@@ -1,0 +1,39 @@
+version: '2'
+services:
+  postgres:
+    restart: always
+    image: "postgres:9.6"
+    env_file:
+      - env_defaults
+  redis:
+    restart: always
+    image: "redis:alpine"
+
+  memcached:
+    restart: always
+    image: memcached
+  web:
+    restart: always
+    build:
+      context: .
+      args:
+        - VENV_ROOT=venv
+    ports:
+      - "8081:8081"
+    links:
+      - postgres
+      - redis
+      - memcached
+    depends_on:
+      - redis
+      - memcached
+    environment:
+      - C_FORCE_ROOT=1
+    env_file:
+      - env_defaults
+    volumes:
+      - ./pepro/:/code/pepro
+      - ./helpers/:/code/helpers
+      - ./conf:/code/conf
+      - ./Procfile:/code/Procfile
+    command: "bin/app start"
