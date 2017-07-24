@@ -101,6 +101,9 @@ INSTALLED_APPS = [
 
     'endless_login',
     'endless_logger',
+    'endless_acceptance_tests',
+    'endless_recruitee',
+    'endless_skills',
 
     'compressor',
     'djangobower',
