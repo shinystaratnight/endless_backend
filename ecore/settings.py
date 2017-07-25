@@ -189,13 +189,17 @@ AUTH_PASSWORD_VALIDATORS = [
 
 CACHES = {
     'default': {
-        'BACKEND': 'django.core.cache.backends.memcached.MemcachedCache',
-        'LOCATION': '{host}:{port}'.format(
-            host=env('MEMCACHED_HOST'),
-            port=env('MEMCACHED_PORT')
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': 'redis://{host}:{port}/1'.format(
+            host=env('REDIS_HOST'),
+            port=env('REDIS_PORT')
         ),
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+        },
         'KEY_PREFIX': env('CACHE_KEY_PREFIX')
-    }
+    },
+
 }
 
 # Internationalization
