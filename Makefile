@@ -394,7 +394,7 @@ run-container:
         --volume "$(CURRENT_PATH)/helpers:$(BASE_DIR)/helpers:ro" \
         --volume "$(CURRENT_PATH)/conf:$(BASE_DIR)/conf" \
         --volume "$(CURRENT_PATH)/docker-entrypoint.sh:$(BASE_DIR)/docker-entrypoint.sh" \
-        --volume "$(NGINX_SITE_VOLUME):$(BASE_DIR)/var/www/" \
+        --volume "$(NGINX_SITE_VOLUME):$(BASE_DIR)/var/www/:rw" \
         --env-file "env_defaults" --env-file ".env" \
         --net $(DOCKER_SUB_NET_NAME) --ip $(REMOTE_CONTAINER_IP) \
         -e WEBUI_APP_DIR=$(WEBUI_APP_DIR) \
@@ -402,6 +402,11 @@ run-container:
         --restart on-failure \
         -p "$(DJANGO_UWSGI_PORT):$(DJANGO_UWSGI_PORT)" \
         ecore-$(DOCKER_APP_NAME)-image
+
+	if test "$(DJANGO_DEBUG)"="1"; then \
+		make user_permissions;
+	fi;
+
 
 restart:
 	sudo docker restart ecore-$(DOCKER_APP_NAME)
@@ -475,7 +480,7 @@ restart-celery-beat:
 	@$(call supervisor, restart celery-beat)
 
 create-superuser:
-	@$(call docker_exec, bin/django createsuperuser, -it)
+	@$(call docker_exec, bin/django createsuper, -it)
 
 docker-app-ip:
 	@echo "Container IP: $$(sudo docker inspect --format "{{ .NetworkSettings.IPAddress }}" ecore-$(DOCKER_APP_NAME))"
@@ -541,3 +546,6 @@ clean-clickhouse:
 	if (sudo docker ps -a| grep " $(DOCKER_CLICKHOUSE_NAME)"); then \
 		sudo docker rm $(DOCKER_CLICKHOUSE_NAME); \
 	fi ;
+
+user_permissions:
+	sudo docker exec -it -u 0 ecore-$(DOCKER_APP_NAME) chown $(SYSTEM_USER):$(SYSTEM_USER) var/www/ -R;
