@@ -3,7 +3,7 @@ ARG VENV_ROOT
 ARG BASE_DIR
 ARG PRIVATE_REPO_KEY
 ARG EXPOSE_PORT
-ARG USER_APP
+ENV USER_APP root
 
 RUN mkdir /root/.ssh/
 ADD ${PRIVATE_REPO_KEY} /root/.ssh/id_rsa
@@ -27,7 +27,7 @@ RUN bin/pip install --process-dependency-links `cat dependencies/submodules.txt`
 
 RUN rm -r /root/.ssh
 
-RUN id -u ${USER_APP} &>/dev/null || adduser \
+RUN id -u ${USER_APP} >/dev/null || adduser \
     --disabled-password \
     --no-create-home \
     --shell /bin/bash \

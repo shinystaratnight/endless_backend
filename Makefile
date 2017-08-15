@@ -70,7 +70,6 @@ all: \
   var/run \
   var/make/subnet \
   var/make/docker-redis \
-  var/make/docker-memcached \
   var/make-docker-postgres \
   var/make/docker-rabbitmq \
   var/make/create-app \
@@ -207,7 +206,7 @@ var/make/bower-packages: dependencies/bower.txt
 
 full-clean:
 	make clean
-	@for CONTAINER in $(DOCKER_POSTGRES_NAME) $(DOCKER_MEMCACHED_NAME) $(DOCKER_REDIS_NAME) nginx ecore-$(DOCKER_APP_NAME); \
+	@for CONTAINER in $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) nginx ecore-$(DOCKER_APP_NAME); \
 	do \
 		if sudo docker ps -a | grep $$CONTAINER; then \
 		    echo "Remove container: $$CONTAINER"; \
@@ -307,9 +306,6 @@ check-docker-db:
 check-docker-redis:
 	@sudo docker ps | grep $(DOCKER_REDIS_NAME) || echo "Not found";
 
-check-docker-memcached:
-	@sudo docker ps | grep memcached || echo "Not found";
-
 check-docker-app:
 	@sudo docker ps | grep crm-core-ecore || echo "Not found";
 
@@ -329,7 +325,7 @@ var/make/create-docker-nginx:
 	sudo mkdir -p $(NGINX_VOLUME)/conf $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/static/ $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/media/ \
 	    $(LETSENCRYPT_CERTS_PATH)
 	sudo chmod -R 775 $(NGINX_VOLUME)
-	@if !(sudo docker ps -a| grep " nginx"); then \
+	if !(sudo docker ps -a| grep " nginx"); then \
         sudo docker run -itd --name nginx \
             --volume "$(LETSENCRYPT_CERTS_PATH):$(DOCKER_NGINX_CERTS_PATH)" \
             --volume "$(NGINX_VOLUME):/www:ro" \
@@ -350,10 +346,6 @@ rm-docker-nginx:
 	if sudo docker ps -a | grep " nginx"; then \
         sudo docker rm nginx; \
     fi ;
-
-var/make/docker-memcached:
-	@$(call docker_run,memcached,$(DOCKER_MEMCACHED_NAME),,$(MEMCACHED_CONTAINER_IP),$(DOCKER_MEMCACHED_PORT),11211)
-	@touch $@
 
 rm-docker-app:
 	@if (sudo docker ps | grep " ecore-$(DOCKER_APP_NAME)"); then \
@@ -396,14 +388,13 @@ run-container:
 	sudo docker run -itd \
         --link "$(DOCKER_POSTGRES_NAME):$(POSTGRES_HOST)" \
         --link "$(DOCKER_REDIS_NAME):$(REDIS_HOST)" \
-        --link "$(DOCKER_MEMCACHED_NAME):$(MEMCACHED_HOST)" \
         --link "$(DOCKER_RABBIT_MQ_NAME):$(RABBIT_MQ_HOST)" \
         --volume "$(CURRENT_PATH)/ecore:$(BASE_DIR)/ecore" \
         --volume "$(CURRENT_PATH)/dependencies/:$(BASE_DIR)/dependencies:ro" \
         --volume "$(CURRENT_PATH)/helpers:$(BASE_DIR)/helpers:ro" \
         --volume "$(CURRENT_PATH)/conf:$(BASE_DIR)/conf" \
         --volume "$(CURRENT_PATH)/docker-entrypoint.sh:$(BASE_DIR)/docker-entrypoint.sh" \
-        --volume "$(NGINX_SITE_VOLUME):$(BASE_DIR)/var/www/" \
+        --volume "$(NGINX_SITE_VOLUME):$(BASE_DIR)/var/www/:rw" \
         --env-file "env_defaults" --env-file ".env" \
         --net $(DOCKER_SUB_NET_NAME) --ip $(REMOTE_CONTAINER_IP) \
         -e WEBUI_APP_DIR=$(WEBUI_APP_DIR) \
@@ -411,6 +402,11 @@ run-container:
         --restart on-failure \
         -p "$(DJANGO_UWSGI_PORT):$(DJANGO_UWSGI_PORT)" \
         ecore-$(DOCKER_APP_NAME)-image
+
+	if test "$(DJANGO_DEBUG)"="1"; then \
+		make user_permissions;
+	fi;
+
 
 restart:
 	sudo docker restart ecore-$(DOCKER_APP_NAME)
@@ -484,13 +480,13 @@ restart-celery-beat:
 	@$(call supervisor, restart celery-beat)
 
 create-superuser:
-	@$(call docker_exec, bin/django createsuperuser, -it)
+	@$(call docker_exec, bin/django createsuper, -it)
 
 docker-app-ip:
 	@echo "Container IP: $$(sudo docker inspect --format "{{ .NetworkSettings.IPAddress }}" ecore-$(DOCKER_APP_NAME))"
 
 docker-start-all:
-	sudo docker start $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) $(DOCKER_RABBIT_MQ_NAME) $(DOCKER_MEMCACHED_NAME) ecore-$(DOCKER_APP_NAME)
+	sudo docker start $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) $(DOCKER_RABBIT_MQ_NAME) ecore-$(DOCKER_APP_NAME)
 
 var/make/webui-app:
 	@if test "$(DJANGO_STUFF_URL_PREFIX)"; then \
@@ -550,3 +546,6 @@ clean-clickhouse:
 	if (sudo docker ps -a| grep " $(DOCKER_CLICKHOUSE_NAME)"); then \
 		sudo docker rm $(DOCKER_CLICKHOUSE_NAME); \
 	fi ;
+
+user_permissions:
+	sudo docker exec -it -u 0 ecore-$(DOCKER_APP_NAME) chown $(SYSTEM_USER):$(SYSTEM_USER) var/www/ -R;
