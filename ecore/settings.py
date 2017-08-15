@@ -77,6 +77,7 @@ INSTALLED_APPS = [
     'sekizai',
     'rosetta',
     'guardian',
+    'easy_select2',
 
     'djangocms_rosetta',
     'classytags',
