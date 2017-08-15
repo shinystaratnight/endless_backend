@@ -76,6 +76,8 @@ INSTALLED_APPS = [
     'menus',
     'sekizai',
     'rosetta',
+    'guardian',
+
     'djangocms_rosetta',
     'classytags',
     'djangocms_text_ckeditor',
@@ -101,9 +103,12 @@ INSTALLED_APPS = [
 
     'endless_login',
     'endless_logger',
+
     'endless_acceptance_tests',
-    'endless_recruitee',
+    'endless_candidate',
+
     'endless_skills',
+    'endless_pricing',
 
     'compressor',
     'djangobower',
@@ -410,7 +415,12 @@ GOOGLE_GEO_CODING_API_KEY = env('GOOGLE_GEO_CODING_API_KEY', '')
 # ENDLESS_CORE APP
 
 AUTH_USER_MODEL = 'endless_core.User'
-AUTHENTICATION_BACKENDS = ['endless_core.backends.ContactBackend']
+
+AUTHENTICATION_BACKENDS = [
+    'endless_core.backends.ContactBackend',
+    'guardian.backends.ObjectPermissionBackend'
+]
+
 CITIES_LIGHT_APP_NAME = 'endless_core'
 LOGINAS_REDIRECT_URL = '/admin'
 
@@ -455,3 +465,5 @@ BOWER_COMPONENTS_ROOT = root('var', 'www', 'bower_components')
 BOWER_INSTALLED_APPS = (
     'font-awesome',
 )
+
+ANONYMOUS_USER_NAME = None

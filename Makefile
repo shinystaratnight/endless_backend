@@ -404,7 +404,7 @@ run-container:
         ecore-$(DOCKER_APP_NAME)-image
 
 	if test "$(DJANGO_DEBUG)"="1"; then \
-		make user_permissions;
+		make user_permissions; \
 	fi;
 
 

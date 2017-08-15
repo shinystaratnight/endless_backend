@@ -2,3 +2,4 @@ git+ssh://git@bitbucket.org/r3sourcer_1/endless_core.git@master#egg=endless_core
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_logger.git@master#egg=endless_logger
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_login.git@master#egg=endless_login
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_hr.git@master#egg=endless_hr
+git+ssh://git@bitbucket.org/r3sourcer_1/endless_pricing.git@master#egg=endless_pricing
