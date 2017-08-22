@@ -514,8 +514,12 @@ var/make/webui-app:
 
 var/make/docker-clickhouse:
 	if !(sudo docker ps -a| grep " $(DOCKER_CLICKHOUSE_NAME)"); then \
+		sudo chmod u+x clickhouse-entrypoint.sh; \
 		sudo python helpers/clickhouse_config.py; \
-		sudo docker run -d --name $(DOCKER_CLICKHOUSE_NAME) --ulimit nofile=262144:262144 yandex/clickhouse-server; \
+		sudo docker run \
+			--volume "$(CURRENT_PATH)/clickhouse-entrypoint.sh:/var/lib/clickhouse/clickhouse-entrypoint.sh" \
+			--entrypoint /var/lib/clickhouse/clickhouse-entrypoint.sh \
+		 	-d --name $(DOCKER_CLICKHOUSE_NAME) --ulimit nofile=262144:262144 yandex/clickhouse-server; \
 		sudo docker cp users.xml $(DOCKER_CLICKHOUSE_NAME):/etc/clickhouse-server/ ; \
 	fi ;
 
