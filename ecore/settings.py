@@ -104,10 +104,8 @@ INSTALLED_APPS = [
 
     'endless_login',
     'endless_logger',
-
     'endless_acceptance_tests',
     'endless_candidate',
-
     'endless_skills',
     'endless_pricing',
 
@@ -416,14 +414,13 @@ GOOGLE_GEO_CODING_API_KEY = env('GOOGLE_GEO_CODING_API_KEY', '')
 # ENDLESS_CORE APP
 
 AUTH_USER_MODEL = 'endless_core.User'
-
 AUTHENTICATION_BACKENDS = [
     'endless_core.backends.ContactBackend',
-    'guardian.backends.ObjectPermissionBackend'
+    'guardian.backends.ObjectPermissionBackend',
 ]
-
 CITIES_LIGHT_APP_NAME = 'endless_core'
 LOGINAS_REDIRECT_URL = '/admin'
+ANONYMOUS_USER_NAME = None
 
 # DRF schema adapter
 DRF_AUTO_BASE_SERIALIZER = 'endless_core.api.serializers.ApiBaseModelSerializer'
@@ -457,6 +454,7 @@ LOGGER_PORT = env('LOGGER_PORT', LOGGER_PORT)
 
 # FIXME: change system user email
 SYSTEM_USER = "system@endless.pro"
+SYSTEM_MASTER_COMPANY = "LabourKing"
 
 OPENEXCHANGE_APP_ID = env('OPENEXCHANGE_APP_ID', '')
 
@@ -466,5 +464,3 @@ BOWER_COMPONENTS_ROOT = root('var', 'www', 'bower_components')
 BOWER_INSTALLED_APPS = (
     'font-awesome',
 )
-
-ANONYMOUS_USER_NAME = None
