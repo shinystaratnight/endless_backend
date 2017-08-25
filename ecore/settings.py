@@ -111,6 +111,7 @@ INSTALLED_APPS = [
 
     'compressor',
     'djangobower',
+    'endless_activity'
 ]
 
 if 'endless_logger' in INSTALLED_APPS:
@@ -459,7 +460,7 @@ SYSTEM_MASTER_COMPANY = "LabourKing"
 OPENEXCHANGE_APP_ID = env('OPENEXCHANGE_APP_ID', '')
 
 # bower configuration
-BOWER_COMPONENTS_ROOT = root('var', 'www', 'bower_components')
+BOWER_COMPONENTS_ROOT = root('var', 'www')
 
 BOWER_INSTALLED_APPS = (
     'font-awesome',

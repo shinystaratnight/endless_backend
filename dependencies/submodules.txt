@@ -4,3 +4,4 @@ git+ssh://git@bitbucket.org/r3sourcer_1/endless_sms_interface.git@master#egg=end
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_login.git@master#egg=endless_login
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_hr.git@master#egg=endless_hr
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_pricing.git@master#egg=endless_pricing
+git+ssh://git@bitbucket.org/r3sourcer_1/endless_activity.git@master#egg=endless_activity
