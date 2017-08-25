@@ -76,3 +76,4 @@ tolerance==0.1.2
 uWSGI==2.0.15
 wheel==0.29.0
 django_compressor==2.1
+infi.clickhouse_orm==0.9.4
