@@ -376,7 +376,8 @@ REST_FRAMEWORK = {
     'DEFAULT_PAGINATION_CLASS': 'endless_core.api.pagination.ApiLimitOffsetPagination',
     'DEFAULT_METADATA_CLASS': 'endless_core.api.metadata.ApiMetadata',
     'PAGE_SIZE': 10,
-    'DATETIME_INPUT_FORMATS': ['iso-8601']
+    'DATETIME_INPUT_FORMATS': ['iso-8601'],
+    'EXCEPTION_HANDLER': 'endless_core.api.views.core_exception_handler',
 }
 
 ADMIN_SHORTCUTS = [
