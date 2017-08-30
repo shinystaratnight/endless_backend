@@ -76,7 +76,8 @@ all: \
   var/make/nginx \
   var/make/create-db \
   var/make/docker-clickhouse \
-  var/make/connect-to-main-container
+  var/make/connect-to-main-container \
+  var/make/webui-app
 
 .env:
 	touch .env
@@ -493,6 +494,8 @@ var/make/webui-app:
 		echo "WEB-UI installation..."; \
 		if ! ls $(WEBUI_APP_DIR); then \
 			git clone git@bitbucket.org:r3sourcer_1/endless_webui.git $(WEBUI_APP_DIR); \
+		else \
+			git pull; \
 		fi; \
 		$(call nginx_root$(USE_NGINX_DOCKER)) \
 		mkdir -p $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
