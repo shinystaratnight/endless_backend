@@ -404,7 +404,7 @@ run-container:
         -p "$(DJANGO_UWSGI_PORT):$(DJANGO_UWSGI_PORT)" \
         ecore-$(DOCKER_APP_NAME)-image
 
-	if test "$(DJANGO_DEBUG)"="1"; then \
+	if test "$(DJANGO_DEBUG)" = "0"; then \
 		make user_permissions; \
 	fi;
 
@@ -487,7 +487,9 @@ docker-app-ip:
 	@echo "Container IP: $$(sudo docker inspect --format "{{ .NetworkSettings.IPAddress }}" ecore-$(DOCKER_APP_NAME))"
 
 docker-start-all:
-	sudo docker start $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) $(DOCKER_RABBIT_MQ_NAME) ecore-$(DOCKER_APP_NAME)
+	sudo docker start $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) $(DOCKER_RABBIT_MQ_NAME) $(DOCKER_CLICKHOUSE_NAME) \
+	    ecore-$(DOCKER_APP_NAME)
+
 
 var/make/webui-app:
 	@if test "$(DJANGO_STUFF_URL_PREFIX)"; then \
@@ -495,25 +497,15 @@ var/make/webui-app:
 		if ! ls $(WEBUI_APP_DIR); then \
 			git clone git@bitbucket.org:r3sourcer_1/endless_webui.git $(WEBUI_APP_DIR); \
 		else \
-			git pull; \
+			cd $(WEBUI_APP_DIR) && git pull && cd ..; \
 		fi; \
 		$(call nginx_root$(USE_NGINX_DOCKER)) \
-		mkdir -p $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
-		mkdir -p var/www/webui; \
-		sudo chmod -R 775 $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
-		sudo chmod u+x $(WEBUI_APP_DIR)/docker-entrypoint.sh; \
-		docker build --tag webui-$(DOCKER_APP_NAME)-image $(WEBUI_APP_DIR); \
-		docker run -itd \
-            --name webui-$(DOCKER_APP_NAME) \
-            -v $(NGINX_SITE_VOLUME)$(WEBUI_APP_DIR):/www/ \
-            -v $(shell pwd)/$(WEBUI_APP_DIR)/:/code/ \
-            --env-file "env_defaults" --env-file ".env" \
-            webui-$(DOCKER_APP_NAME)-image; \
+		sudo rm -rf $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/$(WEBUI_APP_DIR)/*; \
+		sudo cp -R $(WEBUI_APP_DIR)/dist/ $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/$(WEBUI_APP_DIR); \
         echo "WEB-UI successfully installed."; \
     else \
         echo "The 'WEB-UI' wasn't installed because ENV 'DJANGO_STUFF_URL_PREFIX' disabled"; \
 	fi;
-	@touch $@
 
 var/make/docker-clickhouse:
 	if !(sudo docker ps -a| grep " $(DOCKER_CLICKHOUSE_NAME)"); then \
