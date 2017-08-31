@@ -418,7 +418,7 @@ rebuild:
 	sudo docker restart nginx
 
 rebuild-packages:
-	$(call docker_exec, bin/pip uninstall --noinput -r dependencies/submodules.txt, -it)
+	$(call docker_exec, bin/pip uninstall -y -r dependencies/submodules.txt, -it)
 	make restart
 
 update:
