@@ -417,6 +417,10 @@ rebuild:
 	make clean && make
 	sudo docker restart nginx
 
+rebuild-packages:
+	$(call docker_exec, bin/pip uninstall --noinput -r dependencies/submodules.txt, -it)
+	make restart
+
 update:
 	git pull
 	make migrate
