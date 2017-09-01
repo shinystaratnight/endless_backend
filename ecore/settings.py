@@ -102,12 +102,14 @@ INSTALLED_APPS = [
     'djangocms_table',
     'djangocms_oembed',
 
+    'endless_sms_interface',
     'endless_login',
     'endless_logger',
     'endless_acceptance_tests',
     'endless_candidate',
     'endless_skills',
     'endless_pricing',
+    'endless_hr',
 
     'compressor',
     'djangobower',
@@ -466,3 +468,6 @@ BOWER_COMPONENTS_ROOT = root('var', 'www')
 BOWER_INSTALLED_APPS = (
     'font-awesome',
 )
+
+REPLY_TIMEOUT_SMS = 4
+DELIVERY_TIMEOUT_SMS = 4
