@@ -7,5 +7,5 @@ from django.conf import settings  # noqa
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'ecore.settings')
 
 app = Celery('ecore')
-app.config_from_object('django.conf:settings', namespace='CELERY')
+app.config_from_object('ecore.celeryconfig')
 app.autodiscover_tasks(lambda: settings.INSTALLED_APPS)
