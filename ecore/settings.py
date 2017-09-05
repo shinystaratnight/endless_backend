@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
 
     'django_celery_results',
+    'django_celery_beat',
 
     'endless_core_utils',
     'endless_core',
