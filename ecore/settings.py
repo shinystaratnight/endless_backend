@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'rosetta',
     'guardian',
     'easy_select2',
+    'polymorphic',
 
     'djangocms_rosetta',
     'classytags',
@@ -467,6 +468,8 @@ BOWER_COMPONENTS_ROOT = root('var', 'www')
 
 BOWER_INSTALLED_APPS = (
     'font-awesome',
+    'jquery-ui',
+    'bootstrap#3.3.7'
 )
 
 REPLY_TIMEOUT_SMS = 4

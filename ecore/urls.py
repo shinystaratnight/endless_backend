@@ -6,6 +6,7 @@ from drf_auto_endpoint.router import router
 from rest_framework_swagger.views import get_swagger_view
 
 from endless_core.api.viewsets import AppsList, ModelsList, FunctionsList
+from endless_core.views import FormView
 from endless_core.forms import CoreAdminAuthenticationForm
 from endless_logger.admin import admin_logger
 from endless_logger.api.viewsets import journal_list, journal_detail
@@ -26,6 +27,7 @@ api_versions = '(?P<version>v2)'
 _urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^i18n/', include('django.conf.urls.i18n')),
+    url(r'^form-builds/(?P<pk>.+)/', FormView.as_view(), name='form-builder-view'),
     url(r'^rosetta/', include('rosetta.urls')),
     url(r'^api/swagger/$', schema_view),
     url(r'^admin/', admin_logger.urls),
