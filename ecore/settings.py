@@ -104,6 +104,7 @@ INSTALLED_APPS = [
     'djangocms_oembed',
 
     'endless_sms_interface',
+    'endless_twilio',
     'endless_login',
     'endless_logger',
     'endless_acceptance_tests',
@@ -112,8 +113,6 @@ INSTALLED_APPS = [
     'endless_pricing',
     'endless_hr',
 
-    'endless_sms_interface',
-    'endless_twilio',
 
     'compressor',
     'djangobower',
@@ -478,3 +477,6 @@ BOWER_INSTALLED_APPS = (
 DEFAULT_CURRENCY = 'USD'
 REPLY_TIMEOUT_SMS = 4
 DELIVERY_TIMEOUT_SMS = 4
+
+SMS_SERVICE_ENABLED = True
+SMS_SERVICE_CLASS = 'endless_twilio.services.TwilioSMSService'
