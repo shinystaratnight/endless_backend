@@ -1,4 +1,5 @@
 import os
+from datetime import timedelta
 
 from kombu import Queue, Exchange
 
@@ -24,9 +25,18 @@ accept_content = ['json', 'application/text']
 broker_transport_options = {'visibility_timeout': 2 * 60 * 60}
 
 task_queues = (
-    # TODO: create
-    # Queue('example', Exchange('example'), routing_key='example')
+    Queue('sms', Exchange('sms'), routing_key='sms'),
 )
-task_routes = {}
 
-beat_schedule = {}
+task_routes = {
+    'endless_sms_interface.tasks.fetch_remote_sms': {
+        'queue': 'sms',
+    },
+}
+
+beat_schedule = {
+    'fetch_twilio_accounts': {
+        'task': 'endless_sms_interface.tasks.fetch_remote_sms',
+        'schedule': timedelta(seconds=60)
+    }
+}

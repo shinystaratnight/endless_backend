@@ -112,6 +112,9 @@ INSTALLED_APPS = [
     'endless_pricing',
     'endless_hr',
 
+    'endless_sms_interface',
+    'endless_twilio',
+
     'compressor',
     'djangobower',
     'endless_activity'
@@ -472,5 +475,6 @@ BOWER_INSTALLED_APPS = (
     'bootstrap#3.3.7'
 )
 
+DEFAULT_CURRENCY = 'USD'
 REPLY_TIMEOUT_SMS = 4
 DELIVERY_TIMEOUT_SMS = 4
