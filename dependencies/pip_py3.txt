@@ -22,6 +22,7 @@ billiard>=3.5.0.2,<3.6.0
 celery==4.0.2
 django-celery-results==1.0.1
 django-celery-beat==1.0.1
+celery-redbeat==0.10.0
 click==6.6
 Pillow==4.1.1
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light
