@@ -110,6 +110,9 @@ INSTALLED_APPS = [
     'endless_skills',
     'endless_pricing',
 
+    'endless_sms_interface',
+    'endless_twilio',
+
     'compressor',
     'djangobower',
     'endless_activity'
@@ -469,3 +472,8 @@ BOWER_INSTALLED_APPS = (
     'jquery-ui',
     'bootstrap#3.3.7'
 )
+
+DEFAULT_CURRENCY = 'USD'
+
+DELIVERY_TIMEOUT_SMS = 10   # sms no delivered within X minutes
+REPLY_TIMEOUT_SMS = 20   # recipient does not reply within X minutes
