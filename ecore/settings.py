@@ -82,7 +82,7 @@ INSTALLED_APPS = [
 
     'djangocms_rosetta',
     'classytags',
-    # 'djangocms_text_ckeditor',
+    'djangocms_text_ckeditor',
     'djangocms_link',
     'djangocms_snippet',
     'djangocms_column',
