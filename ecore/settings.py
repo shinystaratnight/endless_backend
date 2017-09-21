@@ -82,7 +82,7 @@ INSTALLED_APPS = [
 
     'djangocms_rosetta',
     'classytags',
-    'djangocms_text_ckeditor',
+    # 'djangocms_text_ckeditor',
     'djangocms_link',
     'djangocms_snippet',
     'djangocms_column',
@@ -102,6 +102,8 @@ INSTALLED_APPS = [
     'djangocms_video',
     'djangocms_table',
     'djangocms_oembed',
+
+    'r3sourcer_import',
 
     'endless_sms_interface',
     'endless_twilio',
@@ -173,6 +175,14 @@ DATABASES = {
         'NAME': env('POSTGRES_DB'),
         'USER': env('POSTGRES_USER'),
         'PASSWORD': env('POSTGRES_PASSWORD'),
+        'HOST': env('POSTGRES_HOST'),
+        'PORT': str(env('POSTGRES_PORT')),
+    },
+    'import': {
+        'ENGINE': 'django.db.backends.postgresql_psycopg2',
+        'NAME': 'pepro',
+        'USER': 'crm',
+        'PASSWORD': 'ax9b22axax',
         'HOST': env('POSTGRES_HOST'),
         'PORT': str(env('POSTGRES_PORT')),
     }
