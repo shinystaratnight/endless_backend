@@ -1,10 +1,10 @@
 #!/bin/bash
 
-bin/pip install -r dependencies/pip_py3.txt
-
 if [ "$DJANGO_DEBUG" == "1" ]; then
     bin/pip install --process-dependency-links -r dependencies/submodules.txt
 fi;
+
+bin/pip install -r dependencies/pip_py3.txt
 
 bin/django migrate --noinput
 bin/django bower_install -R
