@@ -38,7 +38,6 @@ _urlpatterns = [
     url(r'^api/{}/'.format(api_versions), include(router.urls, namespace='api')),
     url(r'^', include('filer.urls', namespace='filer')),
     url(r'^admin/', include('loginas.urls')),
-    url(r'^', include('cms.urls'))
 ]
 
 urlpatterns = [
