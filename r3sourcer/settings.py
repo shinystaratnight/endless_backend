@@ -73,7 +73,7 @@ INSTALLED_APPS = [
     # 'r3sourcer_import',
     'r3sourcer.apps.sms_interface',
     'r3sourcer.apps.twilio',
-    # 'endless_login',
+    'r3sourcer.apps.login',
     'r3sourcer.apps.logger',
     # 'endless_acceptance_tests',
     # 'endless_candidate',
