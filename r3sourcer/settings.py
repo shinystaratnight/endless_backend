@@ -71,7 +71,7 @@ INSTALLED_APPS = [
     'polymorphic',
 
     # 'r3sourcer_import',
-    # 'endless_sms_interface',
+    'r3sourcer.apps.sms_interface',
     # 'endless_twilio',
     # 'endless_login',
     # 'endless_logger',

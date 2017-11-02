@@ -29,14 +29,14 @@ task_queues = (
 )
 
 task_routes = {
-    'endless_sms_interface.tasks.fetch_remote_sms': {
+    'r3sourcer.apps.sms_interface.tasks.fetch_remote_sms': {
         'queue': 'sms',
     },
 }
 
 beat_schedule = {
     'fetch_twilio_accounts': {
-        'task': 'endless_sms_interface.tasks.fetch_remote_sms',
+        'task': 'r3sourcer.apps.sms_interface.tasks.fetch_remote_sms',
         'schedule': timedelta(seconds=60)
     }
 }
