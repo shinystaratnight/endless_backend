@@ -13,8 +13,6 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 
 from django.utils.translation import ugettext_lazy as _
-from kombu import Queue, Exchange
-from endless_logger.conf import *
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -52,8 +50,8 @@ INSTALLED_APPS = [
 
     'django_celery_results',
 
-    'endless_core_utils',
-    'endless_core',
+    'r3sourcer.apps.core_utils',
+    'r3sourcer.apps.core',
     'django.contrib.admin',
 
     'loginas',
@@ -65,7 +63,6 @@ INSTALLED_APPS = [
     'django_extensions',
     'phonenumber_field',
     'rest_framework',
-    'rest_framework_swagger',
     'filer',
     'mptt',
     'rosetta',
@@ -73,24 +70,33 @@ INSTALLED_APPS = [
     'easy_select2',
     'polymorphic',
 
-    'r3sourcer_import',
-    'endless_sms_interface',
-    'endless_twilio',
-    'endless_login',
-    'endless_logger',
-    'endless_acceptance_tests',
-    'endless_candidate',
-    'endless_skills',
-    'endless_pricing',
-    'endless_hr',
-    'endless_activity',
+    # 'r3sourcer_import',
+    # 'endless_sms_interface',
+    # 'endless_twilio',
+    # 'endless_login',
+    # 'endless_logger',
+    # 'endless_acceptance_tests',
+    # 'endless_candidate',
+    # 'endless_skills',
+    # 'endless_pricing',
+    # 'endless_hr',
+    # 'endless_activity',
 
     'compressor',
     'djangobower',
 ]
 
 if 'endless_logger' in INSTALLED_APPS:
-    INSTALLED_APPS.append('endless_core_logger')
+    INSTALLED_APPS.append('core_logger')
+
+    from endless_logger.conf import *
+
+    LOGGER_DB = env('LOGGER_DB', LOGGER_DB)
+    LOGGER_USER = env('LOGGER_USER', LOGGER_USER)
+    LOGGER_PASSWORD = env('LOGGER_PASSWORD', LOGGER_PASSWORD)
+    LOGGER_HOST = env('LOGGER_HOST', LOGGER_HOST)
+    LOGGER_PORT = env('LOGGER_PORT', LOGGER_PORT)
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -261,35 +267,35 @@ CELERY_ROUTES = {}
 REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_FILTER_BACKENDS': (
-        'rest_framework.filters.DjangoFilterBackend',
+        'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
-        'endless_core.api.filters.ApiOrderingFilter',
+        'r3sourcer.apps.core.api.filters.ApiOrderingFilter',
     ),
-    'DEFAULT_PAGINATION_CLASS': 'endless_core.api.pagination.ApiLimitOffsetPagination',
-    'DEFAULT_METADATA_CLASS': 'endless_core.api.metadata.ApiMetadata',
+    'DEFAULT_PAGINATION_CLASS': 'r3sourcer.apps.core.api.pagination.ApiLimitOffsetPagination',
+    'DEFAULT_METADATA_CLASS': 'r3sourcer.apps.core.api.metadata.ApiMetadata',
     'PAGE_SIZE': 10,
     'DATETIME_INPUT_FORMATS': ['iso-8601'],
-    'EXCEPTION_HANDLER': 'endless_core.api.views.core_exception_handler',
+    'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
 }
 
 GOOGLE_GEO_CODING_API_KEY = env('GOOGLE_GEO_CODING_API_KEY', '')
 
-# ENDLESS_CORE APP
+# CORE APP
 
-AUTH_USER_MODEL = 'endless_core.User'
+AUTH_USER_MODEL = 'core.User'
 AUTHENTICATION_BACKENDS = [
-    'endless_core.backends.ContactBackend',
+    'r3sourcer.apps.core.backends.ContactBackend',
     'guardian.backends.ObjectPermissionBackend',
 ]
-CITIES_LIGHT_APP_NAME = 'endless_core'
+CITIES_LIGHT_APP_NAME = 'core'
 LOGINAS_REDIRECT_URL = '/admin'
 ANONYMOUS_USER_NAME = None
 
 # DRF schema adapter
-DRF_AUTO_BASE_SERIALIZER = 'endless_core.api.serializers.ApiBaseModelSerializer'
-DRF_AUTO_BASE_VIEWSET = 'endless_core.api.viewsets.BaseApiViewset'
-DRF_AUTO_DEFAULT_ENDPOINT_CLASS = 'endless_core.api.endpoints.ApiEndpoint'
-DRF_AUTO_METADATA_ADAPTER = 'endless_core.api.metadata.AngularApiAdapter'
+DRF_AUTO_BASE_SERIALIZER = 'r3sourcer.apps.core.api.serializers.ApiBaseModelSerializer'
+DRF_AUTO_BASE_VIEWSET = 'r3sourcer.apps.core.api.viewsets.BaseApiViewset'
+DRF_AUTO_DEFAULT_ENDPOINT_CLASS = 'r3sourcer.apps.core.api.endpoints.ApiEndpoint'
+DRF_AUTO_METADATA_ADAPTER = 'r3sourcer.apps.core.api.metadata.AngularApiAdapter'
 
 DRF_AUTO_WIDGET_MAPPING = {
     'ApiDateTimeTzField': 'datetime',
@@ -308,12 +314,6 @@ COMPRESS_CSS_FILTERS = [
 ]
 
 COMPRESS_ENABLED = True
-
-LOGGER_DB = env('LOGGER_DB', LOGGER_DB)
-LOGGER_USER = env('LOGGER_USER', LOGGER_USER)
-LOGGER_PASSWORD = env('LOGGER_PASSWORD', LOGGER_PASSWORD)
-LOGGER_HOST = env('LOGGER_HOST', LOGGER_HOST)
-LOGGER_PORT = env('LOGGER_PORT', LOGGER_PORT)
 
 # FIXME: change system user email
 SYSTEM_USER = "system@endless.pro"
@@ -336,7 +336,7 @@ DELIVERY_TIMEOUT_SMS = 4
 
 ENABLED_TWILIO_WORKING = True
 
-SMS_SERVICE_ENABLED = True
-SMS_SERVICE_CLASS = 'endless_twilio.services.TwilioSMSService'
+SMS_SERVICE_ENABLED = env('SMS_SERVICE_ENABLED', '0') == '1'
+# SMS_SERVICE_CLASS = 'endless_twilio.services.TwilioSMSService'
 
 FETCH_ADDRESS_RAISE_EXCEPTIONS = env('FETCH_ADDRESS_RAISE_EXCEPTIONS', '0') == '1'

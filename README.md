@@ -80,7 +80,6 @@ If you want to run multiple `endless_project/forks` instances you should keep en
 * `DJANGO_UWSGI_PORT` - used for `runserver`, `uwsgi` commands. (Default: `8081`).
 * `ALLOWED_HOSTS` - Django ALLOWED_HOSTS setting (https://docs.djangoproject.com/en/1.10/ref/settings/#allowed-hosts), use separator `,` (example test.ru,example.com). (Default: `*`)
 * `BASE_DIR` -  work directory in the docker container. (Default: `/code`).
-* `PRIVATE_REPO_KEY` - SSH key used to get code from private repositories (e.g. endless_core).
 
 
 # WEB-UI configuration

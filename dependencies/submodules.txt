@@ -1,4 +1,3 @@
-git+ssh://git@bitbucket.org/r3sourcer_1/endless_core.git@master#egg=endless_core
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_logger.git@master#egg=endless_logger
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_sms_interface.git@master#egg=endless_sms_interface
 git+ssh://git@bitbucket.org/r3sourcer_1/endless_twillio.git@master#egg=endless_twilio
