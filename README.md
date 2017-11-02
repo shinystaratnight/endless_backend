@@ -60,7 +60,7 @@ If you want to run multiple `endless_project/forks` instances you should keep en
 * `DOCKER_REDIS_NAME` - redis container name (default: `redis`).
 * `DOCKER_CLICKHOUSE_NAME` - clickhouse container name (default: `clickhouse`).
 * `DOCKER_RABBIT_MQ_NAME` - rabbit mq container name (default: `rabbit_mq`).
-* `DOCKER_APP_NAME` - app container name, formatted str `ecore-%s` (default: `core` => `ecore-cms`). This name should be unique for the docker running containers.
+* `DOCKER_APP_NAME` - app container name, formatted str `r3sourcer-%s` (default: `core` => `r3sourcer-cms`). This name should be unique for the docker running containers.
 ##### Port binding:
 * `DOCKER_NGINX_HTTP_PORT` - docker nginx HTTP port (default: 80). Binding localhost port to docker container (`80` => `nginx-docker`)
 * `DOCKER_NGINX_HTTPS_PORT` - docker nginx HTTPS port (default: 443). Binding localhost port to docker container (`443` => `nginx-docker`)
@@ -73,10 +73,10 @@ If you want to run multiple `endless_project/forks` instances you should keep en
     * `0`- use nginx from system;
     * `1`- use docker nginx;
 * `NGINX_CONFIG_PATH` - if you use system nginx server (`USE_NGINX_DOCKER`=0), set `NGINX_CONFIG_PATH` (default: `/etc/nginx/sites-enabled/`; example: `/usr/local/etc/nginx/servers/`).
-* `NGINX_VOLUME` - directory which would be mounted to nginx container and used as `conf` and `www` root. Example: `%s/crm/static, %s/crm/media` & `%s/some-ecore/static`, & `%s/some-ecore/media`, etc. We can use system nginx server, see `USE_NGINX_DOCKER` env.
+* `NGINX_VOLUME` - directory which would be mounted to nginx container and used as `conf` and `www` root. Example: `%s/crm/static, %s/crm/media` & `%s/some-r3sourcer/static`, & `%s/some-r3sourcer/media`, etc. We can use system nginx server, see `USE_NGINX_DOCKER` env.
 * `DJANGO_STUFF_URL_PREFIX` -  django stuff prefix. Would be used in urls and nginx configuration.
 * `DJANGO_DEBUG` - debug mode (choices: `0`, `1`. Default: `1`).
-* `CACHE_KEY_PREFIX` - cache key prefix. Would be used for different projects and the same redis container (default: `ecore-cms`).
+* `CACHE_KEY_PREFIX` - cache key prefix. Would be used for different projects and the same redis container (default: `r3sourcer-cms`).
 * `DJANGO_UWSGI_PORT` - used for `runserver`, `uwsgi` commands. (Default: `8081`).
 * `ALLOWED_HOSTS` - Django ALLOWED_HOSTS setting (https://docs.djangoproject.com/en/1.10/ref/settings/#allowed-hosts), use separator `,` (example test.ru,example.com). (Default: `*`)
 * `BASE_DIR` -  work directory in the docker container. (Default: `/code`).
@@ -155,4 +155,4 @@ Notes:
     make tests_cov
 
 #### Rut tests with coverage locally
-    pytest --cov=ecore --cov-report=term-missing
+    pytest --cov=r3sourcer --cov-report=term-missing

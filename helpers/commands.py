@@ -23,7 +23,7 @@ def django():
     """Django manage.py
     """
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ecore.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings")
     set_env()
 
     from django.core.management import execute_from_command_line
@@ -33,7 +33,7 @@ def django():
 
 @click.group()
 def app():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "ecore.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings")
     set_env()
 
 

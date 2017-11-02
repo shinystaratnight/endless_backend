@@ -15,7 +15,7 @@ ADD helpers ./helpers
 ADD ["docker-entrypoint.sh", "Procfile", "README.md", "setup.py", "./"]
 RUN apt-get update && apt-get install -y nodejs-legacy npm
 RUN npm i -g bower
-RUN mkdir -p ecore var/log var/run var/www var/tmp
+RUN mkdir -p r3sourcer var/log var/run var/www var/tmp
 RUN pip install virtualenv
 RUN virtualenv ${VENV_ROOT}/py3 -p /usr/local/bin/python3.5 && virtualenv ${VENV_ROOT}/py2 -p /usr/bin/python2.7
 RUN ln -s venv/py3/bin bin
