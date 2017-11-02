@@ -207,7 +207,7 @@ class Contact(
     is_company_contact.boolean = True
 
     def is_candidate_contact(self):
-        from endless_candidate.models import CandidateContact
+        from r3sourcer.apps.candidate.models import CandidateContact
         try:
             return self.candidate_contacts.exists()
         except CandidateContact.DoesNotExist:

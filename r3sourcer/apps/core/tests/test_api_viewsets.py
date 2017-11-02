@@ -13,7 +13,7 @@ from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.test import force_authenticate
 
-from endless_candidate.models import CandidateContact
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import endpoints
 from r3sourcer.apps.core.api.viewsets import CompanyAddressViewset
 from r3sourcer.apps.core.models import Country, City, CompanyContact, DashboardModule, ExtranetNavigation

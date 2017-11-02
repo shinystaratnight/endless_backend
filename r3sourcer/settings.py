@@ -72,7 +72,7 @@ INSTALLED_APPS = [
 
     # 'r3sourcer_import',
     'r3sourcer.apps.sms_interface',
-    # 'endless_twilio',
+    'r3sourcer.apps.twilio',
     # 'endless_login',
     'r3sourcer.apps.logger',
     # 'endless_acceptance_tests',
@@ -337,6 +337,6 @@ DELIVERY_TIMEOUT_SMS = 4
 ENABLED_TWILIO_WORKING = True
 
 SMS_SERVICE_ENABLED = env('SMS_SERVICE_ENABLED', '0') == '1'
-# SMS_SERVICE_CLASS = 'endless_twilio.services.TwilioSMSService'
+SMS_SERVICE_CLASS = 'r3sourcer.apps.twilio.services.TwilioSMSService'
 
 FETCH_ADDRESS_RAISE_EXCEPTIONS = env('FETCH_ADDRESS_RAISE_EXCEPTIONS', '0') == '1'

@@ -27,7 +27,7 @@ _urlpatterns = [
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^form-builds/(?P<pk>.+)/', FormView.as_view(), name='form-builder-view'),
     url(r'^rosetta/', include('rosetta.urls')),
-    # url(r'^twilio/', include('endless_twilio.urls', namespace='twilio')),
+    url(r'^twilio/', include('r3sourcer.apps.twilio.urls', namespace='twilio')),
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),
     url(r'^admin/', admin_logger.urls),
     url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/'.format(api_versions), journal_detail),

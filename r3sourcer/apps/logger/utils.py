@@ -8,8 +8,8 @@ def get_default_user():
     Gets first superuser
     :return: first superuser of the system
     """
-    if 'endless_core' in settings.INSTALLED_APPS:
-        from endless_core.service import factory
+    if 'r3sourcer.apps.core' in settings.INSTALLED_APPS:
+        from r3sourcer.apps.core.service import factory
         return factory.get_instance('get_default_user')
     else:
         cls = get_user_model()
