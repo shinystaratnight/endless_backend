@@ -4,8 +4,8 @@ from drf_auto_endpoint.router import router
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
-from endless_core_logger.models import LoggerModel, LoggerDiffModel
-from endless_core_logger.viewsets import LoggerViewset, LoggerDiffViewset
+from r3sourcer.apps.core_logger.models import LoggerModel, LoggerDiffModel
+from r3sourcer.apps.core_logger.viewsets import LoggerViewset, LoggerDiffViewset
 
 from r3sourcer.apps.core.api.decorators import list_route
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint

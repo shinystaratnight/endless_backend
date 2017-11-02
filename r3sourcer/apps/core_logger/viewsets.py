@@ -4,7 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework.exceptions import ParseError
 
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
-from endless_logger.main import endless_logger
+from r3sourcer.apps.logger.main import endless_logger
 
 
 class LoggerViewset(BaseApiViewset):

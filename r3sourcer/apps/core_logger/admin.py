@@ -1,11 +1,12 @@
 from django.contrib import admin
 from django.contrib.admin.sites import NotRegistered
 
-from endless_logger.admin import LoggerMixin
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.admin import (
     BaseAdmin, UserAdmin, CompanyAdmin, SuperuserAdmin
 )
+
+from r3sourcer.apps.logger.admin import LoggerMixin
 
 
 DEFAULT_MODELS_LIST = [models.Contact, models.BankAccount, models.Address,

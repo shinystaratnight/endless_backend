@@ -2,10 +2,10 @@ import mock
 
 from django.apps import apps
 
-from endless_core_logger.endpoints import LoggerEndpoint, LoggerDiffEndpoint
-from endless_core_logger.models import LoggerModel, LoggerDiffModel
+from r3sourcer.apps.core_logger.endpoints import LoggerEndpoint, LoggerDiffEndpoint
+from r3sourcer.apps.core_logger.models import LoggerModel, LoggerDiffModel
 
-from endless_logger.main import endless_logger
+from r3sourcer.apps.logger.main import endless_logger
 
 
 LoggerViewset = LoggerEndpoint().get_viewset()

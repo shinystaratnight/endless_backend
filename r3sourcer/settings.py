@@ -74,7 +74,7 @@ INSTALLED_APPS = [
     'r3sourcer.apps.sms_interface',
     # 'endless_twilio',
     # 'endless_login',
-    # 'endless_logger',
+    'r3sourcer.apps.logger',
     # 'endless_acceptance_tests',
     # 'endless_candidate',
     # 'endless_skills',
@@ -86,10 +86,10 @@ INSTALLED_APPS = [
     'djangobower',
 ]
 
-if 'endless_logger' in INSTALLED_APPS:
-    INSTALLED_APPS.append('core_logger')
+if 'r3sourcer.apps.logger' in INSTALLED_APPS:
+    INSTALLED_APPS.append('r3sourcer.apps.core_logger')
 
-    from endless_logger.conf import *
+    from r3sourcer.apps.logger.conf import *
 
     LOGGER_DB = env('LOGGER_DB', LOGGER_DB)
     LOGGER_USER = env('LOGGER_USER', LOGGER_USER)

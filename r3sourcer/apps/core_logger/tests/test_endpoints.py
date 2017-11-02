@@ -4,8 +4,8 @@ import pytest
 from rest_framework.response import Response
 from rest_framework.exceptions import NotFound
 
-from endless_core_logger.endpoints import log, LoggerEndpoint
-from endless_core_logger.viewsets import LoggerViewset
+from r3sourcer.apps.core_logger.endpoints import log, LoggerEndpoint
+from r3sourcer.apps.core_logger.viewsets import LoggerViewset
 
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.models import Company

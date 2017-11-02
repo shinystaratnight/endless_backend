@@ -4,15 +4,15 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from drf_auto_endpoint.router import router
 
-# from endless_logger.admin import admin_logger
-# from endless_logger.api.viewsets import journal_list, journal_detail
-# from endless_logger.main import autodiscover
+from r3sourcer.apps.logger.admin import admin_logger
+from r3sourcer.apps.logger.api.viewsets import journal_list, journal_detail
+from r3sourcer.apps.logger.main import autodiscover
 
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
 from r3sourcer.apps.core.views import FormView
 from r3sourcer.apps.core.forms import CoreAdminAuthenticationForm
 
-# autodiscover()
+autodiscover()
 
 router.registry.append(('apps', AppsList, 'apps'))
 router.registry.append(('models', ModelsList, 'models'))
@@ -29,10 +29,10 @@ _urlpatterns = [
     url(r'^rosetta/', include('rosetta.urls')),
     # url(r'^twilio/', include('endless_twilio.urls', namespace='twilio')),
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),
-    # url(r'^admin/', admin_logger.urls),
-    # url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/'.format(api_versions), journal_detail),
-    # url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/'.format(api_versions), journal_list),
-    # url(r'^api/{}/'.format(api_versions), include(router.urls, namespace='api')),
+    url(r'^admin/', admin_logger.urls),
+    url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/'.format(api_versions), journal_detail),
+    url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/'.format(api_versions), journal_list),
+    url(r'^api/{}/'.format(api_versions), include(router.urls, namespace='api')),
     url(r'^', include('filer.urls', namespace='filer')),
     url(r'^admin/', include('loginas.urls')),
 ]
