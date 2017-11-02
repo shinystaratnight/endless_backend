@@ -77,8 +77,8 @@ INSTALLED_APPS = [
     'r3sourcer.apps.logger',
     # 'endless_acceptance_tests',
     # 'endless_candidate',
-    # 'endless_skills',
-    # 'endless_pricing',
+    'r3sourcer.apps.skills',
+    'r3sourcer.apps.pricing',
     # 'endless_hr',
     'r3sourcer.apps.activity',
 
