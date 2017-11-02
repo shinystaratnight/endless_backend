@@ -80,7 +80,7 @@ INSTALLED_APPS = [
     # 'endless_skills',
     # 'endless_pricing',
     # 'endless_hr',
-    # 'endless_activity',
+    'r3sourcer.apps.activity',
 
     'compressor',
     'djangobower',
