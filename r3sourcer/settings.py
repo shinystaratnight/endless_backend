@@ -70,7 +70,7 @@ INSTALLED_APPS = [
     'easy_select2',
     'polymorphic',
 
-    # 'r3sourcer_import',
+    'r3sourcer.import',
     'r3sourcer.apps.sms_interface',
     'r3sourcer.apps.twilio',
     'r3sourcer.apps.login',
