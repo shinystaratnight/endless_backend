@@ -4,12 +4,11 @@ from celery import schedules
 from django.conf import settings
 from django.utils import timezone
 from django.utils.formats import date_format
-from django_celery_beat.models import (CrontabSchedule, IntervalSchedule,
-                                       PeriodicTask)
-from r3sourcer.apps.core.service import factory
+
 from freezegun import freeze_time
 
-from r3sourcer.apps.activity import exceptions as app_exceptions
+from r3sourcer.apps.core.service import factory
+
 from r3sourcer.apps.activity.models import ActivityDate
 
 

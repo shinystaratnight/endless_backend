@@ -44,6 +44,12 @@ def start():
 
 
 @app.command()
+def test():
+    os.chdir(BASE_DIR)
+    run('bin/pytest', warn=True, pty=True)
+
+
+@app.command()
 @click.option('--site_root')
 def nginx_config(site_root):
     required_env = ['HTTP_PORT', 'HTTPS_PORT', 'DOMAIN_NAME']
