@@ -52,6 +52,7 @@ django_compressor==2.1
 infi.clickhouse_orm==0.9.4
 googlemaps==2.5.1
 twilio==5.6.0
+weasyprint==0.40
 
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light
 git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails

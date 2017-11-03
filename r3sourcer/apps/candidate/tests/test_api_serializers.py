@@ -1,0 +1,164 @@
+import mock
+import pytest
+
+from rest_framework.exceptions import ValidationError
+from django_mock_queries.query import MockModel
+
+from r3sourcer.apps.candidate.api.serializers import (
+    CandidateContactSerializer, CandidateContactRegisterSerializer
+)
+from r3sourcer.apps.candidate.models import CandidateContact
+
+
+@pytest.mark.django_db
+class TestCandidateContactSerializer:
+
+    @pytest.fixture
+    def serializer_obj(self):
+        return CandidateContactSerializer()
+
+    def test_can_create_contact(self, contact, serializer_obj):
+        candidate_contact_data = {
+            'contact': contact,
+            'tax_file_number': '123'
+        }
+        instance = serializer_obj.create(candidate_contact_data)
+
+        assert isinstance(instance, CandidateContact)
+        assert instance.pk is not None
+
+    def test_create_contact_without_contact(self, contact, serializer_obj):
+        candidate_contact_data = {
+            'tax_file_number': '123'
+        }
+        with pytest.raises(Exception):
+            serializer_obj.create(candidate_contact_data)
+
+    @mock.patch.object(CandidateContact, 'get_active_states')
+    def test_get_state(self, mock_states, candidate, serializer_obj):
+        mock_states.return_value = [
+            MockModel(state=MockModel(name_after_activation='test'))
+        ]
+
+        res = serializer_obj.get_state(candidate)
+
+        assert len(res) == 1
+        assert res == ['test']
+
+    def test_get_state_none(self, serializer_obj):
+        res = serializer_obj.get_state(None)
+
+        assert res is None
+
+    @mock.patch.object(CandidateContact, 'get_total_score', return_value=5)
+    def test_get_total_score(self, mock_states, candidate, serializer_obj):
+        res = serializer_obj.get_total_score(candidate)
+
+        assert res == 5
+
+    def test_get_total_score_none(self, serializer_obj):
+        res = serializer_obj.get_total_score(None)
+
+        assert res is None
+
+    def test_create_validate_contact_error(self, contact, candidate,
+                                           serializer_obj):
+        candidate_contact_data = {
+            'contact': contact,
+            'tax_file_number': '123'
+        }
+        with pytest.raises(ValidationError):
+            serializer_obj.create(candidate_contact_data)
+
+    @mock.patch.object(CandidateContact, 'get_bmi', return_value=5)
+    def test_get_bmi(self, mock_bmi, candidate, serializer_obj):
+        res = serializer_obj.get_bmi(candidate)
+
+        assert res == 5
+
+    def test_get_bmi_none(self, serializer_obj):
+        res = serializer_obj.get_bmi(None)
+
+        assert res is None
+
+    def test_get_skill_list(self, candidate, serializer_obj,
+                            skill_rel):
+        res = serializer_obj.get_skill_list(candidate)
+
+        assert res == 'Driver'
+
+    def test_get_skill_list_no_items(self, candidate,
+                                     serializer_obj):
+        res = serializer_obj.get_skill_list(candidate)
+
+        assert res == ''
+
+    def test_get_skill_list_none(self, serializer_obj):
+        res = serializer_obj.get_skill_list(None)
+
+        assert res is None
+
+    def test_get_tag_list(self, candidate, serializer_obj,
+                          tag_rel):
+        res = serializer_obj.get_tag_list(candidate)
+
+        assert res == 'Tag name'
+
+    def test_get_tag_list_no_items(self, candidate,
+                                   serializer_obj):
+        res = serializer_obj.get_tag_list(candidate)
+
+        assert res == ''
+
+    def test_get_tag_list_none(self, serializer_obj):
+        res = serializer_obj.get_tag_list(None)
+
+        assert res is None
+
+
+@pytest.mark.django_db
+class TestCandidateContactRegisterSerializer:
+
+    @pytest.fixture
+    def serializer_obj(self):
+        return CandidateContactRegisterSerializer()
+
+    @pytest.fixture
+    def register_data(self, country, skill, tag):
+        return {
+            'first_name': 'Test',
+            'last_name': 'Tester',
+            'email': 'tester@test.tt',
+            'phone_mobile': '+12345678940',
+            'address': {
+                'street_address': 'test str',
+                'country': country,
+            },
+            'skills': [skill],
+            'tags': [tag],
+            'agree': True,
+        }
+
+    def test_create_candidate(self, serializer_obj, register_data):
+        instance = serializer_obj.create(register_data)
+
+        assert isinstance(instance, CandidateContact)
+        assert instance.pk is not None
+
+    def test_create_candidate_do_not_agree(self, serializer_obj, register_data):
+        register_data['agree'] = False
+
+        with pytest.raises(ValidationError):
+            serializer_obj.create(register_data)
+
+    def test_create_candidate_no_tags(self, serializer_obj, register_data):
+        register_data['tags'] = None
+        instance = serializer_obj.create(register_data)
+
+        assert not instance.tag_rels.exists()
+
+    def test_create_candidate_no_skills(self, serializer_obj, register_data):
+        register_data['skills'] = None
+        instance = serializer_obj.create(register_data)
+
+        assert not instance.candidate_skills.exists()

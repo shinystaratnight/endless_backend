@@ -1,0 +1,130 @@
+{% load static %}
+
+<html>
+
+<head>
+    <style type="text/css">
+        body {
+            font-size: 9pt;
+        }
+        @page {
+            margin: 1cm;
+        }
+        .group:before,
+        .group:after {
+            content: "";
+            display: table;
+        }
+        .group:after {
+            clear: both;
+        }
+        .group {
+            display: block;
+            zoom: 1;
+        }
+        .left {
+            margin-right: 3em;
+            float: left;
+        }
+        .right {
+            float: right;
+        }
+        .document-title {
+            font-size: 1.6em;
+            font-style: normal;
+            font-weight: bold;
+            color: black;
+        }
+        .inner-block {
+            display: inline-block;
+            width: 45%;
+            padding: .2em;
+            margin-top: 0;
+            vertical-align: top;
+            font-style: italic;
+        }
+        .title {
+            display: inline-block;
+            width: 11em;
+            font-style: normal;
+            font-weight: bold;
+            vertical-align: top;
+            color: black;
+        }
+        .value {
+            display: inline-block;
+            width: 40%;
+            vertical-align: top;
+        }
+        .value.wrap {
+            width: 65%;
+        }
+        .period {
+            display: inline-block;
+            margin-right: 1em;
+            padding: .2em;
+            padding-left: 0;
+            font-style: normal;
+            font-weight: bold;
+            color: black;
+        }
+        .date {
+            display: inline-block;
+            margin-right: 1em;
+        }
+        .notice {
+            font-size: .9em;
+            font-style: normal;
+            font-weight: bold;
+            color: black;
+        }
+        span.notice {
+            display: block;
+            padding: 0;
+            margin-top: .5em;
+            margin-bottom: .5em;
+            text-transform: uppercase;
+        }
+        p {
+            margin-top: 0;
+            font-style: italic;
+        }
+        table {
+            width: 100%;
+            margin-bottom: 1em;
+            border: 1px solid black;
+            border-collapse: collapse;
+            color: black;
+        }
+        table thead {
+            background: #d9d9d9;
+        }
+        table th {
+            padding: .5em;
+            text-align: left;
+            text-transform: uppercase;
+            border-right: 1px solid black;
+        }
+        table td {
+            padding: .5em;
+            vertical-align: top;
+            border-right: 1px solid black;
+        }
+        table.invoice td {
+            border-bottom: 1px solid black;
+        }
+        table tbody>tr:nth-child(odd) {
+            background-color: #f2f2f2;
+        }
+        .left-table {
+            width: 72%;
+        }
+    </style>
+    <title>{% block title %}{% endblock %}</title>
+</head>
+
+<body>
+    {% block content %}{% endblock %} {% block footer %}{% endblock %}
+</body>
+
+</html>
