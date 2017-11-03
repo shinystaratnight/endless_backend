@@ -505,8 +505,17 @@ var/make/webui-app:
 			cd $(WEBUI_APP_DIR) && git pull && cd ..; \
 		fi; \
 		$(call nginx_root$(USE_NGINX_DOCKER)) \
-		sudo rm -rf $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/$(WEBUI_APP_DIR)/*; \
-		sudo cp -R $(WEBUI_APP_DIR)/dist/ $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/$(WEBUI_APP_DIR); \
+		mkdir -p $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
+		mkdir -p var/www/webui; \
+		sudo chmod -R 775 $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
+		sudo chmod u+x $(WEBUI_APP_DIR)/docker-entrypoint.sh; \
+		docker build --tag webui-$(DOCKER_APP_NAME)-image $(WEBUI_APP_DIR); \
+		docker run -itd \
+            --name webui-$(DOCKER_APP_NAME) \
+            -v $(NGINX_SITE_VOLUME)$(WEBUI_APP_DIR):/www/ \
+            -v $(shell pwd)/$(WEBUI_APP_DIR)/:/code/ \
+            --env-file "env_defaults" --env-file ".env" \
+            webui-$(DOCKER_APP_NAME)-image; \
         echo "WEB-UI successfully installed."; \
     else \
         echo "The 'WEB-UI' wasn't installed because ENV 'DJANGO_STUFF_URL_PREFIX' disabled"; \

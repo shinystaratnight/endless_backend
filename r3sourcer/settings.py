@@ -70,7 +70,7 @@ INSTALLED_APPS = [
     'easy_select2',
     'polymorphic',
 
-    'r3sourcer.import',
+    'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',
     'r3sourcer.apps.twilio',
     'r3sourcer.apps.login',
@@ -335,7 +335,7 @@ DEFAULT_CURRENCY = 'USD'
 REPLY_TIMEOUT_SMS = 4
 DELIVERY_TIMEOUT_SMS = 4
 
-ENABLED_TWILIO_WORKING = True
+ENABLED_TWILIO_WORKING = False
 
 SMS_SERVICE_ENABLED = env('SMS_SERVICE_ENABLED', '0') == '1'
 SMS_SERVICE_CLASS = 'r3sourcer.apps.twilio.services.TwilioSMSService'

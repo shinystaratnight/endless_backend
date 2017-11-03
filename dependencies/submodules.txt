@@ -1,1 +1,0 @@
-git+ssh://git@bitbucket.org/r3sourcer_1/r3sourcer_import.git@master#egg=r3sourcer_import

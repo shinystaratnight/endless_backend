@@ -19,10 +19,7 @@ RUN mkdir -p r3sourcer var/log var/run var/www var/tmp
 RUN pip install virtualenv
 RUN virtualenv ${VENV_ROOT}/py3 -p /usr/local/bin/python3.5 && virtualenv ${VENV_ROOT}/py2 -p /usr/bin/python2.7
 RUN ln -s venv/py3/bin bin
-RUN venv/py2/bin/pip install six
-RUN bin/pip install six
-RUN bin/pip install --process-dependency-links -r dependencies/pip_py3.txt && bin/pip install -e . && venv/py2/bin/pip install -r dependencies/pip_py2.txt
-RUN bin/pip install --no-cache-dir --process-dependency-links `cat dependencies/submodules.txt`
+RUN bin/pip install -r dependencies/pip_pytest.txt && venv/py2/bin/pip install -r dependencies/pip_py2.txt
 
 # available only uwsgi port
 EXPOSE ${EXPOSE_PORT}
