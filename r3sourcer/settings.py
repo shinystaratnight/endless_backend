@@ -81,6 +81,7 @@ INSTALLED_APPS = [
     'r3sourcer.apps.pricing',
     'r3sourcer.apps.hr',
     'r3sourcer.apps.activity',
+    'r3sourcer.apps.myob',
 
     'compressor',
     'djangobower',
@@ -340,3 +341,11 @@ SMS_SERVICE_ENABLED = env('SMS_SERVICE_ENABLED', '0') == '1'
 SMS_SERVICE_CLASS = 'r3sourcer.apps.twilio.services.TwilioSMSService'
 
 FETCH_ADDRESS_RAISE_EXCEPTIONS = env('FETCH_ADDRESS_RAISE_EXCEPTIONS', '0') == '1'
+
+DATE_MYOB_FORMAT = 'Y-m-d'
+
+MYOB_APP = {
+    'desc': env('MYOB_APP_DESC', 'MYOB'),
+    'api_key': env('MYOB_APP_API_KEY'),
+    'api_secret': env('MYOB_APP_API_SECRET')
+}
