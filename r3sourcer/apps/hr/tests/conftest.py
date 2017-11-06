@@ -9,7 +9,7 @@ from unittest.mock import patch
 
 from r3sourcer.apps.core.models import (
     User, Address, Country, Region, City, Company, CompanyContact, CompanyRel,
-    CompanyContactRelationship, InvoiceRule, Invoice
+    CompanyContactRelationship, InvoiceRule, Invoice, VAT
 )
 from r3sourcer.apps.hr.models import (
     Jobsite, JobsiteAddress, Vacancy, VacancyDate, Shift, TimeSheet,
@@ -439,4 +439,15 @@ def invoice(db, master_company, regular_company):
     return Invoice.objects.create(
         provider_company=master_company,
         customer_company=regular_company,
+    )
+
+
+@pytest.fixture
+def vat():
+    country, _ = Country.objects.get_or_create(name='Australia', code2='AU')
+    return VAT.objects.create(
+        country=country,
+        name='GST',
+        rate=0.1,
+        start_date=datetime.date(2017, 1, 1),
     )

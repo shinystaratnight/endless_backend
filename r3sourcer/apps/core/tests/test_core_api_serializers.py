@@ -649,10 +649,13 @@ class TestContactSerializer(SerializerMixin):
     def test_to_representation(self, contact):
         serializer = self.serializer_class(instance=contact)
         data = serializer.data
-        expected_keys = {'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available',
-                         'marital_status', 'birthday', 'spouse_name', 'children', 'picture', 'id', 'address',
-                         '__str__', }
-        assert expected_keys == data.keys()
+        expected_keys = {
+            'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'marital_status',
+            'birthday', 'spouse_name', 'children', 'picture', 'id', 'address', 'company_contact', 'availability',
+            'contact_unavailabilities', 'phone_mobile_verified', 'email_verified', 'notes', '__str__', 'is_available',
+            'notes', 'is_candidate_contact', 'is_company_contact', 'job_title'
+        }
+        assert expected_keys == set(data.keys())
         assert data['id'] == contact.id
 
     @patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(42, 42))
@@ -673,7 +676,8 @@ class TestContactSerializer(SerializerMixin):
         with pytest.raises(serializers.ValidationError):
             self.execute_serializer(data=contact_data)
 
-    def test_can_create_contact_without_city(self, contact_data, country):
+    @patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(1, 1))
+    def test_can_create_contact_without_city(self, mock_geo, contact_data, country):
         contact_data.pop('password')
         contact_data['address'] = {
             'country': country.id,

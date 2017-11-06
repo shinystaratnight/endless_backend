@@ -22,6 +22,7 @@ fake_sms_qs = MockSet(
 )
 
 
+@pytest.mark.django_db
 class TestModels:
 
     def test_replace_timezone_to_default_utc(self):
@@ -42,6 +43,7 @@ class TestModels:
         assert not isinstance(dt, timezone.datetime)
 
 
+@pytest.mark.django_db
 class TestManagers:
 
     @mock.patch('django.db.models.Manager.get_queryset')

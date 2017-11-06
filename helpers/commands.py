@@ -44,9 +44,17 @@ def start():
 
 
 @app.command()
-def test():
+@click.option('--app', prompt='App name (e.g. core)')
+def test(app=None):
     os.chdir(BASE_DIR)
-    run('bin/pytest', warn=True, pty=True)
+
+    if not app:
+        app = ''
+
+    app = os.path.join('r3sourcer', 'apps', app)
+
+    run('bin/pytest --cov={app} --cov-report=term-missing {app}'.format(
+        app=app), warn=True, pty=True)
 
 
 @app.command()

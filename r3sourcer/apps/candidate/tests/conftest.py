@@ -178,8 +178,6 @@ def tag(db):
     return Tag.objects.create(
         name="Tag name",
         active=True,
-        depth=1,
-        path="test",
         evidence_required_for_approval=True
     )
 

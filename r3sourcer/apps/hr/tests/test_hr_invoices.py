@@ -39,7 +39,7 @@ class TestInvoiceService:
     @mock.patch.object(InvoiceService, 'generate_pdf')
     @mock.patch.object(InvoiceService, 'calculate')
     def test_prepare_invoice(self, mock_calc, mock_pdf, service,
-                             master_company):
+                             master_company, vat):
         mock_calc.return_value = [{
             'date': date(2017, 1, 1),
             'units': Decimal(1),
@@ -70,7 +70,7 @@ class TestInvoiceService:
     def test_calculate(
             self, mock_timesheets, mock_price_list_rate, mock_worked, mock_pl,
             service, master_company, timesheet_approved, price_list_rate,
-            rate_coefficient):
+            rate_coefficient, vat):
 
         mock_timesheets.return_value = [timesheet_approved]
         mock_price_list_rate.return_value = price_list_rate
@@ -94,7 +94,7 @@ class TestInvoiceService:
     def test_calculate_show_candidate(
             self, mock_timesheets, mock_price_list_rate, mock_worked, mock_pl,
             service, master_company, timesheet_approved, price_list_rate,
-            rate_coefficient):
+            rate_coefficient, vat):
 
         mock_timesheets.return_value = [timesheet_approved]
         mock_price_list_rate.return_value = price_list_rate

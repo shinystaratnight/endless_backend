@@ -16,7 +16,7 @@ from django.utils.translation import ugettext_lazy as _
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
 def env(key, default=None):
@@ -35,6 +35,7 @@ SECRET_KEY = env('DJANGO_SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = env("DJANGO_DEBUG", '1') == '1'
+TEST = False
 
 ALLOWED_HOSTS = [x.strip() for x in env('ALLOWED_HOSTS').split(',')]
 
@@ -153,7 +154,7 @@ DATABASES = {
         'PASSWORD': 'ax9b22axax',
         'HOST': env('POSTGRES_HOST'),
         'PORT': str(env('POSTGRES_PORT')),
-    }
+    },
 }
 
 # Password validation
@@ -280,6 +281,7 @@ REST_FRAMEWORK = {
 }
 
 GOOGLE_GEO_CODING_API_KEY = env('GOOGLE_GEO_CODING_API_KEY', '')
+GOOGLE_DISTANCE_MATRIX_API_KEY = env('GOOGLE_DISTANCE_MATRIX_API_KEY', '')
 
 # CORE APP
 
@@ -297,6 +299,7 @@ DRF_AUTO_BASE_SERIALIZER = 'r3sourcer.apps.core.api.serializers.ApiBaseModelSeri
 DRF_AUTO_BASE_VIEWSET = 'r3sourcer.apps.core.api.viewsets.BaseApiViewset'
 DRF_AUTO_DEFAULT_ENDPOINT_CLASS = 'r3sourcer.apps.core.api.endpoints.ApiEndpoint'
 DRF_AUTO_METADATA_ADAPTER = 'r3sourcer.apps.core.api.metadata.AngularApiAdapter'
+ROUTER_CLASS = 'r3sourcer.apps.core.api.router.ApiRouter'
 
 DRF_AUTO_WIDGET_MAPPING = {
     'ApiDateTimeTzField': 'datetime',
@@ -341,6 +344,10 @@ SMS_SERVICE_ENABLED = env('SMS_SERVICE_ENABLED', '0') == '1'
 SMS_SERVICE_CLASS = 'r3sourcer.apps.twilio.services.TwilioSMSService'
 
 FETCH_ADDRESS_RAISE_EXCEPTIONS = env('FETCH_ADDRESS_RAISE_EXCEPTIONS', '0') == '1'
+
+DATE_FORMAT = 'd/m/Y'
+DATETIME_FORMAT = 'd/m/Y h:i A'
+TIME_FORMAT = 'h:i A'
 
 DATE_MYOB_FORMAT = 'Y-m-d'
 

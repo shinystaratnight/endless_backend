@@ -28,7 +28,7 @@ RESTORE_DB_FILE_PATH = var/backups/$(RESTORE_DB_FILE)
 RESTORE_DB_FOR_DEV_FILE_PATH = var/backups/$(RESTORE_DB_FOR_DEV_FILE)
 
 define docker_exec
-    sudo docker exec $(2) r3sourcer-$(DOCKER_APP_NAME) $(1)
+    docker exec $(2) r3sourcer-$(DOCKER_APP_NAME) $(1)
 endef
 
 define supervisor
@@ -272,14 +272,12 @@ clone_prod_db:
 	scp $(PROD_LOGIN):$(PROD_DIR)/var/backups/$(RESTORE_DB_FOR_DEV_FILE) var/backups/
 	make restore_db_for_dev
 
-tests:
-	PYTHONDONTWRITEBYTECODE=1
-	@$(call docker_exec, rm -rf r3sourcer/core/tests/__pycache__/)
-	@$(call docker_exec, bash -c "PYTHONDONTWRITEBYTECODE=1 bin/pytest --ds=r3sourcer.settings_tests r3sourcer", -it)
-
-tests_cov:
-	@$(call docker_exec, rm -rf r3sourcer/core/tests/__pycache__/)
-	@$(call docker_exec, bash -c "PYTHONDONTWRITEBYTECODE=1 bin/pytest --ds=r3sourcer.settings_tests --cov=r3sourcer --cov-report=term-missing r3sourcer", -it)
+test:
+	if (docker ps | grep "r3sourcer-$(DOCKER_APP_NAME)"); then \
+	    $(call docker_exec, bin/app test); \
+	elif [ -a ./bin/app ]; then \
+		bin/app test; \
+	fi ;
 
 makemessages:
 	$(call docker_exec, bin/django makemessages -l $(LANG) --extension=html,jinja)

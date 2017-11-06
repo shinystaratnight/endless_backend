@@ -19,18 +19,20 @@ class TestLoginResource:
         get_active_states.return_value = [mocked_value]
 
         client.get(reverse('api:auth-login-by-token', kwargs={'version': 'v2', 'auth_token': token_login.auth_token}))
-        company_contact = CompanyContact.objects.create(contact=user.contact, role=CompanyContact.ROLE_CHOICES[0][0])
+        company_contact = CompanyContact.objects.create(
+            contact=user.contact, role=CompanyContact.ROLE_CHOICES[CompanyContact.MANAGER]
+        )
         url = reverse('api:auth-restore-session', kwargs={'version': 'v2'})
         response1 = client.get(url)
-        company_contact.role = CompanyContact.ROLE_CHOICES[1][0]
+        company_contact.role = CompanyContact.ROLE_CHOICES[CompanyContact.CLIENT]
         company_contact.save()
         response2 = client.get(url)
         company_contact.delete()
         CandidateContact.objects.create(contact=user.contact)
         response3 = client.get(url)
 
-        assert response1.json()['data']['contact']['contact_type'] == 'manager'
-        assert response2.json()['data']['contact']['contact_type'] == 'client'
+        assert response1.json()['data']['contact']['contact_type'] == 'Manager'
+        assert response2.json()['data']['contact']['contact_type'] == 'Client'
         assert response3.json()['data']['contact']['contact_type'] == 'candidate'
 
     def test_cannot_put_to_login(self, client, user):

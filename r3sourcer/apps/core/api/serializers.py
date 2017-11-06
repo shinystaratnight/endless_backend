@@ -616,10 +616,20 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
     class Meta:
         model = models.Contact
         read_only = ('is_available', 'address', 'company_contact', 'object_history', 'notes')
-        fields = ('title', 'first_name', 'last_name', 'email', 'phone_mobile',
-                  'gender', 'is_available', 'marital_status', 'birthday', 'spouse_name',
-                  'children', 'picture', 'address', 'company_contact', 'contact_unavailabilities',
-                  'phone_mobile_verified', 'email_verified', 'notes')
+        fields = (
+            'title', 'first_name', 'last_name', 'email', 'phone_mobile',
+            'gender', 'is_available', 'marital_status', 'birthday', 'spouse_name',
+            'children', 'picture', 'address', 'phone_mobile_verified', 'email_verified',
+            # FIXME: change related fields
+            {
+                'notes': ('id', 'note'),
+                'company_contact': (
+                    'id', 'job_title', 'rating_unreliable', 'legacy_myob_card_number', 'voip_username',
+                    'voip_password', 'receive_order_confirmation_sms'
+                ),
+                'contact_unavailabilities': ('id', 'unavailable_from', 'unavailable_until', 'notes',),
+            }
+        )
         related = RELATED_DIRECT
         extra_kwargs = {
             'address': {'required': True}

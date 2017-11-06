@@ -139,7 +139,8 @@ class TestCandidateContactRegisterSerializer:
             'agree': True,
         }
 
-    def test_create_candidate(self, serializer_obj, register_data):
+    @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(1, 1))
+    def test_create_candidate(self, mock_geo, serializer_obj, register_data):
         instance = serializer_obj.create(register_data)
 
         assert isinstance(instance, CandidateContact)
@@ -151,13 +152,15 @@ class TestCandidateContactRegisterSerializer:
         with pytest.raises(ValidationError):
             serializer_obj.create(register_data)
 
-    def test_create_candidate_no_tags(self, serializer_obj, register_data):
+    @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(1, 1))
+    def test_create_candidate_no_tags(self, mock_geo, serializer_obj, register_data):
         register_data['tags'] = None
         instance = serializer_obj.create(register_data)
 
         assert not instance.tag_rels.exists()
 
-    def test_create_candidate_no_skills(self, serializer_obj, register_data):
+    @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(1, 1))
+    def test_create_candidate_no_skills(self, mock_geo,  serializer_obj, register_data):
         register_data['skills'] = None
         instance = serializer_obj.create(register_data)
 

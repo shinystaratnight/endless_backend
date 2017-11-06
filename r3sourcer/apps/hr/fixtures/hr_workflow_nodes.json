@@ -1,38 +1,38 @@
 [
     {
-        "model": "endless_core.workflow",
+        "model": "core.workflow",
         "fields": {
-            "model": "endless_candidate.candidatecontact",
+            "model": "candidate.candidatecontact",
             "name": "Candidate Contact Workflow"
         },
         "pk": "da438699-c153-4782-9781-ba337dfdbddb"
     },
     {
-        "model": "endless_core.workflow",
+        "model": "core.workflow",
         "fields": {
-            "model": "endless_hr.jobsite",
+            "model": "hr.jobsite",
             "name": "Jobsite Workflow"
         },
         "pk": "3be41886-8a5a-44f1-8c2a-d422b89a9b84"
     },
     {
-        "model": "endless_core.workflow",
+        "model": "core.workflow",
         "fields": {
-            "model": "endless_hr.timesheet",
+            "model": "hr.timesheet",
             "name": "TimeSheet Workflow"
         },
         "pk": "7f62e161-70f5-47ef-b5f3-b464a508d76a"
     },
     {
-        "model": "endless_core.workflow",
+        "model": "core.workflow",
         "fields": {
-            "model": "endless_hr.timesheetissue",
+            "model": "hr.timesheetissue",
             "name": "TimeSheet Issue Workflow"
         },
         "pk": "bc160e18-ca7f-40ce-9453-0b195dc20d52"
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "084eb8a9-84d3-4cff-8472-7c2f37541e50",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -94,7 +94,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "1471746a-eb65-4493-8c75-553acc306707",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -124,7 +124,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "1488ac31-2170-44c5-b5d6-5b5bb0627aad",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -187,7 +187,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "258c5d58-411c-45c7-9bad-937d75c1da26",
         "fields": {
             "workflow": "3be41886-8a5a-44f1-8c2a-d422b89a9b84",
@@ -209,7 +209,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "2826ef71-f845-48c0-a3af-43e9f7c26251",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -274,7 +274,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "325b449c-edc1-480c-881a-47d8dff60887",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -339,7 +339,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "4337d3b0-1360-4539-a907-43947ca1d6fe",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -401,7 +401,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "553b6d9a-2ec9-4148-88c8-ad0bbf4ad3f1",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -455,7 +455,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "672c368b-8a79-4d7f-afbd-438a0ff5f3dd",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -517,7 +517,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "88cc1a5b-50b8-46a0-887b-aa8bf6b4b516",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -580,7 +580,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "8f04ed8e-53f9-4044-a6c7-ac23efa3fa00",
         "fields": {
             "workflow": "3be41886-8a5a-44f1-8c2a-d422b89a9b84",
@@ -615,7 +615,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "9e3e9b03-78bb-42d7-8a6b-b19fd4769e81",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -628,7 +628,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "a64c7d22-8fc3-4f37-ba67-da491c8469b5",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -688,7 +688,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "a74aa4b6-edbf-4d0c-8729-9eb856186fd2",
         "fields": {
             "workflow": "3be41886-8a5a-44f1-8c2a-d422b89a9b84",
@@ -705,7 +705,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "aea77db2-069f-4d53-a58b-0eb2bd8430a9",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -726,7 +726,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "d1a7e232-5642-4298-9794-6ff40c8e4e05",
         "fields": {
             "workflow": "3be41886-8a5a-44f1-8c2a-d422b89a9b84",
@@ -747,7 +747,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "e1339bde-0500-4334-a88f-de0963421bbd",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -809,7 +809,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "e1a4d6ab-5cda-4288-ac38-273472158fa5",
         "fields": {
             "workflow": "3be41886-8a5a-44f1-8c2a-d422b89a9b84",
@@ -831,7 +831,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "e41d2e08-bb5d-4b28-8d6b-8f087add923b",
         "fields": {
             "workflow": "3be41886-8a5a-44f1-8c2a-d422b89a9b84",
@@ -853,7 +853,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "ef7f16b6-0d08-43b3-baef-45397778f5d2",
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
@@ -915,7 +915,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "a95a2cae-14cc-4400-aee8-1bfe14e841d3",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
@@ -932,7 +932,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "2a0b7920-9cd9-4c7c-8422-2febdbeaa294",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
@@ -953,7 +953,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "2fccba89-e281-4486-8427-1bfb505cf1cb",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
@@ -975,7 +975,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "bcb4c951-a665-41c8-9610-e0498eb48b8d",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
@@ -999,7 +999,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "d58c8a6b-7d46-4f34-8733-c9404f7db3ae",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
@@ -1028,7 +1028,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "5407a6d4-1d4c-49a8-b7c5-87dde2d8d86d",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
@@ -1057,7 +1057,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "fbb3faa1-b9b3-4235-8fac-b0129e265526",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
@@ -1082,7 +1082,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "d8a30a6b-2df3-45d9-b374-83c13b55ef75",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
@@ -1124,7 +1124,7 @@
         }
     },
     {
-        "model": "endless_core.workflownode",
+        "model": "core.workflownode",
         "pk": "84a60f70-9d25-4351-8e56-90196fa090c9",
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",

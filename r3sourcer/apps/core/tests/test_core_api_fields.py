@@ -39,7 +39,7 @@ class TestApiDateTimeTzField:
         date_time = datetime(2017, 1, 1)
         date_tz_str = field.to_representation(date_time)
 
-        assert date_tz_str == '2017-01-01T00:00:00'
+        assert date_tz_str == '2017-01-01T00:00:00+11:00'
 
 
 class TestApiAbsoluteUrlMixin:

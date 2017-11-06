@@ -603,7 +603,7 @@ class TestNavigationViewset(ResourceMixin):
         client_url = 'client_url'
         manager_url = 'manager_url'
         candidate_url = 'candidate_url'
-        url = reverse('api:endless-core/extranetnavigations-list', kwargs={'version': 'v2'})
+        url = '/endless-core/extranetnavigations/'
 
         ExtranetNavigation.objects.create(url=client_url,
                                           access_level=ExtranetNavigation.CLIENT)
@@ -639,7 +639,7 @@ class TestNavigationViewset(ResourceMixin):
 
     def test_navigation_retrieve_unknown_role(self, rf, user):
         with pytest.raises(exceptions.ValidationError) as exc:
-            url = reverse('api:endless-core/extranetnavigations-list', kwargs={'version': 'v2'})
+            url = '/endless-core/extranetnavigations/'
             request = rf.get(url)
             force_authenticate(request, user=user)
             self.get_response_as_view(request, actions={'get': 'list'})

@@ -62,16 +62,16 @@ class TestGeo:
             {'distance': 1538731, 'duration': 89893}
         ]]
 
-    @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps')
+    @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps.Client')
     def test_calc_distance_unsuccessfull(self, mock_googlemaps):
-        mock_gmaps = mock_googlemaps.Client.return_value
+        mock_gmaps = mock_googlemaps.return_value
         mock_gmaps.distance_matrix.side_effect = googlemaps.exceptions.ApiError('REQUEST_DENIED')
-        distance_matrix = calc_distance('test address', ['test address 1', 'test address 2'])
-        assert distance_matrix is None
+        with pytest.raises(GeoException):
+            calc_distance('test address', ['test address 1', 'test address 2'])
 
-    @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps')
+    @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps.Client')
     def test_calc_distance_query_limit_reached(self, mock_googlemaps):
-        mock_gmaps = mock_googlemaps.Client.return_value
+        mock_gmaps = mock_googlemaps.return_value
         mock_gmaps.distance_matrix.side_effect = googlemaps.exceptions.ApiError('OVER_QUERY_LIMIT')
         with pytest.raises(GeoException):
             calc_distance('test address', ['test address 1', 'test address 2'])
