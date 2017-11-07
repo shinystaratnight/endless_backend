@@ -33,6 +33,7 @@ from model_utils import Choices
 from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
+from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..utils.user import get_default_company
@@ -61,6 +62,10 @@ class UUIDModel(models.Model):
     @classmethod
     def use_logger(cls):
         return True
+
+    @property
+    def object_history(self):
+        return endless_logger.get_object_history(self.__class__, self.pk)
 
 
 class Contact(
