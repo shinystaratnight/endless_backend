@@ -719,7 +719,20 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Company state timeline'),
-            'fields': ()
+            'fields': (
+                {
+                    'type': constants.FIELD_TIMELINE,
+                    'label': _('States Timeline'),
+                    'field': 'id',
+                    'endpoint': format_lazy(
+                        '{}timeline/',
+                        api_reverse_lazy('endless-core/workflownodes'),
+                    ),
+                    'query': ['model', 'object_id'],
+                    'model': 'core.company',
+                    'object_id': '{id}',
+                },
+            )
         },
         {
             'type': constants.CONTAINER_COLLAPSE,
