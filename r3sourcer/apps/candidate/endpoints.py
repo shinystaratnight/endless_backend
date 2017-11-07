@@ -22,7 +22,16 @@ class CandidateContactEndpoint(ApiEndpoint):
     serializer = serializers.CandidateContactSerializer
 
     fieldsets = (
-        'contact',
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('General'),
+            'collapsed': False,
+            'fields': (
+                'contact',
+                'recruitment_agent',
+                'picture',
+            )
+        },
         {
             'type': constants.CONTAINER_COLLAPSE,
             'name': _('Residency'),

@@ -1,39 +1,78 @@
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import serializers, exceptions
-
-from r3sourcer.apps.core.api.serializers import (
-    ApiBaseModelSerializer, ContactRegisterSerializer, RELATED_DIRECT,
-    ApiRealtedFieldManyMixin, ContactSerializer,
-)
+from rest_framework import exceptions, serializers
+from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers
+from r3sourcer.apps.activity.endpoints.serializers import ActivitySerializer
+from r3sourcer.apps.candidate import models
+from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.core.api import serializers as core_serializers
 from r3sourcer.apps.core.models import Contact, Tag
 from r3sourcer.apps.skills.models import Skill
-
 from .. import models
 
 
-class SkillRelSerializer(ApiBaseModelSerializer):
+class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = hr_models.FavouriteList
+        fields = '__all__'
+
+
+class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = hr_models.BlackList
+        fields = '__all__'
+
+
+class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = hr_models.VacancyOffer
+        fields = '__all__'
+
+
+class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = hr_models.CarrierList
+        fields = '__all__'
+
+
+class SkillRelSerializer(core_serializers.ApiBaseModelSerializer):
 
     class Meta:
         model = models.SkillRel
         fields = '__all__'
 
 
-class TagRelSerializer(ApiBaseModelSerializer):
+class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
 
     class Meta:
         model = models.TagRel
         fields = '__all__'
 
 
-class CandidateContactSerializer(ApiRealtedFieldManyMixin,
-                                 ApiBaseModelSerializer):
+class CandidateContactSerializer(core_serializers.ApiRealtedFieldManyMixin,
+                                 core_serializers.ApiBaseModelSerializer):
+    blacklist = BlackListSerializer(many=True)
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
+    notes = serializers.NoteSerializer(many=True)
+    active_states = serializers.WorkflowObjectSerializer(many=True)
+    activities = ActivitySerializer(many=True)
+    favourites = FavouriteListSerializer(many=True)
+    vacancy_offers = VacancyOfferSerializer(many=True)
+    carrier_lists = CarrierListSerializer(many=True)
+    candidate_evaluations = timesheet_serializers.CandidateEvaluationSerializer(many=True)
 
     method_fields = ('state', 'total_score', 'bmi', 'skill_list', 'tag_list')
     many_related_fields = {
+        'candidate_evaluations': 'candidate_contact',
+        'carrier_lists': 'candidate_contact',
+        'vacancy_offers': 'candidate_contact',
+        'active_states': 'candidate_contact',
+        'blacklists': 'candidate_contact',
+        'activities': 'candidate_contact',
+        'notes': 'candidate_contact',
         'candidate_skills': 'candidate_contact',
         'tag_rels': 'candidate_contact',
+        'favourites': 'candidate_contact',
     }
 
     def create(self, validated_data):
@@ -54,13 +93,31 @@ class CandidateContactSerializer(ApiRealtedFieldManyMixin,
     class Meta:
         model = models.CandidateContact
         fields = ('__all__', {
+            'blacklists': ('__all__',),
+            'favourites': ('__all__',),
+            'active_states': ('__all__',),
+            'vacancy_offers': ('__all__',),
+            'carrier_lists': ('__all__',),
+            'candidate_evaluations': ('__all__',),
+            'notes': ('id', 'note'),
+            'activities': ('id', 'starts_at', 'ends_at', 'done', 'template', {
+                'contact': ('__all__', {
+                    'address': ('__all__',),
+                },)
+            }),
             'tag_rels': ('id', 'verified_by', 'verification_evidence'),
-            'candidate_skills': ('id', 'skill', 'score', 'prior_experience'),
+            'candidate_skills': (
+                'id', 'skill', 'score', 'prior_experience'
+            ),
             'contact': ('__all__', {
-                'address': ('__all__', ),
+                'address': ('__all__',),
+            }),
+            'recruitment_agent': ('__all__', {
+                'contact': ('__all__',),
             }),
         })
-        related = RELATED_DIRECT
+
+        related = core_serializers.RELATED_DIRECT
 
     def get_state(self, obj):
         if not obj:
@@ -103,7 +160,7 @@ class CandidateContactSerializer(ApiRealtedFieldManyMixin,
         )
 
 
-class CandidateContactRegisterSerializer(ContactRegisterSerializer):
+class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):
 
     candidate = CandidateContactSerializer(required=False)
     agree = serializers.BooleanField(required=True)
@@ -159,7 +216,7 @@ class CandidateContactRegisterSerializer(ContactRegisterSerializer):
         )
 
 
-class SubcontractorSerializer(ApiBaseModelSerializer):
+class SubcontractorSerializer(core_serializers.ApiBaseModelSerializer):
 
     class Meta:
         fields = '__all__'
