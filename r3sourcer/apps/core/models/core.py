@@ -683,6 +683,12 @@ class Company(
 
     website = models.URLField(verbose_name=_("Website"), blank=True)
 
+    logo = ThumbnailerImageField(
+        upload_to='company_pictures',
+        default=os.path.join(settings.MEDIA_ROOT, 'company_pictures', 'default_picture.jpg'),
+        blank=True
+    )
+
     date_of_incorporation = models.DateField(
         verbose_name=_("Date of Incorporation"),
         null=True,
