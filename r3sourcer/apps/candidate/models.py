@@ -1,0 +1,809 @@
+from datetime import timedelta, date
+
+from crum import get_current_request
+from django.db import models
+from django.utils.translation import ugettext_lazy as _
+from model_utils import Choices
+from phonenumber_field.modelfields import PhoneNumberField
+
+from r3sourcer.apps.acceptance_tests.models import (
+    AcceptanceTest, AcceptanceTestQuestion, AcceptanceTestAnswer
+)
+from r3sourcer.apps.core.decorators import workflow_function
+from r3sourcer.apps.core.models import (
+    UUIDModel, Contact, BankAccount, CompanyContact, Country, Tag, Company
+)
+from r3sourcer.apps.core.utils.user import get_default_user, get_default_company
+from r3sourcer.apps.core.workflow import WorkflowProcess
+from r3sourcer.apps.skills.models import (
+    EmploymentClassification, Skill, SkillBaseRate
+)
+
+
+class VisaType(UUIDModel):
+
+    GENERAL_TYPE_CHOICES = Choices(
+        ('visitor', _("Visitor")),
+        ('working', _("Working and Skilled")),
+        ('studying', _("Studying")),
+        ('family', _("Family and Spousal")),
+        ('refugee', _("Refugee and Humanitarian")),
+        ('other', _("Other")),
+        ('repealed', _("Repealed")),
+        ('temp', _("Temporary")),
+        ('temp_resid', _("Temporary Resident")),
+        ('bridging', _("Bridging Visa")),
+    )
+
+    subclass = models.CharField(
+        max_length=4,
+        verbose_name=_("Subclass Number"),
+        unique=True
+    )
+
+    name = models.CharField(
+        max_length=255,
+        verbose_name=_("Visa Type Name")
+    )
+
+    general_type = models.CharField(
+        max_length=10,
+        verbose_name=_("General Visa Type"),
+        choices=GENERAL_TYPE_CHOICES,
+        default=GENERAL_TYPE_CHOICES.other
+    )
+
+    work_hours_allowed = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name=_("Working Hours Allowed")
+    )
+
+    is_available = models.BooleanField(
+        default=True,
+        verbose_name=_("Available")
+    )
+
+    class Meta:
+        verbose_name = _("Visa Type")
+        verbose_name_plural = _("Visa Types")
+
+    def __str__(self):
+        return '{}: {} ({})'.format(
+            self.subclass, self.name, self.general_type
+        )
+
+
+class SuperannuationFund(UUIDModel):
+
+    name = models.CharField(
+        max_length=76,
+        verbose_name=_('Name')
+    )
+
+    membership_number = models.CharField(
+        max_length=255,
+        verbose_name=_("Employer Membership Number"),
+        blank=True,
+        null=True
+    )
+
+    phone = PhoneNumberField(
+        verbose_name=_("Phone Number"),
+        blank=True,
+        null=True
+    )
+
+    website = models.CharField(
+        max_length=255,
+        verbose_name=_("Website"),
+        blank=True,
+        null=True
+    )
+
+    class Meta:
+        verbose_name = _("Superannuation Fund")
+        verbose_name_plural = _("Superannuation Funds")
+
+    def __str__(self):
+        return self.name
+
+
+class CandidateContact(
+        UUIDModel,
+        WorkflowProcess):
+
+    RESIDENCY_STATUS_CHOICES = Choices(
+        (0, 'unknown', _('Unknown')),
+        (1, 'citizen', _('Citizen')),
+        (2, 'permanent', _('Permanent Resident')),
+        (3, 'temporary', _('Temporary Resident')),
+    )
+
+    REFERRAL_CHOICES = Choices(
+        (0, 'other', _("Other / Unspecified")),
+        (1, 'direct', _("Direct Contact")),
+        (2, 'friend', _("Friend")),
+        (3, 'internet', _("Internet Search")),
+        (4, 'RTO', _("RTO")),
+        (5, 'job_agent', _("Job Agent")),
+        (6, 'advertisement', _("Advertisement")),
+    )
+
+    TRANSPORTATION_CHOICES = Choices(
+        (1, 'own', _("Own Car")),
+        (2, 'public', _("Public Transportation")),
+    )
+
+    contact = models.OneToOneField(
+        Contact,
+        on_delete=models.CASCADE,
+        related_name="candidate_contacts",
+        verbose_name=_("Contact")
+    )
+
+    residency = models.PositiveSmallIntegerField(
+        verbose_name=_("Residency Status"),
+        choices=RESIDENCY_STATUS_CHOICES,
+        default=RESIDENCY_STATUS_CHOICES.unknown
+    )
+
+    nationality = models.ForeignKey(
+        Country,
+        to_field='code2',
+        null=True,
+        blank=True,
+        related_name="candidate_contacts"
+    )
+
+    visa_type = models.ForeignKey(
+        VisaType,
+        null=True,
+        blank=True,
+        related_name="candidate_contacts",
+        verbose_name=_("Visa Type"),
+        on_delete=models.PROTECT
+    )
+
+    visa_expiry_date = models.DateField(
+        verbose_name=_("Visa Expiry Date"),
+        blank=True,
+        null=True
+    )
+
+    vevo_checked_at = models.DateField(
+        verbose_name=_("VEVO checked at"),
+        blank=True,
+        null=True
+    )
+
+    referral = models.PositiveSmallIntegerField(
+        verbose_name=_("Referral Source"),
+        choices=REFERRAL_CHOICES,
+        default=REFERRAL_CHOICES.direct
+    )
+
+    tax_file_number = models.CharField(
+        max_length=9,
+        verbose_name=_("Tax File Number"),
+        blank=True
+    )
+
+    super_annual_fund_name = models.CharField(
+        max_length=63,
+        blank=True,
+        verbose_name=_("Super annual Fund Name")
+    )
+
+    super_member_number = models.CharField(
+        max_length=63,
+        verbose_name=_("Super Member Number"),
+        blank=True
+    )
+
+    weight = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        verbose_name=_("Weight, kg"),
+        null=True,
+        blank=True
+    )
+
+    height = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        verbose_name=_("Height, cm"),
+        null=True,
+        blank=True
+    )
+
+    strength = models.PositiveSmallIntegerField(
+        verbose_name=_("Strength"),
+        default=0
+    )
+
+    language = models.PositiveSmallIntegerField(
+        verbose_name=_("Language"),
+        default=0
+    )
+
+    transportation_to_work = models.PositiveSmallIntegerField(
+        choices=TRANSPORTATION_CHOICES,
+        verbose_name=_("Transportation to Work"),
+        null=True,
+        blank=True
+    )
+
+    emergency_contact_name = models.CharField(
+        max_length=63,
+        verbose_name=_("Emergency Contact Name"),
+        blank=True
+    )
+
+    emergency_contact_phone = PhoneNumberField(
+        verbose_name=_("Emergency Contact Phone Number"),
+        blank=True
+    )
+
+    reliability_score = models.PositiveSmallIntegerField(
+        verbose_name=_("Reliability Score"),
+        default=0
+    )
+
+    loyalty_score = models.PositiveSmallIntegerField(
+        verbose_name=_("Loyalty Score"),
+        default=0
+    )
+
+    total_score = models.PositiveSmallIntegerField(
+        verbose_name=_("Total Score"),
+        default=0
+    )
+
+    autoreceives_sms = models.BooleanField(
+        verbose_name=_("Autoreceives SMS"),
+        default=True
+    )
+
+    bank_account = models.ForeignKey(
+        BankAccount,
+        related_name="candidates",
+        on_delete=models.PROTECT,
+        verbose_name=_("Bank Account"),
+        blank=True,
+        null=True
+    )
+
+    employment_classification = models.ForeignKey(
+        EmploymentClassification,
+        related_name="candidates",
+        on_delete=models.PROTECT,
+        verbose_name=_("Employment Classification"),
+        blank=True,
+        null=True
+    )
+
+    superannuation_fund = models.ForeignKey(
+        SuperannuationFund,
+        related_name="candidates",
+        on_delete=models.PROTECT,
+        verbose_name=_("Superannuation Fund"),
+        blank=True,
+        null=True
+    )
+    # objects = SelectRelatedContactManager()
+
+    class Meta:
+        verbose_name = _("Candidate Contact")
+        verbose_name_plural = _("Candidate Contacts")
+
+    def __str__(self):
+        return str(self.contact)
+
+    # REQUIREMENTS AND ACTIONS FOR WORKFLOW
+    @workflow_function
+    def is_skill_defined(self):
+        return self.candidate_skills.filter(
+            score__gt=0, skill__active=True).count() > 0
+    is_skill_defined.short_description = _("Define at least one skill")
+
+    @workflow_function
+    def is_personal_info_filled(self):
+        return bool(self.height is not None and
+                    self.weight is not None and
+                    self.transportation_to_work is not None and
+                    self.strength and self.language and
+                    self.reliability_score and
+                    self.loyalty_score)
+    is_personal_info_filled.short_description = _(
+        'All personal info is required'
+    )
+
+    @workflow_function
+    def is_contact_info_filled(self):
+        return bool(self.contact.first_name and
+                    self.contact.last_name and
+                    self.contact.title and
+                    self.contact.email and
+                    self.contact.phone_mobile)
+    is_contact_info_filled.short_description = _(
+        'Contact\'s title, first name, '
+        'last name, email and mobile phone '
+        'must be filled.'
+    )
+
+    @workflow_function
+    def is_formalities_filled(self):
+        return bool(self.tax_file_number and
+                    self.super_annual_fund_name and
+                    self.super_member_number and
+                    self.bank_account and
+                    self.emergency_contact_name and
+                    self.emergency_contact_phone and
+                    self.employment_classification)
+    is_formalities_filled.short_description = _(
+        'All formalities info is required'
+    )
+
+    @workflow_function
+    def is_residency_filled(self):
+        residency_list = [self.RESIDENCY_STATUS_CHOICES.citizen,
+                          self.RESIDENCY_STATUS_CHOICES.permanent]
+        if self.residency in residency_list:
+            return True
+        elif (self.visa_type and self.visa_expiry_date and
+                self.vevo_checked_at and self.nationality):
+            return True
+        return False
+    is_residency_filled.short_description = _('All residency info is required')
+
+    @workflow_function
+    def are_skill_rates_set(self):
+        for skill in self.candidate_skills.filter(
+                score__gt=0, skill__active=True
+        ).all():
+            if not skill.get_valid_rate():
+                return False
+        return True
+    are_skill_rates_set.short_description = _(
+        'Valid hourly rate for each assigned skill must be set.')
+
+    @workflow_function
+    def are_tags_verified(self):
+        for tag in self.tag_rels.all():
+            if not tag.verified_by:
+                return False
+        return True
+    are_tags_verified.short_description = _('All tags must be verified.')
+
+    @workflow_function
+    def is_address_set(self):
+        return bool(self.contact.address and
+                    self.contact.address.street_address and
+                    self.contact.address.city and
+                    self.contact.address.postal_code and
+                    self.contact.address.state)
+    is_address_set.short_description = _('Address must be set.')
+
+    @workflow_function
+    def is_email_set(self):
+        return bool(self.contact.email)
+    is_email_set.short_description = _('Email must be set.')
+
+    @workflow_function
+    def is_phone_set(self):
+        return bool(self.contact.phone_mobile)
+    is_phone_set.short_description = _('Mobile Phone must be set.')
+
+    @workflow_function
+    def is_birthday_set(self):
+        return bool(self.contact.birthday)
+    is_birthday_set.short_description = _('Birthday must be set.')
+
+    def get_bmi(self):
+        if self.weight and self.height:
+            bmi = self.weight / ((self.height / 100) ** 2)
+            if bmi > 25:
+                return _("Over Weight")
+            elif bmi > 18.5:
+                return _("Normal Weight")
+            else:
+                return _("Under Weight")
+        return None
+
+    def get_total_score(self):
+        summary = 0
+        if self.reliability_score:
+            summary += self.reliability_score
+        if self.loyalty_score:
+            summary += self.loyalty_score
+        return summary / 2
+    get_total_score.short_description = _("Total score")
+
+    def set_contact_unavailable(self):
+        """
+        Sets available to False
+        """
+        self.contact.is_available = False
+        self.contact.save()
+
+    def get_phone_mobile(self):
+        if self.autoreceives_sms and self.contact.phone_mobile:
+            return self.contact.phone_mobile
+        return None
+
+    def get_email(self):
+        return self.contact.email
+
+    def get_candidate_rate_for_skill(self, skill, **skill_kwargs):
+        candidate_skill = self.candidate_skills.filter(
+            skill=skill, **skill_kwargs
+        ).first()
+        if candidate_skill:
+            candidate_skill_rate = candidate_skill.get_valid_rate()
+            if candidate_skill_rate:
+                return candidate_skill_rate.hourly_rate
+        return None
+
+    def get_closest_company(self):
+        try:
+            candidate_rel = self.candidate_rels.latest('created_at')
+            return candidate_rel.master_company
+        except CandidateRel.DoesNotExist:
+            return get_default_company()
+
+    def save(self, *args, **kwargs):
+        just_added = self._state.adding
+        super().save(*args, **kwargs)
+
+        if just_added:
+            self.create_state(10)
+
+            if not hasattr(self, 'candidate_scores'):
+                from r3sourcer.apps.hr.models import CandidateScore
+                obj = CandidateScore.objects.create(candidate_contact=self)
+                obj.recalc_scores()
+
+
+class TagRel(UUIDModel):
+    tag = models.ForeignKey(
+        Tag,
+        related_name="tag_rels",
+        on_delete=models.PROTECT,
+        verbose_name=_("Tag")
+    )
+
+    candidate_contact = models.ForeignKey(
+        CandidateContact,
+        on_delete=models.PROTECT,
+        related_name="tag_rels",
+        verbose_name=_("Candidate Contact")
+    )
+
+    def verification_evidence_path(instance, filename):
+        return 'candidates/tags/{}/{}'.format(instance.id, filename)
+
+    verification_evidence = models.FileField(
+        verbose_name=_("Verification Evidence"),
+        upload_to=verification_evidence_path,
+        null=True,
+        blank=True
+    )
+
+    verified_by = models.ForeignKey(
+        CompanyContact,
+        on_delete=models.PROTECT,
+        related_name="verified_tag_rels",
+        verbose_name=_("Verified By"),
+        blank=True,
+        null=True
+    )
+
+    verify = True
+
+    class Meta:
+        verbose_name = _("Tag Relationship")
+        verbose_name_plural = _("Tag Relationships")
+        unique_together = ("tag", "candidate_contact")
+
+    def __str__(self):
+        return self.tag.name
+
+    def save(self, *args, **kwargs):
+        # we don't allow set verified_by if tag require evidence
+        # approval and this approval not uploaded
+        if self.tag.evidence_required_for_approval \
+                and not self.verification_evidence:
+            self.verified_by = None
+            self.verify = False
+        if self.verify:
+            request = get_current_request()
+            if request and request.user and request.user.is_authenticated():
+                default_user = request.user
+            else:
+                default_user = get_default_user()
+            if CompanyContact.objects.filter(
+                    contact__user=default_user).exists():
+                self.verified_by = CompanyContact.objects.get(
+                    contact__user=default_user
+                )
+        else:
+            self.verified_by = None
+        super(TagRel, self).save(*args, **kwargs)
+
+
+class SkillRel(UUIDModel):
+
+    PRIOR_EXPERIENCE_CHOICES = Choices(
+        (timedelta(days=0), 'inexperienced', _("Inexperienced")),
+        (timedelta(days=30), "1month", _("1 Month")),
+        (timedelta(days=90), "3months", _("3 Months")),
+        (timedelta(days=180), "6months", _("6 Months")),
+        (timedelta(days=365), "1year", _("1 Year")),
+        (timedelta(days=730), "2years", _("2 Years")),
+        (timedelta(days=1095), "3years", _("3 Years")),
+        (timedelta(days=1825), "5years", _("5 Years or more")),
+    )
+
+    skill = models.ForeignKey(
+        Skill,
+        related_name="candidate_skills",
+        on_delete=models.PROTECT,
+        verbose_name=_("Skill")
+    )
+
+    score = models.PositiveSmallIntegerField(
+        verbose_name=_("Score"),
+        default=0
+    )
+
+    candidate_contact = models.ForeignKey(
+        CandidateContact,
+        on_delete=models.PROTECT,
+        related_name="candidate_skills"
+    )
+
+    prior_experience = models.DurationField(
+        verbose_name=_("Prior Experience"),
+        choices=PRIOR_EXPERIENCE_CHOICES,
+        default=PRIOR_EXPERIENCE_CHOICES.inexperienced
+    )
+
+    class Meta:
+        verbose_name = _("Candidate Skill")
+        verbose_name_plural = _("Candidate Skills")
+        unique_together = ("skill", "candidate_contact")
+
+    def __str__(self):
+        return '{}: {} ({}*)'.format(
+            str(self.candidate_contact), str(self.skill), str(self.score))
+
+    def get_valid_rate(self):
+        today = date.today()
+        return self.candidate_skill_rates.filter(valid_from__lte=today,
+                                                 valid_until__gte=today).last()
+
+
+class SkillRateRel(UUIDModel):
+
+    candidate_skill = models.ForeignKey(
+        SkillRel,
+        related_name="candidate_skill_rates",
+        on_delete=models.CASCADE,
+        verbose_name=_("Candidate Skill")
+    )
+
+    hourly_rate = models.ForeignKey(
+        SkillBaseRate,
+        related_name="candidate_skill_rates",
+        on_delete=models.PROTECT,
+        verbose_name=_("Hourly Rate")
+    )
+
+    valid_from = models.DateField(verbose_name=_("Valid From"))
+    valid_until = models.DateField(verbose_name=_("Valid Until"))
+
+    class Meta:
+        verbose_name = _("Candidate Skill Rate")
+        verbose_name_plural = _("Candidate Skill Rates")
+
+    def __str__(self):
+        return str(self.hourly_rate)
+
+
+class InterviewSchedule(UUIDModel):
+
+    candidate_contact = models.ForeignKey(
+        CandidateContact,
+        on_delete=models.PROTECT,
+        related_name="interview_schedules",
+        verbose_name=_("Candidate Contact")
+    )
+
+    company_contact = models.ForeignKey(
+        CompanyContact,
+        related_name="interview_schedules",
+        on_delete=models.PROTECT,
+        verbose_name=_("Company Contact")
+    )
+
+    target_date_and_time = models.DateTimeField(
+        verbose_name=_("Target date")
+    )
+
+    CATEGORY_CHOICES = Choices(
+        ('first_phone_interview', _('First Phone Interview')),
+        ('second_phone_interview', _('Second Phone Interview')),
+        ('live_interview', _('Live interview')),
+    )
+
+    category = models.CharField(
+        max_length=15,
+        verbose_name=_("Category"),
+        choices=CATEGORY_CHOICES,
+        null=True,
+        blank=True
+    )
+
+    accepted = models.BooleanField(
+        default=False,
+        verbose_name=_("Accepted")
+    )
+
+    def __str__(self):
+        return "{}: {}".format(self.candidate_contact,
+                               self.target_date_and_time)
+
+
+class CandidateRel(UUIDModel):
+
+    candidate_contact = models.ForeignKey(
+        CandidateContact,
+        on_delete=models.PROTECT,
+        related_name="candidate_rels",
+        verbose_name=_("Candidate Contact")
+    )
+
+    master_company = models.ForeignKey(
+        Company,
+        on_delete=models.PROTECT,
+        related_name="candidate_rels",
+        verbose_name=_("Master Company")
+    )
+
+    company_contact = models.ForeignKey(
+        CompanyContact,
+        related_name="candidate_rels",
+        on_delete=models.PROTECT,
+        verbose_name=_("Company Contact")
+    )
+
+    class Meta:
+        verbose_name = _("Candidate Relationship")
+        verbose_name_plural = _("Candidate Relationships")
+
+    def __str__(self):
+        return "{}: {}".format(self.master_company, self.candidate_contact)
+
+
+class AcceptanceTestRel(UUIDModel):
+
+    acceptance_test = models.ForeignKey(
+        AcceptanceTest,
+        on_delete=models.CASCADE,
+        related_name='candidate_acceptance_tests',
+        verbose_name=_("Acceptance Test")
+    )
+
+    candidate_contact = models.ForeignKey(
+        CandidateContact,
+        on_delete=models.PROTECT,
+        related_name='candidate_acceptance_tests',
+        verbose_name=_("Candidate Contact")
+    )
+
+    test_started_at = models.DateTimeField(
+        verbose_name=_("Test Started at"),
+        auto_now_add=True
+    )
+
+    test_finished_at = models.DateTimeField(
+        verbose_name=_("Test Finished at"),
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = _("Acceptance Test Relation")
+        verbose_name_plural = _("Acceptance Test Relations")
+
+    def __str__(self):
+        return '{} {}'.format(
+            str(self.candidate_contact), str(self.acceptance_test)
+        )
+
+
+class AcceptanceTestQuestionRel(UUIDModel):
+
+    candidate_acceptance_test = models.ForeignKey(
+        AcceptanceTestRel,
+        on_delete=models.CASCADE,
+        related_name='acceptance_test_question_rels',
+        verbose_name=_("Acceptance Test Relation")
+    )
+
+    acceptance_test_question = models.ForeignKey(
+        AcceptanceTestQuestion,
+        on_delete=models.PROTECT,
+        related_name='acceptance_test_question_rels',
+        verbose_name=_("Acceptance Test Question")
+    )
+
+    acceptance_test_answer = models.ForeignKey(
+        AcceptanceTestAnswer,
+        on_delete=models.PROTECT,
+        related_name='acceptance_test_question_rels',
+        verbose_name=_("Acceptance Test Answer")
+    )
+
+    question_answered_at = models.DateTimeField(
+        verbose_name=_("Question Answered at"),
+        auto_now=True
+    )
+
+    class Meta:
+        verbose_name = _("Acceptance Test Question Relation")
+        verbose_name_plural = _("Acceptance Test Question Relations")
+
+    def __str__(self):
+        return '{}, {}: {}'.format(str(self.candidate_acceptance_test),
+                                   str(self.acceptance_test_question),
+                                   str(self.acceptance_test_answer))
+
+    def get_if_correct(self):
+        return self.acceptance_test_answer in \
+               self.acceptance_test_question.get_correct_answers()
+
+
+class Subcontractor(UUIDModel):
+
+    SUBCONTRACTOR_TYPE_CHOICES = Choices(
+        (10, 'sole_trader', _("sole_trader")),
+        (20, 'company', _("company")),
+    )
+
+    subcontractor_type = models.PositiveSmallIntegerField(
+        verbose_name=_("Subcontractor Type"),
+        choices=SUBCONTRACTOR_TYPE_CHOICES,
+        default=SUBCONTRACTOR_TYPE_CHOICES.sole_trader
+    )
+
+    company = models.OneToOneField(
+        Company,
+        on_delete=models.CASCADE,
+        parent_link=True
+    )
+
+    primary_contact = models.ForeignKey(
+        CandidateContact,
+        verbose_name=_('Candidate Contact'),
+        on_delete=models.CASCADE
+    )
+
+    allowance_enabled = models.BooleanField(
+        verbose_name=_('Allowance Enabled'),
+        default=False
+    )
+
+    penalty_rates_enabled = models.BooleanField(
+        verbose_name=_('Penalty Rates Enabled'),
+        default=False
+    )
+
+    class Meta:
+        verbose_name = _("Subcontractor")
+        verbose_name_plural = _("Subcontactors")
+
+    def __str__(self):
+        if (self.subcontractor_type ==
+                self.SUBCONTRACTOR_TYPE_CHOICES.sole_trader):
+            return str(self.primary_contact)
+        return str(self.company)

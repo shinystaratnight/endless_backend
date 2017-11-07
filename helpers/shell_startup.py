@@ -1,2 +1,2 @@
-from endless_logger.main import autodiscover
+from r3sourcer.apps.logger.main import autodiscover
 autodiscover()

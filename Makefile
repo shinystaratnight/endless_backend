@@ -28,7 +28,7 @@ RESTORE_DB_FILE_PATH = var/backups/$(RESTORE_DB_FILE)
 RESTORE_DB_FOR_DEV_FILE_PATH = var/backups/$(RESTORE_DB_FOR_DEV_FILE)
 
 define docker_exec
-    sudo docker exec $(2) ecore-$(DOCKER_APP_NAME) $(1)
+    docker exec $(2) r3sourcer-$(DOCKER_APP_NAME) $(1)
 endef
 
 define supervisor
@@ -207,7 +207,7 @@ var/make/bower-packages: dependencies/bower.txt
 
 full-clean:
 	make clean
-	@for CONTAINER in $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) nginx ecore-$(DOCKER_APP_NAME); \
+	@for CONTAINER in $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) nginx r3sourcer-$(DOCKER_APP_NAME); \
 	do \
 		if sudo docker ps -a | grep $$CONTAINER; then \
 		    echo "Remove container: $$CONTAINER"; \
@@ -219,8 +219,8 @@ full-clean:
 
 clean:
 	@make rm-docker-app;
-	@if (sudo docker images | grep ecore-$(DOCKER_APP_NAME)-image); then \
-	    sudo docker rmi ecore-$(DOCKER_APP_NAME)-image; \
+	@if (sudo docker images | grep r3sourcer-$(DOCKER_APP_NAME)-image); then \
+	    sudo docker rmi r3sourcer-$(DOCKER_APP_NAME)-image; \
 	    echo "Image removed"; \
 	fi ;
 
@@ -237,7 +237,7 @@ clean:
 	@rm -rf var/make
 
 drop_db:
-	sudo docker stop ecore-$(DOCKER_APP_NAME)
+	sudo docker stop r3sourcer-$(DOCKER_APP_NAME)
 	sudo docker exec $(DOCKER_POSTGRES_NAME) dropdb -U postgres --if-exists $(POSTGRES_DB)
 
 backup_db:
@@ -272,14 +272,12 @@ clone_prod_db:
 	scp $(PROD_LOGIN):$(PROD_DIR)/var/backups/$(RESTORE_DB_FOR_DEV_FILE) var/backups/
 	make restore_db_for_dev
 
-tests:
-	PYTHONDONTWRITEBYTECODE=1
-	@$(call docker_exec, rm -rf ecore/core/tests/__pycache__/)
-	@$(call docker_exec, bash -c "PYTHONDONTWRITEBYTECODE=1 bin/pytest --ds=ecore.settings_tests ecore", -it)
-
-tests_cov:
-	@$(call docker_exec, rm -rf ecore/core/tests/__pycache__/)
-	@$(call docker_exec, bash -c "PYTHONDONTWRITEBYTECODE=1 bin/pytest --ds=ecore.settings_tests --cov=ecore --cov-report=term-missing ecore", -it)
+test:
+	if (docker ps | grep "r3sourcer-$(DOCKER_APP_NAME)"); then \
+	    $(call docker_exec, bin/app test); \
+	elif [ -a ./bin/app ]; then \
+		bin/app test; \
+	fi ;
 
 makemessages:
 	$(call docker_exec, bin/django makemessages -l $(LANG) --extension=html,jinja)
@@ -308,7 +306,7 @@ check-docker-redis:
 	@sudo docker ps | grep $(DOCKER_REDIS_NAME) || echo "Not found";
 
 check-docker-app:
-	@sudo docker ps | grep crm-core-ecore || echo "Not found";
+	@sudo docker ps | grep crm-core-r3sourcer || echo "Not found";
 
 check-docker-rabbit_mq:
 	@sudo docker ps | grep $(DOCKER_RABBIT_MQ_NAME) || echo "Not found";
@@ -349,11 +347,11 @@ rm-docker-nginx:
     fi ;
 
 rm-docker-app:
-	@if (sudo docker ps | grep " ecore-$(DOCKER_APP_NAME)"); then \
-	    sudo docker stop ecore-$(DOCKER_APP_NAME); \
+	@if (sudo docker ps | grep " r3sourcer-$(DOCKER_APP_NAME)"); then \
+	    sudo docker stop r3sourcer-$(DOCKER_APP_NAME); \
 	fi ;
-	@if (sudo docker ps -a | grep " ecore-$(DOCKER_APP_NAME)"); then \
-	    sudo docker rm ecore-$(DOCKER_APP_NAME); \
+	@if (sudo docker ps -a | grep " r3sourcer-$(DOCKER_APP_NAME)"); then \
+	    sudo docker rm r3sourcer-$(DOCKER_APP_NAME); \
 	fi ;
 	@rm -f var/make/create-app
 
@@ -367,7 +365,7 @@ var/make/create-app:
              --build-arg "BASE_DIR=$(BASE_DIR)" \
              --build-arg "PRIVATE_REPO_KEY=var/id_rsa" \
              --build-arg "EXPOSE_PORT=$(DJANGO_UWSGI_PORT)" \
-             -t ecore-$(DOCKER_APP_NAME)-image \
+             -t r3sourcer-$(DOCKER_APP_NAME)-image \
              -f conf/docker/Dockerfile.dev .; \
 	else \
         echo "Build docker for prod"; \
@@ -377,7 +375,7 @@ var/make/create-app:
              --build-arg "PRIVATE_REPO_KEY=var/id_rsa" \
              --build-arg "EXPOSE_PORT=$(DJANGO_UWSGI_PORT)" \
              --build-arg "USER_APP=$(SYSTEM_USER)" \
-             -t ecore-$(DOCKER_APP_NAME)-image \
+             -t r3sourcer-$(DOCKER_APP_NAME)-image \
              -f conf/docker/Dockerfile.prod .; \
 	fi;
 	@sudo rm -f var/id_rsa
@@ -390,7 +388,7 @@ run-container:
         --link "$(DOCKER_POSTGRES_NAME):$(POSTGRES_HOST)" \
         --link "$(DOCKER_REDIS_NAME):$(REDIS_HOST)" \
         --link "$(DOCKER_RABBIT_MQ_NAME):$(RABBIT_MQ_HOST)" \
-        --volume "$(CURRENT_PATH)/ecore:$(BASE_DIR)/ecore" \
+        --volume "$(CURRENT_PATH)/r3sourcer:$(BASE_DIR)/r3sourcer" \
         --volume "$(CURRENT_PATH)/dependencies/:$(BASE_DIR)/dependencies:ro" \
         --volume "$(CURRENT_PATH)/helpers:$(BASE_DIR)/helpers:ro" \
         --volume "$(CURRENT_PATH)/conf:$(BASE_DIR)/conf" \
@@ -399,10 +397,10 @@ run-container:
         --env-file "env_defaults" --env-file ".env" \
         --net $(DOCKER_SUB_NET_NAME) --ip $(REMOTE_CONTAINER_IP) \
         -e WEBUI_APP_DIR=$(WEBUI_APP_DIR) \
-        --name ecore-$(DOCKER_APP_NAME) \
+        --name r3sourcer-$(DOCKER_APP_NAME) \
         --restart on-failure \
         -p "$(DJANGO_UWSGI_PORT):$(DJANGO_UWSGI_PORT)" \
-        ecore-$(DOCKER_APP_NAME)-image
+        r3sourcer-$(DOCKER_APP_NAME)-image
 
 	if test "$(DJANGO_DEBUG)" = "0"; then \
 		make user_permissions; \
@@ -410,7 +408,7 @@ run-container:
 
 
 restart:
-	sudo docker restart ecore-$(DOCKER_APP_NAME)
+	sudo docker restart r3sourcer-$(DOCKER_APP_NAME)
 
 rebuild:
 	git pull
@@ -429,7 +427,7 @@ update:
 	make reload
 
 app-logs:
-	@sudo docker logs -f --tail 10 ecore-$(DOCKER_APP_NAME)
+	@sudo docker logs -f --tail 10 r3sourcer-$(DOCKER_APP_NAME)
 
 nginx-logs:
 	@sudo docker logs -f --tail 20 nginx
@@ -489,11 +487,11 @@ create-superuser:
 	@$(call docker_exec, bin/django createsuper, -it)
 
 docker-app-ip:
-	@echo "Container IP: $$(sudo docker inspect --format "{{ .NetworkSettings.IPAddress }}" ecore-$(DOCKER_APP_NAME))"
+	@echo "Container IP: $$(sudo docker inspect --format "{{ .NetworkSettings.IPAddress }}" r3sourcer-$(DOCKER_APP_NAME))"
 
 docker-start-all:
 	sudo docker start $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) $(DOCKER_RABBIT_MQ_NAME) $(DOCKER_CLICKHOUSE_NAME) \
-	    ecore-$(DOCKER_APP_NAME)
+	    r3sourcer-$(DOCKER_APP_NAME)
 
 
 var/make/webui-app:
@@ -505,8 +503,17 @@ var/make/webui-app:
 			cd $(WEBUI_APP_DIR) && git pull && cd ..; \
 		fi; \
 		$(call nginx_root$(USE_NGINX_DOCKER)) \
-		sudo rm -rf $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/$(WEBUI_APP_DIR)/*; \
-		sudo cp -R $(WEBUI_APP_DIR)/dist/ $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/$(WEBUI_APP_DIR); \
+		mkdir -p $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
+		mkdir -p var/www/webui; \
+		sudo chmod -R 775 $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
+		sudo chmod u+x $(WEBUI_APP_DIR)/docker-entrypoint.sh; \
+		docker build --tag webui-$(DOCKER_APP_NAME)-image $(WEBUI_APP_DIR); \
+		docker run -itd \
+            --name webui-$(DOCKER_APP_NAME) \
+            -v $(NGINX_SITE_VOLUME)$(WEBUI_APP_DIR):/www/ \
+            -v $(shell pwd)/$(WEBUI_APP_DIR)/:/code/ \
+            --env-file "env_defaults" --env-file ".env" \
+            webui-$(DOCKER_APP_NAME)-image; \
         echo "WEB-UI successfully installed."; \
     else \
         echo "The 'WEB-UI' wasn't installed because ENV 'DJANGO_STUFF_URL_PREFIX' disabled"; \
@@ -530,16 +537,16 @@ var/make/connect-to-main-container:
 	if !(sudo docker network inspect $(NETWORK_NAME)| grep "$(DOCKER_CLICKHOUSE_NAME)"); then \
 		sudo docker network connect $(NETWORK_NAME) $(DOCKER_CLICKHOUSE_NAME); \
 	fi ;
-	if !(sudo docker network inspect $(NETWORK_NAME)| grep "ecore-$(DOCKER_APP_NAME)"); then \
-		sudo docker network connect $(NETWORK_NAME) ecore-$(DOCKER_APP_NAME); \
+	if !(sudo docker network inspect $(NETWORK_NAME)| grep "r3sourcer-$(DOCKER_APP_NAME)"); then \
+		sudo docker network connect $(NETWORK_NAME) r3sourcer-$(DOCKER_APP_NAME); \
 	fi ;
 
 clean-clickhouse:
 	if (sudo docker network inspect $(NETWORK_NAME)| grep "$(DOCKER_CLICKHOUSE_NAME)"); then \
 		sudo docker network disconnect $(NETWORK_NAME) $(DOCKER_CLICKHOUSE_NAME); \
 	fi ;
-	if (sudo docker network inspect $(NETWORK_NAME)| grep "ecore-$(DOCKER_APP_NAME)"); then \
-		sudo docker network disconnect $(NETWORK_NAME) ecore-$(DOCKER_APP_NAME); \
+	if (sudo docker network inspect $(NETWORK_NAME)| grep "r3sourcer-$(DOCKER_APP_NAME)"); then \
+		sudo docker network disconnect $(NETWORK_NAME) r3sourcer-$(DOCKER_APP_NAME); \
 	fi ;
 	if (sudo docker network ls| grep " $(NETWORK_NAME)"); then \
 		sudo docker network rm $(NETWORK_NAME); \
@@ -552,4 +559,4 @@ clean-clickhouse:
 	fi ;
 
 user_permissions:
-	sudo docker exec -it -u 0 ecore-$(DOCKER_APP_NAME) chown $(SYSTEM_USER):$(SYSTEM_USER) var/www/ -R;
+	sudo docker exec -it -u 0 r3sourcer-$(DOCKER_APP_NAME) chown $(SYSTEM_USER):$(SYSTEM_USER) var/www/ -R;
