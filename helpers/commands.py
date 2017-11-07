@@ -23,7 +23,7 @@ def django():
     """Django manage.py
     """
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings.prod")
     set_env()
 
     from django.core.management import execute_from_command_line
@@ -33,7 +33,7 @@ def django():
 
 @click.group()
 def app():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings.prod")
     set_env()
 
 
@@ -44,17 +44,16 @@ def start():
 
 
 @app.command()
-@click.option('--app', prompt='App name (e.g. core)')
-def test(app=None):
+@click.option('--app', default='')
+@click.argument('app', default='')
+def test(app):
     os.chdir(BASE_DIR)
 
-    if not app:
-        app = ''
-
-    app = os.path.join('r3sourcer', 'apps', app)
+    if app:
+        app = os.path.join('apps', app)
 
     run('bin/pytest --cov={app} --cov-report=term-missing {app}'.format(
-        app=app), warn=True, pty=True)
+        app=os.path.join('r3sourcer', app)), warn=True, pty=True)
 
 
 @app.command()
