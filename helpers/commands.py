@@ -56,6 +56,13 @@ def test(app):
         app=os.path.join('r3sourcer', app)), warn=True, pty=True)
 
 
+@click.command()
+def py_test():
+    os.chdir(BASE_DIR)
+    set_env()
+    run('bin/pytest')
+
+
 @app.command()
 @click.option('--site_root')
 def nginx_config(site_root):
