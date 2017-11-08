@@ -146,7 +146,7 @@ class TimeSheetViewset(BaseApiViewset):
                 'type': constants.FIELD_LINK,
                 'endpoint': format_lazy(
                     '{}{{vacancy_offer.candidate_contact.id}}/',
-                    api_reverse_lazy('endless-candidate/candidatecontacts')
+                    api_reverse_lazy('candidate/candidatecontacts')
                 ),
                 'action': 'showCandidateProfile',
                 'field': 'vacancy_offer.candidate_contact',
@@ -186,7 +186,7 @@ class TimeSheetViewset(BaseApiViewset):
             'hidden': 'supervisor_approved_at',
             'replace_by': 'supervisor',
             'endpoint': format_lazy(
-                '{}{{id}}/approve/', api_reverse_lazy('endless-hr/timesheets')
+                '{}{{id}}/approve/', api_reverse_lazy('hr/timesheets')
             ),
         }, {
             'type': constants.FIELD_BUTTON,
@@ -199,7 +199,7 @@ class TimeSheetViewset(BaseApiViewset):
             'hidden': 'supervisor_approved_at',
             'endpoint': format_lazy(
                 '{}{{id}}/not_agree/',
-                api_reverse_lazy('endless-hr/timesheets')
+                api_reverse_lazy('hr/timesheets')
             ),
         }, {
             'type': constants.FIELD_BUTTON,
@@ -211,7 +211,7 @@ class TimeSheetViewset(BaseApiViewset):
             'field': 'id',
             'endpoint': format_lazy(
                 '{}{{id}}/evaluate/',
-                api_reverse_lazy('endless-hr/timesheets')
+                api_reverse_lazy('hr/timesheets')
             ),
         }]
     )
@@ -322,7 +322,7 @@ class TimeSheetViewset(BaseApiViewset):
                 'type': constants.FIELD_LINK,
                 'endpoint': format_lazy(
                     '{}{{vacancy_offer.candidate_contact.id}}/',
-                    api_reverse_lazy('endless-candidate/candidatecontacts')
+                    api_reverse_lazy('candidate/candidatecontacts')
                 ),
                 'action': 'showCandidateProfile',
                 'field': 'vacancy_offer.candidate_contact',
@@ -361,7 +361,7 @@ class TimeSheetViewset(BaseApiViewset):
             'field': 'id',
             'endpoint': format_lazy(
                 '{}{{id}}/evaluate/',
-                api_reverse_lazy('endless-hr/timesheets')
+                api_reverse_lazy('hr/timesheets')
             ),
         }]
     )
