@@ -2,6 +2,22 @@
 import os
 import sys
 
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def set_env():
+    configs = ['env_defaults', '.env']
+    for config in configs:
+        if os.path.isfile(os.path.join(BASE_DIR, config)):
+            with open(os.path.join(BASE_DIR, config), 'r') as f:
+                for line in f.readlines():
+                    if not line.strip():
+                        continue
+                    var, value = line.split('=', 1)
+                    os.environ[var.strip()] = value.strip().strip('"')
+
+
 if __name__ == "__main__":
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings")
     try:
@@ -19,4 +35,5 @@ if __name__ == "__main__":
                 "forget to activate a virtual environment?"
             )
         raise
+    set_env()
     execute_from_command_line(sys.argv)
