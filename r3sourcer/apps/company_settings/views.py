@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
+from rest_framework import exceptions
 from rest_framework import status
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -51,7 +52,7 @@ class SetGroupGlobalPermissionView(APIView):
     """
     def post(self, request, id, *args, **kwargs):
         group = get_object_or_404(Group, id=id)
-        permission_id_list = list(map(int, request.data.getlist('permission_list')))
+        permission_id_list = list(map(int, request.data.get('permission_list', None)))
         permission_list = list(GlobalPermission.objects.filter(id__in=permission_id_list))
         group.permissions.add(*permission_list)
         return Response()
@@ -63,7 +64,7 @@ class SetUserGlobalPermissionView(APIView):
     """
     def post(self, request, id, *args, **kwargs):
         user = get_object_or_404(User, id=id)
-        permission_id_list = request.data.getlist('permission_list')
+        permission_id_list = request.data.get('permission_list', None)
         permission_list = list(GlobalPermission.objects.filter(id__in=permission_id_list))
         user.user_permissions.add(*permission_list)
         return Response()
@@ -104,6 +105,10 @@ class CompanyGroupCreateView(APIView):
     """
     def post(self, request, *args, **kwargs):
         company = request.user.contact.company_contact.first().companies.first()
+
+        if not company:
+            raise exceptions.APIException("User has no relation to any company.")
+
         name = request.data.get('name')
         group = Group.objects.create(name=name)
         company.groups.add(group)
@@ -120,7 +125,7 @@ class CompanyGroupListView(ListAPIView):
         company = self.request.user.contact.company_contact.first().companies.first()
 
         if not company:
-            return list()
+            raise exceptions.APIException("User has no relation to any company.")
 
         return company.groups.all()
 
@@ -177,6 +182,10 @@ class CompanyUserListView(APIView):
     """
     def get(self, *args, **kwargs):
         company = self.request.user.contact.company_contact.first().companies.first()
+
+        if not company:
+            raise exceptions.APIException("User has no relation to any company.")
+
         user_list = User.objects.filter(contact__company_contact__relationships__company=company)
         serializer = serializers.CompanyUserSerializer(user_list, many=True)
         data = {

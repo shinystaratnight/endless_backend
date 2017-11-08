@@ -1,3 +1,4 @@
+import json
 import pytest
 
 from django.contrib.auth.models import Group
@@ -52,7 +53,7 @@ class TestSetGroupGlobalPermissionView:
         payload = {
             'permission_list': [permission.id, permission2.id]
         }
-        response = client.post(url, data=payload)
+        response = client.post(url, data=json.dumps(payload), content_type="application/json")
         result_permissions = group.permissions.all()
 
         assert response.status_code == status.HTTP_200_OK
@@ -68,7 +69,7 @@ class TestSetUserGlobalPermissionView:
         payload = {
             'permission_list': [permission.id, permission2.id]
         }
-        response = client.post(url, data=payload)
+        response = client.post(url, data=json.dumps(payload), content_type="application/json")
         result_permissions = user.user_permissions.all()
 
         assert response.status_code == status.HTTP_200_OK
