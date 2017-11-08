@@ -48,7 +48,7 @@ DOCKER_CLICKHOUSE_NAME=clickhouse
 DOCKER_RABBIT_MQ_NAME=rabbit_mq
 NETWORK_NAME=isolated_nw
 
-PRIVATE_REPO_KEY=path_to_key
+PRIVATE_REPO_KEY=
 
 NGINX_CONFIG_PATH=/etc/nginx/sites-enabled
 USE_NGINX_DOCKER=1

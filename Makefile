@@ -506,14 +506,6 @@ var/make/webui-app:
 		mkdir -p $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
 		mkdir -p var/www/webui; \
 		sudo chmod -R 775 $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
-		sudo chmod u+x $(WEBUI_APP_DIR)/docker-entrypoint.sh; \
-		docker build --tag webui-$(DOCKER_APP_NAME)-image $(WEBUI_APP_DIR); \
-		docker run -itd \
-            --name webui-$(DOCKER_APP_NAME) \
-            -v $(NGINX_SITE_VOLUME)$(WEBUI_APP_DIR):/www/ \
-            -v $(shell pwd)/$(WEBUI_APP_DIR)/:/code/ \
-            --env-file "env_defaults" --env-file ".env" \
-            webui-$(DOCKER_APP_NAME)-image; \
         echo "WEB-UI successfully installed."; \
     else \
         echo "The 'WEB-UI' wasn't installed because ENV 'DJANGO_STUFF_URL_PREFIX' disabled"; \
@@ -522,7 +514,9 @@ var/make/webui-app:
 var/make/docker-clickhouse:
 	if !(sudo docker ps -a| grep " $(DOCKER_CLICKHOUSE_NAME)"); then \
 		sudo chmod u+x clickhouse-entrypoint.sh; \
-		sudo python helpers/clickhouse_config.py; \
+	    export LOGGER_PASSWORD="$(LOGGER_PASSWORD)" \
+	        && export LOGGER_USER="$(LOGGER_USER)" \
+	        && envsubst '$${LOGGER_USER} $${LOGGER_PASSWORD}' < conf/templates/users.xml > $(CURRENT_PATH)/users.xml; \
 		sudo docker run \
 			--volume "$(CURRENT_PATH)/clickhouse-entrypoint.sh:/var/lib/clickhouse/clickhouse-entrypoint.sh" \
 			--entrypoint /var/lib/clickhouse/clickhouse-entrypoint.sh \
@@ -560,3 +554,15 @@ clean-clickhouse:
 
 user_permissions:
 	sudo docker exec -it -u 0 r3sourcer-$(DOCKER_APP_NAME) chown $(SYSTEM_USER):$(SYSTEM_USER) var/www/ -R;
+
+prepare-compose:
+	if test $(PRIVATE_REPO_KEY) = "" || ! ls $(PRIVATE_REPO_KEY); then \
+        echo "You should define private key for repo `PRIVATE_REPO_KEY` in .env" \
+        exit 1; \
+    fi;
+	if ! ls .env; then cp env_defaults .env; fi;
+	cp $(PRIVATE_REPO_KEY) conf/id_rsa
+	make var/make/webui-app
+	export LOGGER_PASSWORD="$(LOGGER_PASSWORD)" \
+	    && export LOGGER_USER="$(LOGGER_USER)" \
+	    && envsubst '$${LOGGER_USER} $${LOGGER_PASSWORD}' < conf/templates/users.xml > $(CURRENT_PATH)/users.xml

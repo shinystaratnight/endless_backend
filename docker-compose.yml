@@ -1,39 +1,63 @@
 version: '2'
 services:
+
   postgres:
     restart: always
     image: "postgres:9.6"
     env_file:
-      - env_defaults
+      - .env
   redis:
     restart: always
     image: "redis:alpine"
 
-  memcached:
+  clickhouse:
+    image: yandex/clickhouse-server
+    volumes:
+      - ./users.xml:/etc/clickhouse-server/users.xml
+      - ./clickhouse-entrypoint.sh:/var/lib/clickhouse/clickhouse-entrypoint.sh
+    entrypoint: /var/lib/clickhouse/clickhouse-entrypoint.sh
+
+  rabbitmq:
     restart: always
-    image: memcached
+    image: "rabbitmq:3"
+
+  nginx:
+    restart: always
+    image: "nginx"
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    volumes:
+      - ./var/www/static/:/app/static/
+      - ./var/www/media:/app/media/
+      - ./webui-app/dist/:/app/webui/
+      - ./conf/docker/nginx.conf:/etc/nginx/conf.d/default.conf
+
   web:
     restart: always
     build:
       context: .
-      args:
-        - VENV_ROOT=venv
+      dockerfile: ./conf/docker/Dockerfile.dev
     ports:
       - "8081:8081"
     links:
       - postgres
       - redis
-      - memcached
+      - rabbitmq
+      - clickhouse
     depends_on:
       - redis
-      - memcached
+      - postgres
+      - clickhouse
+      - rabbitmq
     environment:
       - C_FORCE_ROOT=1
     env_file:
-      - env_defaults
+      - .env
     volumes:
-      - ./pepro/:/code/pepro
-      - ./helpers/:/code/helpers
-      - ./conf:/code/conf
-      - ./Procfile:/code/Procfile
+      - ./var/www/:/app/var/www/
+      - ./r3sourcer/:/app/r3sourcer
+      - ./helpers/:/app/helpers
+      - ./conf:/app/conf
     command: "bin/app start"
