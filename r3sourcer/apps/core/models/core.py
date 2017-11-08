@@ -33,6 +33,7 @@ from model_utils import Choices
 from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
+from r3sourcer.apps.company_settings.models import CompanySettings
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..utils.user import get_default_company
@@ -833,6 +834,8 @@ class Company(
         default='4-1000',
     )
 
+    company_settings = models.OneToOneField(CompanySettings, blank=True, null=True)
+
     class Meta:
         verbose_name = _("Company")
         verbose_name_plural = _("Companies")
@@ -896,6 +899,11 @@ class Company(
             self.TERMS_PAYMENT_CHOICES[self.terms_of_payment],
             self.payment_due_date
         )
+
+    def save(self, *args, **kwargs):
+        if not self.company_settings:
+            self.company_settings = CompanySettings.objects.create()
+        super(Company, self).save(*args, **kwargs)
 
 
 class CompanyRel(
