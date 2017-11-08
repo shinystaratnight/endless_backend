@@ -7,19 +7,21 @@ from drf_auto_endpoint.router import router
 from rest_framework.response import Response
 from rest_framework.exceptions import ParseError
 
-from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.models import WorkflowNode
 from r3sourcer.apps.core_adapter import constants
+from r3sourcer.apps.core.utils.text import format_lazy
+from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.api import endpoints as core_endpoints
+from r3sourcer.apps.candidate import models as candidate_models
+from r3sourcer.apps.candidate.api import viewsets as candidate_viewsets
+from r3sourcer.apps.candidate.api import serializers as candidate_serializers
 
-from . import models
-from .api import viewsets, serializers
 
+class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
 
-class CandidateContactEndpoint(ApiEndpoint):
-
-    model = models.CandidateContact
-    base_viewset = viewsets.CandidateContactViewset
-    serializer = serializers.CandidateContactSerializer
+    model = candidate_models.CandidateContact
+    base_viewset = candidate_viewsets.CandidateContactViewset
+    serializer = candidate_serializers.CandidateContactSerializer
 
     fieldsets = (
         {
@@ -27,9 +29,7 @@ class CandidateContactEndpoint(ApiEndpoint):
             'name': _('General'),
             'collapsed': False,
             'fields': (
-                'contact',
-                'recruitment_agent',
-                'picture',
+                'contact', 'recruitment_agent', 'picture',
             )
         },
         {
@@ -37,40 +37,210 @@ class CandidateContactEndpoint(ApiEndpoint):
             'name': _('Residency'),
             'collapsed': True,
             'fields': (
-                'residency', 'nationality', 'visa_type', 'visa_expiry_date',
-                'vevo_checked_at',
+                'residency', 'visa_type', 'visa_expiry_date', 'vevo_checked_at', 'nationality',
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'name': _('Formalities'),
             'collapsed': True,
             'fields': (
-                'tax_file_number', 'referral', 'superannuation_fund',
-                'super_member_number', 'bank_account',
-                'emergency_contact_name', 'emergency_contact_phone',
-                'employment_classification', 'autoreceives_sms',
+                'tax_file_number', 'superannuation_fund', 'super_member_number', 'bank_account',
+                'emergency_contact_name', 'emergency_contact_phone', 'employment_classification', 'autoreceives_sms',
+                'referral',
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'name': _('Personal Traits'),
             'collapsed': True,
             'fields': (
-                'weight', 'height', 'transportation_to_work', 'strength',
-                'language', 'reliability_score', 'loyalty_score',
-                'total_score',
+                'height', 'weight', 'transportation_to_work', 'strength', 'language',
             ),
         }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'candidate_skills',
-            'delete': True,
-            'list': True,
-            'label': _('Candidate Skills')
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('Candidate rating'),
+            'collapsed': True,
+            'fields': (
+                'total_score', 'loyalty_score', 'reliability_score',
+            ),
         }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'tag_rels',
-            'delete': True,
-            'list': True,
-            'label': _('Candidate Tags')
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('Messages'),
+            'collapsed': True,
+            'fields': (
+                'message_by_sms', 'message_by_email',
+            ),
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('Other'),
+            'collapsed': True,
+            'fields': (
+                'created', 'updated',
+            ),
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Notes'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'notes',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Candidate skills'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'candidate_skills',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Candidate tags'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'tag_rels',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Activities'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'activities',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Candidate Contact state timeline'),
+            'fields': (
+                {
+                    'type': constants.FIELD_TIMELINE,
+                    'label': _('States Timeline'),
+                    'field': 'id',
+                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('endless-core/workflownodes')),
+                    'query': ['model', 'object_id'],
+                    'model': 'core.candidatecontact',
+                    'object_id': '{id}',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Candidate state history'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'active_states',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Vacancy offers'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'vacancy_offers',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Carrier list'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'carrier_lists',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Black list'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'blacklist',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Favorite list'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'favourites',
+                },
+            )
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Candidate evaluations'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'delete': True,
+                    'list': True,
+                    'many': True,
+                    'create': True,
+                    'edit': True,
+                    'field': 'candidate_evaluations',
+                },
+            )
         }
     )
 
@@ -138,7 +308,7 @@ class CandidateContactEndpoint(ApiEndpoint):
 
     def get_list_filter(self):
         states_part = partial(
-            WorkflowNode.get_model_all_states, models.CandidateContact
+            core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
         )
         list_filter = [{
             'type': constants.FIELD_SELECT,
@@ -169,10 +339,10 @@ class CandidateContactEndpoint(ApiEndpoint):
         })
 
 
-class SkillRelEndpoint(ApiEndpoint):
+class SkillRelEndpoint(core_endpoints.ApiEndpoint):
 
-    model = models.SkillRel
-    serializer = serializers.SkillRelSerializer
+    model = candidate_models.SkillRel
+    serializer = candidate_serializers.SkillRelSerializer
 
     list_display = (
         'candidate_contact', 'skill', 'score', 'prior_experience'
@@ -181,10 +351,10 @@ class SkillRelEndpoint(ApiEndpoint):
     list_editable = ('skill', 'score', 'prior_experience')
 
 
-class TagRelEndpoint(ApiEndpoint):
+class TagRelEndpoint(core_endpoints.ApiEndpoint):
 
-    model = models.TagRel
-    serializer = serializers.TagRelSerializer
+    model = candidate_models.TagRel
+    serializer = candidate_serializers.TagRelSerializer
 
     list_display = (
         'candidate_contact', 'tag', 'verified_by', 'verification_evidence'
@@ -201,19 +371,19 @@ class TagRelEndpoint(ApiEndpoint):
     )
 
 
-class SubcontractorEndpoint(ApiEndpoint):
+class SubcontractorEndpoint(core_endpoints.ApiEndpoint):
 
-    model = models.Subcontractor
-    base_viewset = viewsets.SubcontractorViewset
-    serializer = serializers.SubcontractorSerializer
+    model = candidate_models.Subcontractor
+    base_viewset = candidate_viewsets.SubcontractorViewset
+    serializer = candidate_serializers.SubcontractorSerializer
 
 
-router.register(models.VisaType)
-router.register(models.SuperannuationFund)
+router.register(candidate_models.VisaType)
+router.register(candidate_models.SuperannuationFund)
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
 router.register(endpoint=TagRelEndpoint())
 router.register(endpoint=SkillRelEndpoint())
-router.register(models.SkillRateRel)
-router.register(models.InterviewSchedule)
-router.register(models.CandidateRel)
+router.register(candidate_models.SkillRateRel)
+router.register(candidate_models.InterviewSchedule)
+router.register(candidate_models.CandidateRel)
