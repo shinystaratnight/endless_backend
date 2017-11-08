@@ -14,8 +14,13 @@ class GlobalPermissionListView(ListAPIView):
     """
     Returns list of all GlobalPermissions
     """
-    serializer_class = serializers.GlobalPermissionSerializer
-    queryset = GlobalPermission.objects.all()
+    def get(self, *args, **kwargs):
+        permissions = GlobalPermission.objects.all()
+        serializer = serializers.GlobalPermissionSerializer(permissions, many=True)
+        data = {
+            "permission_list": serializer.data
+        }
+        return Response(data)
 
 
 class GroupGlobalPermissionListView(ListAPIView):
@@ -88,7 +93,6 @@ class RevokeUserGlobalPermissionView(APIView):
         serializer = serializers.PermissionListSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         data = serializer.data
-
         permission_list = list(GlobalPermission.objects.filter(id__in=data['permission_list']))
         user.user_permissions.remove(*permission_list)
         return Response()
@@ -114,6 +118,10 @@ class CompanyGroupListView(ListAPIView):
 
     def get_queryset(self):
         company = self.request.user.contact.company_contact.first().companies.first()
+
+        if not company:
+            return list()
+
         return company.groups.all()
 
 
@@ -174,5 +182,4 @@ class CompanyUserListView(APIView):
         data = {
             "user_list": serializer.data
         }
-
         return Response(data)

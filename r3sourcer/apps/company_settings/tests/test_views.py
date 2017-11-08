@@ -78,20 +78,19 @@ class TestSetUserGlobalPermissionView:
 
 class TestGlobalPermissionListView:
     @pytest.mark.skip(reason='complete it when permission datamigration is done')
-    def test_get_permission_list(self, user, client):
+    def test_get_permission_list(self, client):
         permission = GlobalPermission.objects.create(name='permission_name', codename='permission_codename')
         permission2 = GlobalPermission.objects.create(name='permission_name2', codename='permission_codename2')
-        user.user_permissions.add(permission, permission2)
         url = reverse('global_permission_list', kwargs={'version': 'v2'})
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data[0]['id'] == permission.id
-        assert response.data[0]['name'] == permission.name
-        assert response.data[0]['codename'] == permission.codename
-        assert response.data[1]['id'] == permission2.id
-        assert response.data[1]['name'] == permission2.name
-        assert response.data[1]['codename'] == permission2.codename
+        assert response.data['permission_list'][0]['id'] == permission.id
+        assert response.data['permission_list'][0]['name'] == permission.name
+        assert response.data['permission_list'][0]['codename'] == permission.codename
+        assert response.data['permission_list'][1]['id'] == permission2.id
+        assert response.data['permission_list'][1]['name'] == permission2.name
+        assert response.data['permission_list'][1]['codename'] == permission2.codename
 
 
 class TestCompanyGroupListView:
