@@ -99,6 +99,8 @@ if 'r3sourcer.apps.logger' in INSTALLED_APPS:
     LOGGER_HOST = env('LOGGER_HOST', LOGGER_HOST)
     LOGGER_PORT = env('LOGGER_PORT', LOGGER_PORT)
 
+    LOGGER_ENABLED = env('LOGGER_ENABLED', '1') == '1'
+
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',

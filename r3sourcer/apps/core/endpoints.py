@@ -317,7 +317,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'type': constants.FIELD_LINK,
                 'endpoint': format_lazy(
                     '{}{{company.id}}/',
-                    api_reverse_lazy('endless-core/companies')
+                    api_reverse_lazy('core/companies')
                 ),
                 'field': 'company.name',
             }, {
@@ -327,7 +327,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'text': '{field}',
                 'endpoint': format_lazy(
                     '{}?company={{company.id}}',
-                    api_reverse_lazy('endless-core/invoices')
+                    api_reverse_lazy('core/invoices')
                 ),
                 'field': 'invoices_count',
                 'action': 'openList',
@@ -338,7 +338,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'text': '{field}',
                 'endpoint': format_lazy(
                     '{}?provider_company={{company.id}}',
-                    api_reverse_lazy('endless-core/orders')
+                    api_reverse_lazy('core/orders')
                 ),
                 'field': 'orders_count',
                 'action': 'openList',
@@ -410,7 +410,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
             'label': _('Journal'),
             'fields': ({
                 'type': constants.FIELD_BUTTON,
-                'endpoint': api_reverse_lazy('endless-core/companyaddresses',
+                'endpoint': api_reverse_lazy('core/companyaddresses',
                                              'log'),
                 'text': _('Open Journal'),
                 'action': 'openList',
@@ -479,7 +479,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'portfolio_manager',
-            'endpoint': api_reverse_lazy('endless-core/companycontacts'),
+            'endpoint': api_reverse_lazy('core/companycontacts'),
         }, {
             'field': 'updated_at',
             'type': constants.FIELD_DATE,
@@ -535,7 +535,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_LINK,
             'endpoint': format_lazy(
                 '{}{{id}}/',
-                api_reverse_lazy('endless-core/companies')
+                api_reverse_lazy('core/companies')
             ),
             'field': 'name',
         },
@@ -871,13 +871,13 @@ class CompanyContactEndpoint(ApiEndpoint):
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'company',
-            'endpoint': api_reverse_lazy('endless-core/companies'),
+            'endpoint': api_reverse_lazy('core/companies'),
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'manager',
             'endpoint': format_lazy(
                 '{}?is_manager=3',
-                api_reverse_lazy('endless-core/companycontacts')
+                api_reverse_lazy('core/companycontacts')
             ),
         },]
 
@@ -911,7 +911,7 @@ class CompanyRelEndpoint(ApiEndpoint):
             'field': 'id',
             'endpoint': format_lazy(
                 '{}timeline/',
-                api_reverse_lazy('endless-core/workflownodes'),
+                api_reverse_lazy('core/workflownodes'),
             ),
             'query': ['model', 'object_id'],
             'model': 'core.companyrel',
@@ -1068,7 +1068,7 @@ class FormFieldGroupEndpoint(ApiEndpoint):
         {
             'field': 'field_list',
             'type': constants.FIELD_RELATED,
-            'endpoint': api_reverse_lazy('endless-core/formfields'),
+            'endpoint': api_reverse_lazy('core/formfields'),
             'many': True
         }
     )
@@ -1088,7 +1088,7 @@ class FormEndpoint(ApiEndpoint):
         {
             'field': 'groups',
             'type': constants.FIELD_RELATED,
-            'endpoint': api_reverse_lazy('endless-core/formfieldgroups'),
+            'endpoint': api_reverse_lazy('core/formfieldgroups'),
             'many': True
         }
     )

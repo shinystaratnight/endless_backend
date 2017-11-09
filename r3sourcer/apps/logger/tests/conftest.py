@@ -1,14 +1,18 @@
 import pytest
 
 from django.db import models
+from django.contrib.auth import get_user_model
+
+from r3sourcer.apps.logger.manager import get_endless_logger
+from r3sourcer.apps.logger.models import LogHistory
 
 
 class NameModel(models.Model):
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=63)
 
 
 class ModelForAutodiscover(models.Model):
-    name = models.CharField(max_length=20)
+    name = models.CharField(max_length=63)
     rel = models.ForeignKey(NameModel, null=True)
 
     @classmethod
@@ -34,5 +38,12 @@ def test_model(db):
 
 @pytest.fixture()
 def user(db):
-    from django.contrib.auth.models import User
-    return User.objects.create_superuser("test user", email="test@test.com", password="TestPASS12")
+    User = get_user_model()
+    return User.objects.create_superuser(email="test@test.com", password="TestPASS12")
+
+
+@pytest.fixture(autouse=True)
+def clickhouse_cleanup():
+    logger = get_endless_logger()
+    logger.logger_database.drop_table(LogHistory)
+    logger.logger_database.create_table(LogHistory)

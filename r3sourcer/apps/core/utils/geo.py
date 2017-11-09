@@ -29,8 +29,8 @@ class GeoException(Exception):
 
 
 def fetch_geo_coord_by_address(address):
-    gmaps = googlemaps.Client(key=settings.GOOGLE_GEO_CODING_API_KEY)
     try:
+        gmaps = googlemaps.Client(key=settings.GOOGLE_GEO_CODING_API_KEY)
         geocode_result = gmaps.geocode(address)
         if geocode_result:
             return (
@@ -44,8 +44,8 @@ def fetch_geo_coord_by_address(address):
 
 
 def calc_distance(origins, destinations, mode=None):
-    gmaps = googlemaps.Client(key=settings.GOOGLE_DISTANCE_MATRIX_API_KEY)
     try:
+        gmaps = googlemaps.Client(key=settings.GOOGLE_DISTANCE_MATRIX_API_KEY)
         dm_results = gmaps.distance_matrix(
             origins,
             destinations,

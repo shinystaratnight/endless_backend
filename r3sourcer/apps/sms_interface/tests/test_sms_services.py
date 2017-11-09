@@ -195,8 +195,6 @@ class TestSMSServices:
 
     @mock.patch('r3sourcer.apps.sms_interface.services.logger')
     def test_process_new_sms(self, mock_log, fake_sms):
-        fake_sms.delete()
-
         service = SMSTestService()
         service._process_sms(fake_sms)
 

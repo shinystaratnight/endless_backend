@@ -6,6 +6,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 
 from freezegun import freeze_time
+from redbeat import RedBeatSchedulerEntry
 
 from r3sourcer.apps.core.service import factory
 
@@ -82,10 +83,7 @@ class TestActivityModels:
         task = repeater_interval1.create_periodic_task()
 
         assert task
-        assert isinstance(task, schedules.schedule)
-        assert task.run_every == timezone.timedelta(
-            seconds=repeater_interval1.every
-        )
+        assert isinstance(task, RedBeatSchedulerEntry)
 
     def test_repeater_interval(self, repeater_interval2):
 
