@@ -358,3 +358,9 @@ MYOB_APP = {
     'api_key': env('MYOB_APP_API_KEY'),
     'api_secret': env('MYOB_APP_API_SECRET')
 }
+
+DEFAULT_SMTP_SERVER = env('NOREPLY_SMTP_SERVER', 'smtp.office365.com')
+DEFAULT_SMTP_PORT = env('NOREPLY_SMTP_PORT', 587)
+DEFAULT_SMTP_EMAIL = env('NOREPLY_SMTP_EMAIL', 'no-reply@labourking.com.au')
+DEFAULT_SMTP_PASSWORD = env('NOREPLY_SMTP_PASSWORD', '')
+DEFAULT_SMTP_SSL = bool(int(env('NOREPLY_SMTP_SSL', True)))
