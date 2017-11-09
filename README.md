@@ -16,16 +16,14 @@
 4. Run all containers (rabbit, redis, postgres, clickhouse) as daemon: `docker-compose up -d`;
 5. Stop/Start containers: `docker-compose stop/start`;
 6. Check logs from container: 
-    - `docker ps`
-    - find `$(DURRENT_DIRECTORY)_web_1` container name
-    - `docker logs -f $(DURRENT_DIRECTORY)_web_1` / `docker logs -f $(DURRENT_DIRECTORY)_postgres_1` / `docker logs -f $(DURRENT_DIRECTORY)_nginx_1` / etc.;
+    - `docker-compose logs -f web` / `docker-compose logs -f postgres` / `docker-compose logs -f nginx` / etc.;
 
 ### Helper commands for developers:
 
-1. Createsuperuser: `docker exec -it $(DURRENT_DIRECTORY)_web_1 bin/django createsuper`;
-2. Migrate: `docker exec -it $(DURRENT_DIRECTORY)_web_1 bin/django migrate`;
-3. Execute bash commands: `docker exec -it $(DURRENT_DIRECTORY)_web_1 ls -la`;
-4. Attach to bash: `docker exec -it $(DURRENT_DIRECTORY)_web_1 bash`;
+1. Createsuperuser: `docker-compose exec web bin/django createsuper`;
+2. Migrate: `docker-compose exec web bin/django migrate`;
+3. Execute bash commands: `docker-compose exec web ls -la`;
+4. Attach to bash: `docker-compose exec web bash`;
 
 
 ## Deployment
