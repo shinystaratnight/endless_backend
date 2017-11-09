@@ -47,11 +47,11 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class CandidateContactSerializer(core_serializers.ApiRealtedFieldManyMixin, core_serializers.ApiBaseModelSerializer):
-    blacklist = BlackListSerializer(many=True)
+    blacklists = BlackListSerializer(many=True)
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
-    notes = serializers.NoteSerializer(many=True)
-    active_states = serializers.WorkflowObjectSerializer(many=True)
+    notes = core_serializers.NoteSerializer(many=True)
+    active_states = core_serializers.WorkflowObjectSerializer(many=True)
     activities = activity_serializers.ActivitySerializer(many=True)
     favourites = FavouriteListSerializer(many=True)
     vacancy_offers = VacancyOfferSerializer(many=True)
