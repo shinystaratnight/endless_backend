@@ -268,21 +268,28 @@ class ContactEndpoint(ApiEndpoint):
                 },
             ),
         },
-        # TODO: Should work with the endless_logger
-        # {
-        #     'type': constants.CONTAINER_COLLAPSE,
-        #     'collapsed': False,
-        #     'name': _('History'),
-        #     'fields': (
-        #         {
-        #             'type': constants.METADATA_LIST_TYPE,
-        #             'readonly': True,
-        #             'list': True,
-        #             'many': True,
-        #             'field': 'object_history'
-        #         },
-        #     ),
-        # }
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('History'),
+            'fields': (
+                {
+                    'type': constants.CONTAINER_COLLAPSE,
+                    'collapsed': True,
+                    'name': _('History'),
+                    'fields': (
+                        {
+                            'type': constants.FIELD_RELATED,
+                            'field': 'object_history',
+                            'many': True,
+                            'list': True,
+                            'readonly': True,
+                            'endpoint': api_reverse_lazy('log')
+                        },
+                    )
+                }
+            ),
+        }
     )
 
     list_filter = [{
