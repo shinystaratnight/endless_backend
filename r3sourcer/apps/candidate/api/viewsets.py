@@ -58,7 +58,7 @@ class CandidateContactViewset(BaseApiViewset):
         }, {
             'type': 'related',
             'field': 'tags',
-            'endpoint': api_reverse_lazy('endless-core/tags'),
+            'endpoint': api_reverse_lazy('core/tags'),
             'label': _(
                 'Please select Tickets and Licenses you currently hold'
             ),
@@ -69,7 +69,7 @@ class CandidateContactViewset(BaseApiViewset):
         }, {
             'type': 'related',
             'field': 'skills',
-            'endpoint': api_reverse_lazy('endless-skills/skills'),
+            'endpoint': api_reverse_lazy('skills/skills'),
             'label': _(
                 'Please select your role(s) or trade(s)'
             ),
@@ -145,7 +145,7 @@ class SubcontractorViewset(BaseApiViewset):
         }, {
             'type': 'related',
             'field': 'tags',
-            'endpoint': api_reverse_lazy('endless-core/tags'),
+            'endpoint': api_reverse_lazy('core/tags'),
             'label': _(
                 'Please select Tickets and Licenses you currently hold'
             ),
@@ -156,7 +156,7 @@ class SubcontractorViewset(BaseApiViewset):
         }, {
             'type': 'related',
             'field': 'skills',
-            'endpoint': api_reverse_lazy('endless-skills/skills'),
+            'endpoint': api_reverse_lazy('skills/skills'),
             'label': _(
                 'Please select your role(s) or trade(s)'
             ),

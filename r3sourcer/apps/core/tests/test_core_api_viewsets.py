@@ -524,7 +524,7 @@ class TestDashboardModules(ResourceMixin):
         return dashboard_modules, primary_company_contact
 
     def test_get_all_modules(self, rf, dashboard_modules):
-        req = rf.get('/api/v2/endless-core/dashboardmodules/')
+        req = rf.get('/api/v2/core/dashboardmodules/')
         resp_data = self.get_response_as_view(req)
 
         assert status.HTTP_200_OK == resp_data.status_code
@@ -534,7 +534,7 @@ class TestDashboardModules(ResourceMixin):
 
     def test_get_active_modules(self, rf, assigned_modules):
         modules, c_contact = assigned_modules
-        req = rf.get('/api/v2/endless-core/dashboardmodules/?is_active=true')
+        req = rf.get('/api/v2/core/dashboardmodules/?is_active=true')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
 
@@ -544,7 +544,7 @@ class TestDashboardModules(ResourceMixin):
 
     def test_get_inactive_modules(self, rf, assigned_modules):
         modules, c_contact = assigned_modules
-        req = rf.get('/api/v2/endless-core/dashboardmodules/?is_active=false')
+        req = rf.get('/api/v2/core/dashboardmodules/?is_active=false')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
 
@@ -554,7 +554,7 @@ class TestDashboardModules(ResourceMixin):
 
     def test_get_module_filtering(self, rf, assigned_modules):
         modules, c_contact = assigned_modules
-        req = rf.get('/api/v2/endless-core/dashboardmodules/?model=companycontact')
+        req = rf.get('/api/v2/core/dashboardmodules/?model=companycontact')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
 
@@ -564,7 +564,7 @@ class TestDashboardModules(ResourceMixin):
 
     def test_create_module(self, rf, assigned_modules):
         modules, c_contact = assigned_modules
-        req = rf.post('/api/v2/endless-core/dashboardmodules/')
+        req = rf.post('/api/v2/core/dashboardmodules/')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
 
@@ -581,7 +581,7 @@ class TestUserDashboardModule(ResourceMixin):
     }
 
     def test_create_module_without_company_contact_relation(self, rf, user, dashboard_modules):
-        req = rf.post('/api/v2/endless-core/userdashboardmodules/',
+        req = rf.post('/api/v2/core/userdashboardmodules/',
                       data=json.dumps({
                           'dashboard_module': str(dashboard_modules[0].id),
                           'position': 1
@@ -603,7 +603,7 @@ class TestNavigationViewset(ResourceMixin):
         client_url = 'client_url'
         manager_url = 'manager_url'
         candidate_url = 'candidate_url'
-        url = '/endless-core/extranetnavigations/'
+        url = '/core/extranetnavigations/'
 
         ExtranetNavigation.objects.create(url=client_url,
                                           access_level=ExtranetNavigation.CLIENT)
@@ -639,7 +639,7 @@ class TestNavigationViewset(ResourceMixin):
 
     def test_navigation_retrieve_unknown_role(self, rf, user):
         with pytest.raises(exceptions.ValidationError) as exc:
-            url = '/endless-core/extranetnavigations/'
+            url = '/core/extranetnavigations/'
             request = rf.get(url)
             force_authenticate(request, user=user)
             self.get_response_as_view(request, actions={'get': 'list'})

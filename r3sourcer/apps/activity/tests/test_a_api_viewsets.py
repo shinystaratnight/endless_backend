@@ -50,7 +50,7 @@ class TestDashboardModules(ResourceMixin):
     }
 
     def test_get_activities(self, rf, primary_activity, secondary_activity):
-        req = rf.get('/api/v2/endless-activity/activities/')
+        req = rf.get('/api/v2/activity/activities/')
         force_authenticate(req, user=primary_activity.contact.user)
 
         resp_data = self.get_response_as_view(req)
@@ -61,7 +61,7 @@ class TestDashboardModules(ResourceMixin):
         assert Activity.objects.all().count() == 2
 
     def test_get_activities_by_superuser(self, rf, primary_activity, secondary_activity):
-        req = rf.get('/api/v2/endless-activity/activities/')
+        req = rf.get('/api/v2/activity/activities/')
 
         primary_activity.contact.user.is_superuser = True
 

@@ -1,24 +1,23 @@
 import calendar
-import json
 
-from celery import schedules
-from celery.bin import celery
-from celery.schedules import schedule
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
+
+from celery import schedules
 from model_utils.choices import Choices
+from redbeat import RedBeatSchedulerEntry
 
 from r3sourcer.apps.core.models import TemplateMessage, UUIDModel
 from r3sourcer.apps.core.service import FactoryException, factory
-from redbeat import RedBeatSchedulerEntry
 
-from r3sourcer.apps.activity.exceptions import (PeriodicTaskAlreadyExists,
-                                         PeriodNameError)
+from r3sourcer.apps.activity.exceptions import PeriodNameError
 from r3sourcer.apps.activity.fields import FactoryLookupField
+
+from r3sourcer.celeryapp import app as celery_app
 
 
 class Activity(UUIDModel):
@@ -358,7 +357,7 @@ class ActivityRepeat(UUIDModel):
             else:
                 raise PeriodNameError(_("Incorrect period name"))
             entry = RedBeatSchedulerEntry(
-                self.TASK_KEY.format(),
+                self.TASK_KEY.format(self.TASK_NAME),
                 self.TASK_NAME,
                 schedules.schedule(timezone.timedelta(**{period: value})),
                 app=celery_app
@@ -442,12 +441,12 @@ class ActivityRepeat(UUIDModel):
 
         """
         if self.repeat_type == ActivityRepeat.REPEAT_CHOICES.SCHEDULE and \
-                        self.base_type == ActivityRepeat.PERIODIC_TYPE.secondly:
+                self.base_type == ActivityRepeat.PERIODIC_TYPE.secondly:
             raise ValidationError({"repeat_type": _("Incorrect type: use `Interval`"),
                                    'base_type': _("Incorrect schedule")})
 
         if self.repeat_type == ActivityRepeat.REPEAT_CHOICES.SCHEDULE and \
-                        self.base_type == ActivityRepeat.PERIODIC_TYPE.minutely:
+                self.base_type == ActivityRepeat.PERIODIC_TYPE.minutely:
             raise ValidationError({"repeat_type": _("Incorrect type: use `Interval`"),
                                    'base_type': _("Incorrect schedule")})
 
