@@ -576,6 +576,247 @@ class CompanyEndpoint(ApiEndpoint):
         },
     )
 
+    fieldsets = (
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('Picture'),
+            'fields': (
+                {
+                    'type': constants.FIELD_PICTURE,
+                    'field': 'logo',
+                    'label_upload': _('Choose a file'),
+                    'label_photo': _('Take a photo'),
+                },
+            ),
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('General'),
+            'fields': (
+                'name', 'business_id', 'registered_for_gst', 'tax_number',
+                {
+                    'label': _('Primary Contact'),
+                    'type': constants.FIELD_STATIC,
+                    'field': 'primary_contact',
+                },
+                {
+                    'label': _('Primary Contact'),
+                    'type': constants.FIELD_STATIC,
+                    'field': 'manager',
+                },
+                'website', 'type', 'company_rating',
+                {
+                    'label': _('Date of incorporation'),
+                    'type': constants.FIELD_DATE,
+                    'field': 'date_of_incorporation'
+                },
+            ),
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Company Address'),
+            'fields': (
+                {
+                    'label': _('Addresses'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'edit': True,
+                    'field': 'company_addresses',
+                    'endpoint': api_reverse_lazy('endless-core/notes'),
+                },
+                {
+                    'label': _('HQ Address'),
+                    'type': constants.CONTAINER_COLLAPSE,
+                    'collapsed': False,
+                    'fields': (
+                        'get_hq_address.address.__str__', 'get_hq_address.hq',
+                        'get_hq_address.name',
+                        {
+                            'label': _('Termination date'),
+                            'type': constants.FIELD_DATE,
+                            'field': 'get_hq_address.termination_date'
+                        }, 'get_hq_address.primary_contact.__str__',
+                        'get_hq_address.active', 'get_hq_address.created',
+                        'get_hq_address.updated',
+                    )
+                },
+
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Company contacts'),
+            'fields': ()
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Jobsites'),
+            'fields': (
+                {
+                    'label': _('Jobsites'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'edit': True,
+                    'field': 'jobsites',
+                    'endpoint': api_reverse_lazy('endless-core/jobsites'),
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Credit info'),
+            'fields': (
+                {
+                    'type': constants.FIELD_PICTURE,
+                    'field': 'credit_check_proof',
+                    'label_upload': _('Choose a file'),
+                    'label_photo': _('Take a photo'),
+                }, 'credit_check',
+                {
+                    'label': _('Approval date'),
+                    'type': constants.FIELD_DATE,
+                    'field': 'credit_check_date',
+                }, 'approved_credit_limit',
+                'terms_of_payment', 'payment_due_date',
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Banking details'),
+            'fields': (
+                'billing_email',
+                {
+                    'type': constants.FIELD_RELATED,
+                    'field': 'bank_account',
+                    'endpoint': api_reverse_lazy('endless-core/bankaccounts'),
+                },
+                'expense_account'
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Price list'),
+            'fields': (
+                {
+                    'label': _('Price list'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'edit': True,
+                    'field': 'price_lists',
+                    'endpoint': api_reverse_lazy('endless-core/pricelists'),
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Company state timeline'),
+            'fields': (
+                {
+                    'type': constants.FIELD_TIMELINE,
+                    'label': _('States Timeline'),
+                    'field': 'id',
+                    'endpoint': format_lazy(
+                        '{}timeline/',
+                        api_reverse_lazy('endless-core/workflownodes'),
+                    ),
+                    'query': ['model', 'object_id'],
+                    'model': 'core.company',
+                    'object_id': '{id}',
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Notes'),
+            'fields': (
+                'description',
+                {
+                    'label': _('Notes'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'edit': True,
+                    'field': 'notes',
+                    'endpoint': api_reverse_lazy('endless-core/notes'),
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Other'),
+            'fields': (
+                {
+                    'label': _('Master company'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'readonly': True,
+                    'field': 'get_master_company',
+                    'endpoint': api_reverse_lazy('endless-core/companies'),
+                },
+                {
+                    'label': _('Portfolio manager'),
+                    'type': constants.FIELD_RELATED,
+                    'field': 'manager',
+                    'endpoint': '',
+                }, 'timesheet_approval_scheme',
+                {
+                    'label': _('Parent'),
+                    'type': constants.FIELD_RELATED,
+                    'field': 'parent.__str__',
+                    'endpoint': api_reverse_lazy('endless-core/companies'),
+                },
+                {
+                    'label': _('Created date'),
+                    'type': constants.FIELD_DATETIME,
+                    'field': 'created',
+                },
+                {
+                    'label': _('Updated date'),
+                    'type': constants.FIELD_DATETIME,
+                    'field': 'updated',
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Logo'),
+            'fields': (
+                {
+                    'type': constants.FIELD_PICTURE,
+                    'field': 'logo',
+                    'label_upload': _('Choose a file'),
+                    'label_photo': _('Take a photo'),
+                },
+            ),
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('History'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'field': 'object_history',
+                    'many': True,
+                    'list': True,
+                    'readonly': True,
+                    'endpoint': api_reverse_lazy('log')
+                },
+            )
+        }
+    )
+
 
 class CompanyContactEndpoint(ApiEndpoint):
 
