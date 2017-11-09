@@ -157,7 +157,7 @@ class Contact(
 
     picture = ThumbnailerImageField(
         upload_to='contact_pictures',
-        default=os.path.join(settings.MEDIA_ROOT, 'contact_pictures', 'default_picture.jpg'),
+        default=os.path.join('contact_pictures', 'default_picture.jpg'),
         max_length=255,
         blank=True
     )
