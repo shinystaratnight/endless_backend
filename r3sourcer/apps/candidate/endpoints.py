@@ -2,6 +2,7 @@ from functools import partial
 
 from django.utils.functional import lazy
 from django.utils.translation import ugettext_lazy as _
+
 from drf_auto_endpoint.decorators import bulk_action
 from drf_auto_endpoint.router import router
 from rest_framework.response import Response
@@ -9,17 +10,20 @@ from rest_framework.exceptions import ParseError
 
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.models import WorkflowNode
-from r3sourcer.apps.core_adapter import constants
+from r3sourcer.apps.core.utils.text import format_lazy
 
-from . import models
-from .api import viewsets, serializers
+from r3sourcer.apps.core_adapter import constants
+from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
+
+from r3sourcer.apps.candidate import models as candidate_models
+from r3sourcer.apps.candidate.api import viewsets as candidate_viewsets, serializers as candidate_serializers
 
 
 class CandidateContactEndpoint(ApiEndpoint):
 
-    model = models.CandidateContact
-    base_viewset = viewsets.CandidateContactViewset
-    serializer = serializers.CandidateContactSerializer
+    model = candidate_models.CandidateContact
+    base_viewset = candidate_viewsets.CandidateContactViewset
+    serializer = candidate_serializers.CandidateContactSerializer
 
     fieldsets = (
         'contact',
@@ -62,6 +66,17 @@ class CandidateContactEndpoint(ApiEndpoint):
             'delete': True,
             'list': True,
             'label': _('Candidate Tags')
+        }, {
+            'type': constants.FIELD_TIMELINE,
+            'label': _('States Timeline'),
+            'field': 'id',
+            'endpoint': format_lazy(
+                '{}timeline/',
+                api_reverse_lazy('core/workflownodes'),
+            ),
+            'query': ['model', 'object_id'],
+            'model': 'candidate.candidatecontact',
+            'object_id': '{id}',
         }
     )
 
@@ -129,7 +144,7 @@ class CandidateContactEndpoint(ApiEndpoint):
 
     def get_list_filter(self):
         states_part = partial(
-            WorkflowNode.get_model_all_states, models.CandidateContact
+            WorkflowNode.get_model_all_states, candidate_models.CandidateContact
         )
         list_filter = [{
             'type': constants.FIELD_SELECT,
@@ -162,8 +177,8 @@ class CandidateContactEndpoint(ApiEndpoint):
 
 class SkillRelEndpoint(ApiEndpoint):
 
-    model = models.SkillRel
-    serializer = serializers.SkillRelSerializer
+    model = candidate_models.SkillRel
+    serializer = candidate_serializers.SkillRelSerializer
 
     list_display = (
         'candidate_contact', 'skill', 'score', 'prior_experience'
@@ -174,8 +189,8 @@ class SkillRelEndpoint(ApiEndpoint):
 
 class TagRelEndpoint(ApiEndpoint):
 
-    model = models.TagRel
-    serializer = serializers.TagRelSerializer
+    model = candidate_models.TagRel
+    serializer = candidate_serializers.TagRelSerializer
 
     list_display = (
         'candidate_contact', 'tag', 'verified_by', 'verification_evidence'
@@ -194,17 +209,17 @@ class TagRelEndpoint(ApiEndpoint):
 
 class SubcontractorEndpoint(ApiEndpoint):
 
-    model = models.Subcontractor
-    base_viewset = viewsets.SubcontractorViewset
-    serializer = serializers.SubcontractorSerializer
+    model = candidate_models.Subcontractor
+    base_viewset = candidate_viewsets.SubcontractorViewset
+    serializer = candidate_serializers.SubcontractorSerializer
 
 
-router.register(models.VisaType)
-router.register(models.SuperannuationFund)
+router.register(candidate_models.VisaType)
+router.register(candidate_models.SuperannuationFund)
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
 router.register(endpoint=TagRelEndpoint())
 router.register(endpoint=SkillRelEndpoint())
-router.register(models.SkillRateRel)
-router.register(models.InterviewSchedule)
-router.register(models.CandidateRel)
+router.register(candidate_models.SkillRateRel)
+router.register(candidate_models.InterviewSchedule)
+router.register(candidate_models.CandidateRel)
