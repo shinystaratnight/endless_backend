@@ -140,7 +140,7 @@ class EmailMessage(models.Model):
         verbose_name_plural = _("E-mail messages")
 
     def __str__(self):
-        return self.message_id
+        return 'To {} from {}'.format(self.to_addresses.split(',')[0], self.from_email)
 
     def has_text_message(self):
         """ Check exists palin TEXT body """

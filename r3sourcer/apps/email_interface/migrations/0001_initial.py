@@ -12,7 +12,7 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('core', '0004_auto_20171110_1825'),
+        ('core', '0003_add_company_logo'),
     ]
 
     operations = [

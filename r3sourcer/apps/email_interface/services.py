@@ -98,8 +98,9 @@ class FakeEmailService(BaseEmailService):
 class SMTPEmailService(BaseEmailService):
 
     def process_email_send(self, email_message):
+        email_message.message_id = email_message.id
         email_message.state = email_models.EmailMessage.STATE_CHOICES.SENDING
-        email_message.save(update_fields=['state'])
+        email_message.save(update_fields=['state', 'message_id'])
 
         is_no_reply_email = email_message.from_email == settings.DEFAULT_SMTP_EMAIL
 
