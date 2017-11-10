@@ -492,7 +492,7 @@ prepare-compose:
         echo "You should define private key for repo `PRIVATE_REPO_KEY` in .env"; \
         exit 1; \
     fi;
-	cp $(PRIVATE_REPO_KEY) conf/id_rsa
+	sudo cp $(PRIVATE_REPO_KEY) conf/id_rsa
 	make var/make/webui-app
 	export LOGGER_PASSWORD="$(LOGGER_PASSWORD)" \
 	    && export LOGGER_USER="$(LOGGER_USER)" \
