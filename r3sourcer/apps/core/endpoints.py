@@ -961,6 +961,25 @@ class WorkflowNodeEndpoint(ApiEndpoint):
     )
 
 
+class WorkflowObjectEndpoint(ApiEndpoint):
+
+    model = models.WorkflowObject
+    serializer = serializers.WorkflowObjectSerializer
+
+    fieldsets = ({
+        'type': constants.CONTAINER_HIDDEN,
+        'name': _('Residency'),
+        'fields': [
+            'object_id'
+        ],
+    }, 'state', {
+        'type': constants.FIELD_TEXTAREA,
+        'field': 'comment'
+    }, 'active')
+
+    list_filter = ('object_id', 'active', 'state.workflow.name')
+
+
 class DashboardModuleEndpoint(ApiEndpoint):
 
     model = models.DashboardModule
@@ -1137,6 +1156,7 @@ router.register(models.Tag)
 router.register(endpoint=SiteEndpoint())
 router.register(endpoint=WorkflowNodeEndpoint())
 router.register(endpoint=WorkflowEndpoint())
+router.register(endpoint=WorkflowObjectEndpoint())
 router.register(endpoint=FormBuilderEndpoint())
 router.register(models.FormField, serializer=serializers.FormFieldSerializer)
 router.register(endpoint=FormFieldGroupEndpoint())
@@ -1153,9 +1173,3 @@ router.register(endpoint=ModelFormFieldEndpoint())
 router.register(endpoint=FileFormFieldEndpoint())
 router.register(endpoint=CheckBoxFormFieldEndpoint())
 router.register(endpoint=ContentTypeEndpoint())
-
-router.register(
-    models.WorkflowObject,
-    filter_fields=('object_id', 'active', 'state__workflow__name'),
-    serializer=serializers.WorkflowObjectSerializer
-)
