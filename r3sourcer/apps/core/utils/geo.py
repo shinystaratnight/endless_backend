@@ -28,6 +28,67 @@ class GeoException(Exception):
         return self.str
 
 
+class GMaps(object):
+    """
+    Google Maps helper
+    """
+    def __init__(self, key):
+        """
+        GMaps wrapper instance
+        :param key:
+        """
+        self._client = googlemaps.Client(key=key)
+
+    def set_retry_codes(self, *codes):
+        """
+        Sets exceptions codes that will be ignored
+        :param codes:
+        :return:
+        """
+
+    def get_coordinates(self, address, retries=5):
+        """
+        Returns tuple with address coordinates
+        :param address:
+        :return:
+        """
+        try:
+            response = self._client.geocode(address)
+        except Exception as e:
+            raise GeoException(e)
+
+    def get_distance(self, origins, destinations, mode=None):
+        """
+        Returns tuple with address coordinates
+        :param address:
+        :return:
+        """
+        try:
+            dm_results = self._client.distance_matrix(
+                origins,
+                destinations,
+                mode,
+                departure_time=int(
+                    datetime.combine(date.today(), time(6, 0)).timestamp()
+                ) if mode == MODE_TRANSIT else None
+            )
+            result = []
+            for row in dm_results.get('rows', []):
+                data_row = []
+                for element in row.get('elements', []):
+                    if element['status'] != 'OK':
+                        data_row.append({"distance": None, "duration": None})
+                    else:
+                        data_row.append({"distance": element['distance']['value'],
+                                         "duration": element['duration']['value']})
+                if len(data_row) == 1:
+                    result.append(data_row[0])
+                else:
+                    result.append(data_row)
+        except Exception as e:
+            raise GeoException(e)
+
+
 def fetch_geo_coord_by_address(address):
     try:
         gmaps = googlemaps.Client(key=settings.GOOGLE_GEO_CODING_API_KEY)
