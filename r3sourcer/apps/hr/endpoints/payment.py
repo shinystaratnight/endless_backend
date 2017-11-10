@@ -28,7 +28,7 @@ class InvoiceEndpoint(endpoints.ApiEndpoint):
             'action': 'previewInvoice',
             'endpoint': format_lazy(
                 '{}{{id}}/pdf/',
-                api_reverse_lazy('endless-core/invoices')
+                api_reverse_lazy('core/invoices')
             ),
             'text': _('Preview'),
             'icon': 'fa-eye',
@@ -38,7 +38,7 @@ class InvoiceEndpoint(endpoints.ApiEndpoint):
             'action': 'printInvoice',
             'endpoint': format_lazy(
                 '{}{{id}}/pdf/',
-                api_reverse_lazy('endless-core/invoices')
+                api_reverse_lazy('core/invoices')
             ),
             'text': _('Print'),
             'icon': 'fa-print',

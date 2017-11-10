@@ -33,6 +33,7 @@ from model_utils import Choices
 from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
+from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..utils.user import get_default_company
@@ -61,6 +62,10 @@ class UUIDModel(models.Model):
     @classmethod
     def use_logger(cls):
         return True
+
+    @property
+    def object_history(self):
+        return endless_logger.get_object_history(self.__class__, self.pk)
 
 
 class Contact(
@@ -152,7 +157,7 @@ class Contact(
 
     picture = ThumbnailerImageField(
         upload_to='contact_pictures',
-        default=os.path.join(settings.MEDIA_ROOT, 'contact_pictures', 'default_picture.jpg'),
+        default=os.path.join('contact_pictures', 'default_picture.jpg'),
         max_length=255,
         blank=True
     )
@@ -677,6 +682,12 @@ class Company(
     )
 
     website = models.URLField(verbose_name=_("Website"), blank=True)
+
+    logo = ThumbnailerImageField(
+        upload_to='company_pictures',
+        default=os.path.join('company_pictures', 'default_picture.jpg'),
+        blank=True
+    )
 
     date_of_incorporation = models.DateField(
         verbose_name=_("Date of Incorporation"),

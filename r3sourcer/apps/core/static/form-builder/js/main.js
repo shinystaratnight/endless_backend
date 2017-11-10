@@ -5,7 +5,7 @@ function submitForm(form) {
     submitting = true;
     var formData = new FormData(form);
     $.ajax({
-        url: '/api/v2/endless-core/formstorages/?format=json',
+        url: '/api/v2/core/formstorages/?format=json',
         type: 'post',
         data: formData,
         contentType: false,

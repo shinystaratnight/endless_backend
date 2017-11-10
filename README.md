@@ -1,15 +1,38 @@
 # Project setup steps
 
+## Main info:
+
 1. Install docker for your operation system (Docker community Edition: CE): https://docs.docker.com/engine/installation/#platform-support-matrix;
 
 2. For using docker without sudo run
     `sudo usermod -aG docker $USER`
 
-3. Run `make .env`. Change `.env` content for your settings (see `env_defaults`);
 
-4. Generate ssh key for git and add generated public key to your bitbucket ssh keys. Set env `PRIVATE_REPO_KEY` to the private key's path value;
+## Development:
 
-5. Keep unique value for `DOCKER_APP_NAME` in  `.env` for all existing instances.
+1. Prepare running: `make prepare-compose`;
+2. Generate ssh key for git and add generated public key to your bitbucket ssh keys. Set env `PRIVATE_REPO_KEY` to the private key's path value (.env file);
+3. Build app container: `docker-compose build web`;
+4. Run all containers (rabbit, redis, postgres, clickhouse) as daemon: `docker-compose up -d`;
+5. Stop/Start containers: `docker-compose stop/start`;
+6. Check logs from container: 
+    - `docker-compose logs -f web` / `docker-compose logs -f postgres` / `docker-compose logs -f nginx` / etc.;
+
+### Helper commands for developers:
+
+1. Createsuperuser: `docker-compose exec web bin/django createsuper`;
+2. Migrate: `docker-compose exec web bin/django migrate`;
+3. Execute bash commands: `docker-compose exec web ls -la`;
+4. Attach to bash: `docker-compose exec web bash`;
+
+
+## Deployment
+
+1. Run `make .env`. Change `.env` content for your settings (see `env_defaults`);
+
+2 Generate ssh key for git and add generated public key to your bitbucket ssh keys. Set env `PRIVATE_REPO_KEY` to the private key's path value;
+
+3. Keep unique value for `DOCKER_APP_NAME` in  `.env` for all existing instances.
 
 
 # Nginx configuration
@@ -24,16 +47,12 @@ For using Docker nginx server set env variable `USE_NGINX_DOCKER` to `1` (defaul
 * `USE_TLS` - switch on/off ssl settings from nginx config file (choices: `0`, `1`. Default: `1`).
     * `0` - disable HTTPS;
     * `1` - enable HTTPS.
-* `HTTP_PORT` is a local port for docker routing.
-* `HTTPS_PORT` is a local port for docker routing. Would be ignored if `USE_TLS = 0`.
 
 # Docker network settings
 
 ### Static ip containers configuration
 
 - `DOCKER_SUB_NET_ROUTE` subnet. During network creation Engine creates a non-overlapping subnetwork for the network by default. This subnetwork is not a subdivision of an existing network. It is purely for ip-addressing purposes. `DOCKER_SUB_NET_ROUTE` will override this default value and specify subnetwork values using the --subnet option.
-
-- `DOCKER_SUB_NET_GATEWAY` network address, IPv4 or IPv6 Gateway for the master subnet.
 
 - `DOCKER_SUB_NET_NAME` local subnet name, would be created if doesn't exists.
 
@@ -46,6 +65,8 @@ For using Docker nginx server set env variable `USE_NGINX_DOCKER` to `1` (defaul
 - `MEMCACHED_CONTAINER_IP` IP-address of the memcached container
 
 - `NGINX_CONTAINER_IP` IP-address of the nginx container
+
+- `CLICKHOUSE_CONTAINER_IP` IP-address of the app container
 
 - `REMOTE_CONTAINER_IP` IP-address of the app container
 
@@ -77,9 +98,8 @@ If you want to run multiple `endless_project/forks` instances you should keep en
 * `DJANGO_STUFF_URL_PREFIX` -  django stuff prefix. Would be used in urls and nginx configuration.
 * `DJANGO_DEBUG` - debug mode (choices: `0`, `1`. Default: `1`).
 * `CACHE_KEY_PREFIX` - cache key prefix. Would be used for different projects and the same redis container (default: `r3sourcer-cms`).
-* `DJANGO_UWSGI_PORT` - used for `runserver`, `uwsgi` commands. (Default: `8081`).
+* `DJANGO_UWSGI_PORT` - used for binding external port to container listening. (Default: `8081`).
 * `ALLOWED_HOSTS` - Django ALLOWED_HOSTS setting (https://docs.djangoproject.com/en/1.10/ref/settings/#allowed-hosts), use separator `,` (example test.ru,example.com). (Default: `*`)
-* `BASE_DIR` -  work directory in the docker container. (Default: `/code`).
 
 
 # WEB-UI configuration
@@ -88,22 +108,6 @@ To use web-ui module set env variable `DJANGO_STUFF_URL_PREFIX`. This variable (
 For disabling web-ui module set env `DJANGO_STUFF_URL_PREFIX` to the empty value (`DJANGO_STUFF_URL_PREFIX=`).
 Example: `DJANGO_STUFF_URL_PREFIX=ecore` (by default) => `/ecore/`, `/ecore/admin`.
 This variable used in the Nginx routing configuration.
-
-
-# CMS
-
-For using cms features there is a default template with simple CMS-page structure. In the marked areas will be placed placeholders and plugins.
-There are two placeholder types: `placeholder` and `static_placeholder`.
-
-Notes:
-
-* `static_placeholder`. static_placeholder's content would be available on the all pages with this cms template (example: header, footer).
-* `placeholder`. It's content would be available only on one page (example: main content).
-* to create page click on `Create page` button.
-* to create dynamic pages with dynamic placeholders and reusing them use Snippets. Tt is possible to use django template tags, filters and context (user, request) in the template code.
-* page has tree structure, child pages and relative urls (parent: /user/ -> child /user/contacts). You can add child page via toolbar.
-* use page permission if page should be available only for logged user (`Page / Permissions` -> check `Login required`).
-* to duplicate page with it's content use cms toolbar: (`Page / Create page / Duplicate this page`).
 
 
 # Make commands

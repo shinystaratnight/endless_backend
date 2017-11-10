@@ -87,7 +87,7 @@ def repeater_schedule(db, primary_activity):
 def activity_date(db, faker, activity_repeater):
     return ActivityDate.objects.create(
         activity_repeat=activity_repeater,
-        occur_at=faker.date()
+        occur_at=timezone.datetime(2017, 1, 2, 12, 0).replace(tzinfo=pytz.UTC)
     )
 
 

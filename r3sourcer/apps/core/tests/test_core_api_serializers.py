@@ -697,7 +697,8 @@ class TestContactSerializer(SerializerMixin):
             self.execute_serializer(data=contact_data)
 
     @patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(None, None))
-    def test_cannot_create_contact_with_wrong_address(self, mock_geo, contact_data, country, city):
+    def test_cannot_create_contact_with_wrong_address(self, mock_geo, contact_data, country, city, settings):
+        settings.FETCH_ADDRESS_RAISE_EXCEPTIONS = True
         contact_data.pop('password')
         contact_data['address'] = {
             'country': country.id,

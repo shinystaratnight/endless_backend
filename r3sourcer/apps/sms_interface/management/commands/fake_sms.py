@@ -54,6 +54,9 @@ class Command(BaseCommand):
         if options['interactive']:
             from_number = input("Enter sender number: ")  # pragma: no cover
 
+        if not from_number:
+            raise CommandError("Sender number cannot be empty")
+
         if not Contact.objects.filter(phone_mobile=from_number).exists():
             raise CommandError("Contact doesn't exists with `{}` number".format(from_number))
 

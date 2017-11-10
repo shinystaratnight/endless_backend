@@ -123,14 +123,18 @@ class ContactConfig(BaseConfig):
         if not row['phone_mobile']:
             row['phone_mobile'] = None
 
+        return row
+
+    @classmethod
+    def post_process(cls, row, instance):   # pragma: no cover
         if row['user_id'] is None and (row['email'] or row['phone_mobile']):
             user_obj = models.User.objects.create(
                 email=row['email'],
                 phone_mobile=row['phone_mobile']
             )
-            row['user_id'] = user_obj.id
 
-        return row
+            instance.user = user_obj
+            instance.save()
 
 
 class ContactUnavailabilityConfig(BaseConfig):
