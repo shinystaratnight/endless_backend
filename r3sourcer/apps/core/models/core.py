@@ -685,7 +685,7 @@ class Company(
 
     logo = ThumbnailerImageField(
         upload_to='company_pictures',
-        default=os.path.join(settings.MEDIA_ROOT, 'company_pictures', 'default_picture.jpg'),
+        default=os.path.join('company_pictures', 'default_picture.jpg'),
         blank=True
     )
 
