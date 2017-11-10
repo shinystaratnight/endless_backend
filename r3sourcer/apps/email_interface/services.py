@@ -48,12 +48,12 @@ class BaseEmailService(metaclass=ABCMeta):
             email_message.save()
 
             if text_message:
-                email_models.Body.objects.create(
+                email_models.EmailBody.objects.create(
                     content=text_message, type=email_models.EmailMessage.TEXT_CONTENT_TYPE, message=email_message
                 )
 
             if html_message:
-                email_models.Body.objects.create(
+                email_models.EmailBody.objects.create(
                     content=html_message, type=email_models.EmailMessage.HTML_CONTENT_TYPE, message=email_message
                 )
 

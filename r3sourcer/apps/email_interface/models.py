@@ -24,7 +24,7 @@ class EmailTemplate(core_models.TemplateMessage):
         ordering = ['name']
 
 
-class EmailMessage(models.Model):
+class EmailMessage(core_models.UUIDModel, models.Model):
     TEXT_CONTENT_TYPE = 'text/plain'
     HTML_CONTENT_TYPE = 'text/html'
 
@@ -154,18 +154,18 @@ class EmailMessage(models.Model):
         """ Return TEXT-body or None """
         try:
             return self.bodies.get(type=self.TEXT_CONTENT_TYPE).content
-        except Body.DoesNotExist:
+        except EmailBody.DoesNotExist:
             return None
 
     def get_html_body(self):
         """ Return HTML-body or None """
         try:
             return self.bodies.get(type=self.HTML_CONTENT_TYPE).content
-        except Body.DoesNotExist:
+        except EmailBody.DoesNotExist:
             return None
 
 
-class Body(models.Model):
+class EmailBody(core_models.UUIDModel, models.Model):
     """ Mail message body """
 
     UUID_PATTERN = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'
@@ -222,7 +222,7 @@ class Body(models.Model):
 
     class Meta:
         verbose_name = _("Body of E-mail message")
-        verbose_name_plural = _("Body of E-mail messages")
+        verbose_name_plural = _("Bodies of E-mail messages")
 
     def __str__(self):
         return 'Message: {}'.format(self.message.message_id)
