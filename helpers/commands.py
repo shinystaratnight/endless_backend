@@ -66,7 +66,7 @@ def py_test():
 @app.command()
 @click.option('--site_root')
 def nginx_config(site_root):
-    required_env = ['HTTP_PORT', 'HTTPS_PORT', 'DOMAIN_NAME']
+    required_env = ['DOMAIN_NAME']
     os.environ.setdefault('SITE_CONTENT_ROOT', site_root)
 
     if not all([req in os.environ for req in required_env]):
