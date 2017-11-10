@@ -73,6 +73,7 @@ INSTALLED_APPS = [
 
     'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',
+    'r3sourcer.apps.email_interface',
     'r3sourcer.apps.twilio',
     'r3sourcer.apps.login',
     'r3sourcer.apps.logger',
@@ -359,8 +360,13 @@ MYOB_APP = {
     'api_secret': env('MYOB_APP_API_SECRET')
 }
 
-DEFAULT_SMTP_SERVER = env('NOREPLY_SMTP_SERVER', 'smtp.office365.com')
-DEFAULT_SMTP_PORT = env('NOREPLY_SMTP_PORT', 587)
-DEFAULT_SMTP_EMAIL = env('NOREPLY_SMTP_EMAIL', 'no-reply@labourking.com.au')
-DEFAULT_SMTP_PASSWORD = env('NOREPLY_SMTP_PASSWORD', '')
-DEFAULT_SMTP_SSL = bool(int(env('NOREPLY_SMTP_SSL', True)))
+EMAIL_SERVICE_ENABLED = env('EMAIL_SERVICE_ENABLED', '0') == '1'
+EMAIL_SERVICE_CLASS = env('EMAIL_SERVICE_CLASS', 'r3sourcer.apps.email_interface.services.SMTPEmailService')
+
+NO_REPLY_EMAIL = 'no-reply@labourking.com.au'
+
+DEFAULT_SMTP_SERVER = env('DEFAULT_SMTP_SERVER', 'smtp.office365.com')
+DEFAULT_SMTP_PORT = env('DEFAULT_SMTP_PORT', 587)
+DEFAULT_SMTP_EMAIL = env('DEFAULT_SMTP_EMAIL', NO_REPLY_EMAIL)
+DEFAULT_SMTP_PASSWORD = env('DEFAULT_SMTP_PASSWORD', '')
+DEFAULT_SMTP_TLS = env('DEFAULT_SMTP_TLS', '1') == '1'

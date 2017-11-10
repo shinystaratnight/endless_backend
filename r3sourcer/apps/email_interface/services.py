@@ -25,7 +25,7 @@ class BaseEmailService(metaclass=ABCMeta):
 
         try:
             if not from_email:
-                from_email = settings.NOREPLY_SMTP_EMAIL
+                from_email = settings.NO_REPLY_EMAIL
 
             if isinstance(recipients, str):
                 to_addresses = recipients
@@ -37,13 +37,12 @@ class BaseEmailService(metaclass=ABCMeta):
             now_dt = timezone.now()
 
             email_message = email_models.EmailMessage(
-                state=email_models.EmailMessage.STATE_CREATED,
+                state=email_models.EmailMessage.STATE_CHOICES.CREATED,
                 sent_at=None,
                 from_email=from_email,
                 subject=subject,
                 created_at=now_dt,
                 to_addresses=to_addresses,
-                sent_type=email_models.EmailMessage.SENT_BY_SMTP,
                 template=template
             )
             email_message.save()
@@ -99,10 +98,10 @@ class FakeEmailService(BaseEmailService):
 class SMTPEmailService(BaseEmailService):
 
     def process_email_send(self, email_message):
-        email_message.state = email_models.EmailMessage.STATE_SENDING
+        email_message.state = email_models.EmailMessage.STATE_CHOICES.SENDING
         email_message.save(update_fields=['state'])
 
-        is_no_reply_email = email_message.from_email == settings.NOREPLY_SMTP_EMAIL
+        is_no_reply_email = email_message.from_email == settings.DEFAULT_SMTP_EMAIL
 
         # conf message
         msg = MIMEMultipart('related')
@@ -122,29 +121,30 @@ class SMTPEmailService(BaseEmailService):
             msg_alternative.attach(MIMEText(email_message.get_html_body(), 'html'))
 
         smtp_server_args = {
-            'host': settings.NOREPLY_SMTP_SERVER,
-            'port': settings.NOREPLY_SMTP_PORT,
+            'host': settings.DEFAULT_SMTP_SERVER,
+            'port': settings.DEFAULT_SMTP_PORT,
         }
         smpt_auth_args = {
-            'user': settings.NOREPLY_SMTP_EMAIL,
-            'password': settings.NOREPLY_SMTP_PASSWORD,
+            'user': settings.DEFAULT_SMTP_EMAIL,
+            'password': settings.DEFAULT_SMTP_PASSWORD,
         }
 
         try:
             smtp_conn = smtplib.SMTP(**smtp_server_args)
-
-            if settings.NOREPLY_SMTP_SSL:
-                smtp_conn.starttls()
             smtp_conn.ehlo()
+
+            if settings.DEFAULT_SMTP_TLS:
+                smtp_conn.starttls()
+                smtp_conn.ehlo()
 
             smtp_conn.login(**smpt_auth_args)
             smtp_conn.sendmail(email_message.from_email, email_message.to_addresses.split(','), msg.as_string())
             smtp_conn.close()
 
-            email_message.state = email_models.EmailMessage.STATE_SENT
+            email_message.state = email_models.EmailMessage.STATE_CHOICES.SENT
             email_message.save(update_fields=['state'])
         except Exception:
             logger.exception('Cannot send email using SMTP')
 
-            email_message.state = email_models.EmailMessage.STATE_ERROR
+            email_message.state = email_models.EmailMessage.STATE_CHOICES.ERROR
             email_message.save(update_fields=['state'])

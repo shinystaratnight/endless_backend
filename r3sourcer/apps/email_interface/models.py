@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from model_utils import Choices
+
 from r3sourcer.apps.core import models as core_models
 
 
@@ -26,7 +28,7 @@ class EmailMessage(models.Model):
     TEXT_CONTENT_TYPE = 'text/plain'
     HTML_CONTENT_TYPE = 'text/html'
 
-    STATE_CHOICES = (
+    STATE_CHOICES = Choices(
         ('CREATED', _("Created")),
         ('WAIT', _("Waiting")),
         ('SENDING', _("Sending")),
@@ -35,7 +37,7 @@ class EmailMessage(models.Model):
     )
 
     state = models.CharField(
-        default='CREATED',
+        default=STATE_CHOICES.CREATED,
         choices=STATE_CHOICES,
         max_length=16,
         verbose_name=_("State sending")
