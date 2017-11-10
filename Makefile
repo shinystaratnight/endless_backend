@@ -161,7 +161,7 @@ nginx_config/docker:
 
 full-clean:
 	make clean
-	@for CONTAINER in $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) $(DOCKER_CLICKHOUSE_NAME) nginx r3sourcer-$(DOCKER_APP_NAME); \
+	@for CONTAINER in $(DOCKER_POSTGRES_NAME) $(DOCKER_REDIS_NAME) $(DOCKER_CLICKHOUSE_NAME) $(DOCKER_RABBIT_MQ_NAME) nginx r3sourcer-$(DOCKER_APP_NAME); \
 	do \
 		if docker ps -a | grep $$CONTAINER; then \
 		    echo "Remove container: $$CONTAINER"; \
@@ -451,8 +451,8 @@ var/make/webui-app:
 		$(call nginx_root$(USE_NGINX_DOCKER)) \
 		mkdir -p $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
 		mkdir -p var/www/webui; \
-		sudo chmod -R 775 $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
-		sudo chmod u+x $(WEBUI_APP_DIR)/docker-entrypoint.sh; \
+		chmod -R 775 $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
+		chmod u+x $(WEBUI_APP_DIR)/docker-entrypoint.sh; \
 		docker build --tag webui-$(DOCKER_APP_NAME)-image $(WEBUI_APP_DIR); \
 		docker run -itd \
             --name webui-$(DOCKER_APP_NAME) \
@@ -470,7 +470,7 @@ var/make/docker-clickhouse:
 	        && export LOGGER_USER="$(LOGGER_USER)" \
 	        && envsubst '$${LOGGER_USER} $${LOGGER_PASSWORD}' < conf/templates/users.xml > $(CURRENT_PATH)/users.xml; \
 	if !(docker ps -a| grep " $(DOCKER_CLICKHOUSE_NAME)$$"); then \
-		sudo chmod u+x clickhouse-entrypoint.sh; \
+		chmod u+x clickhouse-entrypoint.sh; \
 		docker run \
 			--volume "$(CURRENT_PATH)/clickhouse-entrypoint.sh:/var/lib/clickhouse/clickhouse-entrypoint.sh" \
 			--volume "$(CURRENT_PATH)/users.xml:/etc/clickhouse-server/users.xml" \

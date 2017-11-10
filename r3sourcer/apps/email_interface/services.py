@@ -27,6 +27,7 @@ class BaseEmailService(metaclass=ABCMeta):
             if not from_email:
                 from_email = settings.NO_REPLY_EMAIL
 
+            email_message = None
             if isinstance(recipients, str):
                 to_addresses = recipients
             elif isinstance(recipients, (tuple, list)):
@@ -63,16 +64,19 @@ class BaseEmailService(metaclass=ABCMeta):
                 email_message.message_id, email_message.to_addresses
             ))
         except EmailBaseServiceError as e:
-            email_message.error_message = str(e)
-            email_message.save()
+            if email_message:
+                email_message.error_message = str(e)
+                email_message.save()
 
     @transaction.atomic
-    def send_tpl(self, recipients, subject, from_email=None, tpl_name=None, **kwargs):
+    def send_tpl(self, recipients, from_email=None, tpl_name=None, **kwargs):
         try:
             template = email_models.EmailTemplate.objects.get(
                 Q(name=tpl_name) | Q(slug=tpl_name)
             )
-            message = template.compile(**kwargs)['text']
+            compiled = template.compile(**kwargs)
+            message = compiled['text']
+            subject = compiled['subject']
         except email_models.EmailTemplate.DoesNotExist:
             logger.exception('Cannot find email template with name %s', tpl_name)
         else:

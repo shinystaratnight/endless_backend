@@ -69,8 +69,8 @@ def nginx_config(site_root):
     required_env = ['HTTP_PORT', 'HTTPS_PORT', 'DOMAIN_NAME']
     os.environ.setdefault('SITE_CONTENT_ROOT', site_root)
 
-    if not all([req in os.environ for req in required_env]):
-        raise ValueError("Required env variables: {}".format('. '.join(required_env)))
+    # if not all([req in os.environ for req in required_env]):
+    #     raise ValueError("Required env variables: {}".format('. '.join(required_env)))
     with open(os.path.join(BASE_DIR, 'conf/templates/nginx.conf'), 'r') as templ_conf_file:
         sys.stdout.write(Template(templ_conf_file.read()).render(**os.environ))
 
