@@ -2,6 +2,7 @@ from functools import partial
 
 from django.utils.functional import lazy
 from django.utils.translation import ugettext_lazy as _
+
 from drf_auto_endpoint.decorators import bulk_action
 from drf_auto_endpoint.router import router
 from rest_framework.response import Response
