@@ -435,7 +435,10 @@ class ModelFormField(FormField):
                 if len(fields) > 0:
                     yield {
                         'model_fields': fields,
-                        'lookup_label': field.related_model._meta.verbose_name
+                        'name': field_name,
+                        'required': not field.blank,
+                        'help_text': field.help_text,
+                        'label': field.verbose_name
                     }
             else:
                 field_name = field.name

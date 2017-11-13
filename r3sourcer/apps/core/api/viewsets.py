@@ -10,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from phonenumber_field import phonenumber
 from rest_framework import viewsets, exceptions, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -464,6 +465,7 @@ class ContentTypeViewSet(BaseApiViewset):
 class FormViewSet(BaseApiViewset):
 
     serializer_class = serializers.FormSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         if self.request.user.is_superuser:
