@@ -632,7 +632,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'list': True,
                     'edit': True,
                     'field': 'company_addresses',
-                    'endpoint': api_reverse_lazy('endless-core/notes'),
+                    'endpoint': api_reverse_lazy('core/notes'),
                 },
                 {
                     'label': _('HQ Address'),
@@ -670,7 +670,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'list': True,
                     'edit': True,
                     'field': 'jobsites',
-                    'endpoint': api_reverse_lazy('endless-core/jobsites'),
+                    'endpoint': api_reverse_lazy('core/jobsites'),
                 },
             )
         },
@@ -702,7 +702,7 @@ class CompanyEndpoint(ApiEndpoint):
                 {
                     'type': constants.FIELD_RELATED,
                     'field': 'bank_account',
-                    'endpoint': api_reverse_lazy('endless-core/bankaccounts'),
+                    'endpoint': api_reverse_lazy('core/bankaccounts'),
                 },
                 'expense_account'
             )
@@ -718,7 +718,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'list': True,
                     'edit': True,
                     'field': 'price_lists',
-                    'endpoint': api_reverse_lazy('endless-core/pricelists'),
+                    'endpoint': api_reverse_lazy('core/pricelists'),
                 },
             )
         },
@@ -733,7 +733,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'field': 'id',
                     'endpoint': format_lazy(
                         '{}timeline/',
-                        api_reverse_lazy('endless-core/workflownodes'),
+                        api_reverse_lazy('core/workflownodes'),
                     ),
                     'query': ['model', 'object_id'],
                     'model': 'core.company',
@@ -753,7 +753,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'list': True,
                     'edit': True,
                     'field': 'notes',
-                    'endpoint': api_reverse_lazy('endless-core/notes'),
+                    'endpoint': api_reverse_lazy('core/notes'),
                 },
             )
         },
@@ -768,7 +768,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'list': True,
                     'readonly': True,
                     'field': 'get_master_company',
-                    'endpoint': api_reverse_lazy('endless-core/companies'),
+                    'endpoint': api_reverse_lazy('core/companies'),
                 },
                 {
                     'label': _('Portfolio manager'),
@@ -780,7 +780,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'label': _('Parent'),
                     'type': constants.FIELD_RELATED,
                     'field': 'parent.__str__',
-                    'endpoint': api_reverse_lazy('endless-core/companies'),
+                    'endpoint': api_reverse_lazy('core/companies'),
                 },
                 {
                     'label': _('Created date'),
