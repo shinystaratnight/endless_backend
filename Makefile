@@ -472,7 +472,7 @@ var/make/docker-clickhouse:
 	        && export LOGGER_USER="$(LOGGER_USER)" \
 	        && envsubst '$${LOGGER_USER} $${LOGGER_PASSWORD}' < conf/templates/users.xml > $(CURRENT_PATH)/users.xml; \
 	if !(docker ps -a| grep " $(DOCKER_CLICKHOUSE_NAME)$$"); then \
-		chmod u+x clickhouse-entrypoint.sh; \
+		sudo chmod u+x clickhouse-entrypoint.sh; \
 		docker run \
 			--volume "$(CURRENT_PATH)/clickhouse-entrypoint.sh:/var/lib/clickhouse/clickhouse-entrypoint.sh" \
 			--volume "$(CURRENT_PATH)/users.xml:/etc/clickhouse-server/users.xml" \
