@@ -268,21 +268,28 @@ class ContactEndpoint(ApiEndpoint):
                 },
             ),
         },
-        # TODO: Should work with the endless_logger
-        # {
-        #     'type': constants.CONTAINER_COLLAPSE,
-        #     'collapsed': False,
-        #     'name': _('History'),
-        #     'fields': (
-        #         {
-        #             'type': constants.METADATA_LIST_TYPE,
-        #             'readonly': True,
-        #             'list': True,
-        #             'many': True,
-        #             'field': 'object_history'
-        #         },
-        #     ),
-        # }
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('History'),
+            'fields': (
+                {
+                    'type': constants.CONTAINER_COLLAPSE,
+                    'collapsed': True,
+                    'name': _('History'),
+                    'fields': (
+                        {
+                            'type': constants.FIELD_RELATED,
+                            'field': 'object_history',
+                            'many': True,
+                            'list': True,
+                            'readonly': True,
+                            'endpoint': api_reverse_lazy('log')
+                        },
+                    )
+                }
+            ),
+        }
     )
 
     list_filter = [{
@@ -961,6 +968,25 @@ class WorkflowNodeEndpoint(ApiEndpoint):
     )
 
 
+class WorkflowObjectEndpoint(ApiEndpoint):
+
+    model = models.WorkflowObject
+    serializer = serializers.WorkflowObjectSerializer
+
+    fieldsets = ({
+        'type': constants.CONTAINER_HIDDEN,
+        'name': _('Residency'),
+        'fields': [
+            'object_id'
+        ],
+    }, 'state', {
+        'type': constants.FIELD_TEXTAREA,
+        'field': 'comment'
+    }, 'active')
+
+    list_filter = ('object_id', 'active', 'state.workflow.name')
+
+
 class DashboardModuleEndpoint(ApiEndpoint):
 
     model = models.DashboardModule
@@ -1137,6 +1163,7 @@ router.register(models.Tag)
 router.register(endpoint=SiteEndpoint())
 router.register(endpoint=WorkflowNodeEndpoint())
 router.register(endpoint=WorkflowEndpoint())
+router.register(endpoint=WorkflowObjectEndpoint())
 router.register(endpoint=FormBuilderEndpoint())
 router.register(models.FormField, serializer=serializers.FormFieldSerializer)
 router.register(endpoint=FormFieldGroupEndpoint())
@@ -1153,9 +1180,3 @@ router.register(endpoint=ModelFormFieldEndpoint())
 router.register(endpoint=FileFormFieldEndpoint())
 router.register(endpoint=CheckBoxFormFieldEndpoint())
 router.register(endpoint=ContentTypeEndpoint())
-
-router.register(
-    models.WorkflowObject,
-    filter_fields=('object_id', 'active', 'state__workflow__name'),
-    serializer=serializers.WorkflowObjectSerializer
-)

@@ -60,4 +60,4 @@ services:
       - ./r3sourcer/:/app/r3sourcer
       - ./helpers/:/app/helpers
       - ./conf:/app/conf
-    command: "bin/app start"
+    command: "./docker-entrypoint.sh"

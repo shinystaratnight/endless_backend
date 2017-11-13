@@ -862,7 +862,11 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
 class WorkflowObjectSerializer(ApiBaseModelSerializer):
     class Meta:
         model = models.WorkflowObject
-        fields = '__all__'
+        fields = ('__all__', {
+            'state': ('__all__', {
+                'workflow': ('id', 'name'),
+            })
+        })
 
     def validate(self, data):
         models.WorkflowObject.validate_object(
@@ -891,7 +895,7 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
             return NOT_ALLOWED
 
         workflow_object = models.WorkflowObject.objects.filter(
-            state=obj
+            state=obj, object_id=self.target.id
         )
         if workflow_object.exists():
             workflow_object = workflow_object.latest('updated_at')
