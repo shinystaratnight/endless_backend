@@ -1,5 +1,6 @@
 import pytest
 
+from r3sourcer.apps.company_settings.models import MYOBAccount
 from r3sourcer.apps.core.models import User, Company, CompanyContact, InvoiceRule
 from r3sourcer.apps.hr.models import PayslipRule
 
@@ -49,4 +50,13 @@ def invoice_rule(db, company):
         starting_number=100,
         comment='comment',
         notice='notice'
+    )
+
+
+@pytest.fixture
+def myob_account(db):
+    return MYOBAccount.objects.create(
+        number='2-2000',
+        name='Test Income Account',
+        type='income'
     )
