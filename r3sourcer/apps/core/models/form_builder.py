@@ -6,7 +6,7 @@ from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
-from django.db import models
+from django.db import models, transaction
 from django import forms
 from django.urls import reverse
 from django.utils.functional import cached_property
@@ -17,6 +17,7 @@ from polymorphic.models import PolymorphicModel
 
 
 from .core import UUIDModel
+from r3sourcer.apps.core.utils.form_builder import StorageHelper
 
 
 __all__ = [
@@ -215,7 +216,14 @@ class FormStorage(UUIDModel):
     """
     Base storage for saving form cleaned_data.
     """
+
     CONTENT_STORAGE_PATH = 'form_storage'
+
+    STATUS_CHOICES = Choices(
+        (None, 'WAIT', _("Wait")),
+        (False, 'CANCELLED', _("Cancelled")),
+        (True, 'APPROVED', _("Approved")),
+    )
 
     form = models.ForeignKey(
         'Form',
@@ -234,6 +242,25 @@ class FormStorage(UUIDModel):
         blank=True,
         editable=False
     )
+
+    status = models.NullBooleanField(
+        verbose_name=_("Status"),
+        default=STATUS_CHOICES.WAIT,
+        choices=STATUS_CHOICES
+    )
+
+    def get_instance(self):
+        """
+        Return instance from object_id and form content_type data.
+        
+        :return: models.Model instance
+        """
+        if self.object_id:
+            try:
+                return self.form.content_type.model_class().objects.get(id=self.object_id)
+            except models.ObjectDoesNotExist:
+                pass
+        return None
 
     @classmethod
     def parse_data_to_storage(cls, form: Form, data: dict):
@@ -264,6 +291,30 @@ class FormStorage(UUIDModel):
             data=parsed_data,
             form=form
         )
+
+    def get_data(self):
+        """
+        Would be used for cleaning string values from dict.
+        
+        :return: dict Validated data from self.data field.
+        """
+        form_cls = self.form.get_form_class()   # type: forms.Form
+        data_storage = {}
+        for name, data in self.data.items():
+            if name not in form_cls.base_fields:
+                data_storage.setdefault(name, data)
+            elif isinstance(form_cls.base_fields[name], forms.FileField):
+                data_storage.setdefault(name, data)
+            else:
+                data_storage.setdefault(name, form_cls.base_fields[name].clean(data))
+        return data_storage
+
+    @transaction.atomic
+    def create_object_from_data(self):
+        if self.status == self.STATUS_CHOICES.WAIT:
+            storage_helper = StorageHelper(self.form.content_type.model_class(), self.get_data())
+            storage_helper.process_fields()
+            instance = storage_helper.create_instance()
 
     class Meta:
         verbose_name = _("Form storage")
@@ -510,7 +561,7 @@ class ModelFormField(FormField):
                 forms.MultipleChoiceField)):
             ui_config.update({
                 'type': 'select',
-                'values': [{'value': value, 'label': str(label)} for
+                'values': [{'value': str(value), 'label': str(label)} for
                            value, label in form_field.choices]
             })
             if isinstance(form_field, (
