@@ -115,7 +115,7 @@ def calculate_distances_for_jobsite(contacts, jobsite):
 
     for mode, contact_list in contacts_dict.items():
         addresses = [c.get_full_address() for c in contact_list]
-        result = calc_distance(jobsite.get_full_address(), addresses, mode=mode)[0]
+        result = calc_distance(jobsite.get_full_address(), addresses, mode=mode)
         if not result:
             return bool(result)
         for distance, contact in zip(result, contact_list):
