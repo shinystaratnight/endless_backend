@@ -5,7 +5,7 @@ from collections import defaultdict
 
 from django.utils import timezone
 
-from r3sourcer.apps.core.utils.geo import calc_distance, GeoException, OVER_QUERY_LIMIT, MODE_TRANSIT, MODE_DRIVING
+from r3sourcer.apps.core.utils.geo import calc_distance, GMapsException, MODE_TRANSIT, MODE_DRIVING
 from r3sourcer.apps.candidate.models import CandidateContact
 
 
@@ -114,13 +114,9 @@ def calculate_distances_for_jobsite(contacts, jobsite):
 
     for mode, contact_list in contacts_dict.items():
         addresses = [c.get_full_address() for c in contact_list]
-        try:
-            distancematrix = calc_distance(jobsite.get_full_address(), addresses, mode=mode)[0]
-            if distancematrix is not None:
-                for distance, contact in zip(distancematrix, contact_list):
-                    create_or_update_distance_cache(contact, jobsite, distance)
-        except GeoException as e:
-            if e.status == OVER_QUERY_LIMIT:
-                return False
+        distancematrix = calc_distance(jobsite.get_full_address(), addresses, mode=mode)[0]
+        if distancematrix:
+            for distance, contact in zip(distancematrix, contact_list):
+                create_or_update_distance_cache(contact, jobsite, distance)
 
     return True
