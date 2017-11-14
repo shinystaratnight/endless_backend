@@ -50,10 +50,7 @@ class CandidateContactSerializer(core_serializers.ApiRealtedFieldManyMixin, core
     blacklists = BlackListSerializer(many=True)
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
-    notes = core_serializers.NoteSerializer(many=True)
     active_states = core_serializers.WorkflowObjectSerializer(many=True)
-    activities = activity_serializers.ActivitySerializer(many=True)
-    favourites = FavouriteListSerializer(many=True)
     vacancy_offers = VacancyOfferSerializer(many=True)
     carrier_lists = CarrierListSerializer(many=True)
     candidate_evaluations = timesheet_serializers.CandidateEvaluationSerializer(many=True)
@@ -69,7 +66,8 @@ class CandidateContactSerializer(core_serializers.ApiRealtedFieldManyMixin, core
         'notes': 'candidate_contact',
         'candidate_skills': 'candidate_contact',
         'tag_rels': 'candidate_contact',
-        'favourites': 'candidate_contact',
+        'favouritelists': 'candidate_contact',
+        'recruitment_agent': 'candidate_contact',
     }
 
     def create(self, validated_data):
@@ -89,30 +87,27 @@ class CandidateContactSerializer(core_serializers.ApiRealtedFieldManyMixin, core
 
     class Meta:
         model = candidate_models.CandidateContact
-        fields = ('__all__', {
-            'blacklists': ('__all__',),
-            'favourites': ('__all__',),
-            'active_states': ('__all__',),
-            'vacancy_offers': ('__all__',),
-            'carrier_lists': ('__all__',),
-            'candidate_evaluations': ('__all__',),
-            'notes': ('id', 'note'),
-            'activities': ('id', 'starts_at', 'ends_at', 'done', 'template', {
+        fields = (
+            '__all__', 'activities', 'notes',
+            {
+                'blacklists': ('__all__',),
+                'favouritelists': ('__all__',),
+                'active_states': ('__all__',),
+                'vacancy_offers': ('__all__',),
+                'carrier_lists': ('__all__',),
+                'candidate_evaluations': ('__all__',),
+                'tag_rels': ('id', 'verified_by', 'verification_evidence'),
+                'candidate_skills': (
+                    'id', 'skill', 'score', 'prior_experience'
+                ),
                 'contact': ('__all__', {
                     'address': ('__all__',),
-                },)
-            }),
-            'tag_rels': ('id', 'verified_by', 'verification_evidence'),
-            'candidate_skills': (
-                'id', 'skill', 'score', 'prior_experience'
-            ),
-            'contact': ('__all__', {
-                'address': ('__all__',),
-            }),
-            'recruitment_agent': ('__all__', {
-                'contact': ('__all__',),
-            }),
-        })
+                }),
+                'recruitment_agent': ('__all__', {
+                    'contact': ('__all__',),
+                }),
+            }
+        )
 
         related = core_serializers.RELATED_DIRECT
 
