@@ -5,6 +5,7 @@ services:
     restart: always
     image: "postgres:9.6"
     env_file:
+      - env_defaults
       - .env
   redis:
     restart: always
@@ -27,6 +28,7 @@ services:
     ports:
       - "80:80"
     env_file:
+      - env_defaults
       - .env
     volumes:
       - ./var/www/static/:/app/static/
@@ -54,6 +56,7 @@ services:
     environment:
       - C_FORCE_ROOT=1
     env_file:
+      - env_defaults
       - .env
     volumes:
       - ./var/www/:/app/var/www/

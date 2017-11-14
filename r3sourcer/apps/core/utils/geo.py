@@ -210,11 +210,11 @@ def fetch_geo_coord_by_address(address):
     :param address:
     :return tuple(float, float)|bool|None:
     """
-    client = GMaps(key=settings.GOOGLE_GEO_CODING_API_KEY)
     try:
+        client = GMaps(key=settings.GOOGLE_GEO_CODING_API_KEY)
         return client.get_coordinates(address)
     except GMapsException as e:
-        return None if e.code == GMapsException.INVALID_REQUEST[1] else False
+        return (None, None) if e.code == GMapsException.INVALID_REQUEST[1] else (False, False)
 
 
 def calc_distance(origins, destinations, mode=None):
@@ -232,8 +232,8 @@ def calc_distance(origins, destinations, mode=None):
     :param mode:
     :return list|bool|None:
     """
-    client = GMaps(key=settings.GOOGLE_DISTANCE_MATRIX_API_KEY)
     try:
+        client = GMaps(key=settings.GOOGLE_DISTANCE_MATRIX_API_KEY)
         return client.get_distance(origins, destinations, mode)
     except GMapsException as e:
-        return None if e.code == GMapsException.INVALID_REQUEST[1] else False
+        return None if e.code == GMapsException.INVALID_REQUEST[1] else []

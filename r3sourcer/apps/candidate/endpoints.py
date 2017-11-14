@@ -146,7 +146,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'type': constants.FIELD_TIMELINE,
                     'label': _('States Timeline'),
                     'field': 'id',
-                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('endless-core/workflownodes')),
+                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
                     'query': ['model', 'object_id'],
                     'model': 'core.candidatecontact',
                     'object_id': '{id}',
