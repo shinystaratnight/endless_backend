@@ -4,7 +4,7 @@ from django.conf import settings
 from django.db.models import Q
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
 from django.utils.translation import ugettext_lazy as _
 
@@ -338,7 +338,7 @@ class WorkflowNodeViewset(BaseApiViewset):
         try:
             model_class = apps.get_model(model_name)
             target_object = model_class.objects.get(id=object_id)
-        except model_class.DoesNotExist:
+        except ObjectDoesNotExist:
             raise exceptions.NotFound(_('Object does not exists'))
 
         required_mixins = (WorkflowProcess, mixins.CompanyLookupMixin)

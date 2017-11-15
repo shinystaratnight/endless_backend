@@ -270,7 +270,7 @@ class ApiFullRelatedFieldsMixin():
         return super(ApiFullRelatedFieldsMixin, self).update(obj, validated_data)
 
 
-class ApiRealtedFieldManyMixin:
+class ApiRelatedFieldManyMixin:
 
     # Format: {'many_related_field': 'related_field_name'}
     many_related_fields = None
@@ -295,9 +295,7 @@ class ApiRealtedFieldManyMixin:
         for field_name, related_name in self.many_related_fields.items():
             field = self.fields.get(field_name)
 
-            if isinstance(field, serializers.ListSerializer) and \
-                    not field.read_only:
-
+            if isinstance(field, serializers.ListSerializer) and not field.read_only:
                 model = field.child.Meta.model
                 instances = validated_data.pop(field_name, [])
 
@@ -308,11 +306,32 @@ class ApiRealtedFieldManyMixin:
 
     def update(self, instance, validated_data):
         if self.many_related_fields:
-            for field_name, related_name in self.many_related_fields.items():
-                field = self.fields[field_name]
+            related_data = {
+                field: validated_data.pop(field)
+                for field in self.many_related_fields.keys()
+                if field in validated_data
+            }
+        else:
+            related_data = {}
+
+        instance = super().update(instance, validated_data)
+        related_data['id'] = instance.id
+
+        self.update_many(instance, related_data)
+        return instance
+
+    def update_many(self, instance, validated_data):
+        """
+        Update related objects
+        """
+        for field_name, related_name in self.many_related_fields.items():
+            field = self.fields.get(field_name)
+
+            if isinstance(field, serializers.ListSerializer) and not field.read_only:
+                instances = validated_data.get(field_name, [])
 
                 objects = getattr(instance, field_name)
-                for item in validated_data.get(field_name, []):
+                for item in instances:
                     item[related_name + '_id'] = instance.id
                     if item.get('id'):
                         obj = objects.filter(id=item['id'])
@@ -320,13 +339,6 @@ class ApiRealtedFieldManyMixin:
                     else:
                         model = field.child.Meta.model
                         model.objects.create(**item)
-
-            validated_data = OrderedDict([
-                (key, val) for key, val in validated_data.items()
-                if key not in self.many_related_fields
-            ])
-
-        return super().update(instance, validated_data)
 
 
 class ApiMethodFieldsMixin():
