@@ -435,7 +435,23 @@ class DashboardModuleViewSet(BaseApiViewset):
 
 class FormStorageViewSet(BaseApiViewset):
 
+    ALREADY_APPROVED_ERROR = _("Form storage already approved")
+
     serializer_class = serializers.FormStorageSerializer
+
+    @detail_route(methods=['post'], permission_classes=(IsAuthenticated,))
+    def approve_storage(self, request, pk):
+        instance = self.get_object()
+        if instance.status == models.FormStorage.STATUS_CHOICES.WAIT:
+            raise exceptions.APIException(self.ALREADY_APPROVED_ERROR)
+        instance.create_instance()
+        return Response(status=status.HTTP_201_CREATED)
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return models.FormStorage.objects.all()
+        companies = get_master_companies_by_contact(self.request.user.contact) + [None]
+        return models.Form.objects.filter(form__company__in=companies)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
