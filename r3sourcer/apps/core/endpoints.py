@@ -949,7 +949,10 @@ class NavigationEndpoint(ApiEndpoint):
 class WorkflowEndpoint(ApiEndpoint):
 
     model = models.Workflow
+    search_fields = ('name', 'model__app_label', 'model__model', )
     fieldsets = ('name', 'model', )
+
+    list_display = ('name', 'model', )
 
 
 class WorkflowNodeEndpoint(ApiEndpoint):
@@ -1134,6 +1137,7 @@ class ContentTypeEndpoint(ApiEndpoint):
 
     model = ContentType
     base_viewset = viewsets.ContentTypeViewSet
+    search_fields = ('model', )
 
 
 router.register(endpoint=DashboardModuleEndpoint())
