@@ -35,11 +35,14 @@ class CompanyUserSerializer(serializers.ModelSerializer):
     """
     Serializer for rendering list of Users of a given Company in CompanyUserListView
     """
-    name = serializers.ReadOnlyField(source='get_full_name')
+    name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
         fields = ('id', 'name')
+
+    def get_name(self, obj):
+        return obj.contact.first_name + ' ' + obj.contact.last_name
 
 
 class UserGroupSerializer(serializers.ModelSerializer):

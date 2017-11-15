@@ -28,22 +28,28 @@ class GroupGlobalPermissionListView(ListAPIView):
     """
     Returns list of all GlobalPermissions of a given Group
     """
-    serializer_class = serializers.GlobalPermissionSerializer
-
-    def get_queryset(self):
+    def get(self, *args, **kwargs):
         group = get_object_or_404(Group, id=self.kwargs['id'])
-        return GlobalPermission.objects.filter(group=group)
+        permissions = GlobalPermission.objects.filter(group=group)
+        serializer = serializers.GlobalPermissionSerializer(permissions, many=True)
+        data = {
+            "permission_list": serializer.data
+        }
+        return Response(data)
 
 
 class UserGlobalPermissionListView(ListAPIView):
     """
     Returns list of all GlobalPermissions of a given User
     """
-    serializer_class = serializers.GlobalPermissionSerializer
-
-    def get_queryset(self):
+    def get(self, *args, **kwargs):
         user = get_object_or_404(User, id=self.kwargs['id'])
-        return GlobalPermission.objects.filter(user=user)
+        permissions = GlobalPermission.objects.filter(group=user)
+        serializer = serializers.GlobalPermissionSerializer(permissions, many=True)
+        data = {
+            "permission_list": serializer.data
+        }
+        return Response(data)
 
 
 class SetGroupGlobalPermissionView(APIView):

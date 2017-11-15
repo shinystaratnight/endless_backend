@@ -20,12 +20,12 @@ class TestUserGlobalPermissionListView:
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['results'][0]['id'] == permission.id
-        assert response.data['results'][0]['name'] == permission.name
-        assert response.data['results'][0]['codename'] == permission.codename
-        assert response.data['results'][1]['id'] == permission2.id
-        assert response.data['results'][1]['name'] == permission2.name
-        assert response.data['results'][1]['codename'] == permission2.codename
+        assert response.data['permission_list'][0]['id'] == permission.id
+        assert response.data['permission_list'][0]['name'] == permission.name
+        assert response.data['permission_list'][0]['codename'] == permission.codename
+        assert response.data['permission_list'][1]['id'] == permission2.id
+        assert response.data['permission_list'][1]['name'] == permission2.name
+        assert response.data['permission_list'][1]['codename'] == permission2.codename
 
 
 class TestGroupGlobalPermissionListView:
@@ -37,12 +37,12 @@ class TestGroupGlobalPermissionListView:
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['results'][0]['id'] == permission.id
-        assert response.data['results'][0]['name'] == permission.name
-        assert response.data['results'][0]['codename'] == permission.codename
-        assert response.data['results'][1]['id'] == permission2.id
-        assert response.data['results'][1]['name'] == permission2.name
-        assert response.data['results'][1]['codename'] == permission2.codename
+        assert response.data['permission_list'][0]['id'] == permission.id
+        assert response.data['permission_list'][0]['name'] == permission.name
+        assert response.data['permission_list'][0]['codename'] == permission.codename
+        assert response.data['permission_list'][1]['id'] == permission2.id
+        assert response.data['permission_list'][1]['name'] == permission2.name
+        assert response.data['permission_list'][1]['codename'] == permission2.codename
 
 
 class TestSetGroupGlobalPermissionView:
