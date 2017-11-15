@@ -14,6 +14,8 @@ class BaseEndpointPermission(permissions.BasePermission):
             method = request.method.lower()
             codename = self.permission_name + '_' + method
 
+            if method == 'options':
+                return True
             if request.user.has_permission(codename):
                 return True
             if request.user.has_group_permission(codename):
