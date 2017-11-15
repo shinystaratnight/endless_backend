@@ -846,8 +846,10 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
     class Meta:
         model = models.WorkflowNode
         fields = (
-            'id', 'workflow', 'number', 'name_before_activation',
-            'name_after_activation', 'rules', 'company', 'active', 'hardlock'
+            'id', 'number', 'name_before_activation', 'name_after_activation', 'rules', 'company', 'active',
+            'hardlock', {
+                'workflow': ('id', '__str__', 'name', 'model')
+            }
         )
 
     def validate(self, data):
