@@ -293,7 +293,7 @@ class ApiRealtedFieldManyMixin:
 
     def create_many(self, validated_data):
         for field_name, related_name in self.many_related_fields.items():
-            field = self.fields[field_name]
+            field = self.fields.get(field_name)
 
             if isinstance(field, serializers.ListSerializer) and \
                     not field.read_only:
