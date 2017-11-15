@@ -451,7 +451,7 @@ class FormStorageViewSet(BaseApiViewset):
         if self.request.user.is_superuser:
             return models.FormStorage.objects.all()
         companies = get_master_companies_by_contact(self.request.user.contact) + [None]
-        return models.Form.objects.filter(form__company__in=companies)
+        return models.FormStorage.objects.filter(form__company__in=companies)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
