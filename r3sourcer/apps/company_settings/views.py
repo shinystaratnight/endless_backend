@@ -38,26 +38,33 @@ class CompanySettingsView(APIView):
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
 
-        company_settings_serializer = serializers.CompanySettingsSerializer(company.company_settings,
-                                                                            data=self.request.data['company_settings'],
-                                                                            partial=True)
-        invoice_rule_serializer = serializers.InvoiceRuleSerializer(company.invoice_rules.first(),
-                                                                    data=self.request.data['invoice_rule'],
-                                                                    partial=True)
-        payslip_rule_serializer = serializers.PayslipRuleSerializer(company.payslip_rules.first(),
-                                                                    data=self.request.data['payslip_rule'],
-                                                                    partial=True)
-        account_set_serializer = serializers.AccountSetSerializer(company.company_settings.account_set,
-                                                                  data=self.request.data['account_set'],
-                                                                  partial=True)
-        company_settings_serializer.is_valid(raise_exception=True)
-        invoice_rule_serializer.is_valid(raise_exception=True)
-        payslip_rule_serializer.is_valid(raise_exception=True)
-        account_set_serializer.is_valid(raise_exception=True)
-        company_settings_serializer.save()
-        invoice_rule_serializer.save()
-        payslip_rule_serializer.save()
-        account_set_serializer.save()
+        if 'company_settings' in self.request.data:
+            serializer = serializers.CompanySettingsSerializer(company.company_settings,
+                                                               data=self.request.data['company_settings'],
+                                                               partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        if 'invoice_rule' in self.request.data:
+            serializer = serializers.InvoiceRuleSerializer(company.invoice_rules.first(),
+                                                           data=self.request.data['invoice_rule'],
+                                                           partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        if 'payslip_rule' in self.request.data:
+            serializer = serializers.PayslipRuleSerializer(company.payslip_rules.first(),
+                                                           data=self.request.data['payslip_rule'],
+                                                           partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        if 'account_set' in self.request.data:
+            serializer = serializers.AccountSetSerializer(company.company_settings.account_set,
+                                                          data=self.request.data['account_set'],
+                                                          partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
 
         return Response()
 

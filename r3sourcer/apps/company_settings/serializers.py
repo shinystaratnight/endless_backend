@@ -1,11 +1,14 @@
 from rest_framework import serializers
 
+from r3sourcer.apps.company_settings.models import CompanySettings, AccountSet, MYOBAccount
+from r3sourcer.apps.core.api.fields import ApiBase64ImageField
 from r3sourcer.apps.core.models import InvoiceRule
 from r3sourcer.apps.hr.models import PayslipRule
-from r3sourcer.apps.company_settings.models import CompanySettings, AccountSet, MYOBAccount
 
 
 class CompanySettingsSerializer(serializers.ModelSerializer):
+    logo = ApiBase64ImageField()
+
     class Meta:
         model = CompanySettings
         fields = ('id', 'logo', 'color_scheme', 'font', 'forwarding_number')
