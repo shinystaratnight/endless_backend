@@ -4,8 +4,9 @@ from django.db import models
 from django.db import transaction
 
 
-class AlreadyProcessed(Exception):
-    pass
+__all__ = [
+    'StorageHelper', 'SimpleFieldHelper', 'RelatedFieldHelper'
+]
 
 
 class StorageHelper(object):
@@ -14,7 +15,7 @@ class StorageHelper(object):
     Would be use for creating new objects from FormStorage.
     """
 
-    __slots__ = ['_model', '_fields', '_source_fields']
+    __slots__ = ['_model', '_fields', '_source_fields', '_done', '_instance']
 
     LOOKUP_SEPARATOR = '__'
 
@@ -24,6 +25,8 @@ class StorageHelper(object):
         self._model = model
         self._source_fields = fields
         self._fields = {}
+        self._done = False
+        self._instance = None
 
     def process_fields(self):
         """
@@ -48,12 +51,15 @@ class StorageHelper(object):
 
         :return: self.model instance.
         """
+        assert self._instance is None, 'Instance already created'
+
         object_params = {}
         for name, field in self._fields.items():
             if isinstance(field, RelatedFieldHelper):
                 field.save_related()
             object_params.setdefault(name, field.value)
-        return self._model.objects.create(**object_params)
+        self._instance = self._model.objects.create(**object_params)
+        return self._instance
 
     @classmethod
     def separate_lookup_name(cls, field_name: str) -> tuple():
@@ -71,6 +77,10 @@ class StorageHelper(object):
         """
         field_name, _, lookup_name = field_name.partition(cls.LOOKUP_SEPARATOR)
         return field_name, lookup_name
+
+    @classmethod
+    def join_lookup_names(cls, *fields):
+        return cls.LOOKUP_SEPARATOR.join(fields)
 
 
 class SimpleFieldHelper(object):

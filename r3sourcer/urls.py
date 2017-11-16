@@ -25,7 +25,7 @@ api_versions = '(?P<version>v2)'
 _urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^i18n/', include('django.conf.urls.i18n')),
-    url(r'^form-builds/(?P<pk>.+)/$', FormView.as_view(), name='form-builder-view'),
+    url(r'^form-builds/(?P<company>.+)/(?P<pk>.+)/$', FormView.as_view(), name='form-builder-view'),
     url(r'^rosetta/', include('rosetta.urls')),
     url(r'^twilio/', include('r3sourcer.apps.twilio.urls', namespace='twilio')),
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),

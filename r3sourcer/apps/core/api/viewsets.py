@@ -439,13 +439,26 @@ class FormStorageViewSet(BaseApiViewset):
 
     serializer_class = serializers.FormStorageSerializer
 
-    @detail_route(methods=['post'], permission_classes=(IsAuthenticated,))
-    def approve_storage(self, request, pk):
+    @detail_route(
+        methods=['post'],
+        permission_classes=(IsAuthenticated,),
+        serializer_class=serializers.FormStorageApproveSerializer
+    )
+    def approve(self, request, pk, *args, **kwargs):
+        """
+        Approve storage. Would be created instance from storage it status is `approved`.
+        """
         instance = self.get_object()
-        if instance.status == models.FormStorage.STATUS_CHOICES.WAIT:
+
+        if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED:
             raise exceptions.APIException(self.ALREADY_APPROVED_ERROR)
-        instance.create_instance()
-        return Response(status=status.HTTP_201_CREATED)
+        serializer = self.get_serializer(instance=instance, data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED and not instance.object_id:
+            obj = instance.create_object_from_data()
+            return Response({'id': obj.pk}, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_200_OK)
 
     def get_queryset(self):
         if self.request.user.is_superuser:

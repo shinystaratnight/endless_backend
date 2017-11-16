@@ -1304,3 +1304,10 @@ class FormBuilderSerializer(ApiBaseModelSerializer):
         fields = (
             'id', 'content_type'
         )
+
+
+class FormStorageApproveSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = models.FormStorage
+        fields = ('status',)

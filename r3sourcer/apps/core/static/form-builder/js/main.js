@@ -4,8 +4,9 @@ function submitForm(form) {
     $('form .form-group').find('div.errors').remove();
     submitting = true;
     var formData = new FormData(form);
+    formData.set('company', companyId);
     $.ajax({
-        url: '/ecore/api/v2/core/formstorages/?format=json',
+        url: storageApiUrl,
         type: 'post',
         data: formData,
         contentType: false,
@@ -59,4 +60,5 @@ jQuery(function ($) {
     });
     $('#form-builder').html(htmlForm.html());
     $(".datapicker").datepicker();
+    $('form').find('input[type=submit]').toggle(true);
 });
