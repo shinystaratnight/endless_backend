@@ -46,7 +46,7 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
         fields = '__all__'
 
 
-class CandidateContactSerializer(core_serializers.ApiRealtedFieldManyMixin, core_serializers.ApiBaseModelSerializer):
+class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core_serializers.ApiBaseModelSerializer):
     blacklists = BlackListSerializer(many=True)
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)

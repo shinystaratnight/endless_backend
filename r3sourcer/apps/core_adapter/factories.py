@@ -1,5 +1,5 @@
 from django_filters import (
-    UUIDFilter, ChoiceFilter, DateFromToRangeFilter, DateTimeFromToRangeFilter
+    UUIDFilter, ChoiceFilter, DateFromToRangeFilter, DateTimeFromToRangeFilter, CharFilter
 )
 from django_filters.rest_framework import FilterSet
 from django.utils.translation import ugettext_lazy as _
@@ -40,7 +40,7 @@ def filter_factory(endpoint):
         field_qry = field.replace('.', '__')
 
         if field_type == constants.FIELD_RELATED:
-            attrs[field_qry] = UUIDFilter(lookup_expr='id')
+            attrs[field_qry] = CharFilter(lookup_expr='id')
         elif field_type == constants.FIELD_SELECT:
             if 'choices' in list_filter:
                 choices = list_filter['choices']

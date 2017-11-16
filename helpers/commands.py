@@ -7,8 +7,11 @@ from jinja2 import Template
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def set_env():
-    configs = ['env_defaults', '.env']
+def set_env(*args):
+    configs = list(args)
+    if not configs:
+        configs = ['env_defaults', '.env']
+
     for config in configs:
         if os.path.isfile(os.path.join(BASE_DIR, config)):
             with open(os.path.join(BASE_DIR, config), 'r') as f:
@@ -47,6 +50,7 @@ def start():
 @click.option('--app', default='')
 @click.argument('app', default='')
 def test(app):
+    set_env('.env_test')
     os.chdir(BASE_DIR)
 
     if app:
@@ -59,7 +63,7 @@ def test(app):
 @click.command()
 def py_test():
     os.chdir(BASE_DIR)
-    set_env()
+    set_env('env_defaults', '.env', '.env_test')
     run('bin/pytest')
 
 

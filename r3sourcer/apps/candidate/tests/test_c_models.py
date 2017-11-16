@@ -10,6 +10,7 @@ from r3sourcer.apps.candidate.models import (
     InterviewSchedule, CandidateRel, AcceptanceTestQuestionRel,
     AcceptanceTestRel, CandidateContact, SkillRel, Subcontractor
 )
+from r3sourcer.apps.hr import models as hr_models
 
 
 @pytest.mark.django_db
@@ -211,6 +212,33 @@ class TestCandidateContact:
         candidate.nationality = country
 
         assert candidate.is_residency_filled()
+
+    def test_notes(self, candidate, candidate_note):
+        notes = candidate.notes
+
+        assert notes.count() == 1
+
+    def test_activities(self, candidate, candidate_activity):
+        activities = candidate.activities
+
+        assert activities.count() == 1
+
+    def test_save_with_score_exists(self, contact, candidate_data):
+        score = hr_models.CandidateScore()
+
+        rc = CandidateContact.objects.create(
+            contact=contact,
+            candidate_scores=score
+        )
+        keys = ('height weight transportation_to_work strength language'
+                ' reliability_score loyalty_score tax_file_number'
+                ' super_annual_fund_name super_member_number bank_account'
+                ' emergency_contact_name emergency_contact_phone'
+                ' employment_classification').split()
+        for key in keys:
+            setattr(rc, key, candidate_data[key])
+
+        assert hasattr(rc, 'candidate_scores')
 
 
 @pytest.mark.django_db

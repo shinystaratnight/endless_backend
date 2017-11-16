@@ -321,7 +321,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     @property
     def activities(self):
         return activity_models.Activity.objects.filter(
-            entity_object__model=self.__class__.__name__,
+            entity_object_name=self.__class__.__name__,
             entity_object_id=self.pk
         )
 
