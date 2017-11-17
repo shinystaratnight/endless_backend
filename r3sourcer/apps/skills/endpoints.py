@@ -11,6 +11,11 @@ class SkillEndpoint(ApiEndpoint):
     fieldsets = ('name', 'short_name',  'carrier_list_reserve',
                  'employment_classification', 'active')
 
+    search_fields = (
+        'name',
+        'short_name'
+    )
+
 
 router.register(endpoint=SkillEndpoint())
 router.register(models.SkillBaseRate)
