@@ -470,12 +470,14 @@ class FormStorageViewSet(BaseApiViewset):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         form_obj = serializer.validated_data['form']
+        company = serializer.validated_data['company']
         form_data = request.data.copy()
         form_data.pop('form')
         form = form_obj.get_form_class()(data=request.data, files=request.data)
         if not form.is_valid():
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
         form_storage = models.FormStorage.parse_data_to_storage(form_obj, form.cleaned_data)
+        form_storage.company = company
         form_storage.save()
         return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
 
