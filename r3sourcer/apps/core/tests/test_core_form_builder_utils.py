@@ -6,6 +6,7 @@ from r3sourcer.apps.core import models
 from r3sourcer.apps.core.utils import form_builder as form_builder_utils
 
 
+@pytest.mark.django_db
 class TestModelStorageHelperCls:
     """
     Testing r3sourcer.apps.core.utils.form_storage helper classes.
@@ -39,7 +40,6 @@ class TestModelStorageHelperCls:
         with pytest.raises(AssertionError):
             related_field.process_field(value)
 
-    @pytest.mark.django_db
     def test_storage_helper(self):
         job_title = 'Software Developer'
         storage_helper = form_builder_utils.StorageHelper(models.CompanyContact, {
@@ -68,4 +68,4 @@ class TestModelStorageHelperCls:
         assert field == contact_field
         assert first_name_field == first_name_field
 
-        assert form_builder_utils.StorageHelper.separate_lookup_name('test_field_name') == 'test_field_name'
+        assert form_builder_utils.StorageHelper.separate_lookup_name('test_field_name') == ('test_field_name', '')
