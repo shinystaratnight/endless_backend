@@ -54,7 +54,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'fields': (
                 'tax_file_number', 'superannuation_fund', 'super_member_number', 'bank_account',
                 'emergency_contact_name', 'emergency_contact_phone', 'employment_classification', 'autoreceives_sms',
-                'referral',
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
