@@ -66,6 +66,6 @@ class TestModelStorageHelperCls:
         test_field_name = form_builder_utils.StorageHelper.join_lookup_names(contact_field, first_name_field)
         field, lookup_field = form_builder_utils.StorageHelper.separate_lookup_name(test_field_name)
         assert field == contact_field
-        assert first_name_field == first_name_field
+        assert lookup_field == first_name_field
 
         assert form_builder_utils.StorageHelper.separate_lookup_name('test_field_name') == ('test_field_name', '')
