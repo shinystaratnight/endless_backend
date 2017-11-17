@@ -44,6 +44,9 @@ class BaseSMSService(metaclass=ABCMeta):
             sms_message.related_object = related_obj
             sms_message.save()
 
+            if 'related_objs' in kwargs and isinstance(kwargs['related_objs'], (list, tuple)):
+                sms_message.add_related_objects(*kwargs.pop('related_objs'))
+
             self.activity_service.on_new_sms_message(
                 sms_message, sender_contact=sender_contact
             )

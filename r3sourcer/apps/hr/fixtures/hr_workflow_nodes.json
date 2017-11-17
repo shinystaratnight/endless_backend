@@ -279,7 +279,7 @@
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
             "number": 11,
-            "name_before_activation": "Verifie Phone",
+            "name_before_activation": "Verify Phone",
             "name_after_activation": "Phone Verified",
             "active": true,
             "rules": {
