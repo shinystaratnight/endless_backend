@@ -30,7 +30,14 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'name': _('General'),
             'collapsed': False,
             'fields': (
-                'contact', 'recruitment_agent', 'picture',
+                'contact', 'recruitment_agent', {
+                    'type': constants.FIELD_PICTURE,
+                    'field': 'contact.picture',
+                    'read_only': True,
+                    'label': _('Photo'),
+                    'file': False,
+                    'photo': False
+                }
             )
         },
         {
@@ -78,50 +85,35 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'created', 'updated',
             ),
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'type': constants.FIELD_RELATED,
+            'delete': True,
+            'list': True,
+            'many': True,
+            'create': True,
+            'edit': True,
             'collapsed': True,
-            'name': _('Notes'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'notes',
-                },
-            )
+            'label': _('Notes'),
+            'field': 'notes',
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'type': constants.FIELD_RELATED,
+            'delete': True,
+            'list': True,
+            'many': True,
+            'create': True,
+            'edit': True,
             'collapsed': True,
-            'name': _('Candidate skills'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'candidate_skills',
-                },
-            )
+            'label': _('Candidate Skills'),
+            'field': 'candidate_skills',
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'type': constants.FIELD_RELATED,
+            'delete': True,
+            'list': True,
+            'many': True,
+            'create': True,
+            'edit': True,
             'collapsed': True,
-            'name': _('Candidate tags'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'tag_rels',
-                },
-            )
+            'label': _('Candidate Tags'),
+            'field': 'tag_rels',
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,

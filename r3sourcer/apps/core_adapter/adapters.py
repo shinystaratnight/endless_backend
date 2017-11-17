@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete',
     'read_only', 'label_upload', 'label_photo', 'many', 'list', 'values',
-    'color', 'default',
+    'color', 'default', 'collapsed', 'file', 'photo',
 )
 
 
@@ -108,6 +108,7 @@ class AngularApiAdapter(BaseAdapter):
                 'endpoint': endpoint,
                 'many': field.get('many', False),
                 'list': field.get('list', False),
+                'collapsed': field.get('collapsed', False),
                 'templateOptions': {
                     'delete': field.get('delete', False),
                     **{attr: field.get(attr, True) for attr in ('add', 'edit')}
@@ -145,17 +146,17 @@ class AngularApiAdapter(BaseAdapter):
             adapted['default'] = field['default']
 
         field_ui = field.get('ui', {})
-        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color')
+        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo')
         adapted['templateOptions'].update({
             'type': component_type,
             'label': field.get('label', field_ui.get('label', '')),
             **{
                 option: field_ui[option] for option in ui_options
-                if field_ui.get(option)
+                if field_ui.get(option) is not None
             },
             **{
                 option: field[option] for option in ui_options
-                if field.get(option)
+                if field.get(option) is not None
             },
         })
 
@@ -242,7 +243,7 @@ class AngularApiAdapter(BaseAdapter):
         if fieldset:
             field.update(
                 {attr: fieldset[attr] for attr in CUSTOM_FIELD_ATTRS
-                 if fieldset.get(attr)}
+                 if fieldset.get(attr) is not None}
             )
             if 'query' in fieldset:
                 query_opts = {}
