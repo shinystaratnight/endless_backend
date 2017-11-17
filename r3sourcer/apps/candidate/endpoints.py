@@ -148,7 +148,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'field': 'id',
                     'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
                     'query': ['model', 'object_id'],
-                    'model': 'core.candidatecontact',
+                    'model': 'candidate.candidatecontact',
                     'object_id': '{id}',
                 },
             )

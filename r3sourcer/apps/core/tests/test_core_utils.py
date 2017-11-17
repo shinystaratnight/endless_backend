@@ -37,6 +37,14 @@ class TestGeo:
         assert (lat, lng) == (False, False)
 
     @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps')
+    def test_fetch_geo_coord_wrong_gkey(self, mock_googlemaps):
+        mock_gmaps = mock_googlemaps.Client.return_value
+        mock_gmaps.geocode.side_effect = ValueError('error')
+        lat, lng = fetch_geo_coord_by_address('test address')
+
+        assert (lat, lng) == (False, False)
+
+    @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps')
     def test_calc_distance_successfull(self, mock_googlemaps):
         mock_gmaps = mock_googlemaps.Client.return_value
         mock_gmaps.distance_matrix.return_value = {
@@ -74,6 +82,14 @@ class TestGeo:
     def test_calc_distance_query_limit_reached(self, mock_googlemaps):
         mock_gmaps = mock_googlemaps.return_value
         mock_gmaps.distance_matrix.side_effect = googlemaps.exceptions.ApiError('OVER_QUERY_LIMIT')
+        res = calc_distance('test address', ['test address 1', 'test address 2'])
+
+        assert res == []
+
+    @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps.Client')
+    def test_calc_distance_query_wrong_gkey(self, mock_googlemaps):
+        mock_gmaps = mock_googlemaps.return_value
+        mock_gmaps.distance_matrix.side_effect = ValueError('error')
         res = calc_distance('test address', ['test address 1', 'test address 2'])
 
         assert res == []

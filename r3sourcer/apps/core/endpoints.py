@@ -949,7 +949,10 @@ class NavigationEndpoint(ApiEndpoint):
 class WorkflowEndpoint(ApiEndpoint):
 
     model = models.Workflow
+    search_fields = ('name', 'model__app_label', 'model__model', )
     fieldsets = ('name', 'model', )
+
+    list_display = ('name', 'model', )
 
 
 class WorkflowNodeEndpoint(ApiEndpoint):
@@ -959,12 +962,20 @@ class WorkflowNodeEndpoint(ApiEndpoint):
     serializer = serializers.WorkflowNodeSerializer
     filter_class = filters.WorkflowNodeFilter
 
+    search_fields = (
+        'workflow__name', 'company__name', 'number', 'name_before_activation', 'name_after_activation'
+    )
+    list_filter = ('workflow.model', )
+
     fieldsets = (
         'workflow', 'number', 'name_before_activation',
         'name_after_activation', {
             'type': constants.FIELD_RULE,
             'field': 'rules',
         }, 'company', 'active', 'hardlock',
+    )
+    list_display = (
+        'workflow', 'company', 'number', 'name_before_activation', 'name_after_activation', 'active', 'hardlock',
     )
 
 
@@ -1134,6 +1145,7 @@ class ContentTypeEndpoint(ApiEndpoint):
 
     model = ContentType
     base_viewset = viewsets.ContentTypeViewSet
+    search_fields = ('model', )
 
 
 router.register(endpoint=DashboardModuleEndpoint())

@@ -1,26 +1,22 @@
 import datetime
+import pytz
 
 import pytest
 from unittest.mock import patch
 
 from django.utils import timezone
-from r3sourcer.apps.core.models import User, Address, Country, Region, City, \
-    BankAccount, Tag, CompanyContact, Company
-from r3sourcer.apps.acceptance_tests.models import (
-    AcceptanceTest, AcceptanceTestQuestion, AcceptanceTestAnswer
-)
-from r3sourcer.apps.skills.models import (
-    Skill, EmploymentClassification, SkillBaseRate
-)
-from r3sourcer.apps.candidate.models import (
-    CandidateContact, VisaType, SuperannuationFund, SkillRel, SkillRateRel,
-    TagRel, AcceptanceTestRel, CandidateRel
-)
+
+from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
+from r3sourcer.apps.activity import models as activity_models
+from r3sourcer.apps.candidate import models as candidate_models
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.skills import models as skills_models
 
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(
+    return core_models.User.objects.create_user(
         email='test@test.tt', phone_mobile='+12345678901',
         password='test1234'
     )
@@ -48,14 +44,14 @@ def contact(db, user, contact_data):
 
 @pytest.fixture
 def employment_classification(db):
-    return EmploymentClassification.objects.create(
+    return skills_models.EmploymentClassification.objects.create(
         name="test"
     )
 
 
 @pytest.fixture
 def bank_account(db, contact):
-    return BankAccount.objects.create(
+    return core_models.BankAccount.objects.create(
         bank_name="bank name",
         bank_account_name="bank account name",
         bsb="###",
@@ -86,7 +82,7 @@ def candidate_data(employment_classification, bank_account):
 
 @pytest.fixture
 def candidate(db, contact, candidate_data):
-    rc = CandidateContact.objects.create(
+    rc = candidate_models.CandidateContact.objects.create(
         contact=contact
     )
     keys = ('height weight transportation_to_work strength language'
@@ -101,16 +97,16 @@ def candidate(db, contact, candidate_data):
 
 @pytest.fixture
 def country(db):
-    return Country.objects.get_or_create(name='Australia', code2='AU')[0]
+    return core_models.Country.objects.get_or_create(name='Australia', code2='AU')[0]
 
 
 @pytest.fixture
 @patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
        return_value=(42, 42))
 def address(db, country):
-    state = Region.objects.create(name='test', country=country)
-    city = City.objects.create(name='city', country=country)
-    return Address.objects.create(
+    state = core_models.Region.objects.create(name='test', country=country)
+    city = core_models.City.objects.create(name='city', country=country)
+    return core_models.Address.objects.create(
         street_address="test street",
         postal_code="123456",
         city=city,
@@ -120,7 +116,7 @@ def address(db, country):
 
 @pytest.fixture
 def visa_type(db):
-    return VisaType.objects.create(
+    return candidate_models.VisaType.objects.create(
         subclass="1234",
         name="Visa name",
         work_hours_allowed=20,
@@ -130,7 +126,7 @@ def visa_type(db):
 
 @pytest.fixture
 def superannuation_fund(db):
-    return SuperannuationFund.objects.create(
+    return candidate_models.SuperannuationFund.objects.create(
         name="Test fund",
         membership_number="321"
     )
@@ -138,7 +134,7 @@ def superannuation_fund(db):
 
 @pytest.fixture
 def skill(db):
-    return Skill.objects.create(
+    return skills_models.Skill.objects.create(
         name="Driver",
         carrier_list_reserve=2,
         short_name="Drv",
@@ -148,7 +144,7 @@ def skill(db):
 
 @pytest.fixture
 def skill_base_rate(db, skill):
-    return SkillBaseRate.objects.create(
+    return skills_models.SkillBaseRate.objects.create(
         skill=skill,
         hourly_rate=20
     )
@@ -156,7 +152,7 @@ def skill_base_rate(db, skill):
 
 @pytest.fixture
 def skill_rel(db, skill, candidate):
-    return SkillRel.objects.create(
+    return candidate_models.SkillRel.objects.create(
         skill=skill,
         score=4,
         candidate_contact=candidate
@@ -165,7 +161,7 @@ def skill_rel(db, skill, candidate):
 
 @pytest.fixture
 def skill_rate_rel(db, skill_rel, skill_base_rate):
-    return SkillRateRel.objects.create(
+    return candidate_models.SkillRateRel.objects.create(
         candidate_skill=skill_rel,
         hourly_rate=skill_base_rate,
         valid_from=timezone.now(),
@@ -175,7 +171,7 @@ def skill_rate_rel(db, skill_rel, skill_base_rate):
 
 @pytest.fixture
 def tag(db):
-    return Tag.objects.create(
+    return core_models.Tag.objects.create(
         name="Tag name",
         active=True,
         evidence_required_for_approval=True
@@ -184,7 +180,7 @@ def tag(db):
 
 @pytest.fixture
 def tag_rel(db, tag, candidate):
-    return TagRel.objects.create(
+    return candidate_models.TagRel.objects.create(
         tag=tag,
         candidate_contact=candidate
     )
@@ -192,24 +188,24 @@ def tag_rel(db, tag, candidate):
 
 @pytest.fixture
 def company_contact(db, contact):
-    return CompanyContact.objects.create(
+    return core_models.CompanyContact.objects.create(
         contact=contact
     )
 
 
 @pytest.fixture
 def company(db):
-    return Company.objects.create(
+    return core_models.Company.objects.create(
         name='Company',
         business_id='123',
         registered_for_gst=True,
-        type=Company.COMPANY_TYPES.master,
+        type=core_models.Company.COMPANY_TYPES.master,
     )
 
 
 @pytest.fixture
 def acceptance_test(db):
-    return AcceptanceTest.objects.create(
+    return acceptance_test_models.AcceptanceTest.objects.create(
         test_name='test',
         valid_from=datetime.date(2017, 1, 1),
         valid_until=datetime.date(2018, 1, 1),
@@ -219,7 +215,7 @@ def acceptance_test(db):
 
 @pytest.fixture
 def acceptance_test_rel(db, candidate, acceptance_test):
-    return AcceptanceTestRel.objects.create(
+    return candidate_models.AcceptanceTestRel.objects.create(
         acceptance_test=acceptance_test,
         candidate_contact=candidate
     )
@@ -227,7 +223,7 @@ def acceptance_test_rel(db, candidate, acceptance_test):
 
 @pytest.fixture
 def acceptance_question(db, acceptance_test):
-    return AcceptanceTestQuestion.objects.create(
+    return acceptance_test_models.AcceptanceTestQuestion.objects.create(
         acceptance_test=acceptance_test,
         question='question'
     )
@@ -235,7 +231,7 @@ def acceptance_question(db, acceptance_test):
 
 @pytest.fixture
 def acceptance_answer(db, acceptance_question):
-    return AcceptanceTestAnswer.objects.create(
+    return acceptance_test_models.AcceptanceTestAnswer.objects.create(
         acceptance_test_question=acceptance_question,
         answer='answer',
         order=0,
@@ -245,8 +241,38 @@ def acceptance_answer(db, acceptance_question):
 
 @pytest.fixture
 def candidate_rel(db, candidate, company, company_contact):
-    return CandidateRel.objects.create(
+    return candidate_models.CandidateRel.objects.create(
         candidate_contact=candidate,
         master_company=company,
         company_contact=company_contact
+    )
+
+
+@pytest.fixture
+def candidate_note(db, candidate):
+    return core_models.Note.objects.create(
+        object=candidate,
+        note='note'
+    )
+
+
+@pytest.fixture
+def activity_template(db):
+    return activity_models.ActivityTemplate.objects.create(
+        name='test',
+        type=activity_models.ActivityTemplate.TYPE_CHOICES.ACTIVITY,
+        subject_template='text content',
+        message_text_template='html content'
+    )
+
+
+@pytest.fixture
+def candidate_activity(db, candidate, contact, activity_template):
+    return activity_models.Activity.objects.create(
+        entity_object_id=candidate.id,
+        entity_object_name=candidate_models.CandidateContact.__class__.__name__,
+        contact=contact,
+        starts_at=timezone.datetime(2017, 1, 1, 12, 0).replace(tzinfo=pytz.UTC),
+        ends_at=timezone.datetime(2017, 1, 5, 12, 0).replace(tzinfo=pytz.UTC),
+        activity_template=activity_template
     )

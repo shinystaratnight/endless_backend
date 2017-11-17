@@ -212,11 +212,7 @@ class Contact(
     is_company_contact.boolean = True
 
     def is_candidate_contact(self):
-        from r3sourcer.apps.candidate.models import CandidateContact
-        try:
-            return self.candidate_contacts.exists()
-        except CandidateContact.DoesNotExist:
-            return False
+        return hasattr(self, 'candidate_contacts')
 
     def get_job_title(self):
         if self.company_contact.exists():

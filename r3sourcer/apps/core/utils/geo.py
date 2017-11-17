@@ -215,6 +215,8 @@ def fetch_geo_coord_by_address(address):
         return client.get_coordinates(address)
     except GMapsException as e:
         return (None, None) if e.code == GMapsException.INVALID_REQUEST[1] else (False, False)
+    except ValueError:
+        return (None, None)
 
 
 def calc_distance(origins, destinations, mode=None):
@@ -237,3 +239,5 @@ def calc_distance(origins, destinations, mode=None):
         return client.get_distance(origins, destinations, mode)
     except GMapsException as e:
         return None if e.code == GMapsException.INVALID_REQUEST[1] else []
+    except ValueError:
+        return None
