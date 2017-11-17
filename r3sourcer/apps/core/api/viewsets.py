@@ -435,18 +435,49 @@ class DashboardModuleViewSet(BaseApiViewset):
 
 class FormStorageViewSet(BaseApiViewset):
 
+    ALREADY_APPROVED_ERROR = _("Form storage already approved")
+
     serializer_class = serializers.FormStorageSerializer
+
+    @detail_route(
+        methods=['post'],
+        permission_classes=(IsAuthenticated,),
+        serializer_class=serializers.FormStorageApproveSerializer
+    )
+    def approve(self, request, pk, *args, **kwargs):
+        """
+        Approve storage. Would be created instance from storage it status is `approved`.
+        """
+        instance = self.get_object()
+
+        if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED:
+            raise exceptions.APIException(self.ALREADY_APPROVED_ERROR)
+        serializer = self.get_serializer(instance=instance, data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED and not instance.object_id:
+            obj = instance.create_object_from_data()
+            return Response({'id': obj.pk}, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_200_OK)
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return models.FormStorage.objects.all()
+        companies = get_master_companies_by_contact(self.request.user.contact) + [None]
+        return models.FormStorage.objects.filter(form__company__in=companies)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         form_obj = serializer.validated_data['form']
+        company = serializer.validated_data['company']
         form_data = request.data.copy()
         form_data.pop('form')
         form = form_obj.get_form_class()(data=request.data, files=request.data)
         if not form.is_valid():
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
         form_storage = models.FormStorage.parse_data_to_storage(form_obj, form.cleaned_data)
+        form_storage.company = company
         form_storage.save()
         return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
 

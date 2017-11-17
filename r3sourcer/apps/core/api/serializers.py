@@ -1085,9 +1085,12 @@ class FormStorageSerializer(ApiBaseModelSerializer):
 
     class Meta:
         fields = (
-            'id', 'form', 'data'
+            'id', 'form', 'data', 'company'
         )
         model = models.FormStorage
+        extra_kwargs = {
+            'company': {'required': True}
+        }
 
 
 class FormFieldSerializer(ApiBaseModelSerializer):
@@ -1318,3 +1321,10 @@ class FormBuilderSerializer(ApiBaseModelSerializer):
         fields = (
             'id', 'content_type'
         )
+
+
+class FormStorageApproveSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = models.FormStorage
+        fields = ('status',)

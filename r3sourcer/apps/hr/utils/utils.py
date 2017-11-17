@@ -6,7 +6,6 @@ from collections import defaultdict
 from django.utils import timezone
 
 from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
-
 from r3sourcer.apps.candidate.models import CandidateContact
 
 

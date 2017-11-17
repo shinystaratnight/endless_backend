@@ -1,3 +1,4 @@
+import datetime
 import pytest
 from django import forms
 
@@ -587,3 +588,53 @@ class TestFormFields:
             )
             form.clean()
 
+    def test_get_data_method(self, form, form_field_group):
+        date_value = '2017-09-11'
+        data = {
+            'first_name': 'test name',
+            'birthday': date_value,
+            'children': '5',
+        }
+
+        models.ModelFormField.objects.create(group=form_field_group, name='first_name', required=True),
+        models.ModelFormField.objects.create(group=form_field_group, name='children', required=True),
+        models.ModelFormField.objects.create(group=form_field_group, name='birthday', required=True)
+
+        form_storage = models.FormStorage(data=data, form=form)  # type: models.FormStorage
+        cleaned_data = form_storage.get_data()
+
+        assert isinstance(cleaned_data['birthday'], datetime.datetime)
+        assert cleaned_data['birthday'] == datetime.datetime.strptime(data['birthday'], '%Y-%m-%d')
+        assert cleaned_data['children'] == int(data['children'])
+
+    def test_create_instance(self, form, form_field_group):
+
+        models.ModelFormField.objects.create(group=form_field_group, name='first_name', required=True),
+        models.ModelFormField.objects.create(group=form_field_group, name='last_name', required=True),
+        models.ModelFormField.objects.create(group=form_field_group, name='email', required=True)
+        models.ModelFormField.objects.create(group=form_field_group, name='phone_mobile', required=True)
+
+        data = {
+            'first_name': 'first name',
+            'last_name': 'last name',
+            'email': 'test@example.com',
+            'phone_mobile': '+79998887766'
+        }
+        storage = models.FormStorage.objects.create(data=data, form=form)
+
+        instance = storage.create_object_from_data()
+
+        assert str(instance.id) == storage.object_id
+
+        with pytest.raises(AssertionError):
+            storage.create_object_from_data()
+
+        assert instance.first_name == data['first_name']
+        assert instance.last_name == data['last_name']
+        assert instance.email == data['email']
+        assert str(instance.phone_mobile) == data['phone_mobile']
+
+    def test_get_url_for_company(self, form, company):
+        url = form.get_url_for_company(company)
+        assert str(company.pk) in url
+        assert str(form.pk) in url
