@@ -55,7 +55,7 @@ class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core
     carrier_lists = CarrierListSerializer(many=True)
     candidate_evaluations = timesheet_serializers.CandidateEvaluationSerializer(many=True)
 
-    method_fields = ('state', 'total_score', 'bmi', 'skill_list', 'tag_list')
+    method_fields = ('state', 'average_score', 'bmi', 'skill_list', 'tag_list')
     many_related_fields = {
         'candidate_evaluations': 'candidate_contact',
         'carrier_lists': 'candidate_contact',
@@ -88,7 +88,7 @@ class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core
     class Meta:
         model = candidate_models.CandidateContact
         fields = (
-            '__all__', 'activities', 'notes',
+            '__all__',
             {
                 'blacklists': ('__all__',),
                 'favouritelists': ('__all__',),
@@ -106,6 +106,7 @@ class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core
                 'recruitment_agent': ('__all__', {
                     'contact': ('__all__',),
                 }),
+                'candidate_scores': ('id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score')
             }
         )
 
@@ -123,11 +124,11 @@ class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core
             for state in states
         ]
 
-    def get_total_score(self, obj):
+    def get_average_score(self, obj):
         if not obj:
             return
 
-        return obj.get_total_score()
+        return obj.candidate_scores.get_average_score()
 
     def get_bmi(self, obj):
         if not obj:

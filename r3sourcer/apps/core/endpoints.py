@@ -244,15 +244,11 @@ class ContactEndpoint(ApiEndpoint):
                 },
                 {
                     'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.total_score',
+                    'field': 'candidate_contacts.candidate_scores.loyalty',
                 },
                 {
                     'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.loyalty_score',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.reliability_score',
+                    'field': 'candidate_contacts.candidate_scores.reliability',
                 },
             ),
         }, {

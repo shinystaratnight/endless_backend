@@ -67,7 +67,27 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'name': _('Candidate rating'),
             'collapsed': True,
             'fields': (
-                'total_score', 'loyalty_score', 'reliability_score',
+                {
+                    'field': 'candidate_scores.loyalty',
+                    'type': constants.FIELD_STATIC,
+                    'read_only': True,
+                    'label': _('Loyalty Score'),
+                }, {
+                    'field': 'candidate_scores.reliability',
+                    'type': constants.FIELD_STATIC,
+                    'read_only': True,
+                    'label': _('Reliability Score'),
+                }, {
+                    'field': 'candidate_scores.client_feedback',
+                    'type': constants.FIELD_STATIC,
+                    'read_only': True,
+                    'label': _('Client Feedback'),
+                }, {
+                    'field': 'candidate_scores.recruitment_score',
+                    'type': constants.FIELD_STATIC,
+                    'read_only': True,
+                    'label': _('Recruitment Score'),
+                },
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
@@ -270,8 +290,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'label': _('E-mail'),
         }, 'contact.address.city', 'contact.address.state', 'contact.gender',
         'nationality', 'weight', 'height', 'transportation_to_work',
-        'skill_list', 'tag_list', 'reliability_score', 'loyalty_score',
-        'bmi', 'strength', 'language', 'total_score', 'state'
+        'skill_list', 'tag_list', 'candidate_scores.reliability', 'candidate_scores.loyalty',
+        'bmi', 'strength', 'language', 'average_score', 'state'
     )
 
     list_tabs = [{
@@ -294,7 +314,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
     }, {
         'label': _('Score'),
         'fields': (
-            'reliability_score', 'loyalty_score', 'bmi', 'strength', 'language'
+            'candidate_scores.reliability', 'candidate_scores.loyalty', 'bmi', 'strength', 'language'
         )
     }]
 
