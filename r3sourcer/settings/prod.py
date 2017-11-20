@@ -344,7 +344,7 @@ DELIVERY_TIMEOUT_SMS = 4
 ENABLED_TWILIO_WORKING = False
 
 SMS_SERVICE_ENABLED = env('SMS_SERVICE_ENABLED', '0') == '1'
-SMS_SERVICE_CLASS = 'r3sourcer.apps.twilio.services.TwilioSMSService'
+SMS_SERVICE_CLASS = env('SMS_SERVICE_CLASS', 'r3sourcer.apps.sms_interface.services.FakeSMSService')
 
 FETCH_ADDRESS_RAISE_EXCEPTIONS = env('FETCH_ADDRESS_RAISE_EXCEPTIONS', '0') == '1'
 

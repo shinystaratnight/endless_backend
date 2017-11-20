@@ -27,7 +27,7 @@ def django():
     """
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings.prod")
-    set_env()
+    set_env('env_defaults', '.env', '.env_test')
 
     from django.core.management import execute_from_command_line
 

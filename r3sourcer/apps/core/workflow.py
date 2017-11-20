@@ -21,7 +21,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
     def content_type(self):
         return ContentType.objects.get_for_model(self)
 
-    def create_state(self, number, comment=''):
+    def create_state(self, number, comment='', active=True):
         """
         Creates state by number
         :param number: int number of the state
@@ -39,9 +39,10 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         state = WorkflowNode.objects.filter(**kwargs).first()
 
         if state:
-            WorkflowObject.objects.create(
-                object_id=self.id, state=state, comment=comment, active=True
+            workflow_object = WorkflowObject(
+                object_id=self.id, state=state, comment=comment, active=active
             )
+            workflow_object.save()
 
     def get_active_states(self):
         """
@@ -58,6 +59,25 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
             state__workflow__model=self.content_type,
             active=True
         ).order_by('-state__number')
+
+    def has_state(self, state, is_active=True):
+        """
+        Checks if object has state
+
+        :param state: WorkflowNode or number
+        :param is_active: Is existing state active?
+        :return: True if state exists
+        """
+        from .models import WorkflowObject
+
+        qry = models.Q(object_id=self.id, state__workflow__model=self.content_type)
+        if isinstance(state, int):
+            qry &= models.Q(state__number=state)
+        else:
+            qry &= models.Q(state=state)
+
+        result = WorkflowObject.objects.filter(qry).first()
+        return result is not None
 
     def get_current_state(self):
         """
@@ -286,6 +306,22 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         ).order_by('number'):
             nodes[node.number] = node.id
         return nodes
+
+    def before_state_creation(self, workflow_object):
+        """
+        Lifecycle callback: before some state created
+
+        :param state: WorkflowObject instance
+        """
+        pass
+
+    def after_state_creation(self, workflow_object):
+        """
+        Lifecycle callback: after some state created
+
+        :param state: WorkflowObject instance
+        """
+        pass
 
 
 class CompanyRelState60:
