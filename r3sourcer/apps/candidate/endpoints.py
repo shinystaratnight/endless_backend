@@ -68,6 +68,9 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'collapsed': True,
             'fields': (
                 {
+                    'field': 'candidate_scores.id',
+                    'type': constants.FIELD_TEXT,
+                }, {
                     'field': 'candidate_scores.loyalty',
                     'type': constants.FIELD_STATIC,
                     'read_only': True,
@@ -134,50 +137,29 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'label': _('Candidate Tags'),
             'field': 'tag_rels',
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Activities'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'activities',
-                },
-            )
+            'type': constants.FIELD_RELATED,
+            'delete': True,
+            'list': True,
+            'many': True,
+            'create': True,
+            'edit': True,
+            'field': 'activities',
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Candidate Contact state timeline'),
-            'fields': (
-                {
-                    'type': constants.FIELD_TIMELINE,
-                    'label': _('States Timeline'),
-                    'field': 'id',
-                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
-                    'query': ['model', 'object_id'],
-                    'model': 'candidate.candidatecontact',
-                    'object_id': '{id}',
-                },
-            )
+            'type': constants.FIELD_TIMELINE,
+            'label': _('States Timeline'),
+            'field': 'id',
+            'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+            'query': ['model', 'object_id'],
+            'model': 'candidate.candidatecontact',
+            'object_id': '{id}',
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Candidate state history'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'active_states',
-                },
-            )
+            'type': constants.FIELD_RELATED,
+            'delete': True,
+            'list': True,
+            'many': True,
+            'create': True,
+            'edit': True,
+            'field': 'active_states',
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,

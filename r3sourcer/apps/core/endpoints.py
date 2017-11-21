@@ -982,16 +982,24 @@ class WorkflowObjectEndpoint(ApiEndpoint):
 
     fieldsets = ({
         'type': constants.CONTAINER_HIDDEN,
-        'name': _('Residency'),
-        'fields': [
-            'object_id'
-        ],
+        'field': 'object_id',
+        'hide': True,
     }, 'state', {
         'type': constants.FIELD_TEXTAREA,
         'field': 'comment'
     }, 'active')
 
     list_filter = ('object_id', 'active', 'state.workflow.name')
+
+    list_display = (
+        'state_name', 'comment', 'active', {
+            'field': 'created_at',
+            'type': constants.FIELD_STATIC,
+        }, {
+            'field': 'updated_at',
+            'type': constants.FIELD_STATIC,
+        }
+    )
 
 
 class DashboardModuleEndpoint(ApiEndpoint):

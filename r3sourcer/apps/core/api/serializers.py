@@ -87,9 +87,14 @@ class ApiFullRelatedFieldsMixin():
                 )
                 continue
 
-            is_pk_data = data is not empty and \
-                field_name in data and \
-                not isinstance(data[field_name], (list, dict))
+            is_field_in_data = data is not empty and field_name in data
+            is_pk_data = is_field_in_data and not isinstance(data[field_name], (list, dict))
+            is_id_partial = kwargs.get('partial', False) or bool(
+                is_field_in_data and isinstance(data[field_name], dict) and data[field_name].get('id')
+            )
+
+            if is_id_partial:
+                internal_fields_dict[field_name] = [f for f in data.get(field_name, [])]
 
             if not is_pk_data and isinstance(data, list) and len(data) > 0:
                 data_elem = data[0]
@@ -127,9 +132,9 @@ class ApiFullRelatedFieldsMixin():
                         read_only=field.read_only,
                         context=context,
                         many=getattr(field, 'many', False),
-                        data=data.get(
-                            field_name, empty) if data is not empty else empty,
+                        data=data.get(field_name, empty) if data is not empty else empty,
                         parent_name=parent_field_name or field_name,
+                        partial=is_id_partial,
                     )
 
                     internal = self._get_internal_serializer(
@@ -146,9 +151,7 @@ class ApiFullRelatedFieldsMixin():
 
             is_many_to_one_relation = isinstance(related_field, ManyToOneRel)
             is_one_to_one_relation = isinstance(related_field, OneToOneRel)
-            if not isinstance(related_field, RelatedField) and \
-                    not is_many_to_one_relation:
-
+            if not isinstance(related_field, RelatedField) and not is_many_to_one_relation:
                 if getattr(related_field, 'blank', False) and not getattr(related_field, 'null', False):
                     self.fields[field_name] = EmptyNullField.from_field(field)
 
@@ -200,6 +203,7 @@ class ApiFullRelatedFieldsMixin():
                 many=is_many_relation,
                 data=related_data,
                 parent_name=parent_field_name or field_name,
+                partial=is_id_partial,
             )
 
             internal = self._get_internal_serializer(
@@ -861,8 +865,7 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
     class Meta:
         model = core_models.WorkflowNode
         fields = (
-            'id', 'number', 'name_before_activation', 'name_after_activation', 'rules', 'company', 'active',
-            'hardlock', {
+            '__all__', {
                 'workflow': ('id', '__str__', 'name', 'model')
             }
         )
@@ -877,6 +880,8 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
 
 
 class WorkflowObjectSerializer(ApiBaseModelSerializer):
+    method_fields = ('state_name', )
+
     class Meta:
         model = core_models.WorkflowObject
         fields = ('__all__', {
@@ -890,6 +895,12 @@ class WorkflowObjectSerializer(ApiBaseModelSerializer):
             data["state"], data["object_id"], self.instance is None
         )
         return data
+
+    def get_state_name(self, obj):
+        if not obj:
+            return None
+
+        return obj.state.name_after_activation or obj.state.name_before_activation
 
 
 class WorkflowTimelineSerializer(ApiBaseModelSerializer):

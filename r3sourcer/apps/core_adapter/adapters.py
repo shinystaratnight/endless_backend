@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete',
     'read_only', 'label_upload', 'label_photo', 'many', 'list', 'values',
-    'color', 'default', 'collapsed', 'file', 'photo',
+    'color', 'default', 'collapsed', 'file', 'photo', 'hide',
 )
 
 
@@ -56,7 +56,8 @@ class AngularApiAdapter(BaseAdapter):
         MetaDataInfo('fieldsets', GETTER, []),
     ]
 
-    _excluded_field = {'id', 'updated_at', 'created_at', '__str__'}
+    _excluded_field = {'updated_at', 'created_at', '__str__'}
+    _hidden_fields = {'id'}
     edit = True
 
     def __init__(self, edit=True, * args, **kwargs):
@@ -159,6 +160,9 @@ class AngularApiAdapter(BaseAdapter):
                 if field.get(option) is not None
             },
         })
+
+        if field['key'].split('.')[-1] in cls._hidden_fields:
+            adapted['hide'] = True
 
         if field_ui.get('help'):
             adapted['templateOptions']['description'] = field_ui['help']
