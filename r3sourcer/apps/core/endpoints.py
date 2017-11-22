@@ -1019,6 +1019,40 @@ class FormStorageEndpoint(ApiEndpoint):
     base_viewset = viewsets.FormStorageViewSet
     serializer = serializers.FormStorageSerializer
 
+    fieldsets = (
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('General'),
+            'collapsed': False,
+            'fields': (
+                    'company', 'status',
+                    {'field': 'data', 'read_only': True, 'label': _("Data"), 'type': constants.FIELD_STATIC}
+                )
+        },
+    )
+
+    list_display = (
+        {
+            'label': _("Form"),
+            'field': 'form.title',
+            'type': constants.FIELD_LINK,
+            'endpoint': api_reverse_lazy(
+                'core/forms'
+            )
+        },
+        {
+            'label': _('Company'),
+            'type': constants.FIELD_LINK,
+            'endpoint': format_lazy(
+                '{}{{company_id}}/',
+                api_reverse_lazy('core/companies')
+            ),
+            'field': 'company',
+        },
+        'status',
+        'created_at'
+    )
+
 
 class BaseFormFieldEndpoint(ApiEndpoint):
 

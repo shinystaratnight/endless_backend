@@ -120,7 +120,7 @@ class TwilioAccount(UUIDModel):
         ('CLOSED', _("Closed")),
         ('SUSPENDED', _("Suspended"))
     )
-    STATUS_VALUES = {True: _("Enabled"), True: _("Disabled")}
+    STATUS_VALUES = {True: _("Enabled"), False: _("Disabled")}
     INCORRECT_STATUS_ERROR = _("Incorrect status value. Available choices: %s")
     TIMEDELTA_DAYS_FETCH = 24
 
