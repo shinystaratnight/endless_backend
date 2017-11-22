@@ -8,7 +8,7 @@ import easy_thumbnails.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0002_auto_20171102_1757'),
+        ('core', '0003_add_company_group'),
     ]
 
     operations = [
