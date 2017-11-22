@@ -1,8 +1,6 @@
-from django.conf.urls import url, include
+from django.conf.urls import url
 
 from r3sourcer.apps.company_settings import views
-# from endless_core.api import views
-# from endless_core.api.viewsets import AppsList, ModelsList, FunctionsList
 
 
 urlpatterns = [

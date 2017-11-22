@@ -1,5 +1,4 @@
 from rest_framework import permissions
-# from rest_framework.compat import is_authenticated
 
 
 class BaseEndpointPermission(permissions.BasePermission):

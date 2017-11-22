@@ -181,7 +181,6 @@ class UserGroupListView(ListAPIView):
         return user.groups.all()
 
 
-# TODO: move this view to another app; most likely it will be company_settings
 class CompanyUserListView(APIView):
     """
     Returns list of all users of current user's company
