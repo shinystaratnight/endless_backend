@@ -981,7 +981,7 @@ class WorkflowObjectEndpoint(ApiEndpoint):
     serializer = serializers.WorkflowObjectSerializer
 
     fieldsets = ({
-        'type': constants.CONTAINER_HIDDEN,
+        'type': constants.FIELD_TEXT,
         'field': 'object_id',
         'hide': True,
     }, 'state', {

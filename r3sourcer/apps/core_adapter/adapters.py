@@ -16,9 +16,8 @@ from .utils import api_reverse
 
 
 CUSTOM_FIELD_ATTRS = (
-    'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete',
-    'read_only', 'label_upload', 'label_photo', 'many', 'list', 'values',
-    'color', 'default', 'collapsed', 'file', 'photo', 'hide',
+    'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
+    'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label',
 )
 
 
@@ -36,11 +35,10 @@ def format_date(date):
 
 def to_html_tag(component_type):
     custom_types = [
-        'checkbox', 'radio', 'textarea', constants.FIELD_SELECT,
-        constants.FIELD_RADIO_GROUP, constants.FIELD_CHECKBOX_GROUP,
-        constants.FIELD_BUTTON, constants.FIELD_LINK, constants.FIELD_SUBMIT,
-        constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_RULE,
-        constants.FIELD_ICON, constants.FIELD_TIMELINE
+        constants.FIELD_CHECKBOX, constants.FIELD_RADIO, constants.FIELD_TEXTAREA, constants.FIELD_SELECT,
+        constants.FIELD_RADIO_GROUP, constants.FIELD_CHECKBOX_GROUP, constants.FIELD_BUTTON, constants.FIELD_LINK,
+        constants.FIELD_SUBMIT, constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_RULE,
+        constants.FIELD_ICON, constants.FIELD_TIMELINE, constants.FIELD_LIST,
     ]
     if component_type in custom_types:
         return component_type
@@ -83,15 +81,23 @@ class AngularApiAdapter(BaseAdapter):
             if 'key' in field:
                 adapted['key'] = field['key']
             if component_type == constants.FIELD_TIMELINE:
-                query_opts = field.get('query_opts', {})
-
                 adapted['endpoint'] = field.get('endpoint')
                 adapted['key'] = constants.FIELD_TIMELINE
-                adapted.update(query_opts)
             elif component_type == constants.FIELD_LINK:
                 adapted['templateOptions']['link'] = field.get('link')
+            elif component_type == constants.FIELD_LIST:
+                adapted.update(
+                    endpoint=field.get('endpoint'),
+                    collapsed=field.get('collapsed', False),
+                    prefilled=field.get('prefilled'),
+                )
+                adapted['templateOptions']['add_label'] = field.get('add_label')
             elif component_type != constants.FIELD_SUBMIT:
                 adapted['templateOptions']['action'] = field['action']
+
+            query_params = field.get('query')
+            if query_params is not None:
+                adapted['query'] = query_params
 
             return adapted
         elif component_type == constants.FIELD_RELATED:
@@ -249,14 +255,6 @@ class AngularApiAdapter(BaseAdapter):
                 {attr: fieldset[attr] for attr in CUSTOM_FIELD_ATTRS
                  if fieldset.get(attr) is not None}
             )
-            if 'query' in fieldset:
-                query_opts = {}
-                query = fieldset.get('query', [])
-                for qry in query:
-                    query_opts[qry] = fieldset.get(qry)
-                query_opts['query'] = query
-
-                field['query_opts'] = query_opts
         data = self.adapt_field(field)
         return data
 

@@ -149,17 +149,23 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'label': _('States Timeline'),
             'field': 'id',
             'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
-            'query': ['model', 'object_id'],
-            'model': 'candidate.candidatecontact',
-            'object_id': '{id}',
+            'query': {
+                'model': 'candidate.candidatecontact',
+                'object_id': '{id}',
+            },
         }, {
-            'type': constants.FIELD_RELATED,
-            'delete': True,
-            'list': True,
-            'many': True,
-            'create': True,
-            'edit': True,
-            'field': 'active_states',
+            'type': constants.FIELD_LIST,
+            'field': 'id',
+            'query': {
+                'object_id': '{id}'
+            },
+            'collapsed': True,
+            'label': _('Candidate States History'),
+            'add_label': _('Add Candidate State'),
+            'endpoint': api_reverse_lazy('core/workflowobjects'),
+            'prefilled': {
+                'object_id': '{id}',
+            }
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
