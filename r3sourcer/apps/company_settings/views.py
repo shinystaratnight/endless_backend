@@ -78,3 +78,12 @@ class MYOBAccountListView(APIView):
         }
 
         return Response(data)
+
+
+class MYOBCredentialsCheckView(APIView):
+    """
+    Accepts Developer Key and Developer Secret and checks if they are correct
+    """
+    def post(self, *args, **kwargs):
+        developer_key = self.request.data['developer_key']
+        developer_secret = self.request.data['developer_secret']
