@@ -1,6 +1,8 @@
 import mock
 import pytest
 
+from r3sourcer.apps.logger.manager import get_endless_logger
+
 from r3sourcer.apps.core.models import (
     User
 )
@@ -32,3 +34,8 @@ def contact(db, user):
 @mock.patch('r3sourcer.apps.login.mixins.get_random_string', return_value='1'*8)
 def token_login(mock_gen_token, contact):
     return TokenLogin.objects.create(contact=contact)
+
+
+@pytest.fixture(autouse=True, scope='module')
+def clickhouse_restart():
+    logger = get_endless_logger()

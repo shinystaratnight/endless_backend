@@ -64,7 +64,7 @@ class TestFilterFactory:
     def test_filter_factory_related(self, endpoint):
         res_cls = filter_factory(endpoint)
 
-        assert isinstance(res_cls.declared_filters['field'], UUIDFilter)
+        assert isinstance(res_cls.declared_filters['field'], CharFilter)
 
     def test_filter_factory_related_base_filter_class(self):
         endpoint = self.get_endpoint()
@@ -72,7 +72,7 @@ class TestFilterFactory:
 
         res_cls = filter_factory(endpoint)
 
-        assert isinstance(res_cls.declared_filters['field'], UUIDFilter)
+        assert isinstance(res_cls.declared_filters['field'], CharFilter)
 
     def test_filter_factory_related_base_filter_class_with_field(self):
         endpoint = self.get_endpoint()

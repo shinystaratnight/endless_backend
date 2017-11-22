@@ -34,6 +34,7 @@ from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.company_settings.models import GlobalPermission
+from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..utils.user import get_default_company
@@ -62,6 +63,10 @@ class UUIDModel(models.Model):
     @classmethod
     def use_logger(cls):
         return True
+
+    @property
+    def object_history(self):
+        return endless_logger.get_object_history(self.__class__, self.pk)
 
 
 class Contact(
@@ -153,7 +158,7 @@ class Contact(
 
     picture = ThumbnailerImageField(
         upload_to='contact_pictures',
-        default=os.path.join(settings.MEDIA_ROOT, 'contact_pictures', 'default_picture.jpg'),
+        default=os.path.join('contact_pictures', 'default_picture.jpg'),
         max_length=255,
         blank=True
     )
@@ -208,11 +213,7 @@ class Contact(
     is_company_contact.boolean = True
 
     def is_candidate_contact(self):
-        from r3sourcer.apps.candidate.models import CandidateContact
-        try:
-            return self.candidate_contacts.exists()
-        except CandidateContact.DoesNotExist:
-            return False
+        return hasattr(self, 'candidate_contacts')
 
     def get_job_title(self):
         if self.company_contact.exists():
@@ -693,6 +694,12 @@ class Company(
     )
 
     website = models.URLField(verbose_name=_("Website"), blank=True)
+
+    logo = ThumbnailerImageField(
+        upload_to='company_pictures',
+        default=os.path.join('company_pictures', 'default_picture.jpg'),
+        blank=True
+    )
 
     date_of_incorporation = models.DateField(
         verbose_name=_("Date of Incorporation"),
@@ -1953,10 +1960,19 @@ class WorkflowObject(UUIDModel):
     def save(self, *args, **kwargs):
         self.clean()
         just_added = self._state.adding
+
+        lifecycle_enabled = kwargs.pop('lifecycle', True)
+
+        if just_added and lifecycle_enabled:
+            self.model_object.before_state_creation(self)
+
         super().save(*args, **kwargs)
 
         if just_added:
             self.model_object.workflow(self.state)
+
+            if lifecycle_enabled:
+                self.model_object.after_state_creation(self)
 
     def clean(self):
         self.validate_object(self.state, self.object_id, self._state.adding)

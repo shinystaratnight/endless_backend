@@ -73,6 +73,7 @@ INSTALLED_APPS = [
 
     'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',
+    'r3sourcer.apps.email_interface',
     'r3sourcer.apps.twilio',
     'r3sourcer.apps.login',
     'r3sourcer.apps.logger',
@@ -99,6 +100,8 @@ if 'r3sourcer.apps.logger' in INSTALLED_APPS:
     LOGGER_PASSWORD = env('LOGGER_PASSWORD', LOGGER_PASSWORD)
     LOGGER_HOST = env('LOGGER_HOST', LOGGER_HOST)
     LOGGER_PORT = env('LOGGER_PORT', LOGGER_PORT)
+
+    LOGGER_ENABLED = env('LOGGER_ENABLED', '1') == '1'
 
 
 MIDDLEWARE = [
@@ -342,7 +345,7 @@ DELIVERY_TIMEOUT_SMS = 4
 ENABLED_TWILIO_WORKING = False
 
 SMS_SERVICE_ENABLED = env('SMS_SERVICE_ENABLED', '0') == '1'
-SMS_SERVICE_CLASS = 'r3sourcer.apps.twilio.services.TwilioSMSService'
+SMS_SERVICE_CLASS = env('SMS_SERVICE_CLASS', 'r3sourcer.apps.sms_interface.services.FakeSMSService')
 
 FETCH_ADDRESS_RAISE_EXCEPTIONS = env('FETCH_ADDRESS_RAISE_EXCEPTIONS', '0') == '1'
 
@@ -357,3 +360,14 @@ MYOB_APP = {
     'api_key': env('MYOB_APP_API_KEY'),
     'api_secret': env('MYOB_APP_API_SECRET')
 }
+
+EMAIL_SERVICE_ENABLED = env('EMAIL_SERVICE_ENABLED', '0') == '1'
+EMAIL_SERVICE_CLASS = env('EMAIL_SERVICE_CLASS', 'r3sourcer.apps.email_interface.services.SMTPEmailService')
+
+NO_REPLY_EMAIL = 'no-reply@labourking.com.au'
+
+DEFAULT_SMTP_SERVER = env('DEFAULT_SMTP_SERVER', 'smtp.office365.com')
+DEFAULT_SMTP_PORT = env('DEFAULT_SMTP_PORT', 587)
+DEFAULT_SMTP_EMAIL = env('DEFAULT_SMTP_EMAIL', NO_REPLY_EMAIL)
+DEFAULT_SMTP_PASSWORD = env('DEFAULT_SMTP_PASSWORD', '')
+DEFAULT_SMTP_TLS = env('DEFAULT_SMTP_TLS', '1') == '1'

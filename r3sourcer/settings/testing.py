@@ -14,6 +14,9 @@ DATABASES = {
     },
 }
 
+LOGGER_DB = 'testing'
+LOGGER_ENABLED = False
+
 
 def cities_light_uri(n): return 'file://%s' % os.path.join(
     BASE_DIR, 'r3sourcer/apps/core/tests/fixtures/django_cities', n

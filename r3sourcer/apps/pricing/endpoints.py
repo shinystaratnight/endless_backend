@@ -1,20 +1,23 @@
 from drf_auto_endpoint.router import router
 
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from .api import serializers
-from . import models
+from r3sourcer.apps.pricing.api import serializers
+from r3sourcer.apps.pricing import models
 
 
 class DynamicCoefficientRuleEndpoint(ApiEndpoint):
-
     model = models.DynamicCoefficientRule
     serializer = serializers.DynamicCoefficientRuleSerializer
 
 
 class RateCoefficientEndpoint(ApiEndpoint):
-
     model = models.RateCoefficient
     serializer = serializers.RateCoefficientSerializer
+
+
+class PriceListRateEndpoint(ApiEndpoint):
+    model = models.PriceListRate
+    search_fields = ('skill__name',)
 
 
 router.register(endpoint=RateCoefficientEndpoint())
@@ -25,7 +28,7 @@ router.register(models.IndustryPriceList)
 router.register(models.IndustryPriceListRate)
 router.register(models.IndustryRateCoefficient)
 router.register(models.PriceList)
-router.register(models.PriceListRate)
+router.register(endpoint=PriceListRateEndpoint())
 router.register(models.PriceListRateCoefficient)
 router.register(endpoint=DynamicCoefficientRuleEndpoint())
 

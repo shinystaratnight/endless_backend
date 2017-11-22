@@ -85,14 +85,14 @@
 			<profile>readonly</profile>
 			<quota>default</quota>
 		</readonly>
-		<USER_FROM_ENV>
+		<$LOGGER_USER>
 			<networks incl="networks" replace="replace">
 					<ip>::/0</ip>
 			</networks>
-			<password>PASSWORD_FROM_ENV</password>
+			<password>$LOGGER_PASSWORD</password>
 			<quota>default</quota>
 			<profile>default</profile>
-		</USER_FROM_ENV>
+		</$LOGGER_USER>
 	</users>
 
 	<!-- Quotas. -->

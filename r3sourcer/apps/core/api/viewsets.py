@@ -4,12 +4,13 @@ from django.conf import settings
 from django.db.models import Q
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
 from django.utils.translation import ugettext_lazy as _
 
 from phonenumber_field import phonenumber
 from rest_framework import viewsets, exceptions, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -337,7 +338,7 @@ class WorkflowNodeViewset(BaseApiViewset):
         try:
             model_class = apps.get_model(model_name)
             target_object = model_class.objects.get(id=object_id)
-        except model_class.DoesNotExist:
+        except ObjectDoesNotExist:
             raise exceptions.NotFound(_('Object does not exists'))
 
         required_mixins = (WorkflowProcess, mixins.CompanyLookupMixin)
@@ -434,18 +435,49 @@ class DashboardModuleViewSet(BaseApiViewset):
 
 class FormStorageViewSet(BaseApiViewset):
 
+    ALREADY_APPROVED_ERROR = _("Form storage already approved")
+
     serializer_class = serializers.FormStorageSerializer
+
+    @detail_route(
+        methods=['post'],
+        permission_classes=(IsAuthenticated,),
+        serializer_class=serializers.FormStorageApproveSerializer
+    )
+    def approve(self, request, pk, *args, **kwargs):
+        """
+        Approve storage. Would be created instance from storage it status is `approved`.
+        """
+        instance = self.get_object()
+
+        if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED:
+            raise exceptions.APIException(self.ALREADY_APPROVED_ERROR)
+        serializer = self.get_serializer(instance=instance, data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED and not instance.object_id:
+            obj = instance.create_object_from_data()
+            return Response({'id': obj.pk}, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_200_OK)
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return models.FormStorage.objects.all()
+        companies = get_master_companies_by_contact(self.request.user.contact) + [None]
+        return models.FormStorage.objects.filter(form__company__in=companies)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         form_obj = serializer.validated_data['form']
+        company = serializer.validated_data['company']
         form_data = request.data.copy()
         form_data.pop('form')
         form = form_obj.get_form_class()(data=request.data, files=request.data)
         if not form.is_valid():
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
         form_storage = models.FormStorage.parse_data_to_storage(form_obj, form.cleaned_data)
+        form_storage.company = company
         form_storage.save()
         return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
 
@@ -464,6 +496,7 @@ class ContentTypeViewSet(BaseApiViewset):
 class FormViewSet(BaseApiViewset):
 
     serializer_class = serializers.FormSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         if self.request.user.is_superuser:

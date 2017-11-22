@@ -8,6 +8,7 @@
 .DS_Store
 .idea/**
 \.env
+\.env_test
 
 \.venv
 .sass-cache/
@@ -29,3 +30,4 @@ __pycache__
 .cache
 webui-app
 /users.xml
+id_rsa

@@ -7,8 +7,11 @@ from jinja2 import Template
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
-def set_env():
-    configs = ['env_defaults', '.env']
+def set_env(*args):
+    configs = list(args)
+    if not configs:
+        configs = ['env_defaults', '.env']
+
     for config in configs:
         if os.path.isfile(os.path.join(BASE_DIR, config)):
             with open(os.path.join(BASE_DIR, config), 'r') as f:
@@ -23,8 +26,8 @@ def django():
     """Django manage.py
     """
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings")
-    set_env()
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings.prod")
+    set_env('env_defaults', '.env', '.env_test')
 
     from django.core.management import execute_from_command_line
 
@@ -33,7 +36,7 @@ def django():
 
 @click.group()
 def app():
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings.prod")
     set_env()
 
 
@@ -44,23 +47,30 @@ def start():
 
 
 @app.command()
-@click.option('--app', prompt='App name (e.g. core)')
-def test(app=None):
+@click.option('--app', default='')
+@click.argument('app', default='')
+def test(app):
+    set_env('.env_test')
     os.chdir(BASE_DIR)
 
-    if not app:
-        app = ''
-
-    app = os.path.join('r3sourcer', 'apps', app)
+    if app:
+        app = os.path.join('apps', app)
 
     run('bin/pytest --cov={app} --cov-report=term-missing {app}'.format(
-        app=app), warn=True, pty=True)
+        app=os.path.join('r3sourcer', app)), warn=True, pty=True)
+
+
+@click.command()
+def py_test():
+    os.chdir(BASE_DIR)
+    set_env('env_defaults', '.env', '.env_test')
+    run('bin/pytest')
 
 
 @app.command()
 @click.option('--site_root')
 def nginx_config(site_root):
-    required_env = ['HTTP_PORT', 'HTTPS_PORT', 'DOMAIN_NAME']
+    required_env = ['DOMAIN_NAME']
     os.environ.setdefault('SITE_CONTENT_ROOT', site_root)
 
     if not all([req in os.environ for req in required_env]):

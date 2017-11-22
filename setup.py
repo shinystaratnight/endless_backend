@@ -21,6 +21,7 @@ setup(
         [console_scripts]
         django=helpers.commands:django
         app=helpers.commands:app
+        py_test=helpers.commands:py_test
         _supervisord=helpers.commands:supervisord
         _supervisorctl=helpers.commands:supervisorctl
     '''

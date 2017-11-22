@@ -122,9 +122,14 @@ class FormBuilderAdminForm(forms.ModelForm):
 class ContentTypeChoiceField(forms.ModelChoiceField):
 
     def label_from_instance(self, obj):
+        model_class = obj.model_class()
+        if model_class is None:
+            model_name = str(obj)
+        else:
+            model_name = model_class._meta.verbose_name
         return '{app_label}: {model_name}'.format(
             app_label=obj.app_label,
-            model_name=obj.model_class()._meta.verbose_name
+            model_name=model_name
         )
 
 
@@ -132,7 +137,7 @@ class DashboardModuleForm(forms.ModelForm):
 
     content_type = ContentTypeChoiceField(
         queryset=ContentType.objects.all(), label=_("Model"),
-        widget=Select2(select2attrs={'width': 'auto'})
+        widget=Select2(select2attrs={'width': 'resolve'})
     )
 
     class Meta:

@@ -1,5 +1,6 @@
 import datetime
 
+import mock
 import pytest
 from mock import patch, MagicMock, PropertyMock
 
@@ -10,6 +11,8 @@ from r3sourcer.apps.candidate.models import (
     InterviewSchedule, CandidateRel, AcceptanceTestQuestionRel,
     AcceptanceTestRel, CandidateContact, SkillRel, Subcontractor
 )
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.hr import models as hr_models
 
 
 @pytest.mark.django_db
@@ -211,6 +214,127 @@ class TestCandidateContact:
         candidate.nationality = country
 
         assert candidate.is_residency_filled()
+
+    def test_notes(self, candidate, candidate_note):
+        notes = candidate.notes
+
+        assert notes.count() == 1
+
+    def test_activities(self, candidate, candidate_activity):
+        activities = candidate.activities
+
+        assert activities.count() == 1
+
+    def test_save_with_score_exists(self, contact, candidate_data):
+        score = hr_models.CandidateScore()
+
+        rc = CandidateContact.objects.create(
+            contact=contact,
+            candidate_scores=score
+        )
+        keys = ('height weight transportation_to_work strength language'
+                ' reliability_score loyalty_score tax_file_number'
+                ' super_annual_fund_name super_member_number bank_account'
+                ' emergency_contact_name emergency_contact_phone'
+                ' employment_classification').split()
+        for key in keys:
+            setattr(rc, key, candidate_data[key])
+
+        assert hasattr(rc, 'candidate_scores')
+
+    def test_before_state_creation_state_11(self, candidate, workflow_state):
+        workflow_object = core_models.WorkflowObject(
+            object_id=candidate.id, state=workflow_state, comment='comment', active=True
+        )
+
+        candidate.before_state_creation(workflow_object)
+
+        assert not workflow_object.active
+
+    def test_before_state_creation(self, candidate, workflow_state):
+        workflow_state.number = 100
+
+        workflow_object = core_models.WorkflowObject(
+            object_id=candidate.id, state=workflow_state, comment='comment', active=True
+        )
+
+        candidate.before_state_creation(workflow_object)
+
+        assert workflow_object.active
+
+    @mock.patch('r3sourcer.apps.candidate.tasks.send_verify_sms')
+    def test_after_state_creation_state_11(self, mock_send_task, candidate, workflow_state):
+        workflow_object = core_models.WorkflowObject(
+            object_id=candidate.id, state=workflow_state, comment='comment', active=True
+        )
+
+        candidate.after_state_creation(workflow_object)
+
+        assert mock_send_task.apply_async.called
+
+    @mock.patch('r3sourcer.apps.candidate.tasks.send_verify_sms')
+    def test_after_state_creation(self, mock_send_task, candidate, workflow_state):
+        workflow_state.number = 100
+
+        workflow_object = core_models.WorkflowObject(
+            object_id=candidate.id, state=workflow_state, comment='comment', active=True
+        )
+
+        candidate.after_state_creation(workflow_object)
+
+        assert not mock_send_task.apply_async.called
+
+    @mock.patch.object(core_models.WorkflowObject, 'save')
+    def test_process_sms_workflow_object_state_11(self, mock_clean, candidate, workflow_state):
+        workflow_object = core_models.WorkflowObject(
+            object_id=candidate.id, state=workflow_state, comment='comment', active=False
+        )
+
+        candidate._process_sms_workflow_object(workflow_object)
+
+        assert workflow_object.active
+
+    def test_process_sms_workflow_object(self, candidate, workflow_state):
+        workflow_state.number = 100
+
+        workflow_object = core_models.WorkflowObject(
+            object_id=candidate.id, state=workflow_state, comment='comment', active=False
+        )
+
+        candidate._process_sms_workflow_object(workflow_object)
+
+        assert not workflow_object.active
+
+    @mock.patch.object(CandidateContact, '_process_sms_workflow_object')
+    def test_process_sms_reply_workflow_11(self, mock_process, candidate, workflow_state):
+        workflow_object = core_models.WorkflowObject(
+            object_id=candidate.id, state=workflow_state, comment='comment', active=False
+        )
+
+        mock_sms = mock.MagicMock()
+        mock_sms.get_related_objects.return_value = [workflow_object]
+
+        candidate.process_sms_reply(None, mock_sms, True)
+
+        assert mock_process.called
+
+    @mock.patch.object(CandidateContact, '_process_sms_workflow_object')
+    def test_process_sms_reply_no_related(self, mock_process, candidate):
+        mock_sms = mock.MagicMock()
+        mock_sms.get_related_objects.return_value = []
+
+        candidate.process_sms_reply(None, mock_sms, True)
+
+        assert not mock_process.called
+
+    @mock.patch.object(CandidateContact, '_process_sms_workflow_object')
+    def test_process_sms_reply_related_not_workflow(self, mock_process, candidate):
+        mock_sms = mock.MagicMock()
+        mock_sms.get_related_objects.return_value = [candidate]
+
+        candidate.process_sms_reply(None, mock_sms, True)
+
+        assert not mock_process.called
 
 
 @pytest.mark.django_db

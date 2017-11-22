@@ -270,7 +270,7 @@ class ApiFullRelatedFieldsMixin():
         return super(ApiFullRelatedFieldsMixin, self).update(obj, validated_data)
 
 
-class ApiRealtedFieldManyMixin:
+class ApiRelatedFieldManyMixin:
 
     # Format: {'many_related_field': 'related_field_name'}
     many_related_fields = None
@@ -293,11 +293,9 @@ class ApiRealtedFieldManyMixin:
 
     def create_many(self, validated_data):
         for field_name, related_name in self.many_related_fields.items():
-            field = self.fields[field_name]
+            field = self.fields.get(field_name)
 
-            if isinstance(field, serializers.ListSerializer) and \
-                    not field.read_only:
-
+            if isinstance(field, serializers.ListSerializer) and not field.read_only:
                 model = field.child.Meta.model
                 instances = validated_data.pop(field_name, [])
 
@@ -308,11 +306,32 @@ class ApiRealtedFieldManyMixin:
 
     def update(self, instance, validated_data):
         if self.many_related_fields:
-            for field_name, related_name in self.many_related_fields.items():
-                field = self.fields[field_name]
+            related_data = {
+                field: validated_data.pop(field)
+                for field in self.many_related_fields.keys()
+                if field in validated_data
+            }
+        else:
+            related_data = {}
+
+        instance = super().update(instance, validated_data)
+        related_data['id'] = instance.id
+
+        self.update_many(instance, related_data)
+        return instance
+
+    def update_many(self, instance, validated_data):
+        """
+        Update related objects
+        """
+        for field_name, related_name in self.many_related_fields.items():
+            field = self.fields.get(field_name)
+
+            if isinstance(field, serializers.ListSerializer) and not field.read_only:
+                instances = validated_data.get(field_name, [])
 
                 objects = getattr(instance, field_name)
-                for item in validated_data.get(field_name, []):
+                for item in instances:
                     item[related_name + '_id'] = instance.id
                     if item.get('id'):
                         obj = objects.filter(id=item['id'])
@@ -320,13 +339,6 @@ class ApiRealtedFieldManyMixin:
                     else:
                         model = field.child.Meta.model
                         model.objects.create(**item)
-
-            validated_data = OrderedDict([
-                (key, val) for key, val in validated_data.items()
-                if key not in self.many_related_fields
-            ])
-
-        return super().update(instance, validated_data)
 
 
 class ApiMethodFieldsMixin():
@@ -846,8 +858,10 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
     class Meta:
         model = models.WorkflowNode
         fields = (
-            'id', 'workflow', 'number', 'name_before_activation',
-            'name_after_activation', 'rules', 'company', 'active', 'hardlock'
+            'id', 'number', 'name_before_activation', 'name_after_activation', 'rules', 'company', 'active',
+            'hardlock', {
+                'workflow': ('id', '__str__', 'name', 'model')
+            }
         )
 
     def validate(self, data):
@@ -862,7 +876,11 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
 class WorkflowObjectSerializer(ApiBaseModelSerializer):
     class Meta:
         model = models.WorkflowObject
-        fields = '__all__'
+        fields = ('__all__', {
+            'state': ('__all__', {
+                'workflow': ('id', 'name'),
+            })
+        })
 
     def validate(self, data):
         models.WorkflowObject.validate_object(
@@ -891,7 +909,7 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
             return NOT_ALLOWED
 
         workflow_object = models.WorkflowObject.objects.filter(
-            state=obj
+            state=obj, object_id=self.target.id
         )
         if workflow_object.exists():
             workflow_object = workflow_object.latest('updated_at')
@@ -1067,9 +1085,12 @@ class FormStorageSerializer(ApiBaseModelSerializer):
 
     class Meta:
         fields = (
-            'id', 'form', 'data'
+            'id', 'form', 'data', 'company'
         )
         model = models.FormStorage
+        extra_kwargs = {
+            'company': {'required': True}
+        }
 
 
 class FormFieldSerializer(ApiBaseModelSerializer):
@@ -1300,3 +1321,10 @@ class FormBuilderSerializer(ApiBaseModelSerializer):
         fields = (
             'id', 'content_type'
         )
+
+
+class FormStorageApproveSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = models.FormStorage
+        fields = ('status',)
