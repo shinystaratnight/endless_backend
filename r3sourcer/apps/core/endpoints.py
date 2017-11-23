@@ -1054,6 +1054,8 @@ class FormStorageEndpoint(ApiEndpoint):
         'created_at'
     )
 
+    list_buttons = []
+
 
 class BaseFormFieldEndpoint(ApiEndpoint):
 
