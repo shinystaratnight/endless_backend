@@ -1034,11 +1034,12 @@ class FormStorageEndpoint(ApiEndpoint):
     list_display = (
         {
             'label': _("Form"),
-            'field': 'form.title',
+            'field': 'form',
             'type': constants.FIELD_LINK,
-            'endpoint': api_reverse_lazy(
-                'core/forms'
-            )
+            'endpoint': format_lazy(
+                '{}{{form_id}}/',
+                api_reverse_lazy('core/forms')
+            ),
         },
         {
             'label': _('Company'),
