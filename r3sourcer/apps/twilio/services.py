@@ -13,9 +13,8 @@ logger = logging.getLogger(__name__)
 class TwilioSMSService(BaseSMSService):
     def process_sms_send(self, sms_message):
         twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=sms_message.from_number)
-        print('sending', sms_message)
-        # sms_message.sid = twilio_account.client.messages.create(body=sms_message.text, from_=sms_message.from_number,
-        #                                                         to=sms_message.to_number).sid
+        sms_message.sid = twilio_account.client.messages.create(body=sms_message.text, from_=sms_message.from_number,
+                                                                 to=sms_message.to_number).sid
         sms_message.save(update_fields=['sid'])
 
     def process_sms_fetch(self):

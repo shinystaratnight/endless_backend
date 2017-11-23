@@ -79,6 +79,9 @@ class PhoneNumber(UUIDModel):
         default=False
     )
 
+    def __str__(self):
+        return self.phone_number
+
     class Meta:
         verbose_name = _("Phone number")
         verbose_name_plural = _("Phone numbers")
