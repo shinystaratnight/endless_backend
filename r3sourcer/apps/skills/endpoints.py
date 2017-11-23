@@ -25,6 +25,10 @@ class SkillEndpoint(ApiEndpoint):
         },
     )
 
+    search_fields = (
+        'name',
+    )
+
     def get_list_filter(self):
         return [{
             'type': constants.FIELD_SELECT,
@@ -42,11 +46,6 @@ class EmploymentClassificationEndpoint(ApiEndpoint):
 class SkillBaseRateEndpoint(ApiEndpoint):
     model = models.SkillBaseRate
     search_fields = ('skill__name',)
-
-    search_fields = (
-        'name',
-        'short_name'
-    )
 
 
 router.register(endpoint=SkillEndpoint())
