@@ -537,8 +537,7 @@ class TagRel(core_models.UUIDModel):
     def save(self, *args, **kwargs):
         # we don't allow set verified_by if tag require evidence
         # approval and this approval not uploaded
-        if self.tag.evidence_required_for_approval \
-                and not self.verification_evidence:
+        if self.tag.evidence_required_for_approval and not self.verification_evidence:
             self.verified_by = None
             self.verify = False
         if self.verify:

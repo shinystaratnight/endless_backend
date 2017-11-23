@@ -93,6 +93,9 @@ class ApiFullRelatedFieldsMixin():
                 is_field_in_data and isinstance(data[field_name], dict) and data[field_name].get('id')
             )
 
+            if is_id_partial:
+                internal_fields_dict[field_name] = [f for f in data.get(field_name, [])]
+
             if not is_pk_data and isinstance(data, list) and len(data) > 0:
                 data_elem = data[0]
                 if isinstance(data_elem, dict):

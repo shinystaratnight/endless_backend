@@ -60,6 +60,8 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     _exclude_data = {'__str__'}
 
+    picture_fields = {'picture', 'logo'}
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         fields = self.get_list_fields(request)
@@ -118,6 +120,8 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
                 continue
 
             if isinstance(val, dict):
+                val = {k: v for k, v in val.items() if k not in self.picture_fields}
+
                 res[key] = self.prepare_related_data(val)
             elif isinstance(val, list):
                 res[key] = [self.prepare_related_data(item) if isinstance(item, dict) else item for item in val]
