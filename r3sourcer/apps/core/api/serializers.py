@@ -1120,7 +1120,7 @@ class FormFieldSerializer(ApiBaseModelSerializer):
 
 class FormSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('model_fields', 'groups')
+    method_fields = ('model_fields', 'groups', 'company_links')
 
     class Meta:
         model = models.Form
@@ -1163,8 +1163,11 @@ class FormSerializer(ApiBaseModelSerializer):
             )
         return []
 
-    def get_groups(self,obj):
+    def get_groups(self, obj):
         return FormFieldGroupSerializer(obj.groups.all(), many=True).data
+
+    def get_company_links(self, obj):
+        return obj.get_company_links(self.context['request'].user.contact)
 
 
 class FormFieldGroupSerializer(ApiBaseModelSerializer):

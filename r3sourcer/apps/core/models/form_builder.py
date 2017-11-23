@@ -138,7 +138,7 @@ class Form(UUIDModel):
         result_list = []
         for company in companies:
             result_list.append({
-                'company': company,
+                'company': company.name,
                 'url': reverse('form-builder-view', kwargs={'company': str(company.id), 'pk': str(self.pk)})
             })
         return result_list
