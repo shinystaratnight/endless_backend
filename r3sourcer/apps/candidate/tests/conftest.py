@@ -4,6 +4,7 @@ import pytz
 import pytest
 from unittest.mock import patch
 
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 
 from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
@@ -270,9 +271,18 @@ def activity_template(db):
 def candidate_activity(db, candidate, contact, activity_template):
     return activity_models.Activity.objects.create(
         entity_object_id=candidate.id,
-        entity_object_name=candidate_models.CandidateContact.__class__.__name__,
+        entity_object_name=candidate_models.CandidateContact.__name__,
         contact=contact,
         starts_at=timezone.datetime(2017, 1, 1, 12, 0).replace(tzinfo=pytz.UTC),
         ends_at=timezone.datetime(2017, 1, 5, 12, 0).replace(tzinfo=pytz.UTC),
-        activity_template=activity_template
+        template=activity_template
+    )
+
+
+@pytest.fixture
+def workflow_state(db, candidate, company):
+    content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
+    workflow, created = core_models.Workflow.objects.get_or_create(name="test_workflow", model=content_type)
+    return core_models.WorkflowNode.objects.create(
+        number=11, name_before_activation="State 11", workflow=workflow, company=company, rules={}
     )

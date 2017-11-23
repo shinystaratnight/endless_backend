@@ -318,10 +318,14 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
             defaults={'content_object': obj}
         ) for obj in args if isinstance(obj, models.Model)]
 
-    def get_related_objects(self):
+    def get_related_objects(self, obj_type=None):
+        qry = models.Q()
+        if obj_type is not None:
+            qry = models.Q(content_type=obj_type)
+
         return [
             obj.content_object
-            for obj in self.related_objects.all() if obj.content_object
+            for obj in self.related_objects.filter(qry) if obj.content_object
         ]
 
     def no_check_reply(self):
