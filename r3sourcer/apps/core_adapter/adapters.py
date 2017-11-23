@@ -17,7 +17,7 @@ from .utils import api_reverse
 
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
-    'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label',
+    'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query'
 )
 
 
@@ -87,11 +87,12 @@ class AngularApiAdapter(BaseAdapter):
                 adapted['templateOptions']['link'] = field.get('link')
             elif component_type == constants.FIELD_LIST:
                 adapted.update(
-                    endpoint=field.get('endpoint'),
                     collapsed=field.get('collapsed', False),
-                    prefilled=field.get('prefilled'),
+                    **{attr: field[attr] for attr in ('endpoint', 'prefilled')
+                       if field.get(attr) is not None}
                 )
-                adapted['templateOptions']['add_label'] = field.get('add_label')
+                if field.get('add_label'):
+                    adapted['templateOptions']['add_label'] = field['add_label']
             elif component_type != constants.FIELD_SUBMIT:
                 adapted['templateOptions']['action'] = field['action']
 
@@ -153,7 +154,7 @@ class AngularApiAdapter(BaseAdapter):
             adapted['default'] = field['default']
 
         field_ui = field.get('ui', {})
-        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo')
+        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'hide')
         adapted['templateOptions'].update({
             'type': component_type,
             'label': field.get('label', field_ui.get('label', '')),

@@ -93,7 +93,6 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
-        print('!!!', data)
 
         partial = kwargs.pop('partial', False)
         instance = self.get_object()

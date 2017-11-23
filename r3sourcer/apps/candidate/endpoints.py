@@ -137,13 +137,20 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'label': _('Candidate Tags'),
             'field': 'tag_rels',
         }, {
-            'type': constants.FIELD_RELATED,
-            'delete': True,
-            'list': True,
-            'many': True,
-            'create': True,
-            'edit': True,
-            'field': 'activities',
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'entity_object_id': '{id}',
+                'entity_object_name': 'candidatecontact',
+            },
+            'collapsed': True,
+            'label': _('Activities'),
+            'add_label': _('Add Activity'),
+            'endpoint': api_reverse_lazy('activity/activities'),
+            'prefilled': {
+                'entity_object_id': '{id}',
+                'entity_object_name': 'candidatecontact',
+            }
         }, {
             'type': constants.FIELD_TIMELINE,
             'label': _('States Timeline'),
@@ -155,7 +162,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
         }, {
             'type': constants.FIELD_LIST,
-            'field': 'id',
             'query': {
                 'object_id': '{id}'
             },
@@ -167,80 +173,57 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'object_id': '{id}',
             }
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'type': constants.FIELD_LIST,
+            'query': {
+                'candidate_contact': '{id}'
+            },
             'collapsed': True,
-            'name': _('Vacancy offers'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'vacancy_offers',
-                },
-            )
+            'label': _('Vacancy offers'),
+            'endpoint': api_reverse_lazy('hr/vacancyoffers'),
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Carrier list'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'carrier_lists',
-                },
-            )
+            'label': _('Carrier List'),
+            'endpoint': api_reverse_lazy('hr/carrierlists'),
+            'add_label': _('Add Carrier List'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Black list'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'blacklist',
-                },
-            )
+            'label': _('Black List'),
+            'endpoint': api_reverse_lazy('hr/blacklists'),
+            'add_label': _('Add Black List'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Favorite list'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'favourites',
-                },
-            )
+            'label': _('Favorite List'),
+            'endpoint': api_reverse_lazy('hr/favouritelists'),
+            'add_label': _('Add Favorite List'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Candidate evaluations'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'candidate_evaluations',
-                },
-            )
+            'label': _('Evaluations'),
+            'endpoint': api_reverse_lazy('hr/candidateevaluations'),
         }
     )
 
