@@ -297,7 +297,7 @@ class FormStorage(UUIDModel):
         for (key, value) in data.items():
             if isinstance(value, models.Model):
                 key = '{key}_id'.format(key=key)
-                value = value.id
+                value = str(value.id)
             elif isinstance(value, UploadedFile):
                 full_file_name = '{path}/{filename}.{ext}'.format(
                     path=cls.CONTENT_STORAGE_PATH,
@@ -577,6 +577,11 @@ class ModelFormField(FormField):
             ui_config['type'] = 'file'
         elif isinstance(form_field, (forms.DateField, forms.DateTimeField)):
             ui_config['type'] = 'date'
+        elif isinstance(form_field, (forms.BooleanField, forms.NullBooleanField)):
+            ui_config['type'] = 'select'
+            ui_config['values'] = [{'label': str(_("Yes")), 'value': True}, {'label': str(_("No")), 'value': False}]
+            if isinstance(form_field, forms.NullBooleanField):
+                ui_config['values'].insert(0, {'label': str(_("Undefined")), 'value': None})
         elif isinstance(form_field, (
                 forms.ModelChoiceField, forms.ModelMultipleChoiceField,
                 forms.ChoiceField,
