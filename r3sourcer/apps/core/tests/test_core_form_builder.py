@@ -464,7 +464,7 @@ class TestFormFields:
             'name'
         }
 
-        assert folder.id in [item.get('value') for item in model_field.get_ui_config()['values']]
+        assert str(folder.id) in [item.get('value') for item in model_field.get_ui_config()['values']]
 
         form_field = model_field.get_form_field()
 
@@ -603,8 +603,8 @@ class TestFormFields:
         form_storage = models.FormStorage(data=data, form=form)  # type: models.FormStorage
         cleaned_data = form_storage.get_data()
 
-        assert isinstance(cleaned_data['birthday'], datetime.datetime)
-        assert cleaned_data['birthday'] == datetime.datetime.strptime(data['birthday'], '%Y-%m-%d')
+        assert isinstance(cleaned_data['birthday'], datetime.date)
+        assert cleaned_data['birthday'] == datetime.datetime.strptime(data['birthday'], '%Y-%m-%d').date()
         assert cleaned_data['children'] == int(data['children'])
 
     def test_create_instance(self, form, form_field_group):
