@@ -9,7 +9,7 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group
 from django.contrib.postgres.fields import JSONField
 from django.contrib.sites.models import Site
 from django.core.validators import MinLengthValidator
@@ -33,6 +33,7 @@ from model_utils import Choices
 from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
+from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
@@ -401,9 +402,24 @@ class User(UUIDModel,
             return MANAGER
         raise ValidationError("Unknown user role")
 
+    def has_permission(self, permission_codename) -> bool:
+        try:
+            permission = GlobalPermission.objects.get(codename=permission_codename)
+            return permission in self.user_permissions.all()
+        except GlobalPermission.DoesNotExist:
+            return False
 
-class Country(UUIDModel,
-              AbstractCountry):
+    def has_group_permission(self, permission_codename) -> bool:
+        try:
+            groups = self.groups.all()
+            granted_permissions = GlobalPermission.objects.filter(group__in=groups)
+            permission = GlobalPermission.objects.get(codename=permission_codename)
+            return permission in granted_permissions
+        except GlobalPermission.DoesNotExist:
+            return False
+
+
+class Country(UUIDModel, AbstractCountry):
     currency = CurrencyField(default='USD', choices=CURRENCY_CHOICES)
 
     class Meta:
@@ -839,6 +855,8 @@ class Company(
         verbose_name=_('MYOB Expense Account'),
         default='4-1000',
     )
+
+    groups = models.ManyToManyField(Group, related_name='companies')
 
     class Meta:
         verbose_name = _("Company")
@@ -1942,10 +1960,19 @@ class WorkflowObject(UUIDModel):
     def save(self, *args, **kwargs):
         self.clean()
         just_added = self._state.adding
+
+        lifecycle_enabled = kwargs.pop('lifecycle', True)
+
+        if just_added and lifecycle_enabled:
+            self.model_object.before_state_creation(self)
+
         super().save(*args, **kwargs)
 
         if just_added:
             self.model_object.workflow(self.state)
+
+            if lifecycle_enabled:
+                self.model_object.after_state_creation(self)
 
     def clean(self):
         self.validate_object(self.state, self.object_id, self._state.adding)

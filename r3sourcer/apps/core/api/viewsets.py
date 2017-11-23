@@ -457,7 +457,7 @@ class FormStorageViewSet(BaseApiViewset):
         instance = serializer.save()
         if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED and not instance.object_id:
             obj = instance.create_object_from_data()
-            return Response({'id': obj.pk}, status=status.HTTP_201_CREATED)
+            return Response({'id': str(obj.pk)}, status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_200_OK)
 
     def get_queryset(self):

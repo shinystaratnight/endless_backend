@@ -1,9 +1,11 @@
 from datetime import timedelta, date
 
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
-from model_utils import Choices
-from crum import get_current_request
 from django.utils.translation import ugettext_lazy as _
+
+from crum import get_current_request
+from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core import models as core_models
@@ -314,7 +316,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     @property
     def notes(self):
         return core_models.Note.objects.filter(
-            content_type__model=self.__class__.__name__,
+            content_type__model=self.__class__.__name__.lower(),
             object_id=self.pk
         )
 
@@ -488,6 +490,28 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
                 from r3sourcer.apps.hr.models import CandidateScore
                 obj = CandidateScore.objects.create(candidate_contact=self)
                 obj.recalc_scores()
+
+    def process_sms_reply(self, sent_sms, reply_sms, positive):
+        related_objs = reply_sms.get_related_objects()
+
+        for related_object in related_objs:
+            if isinstance(related_object, core_models.WorkflowObject):
+                self._process_sms_workflow_object(related_object)
+
+    def _process_sms_workflow_object(self, workflow_object):
+        if workflow_object.state.number == 11:
+            workflow_object.active = True
+            workflow_object.save(update_fields=['active'])
+
+    def before_state_creation(self, workflow_object):
+        if workflow_object.state.number == 11:  # Phone verify
+            workflow_object.active = False
+
+    def after_state_creation(self, workflow_object):
+        if workflow_object.state.number == 11:  # Phone verify
+            from r3sourcer.apps.candidate.tasks import send_verify_sms
+
+            send_verify_sms.apply_async(args=(self.id, workflow_object.id), countdown=10)
 
 
 class TagRel(core_models.UUIDModel):
