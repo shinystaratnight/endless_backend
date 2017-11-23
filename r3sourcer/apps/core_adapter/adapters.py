@@ -154,7 +154,7 @@ class AngularApiAdapter(BaseAdapter):
             adapted['default'] = field['default']
 
         field_ui = field.get('ui', {})
-        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'hide')
+        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo')
         adapted['templateOptions'].update({
             'type': component_type,
             'label': field.get('label', field_ui.get('label', '')),
@@ -168,7 +168,8 @@ class AngularApiAdapter(BaseAdapter):
             },
         })
 
-        if field['key'].split('.')[-1] in cls._hidden_fields:
+        is_hidden = field.get('hide')
+        if field['key'].split('.')[-1] in cls._hidden_fields or is_hidden:
             adapted['hide'] = True
 
         if field_ui.get('help'):
@@ -290,6 +291,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         MetaDataInfo('bulk_actions', GETTER, []),
         MetaDataInfo('list_tabs', GETTER, []),
         MetaDataInfo('list_buttons', GETTER, []),
+        MetaDataInfo('list_editable_filter', GETTER, []),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -709,7 +711,13 @@ class AngularListApiAdapter(AngularApiAdapter):
         else:
             self.list_editable = []
             display_fields = config['list_display']
-        list_filters = config['list_filter']
+
+        list_editable_filter = config['list_editable_filter']
+        if self.is_formset:
+            list_filters = list_editable_filter or []
+        else:
+            list_filters = config['list_filter']
+
         ordering_fields = config['ordering_fields']
         ordering_mapping = config['ordering_mapping']
         ordering = config['ordering']

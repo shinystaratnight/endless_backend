@@ -335,6 +335,26 @@ class TestAngularApiAdapter:
             'query': {
                 'model': 'model',
                 'object_id': '{id}',
+            },
+            'add_label': 'label'
+        }
+
+        res = AngularApiAdapter.adapt_field(field)
+
+        assert res['type'] == FIELD_LIST
+        assert 'query' in res
+        assert 'model' in res['query']
+        assert 'add_label' in res['templateOptions']
+
+    def test_adapt_field_list_type_without_add_button(self):
+        field = {
+            'type': FIELD_LIST,
+            'label': 'label',
+            'field': 'id',
+            'endpoint': '/list/',
+            'query': {
+                'model': 'model',
+                'object_id': '{id}',
             }
         }
 

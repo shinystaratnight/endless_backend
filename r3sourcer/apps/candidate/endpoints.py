@@ -140,16 +140,14 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'field': 'id_',
             'query': {
-                'entity_object_id': '{id}',
-                'entity_object_name': 'candidatecontact',
+                'contact': '{contact.id}',
             },
             'collapsed': True,
             'label': _('Activities'),
             'add_label': _('Add Activity'),
             'endpoint': api_reverse_lazy('activity/activities'),
             'prefilled': {
-                'entity_object_id': '{id}',
-                'entity_object_name': 'candidatecontact',
+                'contact': '{contact.id}',
             }
         }, {
             'type': constants.FIELD_TIMELINE,
@@ -224,6 +222,10 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'collapsed': True,
             'label': _('Evaluations'),
             'endpoint': api_reverse_lazy('hr/candidateevaluations'),
+            'add_label': _('Add Evaluation'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
         }
     )
 
