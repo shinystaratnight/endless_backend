@@ -15,7 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 from polymorphic.models import PolymorphicModel
 
-
+from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
 from .core import UUIDModel
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 
@@ -126,6 +126,22 @@ class Form(UUIDModel):
             title=self.title,
             builder=self.builder,
         )
+
+    def get_company_links(self, contact):
+        """
+        Get form links for contact.
+        
+        :param contact: Contact
+        :return: 
+        """
+        companies = get_master_companies_by_contact(contact)
+        result_list = []
+        for company in companies:
+            result_list.append({
+                'company': company.name,
+                'url': reverse('form-builder-view', kwargs={'company': str(company.id), 'pk': str(self.pk)})
+            })
+        return result_list
 
     def is_valid_model_field_name(self, field_name: str) -> bool:
         """

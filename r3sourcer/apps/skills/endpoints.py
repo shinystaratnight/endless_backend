@@ -25,6 +25,10 @@ class SkillEndpoint(ApiEndpoint):
         },
     )
 
+    search_fields = (
+        'name',
+    )
+
     def get_list_filter(self):
         return [{
             'type': constants.FIELD_SELECT,
