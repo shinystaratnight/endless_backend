@@ -1,4 +1,5 @@
 import json
+import mock
 
 from django.core.urlresolvers import reverse
 from rest_framework import status
@@ -123,3 +124,27 @@ class TestMYOBAccountListView:
         assert response.data['myob_accounts'][1]['number'] == account2.number
         assert response.data['myob_accounts'][1]['name'] == account2.name
         assert response.data['myob_accounts'][1]['type'] == account2.type
+
+
+class TestMYOBAuthorizationView:
+    def test_authorization_success(self, client, user):
+        data = {
+            'api_key': 'qwe',
+            'api_secret': 'api_secret',
+            'redirect_uri': 'redirect_uri',
+        }
+        url = reverse('myob_authorization', kwargs={'version': 'v2'}) + "?code=code"
+        response = client.post(url, data=data)
+
+        assert response.status_code == status.HTTP_200_OK
+
+    def test_authorization_fail(self, client, user):
+        data = {
+            'api_key': 'qwe',
+            'api_secret': 'api_secret',
+            'redirect_uri': 'redirect_uri',
+        }
+        url = reverse('myob_authorization', kwargs={'version': 'v2'}) + "?code=code"
+        response = client.post(url, data=data)
+
+        assert response.status_code == status.HTTP_417_EXPECTATION_FAILED

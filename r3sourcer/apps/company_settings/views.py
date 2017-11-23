@@ -4,6 +4,7 @@ from rest_framework.views import APIView
 
 from r3sourcer.apps.company_settings import serializers
 from r3sourcer.apps.company_settings.models import MYOBAccount
+from r3sourcer.apps.myob.api.wrapper import MYOBAuth
 
 
 class CompanySettingsView(APIView):
@@ -80,10 +81,20 @@ class MYOBAccountListView(APIView):
         return Response(data)
 
 
-class MYOBCredentialsCheckView(APIView):
+class MYOBAuthorizationView(APIView):
     """
     Accepts Developer Key and Developer Secret and checks if they are correct
     """
     def post(self, *args, **kwargs):
-        developer_key = self.request.data['developer_key']
-        developer_secret = self.request.data['developer_secret']
+        data = {
+            'client_id': self.request.data.get('api_key'),
+            'client_secret': self.request.data.get('api_secret'),
+            'refresh_token': self.request.data.get('redirect_uri'),
+            'grant_type': 'refresh_token'
+        }
+        import pdb; pdb.set_trace()
+        auth_client = MYOBAuth(self.request)
+        auth_client.retrieve_access_code()
+        auth_client.retrieve_access_token(data=data)
+
+        return Response()

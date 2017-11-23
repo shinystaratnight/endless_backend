@@ -6,4 +6,5 @@ from r3sourcer.apps.company_settings import views
 urlpatterns = [
     url(r'^company_settings/$', views.CompanySettingsView.as_view(), name='company_settings'),
     url(r'^company_settings/myob_accounts/$', views.MYOBAccountListView.as_view(), name='myob_accounts'),
+    url(r'^company_settings/myob_authorization$', views.MYOBAuthorizationView.as_view(), name='myob_authorization'),
 ]
