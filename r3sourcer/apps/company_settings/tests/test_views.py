@@ -1,5 +1,6 @@
 import json
 import mock
+import pytest
 
 from django.core.urlresolvers import reverse
 from rest_framework import status
@@ -127,7 +128,9 @@ class TestMYOBAccountListView:
 
 
 class TestMYOBAuthorizationView:
-    def test_authorization_success(self, client, user):
+    @pytest.mark.django_db
+    @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBAuth.retrieve_access_token')
+    def test_authorization_success(self, mocked_function, client):
         data = {
             'api_key': 'qwe',
             'api_secret': 'api_secret',
@@ -147,4 +150,4 @@ class TestMYOBAuthorizationView:
         url = reverse('myob_authorization', kwargs={'version': 'v2'}) + "?code=code"
         response = client.post(url, data=data)
 
-        assert response.status_code == status.HTTP_417_EXPECTATION_FAILED
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

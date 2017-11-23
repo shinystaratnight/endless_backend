@@ -87,12 +87,11 @@ class MYOBAuthorizationView(APIView):
     """
     def post(self, *args, **kwargs):
         data = {
-            'client_id': self.request.data.get('api_key'),
-            'client_secret': self.request.data.get('api_secret'),
-            'refresh_token': self.request.data.get('redirect_uri'),
+            'client_id': self.request.data.get('api_key', None),
+            'client_secret': self.request.data.get('api_secret', None),
+            'refresh_token': self.request.data.get('redirect_uri', None),
             'grant_type': 'refresh_token'
         }
-        import pdb; pdb.set_trace()
         auth_client = MYOBAuth(self.request)
         auth_client.retrieve_access_code()
         auth_client.retrieve_access_token(data=data)

@@ -14,6 +14,8 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
+from rest_framework import status
+from rest_framework.exceptions import APIException
 
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBAuthData, MYOBCompanyFileToken
@@ -23,10 +25,11 @@ from r3sourcer.apps.myob.api.utils import get_myob_app_info
 log = logging.getLogger(__name__)
 
 
-class MYOBException(Exception):
+class MYOBException(APIException):
     """
     General MYOB related Exception
     """
+    status_code = status.HTTP_400_BAD_REQUEST
 
 
 class MYOBProgrammingException(MYOBException):
@@ -294,8 +297,10 @@ class MYOBAuth(object):
         resp = myob_request('post', url, data=data)
         log.info('%s %s', resp.status_code, resp.content)
 
-        resp_data = resp.json(parse_float=decimal.Decimal)
+        if resp.status_code != status.HTTP_200_OK:
+            raise MYOBImplementationException('MYOB API returned %s status code: %s' % (resp.status_code, resp.content))
 
+        resp_data = resp.json(parse_float=decimal.Decimal)
         self.set_attr('access_token', resp_data['access_token'])
         self.set_attr('refresh_token', resp_data['refresh_token'])
         self.set_attr('user_uid', resp_data['user']['uid'])
