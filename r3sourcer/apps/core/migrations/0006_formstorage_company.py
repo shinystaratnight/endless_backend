@@ -9,7 +9,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0006_formstorage_status'),
+        ('core', '0005_formstorage_status'),
     ]
 
     operations = [
