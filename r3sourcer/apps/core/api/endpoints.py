@@ -18,6 +18,8 @@ class ApiEndpoint(Endpoint):
     list_tabs = None
     list_buttons = None
 
+    list_editable_filter = None
+
     ordering = None
     ordering_mapping = None
     context_actions = None
@@ -196,3 +198,8 @@ class ApiEndpoint(Endpoint):
                 rv.append(bulk_action)
 
         return rv
+
+    def get_list_editable_filter(self):
+        if self.list_editable_filter is None:
+            self.list_editable_filter = []
+        return self.list_editable_filter

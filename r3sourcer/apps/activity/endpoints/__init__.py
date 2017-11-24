@@ -61,5 +61,20 @@ class ActivityEndpoint(ApiEndpoint):
         }
     )
 
+    list_editable = (
+        'priority',
+        {
+            'label': _("Starts at"),
+            'type': constants.FIELD_DATETIME,
+            'field': 'starts_at'
+        },
+        {
+            'label': _("Ends at"),
+            'type': constants.FIELD_DATETIME,
+            'field': 'ends_at'
+        },
+        'done'
+    )
+
 
 router.register(endpoint=ActivityEndpoint())

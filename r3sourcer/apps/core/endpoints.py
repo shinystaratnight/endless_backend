@@ -244,15 +244,11 @@ class ContactEndpoint(ApiEndpoint):
                 },
                 {
                     'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.total_score',
+                    'field': 'candidate_contacts.candidate_scores.loyalty',
                 },
                 {
                     'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.loyalty_score',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.reliability_score',
+                    'field': 'candidate_contacts.candidate_scores.reliability',
                 },
             ),
         }, {
@@ -985,17 +981,25 @@ class WorkflowObjectEndpoint(ApiEndpoint):
     serializer = serializers.WorkflowObjectSerializer
 
     fieldsets = ({
-        'type': constants.CONTAINER_HIDDEN,
-        'name': _('Residency'),
-        'fields': [
-            'object_id'
-        ],
+        'type': constants.FIELD_TEXT,
+        'field': 'object_id',
+        'hide': True,
     }, 'state', {
         'type': constants.FIELD_TEXTAREA,
         'field': 'comment'
     }, 'active')
 
     list_filter = ('object_id', 'active', 'state.workflow.name')
+
+    list_display = (
+        'state_name', 'comment', 'active', {
+            'field': 'created_at',
+            'type': constants.FIELD_STATIC,
+        }, {
+            'field': 'updated_at',
+            'type': constants.FIELD_STATIC,
+        }
+    )
 
 
 class DashboardModuleEndpoint(ApiEndpoint):
@@ -1037,7 +1041,7 @@ class FormStorageEndpoint(ApiEndpoint):
             'field': 'form',
             'type': constants.FIELD_LINK,
             'endpoint': format_lazy(
-                '{}{{form_id}}/',
+                '{}{{form.id}}/',
                 api_reverse_lazy('core/forms')
             ),
         },
@@ -1045,7 +1049,7 @@ class FormStorageEndpoint(ApiEndpoint):
             'label': _('Company'),
             'type': constants.FIELD_LINK,
             'endpoint': format_lazy(
-                '{}{{company_id}}/',
+                '{}{{company.id}}/',
                 api_reverse_lazy('core/companies')
             ),
             'field': 'company',

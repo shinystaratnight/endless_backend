@@ -1,12 +1,13 @@
 from django.core.exceptions import ValidationError
 from django.db import transaction
 from django.db import models
+from django.db.models.signals import post_save
 from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
-from r3sourcer.apps.sms_interface.models import PhoneNumber, SMSMessage, replace_timezone
+from r3sourcer.apps.sms_interface import models as sms_models
 from model_utils import Choices
 from twilio import TwilioRestException
 from twilio.rest import TwilioRestClient
@@ -81,7 +82,7 @@ class TwilioCredential(UUIDModel, DeadlineCheckingMixin):
         return bool(self.last_sync)
 
 
-class TwilioPhoneNumber(PhoneNumber):
+class TwilioPhoneNumber(sms_models.PhoneNumber):
 
     account_sid = models.CharField(
         verbose_name=_("Account SID"),
@@ -95,8 +96,8 @@ class TwilioPhoneNumber(PhoneNumber):
             'sid': remote_phone.sid,
             'company': company,
             'account_sid': remote_phone.account_sid,
-            'created_at': replace_timezone(remote_phone.date_created),
-            'updated_at': replace_timezone(remote_phone.date_updated),
+            'created_at': sms_models.replace_timezone(remote_phone.date_created),
+            'updated_at': sms_models.replace_timezone(remote_phone.date_updated),
             'friendly_name': remote_phone.friendly_name,
             'phone_number': remote_phone.phone_number,
             'sms_enabled': remote_phone.capabilities['sms'],
@@ -248,7 +249,7 @@ class TwilioAccount(UUIDModel):
         return account
 
 
-class TwilioSMSMessage(SMSMessage):
+class TwilioSMSMessage(sms_models.SMSMessage):
 
     @classmethod
     @transaction.atomic
@@ -265,9 +266,9 @@ class TwilioSMSMessage(SMSMessage):
             'from_number': remote_message.from_,
             'to_number': remote_message.to,
             'text': remote_message.body,
-            'sent_at': replace_timezone(remote_message.date_sent),
-            'updated_at': replace_timezone(remote_message.date_updated),
-            'created_at': replace_timezone(remote_message.date_created),
+            'sent_at': sms_models.replace_timezone(remote_message.date_sent),
+            'updated_at': sms_models.replace_timezone(remote_message.date_updated),
+            'created_at': sms_models.replace_timezone(remote_message.date_created),
             'status': remote_message.status.upper(),
             'type': message_type,
             'error_code': remote_message.error_code,
@@ -280,3 +281,6 @@ class TwilioSMSMessage(SMSMessage):
 
     class Meta:
         proxy = True
+
+
+post_save.connect(sms_models.disable_default_flag_for_phones, sender=TwilioPhoneNumber)

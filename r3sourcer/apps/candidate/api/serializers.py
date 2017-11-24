@@ -47,27 +47,13 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core_serializers.ApiBaseModelSerializer):
-    blacklists = BlackListSerializer(many=True)
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
-    active_states = core_serializers.WorkflowObjectSerializer(many=True)
-    vacancy_offers = VacancyOfferSerializer(many=True)
-    carrier_lists = CarrierListSerializer(many=True)
-    candidate_evaluations = timesheet_serializers.CandidateEvaluationSerializer(many=True)
 
-    method_fields = ('state', 'total_score', 'bmi', 'skill_list', 'tag_list')
+    method_fields = ('state', 'average_score', 'bmi', 'skill_list', 'tag_list')
     many_related_fields = {
-        'candidate_evaluations': 'candidate_contact',
-        'carrier_lists': 'candidate_contact',
-        'vacancy_offers': 'candidate_contact',
-        'active_states': 'candidate_contact',
-        'blacklists': 'candidate_contact',
-        'activities': 'candidate_contact',
-        'notes': 'candidate_contact',
         'candidate_skills': 'candidate_contact',
         'tag_rels': 'candidate_contact',
-        'favouritelists': 'candidate_contact',
-        'recruitment_agent': 'candidate_contact',
     }
 
     def create(self, validated_data):
@@ -88,24 +74,16 @@ class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core
     class Meta:
         model = candidate_models.CandidateContact
         fields = (
-            '__all__', 'activities', 'notes',
+            '__all__',
             {
-                'blacklists': ('__all__',),
-                'favouritelists': ('__all__',),
-                'active_states': ('__all__',),
-                'vacancy_offers': ('__all__',),
-                'carrier_lists': ('__all__',),
-                'candidate_evaluations': ('__all__',),
-                'tag_rels': ('id', 'verified_by', 'verification_evidence'),
-                'candidate_skills': (
-                    'id', 'skill', 'score', 'prior_experience'
-                ),
                 'contact': ('__all__', {
-                    'address': ('__all__',),
+                    'address': ('__all__', ),
                 }),
-                'recruitment_agent': ('__all__', {
-                    'contact': ('__all__',),
+                'tag_rels': ('id', 'tag', 'verified_by', 'verification_evidence'),
+                'candidate_skills': ('id', 'score', 'prior_experience', {
+                    'skill': ('id', )
                 }),
+                'candidate_scores': ('id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score'),
             }
         )
 
@@ -123,11 +101,11 @@ class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core
             for state in states
         ]
 
-    def get_total_score(self, obj):
+    def get_average_score(self, obj):
         if not obj:
             return
 
-        return obj.get_total_score()
+        return obj.candidate_scores.get_average_score()
 
     def get_bmi(self, obj):
         if not obj:
