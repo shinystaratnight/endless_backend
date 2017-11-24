@@ -95,3 +95,16 @@ class TestDynamicCoefficientRule:
         obj.save()
 
         assert obj.priority == 0
+
+
+class TestRateCoefficientModifier:
+
+    def test_calc(self):
+        mod = RateCoefficientModifier(multiplier=1, fixed_addition=1)
+
+        assert mod.calc(1) == 2
+
+    def test_calc_fixed_override(self):
+        mod = RateCoefficientModifier(fixed_override=1)
+
+        assert mod.calc(1) == 1

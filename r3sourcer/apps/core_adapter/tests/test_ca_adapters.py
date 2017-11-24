@@ -13,7 +13,7 @@ from r3sourcer.apps.core_adapter.adapters import (
 )
 from r3sourcer.apps.core_adapter.constants import (
     CONTAINER_TYPES, CONTAINER_ROW, CONTAINER_COLLAPSE, FIELD_RADIO_GROUP,
-    FIELD_BUTTON, FIELD_RELATED, FIELD_SELECT, FIELD_TIMELINE,
+    FIELD_BUTTON, FIELD_RELATED, FIELD_SELECT, FIELD_TIMELINE, FIELD_LIST
 )
 
 
@@ -313,8 +313,7 @@ class TestAngularApiAdapter:
             'label': 'label',
             'field': 'id',
             'endpoint': '/timeline/',
-            'query_opts': {
-                'query': ['model', 'object_id'],
+            'query': {
                 'model': 'model',
                 'object_id': '{id}',
             }
@@ -324,8 +323,55 @@ class TestAngularApiAdapter:
 
         assert res['type'] == FIELD_TIMELINE
         assert 'query' in res
-        assert 'model' in res
-        assert 'object_id' in res
+        assert 'model' in res['query']
+        assert 'object_id' in res['query']
+
+    def test_adapt_field_list_type(self):
+        field = {
+            'type': FIELD_LIST,
+            'label': 'label',
+            'field': 'id',
+            'endpoint': '/list/',
+            'query': {
+                'model': 'model',
+                'object_id': '{id}',
+            },
+            'add_label': 'label'
+        }
+
+        res = AngularApiAdapter.adapt_field(field)
+
+        assert res['type'] == FIELD_LIST
+        assert 'query' in res
+        assert 'model' in res['query']
+        assert 'add_label' in res['templateOptions']
+
+    def test_adapt_field_list_type_without_add_button(self):
+        field = {
+            'type': FIELD_LIST,
+            'label': 'label',
+            'field': 'id',
+            'endpoint': '/list/',
+            'query': {
+                'model': 'model',
+                'object_id': '{id}',
+            }
+        }
+
+        res = AngularApiAdapter.adapt_field(field)
+
+        assert res['type'] == FIELD_LIST
+        assert 'query' in res
+        assert 'model' in res['query']
+
+    def test_adapt_field_hide_field(self):
+        field = self.get_field('id')
+        field['hide'] = True
+
+        res = AngularApiAdapter.adapt_field(field)
+
+        assert res['type'] == 'input'
+        assert res['hide']
 
     @mock.patch.object(AngularApiAdapter, '_get_metadata_fieldsets_info')
     def test_map_fieldsets(self, mock_get_metadata_fieldsets, field, second_field):

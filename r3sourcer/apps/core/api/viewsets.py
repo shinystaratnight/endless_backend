@@ -58,6 +58,10 @@ class BaseViewsetMixin():
 
 class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
+    _exclude_data = {'__str__'}
+
+    picture_fields = {'picture', 'logo'}
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         fields = self.get_list_fields(request)
@@ -80,7 +84,8 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        data = self.clean_request_data(request.data)
+        data = self.prepare_related_data(request.data)
+        data = self.clean_request_data(data)
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -88,8 +93,42 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def update(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+        return super().update(request, *args, **kwargs)
+
     def process_response_data(self, data, queryset=None):
         return data
+
+    def prepare_related_data(self, data):
+        res = {}
+
+        for key, val in data.items():
+            if key in self._exclude_data:
+                continue
+
+            if isinstance(val, dict):
+                val = {k: v for k, v in val.items() if k not in self.picture_fields}
+
+                res[key] = self.prepare_related_data(val)
+            elif isinstance(val, list):
+                res[key] = [self.prepare_related_data(item) if isinstance(item, dict) else item for item in val]
+            else:
+                res[key] = val
+
+        return res['id'] if len(res) == 1 and 'id' in res else res
 
     def clean_request_data(self, data):
         return {

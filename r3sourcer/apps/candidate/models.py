@@ -248,21 +248,6 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         blank=True
     )
 
-    reliability_score = models.PositiveSmallIntegerField(
-        verbose_name=_("Reliability Score"),
-        default=0
-    )
-
-    loyalty_score = models.PositiveSmallIntegerField(
-        verbose_name=_("Loyalty Score"),
-        default=0
-    )
-
-    total_score = models.PositiveSmallIntegerField(
-        verbose_name=_("Total Score"),
-        default=0
-    )
-
     autoreceives_sms = models.BooleanField(
         verbose_name=_("Autoreceives SMS"),
         default=True
@@ -340,8 +325,8 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
                     self.weight is not None and
                     self.transportation_to_work is not None and
                     self.strength and self.language and
-                    self.reliability_score and
-                    self.loyalty_score)
+                    self.candidate_scores.reliability and
+                    self.candidate_scores.loyalty)
     is_personal_info_filled.short_description = _(
         'All personal info is required'
     )
@@ -437,15 +422,6 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
             else:
                 return _("Under Weight")
         return None
-
-    def get_total_score(self):
-        summary = 0
-        if self.reliability_score:
-            summary += self.reliability_score
-        if self.loyalty_score:
-            summary += self.loyalty_score
-        return summary / 2
-    get_total_score.short_description = _("Total score")
 
     def set_contact_unavailable(self):
         """
@@ -561,8 +537,7 @@ class TagRel(core_models.UUIDModel):
     def save(self, *args, **kwargs):
         # we don't allow set verified_by if tag require evidence
         # approval and this approval not uploaded
-        if self.tag.evidence_required_for_approval \
-                and not self.verification_evidence:
+        if self.tag.evidence_required_for_approval and not self.verification_evidence:
             self.verified_by = None
             self.verify = False
         if self.verify:

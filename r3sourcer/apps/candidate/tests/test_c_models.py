@@ -136,17 +136,6 @@ class TestCandidateContact:
         candidate = CandidateContact(weight=weight, height=height)
         assert candidate.get_bmi() == result
 
-    @pytest.mark.parametrize(
-        ['reliability_score', 'loyalty_score', 'result'],
-        [(2, 0, 1), (0, 2, 1), (2, 2, 2), (0, 0, 0)]
-    )
-    def test_get_total_score(self, reliability_score, loyalty_score, result):
-        candidate = CandidateContact(
-            reliability_score=reliability_score,
-            loyalty_score=loyalty_score
-        )
-        assert candidate.get_total_score() == result
-
     def test_get_phone_mobile(self, contact):
         candidate = CandidateContact(
             contact=contact,
@@ -233,8 +222,7 @@ class TestCandidateContact:
             candidate_scores=score
         )
         keys = ('height weight transportation_to_work strength language'
-                ' reliability_score loyalty_score tax_file_number'
-                ' super_annual_fund_name super_member_number bank_account'
+                ' tax_file_number super_annual_fund_name super_member_number bank_account'
                 ' emergency_contact_name emergency_contact_phone'
                 ' employment_classification').split()
         for key in keys:
