@@ -1041,7 +1041,7 @@ class FormStorageEndpoint(ApiEndpoint):
             'field': 'form',
             'type': constants.FIELD_LINK,
             'endpoint': format_lazy(
-                '{}{{form_id}}/',
+                '{}{{form.id}}/',
                 api_reverse_lazy('core/forms')
             ),
         },
@@ -1049,7 +1049,7 @@ class FormStorageEndpoint(ApiEndpoint):
             'label': _('Company'),
             'type': constants.FIELD_LINK,
             'endpoint': format_lazy(
-                '{}{{company_id}}/',
+                '{}{{company.id}}/',
                 api_reverse_lazy('core/companies')
             ),
             'field': 'company',
