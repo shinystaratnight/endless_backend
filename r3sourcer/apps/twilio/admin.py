@@ -127,6 +127,13 @@ class TwilioSMSMessageAdmin(AdminAllReadOnlyFields):
         }
 
 
-admin.site.register(TwilioPhoneNumber)
+class TwilioPhoneNumberAdmin(admin.ModelAdmin):
+
+    list_display = ('phone_number', 'company', 'is_default', 'sms_enabled', 'voice_enabled')
+    list_filter = ('company', 'is_default')
+    readonly_fields = ('phone_number', 'friendly_name', 'sms_enabled', 'mms_enabled', 'voice_enabled')
+
+
+admin.site.register(TwilioPhoneNumber, TwilioPhoneNumberAdmin)
 admin.site.register(TwilioCredential, TwilioCredentialAdmin)
 admin.site.register(TwilioSMSMessage, TwilioSMSMessageAdmin)
