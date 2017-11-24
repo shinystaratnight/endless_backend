@@ -18,12 +18,11 @@ from django.db.models.fields.related import (
 )
 from django.contrib.contenttypes.fields import GenericRelation
 
-from .. import models as core_models
-from ..workflow import (
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.workflow import (
     NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED
 )
-
-from .fields import (
+from r3sourcer.apps.core.api.fields import (
     ApiBaseRelatedField, ApiDateTimeTzField, ApiContactPictureField,
     EmptyNullField, ApiChoicesField
 )
