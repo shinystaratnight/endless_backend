@@ -54,7 +54,7 @@ class TwilioSMSService(BaseSMSService):
                     models.TwilioAccount.objects.get(sid=sid).phone_numbers.add(
                         *models.TwilioPhoneNumber.objects.filter(account_sid=sid)
                     )
-            print(c.last_sync)
+
             c.last_sync = last_sync
             c.save(update_fields=['last_sync'])
 
