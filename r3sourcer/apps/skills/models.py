@@ -1,8 +1,10 @@
+from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
-from r3sourcer.apps.core.models import UUIDModel
 
-from .managers import SelectRelatedSkillManager
+from r3sourcer.apps.core.models import UUIDModel
+from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
 
 class EmploymentClassification(UUIDModel):
@@ -50,6 +52,19 @@ class Skill(UUIDModel):
         verbose_name = _("Skill")
         verbose_name_plural = _("Skills")
 
+    def clean(self, *args, **kwargs):
+        have_default_base_rate = self.skill_rate_defaults.filter(default_rate=True).count()
+        have_default_price_list_rate = self.price_list_rates.filter(default_rate=True).count()
+
+        if self.active and (not have_default_base_rate or not have_default_price_list_rate):
+            raise ValidationError("Skill cant be active it doesnt have default price list rate and defalut base rate.")
+
+        super(Skill, self).clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super(Skill, self).save(*args, **kwargs)
+
     def __str__(self):
         return self.name
 
@@ -70,12 +85,40 @@ class SkillBaseRate(UUIDModel):
         default=0.00
     )
 
+    default_rate = models.BooleanField(
+        default=False,
+        verbose_name=_("Is Default Rate")
+    )
+
     objects = SelectRelatedSkillManager()
 
     class Meta:
         verbose_name = _("Skill Base Rate")
         verbose_name_plural = _("Skill Base Rates")
         ordering = ('hourly_rate',)
+        unique_together = ('skill', 'hourly_rate')
+
+    @classmethod
+    def set_default_rate(cls, sender, instance, created, **kwargs):
+        if created and not instance.skill.skill_rate_defaults.exclude(pk=instance.pk).count():
+            instance.default_rate = True
+            instance.save()
+
+    def clean(self, *args, **kwargs):
+        if self.default_rate:
+            default_rates = self.skill.skill_rate_defaults.filter(default_rate=True) \
+                                                          .exclude(pk=self.pk)
+            if default_rates.count():
+                raise ValidationError('Only one rate for the skill can be set to "True"')
+
+        super(SkillBaseRate, self).clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super(SkillBaseRate, self).save(*args, **kwargs)
 
     def __str__(self):
         return '{} ${}/h'.format(str(self.skill), str(self.hourly_rate))
+
+
+post_save.connect(SkillBaseRate.set_default_rate, sender=SkillBaseRate)

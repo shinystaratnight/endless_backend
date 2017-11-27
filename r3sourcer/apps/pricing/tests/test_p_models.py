@@ -108,3 +108,27 @@ class TestRateCoefficientModifier:
         mod = RateCoefficientModifier(fixed_override=1)
 
         assert mod.calc(1) == 1
+
+
+class TestPriceListRate:
+    def test_validation(self, skill, price_list):
+        PriceListRate.objects.create(skill=skill, price_list=price_list, default_rate=True)
+
+        with pytest.raises(Exception) as excinfo:
+            PriceListRate.objects.create(skill=skill, price_list=price_list, default_rate=True)
+
+        assert excinfo.value.messages[0] == 'Only one rate for the skill can be set to "True"'
+
+    @pytest.mark.django_db
+    def test_default_rate(self, skill, price_list):
+        base_rate = PriceListRate.objects.create(skill=skill,
+                                                 price_list=price_list,
+                                                 hourly_rate=20,
+                                                 default_rate=False)
+        base_rate2 = PriceListRate.objects.create(skill=skill,
+                                                  price_list=price_list,
+                                                  default_rate=False,
+                                                  hourly_rate=30)
+
+        assert base_rate.default_rate
+        assert not base_rate2.default_rate

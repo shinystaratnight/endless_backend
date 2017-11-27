@@ -141,7 +141,7 @@ def skill(db):
         name="Driver",
         carrier_list_reserve=2,
         short_name="Drv",
-        active=True
+        active=False
     )
 
 
