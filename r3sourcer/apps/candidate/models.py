@@ -620,8 +620,10 @@ class SkillRateRel(core_models.UUIDModel):
     hourly_rate = models.ForeignKey(
         skill_models.SkillBaseRate,
         related_name="candidate_skill_rates",
-        on_delete=models.PROTECT,
-        verbose_name=_("Hourly Rate")
+        verbose_name=_("Hourly Rate"),
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
     )
 
     valid_from = models.DateField(verbose_name=_("Valid From"))
