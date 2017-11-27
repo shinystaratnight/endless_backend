@@ -1,5 +1,6 @@
 import json
 import uuid
+from collections import OrderedDict
 
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import JSONField
@@ -181,7 +182,7 @@ class Form(UUIDModel):
         for group in FormFieldGroup.objects.filter(form=self):
             group_data = {
                 'name': group.name,
-                'fields': {}
+                'fields': OrderedDict()
             }
             for field in FormField.objects.filter(group_id=group.id):
                 group_data['fields'].setdefault(field.name, field.get_form_field())
@@ -442,6 +443,9 @@ class FormField(PolymorphicModel):
         blank=True
     )
 
+    class Meta:
+        ordering = ('position',)
+
     def get_ui_config(self):
         return {
             'name': self.name,
@@ -531,18 +535,10 @@ class ModelFormField(FormField):
         :return: forms.Field object
         """
         content_type = self.group.form.content_type
-        model_class = content_type.model_class()
-        field_name = self.name
-        form_field_name = field_name
-
-        if len(field_name.split(StorageHelper.LOOKUP_SEPARATOR)) == 2:
-            lookup_name, field_name = StorageHelper.separate_lookup_name(self.name)
-            model_class = model_class._meta.get_field(lookup_name).related_model
-            form_field_name = StorageHelper.join_lookup_names(lookup_name, field_name)
-
+        model_class, field_name = StorageHelper.get_field_from_lookup_name(content_type.model_class(), self.name)
         form_field = model_class._meta.get_field(field_name).formfield()
         form_field.required = self.required
-        form_field.name = form_field_name
+        form_field.name = self.name
         return form_field
 
     def get_ui_config(self) -> dict:
