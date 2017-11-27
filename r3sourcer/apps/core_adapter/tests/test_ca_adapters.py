@@ -373,6 +373,24 @@ class TestAngularApiAdapter:
         assert res['type'] == 'input'
         assert res['hide']
 
+    def test_adapt_field_input_showif(self):
+        field = self.get_field()
+        field['showIf'] = ['test']
+
+        res = AngularApiAdapter.adapt_field(field)
+
+        assert res['type'] == 'input'
+        assert 'showIf' in res
+
+    def test_adapt_field_button_type_showif(self):
+        field = self.get_button_field()
+        field['showIf'] = ['test']
+
+        res = AngularApiAdapter.adapt_field(field)
+
+        assert res['type'] == FIELD_BUTTON
+        assert 'showIf' in res
+
     @mock.patch.object(AngularApiAdapter, '_get_metadata_fieldsets_info')
     def test_map_fieldsets(self, mock_get_metadata_fieldsets, field, second_field):
         mock_get_metadata_fieldsets.return_value = self.get_res_list()[:2]

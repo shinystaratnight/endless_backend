@@ -39,21 +39,46 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'photo': False
                 }
             )
-        },
-        {
+        }, {
             'type': constants.CONTAINER_COLLAPSE,
             'name': _('Residency'),
             'collapsed': True,
             'fields': (
-                'residency', 'visa_type', 'visa_expiry_date', 'vevo_checked_at', 'nationality',
+                'residency', {
+                    'type': constants.FIELD_RELATED,
+                    'field': 'visa_type',
+                    'showIf': [
+                        {
+                            'residency': str(candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary),
+                        }
+                    ],
+                }, {
+                    'type': constants.FIELD_DATE,
+                    'field': 'visa_expiry_date',
+                    'showIf': [
+                        'visa_type.id',
+                    ],
+                }, {
+                    'type': constants.FIELD_DATE,
+                    'field': 'vevo_checked_at',
+                    'showIf': [
+                        'visa_type.id',
+                    ],
+                }, 'nationality',
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'name': _('Formalities'),
             'collapsed': True,
             'fields': (
-                'tax_file_number', 'superannuation_fund', 'super_member_number', 'bank_account',
-                'emergency_contact_name', 'emergency_contact_phone', 'employment_classification', 'autoreceives_sms',
+                'tax_file_number', 'superannuation_fund', {
+                    'type': constants.FIELD_TEXT,
+                    'field': 'super_member_number',
+                    'showIf': [
+                        'superannuation_fund.id'
+                    ],
+                }, 'bank_account', 'emergency_contact_name', 'emergency_contact_phone', 'employment_classification',
+                'autoreceives_sms',
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,

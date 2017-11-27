@@ -17,7 +17,8 @@ from .utils import api_reverse
 
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
-    'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query'
+    'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
+    'showIf',
 )
 
 
@@ -100,6 +101,9 @@ class AngularApiAdapter(BaseAdapter):
             if query_params is not None:
                 adapted['query'] = query_params
 
+            if 'showIf' in field:
+                adapted['showIf'] = field['showIf']
+
             return adapted
         elif component_type == constants.FIELD_RELATED:
             if 'related_endpoint' in field:
@@ -152,6 +156,9 @@ class AngularApiAdapter(BaseAdapter):
         if ('default' in field and
                 isinstance(field['default'], (str, int, float, bool))):
             adapted['default'] = field['default']
+
+        if 'showIf' in field:
+            adapted['showIf'] = field['showIf']
 
         field_ui = field.get('ui', {})
         ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo')
