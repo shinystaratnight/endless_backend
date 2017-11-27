@@ -82,6 +82,22 @@ class StorageHelper(object):
     def join_lookup_names(cls, *fields):
         return cls.LOOKUP_SEPARATOR.join(fields)
 
+    @classmethod
+    def get_field_from_lookup_name(cls, model_class, field_name: str) -> tuple():
+        """
+        Get model class and it's field from lookup string
+
+        >> StorageHelper.get_field_from_lookup_name('contact__address__street_address')
+        << (<class 'r3sourcer.apps.core.models.core.Address'>, 'street_address')
+
+        :return: tuple ( model class object, field name )
+        """
+        if field_name.count(cls.LOOKUP_SEPARATOR):
+            lookup_name, field_name = StorageHelper.separate_lookup_name(field_name)
+            model_class = model_class._meta.get_field(lookup_name).related_model
+            return cls.get_field_from_lookup_name(model_class, field_name)
+        return model_class, field_name
+
 
 class SimpleFieldHelper(object):
     """
