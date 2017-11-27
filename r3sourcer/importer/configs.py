@@ -123,14 +123,18 @@ class ContactConfig(BaseConfig):
         if not row['phone_mobile']:
             row['phone_mobile'] = None
 
+        return row
+
+    @classmethod
+    def post_process(cls, row, instance):   # pragma: no cover
         if row['user_id'] is None and (row['email'] or row['phone_mobile']):
             user_obj = models.User.objects.create(
                 email=row['email'],
                 phone_mobile=row['phone_mobile']
             )
-            row['user_id'] = user_obj.id
 
-        return row
+            instance.user = user_obj
+            instance.save()
 
 
 class ContactUnavailabilityConfig(BaseConfig):
@@ -332,13 +336,11 @@ class SuperannuationFundConfig(BaseConfig):
 class CandidateContactConfig(BaseConfig):
 
     columns = {
-        'id', 'contact_id', 'residency', 'nationality', 'visa_type_id',
-        'visa_expiry_date', 'vevo_checked_at', 'referral', 'tax_file_number',
-        'super_annual_fund_name', 'super_member_number', 'weight', 'height',
-        'strength', 'language', 'transportation_to_work', 'reliability_score',
-        'emergency_contact_name', 'emergency_contact_phone', 'loyalty_score',
-        'total_score', 'autoreceives_sms', 'bank_account_id', 'updated_at',
-        'employment_classification_id', 'superannuation_fund', 'created_at',
+        'id', 'contact_id', 'residency', 'nationality', 'visa_type_id', 'visa_expiry_date', 'vevo_checked_at',
+        'referral', 'tax_file_number', 'super_annual_fund_name', 'super_member_number', 'weight', 'height',
+        'strength', 'language', 'transportation_to_work', 'emergency_contact_name', 'emergency_contact_phone',
+        'autoreceives_sms', 'bank_account_id', 'updated_at', 'employment_classification_id', 'superannuation_fund',
+        'created_at',
     }
     model = candidate_models.CandidateContact
     lbk_model = 'crm_hr_recruiteecontact'
@@ -349,6 +351,19 @@ class CandidateContactConfig(BaseConfig):
             code2=row['nationality']).first()
 
         return row
+
+    @classmethod
+    def post_process(cls, row, instance):   # pragma: no cover
+        if not hasattr(instance, 'candidate_scores'):
+            hr_models.CandidateScore.objects.create(
+                candidate_contact=instance,
+                reliability=row['reliability_score'],
+                loyalty=row['loyalty_score'],
+            )
+        else:
+            instance.candidate_scores.reliability = row['reliability_score']
+            instance.candidate_scores.loyalty = row['loyalty_score']
+            instance.candidate_scores.save(update_fields=['reliability', 'loyalty'])
 
 
 class TagConfig(BaseConfig):

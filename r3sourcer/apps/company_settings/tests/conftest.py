@@ -1,8 +1,12 @@
 import pytest
 
+from django.contrib.auth.models import Group
+
 from r3sourcer.apps.company_settings.models import MYOBAccount
 from r3sourcer.apps.core.models import User, Company, CompanyContact, InvoiceRule
 from r3sourcer.apps.hr.models import PayslipRule
+from r3sourcer.apps.company_settings.models import GlobalPermission
+from r3sourcer.apps.core.models import User, Company, CompanyContact
 
 
 @pytest.fixture
@@ -35,28 +39,12 @@ def company(db, manager):
 
 
 @pytest.fixture
-def payslip_rule(db, company):
-    return PayslipRule.objects.create(
-        company=company,
-        comment='comment',
-    )
+(??)
 
 
 @pytest.fixture
-def invoice_rule(db, company):
-    return InvoiceRule.objects.create(
-        company=company,
-        serial_number='TEST',
-        starting_number=100,
-        comment='comment',
-        notice='notice'
-    )
+(??)
 
 
 @pytest.fixture
-def myob_account(db):
-    return MYOBAccount.objects.create(
-        number='2-2000',
-        name='Test Income Account',
-        type='income'
-    )
+(??)

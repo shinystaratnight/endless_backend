@@ -5,7 +5,7 @@ from django.core.exceptions import ValidationError
 
 from r3sourcer.apps.core.models import CompanyContactRelationship
 from r3sourcer.apps.core.utils.companies import get_closest_companies, get_master_companies
-from r3sourcer.apps.core.utils.geo import fetch_geo_coord_by_address, calc_distance, GeoException
+from r3sourcer.apps.core.utils.geo import fetch_geo_coord_by_address, calc_distance
 from r3sourcer.apps.core.utils.validators import string_is_numeric
 
 
@@ -34,7 +34,15 @@ class TestGeo:
         mock_gmaps = mock_googlemaps.Client.return_value
         mock_gmaps.geocode.side_effect = googlemaps.exceptions.ApiError('REQUEST_DENIED')
         lat, lng = fetch_geo_coord_by_address('test address')
-        assert (lat, lng) == (None, None)
+        assert (lat, lng) == (False, False)
+
+    @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps')
+    def test_fetch_geo_coord_wrong_gkey(self, mock_googlemaps):
+        mock_gmaps = mock_googlemaps.Client.return_value
+        mock_gmaps.geocode.side_effect = ValueError('error')
+        lat, lng = fetch_geo_coord_by_address('test address')
+
+        assert (lat, lng) == (False, False)
 
     @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps')
     def test_calc_distance_successfull(self, mock_googlemaps):
@@ -66,15 +74,25 @@ class TestGeo:
     def test_calc_distance_unsuccessfull(self, mock_googlemaps):
         mock_gmaps = mock_googlemaps.return_value
         mock_gmaps.distance_matrix.side_effect = googlemaps.exceptions.ApiError('REQUEST_DENIED')
-        with pytest.raises(GeoException):
-            calc_distance('test address', ['test address 1', 'test address 2'])
+        res = calc_distance('test address', ['test address 1', 'test address 2'])
+
+        assert res == []
 
     @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps.Client')
     def test_calc_distance_query_limit_reached(self, mock_googlemaps):
         mock_gmaps = mock_googlemaps.return_value
         mock_gmaps.distance_matrix.side_effect = googlemaps.exceptions.ApiError('OVER_QUERY_LIMIT')
-        with pytest.raises(GeoException):
-            calc_distance('test address', ['test address 1', 'test address 2'])
+        res = calc_distance('test address', ['test address 1', 'test address 2'])
+
+        assert res == []
+
+    @mock.patch('r3sourcer.apps.core.utils.geo.googlemaps.Client')
+    def test_calc_distance_query_wrong_gkey(self, mock_googlemaps):
+        mock_gmaps = mock_googlemaps.return_value
+        mock_gmaps.distance_matrix.side_effect = ValueError('error')
+        res = calc_distance('test address', ['test address 1', 'test address 2'])
+
+        assert res == []
 
 
 class TestCompanies:

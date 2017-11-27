@@ -64,7 +64,7 @@ class TestFilterFactory:
     def test_filter_factory_related(self, endpoint):
         res_cls = filter_factory(endpoint)
 
-        assert isinstance(res_cls.declared_filters['field'], UUIDFilter)
+        assert isinstance(res_cls.declared_filters['field'], CharFilter)
 
     def test_filter_factory_related_base_filter_class(self):
         endpoint = self.get_endpoint()
@@ -72,7 +72,7 @@ class TestFilterFactory:
 
         res_cls = filter_factory(endpoint)
 
-        assert isinstance(res_cls.declared_filters['field'], UUIDFilter)
+        assert isinstance(res_cls.declared_filters['field'], CharFilter)
 
     def test_filter_factory_related_base_filter_class_with_field(self):
         endpoint = self.get_endpoint()
@@ -135,9 +135,12 @@ class TestFilterFactory:
         assert isinstance(res_cls.declared_filters['field'], ChoiceFilter)
 
     def test_filter_factory_select_base_filter_choices_call(self, endpoint):
+        def fn():
+            return [{'value': 'val', 'label': 'label'}]  # pragma: no cover
+
         endpoint.get_list_filter.return_value = ({
             'field': 'field',
-            'choices': lambda: [{'value': 'val', 'label': 'label'}]
+            'choices': fn
         }, )
         endpoint.get_metadata_fields.return_value = [{
             'key': 'field',

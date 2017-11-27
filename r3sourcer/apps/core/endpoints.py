@@ -244,15 +244,11 @@ class ContactEndpoint(ApiEndpoint):
                 },
                 {
                     'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.total_score',
+                    'field': 'candidate_contacts.candidate_scores.loyalty',
                 },
                 {
                     'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.loyalty_score',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.reliability_score',
+                    'field': 'candidate_contacts.candidate_scores.reliability',
                 },
             ),
         }, {
@@ -268,21 +264,28 @@ class ContactEndpoint(ApiEndpoint):
                 },
             ),
         },
-        # TODO: Should work with the endless_logger
-        # {
-        #     'type': constants.CONTAINER_COLLAPSE,
-        #     'collapsed': False,
-        #     'name': _('History'),
-        #     'fields': (
-        #         {
-        #             'type': constants.METADATA_LIST_TYPE,
-        #             'readonly': True,
-        #             'list': True,
-        #             'many': True,
-        #             'field': 'object_history'
-        #         },
-        #     ),
-        # }
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('History'),
+            'fields': (
+                {
+                    'type': constants.CONTAINER_COLLAPSE,
+                    'collapsed': True,
+                    'name': _('History'),
+                    'fields': (
+                        {
+                            'type': constants.FIELD_RELATED,
+                            'field': 'object_history',
+                            'many': True,
+                            'list': True,
+                            'readonly': True,
+                            'endpoint': api_reverse_lazy('log')
+                        },
+                    )
+                }
+            ),
+        }
     )
 
     list_filter = [{
@@ -317,7 +320,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'type': constants.FIELD_LINK,
                 'endpoint': format_lazy(
                     '{}{{company.id}}/',
-                    api_reverse_lazy('endless-core/companies')
+                    api_reverse_lazy('core/companies')
                 ),
                 'field': 'company.name',
             }, {
@@ -327,7 +330,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'text': '{field}',
                 'endpoint': format_lazy(
                     '{}?company={{company.id}}',
-                    api_reverse_lazy('endless-core/invoices')
+                    api_reverse_lazy('core/invoices')
                 ),
                 'field': 'invoices_count',
                 'action': 'openList',
@@ -338,7 +341,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'text': '{field}',
                 'endpoint': format_lazy(
                     '{}?provider_company={{company.id}}',
-                    api_reverse_lazy('endless-core/orders')
+                    api_reverse_lazy('core/orders')
                 ),
                 'field': 'orders_count',
                 'action': 'openList',
@@ -410,7 +413,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
             'label': _('Journal'),
             'fields': ({
                 'type': constants.FIELD_BUTTON,
-                'endpoint': api_reverse_lazy('endless-core/companyaddresses',
+                'endpoint': api_reverse_lazy('core/companyaddresses',
                                              'log'),
                 'text': _('Open Journal'),
                 'action': 'openList',
@@ -479,7 +482,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'portfolio_manager',
-            'endpoint': api_reverse_lazy('endless-core/companycontacts'),
+            'endpoint': api_reverse_lazy('core/companycontacts'),
         }, {
             'field': 'updated_at',
             'type': constants.FIELD_DATE,
@@ -535,7 +538,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_LINK,
             'endpoint': format_lazy(
                 '{}{{id}}/',
-                api_reverse_lazy('endless-core/companies')
+                api_reverse_lazy('core/companies')
             ),
             'field': 'name',
         },
@@ -574,6 +577,247 @@ class CompanyEndpoint(ApiEndpoint):
             'label': _('Client State'),
             'field': 'state',
         },
+    )
+
+    fieldsets = (
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('Picture'),
+            'fields': (
+                {
+                    'type': constants.FIELD_PICTURE,
+                    'field': 'logo',
+                    'label_upload': _('Choose a file'),
+                    'label_photo': _('Take a photo'),
+                },
+            ),
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('General'),
+            'fields': (
+                'name', 'business_id', 'registered_for_gst', 'tax_number',
+                {
+                    'label': _('Primary Contact'),
+                    'type': constants.FIELD_STATIC,
+                    'field': 'primary_contact',
+                },
+                {
+                    'label': _('Primary Contact'),
+                    'type': constants.FIELD_STATIC,
+                    'field': 'manager',
+                },
+                'website', 'type', 'company_rating',
+                {
+                    'label': _('Date of incorporation'),
+                    'type': constants.FIELD_DATE,
+                    'field': 'date_of_incorporation'
+                },
+            ),
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Company Address'),
+            'fields': (
+                {
+                    'label': _('Addresses'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'edit': True,
+                    'field': 'company_addresses',
+                    'endpoint': api_reverse_lazy('core/notes'),
+                },
+                {
+                    'label': _('HQ Address'),
+                    'type': constants.CONTAINER_COLLAPSE,
+                    'collapsed': False,
+                    'fields': (
+                        'get_hq_address.address.__str__', 'get_hq_address.hq',
+                        'get_hq_address.name',
+                        {
+                            'label': _('Termination date'),
+                            'type': constants.FIELD_DATE,
+                            'field': 'get_hq_address.termination_date'
+                        }, 'get_hq_address.primary_contact.__str__',
+                        'get_hq_address.active', 'get_hq_address.created',
+                        'get_hq_address.updated',
+                    )
+                },
+
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Company contacts'),
+            'fields': ()
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Jobsites'),
+            'fields': (
+                {
+                    'label': _('Jobsites'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'edit': True,
+                    'field': 'jobsites',
+                    'endpoint': api_reverse_lazy('core/jobsites'),
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Credit info'),
+            'fields': (
+                {
+                    'type': constants.FIELD_PICTURE,
+                    'field': 'credit_check_proof',
+                    'label_upload': _('Choose a file'),
+                    'label_photo': _('Take a photo'),
+                }, 'credit_check',
+                {
+                    'label': _('Approval date'),
+                    'type': constants.FIELD_DATE,
+                    'field': 'credit_check_date',
+                }, 'approved_credit_limit',
+                'terms_of_payment', 'payment_due_date',
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Banking details'),
+            'fields': (
+                'billing_email',
+                {
+                    'type': constants.FIELD_RELATED,
+                    'field': 'bank_account',
+                    'endpoint': api_reverse_lazy('core/bankaccounts'),
+                },
+                'expense_account'
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Price list'),
+            'fields': (
+                {
+                    'label': _('Price list'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'edit': True,
+                    'field': 'price_lists',
+                    'endpoint': api_reverse_lazy('core/pricelists'),
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Company state timeline'),
+            'fields': (
+                {
+                    'type': constants.FIELD_TIMELINE,
+                    'label': _('States Timeline'),
+                    'field': 'id',
+                    'endpoint': format_lazy(
+                        '{}timeline/',
+                        api_reverse_lazy('core/workflownodes'),
+                    ),
+                    'query': ['model', 'object_id'],
+                    'model': 'core.company',
+                    'object_id': '{id}',
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Notes'),
+            'fields': (
+                'description',
+                {
+                    'label': _('Notes'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'edit': True,
+                    'field': 'notes',
+                    'endpoint': api_reverse_lazy('core/notes'),
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Other'),
+            'fields': (
+                {
+                    'label': _('Master company'),
+                    'type': constants.FIELD_RELATED,
+                    'list': True,
+                    'readonly': True,
+                    'field': 'get_master_company',
+                    'endpoint': api_reverse_lazy('core/companies'),
+                },
+                {
+                    'label': _('Portfolio manager'),
+                    'type': constants.FIELD_RELATED,
+                    'field': 'manager',
+                    'endpoint': '',
+                }, 'timesheet_approval_scheme',
+                {
+                    'label': _('Parent'),
+                    'type': constants.FIELD_RELATED,
+                    'field': 'parent.__str__',
+                    'endpoint': api_reverse_lazy('core/companies'),
+                },
+                {
+                    'label': _('Created date'),
+                    'type': constants.FIELD_DATETIME,
+                    'field': 'created',
+                },
+                {
+                    'label': _('Updated date'),
+                    'type': constants.FIELD_DATETIME,
+                    'field': 'updated',
+                },
+            )
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Logo'),
+            'fields': (
+                {
+                    'type': constants.FIELD_PICTURE,
+                    'field': 'logo',
+                    'label_upload': _('Choose a file'),
+                    'label_photo': _('Take a photo'),
+                },
+            ),
+        },
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('History'),
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'field': 'object_history',
+                    'many': True,
+                    'list': True,
+                    'readonly': True,
+                    'endpoint': api_reverse_lazy('log')
+                },
+            )
+        }
     )
 
 
@@ -630,13 +874,13 @@ class CompanyContactEndpoint(ApiEndpoint):
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'company',
-            'endpoint': api_reverse_lazy('endless-core/companies'),
+            'endpoint': api_reverse_lazy('core/companies'),
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'manager',
             'endpoint': format_lazy(
                 '{}?is_manager=3',
-                api_reverse_lazy('endless-core/companycontacts')
+                api_reverse_lazy('core/companycontacts')
             ),
         },]
 
@@ -670,7 +914,7 @@ class CompanyRelEndpoint(ApiEndpoint):
             'field': 'id',
             'endpoint': format_lazy(
                 '{}timeline/',
-                api_reverse_lazy('endless-core/workflownodes'),
+                api_reverse_lazy('core/workflownodes'),
             ),
             'query': ['model', 'object_id'],
             'model': 'core.companyrel',
@@ -701,7 +945,10 @@ class NavigationEndpoint(ApiEndpoint):
 class WorkflowEndpoint(ApiEndpoint):
 
     model = models.Workflow
+    search_fields = ('name', 'model__app_label', 'model__model', )
     fieldsets = ('name', 'model', )
+
+    list_display = ('name', 'model', )
 
 
 class WorkflowNodeEndpoint(ApiEndpoint):
@@ -711,12 +958,47 @@ class WorkflowNodeEndpoint(ApiEndpoint):
     serializer = serializers.WorkflowNodeSerializer
     filter_class = filters.WorkflowNodeFilter
 
+    search_fields = (
+        'workflow__name', 'company__name', 'number', 'name_before_activation', 'name_after_activation'
+    )
+    list_filter = ('workflow.model', )
+
     fieldsets = (
         'workflow', 'number', 'name_before_activation',
         'name_after_activation', {
             'type': constants.FIELD_RULE,
             'field': 'rules',
         }, 'company', 'active', 'hardlock',
+    )
+    list_display = (
+        'workflow', 'company', 'number', 'name_before_activation', 'name_after_activation', 'active', 'hardlock',
+    )
+
+
+class WorkflowObjectEndpoint(ApiEndpoint):
+
+    model = models.WorkflowObject
+    serializer = serializers.WorkflowObjectSerializer
+
+    fieldsets = ({
+        'type': constants.FIELD_TEXT,
+        'field': 'object_id',
+        'hide': True,
+    }, 'state', {
+        'type': constants.FIELD_TEXTAREA,
+        'field': 'comment'
+    }, 'active')
+
+    list_filter = ('object_id', 'active', 'state.workflow.name')
+
+    list_display = (
+        'state_name', 'comment', 'active', {
+            'field': 'created_at',
+            'type': constants.FIELD_STATIC,
+        }, {
+            'field': 'updated_at',
+            'type': constants.FIELD_STATIC,
+        }
     )
 
 
@@ -740,6 +1022,43 @@ class FormStorageEndpoint(ApiEndpoint):
     model = models.FormStorage
     base_viewset = viewsets.FormStorageViewSet
     serializer = serializers.FormStorageSerializer
+
+    fieldsets = (
+        {
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('General'),
+            'collapsed': False,
+            'fields': (
+                    'company', 'status',
+                    {'field': 'data', 'read_only': True, 'label': _("Data"), 'type': constants.FIELD_STATIC}
+                )
+        },
+    )
+
+    list_display = (
+        {
+            'label': _("Form"),
+            'field': 'form',
+            'type': constants.FIELD_LINK,
+            'endpoint': format_lazy(
+                '{}{{form.id}}/',
+                api_reverse_lazy('core/forms')
+            ),
+        },
+        {
+            'label': _('Company'),
+            'type': constants.FIELD_LINK,
+            'endpoint': format_lazy(
+                '{}{{company.id}}/',
+                api_reverse_lazy('core/companies')
+            ),
+            'field': 'company',
+        },
+        'status',
+        'created_at'
+    )
+
+    list_buttons = []
 
 
 class BaseFormFieldEndpoint(ApiEndpoint):
@@ -827,7 +1146,7 @@ class FormFieldGroupEndpoint(ApiEndpoint):
         {
             'field': 'field_list',
             'type': constants.FIELD_RELATED,
-            'endpoint': api_reverse_lazy('endless-core/formfields'),
+            'endpoint': api_reverse_lazy('core/formfields'),
             'many': True
         }
     )
@@ -847,7 +1166,7 @@ class FormEndpoint(ApiEndpoint):
         {
             'field': 'groups',
             'type': constants.FIELD_RELATED,
-            'endpoint': api_reverse_lazy('endless-core/formfieldgroups'),
+            'endpoint': api_reverse_lazy('core/formfieldgroups'),
             'many': True
         }
     )
@@ -867,6 +1186,7 @@ class ContentTypeEndpoint(ApiEndpoint):
 
     model = ContentType
     base_viewset = viewsets.ContentTypeViewSet
+    search_fields = ('model', )
 
 
 router.register(endpoint=DashboardModuleEndpoint())
@@ -896,6 +1216,7 @@ router.register(models.Tag)
 router.register(endpoint=SiteEndpoint())
 router.register(endpoint=WorkflowNodeEndpoint())
 router.register(endpoint=WorkflowEndpoint())
+router.register(endpoint=WorkflowObjectEndpoint())
 router.register(endpoint=FormBuilderEndpoint())
 router.register(models.FormField, serializer=serializers.FormFieldSerializer)
 router.register(endpoint=FormFieldGroupEndpoint())
@@ -912,9 +1233,3 @@ router.register(endpoint=ModelFormFieldEndpoint())
 router.register(endpoint=FileFormFieldEndpoint())
 router.register(endpoint=CheckBoxFormFieldEndpoint())
 router.register(endpoint=ContentTypeEndpoint())
-
-router.register(
-    models.WorkflowObject,
-    filter_fields=('object_id', 'active', 'state__workflow__name'),
-    serializer=serializers.WorkflowObjectSerializer
-)

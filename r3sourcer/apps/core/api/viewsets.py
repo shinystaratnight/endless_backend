@@ -4,12 +4,13 @@ from django.conf import settings
 from django.db.models import Q
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ValidationError
+from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
 from django.utils.translation import ugettext_lazy as _
 
 from phonenumber_field import phonenumber
 from rest_framework import viewsets, exceptions, status
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -57,6 +58,10 @@ class BaseViewsetMixin():
 
 class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
+    _exclude_data = {'__str__'}
+
+    picture_fields = {'picture', 'logo'}
+
     def list(self, request, *args, **kwargs):
         queryset = self.filter_queryset(self.get_queryset())
         fields = self.get_list_fields(request)
@@ -79,7 +84,8 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        data = self.clean_request_data(request.data)
+        data = self.prepare_related_data(request.data)
+        data = self.clean_request_data(data)
 
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -87,8 +93,42 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
+    def update(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
+
+        return super().update(request, *args, **kwargs)
+
     def process_response_data(self, data, queryset=None):
         return data
+
+    def prepare_related_data(self, data):
+        res = {}
+
+        for key, val in data.items():
+            if key in self._exclude_data:
+                continue
+
+            if isinstance(val, dict):
+                val = {k: v for k, v in val.items() if k not in self.picture_fields}
+
+                res[key] = self.prepare_related_data(val)
+            elif isinstance(val, list):
+                res[key] = [self.prepare_related_data(item) if isinstance(item, dict) else item for item in val]
+            else:
+                res[key] = val
+
+        return res['id'] if len(res) == 1 and 'id' in res else res
 
     def clean_request_data(self, data):
         return {
@@ -337,7 +377,7 @@ class WorkflowNodeViewset(BaseApiViewset):
         try:
             model_class = apps.get_model(model_name)
             target_object = model_class.objects.get(id=object_id)
-        except model_class.DoesNotExist:
+        except ObjectDoesNotExist:
             raise exceptions.NotFound(_('Object does not exists'))
 
         required_mixins = (WorkflowProcess, mixins.CompanyLookupMixin)
@@ -434,18 +474,49 @@ class DashboardModuleViewSet(BaseApiViewset):
 
 class FormStorageViewSet(BaseApiViewset):
 
+    ALREADY_APPROVED_ERROR = _("Form storage already approved")
+
     serializer_class = serializers.FormStorageSerializer
+
+    @detail_route(
+        methods=['post'],
+        permission_classes=(IsAuthenticated,),
+        serializer_class=serializers.FormStorageApproveSerializer
+    )
+    def approve(self, request, pk, *args, **kwargs):
+        """
+        Approve storage. Would be created instance from storage it status is `approved`.
+        """
+        instance = self.get_object()
+
+        if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED:
+            raise exceptions.APIException(self.ALREADY_APPROVED_ERROR)
+        serializer = self.get_serializer(instance=instance, data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        instance = serializer.save()
+        if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED and not instance.object_id:
+            obj = instance.create_object_from_data()
+            return Response({'id': str(obj.pk)}, status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_200_OK)
+
+    def get_queryset(self):
+        if self.request.user.is_superuser:
+            return models.FormStorage.objects.all()
+        companies = get_master_companies_by_contact(self.request.user.contact) + [None]
+        return models.FormStorage.objects.filter(form__company__in=companies)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         form_obj = serializer.validated_data['form']
+        company = serializer.validated_data['company']
         form_data = request.data.copy()
         form_data.pop('form')
         form = form_obj.get_form_class()(data=request.data, files=request.data)
         if not form.is_valid():
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
         form_storage = models.FormStorage.parse_data_to_storage(form_obj, form.cleaned_data)
+        form_storage.company = company
         form_storage.save()
         return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
 
@@ -464,6 +535,7 @@ class ContentTypeViewSet(BaseApiViewset):
 class FormViewSet(BaseApiViewset):
 
     serializer_class = serializers.FormSerializer
+    permission_classes = (IsAuthenticated,)
 
     def get_queryset(self):
         if self.request.user.is_superuser:

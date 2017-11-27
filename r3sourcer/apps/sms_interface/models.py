@@ -6,13 +6,13 @@ import re
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
+from django.db.models.signals import post_save
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import UUIDModel, Company, Contact, TemplateMessage
-
-from .mixins import DeadlineCheckingMixin
+from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
 
 
 logger = logging.getLogger(__name__)
@@ -22,6 +22,17 @@ def replace_timezone(dt, time_zone=pytz.utc):
     if isinstance(dt, timezone.datetime):
         return dt.replace(tzinfo=time_zone)
     return dt
+
+
+def disable_default_flag_for_phones(**kwargs):
+    """
+    Disable is_default value for all phone numbers if instance 
+
+    :param kwargs: 
+    :return: 
+    """
+    if kwargs['instance'].is_default:
+        kwargs['instance'].company.phone_numbers.exclude(id=kwargs['instance'].id).update(is_default=False)
 
 
 class PhoneNumber(UUIDModel):
@@ -63,9 +74,20 @@ class PhoneNumber(UUIDModel):
         verbose_name=_("VOICE enabled"),
     )
 
+    is_default = models.BooleanField(
+        verbose_name=_("Using as default for company"),
+        default=False
+    )
+
+    def __str__(self):
+        return self.phone_number
+
     class Meta:
         verbose_name = _("Phone number")
         verbose_name_plural = _("Phone numbers")
+
+
+post_save.connect(disable_default_flag_for_phones, sender=PhoneNumber)
 
 
 class FakeSMSManager(models.Manager):
@@ -299,10 +321,14 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
             defaults={'content_object': obj}
         ) for obj in args if isinstance(obj, models.Model)]
 
-    def get_related_objects(self):
+    def get_related_objects(self, obj_type=None):
+        qry = models.Q()
+        if obj_type is not None:
+            qry = models.Q(content_type=obj_type)
+
         return [
             obj.content_object
-            for obj in self.related_objects.all() if obj.content_object
+            for obj in self.related_objects.filter(qry) if obj.content_object
         ]
 
     def no_check_reply(self):

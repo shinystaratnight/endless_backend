@@ -1,18 +1,16 @@
 import mock
 import pytest
 
-from django.db.models import Model
-
 from django_filters.rest_framework import DjangoFilterBackend
 from drf_auto_endpoint.decorators import bulk_action
 from rest_framework import serializers
 from rest_framework.response import Response
 
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-# from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.api.serializers import (
     ApiBaseModelSerializer, RELATED_DIRECT, RELATED_NONE
 )
+from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models import Company, User
 
 
@@ -22,33 +20,33 @@ class ApiTestEndpoint(ApiEndpoint):
         'business_id', 'name'
     )
 
-# FIXME: fix this after refactor
-# class UserTestViewset(BaseApiViewset):
-#     filter_backends = (DjangoFilterBackend, )
-#     filter_class = None
+
+class UserTestViewset(BaseApiViewset):
+    filter_backends = (DjangoFilterBackend, )
+    filter_class = None
 
 
-# class UserAnotherTestViewset(BaseApiViewset):
-#     filter_backends = []
-#     filter_class = None
+class UserAnotherTestViewset(BaseApiViewset):
+    filter_backends = []
+    filter_class = None
 
 
-# class UserEndpoint(ApiEndpoint):
-#     model = User
-#     base_viewset = UserTestViewset
-#     fields = ('groups', 'date_joined', )
-#     list_filter = ('date_joined', )
+class UserEndpoint(ApiEndpoint):
+    model = User
+    base_viewset = UserTestViewset
+    fields = ('groups', 'date_joined', )
+    list_filter = ('date_joined', )
 
-#     @bulk_action(method='POST', text='text')
-#     def delete(self, request):
-#         return Response()  # pragma: no cover
+    @bulk_action(method='POST', text='text')
+    def delete(self, request):
+        return Response()  # pragma: no cover
 
 
-# class AnotherUserEndpoint(ApiEndpoint):
-#     model = User
-#     base_viewset = UserAnotherTestViewset
-#     fields = ('groups', 'date_joined', )
-#     list_filter = ('date_joined', )
+class AnotherUserEndpoint(ApiEndpoint):
+    model = User
+    base_viewset = UserAnotherTestViewset
+    fields = ('groups', 'date_joined', )
+    list_filter = ('date_joined', )
 
 
 class TestApiEndpoint:
@@ -308,24 +306,23 @@ class TestApiEndpoint:
 
         assert len(endpoint.get_context_actions()) == 1
 
-    # FIXME: fix this after refactor
-    # def test_filter_class_with_django_backend(self):
-    #     endpoint = UserEndpoint()
+    def test_filter_class_with_django_backend(self):
+        endpoint = UserEndpoint()
 
-    #     assert DjangoFilterBackend in endpoint.get_viewset().filter_backends
+        assert DjangoFilterBackend in endpoint.get_viewset().filter_backends
 
-    # def test_filter_class_without_django_backend(self):
-    #     endpoint = AnotherUserEndpoint()
+    def test_filter_class_without_django_backend(self):
+        endpoint = AnotherUserEndpoint()
 
-    #     assert DjangoFilterBackend in endpoint.get_viewset().filter_backends
+        assert DjangoFilterBackend in endpoint.get_viewset().filter_backends
 
-    # @mock.patch('r3sourcer.apps.core.api.endpoints.api_reverse', return_value='/')
-    # def test_get_bulk_actions(self, mock_reverse):
-    #     endpoint = UserEndpoint()
+    @mock.patch('r3sourcer.apps.core.api.endpoints.api_reverse', return_value='/')
+    def test_get_bulk_actions(self, mock_reverse):
+        endpoint = UserEndpoint()
 
-    #     res = endpoint.get_bulk_actions()
+        res = endpoint.get_bulk_actions()
 
-    #     assert len(res) == 1
+        assert len(res) == 1
 
     def test_get_list_tabs(self):
         class Endpoint(ApiTestEndpoint):
@@ -357,4 +354,20 @@ class TestApiEndpoint:
 
         endpoint = Endpoint()
 
-        assert endpoint.get_list_buttons() == None
+        assert endpoint.get_list_buttons() is None
+
+    def test_get_list_editable_filter(self):
+        class Endpoint(ApiTestEndpoint):
+            list_editable_filter = ['test']
+
+        endpoint = Endpoint()
+
+        assert endpoint.get_list_editable_filter() == ['test']
+
+    def test_get_list_editable_filter_empty(self):
+        class Endpoint(ApiTestEndpoint):
+            pass
+
+        endpoint = Endpoint()
+
+        assert endpoint.get_list_editable_filter() == []

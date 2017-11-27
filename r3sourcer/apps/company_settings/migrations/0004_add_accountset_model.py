@@ -22,7 +22,7 @@ def create_myob_accounts(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('company_settings', '0001_initial'),
+        ('company_settings', '0003_add_companysettings'),
     ]
 
     operations = [

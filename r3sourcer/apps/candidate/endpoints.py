@@ -2,66 +2,255 @@ from functools import partial
 
 from django.utils.functional import lazy
 from django.utils.translation import ugettext_lazy as _
+
 from drf_auto_endpoint.decorators import bulk_action
 from drf_auto_endpoint.router import router
 from rest_framework.response import Response
 from rest_framework.exceptions import ParseError
 
-from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.models import WorkflowNode
 from r3sourcer.apps.core_adapter import constants
+from r3sourcer.apps.core.utils.text import format_lazy
+from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.api import endpoints as core_endpoints
+from r3sourcer.apps.candidate import models as candidate_models
+from r3sourcer.apps.candidate.api import viewsets as candidate_viewsets
+from r3sourcer.apps.candidate.api import serializers as candidate_serializers
 
-from . import models
-from .api import viewsets, serializers
 
+class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
 
-class CandidateContactEndpoint(ApiEndpoint):
-
-    model = models.CandidateContact
-    base_viewset = viewsets.CandidateContactViewset
-    serializer = serializers.CandidateContactSerializer
+    model = candidate_models.CandidateContact
+    base_viewset = candidate_viewsets.CandidateContactViewset
+    serializer = candidate_serializers.CandidateContactSerializer
 
     fieldsets = (
-        'contact',
         {
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('General'),
+            'collapsed': False,
+            'fields': (
+                'contact', 'recruitment_agent', {
+                    'type': constants.FIELD_PICTURE,
+                    'field': 'contact.picture',
+                    'read_only': True,
+                    'label': _('Photo'),
+                    'file': False,
+                    'photo': False
+                }
+            )
+        }, {
             'type': constants.CONTAINER_COLLAPSE,
             'name': _('Residency'),
             'collapsed': True,
             'fields': (
-                'residency', 'nationality', 'visa_type', 'visa_expiry_date',
-                'vevo_checked_at',
+                'residency', {
+                    'type': constants.FIELD_RELATED,
+                    'field': 'visa_type',
+                    'showIf': [
+                        {
+                            'residency': str(candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary),
+                        }
+                    ],
+                }, {
+                    'type': constants.FIELD_DATE,
+                    'field': 'visa_expiry_date',
+                    'showIf': [
+                        'visa_type.id',
+                    ],
+                }, {
+                    'type': constants.FIELD_DATE,
+                    'field': 'vevo_checked_at',
+                    'showIf': [
+                        'visa_type.id',
+                    ],
+                }, 'nationality',
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'name': _('Formalities'),
             'collapsed': True,
             'fields': (
-                'tax_file_number', 'referral', 'superannuation_fund',
-                'super_member_number', 'bank_account',
-                'emergency_contact_name', 'emergency_contact_phone',
-                'employment_classification', 'autoreceives_sms',
+                'tax_file_number', 'superannuation_fund', {
+                    'type': constants.FIELD_TEXT,
+                    'field': 'super_member_number',
+                    'showIf': [
+                        'superannuation_fund.id'
+                    ],
+                }, 'bank_account', 'emergency_contact_name', 'emergency_contact_phone', 'employment_classification',
+                'autoreceives_sms',
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'name': _('Personal Traits'),
             'collapsed': True,
             'fields': (
-                'weight', 'height', 'transportation_to_work', 'strength',
-                'language', 'reliability_score', 'loyalty_score',
-                'total_score',
+                'height', 'weight', 'transportation_to_work', 'strength', 'language',
+            ),
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('Candidate rating'),
+            'collapsed': True,
+            'fields': (
+                {
+                    'field': 'candidate_scores.id',
+                    'type': constants.FIELD_TEXT,
+                }, {
+                    'field': 'candidate_scores.loyalty',
+                    'type': constants.FIELD_STATIC,
+                    'read_only': True,
+                    'label': _('Loyalty Score'),
+                }, {
+                    'field': 'candidate_scores.reliability',
+                    'type': constants.FIELD_STATIC,
+                    'read_only': True,
+                    'label': _('Reliability Score'),
+                }, {
+                    'field': 'candidate_scores.client_feedback',
+                    'type': constants.FIELD_STATIC,
+                    'read_only': True,
+                    'label': _('Client Feedback'),
+                }, {
+                    'field': 'candidate_scores.recruitment_score',
+                    'type': constants.FIELD_STATIC,
+                    'read_only': True,
+                    'label': _('Recruitment Score'),
+                },
+            ),
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('Messages'),
+            'collapsed': True,
+            'fields': (
+                'message_by_sms', 'message_by_email',
+            ),
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'name': _('Other'),
+            'collapsed': True,
+            'fields': (
+                'created', 'updated',
             ),
         }, {
             'type': constants.FIELD_RELATED,
-            'field': 'candidate_skills',
             'delete': True,
             'list': True,
-            'label': _('Candidate Skills')
+            'many': True,
+            'create': True,
+            'edit': True,
+            'collapsed': True,
+            'label': _('Notes'),
+            'field': 'notes',
         }, {
             'type': constants.FIELD_RELATED,
-            'field': 'tag_rels',
             'delete': True,
             'list': True,
-            'label': _('Candidate Tags')
+            'many': True,
+            'create': True,
+            'edit': True,
+            'collapsed': True,
+            'label': _('Candidate Skills'),
+            'field': 'candidate_skills',
+        }, {
+            'type': constants.FIELD_RELATED,
+            'delete': True,
+            'list': True,
+            'many': True,
+            'create': True,
+            'edit': True,
+            'collapsed': True,
+            'label': _('Candidate Tags'),
+            'field': 'tag_rels',
+        }, {
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'contact': '{contact.id}',
+            },
+            'collapsed': True,
+            'label': _('Activities'),
+            'add_label': _('Add Activity'),
+            'endpoint': api_reverse_lazy('activity/activities'),
+            'prefilled': {
+                'contact': '{contact.id}',
+            }
+        }, {
+            'type': constants.FIELD_TIMELINE,
+            'label': _('States Timeline'),
+            'field': 'id',
+            'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+            'query': {
+                'model': 'candidate.candidatecontact',
+                'object_id': '{id}',
+            },
+        }, {
+            'type': constants.FIELD_LIST,
+            'query': {
+                'object_id': '{id}'
+            },
+            'collapsed': True,
+            'label': _('Candidate States History'),
+            'add_label': _('Add Candidate State'),
+            'endpoint': api_reverse_lazy('core/workflowobjects'),
+            'prefilled': {
+                'object_id': '{id}',
+            }
+        }, {
+            'type': constants.FIELD_LIST,
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'collapsed': True,
+            'label': _('Vacancy offers'),
+            'endpoint': api_reverse_lazy('hr/vacancyoffers'),
+        }, {
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Carrier List'),
+            'endpoint': api_reverse_lazy('hr/carrierlists'),
+            'add_label': _('Add Carrier List'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
+        }, {
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Black List'),
+            'endpoint': api_reverse_lazy('hr/blacklists'),
+            'add_label': _('Add Black List'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
+        }, {
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Favorite List'),
+            'endpoint': api_reverse_lazy('hr/favouritelists'),
+            'add_label': _('Add Favorite List'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
+        }, {
+            'query': {
+                'candidate_contact': '{id}'
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Evaluations'),
+            'endpoint': api_reverse_lazy('hr/candidateevaluations'),
+            'add_label': _('Add Evaluation'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
         }
     )
 
@@ -99,8 +288,8 @@ class CandidateContactEndpoint(ApiEndpoint):
             'label': _('E-mail'),
         }, 'contact.address.city', 'contact.address.state', 'contact.gender',
         'nationality', 'weight', 'height', 'transportation_to_work',
-        'skill_list', 'tag_list', 'reliability_score', 'loyalty_score',
-        'bmi', 'strength', 'language', 'total_score', 'state'
+        'skill_list', 'tag_list', 'candidate_scores.reliability', 'candidate_scores.loyalty',
+        'bmi', 'strength', 'language', 'average_score', 'state'
     )
 
     list_tabs = [{
@@ -123,13 +312,13 @@ class CandidateContactEndpoint(ApiEndpoint):
     }, {
         'label': _('Score'),
         'fields': (
-            'reliability_score', 'loyalty_score', 'bmi', 'strength', 'language'
+            'candidate_scores.reliability', 'candidate_scores.loyalty', 'bmi', 'strength', 'language'
         )
     }]
 
     def get_list_filter(self):
         states_part = partial(
-            WorkflowNode.get_model_all_states, models.CandidateContact
+            core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
         )
         list_filter = [{
             'type': constants.FIELD_SELECT,
@@ -160,10 +349,10 @@ class CandidateContactEndpoint(ApiEndpoint):
         })
 
 
-class SkillRelEndpoint(ApiEndpoint):
+class SkillRelEndpoint(core_endpoints.ApiEndpoint):
 
-    model = models.SkillRel
-    serializer = serializers.SkillRelSerializer
+    model = candidate_models.SkillRel
+    serializer = candidate_serializers.SkillRelSerializer
 
     list_display = (
         'candidate_contact', 'skill', 'score', 'prior_experience'
@@ -172,10 +361,10 @@ class SkillRelEndpoint(ApiEndpoint):
     list_editable = ('skill', 'score', 'prior_experience')
 
 
-class TagRelEndpoint(ApiEndpoint):
+class TagRelEndpoint(core_endpoints.ApiEndpoint):
 
-    model = models.TagRel
-    serializer = serializers.TagRelSerializer
+    model = candidate_models.TagRel
+    serializer = candidate_serializers.TagRelSerializer
 
     list_display = (
         'candidate_contact', 'tag', 'verified_by', 'verification_evidence'
@@ -192,19 +381,19 @@ class TagRelEndpoint(ApiEndpoint):
     )
 
 
-class SubcontractorEndpoint(ApiEndpoint):
+class SubcontractorEndpoint(core_endpoints.ApiEndpoint):
 
-    model = models.Subcontractor
-    base_viewset = viewsets.SubcontractorViewset
-    serializer = serializers.SubcontractorSerializer
+    model = candidate_models.Subcontractor
+    base_viewset = candidate_viewsets.SubcontractorViewset
+    serializer = candidate_serializers.SubcontractorSerializer
 
 
-router.register(models.VisaType)
-router.register(models.SuperannuationFund)
+router.register(candidate_models.VisaType)
+router.register(candidate_models.SuperannuationFund)
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
 router.register(endpoint=TagRelEndpoint())
 router.register(endpoint=SkillRelEndpoint())
-router.register(models.SkillRateRel)
-router.register(models.InterviewSchedule)
-router.register(models.CandidateRel)
+router.register(candidate_models.SkillRateRel)
+router.register(candidate_models.InterviewSchedule)
+router.register(candidate_models.CandidateRel)

@@ -2,34 +2,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>{{ form.title }}</title>
-    <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}"/>
-        <link rel="stylesheet" href="{% static 'form-builder/css/main.css' %}"/>
-    <link rel="stylesheet" href="{% static 'jquery-ui/themes/base/jquery-ui.css' %}"/>
+  <meta charset="UTF-8">
+  <title>{{ form.title }}</title>
+  <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}"/>
+  <link rel="stylesheet" href="{% static 'form-builder/css/main.css' %}"/>
+  <link rel="stylesheet" href="{% static 'jquery-ui/themes/base/jquery-ui.css' %}"/>
+  <script type="application/javascript">
+      var storageApiUrl = '{% url 'api:core/formstorages-list' version='v2' %}?format=json',
+          companyId = '{{ company_id }}';
+  </script>
 </head>
 <body>
 <nav class="navbar navbar-inverse">
-    <img src="{% static 'form-builder/img/LBK_regular_logo.png' %}"/>
+  <img src="{% static 'form-builder/img/LBK_regular_logo.png' %}"/>
 </nav>
 <div class="container">
-    <div class="row">
-        <div class="col-sm-12 col-md-12">
-            <h1 class="content__title">{{ form.title }}</h1>
+  <div class="row">
+    <div class="col-sm-12 col-md-12">
+      <h1 class="content__title">{{ company }}</h1>
+      <h2 class="content__title">{{ form.title }}</h2>
 
-            {% if form.short_description %}
-                <div class="well">{{ form.short_description }}</div>
-            {% endif %}
-            <div class="content__form-wrap">
-                <form method="post" enctype="multipart/form-data" onsubmit="submitForm(this); return false;">
-                    {% csrf_token %}
-                    <div id="form-builder" data-config='{{ form.get_ui_config }}'></div>
-                    <input type="hidden" value="{{ form.id }}" name="form"/>
-                    <input type="submit"  class="btn btn-primary" value="{% trans form.save_button_text|default:'Save' %}"/>
-                </form>
-            </div>
-        </div>
+      {% if form.short_description %}
+        <div class="well">{{ form.short_description }}</div>
+      {% endif %}
+      <div class="content__form-wrap">
+        <form method="post" enctype="multipart/form-data" onsubmit="submitForm(this); return false;">
+          {% csrf_token %}
+          <div id="form-builder" data-config='{{ form.get_ui_config }}'>
+            <h4 align="center">{% trans 'Loading' %}...</h4>
+          </div>
+          <input type="hidden" value="{{ form.id }}" name="form"/>
+          <input type="submit" class="btn btn-primary" value="{% trans form.save_button_text|default:'Save' %}"
+                 style="display: none"/>
+        </form>
+      </div>
     </div>
+  </div>
 </div>
 
 <script src="{% static "form-builder/js/vendor.js" %}"></script>

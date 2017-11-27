@@ -1,26 +1,23 @@
 from datetime import timedelta, date
 
-from crum import get_current_request
+from django.contrib.contenttypes.fields import GenericRelation
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+
+from crum import get_current_request
 from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
-from r3sourcer.apps.acceptance_tests.models import (
-    AcceptanceTest, AcceptanceTestQuestion, AcceptanceTestAnswer
-)
-from r3sourcer.apps.core.decorators import workflow_function
-from r3sourcer.apps.core.models import (
-    UUIDModel, Contact, BankAccount, CompanyContact, Country, Tag, Company
-)
-from r3sourcer.apps.core.utils.user import get_default_user, get_default_company
+from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.workflow import WorkflowProcess
-from r3sourcer.apps.skills.models import (
-    EmploymentClassification, Skill, SkillBaseRate
-)
+from r3sourcer.apps.skills import models as skill_models
+from r3sourcer.apps.core.decorators import workflow_function
+from r3sourcer.apps.activity import models as activity_models
+from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
+from r3sourcer.apps.core.utils.user import get_default_user, get_default_company
 
 
-class VisaType(UUIDModel):
+class VisaType(core_models.UUIDModel):
 
     GENERAL_TYPE_CHOICES = Choices(
         ('visitor', _("Visitor")),
@@ -73,7 +70,7 @@ class VisaType(UUIDModel):
         )
 
 
-class SuperannuationFund(UUIDModel):
+class SuperannuationFund(core_models.UUIDModel):
 
     name = models.CharField(
         max_length=76,
@@ -108,9 +105,7 @@ class SuperannuationFund(UUIDModel):
         return self.name
 
 
-class CandidateContact(
-        UUIDModel,
-        WorkflowProcess):
+class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     RESIDENCY_STATUS_CHOICES = Choices(
         (0, 'unknown', _('Unknown')),
@@ -135,10 +130,19 @@ class CandidateContact(
     )
 
     contact = models.OneToOneField(
-        Contact,
+        core_models.Contact,
         on_delete=models.CASCADE,
         related_name="candidate_contacts",
         verbose_name=_("Contact")
+    )
+
+    recruitment_agent = models.ForeignKey(
+        core_models.CompanyContact,
+        null=True,
+        blank=True,
+        related_name='candidate_contacts',
+        verbose_name=_('Recruitment agent'),
+        on_delete=models.PROTECT
     )
 
     residency = models.PositiveSmallIntegerField(
@@ -148,7 +152,7 @@ class CandidateContact(
     )
 
     nationality = models.ForeignKey(
-        Country,
+        core_models.Country,
         to_field='code2',
         null=True,
         blank=True,
@@ -244,28 +248,23 @@ class CandidateContact(
         blank=True
     )
 
-    reliability_score = models.PositiveSmallIntegerField(
-        verbose_name=_("Reliability Score"),
-        default=0
-    )
-
-    loyalty_score = models.PositiveSmallIntegerField(
-        verbose_name=_("Loyalty Score"),
-        default=0
-    )
-
-    total_score = models.PositiveSmallIntegerField(
-        verbose_name=_("Total Score"),
-        default=0
-    )
-
     autoreceives_sms = models.BooleanField(
         verbose_name=_("Autoreceives SMS"),
         default=True
     )
 
+    message_by_sms = models.BooleanField(
+        default=True,
+        verbose_name=_('By SMS')
+    )
+
+    message_by_email = models.BooleanField(
+        default=True,
+        verbose_name=_('By E-Mail')
+    )
+
     bank_account = models.ForeignKey(
-        BankAccount,
+        core_models.BankAccount,
         related_name="candidates",
         on_delete=models.PROTECT,
         verbose_name=_("Bank Account"),
@@ -274,7 +273,7 @@ class CandidateContact(
     )
 
     employment_classification = models.ForeignKey(
-        EmploymentClassification,
+        skill_models.EmploymentClassification,
         related_name="candidates",
         on_delete=models.PROTECT,
         verbose_name=_("Employment Classification"),
@@ -299,6 +298,20 @@ class CandidateContact(
     def __str__(self):
         return str(self.contact)
 
+    @property
+    def notes(self):
+        return core_models.Note.objects.filter(
+            content_type__model=self.__class__.__name__.lower(),
+            object_id=self.pk
+        )
+
+    @property
+    def activities(self):
+        return activity_models.Activity.objects.filter(
+            entity_object_name=self.__class__.__name__,
+            entity_object_id=self.pk
+        )
+
     # REQUIREMENTS AND ACTIONS FOR WORKFLOW
     @workflow_function
     def is_skill_defined(self):
@@ -312,8 +325,8 @@ class CandidateContact(
                     self.weight is not None and
                     self.transportation_to_work is not None and
                     self.strength and self.language and
-                    self.reliability_score and
-                    self.loyalty_score)
+                    self.candidate_scores.reliability and
+                    self.candidate_scores.loyalty)
     is_personal_info_filled.short_description = _(
         'All personal info is required'
     )
@@ -410,15 +423,6 @@ class CandidateContact(
                 return _("Under Weight")
         return None
 
-    def get_total_score(self):
-        summary = 0
-        if self.reliability_score:
-            summary += self.reliability_score
-        if self.loyalty_score:
-            summary += self.loyalty_score
-        return summary / 2
-    get_total_score.short_description = _("Total score")
-
     def set_contact_unavailable(self):
         """
         Sets available to False
@@ -463,10 +467,32 @@ class CandidateContact(
                 obj = CandidateScore.objects.create(candidate_contact=self)
                 obj.recalc_scores()
 
+    def process_sms_reply(self, sent_sms, reply_sms, positive):
+        related_objs = reply_sms.get_related_objects()
 
-class TagRel(UUIDModel):
+        for related_object in related_objs:
+            if isinstance(related_object, core_models.WorkflowObject):
+                self._process_sms_workflow_object(related_object)
+
+    def _process_sms_workflow_object(self, workflow_object):
+        if workflow_object.state.number == 11:
+            workflow_object.active = True
+            workflow_object.save(update_fields=['active'])
+
+    def before_state_creation(self, workflow_object):
+        if workflow_object.state.number == 11:  # Phone verify
+            workflow_object.active = False
+
+    def after_state_creation(self, workflow_object):
+        if workflow_object.state.number == 11:  # Phone verify
+            from r3sourcer.apps.candidate.tasks import send_verify_sms
+
+            send_verify_sms.apply_async(args=(self.id, workflow_object.id), countdown=10)
+
+
+class TagRel(core_models.UUIDModel):
     tag = models.ForeignKey(
-        Tag,
+        core_models.Tag,
         related_name="tag_rels",
         on_delete=models.PROTECT,
         verbose_name=_("Tag")
@@ -479,8 +505,8 @@ class TagRel(UUIDModel):
         verbose_name=_("Candidate Contact")
     )
 
-    def verification_evidence_path(instance, filename):
-        return 'candidates/tags/{}/{}'.format(instance.id, filename)
+    def verification_evidence_path(self, filename):
+        return 'candidates/tags/{}/{}'.format(self.id, filename)
 
     verification_evidence = models.FileField(
         verbose_name=_("Verification Evidence"),
@@ -490,7 +516,7 @@ class TagRel(UUIDModel):
     )
 
     verified_by = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         on_delete=models.PROTECT,
         related_name="verified_tag_rels",
         verbose_name=_("Verified By"),
@@ -511,8 +537,7 @@ class TagRel(UUIDModel):
     def save(self, *args, **kwargs):
         # we don't allow set verified_by if tag require evidence
         # approval and this approval not uploaded
-        if self.tag.evidence_required_for_approval \
-                and not self.verification_evidence:
+        if self.tag.evidence_required_for_approval and not self.verification_evidence:
             self.verified_by = None
             self.verify = False
         if self.verify:
@@ -521,9 +546,9 @@ class TagRel(UUIDModel):
                 default_user = request.user
             else:
                 default_user = get_default_user()
-            if CompanyContact.objects.filter(
+            if core_models.CompanyContact.objects.filter(
                     contact__user=default_user).exists():
-                self.verified_by = CompanyContact.objects.get(
+                self.verified_by = core_models.CompanyContact.objects.get(
                     contact__user=default_user
                 )
         else:
@@ -531,7 +556,7 @@ class TagRel(UUIDModel):
         super(TagRel, self).save(*args, **kwargs)
 
 
-class SkillRel(UUIDModel):
+class SkillRel(core_models.UUIDModel):
 
     PRIOR_EXPERIENCE_CHOICES = Choices(
         (timedelta(days=0), 'inexperienced', _("Inexperienced")),
@@ -545,7 +570,7 @@ class SkillRel(UUIDModel):
     )
 
     skill = models.ForeignKey(
-        Skill,
+        skill_models.Skill,
         related_name="candidate_skills",
         on_delete=models.PROTECT,
         verbose_name=_("Skill")
@@ -583,7 +608,7 @@ class SkillRel(UUIDModel):
                                                  valid_until__gte=today).last()
 
 
-class SkillRateRel(UUIDModel):
+class SkillRateRel(core_models.UUIDModel):
 
     candidate_skill = models.ForeignKey(
         SkillRel,
@@ -593,10 +618,12 @@ class SkillRateRel(UUIDModel):
     )
 
     hourly_rate = models.ForeignKey(
-        SkillBaseRate,
+        skill_models.SkillBaseRate,
         related_name="candidate_skill_rates",
-        on_delete=models.PROTECT,
-        verbose_name=_("Hourly Rate")
+        verbose_name=_("Hourly Rate"),
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
     )
 
     valid_from = models.DateField(verbose_name=_("Valid From"))
@@ -610,7 +637,7 @@ class SkillRateRel(UUIDModel):
         return str(self.hourly_rate)
 
 
-class InterviewSchedule(UUIDModel):
+class InterviewSchedule(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
@@ -620,7 +647,7 @@ class InterviewSchedule(UUIDModel):
     )
 
     company_contact = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="interview_schedules",
         on_delete=models.PROTECT,
         verbose_name=_("Company Contact")
@@ -654,7 +681,7 @@ class InterviewSchedule(UUIDModel):
                                self.target_date_and_time)
 
 
-class CandidateRel(UUIDModel):
+class CandidateRel(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
@@ -664,14 +691,14 @@ class CandidateRel(UUIDModel):
     )
 
     master_company = models.ForeignKey(
-        Company,
+        core_models.Company,
         on_delete=models.PROTECT,
         related_name="candidate_rels",
         verbose_name=_("Master Company")
     )
 
     company_contact = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="candidate_rels",
         on_delete=models.PROTECT,
         verbose_name=_("Company Contact")
@@ -685,10 +712,10 @@ class CandidateRel(UUIDModel):
         return "{}: {}".format(self.master_company, self.candidate_contact)
 
 
-class AcceptanceTestRel(UUIDModel):
+class AcceptanceTestRel(core_models.UUIDModel):
 
     acceptance_test = models.ForeignKey(
-        AcceptanceTest,
+        acceptance_test_models.AcceptanceTest,
         on_delete=models.CASCADE,
         related_name='candidate_acceptance_tests',
         verbose_name=_("Acceptance Test")
@@ -721,7 +748,7 @@ class AcceptanceTestRel(UUIDModel):
         )
 
 
-class AcceptanceTestQuestionRel(UUIDModel):
+class AcceptanceTestQuestionRel(core_models.UUIDModel):
 
     candidate_acceptance_test = models.ForeignKey(
         AcceptanceTestRel,
@@ -731,14 +758,14 @@ class AcceptanceTestQuestionRel(UUIDModel):
     )
 
     acceptance_test_question = models.ForeignKey(
-        AcceptanceTestQuestion,
+        acceptance_test_models.AcceptanceTestQuestion,
         on_delete=models.PROTECT,
         related_name='acceptance_test_question_rels',
         verbose_name=_("Acceptance Test Question")
     )
 
     acceptance_test_answer = models.ForeignKey(
-        AcceptanceTestAnswer,
+        acceptance_test_models.AcceptanceTestAnswer,
         on_delete=models.PROTECT,
         related_name='acceptance_test_question_rels',
         verbose_name=_("Acceptance Test Answer")
@@ -763,7 +790,7 @@ class AcceptanceTestQuestionRel(UUIDModel):
                self.acceptance_test_question.get_correct_answers()
 
 
-class Subcontractor(UUIDModel):
+class Subcontractor(core_models.UUIDModel):
 
     SUBCONTRACTOR_TYPE_CHOICES = Choices(
         (10, 'sole_trader', _("sole_trader")),
@@ -777,7 +804,7 @@ class Subcontractor(UUIDModel):
     )
 
     company = models.OneToOneField(
-        Company,
+        core_models.Company,
         on_delete=models.CASCADE,
         parent_link=True
     )
