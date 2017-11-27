@@ -288,8 +288,10 @@ class MYOBAuth(object):
             data = {
                 'client_id': self.get_api_key(),
                 'client_secret': self.get_api_secret(),
-                'refresh_token': self.get_refresh_token(),
-                'grant_type': 'refresh_token'
+                'scope': 'CompanyFile',
+                'code': self.get_access_code(),
+                'redirect_uri': self.get_redirect_uri(),
+                'grant_type': 'authorization_code'
             }
 
         url = self.get_token_url()
