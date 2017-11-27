@@ -21,6 +21,8 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('skills', '0001_initial'),
+        ('candidate', '0004_make_fk_optional'),
+        ('hr', '0003_make_fk_optional'),
     ]
 
     operations = [
