@@ -16,9 +16,9 @@ from .utils import api_reverse
 
 
 CUSTOM_FIELD_ATTRS = (
-    'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete',
-    'read_only', 'label_upload', 'label_photo', 'many', 'list', 'values',
-    'color', 'default',
+    'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
+    'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
+    'showIf',
 )
 
 
@@ -36,11 +36,10 @@ def format_date(date):
 
 def to_html_tag(component_type):
     custom_types = [
-        'checkbox', 'radio', 'textarea', constants.FIELD_SELECT,
-        constants.FIELD_RADIO_GROUP, constants.FIELD_CHECKBOX_GROUP,
-        constants.FIELD_BUTTON, constants.FIELD_LINK, constants.FIELD_SUBMIT,
-        constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_RULE,
-        constants.FIELD_ICON, constants.FIELD_TIMELINE
+        constants.FIELD_CHECKBOX, constants.FIELD_RADIO, constants.FIELD_TEXTAREA, constants.FIELD_SELECT,
+        constants.FIELD_RADIO_GROUP, constants.FIELD_CHECKBOX_GROUP, constants.FIELD_BUTTON, constants.FIELD_LINK,
+        constants.FIELD_SUBMIT, constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_RULE,
+        constants.FIELD_ICON, constants.FIELD_TIMELINE, constants.FIELD_LIST,
     ]
     if component_type in custom_types:
         return component_type
@@ -56,7 +55,8 @@ class AngularApiAdapter(BaseAdapter):
         MetaDataInfo('fieldsets', GETTER, []),
     ]
 
-    _excluded_field = {'id', 'updated_at', 'created_at', '__str__'}
+    _excluded_field = {'updated_at', 'created_at', '__str__'}
+    _hidden_fields = {'id'}
     edit = True
 
     def __init__(self, edit=True, * args, **kwargs):
@@ -82,15 +82,27 @@ class AngularApiAdapter(BaseAdapter):
             if 'key' in field:
                 adapted['key'] = field['key']
             if component_type == constants.FIELD_TIMELINE:
-                query_opts = field.get('query_opts', {})
-
                 adapted['endpoint'] = field.get('endpoint')
                 adapted['key'] = constants.FIELD_TIMELINE
-                adapted.update(query_opts)
             elif component_type == constants.FIELD_LINK:
                 adapted['templateOptions']['link'] = field.get('link')
+            elif component_type == constants.FIELD_LIST:
+                adapted.update(
+                    collapsed=field.get('collapsed', False),
+                    **{attr: field[attr] for attr in ('endpoint', 'prefilled')
+                       if field.get(attr) is not None}
+                )
+                if field.get('add_label'):
+                    adapted['templateOptions']['add_label'] = field['add_label']
             elif component_type != constants.FIELD_SUBMIT:
                 adapted['templateOptions']['action'] = field['action']
+
+            query_params = field.get('query')
+            if query_params is not None:
+                adapted['query'] = query_params
+
+            if 'showIf' in field:
+                adapted['showIf'] = field['showIf']
 
             return adapted
         elif component_type == constants.FIELD_RELATED:
@@ -108,6 +120,7 @@ class AngularApiAdapter(BaseAdapter):
                 'endpoint': endpoint,
                 'many': field.get('many', False),
                 'list': field.get('list', False),
+                'collapsed': field.get('collapsed', False),
                 'templateOptions': {
                     'delete': field.get('delete', False),
                     **{attr: field.get(attr, True) for attr in ('add', 'edit')}
@@ -144,20 +157,27 @@ class AngularApiAdapter(BaseAdapter):
                 isinstance(field['default'], (str, int, float, bool))):
             adapted['default'] = field['default']
 
+        if 'showIf' in field:
+            adapted['showIf'] = field['showIf']
+
         field_ui = field.get('ui', {})
-        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color')
+        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo')
         adapted['templateOptions'].update({
             'type': component_type,
             'label': field.get('label', field_ui.get('label', '')),
             **{
                 option: field_ui[option] for option in ui_options
-                if field_ui.get(option)
+                if field_ui.get(option) is not None
             },
             **{
                 option: field[option] for option in ui_options
-                if field.get(option)
+                if field.get(option) is not None
             },
         })
+
+        is_hidden = field.get('hide')
+        if field['key'].split('.')[-1] in cls._hidden_fields or is_hidden:
+            adapted['hide'] = True
 
         if field_ui.get('help'):
             adapted['templateOptions']['description'] = field_ui['help']
@@ -242,16 +262,8 @@ class AngularApiAdapter(BaseAdapter):
         if fieldset:
             field.update(
                 {attr: fieldset[attr] for attr in CUSTOM_FIELD_ATTRS
-                 if fieldset.get(attr)}
+                 if fieldset.get(attr) is not None}
             )
-            if 'query' in fieldset:
-                query_opts = {}
-                query = fieldset.get('query', [])
-                for qry in query:
-                    query_opts[qry] = fieldset.get(qry)
-                query_opts['query'] = query
-
-                field['query_opts'] = query_opts
         data = self.adapt_field(field)
         return data
 
@@ -286,6 +298,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         MetaDataInfo('bulk_actions', GETTER, []),
         MetaDataInfo('list_tabs', GETTER, []),
         MetaDataInfo('list_buttons', GETTER, []),
+        MetaDataInfo('list_editable_filter', GETTER, []),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -705,7 +718,13 @@ class AngularListApiAdapter(AngularApiAdapter):
         else:
             self.list_editable = []
             display_fields = config['list_display']
-        list_filters = config['list_filter']
+
+        list_editable_filter = config['list_editable_filter']
+        if self.is_formset:
+            list_filters = list_editable_filter or []
+        else:
+            list_filters = config['list_filter']
+
         ordering_fields = config['ordering_fields']
         ordering_mapping = config['ordering_mapping']
         ordering = config['ordering']

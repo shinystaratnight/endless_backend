@@ -69,8 +69,6 @@ def candidate_data(employment_classification, bank_account):
         transportation_to_work=True,
         strength=1,
         language=5,
-        reliability_score=1,
-        loyalty_score=2,
         tax_file_number="123456",
         super_annual_fund_name="fund name",
         super_member_number="some number",
@@ -86,9 +84,13 @@ def candidate(db, contact, candidate_data):
     rc = candidate_models.CandidateContact.objects.create(
         contact=contact
     )
+
+    rc.candidate_scores.reliability = 1
+    rc.candidate_scores.loyalty = 2
+    rc.candidate_scores.save(update_fields=['reliability', 'loyalty'])
+
     keys = ('height weight transportation_to_work strength language'
-            ' reliability_score loyalty_score tax_file_number'
-            ' super_annual_fund_name super_member_number bank_account'
+            ' tax_file_number super_annual_fund_name super_member_number bank_account'
             ' emergency_contact_name emergency_contact_phone'
             ' employment_classification').split()
     for key in keys:
@@ -139,7 +141,7 @@ def skill(db):
         name="Driver",
         carrier_list_reserve=2,
         short_name="Drv",
-        active=True
+        active=False
     )
 
 

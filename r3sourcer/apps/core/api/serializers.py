@@ -7,22 +7,22 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.db import models
 from django.utils import six, timezone
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
 from rest_framework.fields import empty
 
 from django.db.models.fields.related import (
-    RelatedField, ManyToOneRel, ManyToManyField, ManyToManyRel
+    RelatedField, ManyToOneRel, ManyToManyField, ManyToManyRel, OneToOneRel
 )
 from django.contrib.contenttypes.fields import GenericRelation
 
-from .. import models
-from ..workflow import (
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.workflow import (
     NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED
 )
-
-from .fields import (
+from r3sourcer.apps.core.api.fields import (
     ApiBaseRelatedField, ApiDateTimeTzField, ApiContactPictureField,
     EmptyNullField, ApiChoicesField
 )
@@ -86,9 +86,14 @@ class ApiFullRelatedFieldsMixin():
                 )
                 continue
 
-            is_pk_data = data is not empty and \
-                field_name in data and \
-                not isinstance(data[field_name], (list, dict))
+            is_field_in_data = data is not empty and field_name in data
+            is_pk_data = is_field_in_data and not isinstance(data[field_name], (list, dict))
+            is_id_partial = kwargs.get('partial', False) or bool(
+                is_field_in_data and isinstance(data[field_name], dict) and data[field_name].get('id')
+            )
+
+            if is_id_partial and is_field_in_data and isinstance(data[field_name], list):
+                internal_fields_dict[field_name] = [f for f in data.get(field_name, [])]
 
             if not is_pk_data and isinstance(data, list) and len(data) > 0:
                 data_elem = data[0]
@@ -126,9 +131,9 @@ class ApiFullRelatedFieldsMixin():
                         read_only=field.read_only,
                         context=context,
                         many=getattr(field, 'many', False),
-                        data=data.get(
-                            field_name, empty) if data is not empty else empty,
+                        data=data.get(field_name, empty) if data is not empty else empty,
                         parent_name=parent_field_name or field_name,
+                        partial=is_id_partial,
                     )
 
                     internal = self._get_internal_serializer(
@@ -144,16 +149,15 @@ class ApiFullRelatedFieldsMixin():
                 continue
 
             is_many_to_one_relation = isinstance(related_field, ManyToOneRel)
-            if not isinstance(related_field, RelatedField) and \
-                    not is_many_to_one_relation:
-
+            is_one_to_one_relation = isinstance(related_field, OneToOneRel)
+            if not isinstance(related_field, RelatedField) and not is_many_to_one_relation:
                 if getattr(related_field, 'blank', False) and not getattr(related_field, 'null', False):
                     self.fields[field_name] = EmptyNullField.from_field(field)
 
                 continue
 
             is_generic_relation = isinstance(related_field, GenericRelation)
-            is_many_relation = is_generic_relation or is_many_to_one_relation
+            is_many_relation = is_generic_relation or (is_many_to_one_relation and not is_one_to_one_relation)
 
             if is_many_to_one_relation:
                 rel_model = related_field.related_model
@@ -198,6 +202,7 @@ class ApiFullRelatedFieldsMixin():
                 many=is_many_relation,
                 data=related_data,
                 parent_name=parent_field_name or field_name,
+                partial=is_id_partial,
             )
 
             internal = self._get_internal_serializer(
@@ -442,7 +447,8 @@ class MetaFields(serializers.SerializerMetaclass):
                 all_fields = model._meta.get_fields() if model is not None else []
                 all_fields = [
                     field.name for field in all_fields
-                    if not hasattr(field, 'field') and getattr(field, 'related_name', None) is None
+                    if ((not hasattr(field, 'field') and getattr(field, 'related_name', None) is None) or
+                        isinstance(field, models.OneToOneRel))
                 ]
                 fields = chain(
                     all_fields, [field for field in fields if isinstance(field, dict)])
@@ -488,7 +494,7 @@ class ApiBaseModelSerializer(
 
 class AddressSerializer(ApiBaseModelSerializer):
     class Meta:
-        model = models.Address
+        model = core_models.Address
         fields = '__all__'
 
     def validate_state(self, value):
@@ -534,7 +540,7 @@ class CompanyContactSerializer(ApiBaseModelSerializer):
 
     def create(self, validated_data):
         contact = validated_data.get('contact', None)
-        if not isinstance(contact, models.Contact):
+        if not isinstance(contact, core_models.Contact):
             raise exceptions.ValidationError("Contact is required")
 
         instance = super(CompanyContactSerializer, self).create(validated_data)
@@ -555,7 +561,7 @@ class CompanyContactSerializer(ApiBaseModelSerializer):
             instance.primary_contact_approved_at = now
 
     class Meta:
-        model = models.CompanyContact
+        model = core_models.CompanyContact
         fields = ('id', 'job_title', 'rating_unreliable', 'contact',
                   'legacy_myob_card_number', 'voip_username', 'voip_password',
                   'receive_order_confirmation_sms')
@@ -564,7 +570,7 @@ class CompanyContactSerializer(ApiBaseModelSerializer):
 
 class ContactUnavailabilitySerializer(ApiBaseModelSerializer):
     class Meta:
-        model = models.ContactUnavailability
+        model = core_models.ContactUnavailability
         fields = ('id', 'contact', 'unavailable_from', 'unavailable_until',
                   'notes',)
         related = RELATED_DIRECT
@@ -572,7 +578,7 @@ class ContactUnavailabilitySerializer(ApiBaseModelSerializer):
 
 class NoteSerializer(ApiBaseModelSerializer):
     class Meta:
-        model = models.Note
+        model = core_models.Note
         fields = ('id', 'note',)
 
 
@@ -610,12 +616,12 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
 
     def create(self, validated_data):
         address = validated_data.pop('address', None)
-        if not isinstance(address, models.Address):
+        if not isinstance(address, core_models.Address):
             try:
-                address = models.Address.objects.create(**address)
+                address = core_models.Address.objects.create(**address)
             except ValidationError as e:
                 raise serializers.ValidationError(e.messages)
-        contact = models.Contact.objects.create(
+        contact = core_models.Contact.objects.create(
             address=address, **validated_data)
         return contact
 
@@ -626,7 +632,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         return data
 
     class Meta:
-        model = models.Contact
+        model = core_models.Contact
         read_only = ('is_available', 'address', 'company_contact', 'object_history', 'notes')
         fields = (
             'title', 'first_name', 'last_name', 'email', 'phone_mobile',
@@ -698,7 +704,7 @@ class CompanySerializer(serializers.ModelSerializer):
         return data
 
     class Meta:
-        model = models.Company
+        model = core_models.Company
         fields = 'name', 'business_id', 'registered_for_gst', 'tax_number', 'website',\
                  'date_of_incorporation', 'description', 'notes', 'bank_account',\
                  'credit_check', 'credit_check_date', 'terms_of_payment',\
@@ -709,7 +715,7 @@ class CompanySerializer(serializers.ModelSerializer):
 class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
 
     class Meta:
-        model = models.CompanyContactRelationship
+        model = core_models.CompanyContactRelationship
         fields = '__all__'
 
 
@@ -728,7 +734,7 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         return company and company['manager']
 
     class Meta:
-        model = models.CompanyContact
+        model = core_models.CompanyContact
         fields = ('id', 'job_title', 'rating_unreliable', 'contact',
                   'legacy_myob_card_number', 'voip_username', 'voip_password',
                   'receive_order_confirmation_sms')
@@ -774,17 +780,17 @@ class CompanyAddressSerializer(ApiBaseModelSerializer):
                      'orders_count')
 
     class Meta:
-        model = models.CompanyAddress
+        model = core_models.CompanyAddress
 
     def get_company_rel(self, obj):
         company_rel = cache.get('company_rel_{}'.format(obj.id), None)
         if not company_rel:
             current_site = get_current_site(self.context.get('request'))
 
-            site_company = models.SiteCompany.objects.filter(
+            site_company = core_models.SiteCompany.objects.filter(
                 site=current_site
             ).last()
-            master_type = models.Company.COMPANY_TYPES.master
+            master_type = core_models.Company.COMPANY_TYPES.master
             if not site_company or site_company.company.type != master_type:
                 return
 
@@ -856,16 +862,15 @@ class ApiBaseSerializer(ApiFullRelatedFieldsMixin,
 
 class WorkflowNodeSerializer(ApiBaseModelSerializer):
     class Meta:
-        model = models.WorkflowNode
+        model = core_models.WorkflowNode
         fields = (
-            'id', 'number', 'name_before_activation', 'name_after_activation', 'rules', 'company', 'active',
-            'hardlock', {
+            '__all__', {
                 'workflow': ('id', '__str__', 'name', 'model')
             }
         )
 
     def validate(self, data):
-        models.WorkflowNode.validate_node(
+        core_models.WorkflowNode.validate_node(
             data["number"], data["workflow"], data["company"], data["active"],
             data.get("rules"), self.instance is None,
             self.instance and self.instance.id
@@ -874,8 +879,10 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
 
 
 class WorkflowObjectSerializer(ApiBaseModelSerializer):
+    method_fields = ('state_name', )
+
     class Meta:
-        model = models.WorkflowObject
+        model = core_models.WorkflowObject
         fields = ('__all__', {
             'state': ('__all__', {
                 'workflow': ('id', 'name'),
@@ -883,10 +890,16 @@ class WorkflowObjectSerializer(ApiBaseModelSerializer):
         })
 
     def validate(self, data):
-        models.WorkflowObject.validate_object(
+        core_models.WorkflowObject.validate_object(
             data["state"], data["object_id"], self.instance is None
         )
         return data
+
+    def get_state_name(self, obj):
+        if not obj:
+            return None
+
+        return obj.state.name_after_activation or obj.state.name_before_activation
 
 
 class WorkflowTimelineSerializer(ApiBaseModelSerializer):
@@ -894,7 +907,7 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
     method_fields = ('state', 'requirements', 'wf_object_id')
 
     class Meta:
-        model = models.WorkflowNode
+        model = core_models.WorkflowNode
         fields = (
             'id', 'name_before_activation', 'name_after_activation',
         )
@@ -908,7 +921,7 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         if not obj:
             return NOT_ALLOWED
 
-        workflow_object = models.WorkflowObject.objects.filter(
+        workflow_object = core_models.WorkflowObject.objects.filter(
             state=obj, object_id=self.target.id
         )
         if workflow_object.exists():
@@ -944,7 +957,7 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         if not obj:
             return None
 
-        workflow_object = models.WorkflowObject.objects.filter(
+        workflow_object = core_models.WorkflowObject.objects.filter(
             state=obj, object_id=self.target.id
         ).first()
 
@@ -956,7 +969,7 @@ class NavigationSerializer(ApiBaseModelSerializer):
     method_fields = ('childrens', )
 
     class Meta:
-        model = models.ExtranetNavigation
+        model = core_models.ExtranetNavigation
         fields = ('name', 'url', 'endpoint')
 
     def get_childrens(self, obj):
@@ -983,27 +996,28 @@ class DashboardModuleSerializer(ApiBaseModelSerializer):
         }
 
     def validate(self, attrs):
-        if models.DashboardModule.objects.filter(content_type=attrs['content_type']).exists():
+        if core_models.DashboardModule.objects.filter(content_type=attrs['content_type']).exists():
             raise serializers.ValidationError(
                 {'content_type': _("Module already exists")})
         return attrs
 
     class Meta:
-        model = models.DashboardModule
+        model = core_models.DashboardModule
         fields = ('id', 'content_type', 'module_data', 'is_active')
 
 
 class UserDashboardModuleSerializer(ApiBaseModelSerializer):
 
     def validate(self, attrs):
-        if models.UserDashboardModule.objects.filter(company_contact__contact__user=self.context['request'].user.id,
-                                                     dashboard_module=attrs['dashboard_module']).exists():
+        if core_models.UserDashboardModule.objects.filter(
+                company_contact__contact__user=self.context['request'].user.id,
+                dashboard_module=attrs['dashboard_module']).exists():
             raise serializers.ValidationError(
                 {'dashboard_module': _("Module already exists")})
         return attrs
 
     class Meta:
-        model = models.UserDashboardModule
+        model = core_models.UserDashboardModule
         fields = ('id', 'company_contact',
                   'dashboard_module', 'position', 'ui_config')
         extra_kwargs = {
@@ -1015,7 +1029,7 @@ class CompanyListSerializer(ApiBaseModelSerializer):
     method_fields = ('primary_contact', 'state', 'terms_of_pay')
 
     class Meta:
-        model = models.Company
+        model = core_models.Company
         fields = (
             '__all__',
             {
@@ -1030,10 +1044,10 @@ class CompanyListSerializer(ApiBaseModelSerializer):
         if not company_rel:
             current_site = get_current_site(self.context.get('request'))
 
-            site_company = models.SiteCompany.objects.filter(
+            site_company = core_models.SiteCompany.objects.filter(
                 site=current_site
             ).last()
-            master_type = models.Company.COMPANY_TYPES.master
+            master_type = core_models.Company.COMPANY_TYPES.master
             if not site_company or site_company.company.type != master_type:
                 return
 
@@ -1087,7 +1101,7 @@ class FormStorageSerializer(ApiBaseModelSerializer):
         fields = (
             'id', 'form', 'data', 'company', 'created_at', 'status'
         )
-        model = models.FormStorage
+        model = core_models.FormStorage
         extra_kwargs = {
             'company': {'required': True},
             'status': {'read_only': True}
@@ -1097,7 +1111,7 @@ class FormStorageSerializer(ApiBaseModelSerializer):
 class FormFieldSerializer(ApiBaseModelSerializer):
 
     def to_representation(self, instance):
-        if not isinstance(instance, models.FormField):
+        if not isinstance(instance, core_models.FormField):
             raise NotImplementedError
 
         class DynamicFormFieldSerializer(ApiBaseModelSerializer):
@@ -1114,7 +1128,7 @@ class FormFieldSerializer(ApiBaseModelSerializer):
         return DynamicFormFieldSerializer(instance).data
 
     class Meta:
-        model = models.FormField
+        model = core_models.FormField
         fields = '__all__'
 
 
@@ -1123,7 +1137,7 @@ class FormSerializer(ApiBaseModelSerializer):
     method_fields = ('model_fields', 'groups', 'company_links')
 
     class Meta:
-        model = models.Form
+        model = core_models.Form
         fields = (
             'id', 'title', 'company', 'builder', 'is_active',
             'short_description', 'save_button_text', 'submit_message'
@@ -1146,7 +1160,7 @@ class FormSerializer(ApiBaseModelSerializer):
 
         # TODO: check unique together constraint
         # # check if company/builder relation already exists
-        # qs = models.Form.objects.filter(company=attrs['company'],
+        # qs = core_models.Form.objects.filter(company=attrs['company'],
         #                                 builder=attrs['builder'])
         # if qs.exists():
         #     if self.instance is None or qs.exclude(id=self.instance.id).exists():
@@ -1158,7 +1172,7 @@ class FormSerializer(ApiBaseModelSerializer):
 
     def get_model_fields(self, obj):
         if obj.builder:
-            return models.ModelFormField.get_model_fields(
+            return core_models.ModelFormField.get_model_fields(
                 obj.builder.content_type.model_class()
             )
         return []
@@ -1175,7 +1189,7 @@ class FormFieldGroupSerializer(ApiBaseModelSerializer):
     method_fields = ('field_list', )
 
     class Meta:
-        model = models.FormFieldGroup
+        model = core_models.FormFieldGroup
         fields = (
             'id', 'form', 'name', 'position'
         )
@@ -1202,7 +1216,7 @@ class ModelFormFieldSerializer(BaseFormFieldSerializer):
             raise serializers.ValidationError({
                 'name': _("Incorrect field name for model")
             })
-        base_qs = models.FormField.objects.filter(
+        base_qs = core_models.FormField.objects.filter(
             group__form_id=attrs['group'].form_id, name=attrs['name']
         )
         if self.instance is not None:
@@ -1218,7 +1232,7 @@ class ModelFormFieldSerializer(BaseFormFieldSerializer):
         return attrs
 
     class Meta:
-        model = models.ModelFormField
+        model = core_models.ModelFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text'
@@ -1228,7 +1242,7 @@ class ModelFormFieldSerializer(BaseFormFieldSerializer):
 class SelectFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.SelectFormField
+        model = core_models.SelectFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text', 'is_multiple', 'choices'
@@ -1238,7 +1252,7 @@ class SelectFormFieldSerializer(BaseFormFieldSerializer):
 class DateFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.DateFormField
+        model = core_models.DateFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text'
@@ -1248,7 +1262,7 @@ class DateFormFieldSerializer(BaseFormFieldSerializer):
 class CheckBoxFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.CheckBoxFormField
+        model = core_models.CheckBoxFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text'
@@ -1258,7 +1272,7 @@ class CheckBoxFormFieldSerializer(BaseFormFieldSerializer):
 class RadioButtonsFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.RadioButtonsFormField
+        model = core_models.RadioButtonsFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text', 'choices'
@@ -1268,7 +1282,7 @@ class RadioButtonsFormFieldSerializer(BaseFormFieldSerializer):
 class FileFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.FileFormField
+        model = core_models.FileFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text'
@@ -1278,7 +1292,7 @@ class FileFormFieldSerializer(BaseFormFieldSerializer):
 class ImageFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.ImageFormField
+        model = core_models.ImageFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text'
@@ -1288,7 +1302,7 @@ class ImageFormFieldSerializer(BaseFormFieldSerializer):
 class NumberFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.NumberFormField
+        model = core_models.NumberFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text',
@@ -1299,7 +1313,7 @@ class NumberFormFieldSerializer(BaseFormFieldSerializer):
 class TextFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.TextFormField
+        model = core_models.TextFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text',
@@ -1310,7 +1324,7 @@ class TextFormFieldSerializer(BaseFormFieldSerializer):
 class TextAreaFormFieldSerializer(BaseFormFieldSerializer):
 
     class Meta:
-        model = models.TextAreaFormField
+        model = core_models.TextAreaFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text',
@@ -1321,7 +1335,7 @@ class TextAreaFormFieldSerializer(BaseFormFieldSerializer):
 class FormBuilderSerializer(ApiBaseModelSerializer):
 
     class Meta:
-        model = models.FormBuilder
+        model = core_models.FormBuilder
         fields = (
             'id', 'content_type'
         )
@@ -1330,5 +1344,5 @@ class FormBuilderSerializer(ApiBaseModelSerializer):
 class FormStorageApproveSerializer(ApiBaseModelSerializer):
 
     class Meta:
-        model = models.FormStorage
+        model = core_models.FormStorage
         fields = ('status',)

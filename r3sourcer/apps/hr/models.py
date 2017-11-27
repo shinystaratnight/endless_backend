@@ -295,7 +295,7 @@ class Vacancy(AbstractBaseOrder):
     hourly_rate_default = models.ForeignKey(
         SkillBaseRate,
         related_name="vacancies",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         verbose_name=_("Hourly rate default"),
         null=True,
         blank=True
@@ -382,7 +382,7 @@ class VacancyDate(UUIDModel):
     hourly_rate = models.ForeignKey(
         SkillBaseRate,
         related_name="vacancy_dates",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         verbose_name=_("Hourly rate"),
         null=True,
         blank=True
@@ -655,7 +655,7 @@ class TimeSheet(
     candidate_rate = models.ForeignKey(
         SkillBaseRate,
         related_name="timesheets",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name=_("Candidate Rate Override")
@@ -1176,7 +1176,9 @@ class Payslip(UUIDModel):
     hourly_rate = models.ForeignKey(
         SkillBaseRate,
         related_name="payslips",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
         verbose_name=_("Hourly rate"),
     )
 

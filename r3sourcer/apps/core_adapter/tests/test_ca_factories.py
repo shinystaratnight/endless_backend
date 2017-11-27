@@ -135,9 +135,12 @@ class TestFilterFactory:
         assert isinstance(res_cls.declared_filters['field'], ChoiceFilter)
 
     def test_filter_factory_select_base_filter_choices_call(self, endpoint):
+        def fn():
+            return [{'value': 'val', 'label': 'label'}]  # pragma: no cover
+
         endpoint.get_list_filter.return_value = ({
             'field': 'field',
-            'choices': lambda: [{'value': 'val', 'label': 'label'}]
+            'choices': fn
         }, )
         endpoint.get_metadata_fields.return_value = [{
             'key': 'field',

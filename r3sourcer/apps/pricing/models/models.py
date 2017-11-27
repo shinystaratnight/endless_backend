@@ -1,15 +1,17 @@
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q
+from django.db.models.signals import post_save
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import UUIDModel, Company, CompanyContact
 from r3sourcer.apps.skills.models import Skill
-from .rules import all_rules
+from r3sourcer.apps.pricing.models.rules import all_rules
 
 
 class PriceListMixin(models.Model):
@@ -264,9 +266,38 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
         verbose_name=_('Skill'),
     )
 
+    default_rate = models.BooleanField(
+        default=False,
+        verbose_name=_("Is Default Rate")
+    )
+
     class Meta:
         verbose_name = _('Price List Rate')
         verbose_name_plural = _('Price List Rates')
+        unique_together = ('price_list', 'skill', 'hourly_rate')
+
+    @classmethod
+    def set_default_rate(cls, sender, instance, created, **kwargs):
+        if created and not instance.skill.price_list_rates.exclude(pk=instance.pk).count():
+            instance.default_rate = True
+            instance.save()
+
+    def clean(self, *args, **kwargs):
+        if self.default_rate:
+            default_rates = self.skill.price_list_rates.filter(default_rate=True) \
+                                                       .exclude(pk=self.pk)
+            if default_rates.count():
+                raise ValidationError('Only one rate for the skill can be set to "True"')
+
+        super(PriceListRate, self).clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+
+        if not self.pk and self.skill.price_list_rates.count():
+            self.default_rate = True
+
+        super(PriceListRate, self).save(*args, **kwargs)
 
     def __str__(self):
         return _('{}: ${}/h').format(str(self.skill), str(self.hourly_rate))
@@ -400,3 +431,6 @@ __all__ = [
     'PriceListRateCoefficient', 'RateCoefficientModifier',
     'DynamicCoefficientRule',
 ]
+
+
+post_save.connect(PriceListRate.set_default_rate, sender=PriceListRate)

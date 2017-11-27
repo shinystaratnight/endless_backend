@@ -8,6 +8,7 @@ from r3sourcer.apps.candidate.api.serializers import (
     CandidateContactSerializer, CandidateContactRegisterSerializer
 )
 from r3sourcer.apps.candidate.models import CandidateContact
+from r3sourcer.apps.hr import models as hr_models
 
 
 @pytest.mark.django_db
@@ -50,14 +51,14 @@ class TestCandidateContactSerializer:
 
         assert res is None
 
-    @mock.patch.object(CandidateContact, 'get_total_score', return_value=5)
-    def test_get_total_score(self, mock_states, candidate, serializer_obj):
-        res = serializer_obj.get_total_score(candidate)
+    @mock.patch.object(hr_models.CandidateScore, 'get_average_score', return_value=5)
+    def test_get_average_score(self, mock_states, candidate, serializer_obj):
+        res = serializer_obj.get_average_score(candidate)
 
         assert res == 5
 
-    def test_get_total_score_none(self, serializer_obj):
-        res = serializer_obj.get_total_score(None)
+    def test_get_average_score_none(self, serializer_obj):
+        res = serializer_obj.get_average_score(None)
 
         assert res is None
 
