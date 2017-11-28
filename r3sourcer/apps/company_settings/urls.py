@@ -22,4 +22,3 @@ urlpatterns = [
     url(r'^company_settings/myob_accounts/$', views.MYOBAccountListView.as_view(), name='myob_accounts'),
     url(r'^company_settings/myob_authorization$', views.MYOBAuthorizationView.as_view(), name='myob_authorization'),
 ]
-]
