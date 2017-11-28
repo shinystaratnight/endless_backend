@@ -16,6 +16,9 @@ def _get_field(fields, field_name):
 
 
 def filter_factory(endpoint):
+    """
+    Create new or extends existing filter class using field filters set in list_filter
+    """
     list_filters = endpoint.get_list_filter()
     meta_fields = endpoint.get_metadata_fields()
 
@@ -35,8 +38,8 @@ def filter_factory(endpoint):
         if field in base_class.declared_filters:
             continue
 
-        meta_field = _get_field(meta_fields, field)
-        field_type = list_filter.get('type', meta_field['type'])
+        meta_field = _get_field(meta_fields, field) or list_filter
+        field_type = list_filter.get('type', meta_field.get('type'))
         field_qry = field.replace('.', '__')
 
         if field_type == constants.FIELD_RELATED:
@@ -59,8 +62,7 @@ def filter_factory(endpoint):
                 choice_filter_class = ChoiceFilter
 
                 if not callable(choices):
-                    choices = [(choice['value'], choice['label'])
-                            for choice in choices]
+                    choices = [(choice['value'], choice['label']) for choice in choices]
 
                 kwargs['choices'] = choices
 
@@ -83,8 +85,7 @@ def filter_factory(endpoint):
     if not attrs:
         return base_class if base_class is not FilterSet else None
 
-    base_meta_fields = getattr(base_class.Meta, 'fields', []) \
-        if base_class is not FilterSet else []
+    base_meta_fields = getattr(base_class.Meta, 'fields', []) if base_class is not FilterSet else []
     meta_fields = set(base_meta_fields)
     meta_fields.update(attrs.keys())
 

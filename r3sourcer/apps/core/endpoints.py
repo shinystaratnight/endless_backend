@@ -396,7 +396,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
         },
         {
             'label': _('State'),
-            'field': 'state',
+            'field': 'active_states',
         },
         {
             'label': _('Credit'),
@@ -477,7 +477,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
         )
         list_filter = ['company', 'primary_contact.contact', {
             'type': constants.FIELD_SELECT,
-            'field': 'state',
+            'field': 'active_states',
             'choices': lazy(states_part, list)(),
         }, {
             'type': constants.FIELD_RELATED,
@@ -574,8 +574,8 @@ class CompanyEndpoint(ApiEndpoint):
             }),
         },
         {
-            'label': _('Client State'),
-            'field': 'state',
+            'label': _('State'),
+            'field': 'active_states',
         },
     )
 

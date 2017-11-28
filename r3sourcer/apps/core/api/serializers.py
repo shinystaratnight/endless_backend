@@ -19,13 +19,8 @@ from django.db.models.fields.related import (
 from django.contrib.contenttypes.fields import GenericRelation
 
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.core.workflow import (
-    NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED
-)
-from r3sourcer.apps.core.api.fields import (
-    ApiBaseRelatedField, ApiDateTimeTzField, ApiContactPictureField,
-    EmptyNullField, ApiChoicesField
-)
+from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED)
+from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_field
 
 rest_settings = settings.REST_FRAMEWORK
 
@@ -104,17 +99,17 @@ class ApiFullRelatedFieldsMixin():
                     is_pk_data = True
 
             if isinstance(field, serializers.DateTimeField):
-                self.fields[field_name] = ApiDateTimeTzField(
+                self.fields[field_name] = core_field.ApiDateTimeTzField(
                     *field._args, **field._kwargs
                 )
                 continue
             if isinstance(field, serializers.ChoiceField):
-                self.fields[field_name] = ApiChoicesField(
+                self.fields[field_name] = core_field.ApiChoicesField(
                     *field._args, **field._kwargs
                 )
                 continue
             elif isinstance(field, serializers.ImageField):
-                self.fields[field_name] = ApiContactPictureField(
+                self.fields[field_name] = core_field.ApiContactPictureField(
                     *field._args, **field._kwargs
                 )
                 continue
@@ -152,7 +147,8 @@ class ApiFullRelatedFieldsMixin():
             is_one_to_one_relation = isinstance(related_field, OneToOneRel)
             if not isinstance(related_field, RelatedField) and not is_many_to_one_relation:
                 if getattr(related_field, 'blank', False) and not getattr(related_field, 'null', False):
-                    self.fields[field_name] = EmptyNullField.from_field(field)
+                    self.fields[field_name] = core_field.EmptyNullField.from_field(
+                        field)
 
                 continue
 
@@ -177,7 +173,7 @@ class ApiFullRelatedFieldsMixin():
                     continue
             if data is empty and related_obj_setting == RELATED_NONE and not is_many_relation and \
                     field_name not in internal_fields_dict:
-                self.fields[field_name] = ApiBaseRelatedField(
+                self.fields[field_name] = core_field.ApiBaseRelatedField(
                     read_only=True,
                     many=isinstance(
                         related_field, (ManyToManyRel, ManyToManyField)),
@@ -425,7 +421,7 @@ class ApiContactImageFieldsMixin():
 
         image_fields = self.image_fields or []
         for image_field in image_fields:
-            self.fields[image_field] = ApiContactPictureField(required=False)
+            self.fields[image_field] = core_field.ApiContactPictureField(required=False)
 
 
 class MetaFields(serializers.SerializerMetaclass):
@@ -775,9 +771,8 @@ class CompanyContactRegisterSerializer(ContactRegisterSerializer):
         )
 
 
-class CompanyAddressSerializer(ApiBaseModelSerializer):
-    method_fields = ('portfolio_manager', 'state', 'invoices_count',
-                     'orders_count')
+class CompanyAddressSerializer(core_mixins.WorkflowStateSerializerFieldMixin, ApiBaseModelSerializer):
+    method_fields = ('portfolio_manager', 'invoices_count', 'orders_count')
 
     class Meta:
         model = core_models.CompanyAddress
@@ -816,20 +811,11 @@ class CompanyAddressSerializer(ApiBaseModelSerializer):
         return company_rel and company_rel.primary_contact and \
             str(company_rel.primary_contact.contact)
 
-    def get_state(self, obj):
-        if not obj:
-            return
+    def get_active_states(self, obj):
+        if obj:
+            obj = self.get_company_rel(obj)
 
-        company_rel = self.get_company_rel(obj)
-        if not company_rel:
-            return
-
-        states = company_rel.get_active_states()
-
-        return [
-            state.state.name_after_activation or state.state.name_before_activation
-            for state in states
-        ]
+        return super().get_active_states(obj)
 
     def get_invoices_count(self, obj):
         if not obj:
@@ -1026,7 +1012,7 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
 
 
 class CompanyListSerializer(ApiBaseModelSerializer):
-    method_fields = ('primary_contact', 'state', 'terms_of_pay')
+    method_fields = ('primary_contact', 'terms_of_pay')
 
     class Meta:
         model = core_models.Company
@@ -1073,20 +1059,11 @@ class CompanyListSerializer(ApiBaseModelSerializer):
         return company_rel and company_rel.primary_contact and \
             str(company_rel.primary_contact.contact)
 
-    def get_state(self, obj):
-        if not obj:
-            return
+    def get_active_states(self, obj):
+        if obj:
+            obj = self.get_company_rel(obj)
 
-        company_rel = self.get_company_rel(obj)
-        if not company_rel:
-            return
-
-        states = company_rel.get_active_states()
-
-        return [
-            state.state.name_after_activation or state.state.name_before_activation
-            for state in states
-        ]
+        return super().get_active_states(obj)
 
     def get_terms_of_pay(self, obj):
         if not obj:

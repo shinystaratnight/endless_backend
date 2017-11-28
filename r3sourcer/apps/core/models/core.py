@@ -1895,16 +1895,14 @@ class WorkflowNode(UUIDModel):
 
     @classmethod
     def get_model_all_states(cls, model):
-        states = []#cls.objects.filter(
-#            workflow__model=ContentType.objects.get_for_model(model)
- #       ).distinct('number').values(
-  #          'number', 'name_before_activation', 'name_after_activation'
-   #     )
+        states = cls.objects.filter(
+            workflow__model=ContentType.objects.get_for_model(model)
+        ).distinct('number').values(
+            'number', 'name_before_activation', 'name_after_activation'
+        )
 
         return [
-            {'label': s['name_after_activation'] or s['name_before_activation'],
-                'value': s['number']}
-            for s in states
+            {'label': s['name_after_activation'] or s['name_before_activation'], 'value': s['number']} for s in states
         ]
 
 

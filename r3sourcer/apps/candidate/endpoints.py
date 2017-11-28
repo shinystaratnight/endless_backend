@@ -289,7 +289,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         }, 'contact.address.city', 'contact.address.state', 'contact.gender',
         'nationality', 'weight', 'height', 'transportation_to_work',
         'skill_list', 'tag_list', 'candidate_scores.reliability', 'candidate_scores.loyalty',
-        'bmi', 'strength', 'language', 'average_score', 'state'
+        'bmi', 'strength', 'language', 'average_score', 'active_states'
     )
 
     list_tabs = [{
@@ -322,7 +322,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         )
         list_filter = [{
             'type': constants.FIELD_SELECT,
-            'field': 'state',
+            'field': 'active_states',
             'choices': lazy(states_part, list)(),
         }, 'contact.gender', 'transportation_to_work', {
             'field': 'created_at',

@@ -5,7 +5,7 @@ from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.skills import models as skill_models
 from r3sourcer.apps.candidate import models as candidate_models
-from r3sourcer.apps.core.api import serializers as core_serializers
+from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers
 from r3sourcer.apps.activity.endpoints import serializers as activity_serializers
 
@@ -46,7 +46,11 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
         fields = '__all__'
 
 
-class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core_serializers.ApiBaseModelSerializer):
+class CandidateContactSerializer(
+    core_serializers.ApiRelatedFieldManyMixin, core_mixins.WorkflowStateSerializerFieldMixin,
+    core_serializers.ApiBaseModelSerializer
+):
+
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
 
@@ -88,18 +92,6 @@ class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core
         )
 
         related = core_serializers.RELATED_DIRECT
-
-    def get_state(self, obj):
-        if not obj:
-            return
-
-        states = obj.get_active_states()
-
-        return [
-            state.state.name_after_activation or
-            state.state.name_before_activation
-            for state in states
-        ]
 
     def get_average_score(self, obj):
         if not obj:
