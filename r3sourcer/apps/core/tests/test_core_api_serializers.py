@@ -973,14 +973,14 @@ class TestCompanyAddressSerializer:
 
             assert portfolio_manager is None
 
-    def test_get_state_obj_none(self):
+    def test_get_active_states_obj_none(self):
         serializer = CompanyAddressTestSerializer()
 
-        state = serializer.get_state(None)
+        state = serializer.get_active_states(None)
 
         assert state is None
 
-    def test_get_state_obj_company_rel(self, company_address,
+    def test_get_active_states_obj_company_rel(self, company_address,
                                        company_rel):
         serializer = CompanyAddressTestSerializer()
 
@@ -991,18 +991,18 @@ class TestCompanyAddressSerializer:
                 state = MockModel(number=10, name_after_activation='new')
                 mock_states.return_value = [MockModel(state=state, object_id=company_rel.id)]
 
-                state = serializer.get_state(company_address)
+                state = serializer.get_active_states(company_address)
 
                 assert state == ['new']
 
-    def test_get_state_obj_company_rel_none(self, company_address,
+    def test_get_active_states_obj_company_rel_none(self, company_address,
                                             company_rel):
         serializer = CompanyAddressTestSerializer()
 
         with patch.object(serializer, 'get_company_rel') as mock_comp_rel:
             mock_comp_rel.return_value = None
 
-            state = serializer.get_state(company_address)
+            state = serializer.get_active_states(company_address)
 
             assert state is None
 

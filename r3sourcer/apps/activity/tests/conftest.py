@@ -179,3 +179,15 @@ def picture(faker):
         'FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFC2000B080001000101011100FFC400'
         '14100100000000000000000000000000000000FFDA0008010100013F10')
     return ContentFile(bytes(sequence), faker.file_name(extension='jpg'))
+
+
+@pytest.fixture
+def related_activity(db, activity_template, primary_user):
+    return Activity.objects.create(
+        template=activity_template,
+        contact=primary_user.contact,
+        starts_at=timezone.datetime(2017, 1, 1, 12, 0).replace(tzinfo=pytz.UTC),
+        ends_at=timezone.datetime(2017, 1, 5, 12, 0).replace(tzinfo=pytz.UTC),
+        entity_object_id=primary_user.id,
+        entity_object_name=primary_user.__class__.__name__
+    )

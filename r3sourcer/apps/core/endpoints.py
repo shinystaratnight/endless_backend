@@ -396,7 +396,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
         },
         {
             'label': _('State'),
-            'field': 'state',
+            'field': 'active_states',
         },
         {
             'label': _('Credit'),
@@ -477,7 +477,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
         )
         list_filter = ['company', 'primary_contact.contact', {
             'type': constants.FIELD_SELECT,
-            'field': 'state',
+            'field': 'active_states',
             'choices': lazy(states_part, list)(),
         }, {
             'type': constants.FIELD_RELATED,
@@ -574,8 +574,8 @@ class CompanyEndpoint(ApiEndpoint):
             }),
         },
         {
-            'label': _('Client State'),
-            'field': 'state',
+            'label': _('State'),
+            'field': 'active_states',
         },
     )
 
@@ -820,6 +820,11 @@ class CompanyEndpoint(ApiEndpoint):
         }
     )
 
+    search_fields = (
+        'name', 'company_addresses__address__street_address', 'company_addresses__address__city__search_names',
+        'notes', 'description'
+    )
+
 
 class CompanyContactEndpoint(ApiEndpoint):
 
@@ -857,6 +862,8 @@ class CompanyContactEndpoint(ApiEndpoint):
         'receive_order_confirmation_sms',
         'voip_username', 'voip_password', 'pin_code'
     )
+
+    search_fields = ('job_title', 'contact__title', 'contact__first_name', 'contact__last_name')
 
     def _get_all_job_titles(self):
         return [

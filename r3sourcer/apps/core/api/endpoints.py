@@ -86,9 +86,9 @@ class ApiEndpoint(Endpoint):
         meta_fields = copy.copy(serializer_class.Meta.fields)
         if meta_fields == '__all__':
             meta_fields = self.get_fields_for_serializer()
-        fields = chain(meta_fields, getattr(serializer_class, 'method_fields', []))
-
         serializer = serializer_class()
+
+        fields = chain(meta_fields, getattr(serializer_class, 'get_method_fields', lambda self: [])(serializer))
         result = self._get_metadata_fields_info(fields, [], serializer, meta=meta)
 
         return result
