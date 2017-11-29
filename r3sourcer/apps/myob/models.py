@@ -88,7 +88,9 @@ class MYOBRequestLog(UUIDModel, MYOBWatchdogModel):
 
 
 class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
-
+    """
+    This model contains information needed for  authentication in MYOB API and fetching company files
+    """
     client_id = models.CharField(
         verbose_name=_("Client ID"),
         unique=True,
@@ -157,7 +159,9 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
 
 
 class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
-
+    """
+    Represents a user's company file in MYOB API
+    """
     cf_id = models.CharField(
         verbose_name=_("Company File Id"),
         unique=True,
@@ -193,7 +197,9 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
 
 
 class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
-
+    """
+    Contains all information needed for authorization and fetching iformation related to a specific company file
+    """
     company_file = models.ForeignKey(MYOBCompanyFile)
 
     auth_data = models.ForeignKey(MYOBAuthData)

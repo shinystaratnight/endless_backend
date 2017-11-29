@@ -428,3 +428,27 @@ class TestUserGroupListView:
         assert response.data['results'][0]['name'] == group1.name
         assert response.data['results'][1]['id'] == group2.id
         assert response.data['results'][1]['name'] == group2.name
+
+
+class TestUserCompanyFileListView:
+    def test(self, client):
+        url = reverse('user_company_files', kwargs={'version': 'v2'})
+        response = client.get(url)
+
+        assert True
+
+
+class TestRefreshCompanyFileView:
+    def test(self, client):
+        url = reverse('refresh_company_files', kwargs={'version': 'v2'})
+        response = client.get(url)
+
+        assert True
+
+
+class TestCheckCompanyFileView:
+    def test(self, client):
+        url = reverse('check_company_files', kwargs={'version': 'v2'})
+        response = client.post(url)
+
+        assert True

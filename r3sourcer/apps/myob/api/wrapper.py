@@ -129,6 +129,11 @@ class MYOBAuth(object):
     MYOB_ACCOUNT_URL = 'https://secure.myob.com/oauth2/account/'
 
     def __init__(self, request=None, auth_data=None, app_info=None):
+        """
+        request - django request object
+        auth_data - instance of MYOBAuthData model
+        app_info - dict with keys 'api_key' and 'api_secret'
+        """
         if request is None and auth_data is None:
             raise MYOBProgrammingException('provide request or auth_data')
         self.request = request      # use and save request.session values
