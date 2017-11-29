@@ -1,4 +1,4 @@
-class WorkflowStateSerializerFieldMixin():
+class WorkflowStatesColumnMixin():
 
     def get_method_fields(self):
         method_fields = list(super().get_method_fields())

@@ -47,7 +47,7 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class CandidateContactSerializer(
-    core_serializers.ApiRelatedFieldManyMixin, core_mixins.WorkflowStateSerializerFieldMixin,
+    core_serializers.ApiRelatedFieldManyMixin, core_mixins.WorkflowStatesColumnMixin,
     core_serializers.ApiBaseModelSerializer
 ):
 

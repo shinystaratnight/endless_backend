@@ -6,7 +6,7 @@ from django.utils import timezone
 from r3sourcer.apps.activity import models as activity_models
 
 
-class RelatedActivitiesColumnSerializerMixin():
+class RelatedActivitiesColumnMixin():
 
     def get_method_fields(self):
         method_fields = list(super().get_method_fields())

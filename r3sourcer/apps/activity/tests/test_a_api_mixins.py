@@ -8,44 +8,44 @@ from r3sourcer.apps.activity.api import mixins as activity_mixins
 
 
 @pytest.mark.django_db
-class TestRelatedActivitiesColumnSerializerMixin:
+class TestRelatedActivitiesColumnMixin:
 
     @pytest.fixture
     def obj(self):
-        return activity_mixins.RelatedActivitiesColumnSerializerMixin()
+        return activity_mixins.RelatedActivitiesColumnMixin()
 
     @mock.patch.object(
-        activity_mixins.RelatedActivitiesColumnSerializerMixin, 'get_related_activities', return_value=(1, 2, 3)
+        activity_mixins.RelatedActivitiesColumnMixin, 'get_related_activities', return_value=(1, 2, 3)
     )
     def test_get_actual_activities(self, mock_related, obj):
         assert obj.get_actual_activities(obj) == 2
 
     @mock.patch.object(
-        activity_mixins.RelatedActivitiesColumnSerializerMixin, 'get_related_activities', return_value=None
+        activity_mixins.RelatedActivitiesColumnMixin, 'get_related_activities', return_value=None
     )
     def test_get_actual_activities_none(self, mock_related, obj):
         assert obj.get_actual_activities(obj) is None
 
     @mock.patch.object(
-        activity_mixins.RelatedActivitiesColumnSerializerMixin, 'get_related_activities', return_value=(1, 2, 3)
+        activity_mixins.RelatedActivitiesColumnMixin, 'get_related_activities', return_value=(1, 2, 3)
     )
     def test_get_overdue_activities(self, mock_related, obj):
         assert obj.get_overdue_activities(obj) == 3
 
     @mock.patch.object(
-        activity_mixins.RelatedActivitiesColumnSerializerMixin, 'get_related_activities', return_value=None
+        activity_mixins.RelatedActivitiesColumnMixin, 'get_related_activities', return_value=None
     )
     def test_get_overdue_activities_none(self, mock_related, obj):
         assert obj.get_overdue_activities(obj) == '-'
 
     @mock.patch.object(
-        activity_mixins.RelatedActivitiesColumnSerializerMixin, 'get_related_activities', return_value=(1, 2, 3)
+        activity_mixins.RelatedActivitiesColumnMixin, 'get_related_activities', return_value=(1, 2, 3)
     )
     def test_get_total_activities(self, mock_related, obj):
         assert obj.get_total_activities(obj) == 1
 
     @mock.patch.object(
-        activity_mixins.RelatedActivitiesColumnSerializerMixin, 'get_related_activities', return_value=None
+        activity_mixins.RelatedActivitiesColumnMixin, 'get_related_activities', return_value=None
     )
     def test_get_total_activities_none(self, mock_related, obj):
         assert obj.get_total_activities(obj) is None

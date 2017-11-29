@@ -7,7 +7,7 @@ from r3sourcer.apps.hr import models as hr_models
 
 
 class VacancySerializer(
-    activity_mixins.RelatedActivitiesColumnSerializerMixin, core_mixins.WorkflowStateSerializerFieldMixin,
+    activity_mixins.RelatedActivitiesColumnMixin, core_mixins.WorkflowStatesColumnMixin,
     core_serializers.ApiBaseModelSerializer
 ):
 

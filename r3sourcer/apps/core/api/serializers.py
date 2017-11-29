@@ -771,7 +771,7 @@ class CompanyContactRegisterSerializer(ContactRegisterSerializer):
         )
 
 
-class CompanyAddressSerializer(core_mixins.WorkflowStateSerializerFieldMixin, ApiBaseModelSerializer):
+class CompanyAddressSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
     method_fields = ('portfolio_manager', 'invoices_count', 'orders_count')
 
     class Meta:
@@ -1011,7 +1011,7 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
         }
 
 
-class CompanyListSerializer(core_mixins.WorkflowStateSerializerFieldMixin, ApiBaseModelSerializer):
+class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
     method_fields = ('primary_contact', 'terms_of_pay')
 
     class Meta:
