@@ -54,7 +54,7 @@ class CandidateContactSerializer(
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
 
-    method_fields = ('state', 'average_score', 'bmi', 'skill_list', 'tag_list')
+    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list')
     many_related_fields = {
         'candidate_skills': 'candidate_contact',
         'tag_rels': 'candidate_contact',
