@@ -1011,7 +1011,7 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
         }
 
 
-class CompanyListSerializer(ApiBaseModelSerializer):
+class CompanyListSerializer(core_mixins.WorkflowStateSerializerFieldMixin, ApiBaseModelSerializer):
     method_fields = ('primary_contact', 'terms_of_pay')
 
     class Meta:

@@ -220,6 +220,11 @@ class VacancyEndpoint(ApiEndpoint):
         'fields': ('title', 'created_at', 'updated_at', 'published', 'publish_on', 'expires_on')
     }]
 
+    search_fields = (
+        'workers', 'jobsite__jobsite_addresses__address__city__search_names', 'publish_on', 'expires_on',
+        'jobsite__jobsite_addresses__address__street_address', 'jobsite__master_company__name', 'position__name'
+    )
+
     def get_list_filter(self):
         states_part = partial(
             core_models.WorkflowNode.get_model_all_states, hr_models.Vacancy
@@ -247,7 +252,10 @@ class VacancyEndpoint(ApiEndpoint):
         return list_filter
 
 
-router.register(hr_models.Jobsite)
+router.register(hr_models.Jobsite, search_fields=(
+    'jobsite_addresses__address__city__search_names', 'jobsite_addresses__address__street_address',
+    'master_company__name'
+))
 router.register(hr_models.JobsiteUnavailability)
 router.register(hr_models.JobsiteAddress)
 router.register(endpoint=VacancyEndpoint())

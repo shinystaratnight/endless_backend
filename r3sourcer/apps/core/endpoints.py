@@ -820,6 +820,11 @@ class CompanyEndpoint(ApiEndpoint):
         }
     )
 
+    search_fields = (
+        'name', 'company_addresses__address__street_address', 'company_addresses__address__city__search_names',
+        'notes', 'description'
+    )
+
 
 class CompanyContactEndpoint(ApiEndpoint):
 
@@ -857,6 +862,8 @@ class CompanyContactEndpoint(ApiEndpoint):
         'receive_order_confirmation_sms',
         'voip_username', 'voip_password', 'pin_code'
     )
+
+    search_fields = ('job_title', 'contact__title', 'contact__first_name', 'contact__last_name')
 
     def _get_all_job_titles(self):
         return [

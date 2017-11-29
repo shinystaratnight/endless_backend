@@ -316,6 +316,11 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         )
     }]
 
+    search_fields = (
+        'contact__title', 'contact__last_name', 'contact__first_name', 'contact__address__city__search_names',
+        'contact__address__street_address',
+    )
+
     def get_list_filter(self):
         states_part = partial(
             core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
