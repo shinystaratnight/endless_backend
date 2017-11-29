@@ -79,7 +79,10 @@ class CandidateContactSerializer(core_serializers.ApiRelatedFieldManyMixin, core
                 'contact': ('__all__', {
                     'address': ('__all__', ),
                 }),
-                'tag_rels': ('id', 'tag', 'verified_by', 'verification_evidence'),
+                'tag_rels': ('id', 'verification_evidence', {
+                    'verified_by': ('id', ),
+                    'tag': ('id', )
+                }),
                 'candidate_skills': ('id', 'score', 'prior_experience', {
                     'skill': ('id', )
                 }),

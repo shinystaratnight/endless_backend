@@ -95,26 +95,31 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 {
                     'field': 'candidate_scores.id',
                     'type': constants.FIELD_TEXT,
+                    'send': False,
                 }, {
                     'field': 'candidate_scores.loyalty',
                     'type': constants.FIELD_STATIC,
                     'read_only': True,
                     'label': _('Loyalty Score'),
+                    'send': False,
                 }, {
                     'field': 'candidate_scores.reliability',
                     'type': constants.FIELD_STATIC,
                     'read_only': True,
                     'label': _('Reliability Score'),
+                    'send': False,
                 }, {
                     'field': 'candidate_scores.client_feedback',
                     'type': constants.FIELD_STATIC,
                     'read_only': True,
                     'label': _('Client Feedback'),
+                    'send': False,
                 }, {
                     'field': 'candidate_scores.recruitment_score',
                     'type': constants.FIELD_STATIC,
                     'read_only': True,
                     'label': _('Recruitment Score'),
+                    'send': False,
                 },
             ),
         }, {
