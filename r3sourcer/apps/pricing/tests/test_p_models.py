@@ -111,24 +111,29 @@ class TestRateCoefficientModifier:
 
 
 class TestPriceListRate:
-    def test_validation(self, skill, price_list):
-        PriceListRate.objects.create(skill=skill, price_list=price_list, default_rate=True)
-
-        with pytest.raises(Exception) as excinfo:
-            PriceListRate.objects.create(skill=skill, price_list=price_list, default_rate=True)
-
-        assert excinfo.value.messages[0] == 'Only one rate for the skill can be set to "True"'
-
     @pytest.mark.django_db
     def test_default_rate(self, skill, price_list):
-        base_rate = PriceListRate.objects.create(skill=skill,
+        base_rate1 = PriceListRate.objects.create(skill=skill,
+                                                  price_list=price_list,
+                                                  hourly_rate=20,
+                                                  default_rate=True)
+        base_rate2 = PriceListRate.objects.create(skill=skill,
+                                                  price_list=price_list,
+                                                  default_rate=True,
+                                                  hourly_rate=30)
+
+        assert not PriceListRate.objects.get(pk=str(base_rate1.pk)).default_rate
+        assert PriceListRate.objects.get(pk=str(base_rate2.pk)).default_rate
+
+        skill2 = Skill.objects.create(name="Driver", carrier_list_reserve=2, short_name="Drv", active=False)
+        base_rate3 = PriceListRate.objects.create(skill=skill2,
                                                  price_list=price_list,
                                                  hourly_rate=20,
                                                  default_rate=False)
-        base_rate2 = PriceListRate.objects.create(skill=skill,
+        base_rate4 = PriceListRate.objects.create(skill=skill2,
                                                   price_list=price_list,
                                                   default_rate=False,
                                                   hourly_rate=30)
 
-        assert base_rate.default_rate
-        assert not base_rate2.default_rate
+        assert base_rate3.default_rate
+        assert not base_rate4.default_rate

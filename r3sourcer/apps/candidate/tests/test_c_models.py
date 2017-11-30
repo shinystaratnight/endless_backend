@@ -13,6 +13,8 @@ from r3sourcer.apps.candidate.models import (
 )
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.pricing.models import PriceListRate
+from r3sourcer.apps.skills.models import SkillBaseRate
 
 
 @pytest.mark.django_db
@@ -86,7 +88,12 @@ class TestCandidateContact:
     def test_is_address_set_unsuccessful(self, candidate):
         assert not candidate.is_address_set()
 
-    def test_is_skill_defined_successful(self, candidate, skill_rel):
+    def test_is_skill_defined_successful(self, candidate, skill_rel, price_list):
+        SkillBaseRate.objects.create(skill=skill_rel.skill, hourly_rate=1, default_rate=True)
+        PriceListRate.objects.create(skill=skill_rel.skill, hourly_rate=1, price_list=price_list, default_rate=True)
+        skill_rel.skill.active = True
+        skill_rel.skill.save()
+
         assert candidate.is_skill_defined()
 
     def test_is_skill_defined_unsuccessful(self, candidate):
@@ -102,9 +109,14 @@ class TestCandidateContact:
     def test_are_skill_rates_set_successful(self, candidate, skill_rate_rel):
         assert candidate.are_skill_rates_set()
 
-    def test_are_skill_rates_set_unsuccessful(self, candidate, skill_rate_rel):
+    def test_are_skill_rates_set_unsuccessful(self, candidate, skill_rate_rel, price_list):
+        skill = skill_rate_rel.candidate_skill.skill
+        PriceListRate.objects.create(skill=skill, hourly_rate=1, price_list=price_list, default_rate=True)
+        skill.active = True
+        skill.save()
         skill_rate_rel.valid_until = timezone.now() - datetime.timedelta(days=1)
         skill_rate_rel.save()
+
         assert not candidate.are_skill_rates_set()
 
     def test_are_tags_verified_unsuccessful(self, candidate, tag_rel):

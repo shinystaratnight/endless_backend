@@ -371,9 +371,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     @workflow_function
     def are_skill_rates_set(self):
-        for skill in self.candidate_skills.filter(
-                score__gt=0, skill__active=True
-        ).all():
+        for skill in self.candidate_skills.filter(score__gt=0, skill__active=True).all():
             if not skill.get_valid_rate():
                 return False
         return True

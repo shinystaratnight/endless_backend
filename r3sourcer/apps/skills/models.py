@@ -104,18 +104,14 @@ class SkillBaseRate(UUIDModel):
             instance.default_rate = True
             instance.save()
 
-    def clean(self, *args, **kwargs):
+    def save(self, *args, **kwargs):
+        super(SkillBaseRate, self).save(*args, **kwargs)
+
         if self.default_rate:
             default_rates = self.skill.skill_rate_defaults.filter(default_rate=True) \
                                                           .exclude(pk=self.pk)
-            if default_rates.count():
-                raise ValidationError('Only one rate for the skill can be set to "True"')
-
-        super(SkillBaseRate, self).clean(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super(SkillBaseRate, self).save(*args, **kwargs)
+            if default_rates:
+                default_rates.update(default_rate=False)
 
     def __str__(self):
         return '{} ${}/h'.format(str(self.skill), str(self.hourly_rate))
