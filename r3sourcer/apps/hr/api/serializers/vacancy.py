@@ -73,3 +73,19 @@ class VacancySerializer(
             return None
 
         return obj.get_title()
+
+
+class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = ('is_fulfilled',)
+
+    class Meta:
+        model = hr_models.Shift
+        fields = (
+            '__all__', {
+                'date': ('__all__', )
+            }
+        )
+
+    def get_is_fulfilled(self, obj):
+        return obj and obj.is_fulfilled()
