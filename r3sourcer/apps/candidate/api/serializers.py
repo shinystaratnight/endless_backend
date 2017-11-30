@@ -93,6 +93,7 @@ class CandidateContactSerializer(
                 'candidate_scores': ('id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score'),
             }
         )
+        read_only_fields = ('candidate_scores',)
 
         related = core_serializers.RELATED_DIRECT
 
