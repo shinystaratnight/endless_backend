@@ -331,8 +331,8 @@ class Vacancy(AbstractBaseOrder):
         #     return IRRELEVANT
 
         result = NOT_FULFILLED
-        today = date.today()
         now = timezone.now()
+        today = now.date()
         next_date = self.vacancy_dates.filter(
             shift_date__gt=today, cancelled=False
         ).order_by('shift_date').first()
@@ -358,6 +358,36 @@ class Vacancy(AbstractBaseOrder):
             result = IRRELEVANT
         return result
     is_fulfilled.short_description = _('Fulfilled')
+
+    def is_fulfilled_today(self):
+        # FIXME: change to new workflow
+        # if self.order.get_state() in [OrderState.STATE_CHOICES.cancelled,
+        #                               OrderState.STATE_CHOICES.completed]:
+        #     return IRRELEVANT
+
+        result = NOT_FULFILLED
+        today = timezone.now().date()
+        vd_today = self.vacancy_dates.filter(shift_date=today, cancelled=False).first()
+        if vd_today:
+            result = vd_today.is_fulfilled()
+        else:
+            result = IRRELEVANT
+        return result
+
+    def can_fillin(self):
+        not_filled_future_vd = False
+        today = timezone.now().date()
+        future_vds = self.vacancy_dates.filter(shift_date__gte=today)
+        for vd in future_vds:
+            if vd.is_fulfilled() == NOT_FULFILLED:
+                not_filled_future_vd = True
+                break
+
+        # FIXME: change to new workflow
+        # return self.order.get_state() not in [OrderState.STATE_CHOICES.cancelled,
+        #                                       OrderState.STATE_CHOICES.completed,
+        #                                       OrderState.STATE_CHOICES.new] and \
+        return self.is_fulfilled() in [NOT_FULFILLED, LIKELY_FULFILLED] or not_filled_future_vd
 
 
 class VacancyDate(UUIDModel):

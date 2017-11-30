@@ -289,7 +289,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         }, 'contact.address.city', 'contact.address.state', 'contact.gender',
         'nationality', 'weight', 'height', 'transportation_to_work',
         'skill_list', 'tag_list', 'candidate_scores.reliability', 'candidate_scores.loyalty',
-        'bmi', 'strength', 'language', 'average_score', 'state'
+        'bmi', 'strength', 'language', 'average_score', 'active_states'
     )
 
     list_tabs = [{
@@ -316,13 +316,18 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         )
     }]
 
+    search_fields = (
+        'contact__title', 'contact__last_name', 'contact__first_name', 'contact__address__city__search_names',
+        'contact__address__street_address',
+    )
+
     def get_list_filter(self):
         states_part = partial(
             core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
         )
         list_filter = [{
             'type': constants.FIELD_SELECT,
-            'field': 'state',
+            'field': 'active_states',
             'choices': lazy(states_part, list)(),
         }, 'contact.gender', 'transportation_to_work', {
             'field': 'created_at',

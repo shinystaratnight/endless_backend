@@ -1,5 +1,6 @@
 from drf_auto_endpoint.router import router
 
+from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.pricing.api import serializers
 from r3sourcer.apps.pricing import models
@@ -18,6 +19,16 @@ class RateCoefficientEndpoint(ApiEndpoint):
 class PriceListRateEndpoint(ApiEndpoint):
     model = models.PriceListRate
     search_fields = ('skill__name',)
+    fieldsets = (
+        {
+            "field": "hourly_rate",
+            "type": constants.FIELD_TEXT
+        },
+        {
+            "field": "default_rate",
+            "type": constants.FIELD_CHECKBOX
+        }
+    )
 
 
 router.register(endpoint=RateCoefficientEndpoint())

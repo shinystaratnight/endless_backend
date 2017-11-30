@@ -36,18 +36,18 @@ class TestCandidateContactSerializer:
             serializer_obj.create(candidate_contact_data)
 
     @mock.patch.object(CandidateContact, 'get_active_states')
-    def test_get_state(self, mock_states, candidate, serializer_obj):
+    def test_get_active_states(self, mock_states, candidate, serializer_obj):
         mock_states.return_value = [
             MockModel(state=MockModel(name_after_activation='test'))
         ]
 
-        res = serializer_obj.get_state(candidate)
+        res = serializer_obj.get_active_states(candidate)
 
         assert len(res) == 1
         assert res == ['test']
 
-    def test_get_state_none(self, serializer_obj):
-        res = serializer_obj.get_state(None)
+    def test_get_active_states_none(self, serializer_obj):
+        res = serializer_obj.get_active_states(None)
 
         assert res is None
 

@@ -8,8 +8,20 @@ from r3sourcer.apps.skills import models
 class SkillEndpoint(ApiEndpoint):
 
     model = models.Skill
-    fieldsets = ('name', 'short_name',  'carrier_list_reserve',
-                 'employment_classification', 'active', 'skill_rate_defaults', 'price_list_rates')
+    fieldsets = (
+        'name', 'short_name',  'carrier_list_reserve', 'employment_classification', 'active',
+        {
+            'field': 'skill_rate_defaults',
+            'type': constants.FIELD_RELATED,
+            'list': True
+        },
+        {
+            'field': 'price_list_rates',
+            'type': constants.FIELD_RELATED,
+            'list': True
+        }
+    )
+
     list_display = (
         {
             'field': 'name',
@@ -22,7 +34,7 @@ class SkillEndpoint(ApiEndpoint):
         {
             'field': 'carrier_list_reserve',
             'type': constants.FIELD_TEXT
-        },
+        }
     )
 
     search_fields = (
@@ -46,6 +58,16 @@ class EmploymentClassificationEndpoint(ApiEndpoint):
 class SkillBaseRateEndpoint(ApiEndpoint):
     model = models.SkillBaseRate
     search_fields = ('skill__name',)
+    list_display = (
+        {
+            "field": "hourly_rate",
+            "type": constants.FIELD_TEXT
+        },
+        {
+            "field": "default_rate",
+            "type": constants.FIELD_CHECKBOX
+        }
+    )
 
 
 router.register(endpoint=SkillEndpoint())
