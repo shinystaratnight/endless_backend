@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
-    'showIf', 'send',
+    'showIf', 'title', 'send',
 )
 
 
@@ -164,7 +164,7 @@ class AngularApiAdapter(BaseAdapter):
             adapted['send'] = field['send']
 
         field_ui = field.get('ui', {})
-        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo')
+        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title')
         adapted['templateOptions'].update({
             'type': component_type,
             'label': field.get('label', field_ui.get('label', '')),
@@ -345,8 +345,8 @@ class AngularListApiAdapter(AngularApiAdapter):
                 list_filter = {'field': list_filter}
 
             field = list_filter['field']
-            meta_field = self._get_field(self.fields, field)
-            field_type = list_filter.get('type', meta_field['type'])
+            meta_field = self._get_field(self.fields, field) or list_filter
+            field_type = list_filter.get('type', meta_field.get('type'))
             field_qry = field.replace('.', '__')
 
             label = list_filter.get('label', meta_field.get('label'))
