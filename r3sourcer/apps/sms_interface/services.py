@@ -37,9 +37,8 @@ class BaseSMSService(metaclass=ABCMeta):
     @transaction.atomic
     def send(self, to_number, text, from_number=None, related_obj=None, **kwargs):
         sender_contact = kwargs.get('sender_contact')
+        sms_message = get_sms(from_number=from_number, to_number=to_number, text=text, **kwargs)
         try:
-            sms_message = get_sms(from_number=from_number,
-                                  to_number=to_number, text=text, **kwargs)
 
             sms_message.related_object = related_obj
             sms_message.save()
