@@ -60,8 +60,8 @@ class TokenLoginSerializer(ApiBaseModelSerializer):
 
 class ContactLoginSerializer(ApiBaseModelSerializer):
     name = serializers.SerializerMethodField()
-    contact_type = serializers.SerializerMethodField()
-    contact_id = serializers.SerializerMethodField()
+    contact_type = serializers.CharField(source='get_role', read_only=True)
+    contact_id = serializers.UUIDField(source='get_role_id', read_only=True)
 
     class Meta:
         model = Contact
@@ -69,9 +69,3 @@ class ContactLoginSerializer(ApiBaseModelSerializer):
 
     def get_name(self, obj):
         return str(obj)
-
-    def get_contact_type(self, obj):
-         return obj.get_role()
-
-    def get_contact_id(self, obj):
-        return obj.get_role_id()
