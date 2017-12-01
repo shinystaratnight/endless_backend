@@ -11,7 +11,7 @@ from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
 from r3sourcer.apps.activity import models as activity_models
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.pricing.models import PriceList, IndustryPriceList, Industry
 from r3sourcer.apps.skills import models as skills_models
 
 
@@ -287,4 +287,24 @@ def workflow_state(db, candidate, company):
     workflow, created = core_models.Workflow.objects.get_or_create(name="test_workflow", model=content_type)
     return core_models.WorkflowNode.objects.create(
         number=11, name_before_activation="State 11", workflow=workflow, company=company, rules={}
+    )
+
+
+@pytest.fixture
+def industry(db):
+    return Industry.objects.create(type='test')
+
+
+@pytest.fixture
+def industry_price_list(db, industry):
+    return IndustryPriceList.objects.create(
+        industry=industry,
+    )
+
+
+@pytest.fixture
+def price_list(db, company, industry_price_list):
+    return PriceList.objects.create(
+        company=company,
+        industry_price_list=industry_price_list,
     )
