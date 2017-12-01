@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
-    'showIf', 'title',
+    'showIf', 'title', 'send',
 )
 
 
@@ -159,6 +159,9 @@ class AngularApiAdapter(BaseAdapter):
 
         if 'showIf' in field:
             adapted['showIf'] = field['showIf']
+
+        if 'send' in field:
+            adapted['send'] = field['send']
 
         field_ui = field.get('ui', {})
         ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title')
