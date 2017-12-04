@@ -431,7 +431,7 @@ class TestUserGroupListView:
         assert response.data['results'][1]['name'] == group2.name
 
 
-class TestUserCompanyFileListView:
+class TestUserCompanyFilesView:
     def test_company_file_list(self, client, user, company):
         auth_data = MYOBAuthData.objects.create(client_id='client_id',
                                                 client_secret='client_secret',
@@ -459,7 +459,7 @@ class TestUserCompanyFileListView:
         assert response.data['company_files'][0]['authenticated'] == company_file.authenticated
 
 
-class TestRefreshCompanyFileView:
+class TestRefreshCompanyFilesView:
     @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBClient.get_company_files')
     def test_refresh_company_files(self, get_company_files, client, user, company, company_file_token):
         client.force_login(user)
@@ -469,7 +469,7 @@ class TestRefreshCompanyFileView:
         assert get_company_files.called
 
 
-class TestCheckCompanyFileView:
+class TestCheckCompanyFilesView:
     @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBClient.check_company_file')
     def test_check_company_file(self, check_company_file, client, user, company, company_file_token):
         check_company_file.return_value = True
