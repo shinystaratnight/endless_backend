@@ -236,6 +236,20 @@ class Contact(
                     return True
         return False
 
+    def get_role(self):
+        if self.is_company_contact():
+            return self.company_contact.first().role
+        elif self.is_candidate_contact():
+            return CANDIDATE
+        return None
+
+    def get_role_id(self):
+        if self.is_company_contact():
+            return self.company_contact.first().id
+        elif self.is_candidate_contact():
+            return self.candidate_contacts.first().id
+        return None
+
 
 class ContactUnavailability(UUIDModel):
 
