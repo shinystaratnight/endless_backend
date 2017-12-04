@@ -460,6 +460,21 @@ class Shift(UUIDModel):
         verbose_name=_("Date")
     )
 
+    workers = models.PositiveSmallIntegerField(
+        verbose_name=_("Workers"),
+        default=1,
+        validators=[MinValueValidator(1)]
+    )
+
+    hourly_rate = models.ForeignKey(
+        SkillBaseRate,
+        related_name="vacancy_shifts",
+        on_delete=models.SET_NULL,
+        verbose_name=_("Top hourly rate"),
+        null=True,
+        blank=True
+    )
+
     class Meta:
         verbose_name = _("Shift")
         verbose_name_plural = _("Shifts")
@@ -473,6 +488,15 @@ class Shift(UUIDModel):
     @property
     def vacancy(self):
         return self.date.vacancy
+
+    def is_fulfilled(self):
+        result = NOT_FULFILLED
+        vos = self.vacancy_offers
+        accepted_vos = vos.filter(status=VacancyOffer.STATUS_CHOICES.accepted)
+
+        if vos.exists() and self.workers <= accepted_vos.count():
+            result = FULFILLED
+        return result
 
 
 class VacancyOffer(UUIDModel):

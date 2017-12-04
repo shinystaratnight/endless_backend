@@ -7,10 +7,11 @@ from drf_auto_endpoint.router import router
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core_adapter import constants
+from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.api import filters as hr_filters
-from r3sourcer.apps.hr.api.serializers import vacancy as vacancy_serializer
+from r3sourcer.apps.hr.api.serializers import vacancy as vacancy_serializers
 from r3sourcer.apps.hr.endpoints.payment import InvoiceEndpoint
 from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint
 
@@ -97,7 +98,7 @@ class CandidateEvaluationEndpoint(ApiEndpoint):
 
 class VacancyEndpoint(ApiEndpoint):
     model = hr_models.Vacancy
-    serializer = vacancy_serializer.VacancySerializer
+    serializer = vacancy_serializers.VacancySerializer
     filter_class = hr_filters.VacancyFilter
 
     list_display = ('workers', 'work_start_date', {
@@ -225,6 +226,57 @@ class VacancyEndpoint(ApiEndpoint):
         'jobsite__jobsite_addresses__address__street_address', 'jobsite__master_company__name', 'position__name'
     )
 
+    fieldsets = ({
+        'type': constants.CONTAINER_ROW,
+        'label': '{__str__}',
+        'fields': (
+            {
+                'type': constants.CONTAINER_COLUMN,
+                'fields': (
+                    {
+                        'label': _('Client'),
+                        'field': 'customer_company',
+                        'type': constants.FIELD_RELATED,
+                    }, {
+                        'label': _('Client representative'),
+                        'field': 'customer_representative',
+                        'type': constants.FIELD_RELATED,
+                    }, {
+                        'label': _('Provider company'),
+                        'field': 'provider_company',
+                        'type': constants.FIELD_RELATED,
+                    }, {
+                        'label': _('Company representative'),
+                        'field': 'provider_representative',
+                        'type': constants.FIELD_RELATED,
+                    }, {
+                        'label': _('Accepted at'),
+                        'field': 'provider_signed_at',
+                        'type': constants.FIELD_DATETIME,
+                    }
+                )
+            }, {
+                'type': constants.CONTAINER_COLUMN,
+                'fields': (
+                    'jobsite', 'position', 'work_start_date', 'default_shift_starting_time', 'hourly_rate_default'
+                )
+            }
+        )
+    }, {
+        'type': constants.FIELD_LIST,
+        'field': 'id_',
+        'query': {
+            'date.vacancy': '{id}',
+        },
+        'label': _('Vacancy Dates'),
+        'add_label': _('Add date'),
+        'add_endpoint': api_reverse_lazy('hr/vacancydates'),
+        'endpoint': api_reverse_lazy('hr/shifts'),
+        'prefilled': {
+            'date.vacancy': '{id}',
+        }
+    })
+
     def get_list_filter(self):
         states_part = partial(
             core_models.WorkflowNode.get_model_all_states, hr_models.Vacancy
@@ -252,6 +304,52 @@ class VacancyEndpoint(ApiEndpoint):
         return list_filter
 
 
+class ShiftEndpoint(ApiEndpoint):
+    model = hr_models.Shift
+    serializer = vacancy_serializers.ShiftSerializer
+
+    list_displzy = ('workers', 'time')
+
+    fieldsets = ('date', 'time', 'workers', 'hourly_rate')
+
+    list_editable = (
+        {
+            'type': constants.FIELD_DATE,
+            'label': _('Date'),
+            'field': 'date.shift_date',
+        }, 'workers', 'hourly_rate', {
+            'type': constants.FIELD_TEXT,
+            'field': 'time',
+            'label': _('Shift start time'),
+        }, {
+            'type': constants.FIELD_ICON,
+            'field': 'is_fulfilled',
+            'label': _('Fulfilled'),
+            'values': {
+                0: 'times-circle',
+                1: 'check-circle',
+                2: 'exclamation-circle',
+                3: 'minus-circle',
+            },
+        }, {
+            'type': constants.FIELD_BUTTON,
+            'icon': 'fa-times-circle',
+            'field': 'id',
+            'action': 'deleteShift',
+            'label': _('Actions'),
+        }
+    )
+    ordering = ('-date.shift_date', '-time')
+
+    search_fields = ('date__vacancy', )
+
+
+class VacancyDateEndpoint(ApiEndpoint):
+    model = hr_models.VacancyDate
+
+    fieldsets = ('vacancy', 'shift_date', 'workers', 'hourly_rate')
+
+
 router.register(hr_models.Jobsite, search_fields=(
     'jobsite_addresses__address__city__search_names', 'jobsite_addresses__address__street_address',
     'master_company__name'
@@ -259,8 +357,8 @@ router.register(hr_models.Jobsite, search_fields=(
 router.register(hr_models.JobsiteUnavailability)
 router.register(hr_models.JobsiteAddress)
 router.register(endpoint=VacancyEndpoint())
-router.register(hr_models.VacancyDate)
-router.register(hr_models.Shift)
+router.register(endpoint=VacancyDateEndpoint())
+router.register(endpoint=ShiftEndpoint())
 router.register(endpoint=TimeSheetEndpoint())
 router.register(hr_models.TimeSheetIssue)
 router.register(endpoint=VacancyOfferEndpoint())
