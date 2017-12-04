@@ -18,22 +18,20 @@ class TestStr:
 
 
 class TestSkillBaseRate:
-    def test_validation(self, skill):
-        SkillBaseRate.objects.create(skill=skill, hourly_rate=1, default_rate=True)
-
-        with pytest.raises(Exception) as excinfo:
-            SkillBaseRate.objects.create(skill=skill, hourly_rate=2, default_rate=True)
-
-        assert excinfo.value.messages[0] == 'Only one rate for the skill can be set to "True"'
-
     @pytest.mark.django_db
-    def test_default_rate(self):
-        skill = Skill.objects.create(name="Driver", carrier_list_reserve=2, short_name="Drv", active=False)
-        base_rate = SkillBaseRate.objects.create(skill=skill, hourly_rate=20, default_rate=False)
-        base_rate2 = SkillBaseRate.objects.create(skill=skill, hourly_rate=30, default_rate=False)
+    def test_default_rate(self, skill):
+        base_rate1 = SkillBaseRate.objects.create(skill=skill, hourly_rate=1, default_rate=True)
+        base_rate2 = SkillBaseRate.objects.create(skill=skill, hourly_rate=2, default_rate=True)
 
-        assert base_rate.default_rate
-        assert not base_rate2.default_rate
+        assert not SkillBaseRate.objects.get(pk=str(base_rate1.pk)).default_rate
+        assert SkillBaseRate.objects.get(pk=str(base_rate2.pk)).default_rate
+
+        skill2 = Skill.objects.create(name="Driver", carrier_list_reserve=2, short_name="Drv", active=False)
+        base_rate3 = SkillBaseRate.objects.create(skill=skill2, hourly_rate=20, default_rate=False)
+        base_rate4 = SkillBaseRate.objects.create(skill=skill2, hourly_rate=30, default_rate=False)
+
+        assert base_rate3.default_rate
+        assert not base_rate4.default_rate
 
 
 class TestSkill:

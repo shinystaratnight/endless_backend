@@ -382,6 +382,15 @@ class TestAngularApiAdapter:
         assert res['type'] == 'input'
         assert 'showIf' in res
 
+    def test_adapt_field_input_send(self):
+        field = self.get_field()
+        field['send'] = False
+
+        res = AngularApiAdapter.adapt_field(field)
+
+        assert res['type'] == 'input'
+        assert 'send' in res
+
     def test_adapt_field_button_type_showif(self):
         field = self.get_button_field()
         field['showIf'] = ['test']

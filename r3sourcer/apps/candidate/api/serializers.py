@@ -83,13 +83,17 @@ class CandidateContactSerializer(
                 'contact': ('__all__', {
                     'address': ('__all__', ),
                 }),
-                'tag_rels': ('id', 'tag', 'verified_by', 'verification_evidence'),
+                'tag_rels': ('id', 'verification_evidence', {
+                    'verified_by': ('id', ),
+                    'tag': ('id', )
+                }),
                 'candidate_skills': ('id', 'score', 'prior_experience', {
                     'skill': ('id', )
                 }),
                 'candidate_scores': ('id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score'),
             }
         )
+        read_only_fields = ('candidate_scores',)
 
         related = core_serializers.RELATED_DIRECT
 
