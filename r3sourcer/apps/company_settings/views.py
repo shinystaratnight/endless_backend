@@ -7,13 +7,16 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from r3sourcer.apps.company_settings import serializers
-from r3sourcer.apps.company_settings.models import GlobalPermission
+from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
 from r3sourcer.apps.core.models import User
+from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
+from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer
+from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
 
 
 class GlobalPermissionListView(ListAPIView):
     """
-    Returns list of all GlobalPermissions
+    Returns list of all GlobalPermissions.
     """
     def get(self, *args, **kwargs):
         permissions = GlobalPermission.objects.all()
@@ -26,7 +29,7 @@ class GlobalPermissionListView(ListAPIView):
 
 class GroupGlobalPermissionListView(ListAPIView):
     """
-    Returns list of all GlobalPermissions of a given Group
+    Returns list of all GlobalPermissions of a given Group.
     """
     def get(self, *args, **kwargs):
         group = get_object_or_404(Group, id=self.kwargs['id'])
@@ -40,7 +43,7 @@ class GroupGlobalPermissionListView(ListAPIView):
 
 class UserGlobalPermissionListView(ListAPIView):
     """
-    Returns list of all GlobalPermissions of a given User
+    Returns list of all GlobalPermissions of a given User.
     """
     def get(self, *args, **kwargs):
         user = get_object_or_404(User, id=self.kwargs['id'])
@@ -54,7 +57,7 @@ class UserGlobalPermissionListView(ListAPIView):
 
 class SetGroupGlobalPermissionView(APIView):
     """
-    Sets GlobalPermission to a given Group
+    Sets GlobalPermission to a given Group.
     """
     def post(self, request, id, *args, **kwargs):
         group = get_object_or_404(Group, id=id)
@@ -66,7 +69,7 @@ class SetGroupGlobalPermissionView(APIView):
 
 class SetUserGlobalPermissionView(APIView):
     """
-    Sets GlobalPermission to a given User
+    Sets GlobalPermission to a given User.
     """
     def post(self, request, id, *args, **kwargs):
         user = get_object_or_404(User, id=id)
@@ -78,7 +81,7 @@ class SetUserGlobalPermissionView(APIView):
 
 class RevokeGroupGlobalPermissionView(APIView):
     """
-    Revokes GlobalPermission of a given Group
+    Revokes GlobalPermission of a given Group.
     """
     def post(self, request, id, *args, **kwargs):
         group = get_object_or_404(Group, id=id)
@@ -93,7 +96,7 @@ class RevokeGroupGlobalPermissionView(APIView):
 
 class RevokeUserGlobalPermissionView(APIView):
     """
-    Revokes GlobalPermission of a given User
+    Revokes GlobalPermission of a given User.
     """
     def post(self, request, id, *args, **kwargs):
         user = get_object_or_404(User, id=id)
@@ -107,7 +110,7 @@ class RevokeUserGlobalPermissionView(APIView):
 
 class CompanyGroupCreateView(APIView):
     """
-    Creates a Group and connects it with a Company
+    Creates a Group and connects it with a Company.
     """
     def post(self, request, *args, **kwargs):
         company = request.user.contact.company_contact.first().companies.first()
@@ -123,7 +126,7 @@ class CompanyGroupCreateView(APIView):
 
 class CompanyGroupListView(ListAPIView):
     """
-    Returns list of Groups of a given Company
+    Returns list of Groups of a given Company.
     """
     serializer_class = serializers.GroupSerializer
 
@@ -138,7 +141,7 @@ class CompanyGroupListView(ListAPIView):
 
 class CompanyGroupDeleteView(APIView):
     """
-    Deletes a Group
+    Deletes a Group.
     """
     def get(self, request, id, *args, **kwargs):
         group = get_object_or_404(Group, id=id)
@@ -148,7 +151,7 @@ class CompanyGroupDeleteView(APIView):
 
 class AddUserToGroupView(APIView):
     """
-    Adds User to a Group
+    Adds User to a Group.
     """
     def post(self, request, id, *args, **kwargs):
         user_id = request.data.get('user_id')
@@ -160,7 +163,7 @@ class AddUserToGroupView(APIView):
 
 class RemoveUserFromGroupView(APIView):
     """
-    Removes User from a Group
+    Removes User from a Group.
     """
     def post(self, request, id, *args, **kwargs):
         user_id = request.data.get('user_id')
@@ -172,7 +175,7 @@ class RemoveUserFromGroupView(APIView):
 
 class UserGroupListView(ListAPIView):
     """
-    Returns list of Groups of a given User
+    Returns list of Groups of a given User.
     """
     serializer_class = serializers.UserGroupSerializer
 
@@ -183,7 +186,7 @@ class UserGroupListView(ListAPIView):
 
 class CompanyUserListView(APIView):
     """
-    Returns list of all users of current user's company
+    Returns list of all users of current user's company.
     """
     def get(self, *args, **kwargs):
         company = self.request.user.contact.company_contact.first().companies.first()
@@ -196,4 +199,162 @@ class CompanyUserListView(APIView):
         data = {
             "user_list": serializer.data
         }
+        return Response(data)
+
+
+class CompanySettingsView(APIView):
+    def get(self, *args, **kwargs):
+        company = self.request.user.contact.company_contact.first().companies.first()
+
+        if not company:
+            raise exceptions.APIException("User has no relation to any company.")
+
+        company_settings = company.company_settings
+        invoice_rule = company.invoice_rules.first()
+        payslip_rule = company.payslip_rules.first()
+        account_set = company.company_settings.account_set
+
+        company_settings_serializer = serializers.CompanySettingsSerializer(company_settings)
+        invoice_rule_serializer = serializers.InvoiceRuleSerializer(invoice_rule)
+        payslip_rule_serializer = serializers.PayslipRuleSerializer(payslip_rule)
+        account_set_serializer = serializers.AccountSetSerializer(account_set)
+
+        data = {
+            "company_settings": company_settings_serializer.data,
+            "invoice_rule": invoice_rule_serializer.data,
+            "payslip_rule": payslip_rule_serializer.data,
+            "account_set": account_set_serializer.data
+        }
+
+        return Response(data)
+
+    def post(self, *args, **kwargs):
+        company = self.request.user.contact.company_contact.first().companies.first()
+
+        if not company:
+            raise exceptions.APIException("User has no relation to any company.")
+
+        if 'company_settings' in self.request.data:
+            serializer = serializers.CompanySettingsSerializer(company.company_settings,
+                                                               data=self.request.data['company_settings'],
+                                                               partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        if 'invoice_rule' in self.request.data:
+            serializer = serializers.InvoiceRuleSerializer(company.invoice_rules.first(),
+                                                           data=self.request.data['invoice_rule'],
+                                                           partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        if 'payslip_rule' in self.request.data:
+            serializer = serializers.PayslipRuleSerializer(company.payslip_rules.first(),
+                                                           data=self.request.data['payslip_rule'],
+                                                           partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        if 'account_set' in self.request.data:
+            serializer = serializers.AccountSetSerializer(company.company_settings.account_set,
+                                                          data=self.request.data['account_set'],
+                                                          partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+        return Response()
+
+
+class MYOBAccountListView(APIView):
+    def get(self, *args, **kwargs):
+        myob_accounts = MYOBAccount.objects.all()
+        serializer = serializers.MYOBAccountSerializer(myob_accounts, many=True)
+        data = {
+            'myob_accounts': serializer.data
+        }
+
+        return Response(data)
+
+
+class MYOBAuthorizationView(APIView):
+    """
+    Accepts Developer Key and Developer Secret and checks if they are correct.
+    """
+    def post(self, *args, **kwargs):
+        data = {
+            'client_id': self.request.data.get('api_key', None),
+            'client_secret': self.request.data.get('api_secret', None),
+            'refresh_token': self.request.data.get('redirect_uri', None),
+            'grant_type': 'refresh_token'
+        }
+        auth_client = MYOBAuth(self.request)
+        auth_client.retrieve_access_code()
+        auth_client.retrieve_access_token(data=data)
+
+        return Response()
+
+
+class UserCompanyFilesView(APIView):
+    """
+    Returns all company files of current user.
+    """
+    def get(self, request, *args, **kwargs):
+        serializer = MYOBCompanyFileSerializer(request.user.company_files, many=True)
+        data = {
+            'company_files': serializer.data
+        }
+        return Response(data)
+
+
+class RefreshCompanyFilesView(APIView):
+    """
+    Fetches a list of company files from MYOB API, save and returns it.
+    """
+    def get(self, request, *args, **kwargs):
+        company = request.user.company
+        auth_data = company.company_file_tokens.first().auth_data
+        client = MYOBClient(auth_data=auth_data)
+        raw_company_files = client.get_company_files()
+        new_company_files = list()
+
+        for raw_company_file in raw_company_files:
+            company_file, created = MYOBCompanyFile.objects.update_or_create(cf_id=raw_company_file['Id'],
+                                                                             defaults={
+                                                                                 'cf_uri': raw_company_file['Uri'],
+                                                                                 'cf_name': raw_company_file['Name']
+                                                                             })
+            company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
+                                                                                  defaults={
+                                                                                      'auth_data': auth_data,
+                                                                                  })
+            if created:
+                new_company_files.append(company_file)
+
+        serialzer = MYOBCompanyFileSerializer(new_company_files, many=True)
+        data = {
+            "company_files": serialzer.data
+        }
+
+        return Response(data)
+
+
+class CheckCompanyFilesView(APIView):
+    """
+    Accepts credentials and company file id and check if they are valid.
+    """
+    def post(self, request, *args, **kwargs):
+        username = self.request.data.get('username', None)
+        password = self.request.data.get('password', None)
+        company_file_id = self.request.data.get('id', None)
+        company_file = MYOBCompanyFile.objects.get(cf_id=company_file_id)
+        company = request.user.company
+        auth_data = company.company_file_tokens.first().auth_data
+        client = MYOBClient(auth_data=auth_data)
+        is_valid = client.check_company_file(company_file_id, username, password)
+        company_file.authenticated = is_valid
+        company_file.save()
+        data = {
+            "is_valid": is_valid
+        }
+
         return Response(data)

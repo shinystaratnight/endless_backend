@@ -354,6 +354,7 @@ DATETIME_FORMAT = 'd/m/Y h:i A'
 TIME_FORMAT = 'h:i A'
 
 DATE_MYOB_FORMAT = 'Y-m-d'
+DATETIME_MYOB_FORMAT = 'Y-m-d H:i:s'
 
 MYOB_APP = {
     'desc': env('MYOB_APP_DESC', 'MYOB'),

@@ -35,6 +35,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.logger.main import endless_logger
+from r3sourcer.apps.company_settings.models import CompanySettings
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..utils.user import get_default_company
@@ -431,6 +432,15 @@ class User(UUIDModel,
             return permission in granted_permissions
         except GlobalPermission.DoesNotExist:
             return False
+
+    @property
+    def company(self):
+        return self.contact.company_contact.first().companies.first()
+
+    @property
+    def company_files(self):
+        company_file_tokens = self.company.company_file_tokens.all()
+        return [x.company_file for x in company_file_tokens]
 
 
 class Country(UUIDModel, AbstractCountry):
@@ -870,6 +880,8 @@ class Company(
         default='4-1000',
     )
 
+    company_settings = models.OneToOneField(CompanySettings, blank=True, null=True)
+
     groups = models.ManyToManyField(Group, related_name='companies')
 
     class Meta:
@@ -935,6 +947,11 @@ class Company(
             self.TERMS_PAYMENT_CHOICES[self.terms_of_payment],
             self.payment_due_date
         )
+
+    def save(self, *args, **kwargs):
+        if not self.company_settings:
+            self.company_settings = CompanySettings.objects.create()
+        super(Company, self).save(*args, **kwargs)
 
 
 class CompanyRel(

@@ -1,47 +1,53 @@
 # coding: utf-8
 
-import json
 import base64
-import logging
 import datetime
 import decimal
+import json
+import logging
 import time
-import pytz
-from django.conf import settings
-from django.utils.formats import date_format
 
+import pytz
 import requests
 
+from django.conf import settings
 from django.core.urlresolvers import reverse
+from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
+from rest_framework import status
+from rest_framework.exceptions import APIException
 
 from r3sourcer.apps.core.models import Company
-
-from .. models import MYOBRequestLog
-from .. models import MYOBAuthData
-from .. models import MYOBCompanyFileToken
-from . utils import get_myob_app_info
+from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBAuthData, MYOBCompanyFileToken, MYOBCompanyFile
+from r3sourcer.apps.myob.api.utils import get_myob_app_info
 
 
 log = logging.getLogger(__name__)
 
 
-class MYOBException(Exception):
-    """ General MYOB related Exception """
+class MYOBException(APIException):
+    """
+    General MYOB related Exception
+    """
+    status_code = status.HTTP_400_BAD_REQUEST
 
 
 class MYOBProgrammingException(MYOBException):
-    """ MYOB Exception raised when API wrapper is used improperly. """
+    """
+    MYOB Exception raised when API wrapper is used improperly.
+    """
 
 
 class MYOBImplementationException(MYOBException):
-    """ MYOB Exception raised when current API implementation
-        encounters unexpected and unhandled situation.
+    """
+    MYOB Exception raised when current API implementation
+    encounters unexpected and unhandled situation.
     """
 
 
 class MYOBServerException(MYOBException):
-    """ MYOB Server Exception (5xx) raised after retries.
+    """
+    MYOB Server Exception (5xx) raised after retries.
     """
 
 
@@ -52,6 +58,9 @@ def decimal_default(obj):
 
 
 def myob_request(method, url, **kwargs):
+    """
+    This function makes requests to MYOB API
+    """
     retry = kwargs.pop('retry', 0)
 
     method = method.lower()
@@ -109,17 +118,29 @@ def myob_request(method, url, **kwargs):
 
 
 class MYOBAuth(object):
-
+    """
+    This class is responsible for authentication in MYOB API using session data or token object.
+    If you want to create an instance you have to pass a request or instance of MYOBAuthData to the class constructor
+    It also creates MYOBAuthData which contains information needed for further requests to MYOB.
+    It does it not obviously in persist() method and this method can be called at the end of every operation.
+    """
     MYOB_AUTH_URL = 'https://secure.myob.com/oauth2/account/authorize'
     MYOB_TOKEN_URL = 'https://secure.myob.com/oauth2/v1/authorize'
     MYOB_ACCOUNT_URL = 'https://secure.myob.com/oauth2/account/'
 
     def __init__(self, request=None, auth_data=None, app_info=None):
-        if request is None and auth_data is None:
+        """
+        request - django request object
+        auth_data - instance of MYOBAuthData model
+        app_info - dict with keys 'api_key' and 'api_secret'
+        """
+        if not request and not auth_data:
             raise MYOBProgrammingException('provide request or auth_data')
+
         self.request = request      # use and save request.session values
         self.auth_data = auth_data  # persisted values to MYOBAuthData
         self.auth_vars = {}         # some secret values are not persisted
+
         if app_info:
             self.app_info = app_info
         elif self.auth_data:
@@ -269,23 +290,26 @@ class MYOBAuth(object):
         self.set_attr('access_code', access_code)
         return access_code
 
-    def retrieve_access_token(self, persist=True):
-        url = self.get_token_url()
-        data = {
-            'client_id': self.get_api_key(),
-            'client_secret': self.get_api_secret(),
-            'scope': 'CompanyFile',
-            'code': self.get_access_code(),
-            'redirect_uri': self.get_redirect_uri(),
-            'grant_type': 'authorization_code'
-        }
+    def retrieve_access_token(self, data=None, persist=True):
+        if not data:
+            data = {
+                'client_id': self.get_api_key(),
+                'client_secret': self.get_api_secret(),
+                'scope': 'CompanyFile',
+                'code': self.get_access_code(),
+                'redirect_uri': self.get_redirect_uri(),
+                'grant_type': 'authorization_code'
+            }
 
+        url = self.get_token_url()
         now = datetime.datetime.now()
         resp = myob_request('post', url, data=data)
         log.info('%s %s', resp.status_code, resp.content)
 
-        resp_data = resp.json(parse_float=decimal.Decimal)
+        if resp.status_code != status.HTTP_200_OK:
+            raise MYOBImplementationException('MYOB API returned %s status code: %s' % (resp.status_code, resp.content))
 
+        resp_data = resp.json(parse_float=decimal.Decimal)
         self.set_attr('access_token', resp_data['access_token'])
         self.set_attr('refresh_token', resp_data['refresh_token'])
         self.set_attr('user_uid', resp_data['user']['uid'])
@@ -301,15 +325,16 @@ class MYOBAuth(object):
             self.persist()
         return resp
 
-    def refresh_access_token(self, persist=True):
-        url = self.get_token_url()
-        data = {
-            'client_id': self.get_api_key(),
-            'client_secret': self.get_api_secret(),
-            'refresh_token': self.get_refresh_token(),
-            'grant_type': 'refresh_token'
-        }
+    def refresh_access_token(self, data=None, persist=True):
+        if not data:
+            data = {
+                'client_id': self.get_api_key(),
+                'client_secret': self.get_api_secret(),
+                'refresh_token': self.get_refresh_token(),
+                'grant_type': 'refresh_token'
+            }
 
+        url = self.get_token_url()
         now = datetime.datetime.now()
         resp = myob_request('post', url, data=data)
         log.info('%s %s', resp.status_code, resp.content)
@@ -331,22 +356,33 @@ class MYOBAuth(object):
 
 
 class MYOBClient(object):
-
+    """
+    Main client class for accessing MYOB API.
+    """
     MYOB_API_URL = 'https://api.myob.com/accountright/'
 
-    def __init__(self, request=None, cf_data=None):
-        if request is None and cf_data is None:
-            raise MYOBProgrammingException('provide request or cf_data')
+    def __init__(self, request=None, cf_data=None, auth_data=None):
+        if not any((request, cf_data, auth_data)):
+            raise MYOBProgrammingException('provide request, or instance of MYOBAuthData or MYOBCompanyFileToken')
+
+        if not auth_data:
+            auth_data = cf_data.auth_data if cf_data else None
+
         self.request = request
         self.cftoken = None
         self.cf_data = cf_data
         self.cf_vars = {}
-
         self.api = None  # needs custom initalization
 
-        # init auth client
-        auth_data = cf_data.auth_data if cf_data else None
         self.auth = MYOBAuth(request=request, auth_data=auth_data)
+
+    def check_company_file(self, company_file_id, username, password):
+        url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
+        headers = self.get_headers()
+        cf_token = self.encode_cf_token(username, password)
+        headers['x-myobapi-cftoken'] = cf_token
+        resp = self.api_request('get', url, headers=headers)
+        return resp.status_code == 200
 
     def get_api_url(self):
         return self.MYOB_API_URL
@@ -465,7 +501,7 @@ class MYOBClient(object):
     def get_company_files(self):
         url = self.get_api_url()
         headers = self.get_headers()
-        return self.api_request('get', url, headers=headers)
+        return self.api_request('get', url, headers=headers).json()
 
     def get_resources(self):
         uri = self.get_cf_uri()
