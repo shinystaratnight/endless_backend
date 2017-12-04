@@ -4,15 +4,16 @@ import pytest
 
 from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import force_authenticate
 
 from r3sourcer.apps.company_settings.models import CompanySettings, AccountSet, MYOBAccount
-from r3sourcer.apps.core.models import InvoiceRule
-from r3sourcer.apps.hr.models import PayslipRule
 from r3sourcer.apps.company_settings.views import CompanyGroupListView, CompanyGroupCreateView
 from r3sourcer.apps.company_settings.models import GlobalPermission
-from r3sourcer.apps.core.models import User, CompanyContact, CompanyContactRelationship
+from r3sourcer.apps.core.models import User, CompanyContact, CompanyContactRelationship, InvoiceRule
+from r3sourcer.apps.hr.models import PayslipRule
+from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
 
 
 class TestCompanySettingsView:
@@ -431,24 +432,56 @@ class TestUserGroupListView:
 
 
 class TestUserCompanyFileListView:
-    def test(self, client):
+    def test_company_file_list(self, client, user, company):
+        auth_data = MYOBAuthData.objects.create(client_id='client_id',
+                                                client_secret='client_secret',
+                                                access_token='access_token',
+                                                refresh_token='refresh_token',
+                                                myob_user_uid='myob_user_uid',
+                                                myob_user_username='myob_user_username',
+                                                expires_in=1000,
+                                                expires_at=timezone.now())
+        company_file = MYOBCompanyFile.objects.create(cf_id='cf_id',
+                                                      cf_uri='cf_uri',
+                                                      cf_name='cf_name')
+        MYOBCompanyFileToken.objects.create(company_file=company_file,
+                                            auth_data=auth_data,
+                                            company=company,
+                                            cf_token='cf_token')
         url = reverse('user_company_files', kwargs={'version': 'v2'})
+        client.force_login(user)
         response = client.get(url)
 
-        assert True
+        assert len(response.data['company_files']) == 1
+        assert response.data['company_files'][0]['id'] == company_file.cf_id
+        assert response.data['company_files'][0]['uri'] == company_file.cf_uri
+        assert response.data['company_files'][0]['name'] == company_file.cf_name
+        assert response.data['company_files'][0]['authenticated'] == company_file.authenticated
 
 
 class TestRefreshCompanyFileView:
-    def test(self, client):
+    @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBClient.get_company_files')
+    def test_refresh_company_files(self, get_company_files, client, user, company, company_file_token):
+        client.force_login(user)
         url = reverse('refresh_company_files', kwargs={'version': 'v2'})
-        response = client.get(url)
+        client.get(url)
 
-        assert True
+        assert get_company_files.called
 
 
 class TestCheckCompanyFileView:
-    def test(self, client):
+    @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBClient.check_company_file')
+    def test_check_company_file(self, check_company_file, client, user, company, company_file_token):
+        check_company_file.return_value = True
+        company_file_id = company_file_token.company_file.cf_id
         url = reverse('check_company_files', kwargs={'version': 'v2'})
-        response = client.post(url)
+        payload = {
+            'id': company_file_id,
+            'username': '',
+            'password': ''
+        }
+        client.force_login(user)
+        client.post(url, data=json.dumps(payload), content_type="application/json")
 
-        assert True
+        assert check_company_file.called
+        assert MYOBCompanyFile.objects.get(cf_id=company_file_token.company_file.cf_id).authenticated

@@ -7,6 +7,8 @@ from r3sourcer.apps.core.models import User, Company, CompanyContact, InvoiceRul
 from r3sourcer.apps.hr.models import PayslipRule
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core.models import User, Company, CompanyContact
+from r3sourcer.apps.myob.models import MYOBCompanyFileToken, MYOBCompanyFile
+from r3sourcer.apps.myob.api.wrapper import MYOBAuthData
 
 
 @pytest.fixture
@@ -96,4 +98,36 @@ def myob_account(db):
         number='2-2000',
         name='Test Income Account',
         type='income'
+    )
+
+
+@pytest.fixture
+def company_file(db):
+    return MYOBCompanyFile.objects.create(
+        cf_id='cf_id',
+        cf_uri='cf_uri',
+        cf_name='cf_name'
+    )
+
+
+@pytest.fixture
+def auth_data(db):
+    return MYOBAuthData.objects.create(
+        client_id='client_id',
+        client_secret='client_secret',
+        access_token='access_token',
+        refresh_token='refresh_token',
+        myob_user_uid='myob_user_uid',
+        myob_user_username='myob_user_username',
+        expires_in=1000,
+    )
+
+
+@pytest.fixture
+def company_file_token(db, company_file, auth_data, company):
+    return MYOBCompanyFileToken.objects.create(
+        company_file=company_file,
+        auth_data=auth_data,
+        company=company,
+        cf_token='cf_token'
     )

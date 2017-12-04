@@ -9,7 +9,9 @@ from rest_framework.views import APIView
 from r3sourcer.apps.company_settings import serializers
 from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
 from r3sourcer.apps.core.models import User
-from r3sourcer.apps.myob.api.wrapper import MYOBAuth
+from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
+from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer
+from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
 
 
 class GlobalPermissionListView(ListAPIView):
@@ -292,25 +294,67 @@ class MYOBAuthorizationView(APIView):
         return Response()
 
 
-class UserCompanyFileListView(APIView):
+class UserCompanyFilesView(APIView):
     """
     Returns all company files of current user.
     """
-    def get(self, *args, **kwargs):
-        pass  # TODO: implement it
+    def get(self, request, *args, **kwargs):
+        serializer = MYOBCompanyFileSerializer(request.user.company_files, many=True)
+        data = {
+            'company_files': serializer.data
+        }
+        return Response(data)
 
 
-class RefreshCompanyFileView(APIView):
+class RefreshCompanyFilesView(APIView):
     """
     Fetches a list of company files from MYOB API, save and returns it.
     """
-    def get(self, *args, **kwargs):
-        pass  # TODO: implement it
+    def get(self, request, *args, **kwargs):
+        company = request.user.company
+        auth_data = company.company_file_tokens.first().auth_data
+        client = MYOBClient(auth_data=auth_data)
+        raw_company_files = client.get_company_files()
+        new_company_files = list()
+
+        for raw_company_file in raw_company_files:
+            company_file, created = MYOBCompanyFile.objects.update_or_create(cf_id=raw_company_file['Id'],
+                                                                             defaults={
+                                                                                 'cf_uri': raw_company_file['Uri'],
+                                                                                 'cf_name': raw_company_file['Name']
+                                                                             })
+            company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
+                                                                                  defaults={
+                                                                                      'auth_data': auth_data,
+                                                                                  })
+            if created:
+                new_company_files.append(company_file)
+
+        serialzer = MYOBCompanyFileSerializer(new_company_files, many=True)
+        data = {
+            "company_files": serialzer.data
+        }
+
+        return Response(data)
 
 
-class CheckCompanyFileView(APIView):
+class CheckCompanyFilesView(APIView):
     """
     Accepts credentials and company file id and check if they are valid.
     """
-    def post(self, *args, **kwargs):
-        pass  # TODO: implement it
+    def post(self, request, *args, **kwargs):
+        username = self.request.data.get('username', None)
+        password = self.request.data.get('password', None)
+        company_file_id = self.request.data.get('id', None)
+        company_file = MYOBCompanyFile.objects.get(cf_id=company_file_id)
+        company = request.user.company
+        auth_data = company.company_file_tokens.first().auth_data
+        client = MYOBClient(auth_data=auth_data)
+        is_valid = client.check_company_file(company_file_id, username, password)
+        company_file.authenticated = is_valid
+        company_file.save()
+        data = {
+            "is_valid": is_valid
+        }
+
+        return Response(data)

@@ -11,7 +11,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('company_settings', '0001_initial'),
-        ('core', '0007_add_company_group'),
+        ('core', '0008_auto_20171128_0136'),
     ]
 
     operations = [

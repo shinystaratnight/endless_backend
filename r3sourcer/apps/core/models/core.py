@@ -419,6 +419,15 @@ class User(UUIDModel,
         except GlobalPermission.DoesNotExist:
             return False
 
+    @property
+    def company(self):
+        return self.contact.company_contact.first().companies.first()
+
+    @property
+    def company_files(self):
+        company_file_tokens = self.company.company_file_tokens.all()
+        return [x.company_file for x in company_file_tokens]
+
 
 class Country(UUIDModel, AbstractCountry):
     currency = CurrencyField(default='USD', choices=CURRENCY_CHOICES)

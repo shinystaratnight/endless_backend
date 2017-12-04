@@ -18,7 +18,7 @@ from rest_framework import status
 from rest_framework.exceptions import APIException
 
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBAuthData, MYOBCompanyFileToken
+from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBAuthData, MYOBCompanyFileToken, MYOBCompanyFile
 from r3sourcer.apps.myob.api.utils import get_myob_app_info
 
 
@@ -134,11 +134,13 @@ class MYOBAuth(object):
         auth_data - instance of MYOBAuthData model
         app_info - dict with keys 'api_key' and 'api_secret'
         """
-        if request is None and auth_data is None:
+        if not request and not auth_data:
             raise MYOBProgrammingException('provide request or auth_data')
+
         self.request = request      # use and save request.session values
         self.auth_data = auth_data  # persisted values to MYOBAuthData
         self.auth_vars = {}         # some secret values are not persisted
+
         if app_info:
             self.app_info = app_info
         elif self.auth_data:
@@ -359,19 +361,28 @@ class MYOBClient(object):
     """
     MYOB_API_URL = 'https://api.myob.com/accountright/'
 
-    def __init__(self, request=None, cf_data=None):
-        if request is None and cf_data is None:
-            raise MYOBProgrammingException('provide request or cf_data')
+    def __init__(self, request=None, cf_data=None, auth_data=None):
+        if not any((request, cf_data, auth_data)):
+            raise MYOBProgrammingException('provide request, or instance of MYOBAuthData or MYOBCompanyFileToken')
+
+        if not auth_data:
+            auth_data = cf_data.auth_data if cf_data else None
+
         self.request = request
         self.cftoken = None
         self.cf_data = cf_data
         self.cf_vars = {}
-
         self.api = None  # needs custom initalization
 
-        # init auth client
-        auth_data = cf_data.auth_data if cf_data else None
         self.auth = MYOBAuth(request=request, auth_data=auth_data)
+
+    def check_company_file(self, company_file_id, username, password):
+        url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
+        headers = self.get_headers()
+        cf_token = self.encode_cf_token(username, password)
+        headers['x-myobapi-cftoken'] = cf_token
+        resp = self.api_request('get', url, headers=headers)
+        return resp.status_code == 200
 
     def get_api_url(self):
         return self.MYOB_API_URL
@@ -490,7 +501,7 @@ class MYOBClient(object):
     def get_company_files(self):
         url = self.get_api_url()
         headers = self.get_headers()
-        return self.api_request('get', url, headers=headers)
+        return self.api_request('get', url, headers=headers).json()
 
     def get_resources(self):
         uri = self.get_cf_uri()
