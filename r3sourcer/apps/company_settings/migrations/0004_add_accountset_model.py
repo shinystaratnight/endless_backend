@@ -8,8 +8,6 @@ import django.db.models.deletion
 from r3sourcer.apps.company_settings.models import MYOBAccount
 
 
-# TODO: this shouldbe used for test purposes only
-# TODO: delete it before it is merged into master branch
 def create_myob_accounts(apps, schema_editor):
     MYOBAccount.objects.create(number='1-1000',
                                name='Test Expense Account',
