@@ -28,5 +28,7 @@ urlpatterns = [
     url(r'^company_settings/company_files/check/$', views.CheckCompanyFilesView.as_view(), name='check_company_files'),
     url(r'^company_settings/company_files/(?P<id>[\w\-]+)/accounts/$', views.CompanyFileAccountsView.as_view(), name='company_file_accounts'),
     url(r'^company_settings/company_files/$', views.UserCompanyFilesView.as_view(), name='user_company_files'),
+    url(r'^company_settings/myob_accounts/$', views.MYOBAccountListView.as_view(), name='myob_accounts'),
     url(r'^company_settings/myob_authorization/$', views.MYOBAuthorizationView.as_view(), name='myob_authorization'),
+
 ]
