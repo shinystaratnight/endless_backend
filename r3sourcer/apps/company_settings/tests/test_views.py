@@ -110,27 +110,29 @@ class TestCompanySettingsView:
         assert account_set_new.company_client_gst == myob_account
 
 
-class TestMYOBAccountListView:
-    def test_get_myob_account_list(self, client, user):
+class TestCompanyFileAccountsView:
+    def test_get_myob_account_list(self, client, user, company_file):
         account1 = MYOBAccount.objects.create(number='1-1000',
                                               name='Test Expense Account',
-                                              type='expense')
+                                              type='expense',
+                                              company_file=company_file)
         account2 = MYOBAccount.objects.create(number='2-2000',
                                               name='Test Income Account',
-                                              type='income')
-        url = reverse('myob_accounts', kwargs={'version': 'v2'})
+                                              type='income',
+                                              company_file=company_file)
+        url = reverse('company_file_accounts', kwargs={'version': 'v2', 'id': company_file.id})
         client.force_login(user)
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['myob_accounts'][0]['id'] == account1.id
-        assert response.data['myob_accounts'][0]['number'] == account1.number
-        assert response.data['myob_accounts'][0]['name'] == account1.name
-        assert response.data['myob_accounts'][0]['type'] == account1.type
-        assert response.data['myob_accounts'][1]['id'] == account2.id
-        assert response.data['myob_accounts'][1]['number'] == account2.number
-        assert response.data['myob_accounts'][1]['name'] == account2.name
-        assert response.data['myob_accounts'][1]['type'] == account2.type
+        assert response.data['myob_accounts'][1]['id'] == account1.id
+        assert response.data['myob_accounts'][1]['number'] == account1.number
+        assert response.data['myob_accounts'][1]['name'] == account1.name
+        assert response.data['myob_accounts'][1]['type'] == account1.type
+        assert response.data['myob_accounts'][0]['id'] == account2.id
+        assert response.data['myob_accounts'][0]['number'] == account2.number
+        assert response.data['myob_accounts'][0]['name'] == account2.name
+        assert response.data['myob_accounts'][0]['type'] == account2.type
 
 
 class TestMYOBAuthorizationView:

@@ -20,6 +20,7 @@ class MYOBAccount(models.Model):
     number = models.CharField(max_length=63)
     name = models.CharField(max_length=63)
     type = models.CharField(max_length=63)
+    company_file = models.ForeignKey('myob.MYOBCompanyFile', blank=True, null=True, related_name='accounts')
 
     def __str__(self):
         return self.number + self.name

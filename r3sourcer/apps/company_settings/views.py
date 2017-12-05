@@ -265,9 +265,10 @@ class CompanySettingsView(APIView):
         return Response()
 
 
-class MYOBAccountListView(APIView):
-    def get(self, *args, **kwargs):
-        myob_accounts = MYOBAccount.objects.all()
+class CompanyFileAccountsView(APIView):
+    def get(self, request, *args, **kwargs):
+        company_file = get_object_or_404(MYOBCompanyFile, id=self.kwargs['id'])
+        myob_accounts = company_file.accounts.all()
         serializer = serializers.MYOBAccountSerializer(myob_accounts, many=True)
         data = {
             'myob_accounts': serializer.data

@@ -376,6 +376,15 @@ class MYOBClient(object):
 
         self.auth = MYOBAuth(request=request, auth_data=auth_data)
 
+    def get_accounts(self, company_file_id):
+        company_file_url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
+        url = '%s/GeneralLedger/Account' % company_file_url
+        headers = self.get_headers()
+        # cf_token = self.encode_cf_token(username, password)
+        # headers['x-myobapi-cftoken'] = cf_token
+        resp = self.api_request('get', url, headers=headers)
+        return resp
+
     def check_company_file(self, company_file_id, username, password):
         url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
         headers = self.get_headers()
