@@ -114,7 +114,6 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     def prepare_related_data(self, data):
         res = {}
-
         for key, val in data.items():
             if key in self._exclude_data:
                 continue
@@ -132,7 +131,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     def clean_request_data(self, data):
         return {
-            k: v for k, v in data.items() if v
+            k: v for k, v in data.items() if v is not None
         }
 
 
