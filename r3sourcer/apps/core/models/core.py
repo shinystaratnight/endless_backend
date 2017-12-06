@@ -248,7 +248,7 @@ class Contact(
         if self.is_company_contact():
             return self.company_contact.first().id
         elif self.is_candidate_contact():
-            return self.candidate_contacts.first().id
+            return self.candidate_contacts.id
         return None
 
 
