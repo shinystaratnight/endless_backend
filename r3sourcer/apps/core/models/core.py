@@ -880,8 +880,6 @@ class Company(
         default='4-1000',
     )
 
-    company_settings = models.OneToOneField(CompanySettings, blank=True, null=True)
-
     groups = models.ManyToManyField(Group, related_name='companies')
 
     class Meta:

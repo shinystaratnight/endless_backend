@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from r3sourcer.apps.company_settings.models import CompanySettings, AccountSet, MYOBAccount
+from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings, MYOBAccount
 from r3sourcer.apps.core.api.fields import ApiBase64ImageField
 from r3sourcer.apps.core.models import InvoiceRule
 from r3sourcer.apps.hr.models import PayslipRule
@@ -38,7 +38,7 @@ class MYOBAccountSerializer(serializers.ModelSerializer):
         fields = ('id', 'number', 'name', 'type')
 
 
-class AccountSetSerializer(serializers.ModelSerializer):
+class MYOBSettingsSerializer(serializers.ModelSerializer):
     subcontractor_contract_work = MYOBAccountSerializer()
     subcontractor_gst = MYOBAccountSerializer()
     candidate_wages = MYOBAccountSerializer()
@@ -47,7 +47,7 @@ class AccountSetSerializer(serializers.ModelSerializer):
     company_client_gst = MYOBAccountSerializer()
 
     class Meta:
-        model = AccountSet
+        model = MYOBSettings
         fields = ('subcontractor_contract_work', 'subcontractor_gst', 'candidate_wages', 'candidate_superannuation',
                   'company_client_labour_hire', 'company_client_gst')
 

@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import force_authenticate
 
-from r3sourcer.apps.company_settings.models import CompanySettings, AccountSet, MYOBAccount
+from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings, MYOBAccount
 from r3sourcer.apps.company_settings.views import CompanyGroupListView, CompanyGroupCreateView
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core.models import User, CompanyContact, CompanyContactRelationship, InvoiceRule
@@ -93,7 +93,7 @@ class TestCompanySettingsView:
         payslip_rule_new = PayslipRule.objects.get(id=payslip_rule.id)
         invoice_rule_new = InvoiceRule.objects.get(id=invoice_rule.id)
         company_settings_new = CompanySettings.objects.get(id=company.company_settings.id)
-        account_set_new = AccountSet.objects.get(id=company.company_settings.account_set.id)
+        account_set_new = MYOBSettings.objects.get(id=company.company_settings.account_set.id)
 
         assert response.status_code == status.HTTP_200_OK
         assert invoice_rule.period != invoice_rule_new.period

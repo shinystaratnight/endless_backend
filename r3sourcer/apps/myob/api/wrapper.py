@@ -258,11 +258,6 @@ class MYOBAuth(object):
             return self.auth_data.expires_at
         raise MYOBProgrammingException('expires in not set')
 
-    def persist(self):
-        if self.request:
-            self.request.session.save()
-        self.auth_data, created = MYOBAuthData.persist(self)
-
     def set_attr(self, attr, value, persist=False):
         session_attr = 'myob_' + attr
         if self.request:
@@ -310,22 +305,34 @@ class MYOBAuth(object):
             raise MYOBImplementationException('MYOB API returned %s status code: %s' % (resp.status_code, resp.content))
 
         resp_data = resp.json(parse_float=decimal.Decimal)
-        self.set_attr('access_token', resp_data['access_token'])
-        self.set_attr('refresh_token', resp_data['refresh_token'])
-        self.set_attr('user_uid', resp_data['user']['uid'])
-        self.set_attr('user_username', resp_data['user']['username'])
-        self.set_attr('expires_in', resp_data['expires_in'])
 
-        expires_at = int(resp_data['expires_in'])  # value in seconds
-        expires_at = now + datetime.timedelta(seconds=expires_at)
-        expires_at = date_format(expires_at, settings.DATETIME_MYOB_FORMAT)
-        self.set_attr('expires_at', expires_at)
+        # expires_at = int(resp_data['expires_in'])  # value in seconds
+        # expires_at = now + datetime.timedelta(seconds=expires_at)
+        # expires_at = date_format(expires_at, settings.DATETIME_MYOB_FORMAT)
+        # # self.set_attr('access_token', resp_data['access_token'])
+        # # self.set_attr('refresh_token', resp_data['refresh_token'])
+        # # self.set_attr('user_uid', resp_data['user']['uid'])
+        # # self.set_attr('user_username', resp_data['user']['username'])
+        # # self.set_attr('expires_in', resp_data['expires_in'])
+        # # self.set_attr('expires_at', expires_at)
+        #
+        # self.auth_data.access_token = resp_data['access_token']
+        # self.auth_data.refresh_token = resp_data['refresh_token']
+        # self.auth_data.user_uid = resp_data['user_uid']
+        # self.auth_data.user_username = resp_data['user_username']
+        # self.auth_data.expires_at = expires_at
+        # self.auth_data.save()
 
-        if persist:
-            self.persist()
-        return resp
+        return resp_data
 
     def refresh_access_token(self, data=None, persist=True):
+        print("   +++++++++++      REFRESH      ++++++++++++")
+        print("access_token     ", self.auth_data.access_token)
+        print("expires_in     ", self.auth_data.expires_in)
+        print("refresh_token     ", self.auth_data.refresh_token)
+        print("data     ", data)
+        print("   ++++++++++++++++++++++++++++++++++++++++++")
+
         if not data:
             data = {
                 'client_id': self.get_api_key(),
@@ -340,18 +347,28 @@ class MYOBAuth(object):
         log.info('%s %s', resp.status_code, resp.content)
 
         resp_data = resp.json(parse_float=decimal.Decimal)
-
-        self.set_attr('access_token', resp_data['access_token'])
-        self.set_attr('refresh_token', resp_data['refresh_token'])
-        self.set_attr('expires_in', resp_data['expires_in'])
-
+        print("resp data    ", resp_data)
         expires_at = int(resp_data['expires_in'])  # value in seconds
         expires_at = now + datetime.timedelta(seconds=expires_at)
         expires_at = date_format(expires_at, settings.DATETIME_MYOB_FORMAT)
-        self.set_attr('expires_at', expires_at)
 
-        if persist:
-            self.persist()
+        # self.set_attr('access_token', resp_data['access_token'])
+        # self.set_attr('refresh_token', resp_data['refresh_token'])
+        # self.set_attr('expires_in', resp_data['expires_in'])
+        # self.set_attr('expires_at', expires_at)
+
+        self.auth_data.access_token = resp_data['access_token']
+        self.auth_data.refresh_token = resp_data['refresh_token']
+        self.auth_data.expires_in = resp_data['expires_in']
+        self.auth_data.expires_at = expires_at
+        self.auth_data.save()
+
+        print("-------------------------------------")
+        print("new access_token     ", self.auth_data.access_token)
+        print("new expires_in     ", self.auth_data.expires_in)
+        print("new refresh_token     ", self.auth_data.refresh_token)
+        print("-------------------------------------")
+
         return resp
 
 
@@ -376,12 +393,18 @@ class MYOBClient(object):
 
         self.auth = MYOBAuth(request=request, auth_data=auth_data)
 
-    def get_accounts(self, company_file_id):
+    def get_accounts(self, company_file_id, company_file_token):
         company_file_url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
         url = '%s/GeneralLedger/Account' % company_file_url
         headers = self.get_headers()
-        # cf_token = self.encode_cf_token(username, password)
-        # headers['x-myobapi-cftoken'] = cf_token
+        headers['x-myobapi-cftoken'] = company_file_token
+        print("+++")
+        print("+++")
+        print("url  ", url)
+        print("company_file_token  ", company_file_token)
+        print("headers  ", headers)
+        print("+++")
+        print("+++")
         resp = self.api_request('get', url, headers=headers)
         return resp
 
@@ -391,7 +414,8 @@ class MYOBClient(object):
         cf_token = self.encode_cf_token(username, password)
         headers['x-myobapi-cftoken'] = cf_token
         resp = self.api_request('get', url, headers=headers)
-        return resp.status_code == 200
+        # return resp.status_code == 200
+        return resp
 
     def get_api_url(self):
         return self.MYOB_API_URL
