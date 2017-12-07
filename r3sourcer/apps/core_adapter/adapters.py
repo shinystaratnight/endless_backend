@@ -43,7 +43,7 @@ def to_html_tag(component_type):
     ]
     if component_type in custom_types:
         return component_type
-    elif component_type in [constants.FIELD_DATE, constants.FIELD_DATETIME]:
+    elif component_type in [constants.FIELD_DATE, constants.FIELD_DATETIME, constants.FIELD_TIME]:
         return 'datepicker'
     return 'input'
 
@@ -71,11 +71,12 @@ class AngularApiAdapter(BaseAdapter):
         if 'key' in field and '__str__' in field['key']:
             component_type = constants.FIELD_STATIC
         if component_type in constants.NON_FIELDS_TYPES:
+            label = field.get('label', '')
             adapted = {
                 'type': component_type,
                 'templateOptions': {
-                    'text': field.get('label', ''),
-                    'label': field.get('label', ''),
+                    'text': field.get('text', label),
+                    'label': label,
                     'type': component_type,
                 }
             }
@@ -421,7 +422,7 @@ class AngularListApiAdapter(AngularApiAdapter):
 
                 action_list = list_filter.get('actions')
                 if action_list is None:
-                    today = timezone.now().date()
+                    today = timezone.localtime(timezone.now()).date()
                     action_list = [{
                         'label': _('Yesterday'),
                         'query': '%s=%s' % (from_qry, format_date(
@@ -505,6 +506,7 @@ class AngularListApiAdapter(AngularApiAdapter):
 
         for display_field in display_fields:
             name = label = ''
+            delim = title = None
             if isinstance(display_field, (list, tuple)):
                 if len(display_field) != 2:
                     raise ValueError('Composite content should have 2 items')
@@ -519,6 +521,8 @@ class AngularListApiAdapter(AngularApiAdapter):
                 label, name, display_field_list = self._process_dict_field(
                     display_field
                 )
+                delim = display_field.get('delim')
+                title = display_field.get('title')
             else:
                 display_field_list = [display_field]
 
@@ -528,11 +532,16 @@ class AngularListApiAdapter(AngularApiAdapter):
                 label = field['templateOptions']['label']
 
             content = self._adapt_column_fields(display_field_list)
-            adapted_columns.append({
+            adapted_column = {
                 'name': name,
                 'label': label,
                 'content': content,
-            })
+            }
+            if delim is not None:
+                adapted_column['delim'] = delim
+            if title is not None:
+                adapted_column['title'] = title
+            adapted_columns.append(adapted_column)
 
         return adapted_columns
 

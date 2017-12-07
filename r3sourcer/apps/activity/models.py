@@ -95,7 +95,7 @@ class Activity(UUIDModel):
 
     def __str__(self):
         if self.starts_at and self.ends_at and self.starts_at.date() == self.ends_at.date():
-            if self.starts_at.date() == timezone.now().date():
+            if self.starts_at.date() == timezone.localtime(timezone.now()).date():
                 return self.template.name
             return '{}: {}'.format(
                 date_format(timezone.localtime(self.starts_at), settings.DATETIME_FORMAT),

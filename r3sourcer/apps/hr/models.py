@@ -366,7 +366,7 @@ class Vacancy(AbstractBaseOrder):
         #     return IRRELEVANT
 
         result = NOT_FULFILLED
-        today = timezone.now().date()
+        today = timezone.localtime(timezone.now()).date()
         vd_today = self.vacancy_dates.filter(shift_date=today, cancelled=False).first()
         if vd_today:
             result = vd_today.is_fulfilled()
@@ -376,7 +376,7 @@ class Vacancy(AbstractBaseOrder):
 
     def can_fillin(self):
         not_filled_future_vd = False
-        today = timezone.now().date()
+        today = timezone.localtime(timezone.now()).date()
         future_vds = self.vacancy_dates.filter(shift_date__gte=today)
         for vd in future_vds:
             if vd.is_fulfilled() == NOT_FULFILLED:
@@ -576,6 +576,9 @@ class VacancyOffer(UUIDModel):
     def is_accepted(self):
         return self.status == VacancyOffer.STATUS_CHOICES.accepted
 
+    def is_cancelled(self):
+        return self.status == VacancyOffer.STATUS_CHOICES.cancelled
+
     def is_recurring(self):
         return self.vacancy.get_vacancy_offers().filter(
             candidate_contact=self.candidate_contact,
@@ -594,6 +597,165 @@ class VacancyOffer(UUIDModel):
             candidate_contact=self.candidate_contact,
             shift__date__shift_date__gt=self.shift.date.shift_date
         )
+
+    def move_candidate_to_carrier_list(self, new_offer=False, confirmed_available=None):
+        if not confirmed_available:
+            confirmed_available = self.is_accepted()
+
+        cl = CarrierList.objects.filter(
+            candidate_contact=self.candidate_contact, target_date=self.start_time
+        ).first()
+
+        if cl is not None:
+            cl.target_date = self.start_time
+            cl.confirmed_available = confirmed_available
+        else:
+            # TODO: uncomment after dynamic workflow upgrade
+            # invalid_states = [
+            #     RecruitmentStatus.STATE_CHOICES.failed,
+            #     RecruitmentStatus.STATE_CHOICES.banned,
+            #     RecruitmentStatus.STATE_CHOICES.suspended
+            # ]
+            # if self.candidate_contact.get_state() not in invalid_states:
+
+            cl = CarrierList.objects.create(
+                candidate_contact=self.candidate_contact,
+                target_date=self.start_time,
+                confirmed_available=confirmed_available,
+                skill=self.vacancy.position
+            )
+
+        if cl:
+            if new_offer:
+                cl.vacancy_offer = self
+            else:
+                cl.referral_vacancy_offer = self
+                cl.vacancy_offer = None
+            cl.save()
+
+    def get_timesheets_with_going_work_unset_or_timeout(self, check_date=None):
+        now = timezone.now()
+        if check_date is None:
+            check_date = now.date()
+
+        bookings_with_timesheets = TimeSheet.objects.filter(
+            vacancy_offer=self,
+            shift_started_at__date=check_date,
+            going_to_work_confirmation__isnull=True,
+            going_to_work_sent_sms__check_reply_at__gte=now
+        )
+        return bookings_with_timesheets
+
+    def has_timesheets_with_going_work_unset_or_timeout(self, check_date=None):
+        return self.get_timesheets_with_going_work_unset_or_timeout(check_date).exists()
+
+    def has_future_accepted_vo(self):
+        """
+        Check if there are future accepted VO for the candidate/vacancy
+        :return: True or False
+        """
+        return self.vacancy.get_vacancy_offers().filter(
+            candidate_contact=self.candidate_contact,
+            shift__time__gt=self.shift.time,
+            shift__date__shift_date__gte=self.shift.date.shift_date,
+            status=self.STATUS_CHOICES.accepted
+        ).exists()
+
+    def has_previous_vo(self):
+        """
+        Check if there are VO for the candidate/vacancy earlier than this one
+        :return: True or False
+        """
+        now = timezone.now()
+        return self.vacancy.get_vacancy_offers().filter(
+            candidate_contact=self.candidate_contact,
+            shift__time__gt=now,
+            shift__date__shift_date__gte=now.date(),
+            shift__time__lt=self.shift.time,
+            shift__date__shift_date__lte=self.shift.date.shift_date,
+        ).exists()
+
+    def process_sms_reply(self, sent_sms, reply_sms, positive):
+        if not (self.is_accepted() or self.is_cancelled()):
+            assert isinstance(positive, bool), _('Looks like we could not decide if reply was positive')
+
+            if self.offer_sent_by_sms == sent_sms:
+                setattr(self, self.receive_sms_field, reply_sms)
+                if positive:
+                    self.status = self.STATUS_CHOICES.accepted
+                    self.save(update_fields=['status', receive_sms_field])
+                else:
+                    self.cancel()
+
+    def cancel(self):
+        if self.is_accepted():
+            self.move_candidate_to_carrier_list()
+
+        self.status = self.STATUS_CHOICES.cancelled
+        self.save(update_fields=['status', receive_sms_field])
+
+    def save(self, *args, **kw):
+        just_added = self._state.adding
+
+        if self.is_cancelled() and not just_added:
+            orig = VacancyOffer.objects.get(pk=self.pk)
+            if orig.is_accepted():
+                orig.move_candidate_to_carrier_list(confirmed_available=True)
+
+        super(VacancyOffer, self).save(*args, **kw)
+
+        if just_added:
+            if not self.is_cancelled() and CarrierList.objects.filter(
+                    candidate_contact=self.candidate_contact,
+                    target_date=self.start_time).exists():
+                self.move_candidate_to_carrier_list(new_offer=True)
+
+            if self.is_first() and not self.is_accepted():
+                from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
+            elif self.is_recurring():
+                from r3sourcer.apps.hr.tasks import send_recurring_vo_confirmation_sms as task
+            else:
+                # FIXME: send job confirmation SMS because there is pending vacancy's VOs for candidate
+                from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
+
+            if task:
+                now = timezone.localtime(timezone.now())
+                tomorrow = now + timedelta(days=1)
+                tomorrow_end = datetime.combine(
+                    tomorrow.date() + timedelta(days=1),
+                    time(5, 0, 0, tzinfo=tomorrow.tzinfo)
+                )
+
+                target_date_and_time = timezone.localtime(self.start_time)
+
+                # TODO: maybe need to rethink, but it should work
+                # compute eta to schedule SMS sending
+                if target_date_and_time <= tomorrow_end:
+                    # today and tomorrow day and night shifts
+                    eta = datetime.combine(now.date(), time(10, 0, 0, tzinfo=now.tzinfo))
+
+                    if now >= target_date_and_time - timedelta(hours=1):
+                        if now >= target_date_and_time + timedelta(hours=2):
+                            eta = None
+                        else:
+                            eta = now + timedelta(seconds=10)
+                    elif eta <= now or eta >= target_date_and_time - timedelta(hours=1, minutes=30):
+                        eta = now + timedelta(seconds=10)
+                else:
+                    if not self.has_future_accepted_vo() and not self.has_previous_vo()\
+                            and target_date_and_time <= now + timedelta(days=4):
+                        eta = now + timedelta(seconds=10)
+                    else:
+                        # future date day shift
+                        eta = datetime.combine(
+                            target_date_and_time.date() - timedelta(days=1),
+                            time(10, 0, 0, tzinfo=now.tzinfo)
+                        )
+
+                if eta:
+                    self.scheduled_sms_datetime = eta
+                    self.save(update_fields=['scheduled_sms_datetime'])
+                    task.apply_async(args=[self.id], eta=eta)
 
 
 class TimeSheet(
@@ -1063,6 +1225,13 @@ class CarrierList(UUIDModel):
 
     sms_sending_scheduled_at = models.DateTimeField(
         verbose_name=_("SMS sending scheduled at"),
+        null=True,
+        blank=True
+    )
+
+    skill = models.ForeignKey(
+        Skill,
+        verbose_name=_('Skill'),
         null=True,
         blank=True
     )

@@ -948,6 +948,21 @@ class Company(
             self.payment_due_date
         )
 
+    def get_effective_pricelist_qs(self, position=None):
+        qs = self.price_lists.exclude(
+            Q(approved_by__isnull=True) | Q(approved_by=None) | Q(approved_at__isnull=True) | Q(approved_at=None)
+        ).filter(
+            effective=True,
+            valid_until__gte=date.today(),
+            price_list_rates__skill__active=True,
+            price_list_rates__hourly_rate__gt=0
+        )
+
+        if position:
+            qs = qs.filter(price_list_rates__skill=position)
+
+        return qs
+
     def save(self, *args, **kwargs):
         if not self.company_settings:
             self.company_settings = CompanySettings.objects.create()

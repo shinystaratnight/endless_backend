@@ -207,7 +207,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
             'collapsed': True,
             'label': _('Vacancy offers'),
-            'endpoint': api_reverse_lazy('hr/vacancyoffers'),
+            'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/vacancyoffers')),
         }, {
             'query': {
                 'candidate_contact': '{id}'
@@ -333,7 +333,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         list_filter = [{
             'type': constants.FIELD_SELECT,
             'field': 'active_states',
-            'choices': lazy(states_part, list)(),
+            'choices': lazy(states_part, list),
         }, 'contact.gender', 'transportation_to_work', {
             'field': 'created_at',
             'type': constants.FIELD_DATE,

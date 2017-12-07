@@ -22,6 +22,7 @@ setup(
         django=helpers.commands:django
         app=helpers.commands:app
         py_test=helpers.commands:py_test
+        celery=helpers.commands:celery
         _supervisord=helpers.commands:supervisord
         _supervisorctl=helpers.commands:supervisorctl
     '''

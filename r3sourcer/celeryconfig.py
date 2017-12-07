@@ -25,6 +25,7 @@ accept_content = ['json', 'application/text']
 broker_transport_options = {'visibility_timeout': 2 * 60 * 60}
 
 task_queues = (
+    Queue('celery', Exchange('celery'), routing_key='celery'),
     Queue('sms', Exchange('sms'), routing_key='sms'),
 )
 

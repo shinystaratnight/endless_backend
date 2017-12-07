@@ -34,6 +34,14 @@ def django():
     execute_from_command_line(sys.argv)
 
 
+def celery():
+    set_env()
+
+    from celery.__main__ import main
+
+    return main()
+
+
 @click.group()
 def app():
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings.prod")

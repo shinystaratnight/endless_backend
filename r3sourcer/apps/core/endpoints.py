@@ -478,7 +478,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
         list_filter = ['company', 'primary_contact.contact', {
             'type': constants.FIELD_SELECT,
             'field': 'active_states',
-            'choices': lazy(states_part, list)(),
+            'choices': lazy(states_part, list),
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'portfolio_manager',

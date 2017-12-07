@@ -6,11 +6,12 @@ from drf_auto_endpoint.router import router
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
+from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.api import filters as hr_filters
+from r3sourcer.apps.hr.api import filters as hr_filters, viewsets as hr_viewsets
 from r3sourcer.apps.hr.api.serializers import vacancy as vacancy_serializers
 from r3sourcer.apps.hr.endpoints.payment import InvoiceEndpoint
 from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint
@@ -45,21 +46,37 @@ class FavouriteListEndpoint(ApiEndpoint):
 
 class VacancyOfferEndpoint(ApiEndpoint):
     model = hr_models.VacancyOffer
-
-    serializer_fields = [
-        '__all__',
-        {
-            'shift': ['id', 'time', {
-                'date': ['shift_date'],
-            }],
-        }
-    ]
+    base_viewset = hr_viewsets.VacancyOfferViewset
+    serializer = vacancy_serializers.VacancyOfferSerializer
 
     list_display = ('shift.date.shift_date', 'status')
-    list_editable = ({
-        'label': _('Shift date and time'),
-        'fields': ('shift.date.shift_date', 'shift.time')
-    }, 'status')
+    list_editable = (
+        'candidate_contact', 'shift.date.shift_date', 'shift.time', 'status',
+        {
+            'label': _('Client/Candidate Rate'),
+            'delim': ' / ',
+            'fields': ({
+                'field': 'client_rate',
+                'type': constants.FIELD_STATIC,
+            }, {
+                'field': 'candidate_rate',
+                'type': constants.FIELD_STATIC,
+            })
+        }, {
+            'type': constants.FIELD_LINK,
+            'label': _('Timesheets'),
+            'field': 'timesheets',
+            'text': _('Link to TimeSheet'),
+            'link': format_lazy('{}{{field}}', api_reverse_lazy('hr/timesheets'))
+        }, {
+            'type': constants.FIELD_BUTTON,
+            'icon': 'fa-times-circle',
+            'field': 'id',
+            'action': 'deleteOffer',
+            'text_color': '#f32700',
+            'label': _('Actions'),
+        }
+    )
     ordering = ('-shift.date.shift_date', )
     list_filter = ['candidate_contact']
 
@@ -275,6 +292,16 @@ class VacancyEndpoint(ApiEndpoint):
         'prefilled': {
             'date.vacancy': '{id}',
         }
+    }, {
+        'type': constants.FIELD_LIST,
+        'field': 'id_',
+        'query': {
+            'shift.date.vacancy': '{id}',
+        },
+        'label': _('Vacancy Offers'),
+        'add_label': _('Fill in'),
+        'add_endpoint': api_reverse_lazy('hr/vacancyoffers'),
+        'endpoint': api_reverse_lazy('hr/vacancyoffers'),
     })
 
     def get_list_filter(self):
@@ -292,7 +319,7 @@ class VacancyEndpoint(ApiEndpoint):
                 'type': constants.FIELD_SELECT,
                 'field': 'active_states',
                 'label': _('State'),
-                'choices': lazy(states_part, list)(),
+                'choices': lazy(states_part, list),
             }, {
                 'type': constants.FIELD_SELECT,
                 'field': 'published',
@@ -316,10 +343,12 @@ class ShiftEndpoint(ApiEndpoint):
         {
             'type': constants.FIELD_DATE,
             'label': _('Date'),
+            'name': 'date.shift_date',
             'field': 'date.shift_date',
         }, 'workers', 'hourly_rate', {
             'type': constants.FIELD_TEXT,
             'field': 'time',
+            'name': 'time',
             'label': _('Shift start time'),
         }, {
             'type': constants.FIELD_ICON,
@@ -336,6 +365,7 @@ class ShiftEndpoint(ApiEndpoint):
             'icon': 'fa-times-circle',
             'field': 'id',
             'action': 'deleteShift',
+            'color': '#f32700',
             'label': _('Actions'),
         }
     )

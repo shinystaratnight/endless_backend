@@ -394,3 +394,15 @@ class InvoiceViewset(BaseApiViewset):
             'status': 'success',
             'pdf': pdf_url,
         })
+
+
+class VacancyOfferViewset(BaseApiViewset):
+    @list_route(
+        methods=['GET'],
+        list_editable=[{
+            'label': _('Shift date and time'),
+            'fields': ('shift.date.shift_date', 'shift.time')
+        }, 'status']
+    )
+    def candidate(self, request, *args, **kwargs):  # pragma: no cover
+        return self.list(request, *args, **kwargs)

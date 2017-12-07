@@ -27,18 +27,20 @@ class VacancySerializer(
         )
 
     def get_is_fulfilled_today(self, obj):
-        return obj and obj.is_fulfilled_today()
+        return obj and obj.is_fulfilled_today()  # pragma: no cover
 
     def get_is_fulfilled(self, obj):
-        return obj and obj.is_fulfilled()
+        return obj and obj.is_fulfilled()  # pragma: no cover
 
-    def get_no_vds(self, obj):
+    def get_no_vds(self, obj):  # pragma: no cover
         if obj is None:
             return True
 
-        return not obj.vacancy_dates.filter(shift_date__gt=timezone.now().date(), cancelled=False).exists()
+        return not obj.vacancy_dates.filter(
+            shift_date__gt=timezone.localtime(timezone.now()).date(), cancelled=False
+        ).exists()
 
-    def get_can_fillin(self, obj):
+    def get_can_fillin(self, obj):  # pragma: no cover
         if obj is None:
             return True
 
@@ -47,10 +49,10 @@ class VacancySerializer(
     def get_todays_timesheets(self, obj):
         result = "-"
 
-        if obj is None:
+        if obj is None:  # pragma: no cover
             return result
 
-        today = timezone.now().date()
+        today = timezone.localtime(timezone.now()).date()
         timesheets = hr_models.TimeSheet.objects.filter(
             vacancy_offer__shift__date__vacancy_id=obj.id, shift_started_at__date=today
         )
@@ -68,11 +70,60 @@ class VacancySerializer(
 
         return result
 
-    def get_title(self, obj):
+    def get_title(self, obj):  # pragma: no cover
         if obj is None:
             return None
 
         return obj.get_title()
+
+
+class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = ('candidate_rate', 'client_rate', 'timesheets')
+
+    class Meta:
+        model = hr_models.VacancyOffer
+        fields = [
+            '__all__',
+            {
+                'shift': ['id', 'time', {
+                    'date': ['shift_date'],
+                }],
+            }
+        ]
+
+    def get_candidate_rate(self, obj):
+        if not obj:
+            return None
+
+        if obj.shift.hourly_rate:
+            candidate_rate = obj.shift.hourly_rate
+        elif obj.shift.date.hourly_rate:
+            candidate_rate = obj.shift.date.hourly_rate
+        else:
+            candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.vacancy.position)
+
+        return candidate_rate and candidate_rate.hourly_rate
+
+    def get_client_rate(self, obj):
+        if not obj:
+            return None
+
+        price_list = obj.vacancy.customer_company.get_effective_pricelist_qs(obj.vacancy.position).first()
+        if price_list:
+            price_list_rate = price_list.price_list_rates.filter(rate__skill=obj.position).first()
+            rate = price_list_rate and price_list_rate.hourly_rate
+        else:
+            rate = None
+
+        return rate
+
+    def get_timesheets(self, obj):  # pragma: no cover
+        if obj is None:
+            return None
+
+        timesheet = obj.time_sheets.first()
+        return timesheet and timesheet.id
 
 
 class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
@@ -87,5 +138,5 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
             }
         )
 
-    def get_is_fulfilled(self, obj):
+    def get_is_fulfilled(self, obj):  # pragma: no cover
         return obj and obj.is_fulfilled()
