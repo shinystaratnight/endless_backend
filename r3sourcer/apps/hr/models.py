@@ -24,9 +24,7 @@ from r3sourcer.apps.skills.models import Skill, SkillBaseRate
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 
-from .utils.utils import (
-    today_12_pm, today_3_30_pm, tomorrow, today_7_am, today_12_30_pm
-)
+from r3sourcer.apps.hr.utils import utils as hr_utils
 
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
@@ -158,7 +156,7 @@ class Jobsite(
                 for vd in vacancy.vacancy_dates.all():
                     TimeSheet.objects.filter(
                         vacancy_offer__in=vd.vacancy_offers,
-                        shift_started_at__date__gte=tomorrow()
+                        shift_started_at__date__gte=hr_utils.tomorrow()
                     ).update(supervisor=self.primary_contact)
 
     def get_closest_company(self):
@@ -683,7 +681,7 @@ class VacancyOffer(UUIDModel):
                 setattr(self, self.receive_sms_field, reply_sms)
                 if positive:
                     self.status = self.STATUS_CHOICES.accepted
-                    self.save(update_fields=['status', receive_sms_field])
+                    self.save(update_fields=['status', self.receive_sms_field])
                 else:
                     self.cancel()
 
@@ -692,7 +690,7 @@ class VacancyOffer(UUIDModel):
             self.move_candidate_to_carrier_list()
 
         self.status = self.STATUS_CHOICES.cancelled
-        self.save(update_fields=['status', receive_sms_field])
+        self.save(update_fields=['status', self.receive_sms_field])
 
     def save(self, *args, **kw):
         just_added = self._state.adding
@@ -710,13 +708,7 @@ class VacancyOffer(UUIDModel):
                     target_date=self.start_time).exists():
                 self.move_candidate_to_carrier_list(new_offer=True)
 
-            if self.is_first() and not self.is_accepted():
-                from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
-            elif self.is_recurring():
-                from r3sourcer.apps.hr.tasks import send_recurring_vo_confirmation_sms as task
-            else:
-                # FIXME: send job confirmation SMS because there is pending vacancy's VOs for candidate
-                from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
+            task = hr_utils.get_vo_sms_sending_task(self)
 
             if task:
                 now = timezone.localtime(timezone.now())
@@ -798,28 +790,28 @@ class TimeSheet(
         verbose_name=_("Shift Started at"),
         null=True,
         blank=True,
-        default=today_7_am
+        default=hr_utils.today_7_am
     )
 
     break_started_at = models.DateTimeField(
         verbose_name=_("Break Started at"),
         null=True,
         blank=True,
-        default=today_12_pm
+        default=hr_utils.today_12_pm
     )
 
     break_ended_at = models.DateTimeField(
         verbose_name=_("Break Ended at"),
         null=True,
         blank=True,
-        default=today_12_30_pm
+        default=hr_utils.today_12_30_pm
     )
 
     shift_ended_at = models.DateTimeField(
         verbose_name=_("Shift Ended at"),
         null=True,
         blank=True,
-        default=today_3_30_pm
+        default=hr_utils.today_3_30_pm
     )
 
     supervisor = models.ForeignKey(
@@ -1183,7 +1175,7 @@ class CarrierList(UUIDModel):
 
     target_date = models.DateField(
         verbose_name=_('Target Date'),
-        default=tomorrow
+        default=hr_utils.tomorrow
     )
 
     confirmed_available = models.BooleanField(
