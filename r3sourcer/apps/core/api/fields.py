@@ -107,7 +107,8 @@ class ApiChoicesField(serializers.ChoiceField):
             return ''
 
         try:
-            data = int(float(data))
+            if type(data) != bool:
+                data = int(float(data))
         except ValueError:
             pass
 
