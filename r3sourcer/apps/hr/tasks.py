@@ -239,3 +239,61 @@ def send_recurring_vo_confirmation_sms(self, vacancy_offer_id):
         vacancy_offer_id, send_recurring_vo_confirmation_sms,
         tpl_id='vacancy-offer-recurring', action_sent='offer_sent_by_sms'
     )
+
+
+def send_vacancy_offer_sms_notification(vo_id, tpl_id, recipient):
+    try:
+        sms_interface = get_sms_service()
+    except ImportError:
+        logger.exception('Cannot load SMS service')
+        return
+
+    with transaction.atomic():
+        try:
+            vacancy_offer = hr_models.VacancyOffer.objects.get(pk=vo_id)
+            vacancy = vacancy_offer.vacancy
+        except hr_models.VacancyOffer.DoesNotExist as e:
+            logger.error(e)
+            logger.info('SMS sending will not be proceed for vacancy offer: {}'.format(vo_id))
+        else:
+            recipients = {
+                'candidate_contact': vacancy_offer.candidate_contact,
+                'supervisor': vacancy.jobsite.primary_contact
+            }
+            data_dict = dict(
+                recipients,
+                vacancy=vacancy,
+                target_date_and_time=formats.date_format(
+                    timezone.localtime(vacancy_offer.target_date_and_time), settings.DATETIME_FORMAT
+                ),
+                related_obj=vacancy_offer,
+                related_objs=[vacancy_offer.candidate_contact, vacancy_offer.vacancy]
+            )
+
+            sms_interface.send_tpl(
+                recipients.get(recipient, None), tpl_id, check_reply=False, **data_dict
+            )
+
+
+@app.task()
+def send_vacancy_offer_cancelled_sms(vo_id):
+    """
+    Send cancellation vacancy offer sms.
+
+    :param vo_id: UUID of vacancy offer
+    :return: None
+    """
+
+    send_vacancy_offer_sms_notification(vo_id, 'candidate-vo-cancelled', 'candidate_contact')
+
+
+@app.task()
+def send_vacancy_offer_cancelled_lt_one_hour_sms(vo_id):
+    """
+    Send cancellation vacancy offer sms less than 1h.
+
+    :param vo_id: UUID of vacancy offer
+    :return: None
+    """
+
+    send_vacancy_offer_sms_notification(vo_id, 'candidate-vo-cancelled-1-hrs', 'candidate_contact')

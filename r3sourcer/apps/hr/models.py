@@ -687,7 +687,28 @@ class VacancyOffer(core_models.UUIDModel):
             self.move_candidate_to_carrier_list()
 
         self.status = self.STATUS_CHOICES.cancelled
-        self.save(update_fields=['status', self.receive_sms_field])
+        self.save()
+
+        now = timezone.now()
+        time_sheet = None
+
+        try:
+            time_sheet = TimeSheet.objects.filter(
+                vacancy_offer__vacancy=self.vacancy, vacancy_offer__candidate_contact=self.candidate_contact,
+                shift_started_at__gt=now, going_to_work_confirmation=True
+            ).earliest('shift_started_at')
+        except TimeSheet.DoesNotExist:
+            time_sheet = None
+
+        if time_sheet is not None:
+            if (time_sheet.shift_started_at - now).total_seconds() > 3600:
+                from r3sourcer.apps.hr.tasks import send_vacancy_offer_cancelled_sms
+                send_vacancy_offer_cancelled_sms.delay(self.pk)
+            else:
+                from r3sourcer.apps.hr.tasks import send_vacancy_offer_cancelled_lt_one_hour_sms
+                send_vacancy_offer_cancelled_lt_one_hour_sms.delay(self.pk)
+                # TODO: implement this function
+                # time_sheet.auto_fill_four_hours()
 
     def save(self, *args, **kw):
         just_added = self._state.adding
