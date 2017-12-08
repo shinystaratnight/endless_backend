@@ -273,7 +273,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'field': 'contact.phone_mobile',
             }, {
                 'type': constants.FIELD_BUTTON,
-                'action': 'sendSMS',
+                'action': constants.DEFAULT_ACTION_SEND_SMS,
                 'text': _('SMS'),
                 'icon': 'fa-commenting',
                 'fields': ('contact.phone_mobile',)

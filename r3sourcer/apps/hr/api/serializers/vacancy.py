@@ -79,13 +79,17 @@ class VacancySerializer(
 
 class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('candidate_rate', 'client_rate', 'timesheets')
+    method_fields = (
+        'candidate_rate', 'client_rate', 'timesheets', 'has_accept_action', 'has_cancel_action', 'has_resend_action'
+    )
 
     class Meta:
         model = hr_models.VacancyOffer
         fields = [
             '__all__',
             {
+                'offer_sent_by_sms': ['id'],
+                'reply_received_by_sms': ['id'],
                 'shift': ['id', 'time', {
                     'date': ['shift_date'],
                 }],
@@ -103,7 +107,7 @@ class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
         else:
             candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.vacancy.position)
 
-        return candidate_rate and candidate_rate.hourly_rate
+        return candidate_rate.hourly_rate if candidate_rate else '-'
 
     def get_client_rate(self, obj):
         if not obj:
@@ -116,7 +120,7 @@ class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
         else:
             rate = None
 
-        return rate
+        return rate or '-'
 
     def get_timesheets(self, obj):  # pragma: no cover
         if obj is None:
@@ -124,6 +128,49 @@ class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
         timesheet = obj.time_sheets.first()
         return timesheet and timesheet.id
+
+    def has_late_reply_handling(self, obj):
+        return (
+            obj.offer_sent_by_sms and not obj.reply_received_by_sms and obj.offer_sent_by_sms.late_reply and
+            not obj.accepted
+        )
+
+    def get_has_accept_action(self, obj):
+        if obj is None or obj.is_cancelled() or (obj.is_accepted() and not self.has_late_reply_handling(obj)):
+            return None
+
+        return True
+
+    def get_has_cancel_action(self, obj):
+        if obj is None or obj.is_cancelled():
+            return None
+
+        return True
+
+    @classmethod
+    def is_available_for_resend(cls, obj):
+        not_received_or_scheduled = (
+            obj.reply_received_by_sms is None and not obj.is_accepted() and obj.scheduled_sms_datetime is None
+        )
+
+        if obj.is_cancelled() or not_received_or_scheduled:
+            last_vo = obj.vacancy.get_vacancy_offers().filter(
+                offer_sent_by_sms__isnull=False,
+                candidate_contact=obj.candidate_contact
+            ).order_by('offer_sent_by_sms__sent_at').last()
+            return bool(
+                obj.offer_sent_by_sms and last_vo and
+                last_vo.offer_sent_by_sms.sent_at +
+                timezone.timedelta(minutes=10) < timezone.now()
+            )
+
+        return False
+
+    def get_has_resend_action(self, obj):
+        if not obj:
+            return None
+
+        return self.is_available_for_resend(obj)
 
 
 class ShiftSerializer(core_serializers.ApiBaseModelSerializer):

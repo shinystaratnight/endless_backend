@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
-    'showIf', 'title', 'send',
+    'showIf', 'title', 'send', 'text_color',
 )
 
 
@@ -241,7 +241,7 @@ class AngularApiAdapter(BaseAdapter):
                 'type': fieldset_type,
                 'children': fildset_result,
                 **{
-                    key: fieldset[key] for key in ('name', 'collapsed')
+                    key: fieldset[key] for key in ('name', 'collapsed', 'label')
                     if fieldset.get(key)
                 },
             }
@@ -506,7 +506,7 @@ class AngularListApiAdapter(AngularApiAdapter):
 
         for display_field in display_fields:
             name = label = ''
-            delim = title = None
+            extra_opts = {}
             if isinstance(display_field, (list, tuple)):
                 if len(display_field) != 2:
                     raise ValueError('Composite content should have 2 items')
@@ -521,8 +521,11 @@ class AngularListApiAdapter(AngularApiAdapter):
                 label, name, display_field_list = self._process_dict_field(
                     display_field
                 )
-                delim = display_field.get('delim')
-                title = display_field.get('title')
+
+                extra_opts = {
+                    'delim': display_field.get('delim'),
+                    'title': display_field.get('title'),
+                }
             else:
                 display_field_list = [display_field]
 
@@ -537,10 +540,8 @@ class AngularListApiAdapter(AngularApiAdapter):
                 'label': label,
                 'content': content,
             }
-            if delim is not None:
-                adapted_column['delim'] = delim
-            if title is not None:
-                adapted_column['title'] = title
+            adapted_column.update(extra_opts)
+
             adapted_columns.append(adapted_column)
 
         return adapted_columns
@@ -566,7 +567,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         adapted = []
         options = ('endpoint', 'link', 'values', 'action', 'label', 'text',
                    'icon', 'repeat', 'color', 'visible', 'hidden',
-                   'replace_by')
+                   'replace_by', 'text_color', 'title')
 
         for display_field in display_fields:
             if isinstance(display_field, dict):
@@ -598,11 +599,13 @@ class AngularListApiAdapter(AngularApiAdapter):
                 field_type = None
                 display_field_attrs = {}
 
+            if field_type in constants.DATEPICKER_TYPES:
+                field_type = None
+
             adapted_field = self.get_adapted_field(
                 display_field, field_type=field_type
             )
-            field_type = field_type or adapted_field.get('type',
-                                                         constants.FIELD_STATIC)
+            field_type = field_type or adapted_field.get('type', constants.FIELD_STATIC)
 
             adapt_field = {
                 'type': field_type,

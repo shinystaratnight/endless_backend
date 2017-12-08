@@ -11,11 +11,8 @@ from django.utils.translation import ugettext_lazy as _
 from filer.models import Folder
 from model_utils import Choices
 
+from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
-from r3sourcer.apps.core.models import (
-    UUIDModel, Contact, CompanyContact, Company, Address, Country,
-    AbstractPayRuleMixin, AbstractBaseOrder, Order
-)
 from r3sourcer.apps.core.mixins import CategoryFolderMixin
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.logger.main import endless_logger
@@ -32,7 +29,7 @@ NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
 class Jobsite(
         CategoryFolderMixin,
-        UUIDModel,
+        core_models.UUIDModel,
         WorkflowProcess):
 
     industry = models.ForeignKey(
@@ -43,14 +40,14 @@ class Jobsite(
     )
 
     master_company = models.ForeignKey(
-        Company,
+        core_models.Company,
         related_name="jobsites",
         verbose_name=_("Master company"),
         on_delete=models.PROTECT
     )
 
     portfolio_manager = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="managed_jobsites",
         verbose_name=_("Portfolio Manager"),
         on_delete=models.PROTECT,
@@ -58,7 +55,7 @@ class Jobsite(
     )
 
     primary_contact = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="jobsites",
         verbose_name=_("Primary Contact"),
         on_delete=models.PROTECT,
@@ -163,7 +160,7 @@ class Jobsite(
         return self.master_company
 
 
-class JobsiteUnavailability(UUIDModel):
+class JobsiteUnavailability(core_models.UUIDModel):
 
     jobsite = models.ForeignKey(
         Jobsite,
@@ -195,10 +192,10 @@ class JobsiteUnavailability(UUIDModel):
         verbose_name_plural = _("Jobsite Unavailabilities")
 
 
-class JobsiteAddress(UUIDModel):
+class JobsiteAddress(core_models.UUIDModel):
 
     address = models.ForeignKey(
-        Address,
+        core_models.Address,
         related_name='jobsite_addresses',
         on_delete=models.PROTECT,
         verbose_name=_("Address"),
@@ -212,7 +209,7 @@ class JobsiteAddress(UUIDModel):
     )
 
     regular_company = models.ForeignKey(
-        Company,
+        core_models.Company,
         on_delete=models.PROTECT,
         related_name="jobsite_addresses",
         verbose_name=_("Regular company")
@@ -223,7 +220,7 @@ class JobsiteAddress(UUIDModel):
         verbose_name_plural = _("Jobsite Addresses")
 
 
-class Vacancy(AbstractBaseOrder):
+class Vacancy(core_models.AbstractBaseOrder):
 
     jobsite = models.ForeignKey(
         Jobsite,
@@ -388,7 +385,7 @@ class Vacancy(AbstractBaseOrder):
         return self.is_fulfilled() in [NOT_FULFILLED, LIKELY_FULFILLED] or not_filled_future_vd
 
 
-class VacancyDate(UUIDModel):
+class VacancyDate(core_models.UUIDModel):
 
     vacancy = models.ForeignKey(
         Vacancy,
@@ -448,7 +445,7 @@ class VacancyDate(UUIDModel):
     is_fulfilled.short_description = _('Fulfilled')
 
 
-class Shift(UUIDModel):
+class Shift(core_models.UUIDModel):
     time = models.TimeField(verbose_name=_("Time"))
 
     date = models.ForeignKey(
@@ -497,7 +494,7 @@ class Shift(UUIDModel):
         return result
 
 
-class VacancyOffer(UUIDModel):
+class VacancyOffer(core_models.UUIDModel):
 
     sent_sms_field = 'offer_sent_by_sms'
     receive_sms_field = 'reply_received_by_sms'
@@ -751,7 +748,7 @@ class VacancyOffer(UUIDModel):
 
 
 class TimeSheet(
-        UUIDModel,
+        core_models.UUIDModel,
         WorkflowProcess):
 
     sent_sms_field = 'going_to_work_sent_sms'
@@ -815,7 +812,7 @@ class TimeSheet(
     )
 
     supervisor = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="supervised_time_sheets",
         on_delete=models.PROTECT,
         verbose_name=_("Supervisor"),
@@ -856,7 +853,7 @@ class TimeSheet(
         verbose_name=_("Supervisor Approved scheme"),
         max_length=16,
         default='',
-        choices=Company.TIMESHEET_APPROVAL_SCHEME,
+        choices=core_models.Company.TIMESHEET_APPROVAL_SCHEME,
         editable=False
     )
 
@@ -870,7 +867,7 @@ class TimeSheet(
     )
 
     rate_overrides_approved_by = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name='timesheet_rate_override_approvals',
         on_delete=models.PROTECT,
         verbose_name=_("Candidate and Client Rate Overrides Approved by"),
@@ -964,7 +961,7 @@ class TimeSheet(
 
 
 class TimeSheetIssue(
-        UUIDModel,
+        core_models.UUIDModel,
         WorkflowProcess):
 
     time_sheet = models.ForeignKey(
@@ -984,7 +981,7 @@ class TimeSheetIssue(
     )
 
     supervisor = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="supervised_timesheet_issues",
         on_delete=models.PROTECT,
         verbose_name=_("Supervisor")
@@ -997,7 +994,7 @@ class TimeSheetIssue(
     )
 
     account_representative = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="timesheet_issues",
         verbose_name=_("Account Contact Responsible"),
         on_delete=models.PROTECT,
@@ -1015,10 +1012,10 @@ class TimeSheetIssue(
         return self.time_sheet.get_closest_company()
 
 
-class BlackList(UUIDModel):
+class BlackList(core_models.UUIDModel):
 
     company = models.ForeignKey(
-        Company,
+        core_models.Company,
         related_name="blacklists",
         on_delete=models.PROTECT,
         verbose_name=_("Company")
@@ -1050,7 +1047,7 @@ class BlackList(UUIDModel):
     )
 
     company_contact = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         verbose_name=_('Company Contact'),
         related_name='blacklists',
         blank=True,
@@ -1086,10 +1083,10 @@ class BlackList(UUIDModel):
         super().clean()
 
 
-class FavouriteList(UUIDModel):
+class FavouriteList(core_models.UUIDModel):
 
     company_contact = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name='favouritelist',
         verbose_name=_('Favourite list owner'),
         on_delete=models.CASCADE
@@ -1103,7 +1100,7 @@ class FavouriteList(UUIDModel):
     )
 
     company = models.ForeignKey(
-        Company,
+        core_models.Company,
         related_name="favouritelists",
         verbose_name=_("Company"),
         blank=True,
@@ -1162,7 +1159,7 @@ class FavouriteList(UUIDModel):
         super().clean()
 
 
-class CarrierList(UUIDModel):
+class CarrierList(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
@@ -1248,7 +1245,7 @@ class CarrierList(UUIDModel):
         self.save(update_fields=['confirmed_available'])
 
 
-class CandidateEvaluation(UUIDModel):
+class CandidateEvaluation(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
@@ -1258,7 +1255,7 @@ class CandidateEvaluation(UUIDModel):
     )
 
     supervisor = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="supervised_candidate_evaluations",
         on_delete=models.PROTECT,
         verbose_name=_("Supervisor"),
@@ -1343,9 +1340,9 @@ class CandidateEvaluation(UUIDModel):
     single_evaluation_average.short_description = _("Jobsite Feedback")
 
 
-class ContactJobsiteDistanceCache(UUIDModel):
+class ContactJobsiteDistanceCache(core_models.UUIDModel):
     contact = models.ForeignKey(
-        Contact,
+        core_models.Contact,
         on_delete=models.CASCADE,
         related_name='distance_caches',
         verbose_name=_("Contact")
@@ -1373,7 +1370,7 @@ class ContactJobsiteDistanceCache(UUIDModel):
         unique_together = ("contact", "jobsite")
 
 
-class Payslip(UUIDModel):
+class Payslip(core_models.UUIDModel):
 
     payment_date = models.DateField(
         verbose_name=_("Payment Date"),
@@ -1406,7 +1403,7 @@ class Payslip(UUIDModel):
     )
 
     company = models.ForeignKey(
-        Company,
+        core_models.Company,
         verbose_name=_("Company"),
         related_name="payslips",
         null=True,
@@ -1473,10 +1470,10 @@ class Payslip(UUIDModel):
         return sum_pay
 
 
-class PayslipRule(AbstractPayRuleMixin, UUIDModel):
+class PayslipRule(core_models.AbstractPayRuleMixin, core_models.UUIDModel):
 
     company = models.ForeignKey(
-        Company,
+        core_models.Company,
         related_name="payslip_rules",
         verbose_name=_("Company"),
         on_delete=models.PROTECT
@@ -1487,7 +1484,7 @@ class PayslipRule(AbstractPayRuleMixin, UUIDModel):
         verbose_name_plural = _("Payslip Rules")
 
 
-class PayslipLine(UUIDModel):
+class PayslipLine(core_models.UUIDModel):
 
     description = models.CharField(
         max_length=255,
@@ -1547,10 +1544,10 @@ class PayslipLine(UUIDModel):
         return self.TYPE_CHOICES[self.type]
 
 
-class PersonalIncomeTax(UUIDModel):
+class PersonalIncomeTax(core_models.UUIDModel):
 
     country = models.ForeignKey(
-        Country,
+        core_models.Country,
         to_field='code2',
         default='AU'
     )
@@ -1594,10 +1591,10 @@ class PersonalIncomeTax(UUIDModel):
         verbose_name_plural = _("Personal Income Taxes")
 
 
-class SocialInsurance(UUIDModel):
+class SocialInsurance(core_models.UUIDModel):
 
     country = models.ForeignKey(
-        Country,
+        core_models.Country,
         to_field='code2',
         default='AU'
     )
@@ -1643,7 +1640,7 @@ class SocialInsurance(UUIDModel):
         verbose_name_plural = _("Social Insurances")
 
 
-class CandidateScore(UUIDModel):
+class CandidateScore(core_models.UUIDModel):
 
     candidate_contact = models.OneToOneField(
         CandidateContact,

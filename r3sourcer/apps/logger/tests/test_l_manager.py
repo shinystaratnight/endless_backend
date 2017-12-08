@@ -1,7 +1,5 @@
 from datetime import timedelta
 
-from django.utils import timezone
-
 import pytest
 from r3sourcer.apps.logger.manager import *
 from r3sourcer.apps.logger.models import LogHistory
@@ -178,7 +176,7 @@ class TestClickhouseLogger:
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id)
         assert len(history) == 3
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id,
-                                                 from_date=timezone(timezone.now()).date())
+                                                 from_date=timezone.localtime(timezone.now()).date())
         assert len(history) == 1
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id,
                                                  from_date=week_ago.date(),
