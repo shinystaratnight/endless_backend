@@ -650,10 +650,17 @@ class CompanyEndpoint(ApiEndpoint):
             )
         },
         {
-            'type': constants.CONTAINER_COLLAPSE,
+            'query': {
+                'company': '{id}'
+            },
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Company contacts'),
-            'fields': ()
+            'label': _('Company contact relationships'),
+            'endpoint': api_reverse_lazy('core/companycontactrelationships'),
+            'add_label': _('Add Company Contact Relationship'),
+            'prefilled': {
+                'company': '{id}',
+            }
         },
         {
             'type': constants.CONTAINER_COLLAPSE,
@@ -824,6 +831,13 @@ class CompanyEndpoint(ApiEndpoint):
         'name', 'company_addresses__address__street_address', 'company_addresses__address__city__search_names',
         'notes', 'description'
     )
+
+
+class CompanyContactRelationEndpoint(ApiEndpoint):
+
+    model = models.CompanyContactRelationship
+    serializers = serializers.CompanyContactRelationshipSerializer
+    filter_class = filters.CompanyContactRelationshipFilter
 
 
 class CompanyContactEndpoint(ApiEndpoint):
@@ -1204,8 +1218,7 @@ router.register(models.City, filter_fields=('country', 'region'))
 router.register(endpoint=CompanyEndpoint())
 router.register(endpoint=CompanyAddressEndpoint())
 router.register(endpoint=CompanyContactEndpoint())
-router.register(models.CompanyContactRelationship,
-                serializer=serializers.CompanyContactRelationshipSerializer)
+router.register(endpoint=CompanyContactRelationEndpoint())
 router.register(endpoint=CompanyLocalizationEndpoint())
 router.register(endpoint=CompanyRelEndpoint())
 router.register(models.CompanyTradeReference)

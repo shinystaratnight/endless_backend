@@ -8,7 +8,7 @@ from rest_framework.filters import OrderingFilter
 
 from ..models import (
     Company, CompanyLocalization, CompanyAddress, CompanyRel, WorkflowObject,
-    WorkflowNode, DashboardModule, CompanyContact, FormField
+    WorkflowNode, DashboardModule, CompanyContact, FormField, CompanyContactRelationship
 )
 from ..utils.user import get_default_company
 
@@ -164,6 +164,19 @@ class CompanyContactFilter(FilterSet):
     def filter_is_manager(self, queryset, name, value):
         return queryset.filter(
             companies__isnull=False,
+        )
+
+
+class CompanyContactRelationshipFilter(FilterSet):
+    company = UUIDFilter(method='filter_company')
+
+    class Meta:
+        model = CompanyContactRelationship
+        fields = ['company']
+
+    def filter_company(self, queryset, name, value):
+        return queryset.filter(
+            company_id=value
         )
 
 

@@ -1052,6 +1052,9 @@ class CompanyContactRelationship(
         blank=True
     )
 
+    def __str__(self):
+        return "{company}: {contact}".format(company=self.company, contact=self.company_contact)
+
     def get_master_company(self):
         return self.company.get_master_company()
 
