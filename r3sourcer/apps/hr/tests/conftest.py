@@ -23,6 +23,7 @@ from r3sourcer.apps.pricing.models import (
     PriceListRate, RateCoefficient, RateCoefficientModifier, AllowanceWorkRule,
     DynamicCoefficientRule
 )
+from r3sourcer.apps.sms_interface import models as sms_models
 
 
 @pytest.fixture
@@ -85,13 +86,6 @@ def contact_another(db, user_another, contact_data_another):
 def candidate_contact(db, contact):
     return CandidateContact.objects.create(
         contact=contact
-    )
-
-
-@pytest.fixture
-def candidate_contact_another(db, contact_another):
-    return CandidateContact.objects.create(
-        contact=contact_another
     )
 
 
@@ -217,6 +211,24 @@ def vacancy_offer(db, shift, candidate_contact):
 
 
 @pytest.fixture
+def accepted_vo(db, shift, candidate_contact):
+    return VacancyOffer.objects.create(
+        shift=shift,
+        candidate_contact=candidate_contact,
+        status=VacancyOffer.STATUS_CHOICES.accepted
+    )
+
+
+@pytest.fixture
+def cancelled_vo(db, shift, candidate_contact):
+    return VacancyOffer.objects.create(
+        shift=shift,
+        candidate_contact=candidate_contact,
+        status=VacancyOffer.STATUS_CHOICES.cancelled
+    )
+
+
+@pytest.fixture
 def vacancy_offer_yesterday(db, vacancy, candidate_contact):
     vacancy_date_yesterday = VacancyDate.objects.create(
         vacancy=vacancy,
@@ -243,6 +255,23 @@ def vacancy_offer_tomorrow(db, vacancy, candidate_contact):
     shift_tomorrow = Shift.objects.create(
         date=vacancy_date_tomorrow,
         time=datetime.time(hour=8, minute=30)
+    )
+
+    return VacancyOffer.objects.create(
+        shift=shift_tomorrow,
+        candidate_contact=candidate_contact
+    )
+
+
+@pytest.fixture
+def vacancy_offer_tomorrow_night(db, vacancy, candidate_contact):
+    vacancy_date_tomorrow = VacancyDate.objects.create(
+        vacancy=vacancy,
+        shift_date=datetime.date(2017, 1, 3)
+    )
+    shift_tomorrow = Shift.objects.create(
+        date=vacancy_date_tomorrow,
+        time=datetime.time(hour=19, minute=0)
     )
 
     return VacancyOffer.objects.create(
@@ -450,4 +479,14 @@ def vat():
         name='GST',
         rate=0.1,
         start_date=datetime.date(2017, 1, 1),
+    )
+
+
+@pytest.fixture
+def fake_sms(contact):
+    return sms_models.SMSMessage.objects.create(
+        from_number=contact.phone_mobile,
+        to_number='+12345678901',
+        text='fake',
+        sid='FAKE_test',
     )

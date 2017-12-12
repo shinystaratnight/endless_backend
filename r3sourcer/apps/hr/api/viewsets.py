@@ -19,13 +19,13 @@ from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from .serializers.timesheet import (
     TimeSheetSerializer, CandidateEvaluationSerializer
 )
-from ..models import TimeSheet
+from r3sourcer.apps.hr import models as hr_models
 from ..payment import InvoiceService
 
 
 class ExtranetTimesheetEndpoint(ApiEndpoint):
 
-    model = TimeSheet
+    model = hr_models.TimeSheet
     serializer = TimeSheetSerializer
 
     list_buttons = []
@@ -60,7 +60,7 @@ class TimeSheetViewset(BaseApiViewset):
         now = timezone.now()
         ended_at = now - datetime.timedelta(hours=4)
         signed_delta = now - datetime.timedelta(hours=1)
-        queryset = TimeSheet.objects.filter(
+        queryset = hr_models.TimeSheet.objects.filter(
             Q(candidate_submitted_at__isnull=False) |
             Q(shift_ended_at__lt=ended_at),
             Q(supervisor_approved_at__isnull=True) |
@@ -72,7 +72,7 @@ class TimeSheetViewset(BaseApiViewset):
 
     def handle_request(self, request, pk, is_candidate=True, *args, **kwargs):
         time_sheet = get_object_or_404(
-            TimeSheet.objects.select_for_update(), pk=pk
+            hr_models.TimeSheet.objects.select_for_update(), pk=pk
         )
 
         if request.method == 'PUT':
@@ -103,7 +103,7 @@ class TimeSheetViewset(BaseApiViewset):
             else:
                 qry &= Q(candidate_submitted_at__isnull=False)
 
-        queryset = TimeSheet.objects.filter(qry)
+        queryset = hr_models.TimeSheet.objects.filter(qry)
 
         return self.paginated(queryset)
 
@@ -394,3 +394,48 @@ class InvoiceViewset(BaseApiViewset):
             'status': 'success',
             'pdf': pdf_url,
         })
+
+
+class VacancyOfferViewset(BaseApiViewset):
+    @list_route(
+        methods=['GET'],
+        list_editable=[{
+            'label': _('Shift date and time'),
+            'fields': ('shift.date.shift_date', 'shift.time')
+        }, 'status']
+    )
+    def candidate(self, request, *args, **kwargs):  # pragma: no cover
+        return self.list(request, *args, **kwargs)
+
+    @detail_route(methods=['POST'])
+    def accept(self, request, *args, **kwargs):  # pragma: no cover
+        obj = self.get_object()
+        obj.status = hr_models.VacancyOffer.STATUS_CHOICES.accepted
+        obj.save(update_field=['status'])
+
+        return Response({'status': 'success'})
+
+    @detail_route(methods=['POST'])
+    def cancel(self, request, *args, **kwargs):  # pragma: no cover
+        obj = self.get_object()
+        obj.cancel()
+
+        return Response({'status': 'success'})
+
+    @detail_route(methods=['POST'])
+    def resend(self, request, *args, **kwargs):  # pragma: no cover
+        obj = self.get_object()
+        serializer_class = self.get_serializer_class()
+
+        if serializer_class.is_available_for_resend(obj):
+            if obj.reply_received_by_sms is None:
+                if obj.offer_sent_by_sms is not None:
+                    obj.offer_sent_by_sms.no_check_reply()
+                obj.cancel()
+
+            hr_models.VacancyOffer.objects.create(
+                shift=obj.shift,
+                candidate_contact=obj.candidate_contact,
+            )
+
+        return Response({'status': 'success'})

@@ -13,6 +13,8 @@ services:
   redis:
     restart: always
     image: "redis:alpine"
+    ports:
+      - "6379:6379"
 
   clickhouse:
     image: yandex/clickhouse-server

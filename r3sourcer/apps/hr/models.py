@@ -11,11 +11,8 @@ from django.utils.translation import ugettext_lazy as _
 from filer.models import Folder
 from model_utils import Choices
 
+from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
-from r3sourcer.apps.core.models import (
-    UUIDModel, Contact, CompanyContact, Company, Address, Country,
-    AbstractPayRuleMixin, AbstractBaseOrder, Order
-)
 from r3sourcer.apps.core.mixins import CategoryFolderMixin
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.logger.main import endless_logger
@@ -24,9 +21,7 @@ from r3sourcer.apps.skills.models import Skill, SkillBaseRate
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 
-from .utils.utils import (
-    today_12_pm, today_3_30_pm, tomorrow, today_7_am, today_12_30_pm
-)
+from r3sourcer.apps.hr.utils import utils as hr_utils
 
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
@@ -34,7 +29,7 @@ NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
 class Jobsite(
         CategoryFolderMixin,
-        UUIDModel,
+        core_models.UUIDModel,
         WorkflowProcess):
 
     industry = models.ForeignKey(
@@ -45,14 +40,14 @@ class Jobsite(
     )
 
     master_company = models.ForeignKey(
-        Company,
+        core_models.Company,
         related_name="jobsites",
         verbose_name=_("Master company"),
         on_delete=models.PROTECT
     )
 
     portfolio_manager = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="managed_jobsites",
         verbose_name=_("Portfolio Manager"),
         on_delete=models.PROTECT,
@@ -60,7 +55,7 @@ class Jobsite(
     )
 
     primary_contact = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="jobsites",
         verbose_name=_("Primary Contact"),
         on_delete=models.PROTECT,
@@ -158,14 +153,14 @@ class Jobsite(
                 for vd in vacancy.vacancy_dates.all():
                     TimeSheet.objects.filter(
                         vacancy_offer__in=vd.vacancy_offers,
-                        shift_started_at__date__gte=tomorrow()
+                        shift_started_at__date__gte=hr_utils.tomorrow()
                     ).update(supervisor=self.primary_contact)
 
     def get_closest_company(self):
         return self.master_company
 
 
-class JobsiteUnavailability(UUIDModel):
+class JobsiteUnavailability(core_models.UUIDModel):
 
     jobsite = models.ForeignKey(
         Jobsite,
@@ -197,10 +192,10 @@ class JobsiteUnavailability(UUIDModel):
         verbose_name_plural = _("Jobsite Unavailabilities")
 
 
-class JobsiteAddress(UUIDModel):
+class JobsiteAddress(core_models.UUIDModel):
 
     address = models.ForeignKey(
-        Address,
+        core_models.Address,
         related_name='jobsite_addresses',
         on_delete=models.PROTECT,
         verbose_name=_("Address"),
@@ -214,7 +209,7 @@ class JobsiteAddress(UUIDModel):
     )
 
     regular_company = models.ForeignKey(
-        Company,
+        core_models.Company,
         on_delete=models.PROTECT,
         related_name="jobsite_addresses",
         verbose_name=_("Regular company")
@@ -225,7 +220,7 @@ class JobsiteAddress(UUIDModel):
         verbose_name_plural = _("Jobsite Addresses")
 
 
-class Vacancy(AbstractBaseOrder):
+class Vacancy(core_models.AbstractBaseOrder):
 
     jobsite = models.ForeignKey(
         Jobsite,
@@ -366,7 +361,7 @@ class Vacancy(AbstractBaseOrder):
         #     return IRRELEVANT
 
         result = NOT_FULFILLED
-        today = timezone.now().date()
+        today = timezone.localtime(timezone.now()).date()
         vd_today = self.vacancy_dates.filter(shift_date=today, cancelled=False).first()
         if vd_today:
             result = vd_today.is_fulfilled()
@@ -376,7 +371,7 @@ class Vacancy(AbstractBaseOrder):
 
     def can_fillin(self):
         not_filled_future_vd = False
-        today = timezone.now().date()
+        today = timezone.localtime(timezone.now()).date()
         future_vds = self.vacancy_dates.filter(shift_date__gte=today)
         for vd in future_vds:
             if vd.is_fulfilled() == NOT_FULFILLED:
@@ -390,7 +385,7 @@ class Vacancy(AbstractBaseOrder):
         return self.is_fulfilled() in [NOT_FULFILLED, LIKELY_FULFILLED] or not_filled_future_vd
 
 
-class VacancyDate(UUIDModel):
+class VacancyDate(core_models.UUIDModel):
 
     vacancy = models.ForeignKey(
         Vacancy,
@@ -450,7 +445,7 @@ class VacancyDate(UUIDModel):
     is_fulfilled.short_description = _('Fulfilled')
 
 
-class Shift(UUIDModel):
+class Shift(core_models.UUIDModel):
     time = models.TimeField(verbose_name=_("Time"))
 
     date = models.ForeignKey(
@@ -499,7 +494,7 @@ class Shift(UUIDModel):
         return result
 
 
-class VacancyOffer(UUIDModel):
+class VacancyOffer(core_models.UUIDModel):
 
     sent_sms_field = 'offer_sent_by_sms'
     receive_sms_field = 'reply_received_by_sms'
@@ -576,6 +571,9 @@ class VacancyOffer(UUIDModel):
     def is_accepted(self):
         return self.status == VacancyOffer.STATUS_CHOICES.accepted
 
+    def is_cancelled(self):
+        return self.status == VacancyOffer.STATUS_CHOICES.cancelled
+
     def is_recurring(self):
         return self.vacancy.get_vacancy_offers().filter(
             candidate_contact=self.candidate_contact,
@@ -595,9 +593,183 @@ class VacancyOffer(UUIDModel):
             shift__date__shift_date__gt=self.shift.date.shift_date
         )
 
+    def move_candidate_to_carrier_list(self, new_offer=False, confirmed_available=None):
+        if not confirmed_available:
+            confirmed_available = self.is_accepted()
+
+        cl = CarrierList.objects.filter(
+            candidate_contact=self.candidate_contact, target_date=self.start_time
+        ).first()
+
+        if cl is not None:
+            cl.target_date = self.start_time
+            cl.confirmed_available = confirmed_available
+        else:
+            # TODO: uncomment after dynamic workflow upgrade
+            # invalid_states = [
+            #     RecruitmentStatus.STATE_CHOICES.failed,
+            #     RecruitmentStatus.STATE_CHOICES.banned,
+            #     RecruitmentStatus.STATE_CHOICES.suspended
+            # ]
+            # if self.candidate_contact.get_state() not in invalid_states:
+
+            cl = CarrierList.objects.create(
+                candidate_contact=self.candidate_contact,
+                target_date=self.start_time,
+                confirmed_available=confirmed_available,
+                skill=self.vacancy.position
+            )
+
+        if cl:
+            if new_offer:
+                cl.vacancy_offer = self
+            else:
+                cl.referral_vacancy_offer = self
+                cl.vacancy_offer = None
+            cl.save()
+
+    def get_timesheets_with_going_work_unset_or_timeout(self, check_date=None):
+        now = timezone.now()
+        if check_date is None:
+            check_date = now.date()
+
+        bookings_with_timesheets = TimeSheet.objects.filter(
+            vacancy_offer=self,
+            shift_started_at__date=check_date,
+            going_to_work_confirmation__isnull=True,
+            going_to_work_sent_sms__check_reply_at__gte=now
+        )
+        return bookings_with_timesheets
+
+    def has_timesheets_with_going_work_unset_or_timeout(self, check_date=None):
+        return self.get_timesheets_with_going_work_unset_or_timeout(check_date).exists()
+
+    def has_future_accepted_vo(self):
+        """
+        Check if there are future accepted VO for the candidate/vacancy
+        :return: True or False
+        """
+        return self.vacancy.get_vacancy_offers().filter(
+            candidate_contact=self.candidate_contact,
+            shift__time__gt=self.shift.time,
+            shift__date__shift_date__gte=self.shift.date.shift_date,
+            status=self.STATUS_CHOICES.accepted
+        ).exists()
+
+    def has_previous_vo(self):
+        """
+        Check if there are VO for the candidate/vacancy earlier than this one
+        :return: True or False
+        """
+        now = timezone.now()
+        return self.vacancy.get_vacancy_offers().filter(
+            candidate_contact=self.candidate_contact,
+            shift__time__gt=now,
+            shift__date__shift_date__gte=now.date(),
+            shift__time__lt=self.shift.time,
+            shift__date__shift_date__lte=self.shift.date.shift_date,
+        ).exists()
+
+    def process_sms_reply(self, sent_sms, reply_sms, positive):
+        if not (self.is_accepted() or self.is_cancelled()):
+            assert isinstance(positive, bool), _('Looks like we could not decide if reply was positive')
+
+            if self.offer_sent_by_sms == sent_sms:
+                setattr(self, self.receive_sms_field, reply_sms)
+                if positive:
+                    self.status = self.STATUS_CHOICES.accepted
+                    self.save(update_fields=['status', self.receive_sms_field])
+                else:
+                    self.cancel()
+
+    def cancel(self):
+        if self.is_accepted():
+            self.move_candidate_to_carrier_list()
+
+        self.status = self.STATUS_CHOICES.cancelled
+        self.save()
+
+        now = timezone.now()
+        time_sheet = None
+
+        try:
+            time_sheet = TimeSheet.objects.filter(
+                vacancy_offer__vacancy=self.vacancy, vacancy_offer__candidate_contact=self.candidate_contact,
+                shift_started_at__gt=now, going_to_work_confirmation=True
+            ).earliest('shift_started_at')
+        except TimeSheet.DoesNotExist:
+            time_sheet = None
+
+        if time_sheet is not None:
+            if (time_sheet.shift_started_at - now).total_seconds() > 3600:
+                from r3sourcer.apps.hr.tasks import send_vacancy_offer_cancelled_sms
+                send_vacancy_offer_cancelled_sms.delay(self.pk)
+            else:
+                from r3sourcer.apps.hr.tasks import send_vacancy_offer_cancelled_lt_one_hour_sms
+                send_vacancy_offer_cancelled_lt_one_hour_sms.delay(self.pk)
+                # TODO: implement this function
+                # time_sheet.auto_fill_four_hours()
+
+    def save(self, *args, **kw):
+        just_added = self._state.adding
+
+        if self.is_cancelled() and not just_added:
+            orig = VacancyOffer.objects.get(pk=self.pk)
+            if orig.is_accepted():
+                orig.move_candidate_to_carrier_list(confirmed_available=True)
+
+        super(VacancyOffer, self).save(*args, **kw)
+
+        if just_added:
+            if not self.is_cancelled() and CarrierList.objects.filter(
+                    candidate_contact=self.candidate_contact,
+                    target_date=self.start_time).exists():
+                self.move_candidate_to_carrier_list(new_offer=True)
+
+            task = hr_utils.get_vo_sms_sending_task(self)
+
+            if task:
+                now = timezone.localtime(timezone.now())
+                tomorrow = now + timedelta(days=1)
+                tomorrow_end = datetime.combine(
+                    tomorrow.date() + timedelta(days=1),
+                    time(5, 0, 0, tzinfo=tomorrow.tzinfo)
+                )
+
+                target_date_and_time = timezone.localtime(self.start_time)
+
+                # TODO: maybe need to rethink, but it should work
+                # compute eta to schedule SMS sending
+                if target_date_and_time <= tomorrow_end:
+                    # today and tomorrow day and night shifts
+                    eta = datetime.combine(now.date(), time(10, 0, 0, tzinfo=now.tzinfo))
+
+                    if now >= target_date_and_time - timedelta(hours=1):
+                        if now >= target_date_and_time + timedelta(hours=2):
+                            eta = None
+                        else:
+                            eta = now + timedelta(seconds=10)
+                    elif eta <= now or eta >= target_date_and_time - timedelta(hours=1, minutes=30):
+                        eta = now + timedelta(seconds=10)
+                else:
+                    if not self.has_future_accepted_vo() and not self.has_previous_vo()\
+                            and target_date_and_time <= now + timedelta(days=4):
+                        eta = now + timedelta(seconds=10)
+                    else:
+                        # future date day shift
+                        eta = datetime.combine(
+                            target_date_and_time.date() - timedelta(days=1),
+                            time(10, 0, 0, tzinfo=now.tzinfo)
+                        )
+
+                if eta:
+                    self.scheduled_sms_datetime = eta
+                    self.save(update_fields=['scheduled_sms_datetime'])
+                    task.apply_async(args=[self.id], eta=eta)
+
 
 class TimeSheet(
-        UUIDModel,
+        core_models.UUIDModel,
         WorkflowProcess):
 
     sent_sms_field = 'going_to_work_sent_sms'
@@ -636,32 +808,32 @@ class TimeSheet(
         verbose_name=_("Shift Started at"),
         null=True,
         blank=True,
-        default=today_7_am
+        default=hr_utils.today_7_am
     )
 
     break_started_at = models.DateTimeField(
         verbose_name=_("Break Started at"),
         null=True,
         blank=True,
-        default=today_12_pm
+        default=hr_utils.today_12_pm
     )
 
     break_ended_at = models.DateTimeField(
         verbose_name=_("Break Ended at"),
         null=True,
         blank=True,
-        default=today_12_30_pm
+        default=hr_utils.today_12_30_pm
     )
 
     shift_ended_at = models.DateTimeField(
         verbose_name=_("Shift Ended at"),
         null=True,
         blank=True,
-        default=today_3_30_pm
+        default=hr_utils.today_3_30_pm
     )
 
     supervisor = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="supervised_time_sheets",
         on_delete=models.PROTECT,
         verbose_name=_("Supervisor"),
@@ -702,7 +874,7 @@ class TimeSheet(
         verbose_name=_("Supervisor Approved scheme"),
         max_length=16,
         default='',
-        choices=Company.TIMESHEET_APPROVAL_SCHEME,
+        choices=core_models.Company.TIMESHEET_APPROVAL_SCHEME,
         editable=False
     )
 
@@ -716,7 +888,7 @@ class TimeSheet(
     )
 
     rate_overrides_approved_by = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name='timesheet_rate_override_approvals',
         on_delete=models.PROTECT,
         verbose_name=_("Candidate and Client Rate Overrides Approved by"),
@@ -810,7 +982,7 @@ class TimeSheet(
 
 
 class TimeSheetIssue(
-        UUIDModel,
+        core_models.UUIDModel,
         WorkflowProcess):
 
     time_sheet = models.ForeignKey(
@@ -830,7 +1002,7 @@ class TimeSheetIssue(
     )
 
     supervisor = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="supervised_timesheet_issues",
         on_delete=models.PROTECT,
         verbose_name=_("Supervisor")
@@ -843,7 +1015,7 @@ class TimeSheetIssue(
     )
 
     account_representative = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="timesheet_issues",
         verbose_name=_("Account Contact Responsible"),
         on_delete=models.PROTECT,
@@ -861,10 +1033,10 @@ class TimeSheetIssue(
         return self.time_sheet.get_closest_company()
 
 
-class BlackList(UUIDModel):
+class BlackList(core_models.UUIDModel):
 
     company = models.ForeignKey(
-        Company,
+        core_models.Company,
         related_name="blacklists",
         on_delete=models.PROTECT,
         verbose_name=_("Company")
@@ -896,7 +1068,7 @@ class BlackList(UUIDModel):
     )
 
     company_contact = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         verbose_name=_('Company Contact'),
         related_name='blacklists',
         blank=True,
@@ -932,10 +1104,10 @@ class BlackList(UUIDModel):
         super().clean()
 
 
-class FavouriteList(UUIDModel):
+class FavouriteList(core_models.UUIDModel):
 
     company_contact = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name='favouritelist',
         verbose_name=_('Favourite list owner'),
         on_delete=models.CASCADE
@@ -949,7 +1121,7 @@ class FavouriteList(UUIDModel):
     )
 
     company = models.ForeignKey(
-        Company,
+        core_models.Company,
         related_name="favouritelists",
         verbose_name=_("Company"),
         blank=True,
@@ -1008,7 +1180,7 @@ class FavouriteList(UUIDModel):
         super().clean()
 
 
-class CarrierList(UUIDModel):
+class CarrierList(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
@@ -1021,7 +1193,7 @@ class CarrierList(UUIDModel):
 
     target_date = models.DateField(
         verbose_name=_('Target Date'),
-        default=tomorrow
+        default=hr_utils.tomorrow
     )
 
     confirmed_available = models.BooleanField(
@@ -1067,6 +1239,13 @@ class CarrierList(UUIDModel):
         blank=True
     )
 
+    skill = models.ForeignKey(
+        Skill,
+        verbose_name=_('Skill'),
+        null=True,
+        blank=True
+    )
+
     class Meta:
         verbose_name = _("Carrier List")
         verbose_name_plural = _("Carrier Lists")
@@ -1087,7 +1266,7 @@ class CarrierList(UUIDModel):
         self.save(update_fields=['confirmed_available'])
 
 
-class CandidateEvaluation(UUIDModel):
+class CandidateEvaluation(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
@@ -1097,7 +1276,7 @@ class CandidateEvaluation(UUIDModel):
     )
 
     supervisor = models.ForeignKey(
-        CompanyContact,
+        core_models.CompanyContact,
         related_name="supervised_candidate_evaluations",
         on_delete=models.PROTECT,
         verbose_name=_("Supervisor"),
@@ -1182,9 +1361,9 @@ class CandidateEvaluation(UUIDModel):
     single_evaluation_average.short_description = _("Jobsite Feedback")
 
 
-class ContactJobsiteDistanceCache(UUIDModel):
+class ContactJobsiteDistanceCache(core_models.UUIDModel):
     contact = models.ForeignKey(
-        Contact,
+        core_models.Contact,
         on_delete=models.CASCADE,
         related_name='distance_caches',
         verbose_name=_("Contact")
@@ -1212,7 +1391,7 @@ class ContactJobsiteDistanceCache(UUIDModel):
         unique_together = ("contact", "jobsite")
 
 
-class Payslip(UUIDModel):
+class Payslip(core_models.UUIDModel):
 
     payment_date = models.DateField(
         verbose_name=_("Payment Date"),
@@ -1245,7 +1424,7 @@ class Payslip(UUIDModel):
     )
 
     company = models.ForeignKey(
-        Company,
+        core_models.Company,
         verbose_name=_("Company"),
         related_name="payslips",
         null=True,
@@ -1312,10 +1491,10 @@ class Payslip(UUIDModel):
         return sum_pay
 
 
-class PayslipRule(AbstractPayRuleMixin, UUIDModel):
+class PayslipRule(core_models.AbstractPayRuleMixin, core_models.UUIDModel):
 
     company = models.ForeignKey(
-        Company,
+        core_models.Company,
         related_name="payslip_rules",
         verbose_name=_("Company"),
         on_delete=models.PROTECT
@@ -1326,7 +1505,7 @@ class PayslipRule(AbstractPayRuleMixin, UUIDModel):
         verbose_name_plural = _("Payslip Rules")
 
 
-class PayslipLine(UUIDModel):
+class PayslipLine(core_models.UUIDModel):
 
     description = models.CharField(
         max_length=255,
@@ -1386,10 +1565,10 @@ class PayslipLine(UUIDModel):
         return self.TYPE_CHOICES[self.type]
 
 
-class PersonalIncomeTax(UUIDModel):
+class PersonalIncomeTax(core_models.UUIDModel):
 
     country = models.ForeignKey(
-        Country,
+        core_models.Country,
         to_field='code2',
         default='AU'
     )
@@ -1433,10 +1612,10 @@ class PersonalIncomeTax(UUIDModel):
         verbose_name_plural = _("Personal Income Taxes")
 
 
-class SocialInsurance(UUIDModel):
+class SocialInsurance(core_models.UUIDModel):
 
     country = models.ForeignKey(
-        Country,
+        core_models.Country,
         to_field='code2',
         default='AU'
     )
@@ -1482,7 +1661,7 @@ class SocialInsurance(UUIDModel):
         verbose_name_plural = _("Social Insurances")
 
 
-class CandidateScore(UUIDModel):
+class CandidateScore(core_models.UUIDModel):
 
     candidate_contact = models.OneToOneField(
         CandidateContact,

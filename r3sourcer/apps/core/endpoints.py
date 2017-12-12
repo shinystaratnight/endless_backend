@@ -333,7 +333,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                     api_reverse_lazy('core/invoices')
                 ),
                 'field': 'invoices_count',
-                'action': 'openList',
+                'action': constants.DEFAULT_ACTION_LIST,
             }, {
                 'type': constants.FIELD_BUTTON,
                 'icon': 'fa-external-link',
@@ -344,7 +344,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                     api_reverse_lazy('core/orders')
                 ),
                 'field': 'orders_count',
-                'action': 'openList',
+                'action': constants.DEFAULT_ACTION_LIST,
             }),
         },
         {
@@ -382,7 +382,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'field': 'primary_contact.contact.phone_mobile',
             }, {
                 'type': constants.FIELD_BUTTON,
-                'action': 'sendSMS',
+                'action': constants.DEFAULT_ACTION_SEND_SMS,
                 'text': _('SMS'),
                 'icon': 'fa-commenting',
                 'fields': ('primary_contact.contact.phone_mobile',)
@@ -416,7 +416,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'endpoint': api_reverse_lazy('core/companyaddresses',
                                              'log'),
                 'text': _('Open Journal'),
-                'action': 'openList',
+                'action': constants.DEFAULT_ACTION_LIST,
                 'field': 'id',
             },),
         }
@@ -478,7 +478,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
         list_filter = ['company', 'primary_contact.contact', {
             'type': constants.FIELD_SELECT,
             'field': 'active_states',
-            'choices': lazy(states_part, list)(),
+            'choices': lazy(states_part, list),
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'portfolio_manager',
@@ -860,7 +860,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                 },
                 {
                     'type': constants.FIELD_BUTTON,
-                    'action': 'sendSMS',
+                    'action': constants.DEFAULT_ACTION_SEND_SMS,
                     'text': _('SMS'),
                     'icon': 'fa-commenting',
                     'fields': ('contact.phone_mobile',)
@@ -903,7 +903,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                 '{}?is_manager=3',
                 api_reverse_lazy('core/companycontacts')
             ),
-        },]
+        }]
 
     @bulk_action(method='POST', text=_('Send sms'), confirm=False)
     def sendsms(self, request, *args, **kwargs):
