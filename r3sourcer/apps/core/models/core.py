@@ -35,7 +35,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.logger.main import endless_logger
-from r3sourcer.apps.company_settings.models import CompanySettings
+from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..utils.user import get_default_company
@@ -947,9 +947,13 @@ class Company(
         )
 
     def save(self, *args, **kwargs):
-        if not self.company_settings:
-            self.company_settings = CompanySettings.objects.create()
         super(Company, self).save(*args, **kwargs)
+
+        if not hasattr(self, 'company_settings'):
+            CompanySettings.objects.create(company=self)
+
+        if not hasattr(self, 'myob_settings'):
+            MYOBSettings.objects.create(company=self)
 
 
 class CompanyRel(

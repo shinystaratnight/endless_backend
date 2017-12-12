@@ -8,7 +8,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import force_authenticate
 
-from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings, MYOBAccount
+from r3sourcer.apps.company_settings.models import CompanySettings, MYOBAccount
 from r3sourcer.apps.company_settings.views import CompanyGroupListView, CompanyGroupCreateView
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core.models import User, CompanyContact, CompanyContactRelationship, InvoiceRule
@@ -17,21 +17,13 @@ from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MY
 
 
 class TestCompanySettingsView:
-    def test_get_company_settings(self, client, company, user, invoice_rule, payslip_rule, myob_account):
+    def test_get_company_settings(self, client, company, user, invoice_rule, payslip_rule):
         company_settings = company.company_settings
         company_settings.logo = '/logo/url'
         company_settings.color_scheme = 'color_scheme'
         company_settings.font = 'font'
         company_settings.forwarding_number = '+12345678901'
         company_settings.save()
-        account_set = company_settings.account_set
-        account_set.subcontractor_contract_work = myob_account
-        account_set.subcontractor_gst = myob_account
-        account_set.candidate_wages = myob_account
-        account_set.candidate_superannuation = myob_account
-        account_set.company_client_labour_hire = myob_account
-        account_set.company_client_gst = myob_account
-        account_set.save()
         url = reverse('company_settings', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url)
@@ -48,14 +40,8 @@ class TestCompanySettingsView:
         assert response.data['invoice_rule']['show_candidate_name'] == invoice_rule.show_candidate_name
         assert response.data['invoice_rule']['id'] == str(invoice_rule.id)
         assert response.data['invoice_rule']['period'] == invoice_rule.period
-        assert response.data['account_set']['subcontractor_contract_work']['id'] == account_set.subcontractor_contract_work.id
-        assert response.data['account_set']['subcontractor_gst']['id'] == account_set.subcontractor_gst.id
-        assert response.data['account_set']['candidate_wages']['id'] == account_set.candidate_wages.id
-        assert response.data['account_set']['candidate_superannuation']['id'] == account_set.candidate_superannuation.id
-        assert response.data['account_set']['company_client_labour_hire']['id'] == account_set.company_client_labour_hire.id
-        assert response.data['account_set']['company_client_gst']['id'] == account_set.company_client_gst.id
 
-    def test_update_company_settings(self, client, company, user, invoice_rule, payslip_rule, myob_account):
+    def test_update_company_settings(self, client, company, user, invoice_rule, payslip_rule):
         data = {
             'payslip_rule': {
                 'period': 'fortnightly'
@@ -66,26 +52,6 @@ class TestCompanySettingsView:
             'invoice_rule': {
                 'period': 'fortnightly'
             },
-            'account_set': {
-                'subcontractor_contract_work': {
-                    'id': myob_account.id,
-                },
-                'subcontractor_gst': {
-                    'id': myob_account.id,
-                },
-                'candidate_wages': {
-                    'id': myob_account.id,
-                },
-                'candidate_superannuation': {
-                    'id': myob_account.id,
-                },
-                'company_client_labour_hire': {
-                    'id': myob_account.id,
-                },
-                'company_client_gst': {
-                    'id': myob_account.id,
-                }
-            }
         }
         url = reverse('company_settings', kwargs={'version': 'v2'})
         client.force_login(user)
@@ -93,7 +59,6 @@ class TestCompanySettingsView:
         payslip_rule_new = PayslipRule.objects.get(id=payslip_rule.id)
         invoice_rule_new = InvoiceRule.objects.get(id=invoice_rule.id)
         company_settings_new = CompanySettings.objects.get(id=company.company_settings.id)
-        account_set_new = MYOBSettings.objects.get(id=company.company_settings.account_set.id)
 
         assert response.status_code == status.HTTP_200_OK
         assert invoice_rule.period != invoice_rule_new.period
@@ -102,23 +67,39 @@ class TestCompanySettingsView:
         assert invoice_rule_new.period == data['invoice_rule']['period']
         assert payslip_rule_new.period == data['payslip_rule']['period']
         assert company_settings_new.font == data['company_settings']['font']
-        assert account_set_new.subcontractor_contract_work == myob_account
-        assert account_set_new.subcontractor_gst == myob_account
-        assert account_set_new.candidate_wages == myob_account
-        assert account_set_new.candidate_superannuation == myob_account
-        assert account_set_new.company_client_labour_hire == myob_account
-        assert account_set_new.company_client_gst == myob_account
 
 
 class TestCompanyFileAccountsView:
     def test_get_myob_account_list(self, client, user, company_file):
-        account1 = MYOBAccount.objects.create(number='1-1000',
-                                              name='Test Expense Account',
-                                              type='expense',
+        account1 = MYOBAccount.objects.create(uid="d3edc1d7-7b31-437e-9fcd-000000000002",
+                                              name='Business Bank Account',
+                                              display_id='1-1120',
+                                              classification="Asset",
+                                              type='Bank',
+                                              number='1120',
+                                              description="Bank account",
+                                              is_active=True,
+                                              level=4,
+                                              opening_balance=10000.00,
+                                              current_balance=5000.00,
+                                              is_header=False,
+                                              uri="/GeneralLedger/Account/eb043b43-1d66-472b-a6ee-ad48def81b96",
+                                              row_version="5548997690873872384",
                                               company_file=company_file)
-        account2 = MYOBAccount.objects.create(number='2-2000',
-                                              name='Test Income Account',
-                                              type='income',
+        account2 = MYOBAccount.objects.create(uid="d3edc1d7-7b31-437e-9fcd-000000000003",
+                                              name='Business Bank Account',
+                                              display_id='1-1120',
+                                              classification="Asset",
+                                              type='Bank',
+                                              number='1120',
+                                              description="Bank account",
+                                              is_active=True,
+                                              level=4,
+                                              opening_balance=10000.00,
+                                              current_balance=5000.00,
+                                              is_header=False,
+                                              uri="/GeneralLedger/Account/eb043b43-1d66-472b-a6ee-ad48def81b96",
+                                              row_version="5548997690873872384",
                                               company_file=company_file)
         url = reverse('company_file_accounts', kwargs={'version': 'v2', 'id': company_file.id})
         client.force_login(user)
@@ -138,13 +119,23 @@ class TestCompanyFileAccountsView:
 class TestMYOBAuthorizationView:
     @pytest.mark.django_db
     @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBAuth.retrieve_access_token')
-    def test_authorization_success(self, mocked_function, client):
+    def test_authorization_success(self, mocked_function, client, user):
+        mocked_function.return_value = {
+            'access_token': 'access_token',
+            'refresh_token': 'refresh_token',
+            'expires_in': 1000,
+            'user': {
+                'uid': 'uid',
+                'username': 'username'
+            }
+        }
         data = {
             'api_key': 'qwe',
             'api_secret': 'api_secret',
             'redirect_uri': 'redirect_uri',
         }
         url = reverse('myob_authorization', kwargs={'version': 'v2'}) + "?code=code"
+        client.force_login(user)
         response = client.post(url, data=data)
 
         assert response.status_code == status.HTTP_200_OK
@@ -487,3 +478,69 @@ class TestCheckCompanyFilesView:
 
         assert check_company_file.called
         assert MYOBCompanyFile.objects.get(cf_id=company_file_token.company_file.cf_id).authenticated
+
+
+# TODO
+class TestMYOBAccountsSyncView:
+    def test_myob_settings(self, user, client):
+        url = reverse('myob_accounts_sync', kwargs={'version': 'v2'})
+        client.force_login(user)
+        import pdb; pdb.set_trace()
+        response = client.get(url)
+
+
+# TODO
+class TestMYOBSettingsView:
+    def test_myob_settings_get(self, user, client, manager, company, myob_account):
+        company.myob_settings.subcontractor_contract_work = myob_account
+        company.myob_settings.subcontractor_gst = myob_account
+        company.myob_settings.candidate_wages = myob_account
+        company.myob_settings.candidate_superannuation = myob_account
+        company.myob_settings.company_client_labour_hire = myob_account
+        company.myob_settings.company_client_gst = myob_account
+        company.myob_settings.save()
+        serialized_account = {'id': 1, 'type': 'Bank', 'number': '1120', 'name': 'Business Bank Account'}
+
+        url = reverse('myob_settings', kwargs={'version': 'v2'})
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert response['myob_settings']['subcontractor_contract_work'] == serialized_account
+        assert response['myob_settings']['subcontractor_gst'] == serialized_account
+        assert response['myob_settings']['candidate_wages'] == serialized_account
+        assert response['myob_settings']['candidate_superannuation'] == serialized_account
+        assert response['myob_settings']['company_client_labour_hire'] == serialized_account
+        assert response['myob_settings']['company_client_gst'] == serialized_account
+
+    def test_myob_settings_post(self, user, client, manager, company, company_file):
+        now = timezone.now()
+        account = MYOBAccount.objects.create(uid="d3edc1d7-7b31-437e-9fcd-000000000002",
+                                             name='Business Bank Account',
+                                             display_id='1-1120',
+                                             classification="Asset",
+                                             type='Bank',
+                                             number='1120',
+                                             description="Bank account",
+                                             is_active=True,
+                                             level=4,
+                                             opening_balance=10000.00,
+                                             current_balance=5000.00,
+                                             is_header=False,
+                                             uri="/GeneralLedger/Account/eb043b43-1d66-472b-a6ee-ad48def81b96",
+                                             row_version="5548997690873872384",
+                                             company_file=company_file)
+        data = {
+            'subcontractor_contract_work': account.pk,
+            'subcontractor_gst': account.pk,
+            'candidate_wages': account.pk,
+            'candidate_superannuation': account.pk,
+            'company_client_labour_hire': account.pk,
+            'company_client_gst': account.pk,
+            'payroll_accounts_last_refreshed': str(now),
+            'company_files_last_refreshed': str(now),
+        }
+        url = reverse('myob_settings', kwargs={'version': 'v2'})
+        client.force_login(user)
+        response = client.post(url, data=json.dumps(data), content_type='application/json')
+
+        import pdb; pdb.set_trace()

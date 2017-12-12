@@ -470,25 +470,25 @@ class CompanyAddressEndpoint(ApiEndpoint):
 
     ordering_mapping = {'company': 'company.name'}
 
-    # FIXME: change to real filters
-    def get_list_filter(self):
-        states_part = partial(
-            models.WorkflowNode.get_model_all_states, models.CompanyRel
-        )
-        list_filter = ['company', 'primary_contact.contact', {
-            'type': constants.FIELD_SELECT,
-            'field': 'active_states',
-            'choices': lazy(states_part, list)(),
-        }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'portfolio_manager',
-            'endpoint': api_reverse_lazy('core/companycontacts'),
-        }, {
-            'field': 'updated_at',
-            'type': constants.FIELD_DATE,
-        }]
-
-        return list_filter
+    # # FIXME: change to real filters
+    # def get_list_filter(self):
+    #     states_part = partial(
+    #         models.WorkflowNode.get_model_all_states, models.CompanyRel
+    #     )
+    #     list_filter = ['company', 'primary_contact.contact', {
+    #         'type': constants.FIELD_SELECT,
+    #         'field': 'active_states',
+    #         'choices': lazy(states_part, list)(),
+    #     }, {
+    #         'type': constants.FIELD_RELATED,
+    #         'field': 'portfolio_manager',
+    #         'endpoint': api_reverse_lazy('core/companycontacts'),
+    #     }, {
+    #         'field': 'updated_at',
+    #         'type': constants.FIELD_DATE,
+    #     }]
+    #
+    #     return list_filter
 
     # FIXME: add/change to real actions
     @bulk_action(method='POST', text=_('Delete selected'))

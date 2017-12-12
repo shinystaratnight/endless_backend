@@ -326,13 +326,6 @@ class MYOBAuth(object):
         return resp_data
 
     def refresh_access_token(self, data=None, persist=True):
-        print("   +++++++++++      REFRESH      ++++++++++++")
-        print("access_token     ", self.auth_data.access_token)
-        print("expires_in     ", self.auth_data.expires_in)
-        print("refresh_token     ", self.auth_data.refresh_token)
-        print("data     ", data)
-        print("   ++++++++++++++++++++++++++++++++++++++++++")
-
         if not data:
             data = {
                 'client_id': self.get_api_key(),
@@ -347,28 +340,15 @@ class MYOBAuth(object):
         log.info('%s %s', resp.status_code, resp.content)
 
         resp_data = resp.json(parse_float=decimal.Decimal)
-        print("resp data    ", resp_data)
         expires_at = int(resp_data['expires_in'])  # value in seconds
         expires_at = now + datetime.timedelta(seconds=expires_at)
         expires_at = date_format(expires_at, settings.DATETIME_MYOB_FORMAT)
-
-        # self.set_attr('access_token', resp_data['access_token'])
-        # self.set_attr('refresh_token', resp_data['refresh_token'])
-        # self.set_attr('expires_in', resp_data['expires_in'])
-        # self.set_attr('expires_at', expires_at)
 
         self.auth_data.access_token = resp_data['access_token']
         self.auth_data.refresh_token = resp_data['refresh_token']
         self.auth_data.expires_in = resp_data['expires_in']
         self.auth_data.expires_at = expires_at
         self.auth_data.save()
-
-        print("-------------------------------------")
-        print("new access_token     ", self.auth_data.access_token)
-        print("new expires_in     ", self.auth_data.expires_in)
-        print("new refresh_token     ", self.auth_data.refresh_token)
-        print("-------------------------------------")
-
         return resp
 
 
@@ -398,13 +378,6 @@ class MYOBClient(object):
         url = '%s/GeneralLedger/Account' % company_file_url
         headers = self.get_headers()
         headers['x-myobapi-cftoken'] = company_file_token
-        print("+++")
-        print("+++")
-        print("url  ", url)
-        print("company_file_token  ", company_file_token)
-        print("headers  ", headers)
-        print("+++")
-        print("+++")
         resp = self.api_request('get', url, headers=headers)
         return resp
 
@@ -414,8 +387,7 @@ class MYOBClient(object):
         cf_token = self.encode_cf_token(username, password)
         headers['x-myobapi-cftoken'] = cf_token
         resp = self.api_request('get', url, headers=headers)
-        # return resp.status_code == 200
-        return resp
+        return resp.status_code == 200
 
     def get_api_url(self):
         return self.MYOB_API_URL
@@ -514,16 +486,25 @@ class MYOBClient(object):
     def api_request(self, method, url, **kwargs):
         r = myob_request(method, url, **kwargs)
 
+        print("request status_code  ", r.status_code)
+        print("request json  ", r.json())
+
         if r.status_code == 401:
             data = r.json()
             if isinstance(data, dict) and 'Errors' in data:
                 for e in data['Errors']:
                     if e['ErrorCode'] == 31001:  # OAuthTokenIsInvalid
+                        print("  ---  shas budet refresh eba")
                         self.refresh()
+                        print("  ---  refresh proshel")
                         # TODO: use some request limit
                         kwargs['headers'] = self.get_headers()
-                        return self.api_request(method, url, **kwargs)
-
+                        # return self.api_request(method, url, **kwargs)
+                        response = myob_request(method, url, **kwargs)
+                        print("     =====     RESPONSE AFTER REFRESH")
+                        print("   response status code   ", response.status_code)
+                        print("   response json   ", response.json())
+                        return response
         return r
 
     def api_call(self, method, uri, **kwargs):

@@ -257,13 +257,6 @@ class CompanySettingsView(APIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
-        if 'account_set' in self.request.data:
-            serializer = serializers.MYOBSettingsSerializer(company.company_settings.account_set,
-                                                          data=self.request.data['account_set'],
-                                                          partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-
         return Response()
 
 
@@ -363,8 +356,7 @@ class CheckCompanyFilesView(APIView):
         company_file = MYOBCompanyFile.objects.get(cf_id=company_file_id)
         auth_data = request.user.auth_data.latest('created')
         client = MYOBClient(auth_data=auth_data)
-        response = client.check_company_file(company_file_id, username, password)
-        is_valid = response.status_code == 200
+        is_valid = client.check_company_file(company_file_id, username, password)
         company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created')
         company_file_token.cf_token = client.encode_cf_token(username, password)
         company_file_token.save()
@@ -377,7 +369,7 @@ class CheckCompanyFilesView(APIView):
         return Response(data)
 
 
-class MYOBAccountSyncView(APIView):
+class MYOBAccountsSyncView(APIView):
     """
     Fetches all accounts of all user's company's company files from MYOB API and saves it into database
     """
@@ -390,7 +382,14 @@ class MYOBAccountSyncView(APIView):
                 continue
 
             company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created').cf_token
-            accounts = client.get_accounts(company_file.cf_id, company_file_token).json()['Items']
+            accounts = client.get_accounts(company_file.cf_id, company_file_token).json()
+
+            # TODO: remove it
+            print("++++++++++++++++++++++++")
+            print(accounts)
+            print("++++++++++++++++++++++++")
+
+            accounts = accounts['Items']
 
             for account in accounts:
                 MYOBAccount.objects.update_or_create(uid=account['UID'],
@@ -412,12 +411,7 @@ class MYOBAccountSyncView(APIView):
                     }
                 )
 
-        data = {
-            "response": accounts
-        }
-
-        # TODO: update last_refreshed
-        return Response(data)
+        return Response()
 
 
 class MYOBSettingsView(APIView):
@@ -427,9 +421,23 @@ class MYOBSettingsView(APIView):
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
 
-        account_set = company.company_settings.account_set
-        account_set_serializer = serializers.MYOBSettingsSerializer(account_set)
+        myob_settings = company.myob_settings
+        myob_settings_serializer = serializers.MYOBSettingsSerializer(myob_settings)
         data = {
-            "account_set": account_set_serializer.data
+            "myob_settings": myob_settings_serializer.data
         }
         return Response(data)
+
+    def post(self, *args, **kwargs):
+        company = self.request.user.contact.company_contact.first().companies.first()
+
+        if not company:
+            raise exceptions.APIException("User has no relation to any company.")
+
+        serializer = serializers.MYOBSettingsSerializer(company.myob_settings,
+                                                       data=self.request.data['myob_settings'],
+                                                       partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response()

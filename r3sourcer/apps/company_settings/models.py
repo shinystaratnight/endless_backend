@@ -9,7 +9,6 @@ class CompanySettings(models.Model):
     color_scheme = models.CharField(null=True, blank=True, max_length=32)
     font = models.CharField(null=True, blank=True, max_length=32)
     forwarding_number = models.CharField(null=True, blank=True, max_length=32)
-    account_set = models.OneToOneField('MYOBSettings', blank=True, null=True, related_name='company_settings')
 
 
 class MYOBAccount(models.Model):
@@ -45,6 +44,10 @@ class MYOBSettings(models.Model):
     # Income accounts
     company_client_labour_hire = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='company_client_labour_hire')
     company_client_gst = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='company_client_gst')
+
+    # Last refreshed
+    payroll_accounts_last_refreshed = models.DateTimeField(blank=True, null=True)
+    company_files_last_refreshed = models.DateTimeField(blank=True, null=True)
 
 
 class GlobalPermissionManager(models.Manager):

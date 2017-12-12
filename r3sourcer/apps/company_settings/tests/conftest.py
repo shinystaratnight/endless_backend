@@ -93,11 +93,23 @@ def invoice_rule(db, company):
 
 
 @pytest.fixture
-def myob_account(db):
+def myob_account(db, company_file):
     return MYOBAccount.objects.create(
-        number='2-2000',
-        name='Test Income Account',
-        type='income'
+        uid="d3edc1d7-7b31-437e-9fcd-000000000001",
+        name='Business Bank Account',
+        display_id='1-1120',
+        classification="Asset",
+        type='Bank',
+        number='1120',
+        description="Bank account",
+        is_active=True,
+        level=4,
+        opening_balance=10000.00,
+        current_balance=5000.00,
+        is_header=False,
+        uri="/GeneralLedger/Account/eb043b43-1d66-472b-a6ee-ad48def81b96",
+        row_version="5548997690873872384",
+        company_file=company_file
     )
 
 
@@ -111,7 +123,7 @@ def company_file(db):
 
 
 @pytest.fixture
-def auth_data(db):
+def auth_data(db, user):
     return MYOBAuthData.objects.create(
         client_id='client_id',
         client_secret='client_secret',
@@ -120,6 +132,7 @@ def auth_data(db):
         myob_user_uid='myob_user_uid',
         myob_user_username='myob_user_username',
         expires_in=1000,
+        user=user
     )
 
 

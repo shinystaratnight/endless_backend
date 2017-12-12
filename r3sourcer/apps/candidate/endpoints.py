@@ -326,20 +326,20 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         'contact__address__street_address',
     )
 
-    def get_list_filter(self):
-        states_part = partial(
-            core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
-        )
-        list_filter = [{
-            'type': constants.FIELD_SELECT,
-            'field': 'active_states',
-            'choices': lazy(states_part, list)(),
-        }, 'contact.gender', 'transportation_to_work', {
-            'field': 'created_at',
-            'type': constants.FIELD_DATE,
-        }]
-
-        return list_filter
+    # def get_list_filter(self):
+    #     states_part = partial(
+    #         core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
+    #     )
+    #     list_filter = [{
+    #         'type': constants.FIELD_SELECT,
+    #         'field': 'active_states',
+    #         'choices': lazy(states_part, list)(),
+    #     }, 'contact.gender', 'transportation_to_work', {
+    #         'field': 'created_at',
+    #         'type': constants.FIELD_DATE,
+    #     }]
+    #
+    #     return list_filter
 
     @bulk_action(method='POST', text=_('Send sms'), confirm=False, reload=False)
     def sendsms(self, request, *args, **kwargs):
