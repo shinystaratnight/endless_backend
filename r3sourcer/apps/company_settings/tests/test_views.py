@@ -17,7 +17,7 @@ from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MY
 
 
 class TestCompanySettingsView:
-    def test_get_company_settings(self, client, company, user, invoice_rule, payslip_rule, myob_account):
+    def _get_company_settings(self, client, company, user, invoice_rule, payslip_rule, myob_account):
         company_settings = company.company_settings
         company_settings.logo = '/logo/url'
         company_settings.color_scheme = 'color_scheme'
@@ -54,6 +54,46 @@ class TestCompanySettingsView:
         assert response.data['account_set']['candidate_superannuation']['id'] == account_set.candidate_superannuation.id
         assert response.data['account_set']['company_client_labour_hire']['id'] == account_set.company_client_labour_hire.id
         assert response.data['account_set']['company_client_gst']['id'] == account_set.company_client_gst.id
+
+    def test_get_company_settings_as_manager(self, client, company, user, invoice_rule, payslip_rule, myob_account):
+        company_contact = user.contact.company_contact.first()
+        company_contact.role = 'manager'
+        company_contact.save()
+        CompanyContactRelationship.objects.create(
+            company_contact=company_contact,
+            company=company
+        )
+        assert user.is_manager()
+        self._get_company_settings(client, company, user, invoice_rule, payslip_rule, myob_account)
+
+    def test_get_company_settings_as_client(self, client, company, user, invoice_rule, payslip_rule, myob_account, ):
+        company_contact = user.contact.company_contact.first()
+        company_contact.role = 'client'
+        company_contact.save()
+        CompanyContactRelationship.objects.create(
+            company_contact=company_contact,
+            company=company
+        )
+        assert user.is_client()
+        self._get_company_settings(client, company, user, invoice_rule, payslip_rule, myob_account)
+
+    def test_get_company_settings_as_candidate(self, client, company, user, invoice_rule, payslip_rule, myob_account, candidate_contact, candidate_rel):
+        assert user.is_candidate()
+        self._get_company_settings(client, company, user, invoice_rule, payslip_rule, myob_account)
+
+    def test_get_company_settings_as_unknown_role(self, user, client):
+        url = reverse('company_settings', kwargs={'version': 'v2'})
+        client.force_login(user)
+        response = client.get(url)
+
+        assert response.json()['errors']['detail'] == "Unknown user's role."
+
+    def test_get_company_settings_as_user_without_company(self, manager, client):
+        url = reverse('company_settings', kwargs={'version': 'v2'})
+        client.force_login(manager.contact.user)
+        response = client.get(url)
+
+        assert response.json()['errors']['detail'] == 'User has no relation to any company.'
 
     def test_update_company_settings(self, client, company, user, invoice_rule, payslip_rule, myob_account):
         data = {

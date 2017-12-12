@@ -85,6 +85,32 @@ class TestUser:
     def test_user_get_short_name(self, user):
         assert user.get_short_name() == str(user)
 
+    def test_get_company_as_manager(self, user, manager, company):
+        company_contact = user.contact.company_contact.first()
+        company_contact.role = 'manager'
+        company_contact.save()
+        CompanyContactRelationship.objects.create(
+            company_contact=company_contact,
+            company=company
+        )
+        assert user.is_manager()
+        assert user.company == company
+
+    def test_get_company_as_client(self, user, company):
+        company_contact = user.contact.company_contact.first()
+        company_contact.role = 'client'
+        company_contact.save()
+        CompanyContactRelationship.objects.create(
+            company_contact=company_contact,
+            company=company
+        )
+        assert user.is_client()
+        assert user.company == company
+
+    def test_get_company_as_candidate(self, user, candidate_contact, candidate_rel, company):
+        assert user.is_candidate()
+        assert user.company == company
+
 
 @pytest.mark.django_db
 class TestContact:
