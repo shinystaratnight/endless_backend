@@ -1,25 +1,20 @@
 import binascii
 import copy
-
 import pytest
-from unittest.mock import patch
 
+from unittest.mock import patch
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.management import call_command
 from django.core.files.base import ContentFile
 
-from r3sourcer.apps.core.models import (
-    User, Address, CompanyContact, Company, CompanyRel, City, Region, Country,
-    Order, Contact, CompanyContactRelationship, CompanyAddress, Invoice,
-    InvoiceRule, SiteCompany,
-    Workflow, WorkflowNode, DashboardModule, UserDashboardModule
-)
+from r3sourcer.apps.candidate.models import CandidateContact, CandidateRel
+from r3sourcer.apps.core import models
 
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(
+    return models.User.objects.create_user(
         email='test@test.tt', phone_mobile='+12345678901',
         password='test1234'
     )
@@ -27,7 +22,7 @@ def user(db):
 
 @pytest.fixture
 def primary_user(db):
-    return User.objects.create_user(
+    return models.User.objects.create_user(
         email='primary@test.tt', phone_mobile='+12345678921',
         password='primary1234'
     )
@@ -35,7 +30,7 @@ def primary_user(db):
 
 @pytest.fixture
 def staff_user(db):
-    return User.objects.create_user(
+    return models.User.objects.create_user(
         email='staff@test.tt', phone_mobile='+12345123451',
         password='staff-user'
     )
@@ -43,7 +38,7 @@ def staff_user(db):
 
 @pytest.fixture
 def superuser(db):
-    return User.objects.create_superuser(
+    return models.User.objects.create_superuser(
         email='test@test.tt', phone_mobile='+12345678901',
         password='test1234'
     )
@@ -52,11 +47,11 @@ def superuser(db):
 @pytest.fixture
 @patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(42, 42))
 def addresses(mock_fetch, db):
-    country = Country.objects.get(code2='AU')
-    state = Region.objects.create(name='test', country=country)
-    city = City.objects.create(name='city', country=country)
+    country = models.Country.objects.get(code2='AU')
+    state = models.Region.objects.create(name='test', country=country)
+    city = models.City.objects.create(name='city', country=country)
     return [
-        Address.objects.create(
+        models.Address.objects.create(
             street_address='street%d' % i, city=city,
             postal_code='111%d' % i,
             state=state, country=country
@@ -90,30 +85,30 @@ def contact(db, user, contact_data, contact_address):
 
 @pytest.fixture
 def manager(db, contact):
-    return CompanyContact.objects.create(contact=contact)
+    return models.CompanyContact.objects.create(contact=contact)
 
 
 @pytest.fixture
 def primary_company_contact(db, primary_user):
-    return CompanyContact.objects.create(contact=primary_user.contact)
+    return models.CompanyContact.objects.create(contact=primary_user.contact)
 
 
 @pytest.fixture
 def staff_company_contact(db, staff_user):
-    return CompanyContact.objects.create(contact=staff_user.contact)
+    return models.CompanyContact.objects.create(contact=staff_user.contact)
 
 
 @pytest.fixture
 def company_other(db, manager, addresses):
-    comp = Company.objects.create(
+    comp = models.Company.objects.create(
         name='Company',
         business_id='111',
         registered_for_gst=True,
         manager=manager,
-        type=Company.COMPANY_TYPES.master,
+        type=models.Company.COMPANY_TYPES.master,
     )
 
-    CompanyAddress.objects.create(
+    models.CompanyAddress.objects.create(
         company=comp,
         address=addresses[1],
         name='Test',
@@ -124,18 +119,18 @@ def company_other(db, manager, addresses):
 
 @pytest.fixture
 def company_regular(db, manager):
-    return Company.objects.create(
+    return models.Company.objects.create(
         name='Company regular',
         business_id='222',
         registered_for_gst=True,
         manager=manager,
-        type=Company.COMPANY_TYPES.regular,
+        type=models.Company.COMPANY_TYPES.regular,
     )
 
 
 @pytest.fixture
 def company_address_regular(db, manager, addresses, company_regular):
-    return CompanyAddress.objects.create(
+    return models.CompanyAddress.objects.create(
         company=company_regular,
         address=addresses[1],
         name='Test regular',
@@ -144,18 +139,18 @@ def company_address_regular(db, manager, addresses, company_regular):
 
 @pytest.fixture
 def company(db, manager):
-    return Company.objects.create(
+    return models.Company.objects.create(
         name='Company',
         business_id='111',
         registered_for_gst=True,
         manager=manager,
-        type=Company.COMPANY_TYPES.master,
+        type=models.Company.COMPANY_TYPES.master,
     )
 
 
 @pytest.fixture
 def company_address(db, manager, addresses, company):
-    return CompanyAddress.objects.create(
+    return models.CompanyAddress.objects.create(
         company=company,
         address=addresses[2],
         name='Test',
@@ -172,14 +167,14 @@ def workflow_ct(db):
 
 
 def prefill_workflow():
-    company = Company.objects.create(
+    company = models.Company.objects.create(
         name='New C',
         business_id='123',
         registered_for_gst=True,
-        type=Company.COMPANY_TYPES.master,
+        type=models.Company.COMPANY_TYPES.master,
     )
     content_type, created = ContentType.objects.get_or_create(app_label="core", model="workflowprocess")
-    workflow, created = Workflow.objects.get_or_create(name="test_workflow", model=content_type)
+    workflow, created = models.Workflow.objects.get_or_create(name="test_workflow", model=content_type)
     data = [
         {"active": [0], "required_states": ["and", 40]},
         {"active": [10], "required_states": None},
@@ -198,10 +193,10 @@ def prefill_workflow():
 
     counter = 0
     for rule in data:
-        WorkflowNode.objects.get_or_create(number=counter * 10,
-                                           name_before_activation="State " + str(counter * 10),
-                                           workflow=workflow, company=company,
-                                           rules=rule, hardlock=True)
+        models.WorkflowNode.objects.get_or_create(number=counter * 10,
+                                                  name_before_activation="State " + str(counter * 10),
+                                                  workflow=workflow, company=company,
+                                                  rules=rule, hardlock=True)
         counter += 1
 
 
@@ -215,7 +210,7 @@ def django_db_setup(django_db_setup, django_db_blocker):
 
 @pytest.fixture
 def company_rel(db, company, company_regular, primary_company_contact):
-    return CompanyRel.objects.create(
+    return models.CompanyRel.objects.create(
         master_company=company,
         regular_company=company_regular,
         primary_contact=primary_company_contact
@@ -224,7 +219,7 @@ def company_rel(db, company, company_regular, primary_company_contact):
 
 @pytest.fixture
 def staff_relationship(db, staff_company_contact, company):
-    return CompanyContactRelationship.objects.create(
+    return models.CompanyContactRelationship.objects.create(
         company_contact=staff_company_contact,
         company=company,
     )
@@ -255,8 +250,8 @@ def contact_data(faker, contact_phone, picture):
         last_name=faker.last_name(),
         email=faker.email(),
         phone_mobile=contact_phone,
-        gender=Contact._meta.get_field('gender').choices[0][0],
-        marital_status=Contact.MARITAL_STATUS_CHOICES.Single,
+        gender=models.Contact._meta.get_field('gender').choices[0][0],
+        marital_status=models.Contact.MARITAL_STATUS_CHOICES.Single,
         birthday=faker.date_time_this_year().date(),
         spouse_name=faker.name(),
         children=0,
@@ -267,34 +262,34 @@ def contact_data(faker, contact_phone, picture):
 
 @pytest.fixture
 def order(db, company, manager):
-    customer_company = Company.objects.create(
+    customer_company = models.Company.objects.create(
         name='CustomerCompany',
         business_id='222',
         registered_for_gst=True,
         manager=manager
     )
 
-    return Order.objects.create(customer_company=customer_company, provider_company=company)
+    return models.Order.objects.create(customer_company=customer_company, provider_company=company)
 
 
 @pytest.fixture
 def country(db):
-    return Country.objects.get(code2='AU')
+    return models.Country.objects.get(code2='AU')
 
 
 @pytest.fixture
 def city(db, country):
-    return City.objects.filter(country=country).order_by('name').first()
+    return models.City.objects.filter(country=country).order_by('name').first()
 
 
 @pytest.fixture
 def region(db, city):
-    return Region.objects.get(pk=city.region.pk)
+    return models.Region.objects.get(pk=city.region.pk)
 
 
 @pytest.fixture
 def invoice(db, company, company_regular):
-    return Invoice.objects.create(
+    return models.Invoice.objects.create(
         provider_company=company,
         customer_company=company_regular,
         total_with_tax=20,
@@ -306,7 +301,7 @@ def invoice(db, company, company_regular):
 
 @pytest.fixture
 def invoice_rule(db, company):
-    return InvoiceRule.objects.create(
+    return models.InvoiceRule.objects.create(
         company=company,
         serial_number='TEST',
         starting_number=100,
@@ -325,7 +320,7 @@ def site(db):
 
 @pytest.fixture
 def site_company(db, site, company):
-    return SiteCompany.objects.create(
+    return models.SiteCompany.objects.create(
         company=company,
         site=site
     )
@@ -333,7 +328,7 @@ def site_company(db, site, company):
 
 @pytest.fixture
 def site_regular_company(db, site, company_regular):
-    return SiteCompany.objects.create(
+    return models.SiteCompany.objects.create(
         company=company_regular,
         site=site
     )
@@ -341,30 +336,53 @@ def site_regular_company(db, site, company_regular):
 
 @pytest.fixture
 def dashboard_modules(db):
-    return DashboardModule.objects.bulk_create([
-        DashboardModule(
-            content_type=ContentType.objects.get_for_model(CompanyContact),
+    return models.DashboardModule.objects.bulk_create([
+        models.DashboardModule(
+            content_type=ContentType.objects.get_for_model(models.CompanyContact),
             is_active=True
         ),
-        DashboardModule(
-            content_type=ContentType.objects.get_for_model(CompanyAddress),
+        models.DashboardModule(
+            content_type=ContentType.objects.get_for_model(models.CompanyAddress),
             is_active=True
         ),
-        DashboardModule(
-            content_type=ContentType.objects.get_for_model(Company),
+        models.DashboardModule(
+            content_type=ContentType.objects.get_for_model(models.Company),
             is_active=True
         ),
-        DashboardModule(
-            content_type=ContentType.objects.get_for_model(SiteCompany),
+        models.DashboardModule(
+            content_type=ContentType.objects.get_for_model(models.SiteCompany),
             is_active=False
         ),
     ])
 
 
 @pytest.fixture
-def user_dashboard_module(db, dashboard_modules, primary_company_contact):
-    return UserDashboardModule.objects.create(
-        company_contact=primary_company_contact,
+def company_contact(db, contact):
+    return models.CompanyContact.objects.create(
+        contact=contact
+    )
+
+
+@pytest.fixture
+def user_dashboard_module(db, dashboard_modules, company_contact):
+    return models.UserDashboardModule.objects.create(
+        company_contact=company_contact,
         dashboard_module=dashboard_modules[0],
         position=0
+    )
+
+
+@pytest.fixture
+def candidate_contact(db, contact):
+    return CandidateContact.objects.create(
+        contact=contact
+    )
+
+
+@pytest.fixture
+def candidate_rel(db, candidate_contact, company, company_contact):
+    return CandidateRel.objects.create(
+        candidate_contact=candidate_contact,
+        master_company=company,
+        company_contact=company_contact,
     )

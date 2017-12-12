@@ -20,6 +20,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
+from rest_framework.exceptions import APIException
 
 from cities_light.abstract_models import (
     AbstractCity, AbstractRegion, AbstractCountry
@@ -435,7 +436,15 @@ class User(UUIDModel,
 
     @property
     def company(self):
-        return self.contact.company_contact.first().companies.first()
+        try:
+            if self.is_candidate():
+                return self.contact.candidate_contacts.candidate_rels.first().master_company
+            elif self.is_client() or self.is_manager():
+                return self.contact.company_contact.first().relationships.first().company
+            else:
+                raise APIException("Unknown user's role.")
+        except AttributeError:
+            return None
 
     @property
     def company_files(self):

@@ -17,7 +17,6 @@ from r3sourcer.apps.hr.models import (
     PayslipRule
 )
 from r3sourcer.apps.skills.models import Skill
-from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.pricing.models import (
     Industry, IndustryPriceList, IndustryPriceListRate, PriceList,
     PriceListRate, RateCoefficient, RateCoefficientModifier, AllowanceWorkRule,
