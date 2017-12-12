@@ -48,6 +48,7 @@ class VacancyOfferEndpoint(ApiEndpoint):
     model = hr_models.VacancyOffer
     base_viewset = hr_viewsets.VacancyOfferViewset
     serializer = vacancy_serializers.VacancyOfferSerializer
+    filter_class = hr_filters.VacancyOfferFilter
 
     list_display = ('shift.date.shift_date', 'status')
     list_editable = (
@@ -342,7 +343,7 @@ class VacancyEndpoint(ApiEndpoint):
         'type': constants.FIELD_LIST,
         'field': 'id_',
         'query': {
-            'date.vacancy': '{id}',
+            'vacancy': '{id}',
         },
         'label': _('Vacancy Dates'),
         'add_label': _('Add date'),
@@ -355,7 +356,7 @@ class VacancyEndpoint(ApiEndpoint):
         'type': constants.FIELD_LIST,
         'field': 'id_',
         'query': {
-            'shift.date.vacancy': '{id}',
+            'vacancy': '{id}',
         },
         'label': _('Vacancy Offers'),
         'add_label': _('Fill in'),
@@ -393,6 +394,7 @@ class VacancyEndpoint(ApiEndpoint):
 class ShiftEndpoint(ApiEndpoint):
     model = hr_models.Shift
     serializer = vacancy_serializers.ShiftSerializer
+    filter_class = hr_filters.ShiftFilter
 
     list_displzy = ('workers', 'time')
 

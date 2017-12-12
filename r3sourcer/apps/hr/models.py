@@ -1,10 +1,12 @@
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
+import pytz
+
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
-from django.db import models, IntegrityError
+from django.db import models, IntegrityError, transaction
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -694,7 +696,8 @@ class VacancyOffer(core_models.UUIDModel):
 
         try:
             time_sheet = TimeSheet.objects.filter(
-                vacancy_offer__vacancy=self.vacancy, vacancy_offer__candidate_contact=self.candidate_contact,
+                vacancy_offer__shift__date__vacancy=self.vacancy,
+                vacancy_offer__candidate_contact=self.candidate_contact,
                 shift_started_at__gt=now, going_to_work_confirmation=True
             ).earliest('shift_started_at')
         except TimeSheet.DoesNotExist:
@@ -710,15 +713,72 @@ class VacancyOffer(core_models.UUIDModel):
                 # TODO: implement this function
                 # time_sheet.auto_fill_four_hours()
 
+    def check_vacancy_quota(self, is_initial):
+        if is_initial:
+            all_vacancy_offers = self.vacancy.get_vacancy_offers()
+            accepted_count = all_vacancy_offers.filter(
+                status=VacancyOffer.STATUS_CHOICES.accepted,
+                shift__date__shift_date=self.shift.date.shift_date,
+                shift__time=self.shift.time
+            ).count()
+
+            if accepted_count >= self.vacancy.workers or self.is_cancelled():
+                now = timezone.now()
+                with transaction.atomic():
+                    # if celery worked with VO sending
+                    qs = all_vacancy_offers.filter(
+                        models.Q(offer_sent_by_sms=None) | models.Q(time_sheets=None),
+                        shift__date__shift_date=self.shift.date.shift_date,
+                        shift__time=self.shift.time
+                    ).exclude(status=VacancyOffer.STATUS_CHOICES.accepted)
+
+                    vo_with_sms_sent = list(qs.filter(offer_sent_by_sms__isnull=False))
+
+                    qs.update(status=VacancyOffer.STATUS_CHOICES.cancelled)
+
+                    # send placement rejection sms
+                    for sent_vo in vo_with_sms_sent:
+                        if sent_vo.id == self.id:
+                            continue
+                        if now <= sent_vo.start_time:
+                            hr_utils.send_vo_rejection(sent_vo)
+
+                self.move_candidate_to_carrier_list()
+                self.status = VacancyOffer.STATUS_CHOICES.cancelled
+
+                if now <= self.start_time:
+                    hr_utils.send_vo_rejection(self)
+
+                return False
+            else:
+                self.status = VacancyOffer.STATUS_CHOICES.accepted
+                return True
+        else:
+            return True
+
     def save(self, *args, **kw):
         just_added = self._state.adding
+        is_initial = not self.is_recurring()
+        is_accepted = self.is_accepted()
 
         if self.is_cancelled() and not just_added:
             orig = VacancyOffer.objects.get(pk=self.pk)
             if orig.is_accepted():
                 orig.move_candidate_to_carrier_list(confirmed_available=True)
 
+        if self.is_accepted() and not just_added:
+            orig = VacancyOffer.objects.get(pk=self.pk)
+            is_accepted = orig.is_accepted() != self.is_accepted()
+
+        create_time_sheet = False
+        if is_accepted:
+            create_time_sheet = self.check_vacancy_quota(is_initial)
+
         super(VacancyOffer, self).save(*args, **kw)
+
+        # TODO: implement this
+        # if create_time_sheet:
+        #     TimeSheet.get_or_create_for_vacancy_offer_accepted(self)
 
         if just_added:
             if not self.is_cancelled() and CarrierList.objects.filter(

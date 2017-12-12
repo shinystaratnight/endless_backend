@@ -40,3 +40,25 @@ class VacancyFilter(FilterSet):
     def filter_state(self, queryset, name, value):
         objects = self._fetch_workflow_objects(value)
         return queryset.filter(id__in=objects)
+
+
+class ShiftFilter(FilterSet):
+    vacancy = UUIDFilter(method='filter_vacancy')
+
+    class Meta:
+        model = hr_models.Shift
+        fields = ['vacancy']
+
+    def filter_vacancy(self, queryset, name, value):
+        return queryset.filter(date__vacancy_id=value)
+
+
+class VacancyOfferFilter(FilterSet):
+    vacancy = UUIDFilter(method='filter_vacancy')
+
+    class Meta:
+        model = hr_models.Shift
+        fields = ['vacancy']
+
+    def filter_vacancy(self, queryset, name, value):
+        return queryset.filter(shift__date__vacancy_id=value)

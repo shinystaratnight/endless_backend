@@ -84,7 +84,11 @@ class BaseSMSService(metaclass=ABCMeta):
         except SMSTemplate.DoesNotExist:
             logger.exception('Cannot find template with name %s', tpl_name)
         else:
-            return self.send(to_number, message, from_number, related_obj, **kwargs)
+            sms_message = self.send(to_number, message, from_number, related_obj, **kwargs)
+            sms_message.template = template
+            sms_message.save()
+
+            return sms_message
 
     @abstractmethod
     def process_sms_send(self, sms_message):

@@ -202,7 +202,8 @@ def shift(db, vacancy_date):
 
 
 @pytest.fixture
-def vacancy_offer(db, shift, candidate_contact):
+@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+def vacancy_offer(mock_check, db, shift, candidate_contact):
     return VacancyOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact
@@ -210,7 +211,8 @@ def vacancy_offer(db, shift, candidate_contact):
 
 
 @pytest.fixture
-def accepted_vo(db, shift, candidate_contact):
+@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+def accepted_vo(mock_check, db, shift, candidate_contact):
     return VacancyOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact,
@@ -219,7 +221,8 @@ def accepted_vo(db, shift, candidate_contact):
 
 
 @pytest.fixture
-def cancelled_vo(db, shift, candidate_contact):
+@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+def cancelled_vo(mock_check, db, shift, candidate_contact):
     return VacancyOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact,
@@ -228,7 +231,8 @@ def cancelled_vo(db, shift, candidate_contact):
 
 
 @pytest.fixture
-def vacancy_offer_yesterday(db, vacancy, candidate_contact):
+@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+def vacancy_offer_yesterday(mock_check, db, vacancy, candidate_contact):
     vacancy_date_yesterday = VacancyDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 1)
@@ -246,7 +250,8 @@ def vacancy_offer_yesterday(db, vacancy, candidate_contact):
 
 
 @pytest.fixture
-def vacancy_offer_tomorrow(db, vacancy, candidate_contact):
+@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+def vacancy_offer_tomorrow(mock_check, db, vacancy, candidate_contact):
     vacancy_date_tomorrow = VacancyDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 3)
@@ -263,7 +268,8 @@ def vacancy_offer_tomorrow(db, vacancy, candidate_contact):
 
 
 @pytest.fixture
-def vacancy_offer_tomorrow_night(db, vacancy, candidate_contact):
+@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+def vacancy_offer_tomorrow_night(mock_check, db, vacancy, candidate_contact):
     vacancy_date_tomorrow = VacancyDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 3)

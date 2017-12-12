@@ -133,3 +133,8 @@ def get_vo_sms_sending_task(vacancy_offer):  # pragme: no cover
         from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
 
     return task
+
+
+def send_vo_rejection(vacancy_offer):  # pragme: no cover
+    from r3sourcer.apps.hr.tasks import send_placement_rejection_sms
+    send_placement_rejection_sms.delay(vacancy_offer.pk)

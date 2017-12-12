@@ -26,10 +26,10 @@ def replace_timezone(dt, time_zone=pytz.utc):
 
 def disable_default_flag_for_phones(**kwargs):
     """
-    Disable is_default value for all phone numbers if instance 
+    Disable is_default value for all phone numbers if instance
 
-    :param kwargs: 
-    :return: 
+    :param kwargs:
+    :return:
     """
     if kwargs['instance'].is_default:
         kwargs['instance'].company.phone_numbers.exclude(id=kwargs['instance'].id).update(is_default=False)
@@ -170,6 +170,12 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
     related_object = GenericForeignKey(
         'related_content_type',
         'related_object_id'
+    )
+    template = models.ForeignKey(
+        'SMSTemplate',
+        verbose_name=_("Template"),
+        null=True,
+        blank=True
     )
 
     # check message status

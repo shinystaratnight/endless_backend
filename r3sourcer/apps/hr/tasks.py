@@ -7,6 +7,7 @@ from celery.utils.log import get_task_logger
 from r3sourcer.celeryapp import app
 
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone, formats
@@ -297,3 +298,19 @@ def send_vacancy_offer_cancelled_lt_one_hour_sms(vo_id):
     """
 
     send_vacancy_offer_sms_notification(vo_id, 'candidate-vo-cancelled-1-hrs', 'candidate_contact')
+
+
+@app.task(bind=True)
+@one_sms_task_at_the_same_time
+def send_placement_rejection_sms(self, vacancy_offer_id):
+    from r3sourcer.apps.sms_interface.models import SMSRelatedObject
+
+    with transaction.atomic():
+        vacancy_offer = hr_models.VacancyOffer.objects.get(pk=vacancy_offer_id)
+        f_data = {
+            'sms__template__slug': 'vacancy-offer-rejection',
+            'object_model': ContentType.objects.get_for_model(hr_models.VacancyOffer),
+            'object_id': vacancy_offer_id
+        }
+        if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
+            send_vacancy_offer_sms(vacancy_offer, 'vacancy-offer-rejection')

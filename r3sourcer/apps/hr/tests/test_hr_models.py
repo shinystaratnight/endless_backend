@@ -216,7 +216,8 @@ class TestVacancyDate:
     def test_is_fulfilled(self, vacancy_date):
         assert vacancy_date.is_fulfilled() == NOT_FULFILLED
 
-    def test_is_fulfilled_true(self, vacancy_date, shift, candidate_contact):
+    @patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+    def test_is_fulfilled_true(self, mock_check, vacancy_date, shift, candidate_contact):
         VacancyOffer.objects.create(
             shift=shift,
             candidate_contact=candidate_contact,
@@ -241,7 +242,8 @@ class TestShift:
     def test_is_fulfilled(self, vacancy_date):
         assert vacancy_date.is_fulfilled() == NOT_FULFILLED
 
-    def test_is_fulfilled_true(self, shift, candidate_contact):
+    @patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+    def test_is_fulfilled_true(self, mock_check, shift, candidate_contact):
         VacancyOffer.objects.create(
             shift=shift,
             candidate_contact=candidate_contact,
@@ -411,7 +413,8 @@ class TestVacancyOffer:
         assert cl is not None
         assert cl.confirmed_available
 
-    def test_process_sms_reply_positive(self, vacancy_offer, fake_sms):
+    @patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+    def test_process_sms_reply_positive(self, mock_check, vacancy_offer, fake_sms):
         vacancy_offer.process_sms_reply(None, fake_sms, True)
 
         assert vacancy_offer.status == VacancyOffer.STATUS_CHOICES.accepted
@@ -533,7 +536,7 @@ class TestVacancyOffer:
     @patch.object(VacancyOffer, 'has_future_accepted_vo', return_value=False)
     @patch.object(VacancyOffer, 'has_previous_vo', return_value=False)
     @patch('r3sourcer.apps.hr.models.hr_utils')
-    def test_just_added_has_prev_offers_future_less_than_4day(
+    def test_just_added_has_prev_offers_future_more_than_4day(
         self, mock_task, mock_prev_vo, mock_future_vo, shift, candidate_contact
     ):
         vo = VacancyOffer.objects.create(
@@ -545,6 +548,78 @@ class TestVacancyOffer:
 
         assert vo.scheduled_sms_datetime == eta
         mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_called_with(args=[vo.id], eta=eta)
+
+    def test_check_vacancy_quota(self, vacancy_offer):
+        res = vacancy_offer.check_vacancy_quota(True)
+
+        assert res
+        assert vacancy_offer.status == VacancyOffer.STATUS_CHOICES.accepted
+
+    @patch.object(VacancyOffer, 'move_candidate_to_carrier_list')
+    def test_check_vacancy_quota_cancelled(self, mock_move, vacancy_offer):
+        vacancy_offer.status = VacancyOffer.STATUS_CHOICES.cancelled
+        res = vacancy_offer.check_vacancy_quota(True)
+
+        assert not res
+        assert vacancy_offer.status == VacancyOffer.STATUS_CHOICES.cancelled
+
+    @patch.object(VacancyOffer, 'move_candidate_to_carrier_list')
+    def test_check_vacancy_quota_has_accepted_gt_workers(self, mock_move, accepted_vo, vacancy_offer):
+        res = vacancy_offer.check_vacancy_quota(True)
+
+        assert not res
+        assert vacancy_offer.status == VacancyOffer.STATUS_CHOICES.cancelled
+
+    @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 6)))
+    @patch.object(VacancyOffer, 'move_candidate_to_carrier_list')
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_check_vacancy_quota_has_accepted_gt_workers_gt_now(
+        self, mock_task, mock_move, accepted_vo, vacancy_offer
+    ):
+        res = vacancy_offer.check_vacancy_quota(True)
+
+        assert not res
+        assert vacancy_offer.status == VacancyOffer.STATUS_CHOICES.cancelled
+        mock_task.send_vo_rejection.assert_called_with(vacancy_offer)
+
+    @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 6)))
+    @patch.object(VacancyOffer, 'move_candidate_to_carrier_list')
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_check_vacancy_quota_has_accepted_gt_workers_gt_now_with_sms_sent(
+        self, mock_task, mock_move, shift, candidate_contact, vacancy_offer, fake_sms
+    ):
+        accepted_vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact,
+            status=VacancyOffer.STATUS_CHOICES.accepted,
+            offer_sent_by_sms=fake_sms,
+        )
+        res = vacancy_offer.check_vacancy_quota(True)
+
+        assert not res
+        assert vacancy_offer.status == VacancyOffer.STATUS_CHOICES.cancelled
+        mock_task.send_vo_rejection.assert_called_with(vacancy_offer)
+
+    @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 6)))
+    @patch.object(VacancyOffer, 'move_candidate_to_carrier_list')
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_check_vacancy_quota_has_accepted_gt_workers_gt_now_with_sms_sent_self(
+        self, mock_task, mock_move, shift, candidate_contact, fake_sms
+    ):
+        accepted_vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact,
+            status=VacancyOffer.STATUS_CHOICES.accepted,
+            offer_sent_by_sms=fake_sms,
+        )
+        res = accepted_vo.check_vacancy_quota(True)
+
+        assert not res
+        assert accepted_vo.status == VacancyOffer.STATUS_CHOICES.cancelled
+        mock_task.send_vo_rejection.assert_called_with(accepted_vo)
+
+    def test_check_vacancy_quota_not_initial(self, vacancy_offer):
+        assert vacancy_offer.check_vacancy_quota(False)
 
 
 class TestTimeSheetIssue:
