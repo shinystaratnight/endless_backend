@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('core', '0011_remove_company_company_settings'),
-        ('myob', '0005_auto_20171207_0034'),
+        ('myob', '0005_update_companyfiletoken'),
         ('company_settings', '0005_delete_account_fields'),
     ]
 
