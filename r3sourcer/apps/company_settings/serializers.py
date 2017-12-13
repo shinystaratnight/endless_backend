@@ -59,11 +59,13 @@ class MYOBSettingsSerializer(serializers.ModelSerializer):
         for field in fields:
             if validated_data.get(field, None):
                 myob_account = MYOBAccount.objects.filter(id=validated_data[field]['id']).first()
+                validated_data.pop(field)
 
                 if myob_account:
                     setattr(instance, field, myob_account)
 
         instance.save()
+        super(MYOBSettingsSerializer, self).update(instance, validated_data)
         return instance
 
 

@@ -486,25 +486,15 @@ class MYOBClient(object):
     def api_request(self, method, url, **kwargs):
         r = myob_request(method, url, **kwargs)
 
-        print("request status_code  ", r.status_code)
-        print("request json  ", r.json())
-
         if r.status_code == 401:
             data = r.json()
             if isinstance(data, dict) and 'Errors' in data:
                 for e in data['Errors']:
                     if e['ErrorCode'] == 31001:  # OAuthTokenIsInvalid
-                        print("  ---  shas budet refresh eba")
                         self.refresh()
-                        print("  ---  refresh proshel")
                         # TODO: use some request limit
                         kwargs['headers'] = self.get_headers()
-                        # return self.api_request(method, url, **kwargs)
-                        response = myob_request(method, url, **kwargs)
-                        print("     =====     RESPONSE AFTER REFRESH")
-                        print("   response status code   ", response.status_code)
-                        print("   response json   ", response.json())
-                        return response
+                        return self.api_request(method, url, **kwargs)
         return r
 
     def api_call(self, method, uri, **kwargs):

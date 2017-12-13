@@ -10,7 +10,7 @@ from rest_framework.test import force_authenticate
 
 from r3sourcer.apps.company_settings.models import CompanySettings, MYOBAccount
 from r3sourcer.apps.company_settings.views import CompanyGroupListView, CompanyGroupCreateView
-from r3sourcer.apps.company_settings.models import GlobalPermission
+from r3sourcer.apps.company_settings.models import GlobalPermission, MYOBSettings
 from r3sourcer.apps.core.models import User, CompanyContact, CompanyContactRelationship, InvoiceRule
 from r3sourcer.apps.hr.models import PayslipRule
 from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
@@ -455,11 +455,17 @@ class TestUserCompanyFilesView:
 class TestRefreshCompanyFilesView:
     @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBClient.get_company_files')
     def test_refresh_company_files(self, get_company_files, client, user, company, company_file_token):
+        get_company_files.return_value = [{'Uri': 'https://ar2.api.myob.com/accountright/d12357c7-1065-451f-8657-0ca8c825b2f7', 'Country': 'AU', 'CheckedOutDate': None, 'ProductVersion': '2017.2', 'ProductLevel': {'Code': 30, 'Name': 'Plus'}, 'SerialNumber': '618909727781', 'LibraryPath': 'TS Workforce Pty Ltd', 'LauncherId': '878263e8-cb1e-49f9-a138-a74f21bef5c9', 'Name': 'TS Workforce Pty Ltd', 'CheckedOutBy': None, 'Id': 'd12357c7-1065-451f-8657-0ca8c825b2f7'}]
+        company_file_count = MYOBCompanyFile.objects.count()
+        company_file_token_count = MYOBCompanyFileToken.objects.count()
+        last_refreshed = company.myob_settings.company_files_last_refreshed
         client.force_login(user)
         url = reverse('refresh_company_files', kwargs={'version': 'v2'})
         client.get(url)
 
-        assert get_company_files.called
+        assert MYOBCompanyFile.objects.count() == company_file_count + 1
+        assert MYOBCompanyFileToken.objects.count() == company_file_token_count + 1
+        assert last_refreshed != MYOBSettings.objects.get(id=company.myob_settings.id).company_files_last_refreshed
 
 
 class TestCheckCompanyFilesView:
@@ -480,16 +486,25 @@ class TestCheckCompanyFilesView:
         assert MYOBCompanyFile.objects.get(cf_id=company_file_token.company_file.cf_id).authenticated
 
 
-# TODO
-class TestMYOBAccountsSyncView:
-    def test_myob_settings(self, user, client):
-        url = reverse('myob_accounts_sync', kwargs={'version': 'v2'})
+class TestRefreshMYOBAccountsView:
+    @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBClient.get_accounts')
+    def test_myob_settings(self, get_accounts, user, client, company_file_token):
+        mocked_response = mock.Mock()
+        mocked_response.json.return_value = {'NextPageLink': None, 'Count': 1, 'Items': [{'TaxCode': None, 'OpeningBalance': 0.0, 'Classification': 'Asset', 'URI': 'https://ar1.api.myob.com/accountright/30f3396c-02e9-4a86-99e6-3bb2e832cb3d/GeneralLedger/Account/e7cd2a56-d8f6-44a5-b5bc-979010d4bef0', 'LastReconciledDate': None, 'BankingDetails': None, 'Description': '', 'DisplayID': '1-1100', 'RowVersion': '7437976259579084800', 'Level': 3, 'UID': 'e7cd2a56-d8f6-44a5-b5bc-979010d4bef0', 'Number': 1100, 'Type': 'OtherAsset', 'CurrentBalance': -141162.67, 'IsHeader': True, 'IsActive': True, 'ParentAccount': {'URI': 'https://ar1.api.myob.com/accountright/30f3396c-02e9-4a86-99e6-3bb2e832cb3d/GeneralLedger/Account/285f93c9-14ba-458c-a7f5-7819ddf2e12a', 'Name': 'Current Assets', 'DisplayID': '1-1000', 'UID': '285f93c9-14ba-458c-a7f5-7819ddf2e12a'}, 'Name': 'Bank Accounts'}]}
+        get_accounts.return_value = mocked_response
+        company_file_token.company_file.authenticated = True
+        company_file_token.company_file.save()
+        initial_account_count = MYOBAccount.objects.count()
+        myob_settings = company_file_token.company.myob_settings
+        last_refreshed = myob_settings.payroll_accounts_last_refreshed
+        url = reverse('refresh_myob_accounts', kwargs={'version': 'v2'})
         client.force_login(user)
-        import pdb; pdb.set_trace()
-        response = client.get(url)
+        client.get(url)
+
+        assert MYOBAccount.objects.count() == initial_account_count + 1
+        assert last_refreshed != MYOBSettings.objects.get(id=myob_settings.id).payroll_accounts_last_refreshed
 
 
-# TODO
 class TestMYOBSettingsView:
     def test_myob_settings_get(self, user, client, manager, company, myob_account):
         company.myob_settings.subcontractor_contract_work = myob_account
@@ -499,18 +514,17 @@ class TestMYOBSettingsView:
         company.myob_settings.company_client_labour_hire = myob_account
         company.myob_settings.company_client_gst = myob_account
         company.myob_settings.save()
-        serialized_account = {'id': 1, 'type': 'Bank', 'number': '1120', 'name': 'Business Bank Account'}
 
         url = reverse('myob_settings', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
-        assert response['myob_settings']['subcontractor_contract_work'] == serialized_account
-        assert response['myob_settings']['subcontractor_gst'] == serialized_account
-        assert response['myob_settings']['candidate_wages'] == serialized_account
-        assert response['myob_settings']['candidate_superannuation'] == serialized_account
-        assert response['myob_settings']['company_client_labour_hire'] == serialized_account
-        assert response['myob_settings']['company_client_gst'] == serialized_account
+        assert response['myob_settings']['subcontractor_contract_work']['name'] == myob_account.name
+        assert response['myob_settings']['subcontractor_gst']['name'] == myob_account.name
+        assert response['myob_settings']['candidate_wages']['name'] == myob_account.name
+        assert response['myob_settings']['candidate_superannuation']['name'] == myob_account.name
+        assert response['myob_settings']['company_client_labour_hire']['name'] == myob_account.name
+        assert response['myob_settings']['company_client_gst']['name'] == myob_account.name
 
     def test_myob_settings_post(self, user, client, manager, company, company_file):
         now = timezone.now()
@@ -530,17 +544,25 @@ class TestMYOBSettingsView:
                                              row_version="5548997690873872384",
                                              company_file=company_file)
         data = {
-            'subcontractor_contract_work': account.pk,
-            'subcontractor_gst': account.pk,
-            'candidate_wages': account.pk,
-            'candidate_superannuation': account.pk,
-            'company_client_labour_hire': account.pk,
-            'company_client_gst': account.pk,
+            'subcontractor_contract_work': {"id": account.id},
+            'subcontractor_gst': {"id": account.id},
+            'candidate_wages': {"id": account.id},
+            'candidate_superannuation': {"id": account.id},
+            'company_client_labour_hire': {"id": account.id},
+            'company_client_gst': {"id": account.id},
             'payroll_accounts_last_refreshed': str(now),
             'company_files_last_refreshed': str(now),
         }
         url = reverse('myob_settings', kwargs={'version': 'v2'})
         client.force_login(user)
-        response = client.post(url, data=json.dumps(data), content_type='application/json')
+        client.post(url, data=json.dumps(data), content_type='application/json')
+        myob_settings = MYOBSettings.objects.get(id=company.myob_settings.id)
 
-        import pdb; pdb.set_trace()
+        assert myob_settings.subcontractor_contract_work == account
+        assert myob_settings.subcontractor_gst == account
+        assert myob_settings.candidate_wages == account
+        assert myob_settings.candidate_superannuation == account
+        assert myob_settings.company_client_labour_hire == account
+        assert myob_settings.company_client_gst == account
+        assert myob_settings.payroll_accounts_last_refreshed == now
+        assert myob_settings.company_files_last_refreshed == now

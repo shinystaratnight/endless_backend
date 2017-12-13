@@ -1,7 +1,6 @@
-import decimal
-
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import exceptions
 from rest_framework import status
 from rest_framework.generics import ListAPIView
@@ -342,6 +341,9 @@ class RefreshCompanyFilesView(APIView):
             "company_files": serialzer.data
         }
 
+        myob_settings = request.user.company.myob_settings
+        myob_settings.company_files_last_refreshed = timezone.now()
+        myob_settings.save()
         return Response(data)
 
 
@@ -369,7 +371,7 @@ class CheckCompanyFilesView(APIView):
         return Response(data)
 
 
-class MYOBAccountsSyncView(APIView):
+class RefreshMYOBAccountsView(APIView):
     """
     Fetches all accounts of all user's company's company files from MYOB API and saves it into database
     """
@@ -382,14 +384,7 @@ class MYOBAccountsSyncView(APIView):
                 continue
 
             company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created').cf_token
-            accounts = client.get_accounts(company_file.cf_id, company_file_token).json()
-
-            # TODO: remove it
-            print("++++++++++++++++++++++++")
-            print(accounts)
-            print("++++++++++++++++++++++++")
-
-            accounts = accounts['Items']
+            accounts = client.get_accounts(company_file.cf_id, company_file_token).json()['Items']
 
             for account in accounts:
                 MYOBAccount.objects.update_or_create(uid=account['UID'],
@@ -411,6 +406,9 @@ class MYOBAccountsSyncView(APIView):
                     }
                 )
 
+        myob_settings = request.user.company.myob_settings
+        myob_settings.payroll_accounts_last_refreshed = timezone.now()
+        myob_settings.save()
         return Response()
 
 
@@ -435,7 +433,7 @@ class MYOBSettingsView(APIView):
             raise exceptions.APIException("User has no relation to any company.")
 
         serializer = serializers.MYOBSettingsSerializer(company.myob_settings,
-                                                       data=self.request.data['myob_settings'],
+                                                       data=self.request.data,
                                                        partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
