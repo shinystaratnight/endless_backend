@@ -572,9 +572,10 @@ class AngularListApiAdapter(AngularApiAdapter):
 
     def _adapt_column_fields(self, display_fields):
         adapted = []
-        options = ('endpoint', 'link', 'values', 'action', 'label', 'text',
-                   'icon', 'repeat', 'color', 'visible', 'hidden',
-                   'replace_by', 'text_color', 'title')
+        options = (
+            'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
+            'replace_by', 'text_color', 'title', 'display'
+        )
 
         for display_field in display_fields:
             if isinstance(display_field, dict):
