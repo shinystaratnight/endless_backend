@@ -434,15 +434,17 @@ class TestCompanyUserListView:
         url = reverse('company_users_list', kwargs={'version': 'v2'})
         client.force_login(company.manager.contact.user)
         response = client.get(url)
+        id_list = [x['id'] for x in response.data['user_list']]
+        name_list = [x['name'] for x in response.data['user_list']]
 
         assert response.status_code == 200
         assert len(response.data['user_list']) == 3
-        assert response.data['user_list'][0]['id'] == str(user.id)
-        assert response.data['user_list'][0]['name'] == user.get_full_name()
-        assert response.data['user_list'][1]['id'] == str(user2.id)
-        assert response.data['user_list'][1]['name'] == user2.get_full_name()
-        assert response.data['user_list'][2]['id'] == str(user3.id)
-        assert response.data['user_list'][2]['name'] == user3.get_full_name()
+        assert str(user.id) in id_list
+        assert str(user2.id) in id_list
+        assert str(user3.id) in id_list
+        assert user.get_full_name() in name_list
+        assert user2.get_full_name() in name_list
+        assert user3.get_full_name() in name_list
 
 
 class TestUserGroupListView:
