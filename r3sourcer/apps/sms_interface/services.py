@@ -71,6 +71,8 @@ class BaseSMSService(metaclass=ABCMeta):
                 )
                 ac.save(update_fields=['activity_id'])
 
+        return sms_message
+
     @transaction.atomic
     def send_tpl(self, to_number, tpl_name, from_number=None, related_obj=None,
                  **kwargs):
@@ -82,7 +84,7 @@ class BaseSMSService(metaclass=ABCMeta):
         except SMSTemplate.DoesNotExist:
             logger.exception('Cannot find template with name %s', tpl_name)
         else:
-            self.send(to_number, message, from_number, related_obj, **kwargs)
+            return self.send(to_number, message, from_number, related_obj, **kwargs)
 
     @abstractmethod
     def process_sms_send(self, sms_message):

@@ -121,3 +121,15 @@ def calculate_distances_for_jobsite(contacts, jobsite):
             create_or_update_distance_cache(contact, jobsite, distance)
 
     return True
+
+
+def get_vo_sms_sending_task(vacancy_offer):  # pragme: no cover
+    if vacancy_offer.is_first() and not vacancy_offer.is_accepted():
+        from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
+    elif vacancy_offer.is_recurring():
+        from r3sourcer.apps.hr.tasks import send_recurring_vo_confirmation_sms as task
+    else:
+        # FIXME: send job confirmation SMS because there is pending vacancy's VOs for candidate
+        from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
+
+    return task

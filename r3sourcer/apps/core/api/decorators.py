@@ -6,16 +6,12 @@ def metadata(self, request, *args, **kwargs):
     if endpoint is None:
         endpoint = self.endpoint
 
-    origin_serializer_class = endpoint.serializer
-    origin_fieldsets = endpoint.fieldsets
-    origin_list_display = endpoint.list_display
-    serializer_calss = kwargs.get('serializer') or origin_serializer_class
-    fieldsets = kwargs.get('fieldsets') or origin_fieldsets
-    list_display = kwargs.get('list_display') or origin_list_display
+    backup_fields = ('serializer', 'fieldsets', 'list_display', 'list_editable')
+    origin = {}
 
-    endpoint.serializer = serializer_calss
-    endpoint.fieldsets = fieldsets
-    endpoint.list_display = list_display
+    for backup_field in backup_fields:
+        origin[backup_field] = getattr(endpoint, backup_field)
+        setattr(endpoint, backup_field, kwargs.get(backup_field) or origin[backup_field])
 
     origin_endpoint = self.endpoint
     self.endpoint = endpoint
@@ -23,17 +19,16 @@ def metadata(self, request, *args, **kwargs):
     meta = self.metadata_class()
     data = meta.determine_metadata(request, self)
 
-    endpoint.serializer = origin_serializer_class
-    endpoint.fieldsets = origin_fieldsets
-    endpoint.list_display = origin_list_display
+    for backup_field in backup_fields:
+        setattr(endpoint, backup_field, origin[backup_field])
 
     self.endpoint = origin_endpoint
 
     return Response(data)
 
 
-def list_route(methods=None, serializer=None, fieldsets=None,
-               endpoint=None, list_display=None, **kwargs):
+def list_route(methods=None, serializer=None, fieldsets=None, endpoint=None, list_display=None,
+               list_editable=None, **kwargs):
     methods = ['get'] if (methods is None) else methods
     if 'options' not in methods:
         methods.extend(['options'])
@@ -42,9 +37,8 @@ def list_route(methods=None, serializer=None, fieldsets=None,
         def metadata_wrapper(self, request, *args, **kwargs):
             if request.method == 'OPTIONS':
                 return metadata(
-                    self, request, serializer=serializer,
-                    fieldsets=fieldsets, endpoint=endpoint,
-                    list_display=list_display, * args, **kwargs
+                    self, request, serializer=serializer, fieldsets=fieldsets, endpoint=endpoint,
+                    list_display=list_display, list_editable=list_editable, * args, **kwargs
                 )
 
             return func(self, request, *args, **kwargs)
@@ -56,8 +50,7 @@ def list_route(methods=None, serializer=None, fieldsets=None,
     return decorator
 
 
-def detail_route(methods=None, serializer=None, fieldsets=None,
-                 endpoint=None, **kwargs):
+def detail_route(methods=None, serializer=None, fieldsets=None, endpoint=None, **kwargs):
     methods = ['get'] if (methods is None) else methods
     if 'options' not in methods:
         methods.extend(['options'])

@@ -12,9 +12,8 @@ amqp==2.2.2
 anyjson==0.3.3
 app-version==0.2.1
 billiard>=3.5.0.2,<3.6.0
-celery==4.1.0
+celery==4.0.2
 django-celery-results==1.0.1
-celery-redbeat==0.10.0
 click==6.6
 
 django-appconf==1.0.2
@@ -57,3 +56,7 @@ weasyprint==0.40
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light
 git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails
 git+ssh://git@bitbucket.org/r3sourcer_1/drf-schema-adapter.git@master#egg=drf-schema-adapter
+
+# TODO: uncomment this after redbeat support timezones
+# celery-redbeat==0.11.0
+git+https://github.com/sempr/redbeat#egg=celery-redbeat

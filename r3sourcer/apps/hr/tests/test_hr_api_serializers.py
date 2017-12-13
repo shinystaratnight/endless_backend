@@ -1,6 +1,17 @@
+from datetime import datetime
+
+import freezegun
 import pytest
 
+from pytz import timezone
+
+from django.conf import settings as dj_settings
+
 from r3sourcer.apps.hr.api.serializers.timesheet import TimeSheetSerializer
+from r3sourcer.apps.hr.api.serializers.vacancy import VacancySerializer
+
+
+tz = timezone(dj_settings.TIME_ZONE)
 
 
 class TestTimeSheetSerializer:
@@ -38,3 +49,22 @@ class TestTimeSheetSerializer:
         res = serializer.get_position(None)
 
         assert res is None
+
+
+@pytest.mark.django_db
+class TestVacancySerializer:
+
+    @pytest.fixture
+    def serializer(self):
+        return VacancySerializer()
+
+    @freezegun.freeze_time(tz.localize(datetime(2017, 1, 1, 7)))
+    def test_get_todays_timesheets(self, timesheet, vacancy, serializer):
+        res = serializer.get_todays_timesheets(vacancy)
+
+        assert res == '0% / 0% / 0%'
+
+    def test_get_todays_timesheets_no_timesheet(self, vacancy, serializer):
+        res = serializer.get_todays_timesheets(vacancy)
+
+        assert res == '-'

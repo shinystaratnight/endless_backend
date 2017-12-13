@@ -333,7 +333,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                     api_reverse_lazy('core/invoices')
                 ),
                 'field': 'invoices_count',
-                'action': 'openList',
+                'action': constants.DEFAULT_ACTION_LIST,
             }, {
                 'type': constants.FIELD_BUTTON,
                 'icon': 'fa-external-link',
@@ -344,7 +344,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                     api_reverse_lazy('core/orders')
                 ),
                 'field': 'orders_count',
-                'action': 'openList',
+                'action': constants.DEFAULT_ACTION_LIST,
             }),
         },
         {
@@ -382,7 +382,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'field': 'primary_contact.contact.phone_mobile',
             }, {
                 'type': constants.FIELD_BUTTON,
-                'action': 'sendSMS',
+                'action': constants.DEFAULT_ACTION_SEND_SMS,
                 'text': _('SMS'),
                 'icon': 'fa-commenting',
                 'fields': ('primary_contact.contact.phone_mobile',)
@@ -416,7 +416,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 'endpoint': api_reverse_lazy('core/companyaddresses',
                                              'log'),
                 'text': _('Open Journal'),
-                'action': 'openList',
+                'action': constants.DEFAULT_ACTION_LIST,
                 'field': 'id',
             },),
         }
@@ -470,25 +470,25 @@ class CompanyAddressEndpoint(ApiEndpoint):
 
     ordering_mapping = {'company': 'company.name'}
 
-    # # FIXME: change to real filters
-    # def get_list_filter(self):
-    #     states_part = partial(
-    #         models.WorkflowNode.get_model_all_states, models.CompanyRel
-    #     )
-    #     list_filter = ['company', 'primary_contact.contact', {
-    #         'type': constants.FIELD_SELECT,
-    #         'field': 'active_states',
-    #         'choices': lazy(states_part, list)(),
-    #     }, {
-    #         'type': constants.FIELD_RELATED,
-    #         'field': 'portfolio_manager',
-    #         'endpoint': api_reverse_lazy('core/companycontacts'),
-    #     }, {
-    #         'field': 'updated_at',
-    #         'type': constants.FIELD_DATE,
-    #     }]
-    #
-    #     return list_filter
+    # FIXME: change to real filters
+    def get_list_filter(self):
+        states_part = partial(
+            models.WorkflowNode.get_model_all_states, models.CompanyRel
+        )
+        list_filter = ['company', 'primary_contact.contact', {
+            'type': constants.FIELD_SELECT,
+            'field': 'active_states',
+            'choices': lazy(states_part, list),
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'portfolio_manager',
+            'endpoint': api_reverse_lazy('core/companycontacts'),
+        }, {
+            'field': 'updated_at',
+            'type': constants.FIELD_DATE,
+        }]
+
+        return list_filter
 
     # FIXME: add/change to real actions
     @bulk_action(method='POST', text=_('Delete selected'))
@@ -650,10 +650,17 @@ class CompanyEndpoint(ApiEndpoint):
             )
         },
         {
-            'type': constants.CONTAINER_COLLAPSE,
+            'query': {
+                'company': '{id}'
+            },
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Company contacts'),
-            'fields': ()
+            'label': _('Company contact relationships'),
+            'endpoint': api_reverse_lazy('core/companycontactrelationships'),
+            'add_label': _('Add Company Contact Relationship'),
+            'prefilled': {
+                'company': '{id}',
+            }
         },
         {
             'type': constants.CONTAINER_COLLAPSE,
@@ -826,6 +833,13 @@ class CompanyEndpoint(ApiEndpoint):
     )
 
 
+class CompanyContactRelationEndpoint(ApiEndpoint):
+
+    model = models.CompanyContactRelationship
+    serializers = serializers.CompanyContactRelationshipSerializer
+    filter_class = filters.CompanyContactRelationshipFilter
+
+
 class CompanyContactEndpoint(ApiEndpoint):
 
     model = models.CompanyContact
@@ -846,7 +860,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                 },
                 {
                     'type': constants.FIELD_BUTTON,
-                    'action': 'sendSMS',
+                    'action': constants.DEFAULT_ACTION_SEND_SMS,
                     'text': _('SMS'),
                     'icon': 'fa-commenting',
                     'fields': ('contact.phone_mobile',)
@@ -889,7 +903,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                 '{}?is_manager=3',
                 api_reverse_lazy('core/companycontacts')
             ),
-        },]
+        }]
 
     @bulk_action(method='POST', text=_('Send sms'), confirm=False)
     def sendsms(self, request, *args, **kwargs):
@@ -1204,8 +1218,7 @@ router.register(models.City, filter_fields=('country', 'region'))
 router.register(endpoint=CompanyEndpoint())
 router.register(endpoint=CompanyAddressEndpoint())
 router.register(endpoint=CompanyContactEndpoint())
-router.register(models.CompanyContactRelationship,
-                serializer=serializers.CompanyContactRelationshipSerializer)
+router.register(endpoint=CompanyContactRelationEndpoint())
 router.register(endpoint=CompanyLocalizationEndpoint())
 router.register(endpoint=CompanyRelEndpoint())
 router.register(models.CompanyTradeReference)

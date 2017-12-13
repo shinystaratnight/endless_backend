@@ -165,8 +165,9 @@ class TestClickhouseLogger:
                                      old_value='Dates range test',
                                      new_value='Dates range test 2')
         # second update logging
-        general_logger_fields['date'] = timezone.now().date()
-        general_logger_fields['updated_at'] = int(round(timezone.now().timestamp() * 1000))
+        now = timezone.localtime(timezone.now())
+        general_logger_fields['date'] = now.date()
+        general_logger_fields['updated_at'] = int(round(now.timestamp() * 1000))
 
         self.logger.log_update_field("name", general_logger_fields,
                                      old_value='Dates range test 2',
@@ -175,7 +176,7 @@ class TestClickhouseLogger:
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id)
         assert len(history) == 3
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id,
-                                                 from_date=timezone.now().date())
+                                                 from_date=timezone.localtime(timezone.now()).date())
         assert len(history) == 1
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id,
                                                  from_date=week_ago.date(),

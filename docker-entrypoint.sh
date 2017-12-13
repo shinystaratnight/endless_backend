@@ -1,5 +1,7 @@
 #!/bin/bash
 
+rm -f celerybeat.pid
+
 echo "Bower install starting..."
 bin/django bower_install --allow-root
 

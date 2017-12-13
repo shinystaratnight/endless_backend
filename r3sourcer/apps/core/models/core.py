@@ -20,6 +20,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
+from rest_framework.exceptions import APIException
 
 from cities_light.abstract_models import (
     AbstractCity, AbstractRegion, AbstractCountry
@@ -248,7 +249,7 @@ class Contact(
         if self.is_company_contact():
             return self.company_contact.first().id
         elif self.is_candidate_contact():
-            return self.candidate_contacts.first().id
+            return self.candidate_contacts.id
         return None
 
 
@@ -435,7 +436,15 @@ class User(UUIDModel,
 
     @property
     def company(self):
-        return self.contact.company_contact.first().companies.first()
+        try:
+            if self.is_candidate():
+                return self.contact.candidate_contacts.candidate_rels.first().master_company
+            elif self.is_client() or self.is_manager():
+                return self.contact.company_contact.first().relationships.first().company
+            else:
+                raise APIException("Unknown user's role.")
+        except AttributeError:
+            return None
 
     @property
     def company_files(self):
@@ -946,6 +955,21 @@ class Company(
             self.payment_due_date
         )
 
+    def get_effective_pricelist_qs(self, position=None):
+        qs = self.price_lists.exclude(
+            Q(approved_by__isnull=True) | Q(approved_by=None) | Q(approved_at__isnull=True) | Q(approved_at=None)
+        ).filter(
+            effective=True,
+            valid_until__gte=date.today(),
+            price_list_rates__skill__active=True,
+            price_list_rates__hourly_rate__gt=0
+        )
+
+        if position:
+            qs = qs.filter(price_list_rates__skill=position)
+
+        return qs
+
     def save(self, *args, **kwargs):
         super(Company, self).save(*args, **kwargs)
 
@@ -1053,6 +1077,9 @@ class CompanyContactRelationship(
         null=True,
         blank=True
     )
+
+    def __str__(self):
+        return "{company}: {contact}".format(company=self.company, contact=self.company_contact)
 
     def get_master_company(self):
         return self.company.get_master_company()

@@ -207,7 +207,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
             'collapsed': True,
             'label': _('Vacancy offers'),
-            'endpoint': api_reverse_lazy('hr/vacancyoffers'),
+            'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/vacancyoffers')),
         }, {
             'query': {
                 'candidate_contact': '{id}'
@@ -273,7 +273,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'field': 'contact.phone_mobile',
             }, {
                 'type': constants.FIELD_BUTTON,
-                'action': 'sendSMS',
+                'action': constants.DEFAULT_ACTION_SEND_SMS,
                 'text': _('SMS'),
                 'icon': 'fa-commenting',
                 'fields': ('contact.phone_mobile',)
@@ -326,20 +326,20 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         'contact__address__street_address',
     )
 
-    # def get_list_filter(self):
-    #     states_part = partial(
-    #         core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
-    #     )
-    #     list_filter = [{
-    #         'type': constants.FIELD_SELECT,
-    #         'field': 'active_states',
-    #         'choices': lazy(states_part, list)(),
-    #     }, 'contact.gender', 'transportation_to_work', {
-    #         'field': 'created_at',
-    #         'type': constants.FIELD_DATE,
-    #     }]
-    #
-    #     return list_filter
+    def get_list_filter(self):
+        states_part = partial(
+            core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
+        )
+        list_filter = [{
+            'type': constants.FIELD_SELECT,
+            'field': 'active_states',
+            'choices': lazy(states_part, list),
+        }, 'contact.gender', 'transportation_to_work', {
+            'field': 'created_at',
+            'type': constants.FIELD_DATE,
+        }]
+
+        return list_filter
 
     @bulk_action(method='POST', text=_('Send sms'), confirm=False, reload=False)
     def sendsms(self, request, *args, **kwargs):

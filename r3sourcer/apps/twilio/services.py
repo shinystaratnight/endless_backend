@@ -38,7 +38,7 @@ class TwilioSMSService(BaseSMSService):
                 params = {
                     'date_sent>': account.get_last_sync()}  # get all messages sent_at after `self.get_last_sync()`
 
-                acc_last_sync = timezone.now().date()
+                acc_last_sync = timezone.localtime(timezone.now()).date()
                 logger.info("Sync params: {}".format(params))
 
                 for sms_message in remote_account.messages.iter(**params):

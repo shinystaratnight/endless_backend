@@ -2,7 +2,8 @@ import datetime
 
 import pytest
 from freezegun import freeze_time
-from mock import patch, PropertyMock
+from mock import patch, PropertyMock, MagicMock
+from pytz import timezone
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -12,11 +13,13 @@ from django.utils.timezone import localtime, make_aware
 from django_mock_queries.query import MockSet, MockModel
 
 from r3sourcer.apps.hr.models import (
-    TimeSheet, JobsiteUnavailability, CandidateEvaluation, VacancyOffer,
-    VacancyDate, TimeSheetIssue, BlackList, FavouriteList,
-    NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT
+    TimeSheet, JobsiteUnavailability, CandidateEvaluation, VacancyOffer, VacancyDate, TimeSheetIssue, BlackList,
+    FavouriteList, Vacancy, CarrierList, Shift, NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT
 )
 from r3sourcer.apps.hr.utils.utils import tomorrow
+
+
+tz = timezone(settings.TIME_ZONE)
 
 
 @pytest.mark.django_db
@@ -171,6 +174,32 @@ class TestVacancy:
 
         assert vacancy.is_fulfilled() == NOT_FULFILLED
 
+    @freeze_time(datetime.datetime(2017, 1, 2))
+    @patch.object(VacancyDate, 'is_fulfilled', return_value=FULFILLED)
+    def test_is_fulfilled_today_fulfilled(self, mock_fulfilled, vacancy, vacancy_date):
+        assert vacancy.is_fulfilled_today() == FULFILLED
+
+    @freeze_time(datetime.datetime(2017, 1, 2))
+    def test_is_fulfilled_today_no_vd_today(self, vacancy):
+        assert vacancy.is_fulfilled_today() == IRRELEVANT
+
+    @freeze_time(datetime.datetime(2017, 1, 2))
+    @patch.object(Vacancy, 'is_fulfilled', return_value=NOT_FULFILLED)
+    def test_can_fillin_not_fulfilled(self, mock_vd_fulfilled, vacancy):
+        assert vacancy.can_fillin()
+
+    @freeze_time(datetime.datetime(2017, 1, 1))
+    @patch.object(Vacancy, 'is_fulfilled', return_value=FULFILLED)
+    @patch.object(VacancyDate, 'is_fulfilled', return_value=NOT_FULFILLED)
+    def test_can_fillin_future_vd_not_fulfilled(self, mock_fulfilled, mock_vd_fulfilled, vacancy, vacancy_offer):
+        assert vacancy.can_fillin()
+
+    @freeze_time(datetime.datetime(2017, 1, 1))
+    @patch.object(Vacancy, 'is_fulfilled', return_value=FULFILLED)
+    @patch.object(VacancyDate, 'is_fulfilled', return_value=FULFILLED)
+    def test_can_fillin_future_vd_fulfilled(self, mock_fulfilled, mock_vd_fulfilled, vacancy, vacancy_offer):
+        assert not vacancy.can_fillin()
+
 
 @pytest.mark.django_db
 class TestVacancyDate:
@@ -208,6 +237,19 @@ class TestShift:
 
     def test_get_vacancy(self, shift, vacancy):
         assert shift.vacancy == vacancy
+
+    def test_is_fulfilled(self, vacancy_date):
+        assert vacancy_date.is_fulfilled() == NOT_FULFILLED
+
+    def test_is_fulfilled_true(self, shift, candidate_contact):
+        VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact,
+            status=VacancyOffer.STATUS_CHOICES.accepted,
+        )
+        shift.workers = 1
+
+        assert shift.is_fulfilled() == FULFILLED
 
 
 @pytest.mark.django_db
@@ -320,6 +362,189 @@ class TestVacancyOffer:
     def test_start_time(self, vacancy_offer):
         res = make_aware(datetime.datetime(2017, 1, 2, 8, 30))
         assert vacancy_offer.start_time == res
+
+    def test_move_candidate_to_carrier_list(self, vacancy_offer):
+        vacancy_offer.move_candidate_to_carrier_list()
+
+        assert CarrierList.objects.all().count() == 1
+
+        cl = CarrierList.objects.filter(
+            candidate_contact=vacancy_offer.candidate_contact, target_date=vacancy_offer.start_time
+        ).first()
+
+        assert cl is not None
+        assert cl.referral_vacancy_offer == vacancy_offer
+
+    def test_move_candidate_to_carrier_list_new_offer(self, vacancy_offer):
+        vacancy_offer.move_candidate_to_carrier_list(True)
+
+        assert CarrierList.objects.all().count() == 1
+
+        cl = CarrierList.objects.filter(
+            candidate_contact=vacancy_offer.candidate_contact, target_date=vacancy_offer.start_time
+        ).first()
+
+        assert cl is not None
+        assert cl.vacancy_offer == vacancy_offer
+
+    def test_move_candidate_to_carrier_list_exists(self, vacancy_offer, carrier_list):
+        vacancy_offer.move_candidate_to_carrier_list()
+
+        assert CarrierList.objects.all().count() == 1
+
+        cl = CarrierList.objects.filter(
+            candidate_contact=vacancy_offer.candidate_contact, target_date=vacancy_offer.start_time
+        ).first()
+
+        assert cl is not None
+        assert cl.target_date == vacancy_offer.shift.date.shift_date
+
+    def test_move_candidate_to_carrier_list_confirmed(self, vacancy_offer):
+        vacancy_offer.move_candidate_to_carrier_list(confirmed_available=True)
+
+        assert CarrierList.objects.all().count() == 1
+
+        cl = CarrierList.objects.filter(
+            candidate_contact=vacancy_offer.candidate_contact, target_date=vacancy_offer.start_time
+        ).first()
+
+        assert cl is not None
+        assert cl.confirmed_available
+
+    def test_process_sms_reply_positive(self, vacancy_offer, fake_sms):
+        vacancy_offer.process_sms_reply(None, fake_sms, True)
+
+        assert vacancy_offer.status == VacancyOffer.STATUS_CHOICES.accepted
+
+    def test_process_sms_reply_negative(self, vacancy_offer, fake_sms):
+        vacancy_offer.process_sms_reply(None, fake_sms, False)
+
+        assert vacancy_offer.status == VacancyOffer.STATUS_CHOICES.cancelled
+
+    @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 9)))
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_just_added_shift_started_2h_less(self, mock_task, shift, candidate_contact):
+        vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact
+        )
+
+        eta = tz.localize(datetime.datetime(2017, 1, 2, 9, 0, 10))
+
+        assert vo.scheduled_sms_datetime == eta
+        mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_called_with(args=[vo.id], eta=eta)
+
+    @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 11)))
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_just_added_shift_started_2h_more(self, mock_task, shift, candidate_contact):
+        VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact
+        )
+
+        mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_not_called()
+
+    @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 11)))
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_just_added_shift_eta_less_than_now(self, mock_task, vacancy_date, candidate_contact):
+        shift = Shift.objects.create(
+            date=vacancy_date,
+            time=datetime.time(hour=12, minute=30)
+        )
+        vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact
+        )
+
+        eta = tz.localize(datetime.datetime(2017, 1, 2, 11, 0, 10))
+
+        assert vo.scheduled_sms_datetime == eta
+        mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_called_with(args=[vo.id], eta=eta)
+
+    @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 9)))
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_just_added_shift_eta_less_than_90min_to_shift(self, mock_task, vacancy_date, candidate_contact):
+        shift = Shift.objects.create(
+            date=vacancy_date,
+            time=datetime.time(hour=10, minute=0)
+        )
+        vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact
+        )
+
+        eta = tz.localize(datetime.datetime(2017, 1, 2, 9, 0, 10))
+
+        assert vo.scheduled_sms_datetime == eta
+        mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_called_with(args=[vo.id], eta=eta)
+
+    @freeze_time(tz.localize(datetime.datetime(2016, 12, 31, 9)))
+    @patch.object(VacancyOffer, 'has_future_accepted_vo', return_value=False)
+    @patch.object(VacancyOffer, 'has_previous_vo', return_value=False)
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_just_added_has_no_offers_future_less_than_4day(
+        self, mock_task, mock_prev_vo, mock_future_vo, shift, candidate_contact
+    ):
+        vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact
+        )
+
+        eta = tz.localize(datetime.datetime(2016, 12, 31, 9, 0, 10))
+
+        assert vo.scheduled_sms_datetime == eta
+        mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_called_with(args=[vo.id], eta=eta)
+
+    @freeze_time(tz.localize(datetime.datetime(2016, 12, 31, 9)))
+    @patch.object(VacancyOffer, 'has_future_accepted_vo', return_value=True)
+    @patch.object(VacancyOffer, 'has_previous_vo', return_value=False)
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_just_added_has_offers_future_less_than_4day(
+        self, mock_task, mock_prev_vo, mock_future_vo, shift, candidate_contact
+    ):
+        vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact
+        )
+
+        eta = tz.localize(datetime.datetime(2017, 1, 1, 10, 0, 0))
+
+        assert vo.scheduled_sms_datetime == eta
+        mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_called_with(args=[vo.id], eta=eta)
+
+    @freeze_time(tz.localize(datetime.datetime(2016, 12, 31, 9)))
+    @patch.object(VacancyOffer, 'has_future_accepted_vo', return_value=False)
+    @patch.object(VacancyOffer, 'has_previous_vo', return_value=True)
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_just_added_has_prev_offers_future_less_than_4day(
+        self, mock_task, mock_prev_vo, mock_future_vo, shift, candidate_contact
+    ):
+        vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact
+        )
+
+        eta = tz.localize(datetime.datetime(2017, 1, 1, 10, 0, 0))
+
+        assert vo.scheduled_sms_datetime == eta
+        mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_called_with(args=[vo.id], eta=eta)
+
+    @freeze_time(tz.localize(datetime.datetime(2016, 12, 25, 9)))
+    @patch.object(VacancyOffer, 'has_future_accepted_vo', return_value=False)
+    @patch.object(VacancyOffer, 'has_previous_vo', return_value=False)
+    @patch('r3sourcer.apps.hr.models.hr_utils')
+    def test_just_added_has_prev_offers_future_less_than_4day(
+        self, mock_task, mock_prev_vo, mock_future_vo, shift, candidate_contact
+    ):
+        vo = VacancyOffer.objects.create(
+            shift=shift,
+            candidate_contact=candidate_contact
+        )
+
+        eta = tz.localize(datetime.datetime(2017, 1, 1, 10, 0, 0))
+
+        assert vo.scheduled_sms_datetime == eta
+        mock_task.get_vo_sms_sending_task.return_value.apply_async.assert_called_with(args=[vo.id], eta=eta)
 
 
 class TestTimeSheetIssue:

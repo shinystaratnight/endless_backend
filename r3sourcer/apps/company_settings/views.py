@@ -114,7 +114,7 @@ class CompanyGroupCreateView(APIView):
     Creates a Group and connects it with a Company.
     """
     def post(self, request, *args, **kwargs):
-        company = request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
@@ -132,7 +132,7 @@ class CompanyGroupListView(ListAPIView):
     serializer_class = serializers.GroupSerializer
 
     def get_queryset(self):
-        company = self.request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
@@ -190,12 +190,12 @@ class CompanyUserListView(APIView):
     Returns list of all users of current user's company.
     """
     def get(self, *args, **kwargs):
-        company = self.request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
 
-        user_list = User.objects.filter(contact__company_contact__relationships__company=company)
+        user_list = User.objects.filter(contact__company_contact__relationships__company=company).distinct()
         serializer = serializers.CompanyUserSerializer(user_list, many=True)
         data = {
             "user_list": serializer.data
@@ -213,24 +213,21 @@ class CompanySettingsView(APIView):
         company_settings = company.company_settings
         invoice_rule = company.invoice_rules.first()
         payslip_rule = company.payslip_rules.first()
-        # account_set = company.company_settings.account_set
 
         company_settings_serializer = serializers.CompanySettingsSerializer(company_settings)
         invoice_rule_serializer = serializers.InvoiceRuleSerializer(invoice_rule)
         payslip_rule_serializer = serializers.PayslipRuleSerializer(payslip_rule)
-        # account_set_serializer = serializers.AccountSetSerializer(account_set)
 
         data = {
             "company_settings": company_settings_serializer.data,
             "invoice_rule": invoice_rule_serializer.data,
             "payslip_rule": payslip_rule_serializer.data,
-            # "account_set": account_set_serializer.data
         }
 
         return Response(data)
 
     def post(self, *args, **kwargs):
-        company = self.request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
@@ -317,7 +314,8 @@ class RefreshCompanyFilesView(APIView):
     Fetches a list of company files from MYOB API, save and returns it.
     """
     def get(self, request, *args, **kwargs):
-        auth_data = request.user.auth_data.latest('created')
+        company = request.user.company
+        auth_data = company.company_file_tokens.first().auth_data
         client = MYOBClient(auth_data=auth_data)
         raw_company_files = client.get_company_files()
         new_company_files = list()
@@ -329,7 +327,7 @@ class RefreshCompanyFilesView(APIView):
                                                                                  'cf_name': raw_company_file['Name']
                                                                              })
             company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
-                                                                                  company=request.user.company,
+                                                                                  company=company,
                                                                                   defaults={
                                                                                       'auth_data': auth_data,
                                                                                   })
@@ -356,7 +354,8 @@ class CheckCompanyFilesView(APIView):
         password = self.request.data.get('password', None)
         company_file_id = self.request.data.get('id', None)
         company_file = MYOBCompanyFile.objects.get(cf_id=company_file_id)
-        auth_data = request.user.auth_data.latest('created')
+        company = request.user.company
+        auth_data = company.company_file_tokens.first().auth_data
         client = MYOBClient(auth_data=auth_data)
         is_valid = client.check_company_file(company_file_id, username, password)
         company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created')
@@ -427,7 +426,7 @@ class MYOBSettingsView(APIView):
         return Response(data)
 
     def post(self, *args, **kwargs):
-        company = self.request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")

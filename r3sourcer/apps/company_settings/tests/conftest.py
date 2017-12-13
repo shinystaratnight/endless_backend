@@ -2,13 +2,12 @@ import pytest
 
 from django.contrib.auth.models import Group
 
-from r3sourcer.apps.company_settings.models import MYOBAccount
-from r3sourcer.apps.core.models import User, Company, CompanyContact, InvoiceRule
+from r3sourcer.apps.candidate.models import CandidateContact, CandidateRel
+from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
+from r3sourcer.apps.core.models import InvoiceRule, User, Company, CompanyContact, CompanyContactRelationship
 from r3sourcer.apps.hr.models import PayslipRule
-from r3sourcer.apps.company_settings.models import GlobalPermission
-from r3sourcer.apps.core.models import User, Company, CompanyContact
-from r3sourcer.apps.myob.models import MYOBCompanyFileToken, MYOBCompanyFile
 from r3sourcer.apps.myob.api.wrapper import MYOBAuthData
+from r3sourcer.apps.myob.models import MYOBCompanyFileToken, MYOBCompanyFile
 
 
 @pytest.fixture
@@ -143,4 +142,28 @@ def company_file_token(db, company_file, auth_data, company):
         auth_data=auth_data,
         company=company,
         cf_token='cf_token'
+    )
+
+
+@pytest.fixture
+def candidate_contact(db, contact):
+    return CandidateContact.objects.create(
+        contact=contact
+    )
+
+
+@pytest.fixture
+def candidate_rel(db, candidate_contact, company, manager):
+    return CandidateRel.objects.create(
+        candidate_contact=candidate_contact,
+        master_company=company,
+        company_contact=manager,
+    )
+
+
+@pytest.fixture
+def company_contact_rel(db, manager, company):
+    return CompanyContactRelationship.objects.create(
+        company_contact=manager,
+        company=company
     )
