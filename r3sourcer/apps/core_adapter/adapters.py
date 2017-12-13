@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
-    'showIf', 'title', 'send', 'text_color',
+    'showIf', 'title', 'send', 'text_color', 'display'
 )
 
 
@@ -45,6 +45,8 @@ def to_html_tag(component_type):
         return component_type
     elif component_type in [constants.FIELD_DATE, constants.FIELD_DATETIME, constants.FIELD_TIME]:
         return 'datepicker'
+    elif component_type in [constants.FIELD_SCORE]:
+        return constants.FIELD_STATIC
     return 'input'
 
 
@@ -124,9 +126,14 @@ class AngularApiAdapter(BaseAdapter):
                 'collapsed': field.get('collapsed', False),
                 'templateOptions': {
                     'delete': field.get('delete', False),
+                    'values': field.get('values', ['__str__']),
                     **{attr: field.get(attr, True) for attr in ('add', 'edit')}
                 }
             }
+
+            query_params = field.get('query')
+            if query_params is not None:
+                adapted['query'] = query_params
         elif component_type == constants.FIELD_ICON:
             default_icons = {
                 True: 'check-circle',
@@ -165,7 +172,7 @@ class AngularApiAdapter(BaseAdapter):
             adapted['send'] = field['send']
 
         field_ui = field.get('ui', {})
-        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title')
+        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display')
         adapted['templateOptions'].update({
             'type': component_type,
             'label': field.get('label', field_ui.get('label', '')),

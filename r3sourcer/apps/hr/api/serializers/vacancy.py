@@ -18,6 +18,7 @@ class VacancySerializer(
         fields = (
             '__all__',
             {
+                'hourly_rate_default': ['id', 'hourly_rate'],
                 'jobsite': ['id', {
                     'primary_contact': ['id', {
                         'contact': ['id', 'phone_mobile']
@@ -181,6 +182,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         model = hr_models.Shift
         fields = (
             '__all__', {
+                'hourly_rate': ('id', 'hourly_rate'),
                 'date': ('__all__', )
             }
         )
