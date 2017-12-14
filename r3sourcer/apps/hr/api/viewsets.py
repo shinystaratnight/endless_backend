@@ -1,7 +1,7 @@
 import datetime
 
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, Case, When, BooleanField
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -12,6 +12,7 @@ from filer.models import File
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.decorators import detail_route, list_route
+from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
@@ -41,6 +42,23 @@ class TimeSheetViewset(BaseApiViewset):
 
     EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets',
                    'met_expectations', 'representation')
+
+    def get_queryset(self):
+
+        contact = self.request.user.contact
+        role = contact.get_role()
+
+        queryset = hr_models.TimeSheet.objects.annotate(
+            approved=Case(When(candidate_submitted_at__isnull=False, supervisor_approved_at__isnull=False, then=True),
+                          output_field=BooleanField(), default=False)
+        ).order_by('approved')
+
+        if role == CANDIDATE:
+            queryset = queryset.filter(
+                vacancy_offer__candidate_contact_id=contact.candidate_contacts.id
+            )
+        return queryset
+
 
     def submit_hours(self, data, time_sheet, is_candidate=True):
         if is_candidate:
