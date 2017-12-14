@@ -1,6 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 
-from django_filters import UUIDFilter, NumberFilter
+from django_filters import UUIDFilter, NumberFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core import models as core_models
@@ -9,6 +9,7 @@ from r3sourcer.apps.hr import models as hr_models
 
 class TimesheetFilter(FilterSet):
     candidate = UUIDFilter(method='filter_candidate')
+    approved = BooleanFilter(method='filter_approved')
 
     class Meta:
         model = hr_models.TimeSheet
@@ -18,6 +19,11 @@ class TimesheetFilter(FilterSet):
         return queryset.filter(
             vacancy_offer__candidate_contact_id=value
         )
+
+    def filter_approved(self, queryset, name, value):
+        if value:
+            return queryset.filter(candidate_submitted_at__isnull=False, supervisor_approved_at__isnull=False)
+        return queryset.filter(candidate_submitted_at__isnull=True, supervisor_approved_at__isnull=True)
 
 
 class VacancyFilter(FilterSet):
