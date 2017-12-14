@@ -1,7 +1,7 @@
 from django.contrib.auth.models import Group
 from rest_framework import serializers
 
-from r3sourcer.apps.company_settings.models import CompanySettings, AccountSet, MYOBAccount
+from r3sourcer.apps.company_settings.models import CompanySettings, MYOBAccount, MYOBSettings
 from r3sourcer.apps.core.api.fields import ApiBase64ImageField
 from r3sourcer.apps.core.models import InvoiceRule
 from r3sourcer.apps.hr.models import PayslipRule
@@ -38,7 +38,7 @@ class MYOBAccountSerializer(serializers.ModelSerializer):
         fields = ('id', 'number', 'name', 'type')
 
 
-class AccountSetSerializer(serializers.ModelSerializer):
+class MYOBSettingsSerializer(serializers.ModelSerializer):
     subcontractor_contract_work = MYOBAccountSerializer()
     subcontractor_gst = MYOBAccountSerializer()
     candidate_wages = MYOBAccountSerializer()
@@ -47,9 +47,10 @@ class AccountSetSerializer(serializers.ModelSerializer):
     company_client_gst = MYOBAccountSerializer()
 
     class Meta:
-        model = AccountSet
+        model = MYOBSettings
         fields = ('subcontractor_contract_work', 'subcontractor_gst', 'candidate_wages', 'candidate_superannuation',
-                  'company_client_labour_hire', 'company_client_gst')
+                  'company_client_labour_hire', 'company_client_gst', 'payroll_accounts_last_refreshed',
+                  'company_files_last_refreshed')
 
     def update(self, instance, validated_data):
         fields = ('subcontractor_contract_work', 'subcontractor_gst', 'candidate_wages', 'candidate_superannuation',
@@ -58,11 +59,13 @@ class AccountSetSerializer(serializers.ModelSerializer):
         for field in fields:
             if validated_data.get(field, None):
                 myob_account = MYOBAccount.objects.filter(id=validated_data[field]['id']).first()
+                validated_data.pop(field)
 
                 if myob_account:
                     setattr(instance, field, myob_account)
 
         instance.save()
+        super(MYOBSettingsSerializer, self).update(instance, validated_data)
         return instance
 
 
