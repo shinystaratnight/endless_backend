@@ -33,6 +33,15 @@ class TestSkillBaseRate:
         assert base_rate3.default_rate
         assert not base_rate4.default_rate
 
+    def test_set_default_rate(self, skill):
+        base_rate1 = SkillBaseRate.objects.create(skill=skill, hourly_rate=1, default_rate=True)
+        base_rate2 = SkillBaseRate.objects.create(skill=skill, hourly_rate=2, default_rate=False)
+        base_rate2.default_rate = True
+        base_rate2.save()
+
+        assert SkillBaseRate.objects.get(pk=base_rate1.pk).default_rate is False
+        assert SkillBaseRate.objects.get(pk=base_rate2.pk).default_rate is True
+
 
 class TestSkill:
     def test_validation_success(self, price_list):
