@@ -96,7 +96,6 @@ class SkillBaseRate(UUIDModel):
         verbose_name = _("Skill Base Rate")
         verbose_name_plural = _("Skill Base Rates")
         ordering = ('hourly_rate',)
-        unique_together = ('skill', 'hourly_rate')
 
     @classmethod
     def set_default_rate(cls, sender, instance, created, **kwargs):
