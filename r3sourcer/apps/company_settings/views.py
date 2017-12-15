@@ -315,7 +315,7 @@ class RefreshCompanyFilesView(APIView):
     """
     def get(self, request, *args, **kwargs):
         company = request.user.company
-        auth_data = company.company_file_tokens.first().auth_data
+        auth_data = request.user.auth_data.latest('created')
         client = MYOBClient(auth_data=auth_data)
         raw_company_files = client.get_company_files()
         new_company_files = list()
