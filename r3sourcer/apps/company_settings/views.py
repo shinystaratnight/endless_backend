@@ -1,5 +1,6 @@
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import exceptions
 from rest_framework import status
 from rest_framework.generics import ListAPIView
@@ -113,7 +114,7 @@ class CompanyGroupCreateView(APIView):
     Creates a Group and connects it with a Company.
     """
     def post(self, request, *args, **kwargs):
-        company = request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
@@ -131,7 +132,7 @@ class CompanyGroupListView(ListAPIView):
     serializer_class = serializers.GroupSerializer
 
     def get_queryset(self):
-        company = self.request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
@@ -189,12 +190,12 @@ class CompanyUserListView(APIView):
     Returns list of all users of current user's company.
     """
     def get(self, *args, **kwargs):
-        company = self.request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
 
-        user_list = User.objects.filter(contact__company_contact__relationships__company=company)
+        user_list = User.objects.filter(contact__company_contact__relationships__company=company).distinct()
         serializer = serializers.CompanyUserSerializer(user_list, many=True)
         data = {
             "user_list": serializer.data
@@ -212,24 +213,21 @@ class CompanySettingsView(APIView):
         company_settings = company.company_settings
         invoice_rule = company.invoice_rules.first()
         payslip_rule = company.payslip_rules.first()
-        account_set = company.company_settings.account_set
 
         company_settings_serializer = serializers.CompanySettingsSerializer(company_settings)
         invoice_rule_serializer = serializers.InvoiceRuleSerializer(invoice_rule)
         payslip_rule_serializer = serializers.PayslipRuleSerializer(payslip_rule)
-        account_set_serializer = serializers.AccountSetSerializer(account_set)
 
         data = {
             "company_settings": company_settings_serializer.data,
             "invoice_rule": invoice_rule_serializer.data,
             "payslip_rule": payslip_rule_serializer.data,
-            "account_set": account_set_serializer.data
         }
 
         return Response(data)
 
     def post(self, *args, **kwargs):
-        company = self.request.user.contact.company_contact.first().companies.first()
+        company = self.request.user.company
 
         if not company:
             raise exceptions.APIException("User has no relation to any company.")
@@ -255,19 +253,13 @@ class CompanySettingsView(APIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
-        if 'account_set' in self.request.data:
-            serializer = serializers.AccountSetSerializer(company.company_settings.account_set,
-                                                          data=self.request.data['account_set'],
-                                                          partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-
         return Response()
 
 
-class MYOBAccountListView(APIView):
-    def get(self, *args, **kwargs):
-        myob_accounts = MYOBAccount.objects.all()
+class CompanyFileAccountsView(APIView):
+    def get(self, request, *args, **kwargs):
+        company_file = get_object_or_404(MYOBCompanyFile, id=self.kwargs['id'])
+        myob_accounts = company_file.accounts.all()
         serializer = serializers.MYOBAccountSerializer(myob_accounts, many=True)
         data = {
             'myob_accounts': serializer.data
@@ -280,17 +272,27 @@ class MYOBAuthorizationView(APIView):
     """
     Accepts Developer Key and Developer Secret and checks if they are correct.
     """
-    def post(self, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
         data = {
-            'client_id': self.request.data.get('api_key', None),
-            'client_secret': self.request.data.get('api_secret', None),
+            'client_id': request.data.get('api_key', None),
+            'client_secret': request.data.get('api_secret', None),
             'scope': 'CompanyFile',
-            'code': self.request.data.get('code', None),
-            'redirect_uri': self.request.data.get('redirect_uri', None),
+            'code': request.data.get('code', None),
+            'redirect_uri': request.data.get('redirect_uri', None),
             'grant_type': 'authorization_code'
         }
         auth_client = MYOBAuth(self.request)
-        auth_client.retrieve_access_token(data=data)
+        response = auth_client.retrieve_access_token(data=data)
+        MYOBAuthData.objects.get_or_create(
+            client_id=request.data.get('api_key', None),
+            client_secret=request.data.get('api_secret', None),
+            access_token=response['access_token'],
+            refresh_token=response['refresh_token'],
+            myob_user_uid=response['user']['uid'],
+            myob_user_username=response['user']['username'],
+            expires_in=response['expires_in'],
+            user=request.user
+        )
 
         return Response()
 
@@ -325,6 +327,7 @@ class RefreshCompanyFilesView(APIView):
                                                                                  'cf_name': raw_company_file['Name']
                                                                              })
             company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
+                                                                                  company=company,
                                                                                   defaults={
                                                                                       'auth_data': auth_data,
                                                                                   })
@@ -336,6 +339,9 @@ class RefreshCompanyFilesView(APIView):
             "company_files": serialzer.data
         }
 
+        myob_settings = request.user.company.myob_settings
+        myob_settings.company_files_last_refreshed = timezone.now()
+        myob_settings.save()
         return Response(data)
 
 
@@ -352,6 +358,9 @@ class CheckCompanyFilesView(APIView):
         auth_data = company.company_file_tokens.first().auth_data
         client = MYOBClient(auth_data=auth_data)
         is_valid = client.check_company_file(company_file_id, username, password)
+        company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created')
+        company_file_token.cf_token = client.encode_cf_token(username, password)
+        company_file_token.save()
         company_file.authenticated = is_valid
         company_file.save()
         data = {
@@ -359,3 +368,73 @@ class CheckCompanyFilesView(APIView):
         }
 
         return Response(data)
+
+
+class RefreshMYOBAccountsView(APIView):
+    """
+    Fetches all accounts of all user's company's company files from MYOB API and saves it into database
+    """
+    def get(self, request, *args, **kwargs):
+        auth_data = request.user.auth_data.latest('created')
+        client = MYOBClient(auth_data=auth_data)
+
+        for company_file in request.user.company_files:
+            if not company_file.authenticated:
+                continue
+
+            company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created').cf_token
+            accounts = client.get_accounts(company_file.cf_id, company_file_token).json()['Items']
+
+            for account in accounts:
+                MYOBAccount.objects.update_or_create(uid=account['UID'],
+                    defaults={
+                        'name': account['Name'],
+                        'display_id': account['DisplayID'],
+                        'classification': account['Classification'],
+                        'type': account['Type'],
+                        'number': account['Number'],
+                        'description': account['Description'],
+                        'is_active': account['IsActive'],
+                        'level': account['Level'],
+                        'opening_balance': account['OpeningBalance'],
+                        'current_balance': account['CurrentBalance'],
+                        'is_header': account['IsHeader'],
+                        'uri': account['URI'],
+                        'row_version': account['RowVersion'],
+                        'company_file': company_file
+                    }
+                )
+
+        myob_settings = request.user.company.myob_settings
+        myob_settings.payroll_accounts_last_refreshed = timezone.now()
+        myob_settings.save()
+        return Response()
+
+
+class MYOBSettingsView(APIView):
+    def get(self, *args, **kwargs):
+        company = self.request.user.company
+
+        if not company:
+            raise exceptions.APIException("User has no relation to any company.")
+
+        myob_settings = company.myob_settings
+        myob_settings_serializer = serializers.MYOBSettingsSerializer(myob_settings)
+        data = {
+            "myob_settings": myob_settings_serializer.data
+        }
+        return Response(data)
+
+    def post(self, *args, **kwargs):
+        company = self.request.user.company
+
+        if not company:
+            raise exceptions.APIException("User has no relation to any company.")
+
+        serializer = serializers.MYOBSettingsSerializer(company.myob_settings,
+                                                       data=self.request.data,
+                                                       partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response()

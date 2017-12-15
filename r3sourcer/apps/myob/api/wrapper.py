@@ -258,11 +258,6 @@ class MYOBAuth(object):
             return self.auth_data.expires_at
         raise MYOBProgrammingException('expires in not set')
 
-    def persist(self):
-        if self.request:
-            self.request.session.save()
-        self.auth_data, created = MYOBAuthData.persist(self)
-
     def set_attr(self, attr, value, persist=False):
         session_attr = 'myob_' + attr
         if self.request:
@@ -290,7 +285,7 @@ class MYOBAuth(object):
         self.set_attr('access_code', access_code)
         return access_code
 
-    def retrieve_access_token(self, data=None, persist=True):
+    def retrieve_access_token(self, data=None):
         if not data:
             data = {
                 'client_id': self.get_api_key(),
@@ -302,7 +297,6 @@ class MYOBAuth(object):
             }
 
         url = self.get_token_url()
-        now = datetime.datetime.now()
         resp = myob_request('post', url, data=data)
         log.info('%s %s', resp.status_code, resp.content)
 
@@ -310,22 +304,9 @@ class MYOBAuth(object):
             raise MYOBImplementationException('MYOB API returned %s status code: %s' % (resp.status_code, resp.content))
 
         resp_data = resp.json(parse_float=decimal.Decimal)
-        self.set_attr('access_token', resp_data['access_token'])
-        self.set_attr('refresh_token', resp_data['refresh_token'])
-        self.set_attr('user_uid', resp_data['user']['uid'])
-        self.set_attr('user_username', resp_data['user']['username'])
-        self.set_attr('expires_in', resp_data['expires_in'])
+        return resp_data
 
-        expires_at = int(resp_data['expires_in'])  # value in seconds
-        expires_at = now + datetime.timedelta(seconds=expires_at)
-        expires_at = date_format(expires_at, settings.DATETIME_MYOB_FORMAT)
-        self.set_attr('expires_at', expires_at)
-
-        if persist:
-            self.persist()
-        return resp
-
-    def refresh_access_token(self, data=None, persist=True):
+    def refresh_access_token(self, data=None):
         if not data:
             data = {
                 'client_id': self.get_api_key(),
@@ -340,18 +321,15 @@ class MYOBAuth(object):
         log.info('%s %s', resp.status_code, resp.content)
 
         resp_data = resp.json(parse_float=decimal.Decimal)
-
-        self.set_attr('access_token', resp_data['access_token'])
-        self.set_attr('refresh_token', resp_data['refresh_token'])
-        self.set_attr('expires_in', resp_data['expires_in'])
-
         expires_at = int(resp_data['expires_in'])  # value in seconds
         expires_at = now + datetime.timedelta(seconds=expires_at)
         expires_at = date_format(expires_at, settings.DATETIME_MYOB_FORMAT)
-        self.set_attr('expires_at', expires_at)
 
-        if persist:
-            self.persist()
+        self.auth_data.access_token = resp_data['access_token']
+        self.auth_data.refresh_token = resp_data['refresh_token']
+        self.auth_data.expires_in = resp_data['expires_in']
+        self.auth_data.expires_at = expires_at
+        self.auth_data.save()
         return resp
 
 
@@ -375,6 +353,14 @@ class MYOBClient(object):
         self.api = None  # needs custom initalization
 
         self.auth = MYOBAuth(request=request, auth_data=auth_data)
+
+    def get_accounts(self, company_file_id, company_file_token):
+        company_file_url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
+        url = '%s/GeneralLedger/Account' % company_file_url
+        headers = self.get_headers()
+        headers['x-myobapi-cftoken'] = company_file_token
+        resp = self.api_request('get', url, headers=headers)
+        return resp
 
     def check_company_file(self, company_file_id, username, password):
         url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
@@ -490,7 +476,6 @@ class MYOBClient(object):
                         # TODO: use some request limit
                         kwargs['headers'] = self.get_headers()
                         return self.api_request(method, url, **kwargs)
-
         return r
 
     def api_call(self, method, uri, **kwargs):

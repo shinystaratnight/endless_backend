@@ -10,7 +10,7 @@ import easy_thumbnails.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('company_settings', '0001_initial'),
+        ('company_settings', '0003_add_companysettings'),
         ('core', '0008_auto_20171128_0136'),
     ]
 

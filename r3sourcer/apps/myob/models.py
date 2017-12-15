@@ -2,10 +2,9 @@ import datetime
 
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
-from r3sourcer.apps.core.models import UUIDModel, Company
-
 from model_utils import Choices
+
+from r3sourcer.apps.core.models import UUIDModel, Company, User
 
 
 class MYOBWatchdogModel(models.Model):
@@ -94,14 +93,12 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
     """
     client_id = models.CharField(
         verbose_name=_("Client ID"),
-        unique=True,
         max_length=64,
         help_text=_("Registered MYOB application API Key")
     )
 
     client_secret = models.CharField(
         verbose_name=_("Client Secret"),
-        unique=True,
         max_length=64,
         help_text=_("Registered MYOB application API Secret")
     )
@@ -136,9 +133,12 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
         null=True, blank=True
     )
 
+    user = models.ForeignKey(User, related_name='auth_data', blank=True, null=True)
+
     class Meta:
         verbose_name = _("MYOB OAuth2 Data")
         verbose_name_plural = _("MYOB OAuth2 Data")
+        unique_together = ("client_id", "client_secret", "user")
 
     def __str__(self):
         return self.client_id
@@ -201,9 +201,9 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
 
 class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
     """
-    Contains all information needed for authorization and fetching iformation related to a specific company file
+    Contains all information needed for authorization and fetching information related to a specific company file
     """
-    company_file = models.ForeignKey(MYOBCompanyFile)
+    company_file = models.ForeignKey(MYOBCompanyFile, related_name='tokens')
 
     auth_data = models.ForeignKey(MYOBAuthData)
 
@@ -211,7 +211,7 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
 
     cf_token = models.CharField(
         verbose_name=_(u"Company File Token"),
-        max_length=32,  # current length 20
+        max_length=32,
     )
 
     enable_from = models.DateField(

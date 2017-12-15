@@ -4,32 +4,37 @@ from django.db import models
 
 
 class CompanySettings(models.Model):
+    company = models.OneToOneField('core.Company', blank=True, null=True, related_name='company_settings')
     logo = models.ImageField(null=True, blank=True)
     color_scheme = models.CharField(null=True, blank=True, max_length=32)
     font = models.CharField(null=True, blank=True, max_length=32)
     forwarding_number = models.CharField(null=True, blank=True, max_length=32)
-    account_set = models.OneToOneField('AccountSet', blank=True, null=True, related_name='company_settings')
-
-    def save(self, *args, **kwargs):
-        if not self.account_set:
-            self.account_set = AccountSet.objects.create()
-        super(CompanySettings, self).save(*args, **kwargs)
 
 
 class MYOBAccount(models.Model):
-    number = models.CharField(max_length=63)
+    uid = models.UUIDField(unique=True)
     name = models.CharField(max_length=63)
+    display_id = models.CharField(max_length=63)
+    classification = models.CharField(max_length=63)
     type = models.CharField(max_length=63)
+    number = models.CharField(max_length=63)
+    description = models.CharField(max_length=255)
+    is_active = models.BooleanField()
+    level = models.IntegerField()
+    opening_balance = models.DecimalField(decimal_places=2, max_digits=16)
+    current_balance = models.DecimalField(decimal_places=2, max_digits=16)
+    is_header = models.BooleanField()
+    uri = models.CharField(max_length=255)
+    row_version = models.CharField(max_length=255)
+    company_file = models.ForeignKey('myob.MYOBCompanyFile', blank=True, null=True, related_name='accounts')
 
     def __str__(self):
         return self.number + self.name
 
 
-class AccountSet(models.Model):
-    """
-    This model represents list of actions(transactions) that we perform.
-    Every our inner account has to point to outer MYOB account.
-    """
+class MYOBSettings(models.Model):
+    company = models.OneToOneField('core.Company', blank=True, null=True, related_name='myob_settings')
+
     # Expense accounts
     subcontractor_contract_work = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='subcontractor_contract_work')
     subcontractor_gst = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='subcontractor_gst')
@@ -39,6 +44,10 @@ class AccountSet(models.Model):
     # Income accounts
     company_client_labour_hire = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='company_client_labour_hire')
     company_client_gst = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='company_client_gst')
+
+    # Last refreshed
+    payroll_accounts_last_refreshed = models.DateTimeField(blank=True, null=True)
+    company_files_last_refreshed = models.DateTimeField(blank=True, null=True)
 
 
 class GlobalPermissionManager(models.Manager):

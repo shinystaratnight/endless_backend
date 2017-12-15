@@ -1312,12 +1312,12 @@
     "model": "core.extranetnavigation",
     "pk": 78,
     "fields": {
-      "updated_at": "2017-10-13T07:42:15.891Z",
+      "updated_at": "2017-12-12T09:29:09.055Z",
       "created_at": "2017-10-13T07:42:15.891Z",
       "parent": 71,
       "name": "Candidate relationships",
-      "url": "/candidate/skillraterels/",
-      "endpoint": "/ecore/api/v2/candidate/skillraterels/",
+      "url": "/candidate/candidaterels/",
+      "endpoint": "/ecore/api/v2/candidate/candidaterels/",
       "access_level": "manager",
       "lft": 23,
       "rght": 24,
@@ -2019,6 +2019,91 @@
       "lft": 1,
       "rght": 2,
       "tree_id": 7,
+      "level": 0
+    }
+  },
+  {
+    "model": "core.extranetnavigation",
+    "pk": 120,
+    "fields": {
+      "updated_at": "2017-12-06T07:25:46.457Z",
+      "created_at": "2017-12-06T07:23:13.431Z",
+      "parent": null,
+      "name": "Company settings",
+      "url": "/",
+      "endpoint": "/",
+      "access_level": "manager",
+      "lft": 1,
+      "rght": 8,
+      "tree_id": 8,
+      "level": 0
+    }
+  },
+  {
+    "model": "core.extranetnavigation",
+    "pk": 121,
+    "fields": {
+      "updated_at": "2017-12-06T07:26:52.534Z",
+      "created_at": "2017-12-06T07:26:18.167Z",
+      "parent": 120,
+      "name": "Company",
+      "url": "/settings/company/",
+      "endpoint": "/ecore/api/v2/settings/company/",
+      "access_level": "manager",
+      "lft": 2,
+      "rght": 3,
+      "tree_id": 8,
+      "level": 1
+    }
+  },
+  {
+    "model": "core.extranetnavigation",
+    "pk": 122,
+    "fields": {
+      "updated_at": "2017-12-06T07:30:00.502Z",
+      "created_at": "2017-12-06T07:30:00.502Z",
+      "parent": 120,
+      "name": "Myob",
+      "url": "/settings/myob/",
+      "endpoint": "/ecore/api/v2/settings/myob/",
+      "access_level": "manager",
+      "lft": 4,
+      "rght": 5,
+      "tree_id": 8,
+      "level": 1
+    }
+  },
+  {
+    "model": "core.extranetnavigation",
+    "pk": 123,
+    "fields": {
+      "updated_at": "2017-12-06T07:30:25.812Z",
+      "created_at": "2017-12-06T07:30:25.812Z",
+      "parent": 120,
+      "name": "Permissions",
+      "url": "/settings/permissions/",
+      "endpoint": "/ecore/api/v2/settings/permissions/",
+      "access_level": "manager",
+      "lft": 6,
+      "rght": 7,
+      "tree_id": 8,
+      "level": 1
+    }
+  },
+  {
+    "model": "core.extranetnavigation",
+    "pk": 124,
+    "fields": {
+      "updated_at": "2017-12-14T09:25:08.372Z",
+      "created_at": "2017-12-12T18:46:15.598Z",
+      "parent": null,
+      "name": "Timesheet",
+      "url": "/hr/timesheets/",
+      "endpoint": "/ecore/api/v2/hr/timesheets/",
+      "access_level": "candidate",
+      "lft": 1,
+      "rght": 2,
+      "tree_id": 9,
       "level": 0
     }
   }
