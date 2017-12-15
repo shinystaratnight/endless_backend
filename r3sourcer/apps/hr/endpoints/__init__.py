@@ -101,7 +101,7 @@ class VacancyOfferEndpoint(ApiEndpoint):
             'label': _('Timesheets'),
             'field': 'timesheets',
             'text': _('Link to TimeSheet'),
-            'link': format_lazy('{}{{field}}', api_reverse_lazy('hr/timesheets'))
+            'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('hr/timesheets'))
         }, {
             'label': _('Actions'),
             'delim': ' ',
@@ -373,6 +373,21 @@ class VacancyEndpoint(ApiEndpoint):
         'add_label': _('Fill in'),
         'add_endpoint': api_reverse_lazy('hr/vacancyoffers'),
         'endpoint': api_reverse_lazy('hr/vacancyoffers'),
+    }, {
+        'type': constants.CONTAINER_ROW,
+        'name': _('Vacancy state timeline'),
+        'fields': (
+            {
+                'type': constants.FIELD_TIMELINE,
+                'label': _('States Timeline'),
+                'field': 'id',
+                'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+                'query': {
+                    'model': 'hr.vacancy',
+                    'object_id': '{id}',
+                }
+            },
+        )
     })
 
     def get_list_filter(self):

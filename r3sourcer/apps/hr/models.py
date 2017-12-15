@@ -386,6 +386,62 @@ class Vacancy(core_models.AbstractBaseOrder):
         #                                       OrderState.STATE_CHOICES.new] and \
         return self.is_fulfilled() in [NOT_FULFILLED, LIKELY_FULFILLED] or not_filled_future_vd
 
+    @workflow_function
+    def has_active_price_list_and_rate(self):
+        today = timezone.localtime(timezone.now()).date()
+
+        return self.customer_company.price_lists.filter(
+            models.Q(
+                price_list_rates__skill=self.position,
+                price_list_rates__hourly_rate__gt=0
+            ) |
+            models.Q(
+                industry_price_list__industry_price_list_rates__skill=self.position,
+                industry_price_list__industry_price_list_rates__hourly_rate__gt=0
+            ),
+            effective=True, valid_from__lte=today, valid_until__gte=today,
+        ).exists()
+    has_active_price_list_and_rate.short_description = _('Customer active price list for skill')
+
+    @workflow_function
+    def is_start_date_set(self):
+        return bool(self.work_start_date)
+    is_start_date_set.short_description = _('Work Start Date')
+
+    @workflow_function
+    def is_all_vd_filled(self):
+        for vd in self.vacancy_dates.all():
+            if vd.is_fulfilled() != FULFILLED:
+                return False
+
+        return True
+    is_all_vd_filled.short_description = _('Fill in all Vacancy Dates')
+
+    @workflow_function
+    def is_all_timesheets_approved(self):
+        return not TimeSheet.objects.filter(
+            vacancy_offer__shift__date__vacancy=self,
+            supervisor_approved_at__isnull=True
+        ).exists()
+    is_all_timesheets_approved.short_description = _('All Time Sheets approvment')
+
+    def after_state_created(self, workflow_object):
+        if workflow_object.state.number == 20:
+            vd, _ = VacancyDate.objects.get_or_create(
+                vacancy=self, shift_date=self.work_start_date,
+                workers=self.workers, hourly_rate=self.hourly_rate_default
+            )
+
+            Shift.objects.get_or_create(date=vd, time=hr_utils.today_7_am, workers=self.workers)
+
+    def save(self, *args, **kwargs):
+        just_added = self._state.adding
+
+        super().save(*args, **kwargs)
+
+        if just_added:
+            self.create_state(10)
+
 
 class VacancyDate(core_models.UUIDModel):
 

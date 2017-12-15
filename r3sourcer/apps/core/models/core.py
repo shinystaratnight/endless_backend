@@ -1850,6 +1850,13 @@ class WorkflowNode(UUIDModel):
         default=False
     )
 
+    endpoint = models.CharField(
+        verbose_name=_("Endpoint to activate state"),
+        max_length=255,
+        null=True,
+        blank=True
+    )
+
     class Meta:
         verbose_name = _("Workflow Node")
         verbose_name_plural = _("Workflow Nodes")
@@ -2034,7 +2041,7 @@ class WorkflowObject(UUIDModel):
             self.model_object.workflow(self.state)
 
             if lifecycle_enabled:
-                self.model_object.after_state_creation(self)
+                self.model_object.after_state_created(self)
 
     def clean(self):
         self.validate_object(self.state, self.object_id, self._state.adding)

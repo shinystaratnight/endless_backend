@@ -738,9 +738,10 @@ class CompanyEndpoint(ApiEndpoint):
                         '{}timeline/',
                         api_reverse_lazy('core/workflownodes'),
                     ),
-                    'query': ['model', 'object_id'],
-                    'model': 'core.company',
-                    'object_id': '{id}',
+                    'query': {
+                        'model': 'core.company',
+                        'object_id': '{id}',
+                    },
                 },
             )
         },
@@ -937,9 +938,10 @@ class CompanyRelEndpoint(ApiEndpoint):
                 '{}timeline/',
                 api_reverse_lazy('core/workflownodes'),
             ),
-            'query': ['model', 'object_id'],
-            'model': 'core.companyrel',
-            'object_id': '{id}',
+            'query': {
+                'model': 'core.companyrel',
+                'object_id': '{id}',
+            },
         }
     )
 

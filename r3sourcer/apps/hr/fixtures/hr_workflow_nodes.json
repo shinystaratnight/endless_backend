@@ -32,6 +32,14 @@
         "pk": "bc160e18-ca7f-40ce-9453-0b195dc20d52"
     },
     {
+        "model": "core.workflow",
+        "fields": {
+            "model": "hr.vacancy",
+            "name": "Vacancy Workflow"
+        },
+        "pk": "240d7316-fb0f-4365-b661-630a347c408c"
+    },
+    {
         "model": "core.workflownode",
         "pk": "084eb8a9-84d3-4cff-8472-7c2f37541e50",
         "fields": {
@@ -1139,6 +1147,147 @@
                 "required_states": [
                     "and",
                     90
+                ]
+            },
+            "hardlock": true
+        }
+    },
+    {
+        "model": "core.workflownode",
+        "pk": "238930f0-dcea-4ca3-a5a4-6e203ffba84e",
+        "fields": {
+            "workflow": "240d7316-fb0f-4365-b661-630a347c408c",
+            "number": 10,
+            "name_before_activation": "New",
+            "name_after_activation": "",
+            "active": true,
+            "rules": {
+                "active": [
+                    10
+                ]
+            },
+            "hardlock": true
+        }
+    },
+    {
+        "model": "core.workflownode",
+        "pk": "4a9a445c-4520-4e30-884e-987faab35745",
+        "fields": {
+            "workflow": "240d7316-fb0f-4365-b661-630a347c408c",
+            "number": 20,
+            "name_before_activation": "Confirm",
+            "name_after_activation": "Confirmed",
+            "active": true,
+            "rules": {
+                "active": [
+                    20
+                ],
+                "required_states": [
+                    "and",
+                    10
+                ],
+                "required_functions": [
+                    "and",
+                    "has_active_price_list_and_rate",
+                    "is_start_date_set"
+                ]
+            },
+            "hardlock": true
+        }
+    },
+    {
+        "model": "core.workflownode",
+        "pk": "d04321b9-2463-403a-97b2-3c9f7c63557e",
+        "fields": {
+            "workflow": "240d7316-fb0f-4365-b661-630a347c408c",
+            "number": 30,
+            "name_before_activation": "Fill in",
+            "name_after_activation": "Filled",
+            "active": true,
+            "endpoint": "/ecore/api/v2/hr/vacancy/{id}/fillin/",
+            "rules": {
+                "required_states": [
+                    "and",
+                    20
+                ],
+                "active": [
+                    20,
+                    30
+                ],
+                "required_functions": [
+                    "and",
+                    "is_all_vd_filled"
+                ]
+            },
+            "hardlock": true
+        }
+    },
+    {
+        "model": "core.workflownode",
+        "pk": "b9f7972d-009b-4d45-9c08-ccf1fc8ad293",
+        "fields": {
+            "workflow": "240d7316-fb0f-4365-b661-630a347c408c",
+            "number": 40,
+            "name_before_activation": "On-Hold",
+            "name_after_activation": "",
+            "active": true,
+            "rules": {
+                "required_states": [
+                    "or",
+                    10,
+                    20,
+                    30
+                ],
+                "active": [
+                    40
+                ]
+            },
+            "hardlock": true
+        }
+    },
+    {
+        "model": "core.workflownode",
+        "pk": "04b81f03-ae99-4b09-8cb2-ddd826fe9342",
+        "fields": {
+            "workflow": "240d7316-fb0f-4365-b661-630a347c408c",
+            "number": 50,
+            "name_before_activation": "Activate",
+            "name_after_activation": "Active",
+            "active": true,
+            "rules": {
+                "required_states": [
+                    "and",
+                    20,
+                    30
+                ],
+                "active": [
+                    50
+                ]
+            },
+            "hardlock": true
+        }
+    },
+    {
+        "model": "core.workflownode",
+        "pk": "788921a3-b2fe-4d4f-baa6-819c4df680bf",
+        "fields": {
+            "workflow": "240d7316-fb0f-4365-b661-630a347c408c",
+            "number": 60,
+            "name_before_activation": "Complete",
+            "name_after_activation": "Completed",
+            "active": true,
+            "rules": {
+                "active": [
+                    60
+                ],
+                "required_functions": [
+                    "and",
+                    "is_all_vd_filled",
+                    "is_all_timesheets_approved"
+                ],
+                "required_states": [
+                    "and",
+                    50
                 ]
             },
             "hardlock": true

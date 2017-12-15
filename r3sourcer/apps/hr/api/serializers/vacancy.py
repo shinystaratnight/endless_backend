@@ -108,7 +108,7 @@ class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
         else:
             candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.vacancy.position)
 
-        return candidate_rate.hourly_rate if candidate_rate else '-'
+        return candidate_rate.hourly_rate if candidate_rate else None
 
     def get_client_rate(self, obj):
         if not obj:
@@ -121,7 +121,7 @@ class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
         else:
             rate = None
 
-        return rate or '-'
+        return rate
 
     def get_timesheets(self, obj):  # pragma: no cover
         if obj is None:
