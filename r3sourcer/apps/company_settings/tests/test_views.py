@@ -34,7 +34,7 @@ class TestCompanySettingsView:
         assert response.data['company_settings']['forwarding_number'] == company_settings.forwarding_number
         assert response.data['company_settings']['color_scheme'] == company_settings.color_scheme
         assert response.data['company_settings']['font'] == company_settings.font
-        assert response.data['company_settings']['id'] == company_settings.id
+        assert response.data['company_settings']['id'] == str(company_settings.id)
         assert response.data['company_settings']['logo'] == company_settings.logo.url
         assert response.data['invoice_rule']['separation_rule'] == invoice_rule.separation_rule
         assert response.data['invoice_rule']['show_candidate_name'] == invoice_rule.show_candidate_name
@@ -146,11 +146,11 @@ class TestCompanyFileAccountsView:
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['myob_accounts'][1]['id'] == account1.id
+        assert response.data['myob_accounts'][1]['id'] == str(account1.id)
         assert response.data['myob_accounts'][1]['number'] == account1.number
         assert response.data['myob_accounts'][1]['name'] == account1.name
         assert response.data['myob_accounts'][1]['type'] == account1.type
-        assert response.data['myob_accounts'][0]['id'] == account2.id
+        assert response.data['myob_accounts'][0]['id'] == str(account2.id)
         assert response.data['myob_accounts'][0]['number'] == account2.number
         assert response.data['myob_accounts'][0]['name'] == account2.name
         assert response.data['myob_accounts'][0]['type'] == account2.type
@@ -582,12 +582,12 @@ class TestMYOBSettingsView:
                                              row_version="5548997690873872384",
                                              company_file=company_file)
         data = {
-            'subcontractor_contract_work': {"id": account.id},
-            'subcontractor_gst': {"id": account.id},
-            'candidate_wages': {"id": account.id},
-            'candidate_superannuation': {"id": account.id},
-            'company_client_labour_hire': {"id": account.id},
-            'company_client_gst': {"id": account.id},
+            'subcontractor_contract_work': {"id": str(account.id)},
+            'subcontractor_gst': {"id": str(account.id)},
+            'candidate_wages': {"id": str(account.id)},
+            'candidate_superannuation': {"id": str(account.id)},
+            'company_client_labour_hire': {"id": str(account.id)},
+            'company_client_gst': {"id": str(account.id)},
             'payroll_accounts_last_refreshed': str(now),
             'company_files_last_refreshed': str(now),
         }
