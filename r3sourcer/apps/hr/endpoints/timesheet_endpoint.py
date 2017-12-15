@@ -46,13 +46,6 @@ class TimeSheetEndpoint(ApiEndpoint):
             'field': 'supervisor',
             'choices': self._get_all_supervisors,
             'is_qs': True,
-        }, {
-            'type': constants.FIELD_SELECT,
-            'field': 'approved',
-
-            'label': _('Status'),
-            'choices': [{'label': 'Approved', 'value': 'True'},
-                        {'label': 'Unapproved', 'value': 'False'}]
         }]
 
     @transaction.atomic
