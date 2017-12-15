@@ -2,8 +2,10 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from django.db import models
 
+from r3sourcer.apps.core.models import UUIDModel
 
-class CompanySettings(models.Model):
+
+class CompanySettings(UUIDModel):
     company = models.OneToOneField('core.Company', blank=True, null=True, related_name='company_settings')
     logo = models.ImageField(null=True, blank=True)
     color_scheme = models.CharField(null=True, blank=True, max_length=32)
@@ -11,7 +13,7 @@ class CompanySettings(models.Model):
     forwarding_number = models.CharField(null=True, blank=True, max_length=32)
 
 
-class MYOBAccount(models.Model):
+class MYOBAccount(UUIDModel):
     uid = models.UUIDField(unique=True)
     name = models.CharField(max_length=63)
     display_id = models.CharField(max_length=63)
@@ -32,7 +34,7 @@ class MYOBAccount(models.Model):
         return self.number + self.name
 
 
-class MYOBSettings(models.Model):
+class MYOBSettings(UUIDModel):
     company = models.OneToOneField('core.Company', blank=True, null=True, related_name='myob_settings')
 
     # Expense accounts

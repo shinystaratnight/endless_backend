@@ -34,9 +34,7 @@ from model_utils import Choices
 from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
-from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.logger.main import endless_logger
-from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..utils.user import get_default_company
@@ -419,6 +417,8 @@ class User(UUIDModel,
         raise ValidationError("Unknown user role")
 
     def has_permission(self, permission_codename) -> bool:
+        from r3sourcer.apps.company_settings.models import GlobalPermission
+
         try:
             permission = GlobalPermission.objects.get(codename=permission_codename)
             return permission in self.user_permissions.all()
@@ -426,6 +426,8 @@ class User(UUIDModel,
             return False
 
     def has_group_permission(self, permission_codename) -> bool:
+        from r3sourcer.apps.company_settings.models import GlobalPermission
+
         try:
             groups = self.groups.all()
             granted_permissions = GlobalPermission.objects.filter(group__in=groups)
@@ -971,6 +973,8 @@ class Company(
         return qs
 
     def save(self, *args, **kwargs):
+        from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
+
         super(Company, self).save(*args, **kwargs)
 
         if not hasattr(self, 'company_settings'):
