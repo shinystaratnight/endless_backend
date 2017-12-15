@@ -48,6 +48,7 @@ class VacancyOfferEndpoint(ApiEndpoint):
     model = hr_models.VacancyOffer
     base_viewset = hr_viewsets.VacancyOfferViewset
     serializer = vacancy_serializers.VacancyOfferSerializer
+    filter_class = hr_filters.VacancyOfferFilter
 
     list_display = ('shift.date.shift_date', 'status')
     list_editable = (
@@ -89,9 +90,11 @@ class VacancyOfferEndpoint(ApiEndpoint):
             'fields': ({
                 'field': 'client_rate',
                 'type': constants.FIELD_STATIC,
+                'display': '${field}/h',
             }, {
                 'field': 'candidate_rate',
                 'type': constants.FIELD_STATIC,
+                'display': '${field}/h',
             })
         }, {
             'type': constants.FIELD_LINK,
@@ -304,7 +307,7 @@ class VacancyEndpoint(ApiEndpoint):
 
     fieldsets = ({
         'type': constants.CONTAINER_ROW,
-        'label': '{__str__}',
+        'label': '{jobsite.__str__} {position.__str__} {work_start_date}',
         'fields': (
             {
                 'type': constants.CONTAINER_COLUMN,
@@ -334,7 +337,16 @@ class VacancyEndpoint(ApiEndpoint):
             }, {
                 'type': constants.CONTAINER_COLUMN,
                 'fields': (
-                    'jobsite', 'position', 'work_start_date', 'default_shift_starting_time', 'hourly_rate_default'
+                    'jobsite', 'position', 'work_start_date', 'default_shift_starting_time', {
+                        'type': constants.FIELD_RELATED,
+                        'label': _('Candidate rate default'),
+                        'query': {
+                            'skill': '{position.id}',
+                        },
+                        'field': 'hourly_rate_default',
+                        'values': ['hourly_rate'],
+                        'display': '${hourly_rate}/h',
+                    }
                 )
             }
         )
@@ -342,7 +354,7 @@ class VacancyEndpoint(ApiEndpoint):
         'type': constants.FIELD_LIST,
         'field': 'id_',
         'query': {
-            'date.vacancy': '{id}',
+            'vacancy': '{id}',
         },
         'label': _('Vacancy Dates'),
         'add_label': _('Add date'),
@@ -355,7 +367,7 @@ class VacancyEndpoint(ApiEndpoint):
         'type': constants.FIELD_LIST,
         'field': 'id_',
         'query': {
-            'shift.date.vacancy': '{id}',
+            'vacancy': '{id}',
         },
         'label': _('Vacancy Offers'),
         'add_label': _('Fill in'),
@@ -393,6 +405,7 @@ class VacancyEndpoint(ApiEndpoint):
 class ShiftEndpoint(ApiEndpoint):
     model = hr_models.Shift
     serializer = vacancy_serializers.ShiftSerializer
+    filter_class = hr_filters.ShiftFilter
 
     list_displzy = ('workers', 'time')
 
@@ -404,7 +417,12 @@ class ShiftEndpoint(ApiEndpoint):
             'label': _('Date'),
             'name': 'date.shift_date',
             'field': 'date.shift_date',
-        }, 'workers', 'hourly_rate', {
+        }, 'workers', {
+            'type': constants.FIELD_TEXT,
+            'label': _('Candidate rate'),
+            'field': 'hourly_rate.hourly_rate',
+            'display': '${field}/h',
+        }, {
             'type': constants.FIELD_TIME,
             'field': 'time',
             'name': 'time',

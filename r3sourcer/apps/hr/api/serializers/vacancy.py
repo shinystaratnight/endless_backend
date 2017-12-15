@@ -18,6 +18,7 @@ class VacancySerializer(
         fields = (
             '__all__',
             {
+                'hourly_rate_default': ['id', 'hourly_rate'],
                 'jobsite': ['id', {
                     'primary_contact': ['id', {
                         'contact': ['id', 'phone_mobile']
@@ -115,7 +116,7 @@ class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
         price_list = obj.vacancy.customer_company.get_effective_pricelist_qs(obj.vacancy.position).first()
         if price_list:
-            price_list_rate = price_list.price_list_rates.filter(rate__skill=obj.position).first()
+            price_list_rate = price_list.price_list_rates.filter(rate__skill=obj.vacancy.position).first()
             rate = price_list_rate and price_list_rate.hourly_rate
         else:
             rate = None
@@ -181,6 +182,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         model = hr_models.Shift
         fields = (
             '__all__', {
+                'hourly_rate': ('id', 'hourly_rate'),
                 'date': ('__all__', )
             }
         )

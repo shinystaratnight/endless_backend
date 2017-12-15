@@ -429,7 +429,7 @@ class VacancyOfferViewset(BaseApiViewset):
     def accept(self, request, *args, **kwargs):  # pragma: no cover
         obj = self.get_object()
         obj.status = hr_models.VacancyOffer.STATUS_CHOICES.accepted
-        obj.save(update_field=['status'])
+        obj.save()
 
         return Response({'status': 'success'})
 
