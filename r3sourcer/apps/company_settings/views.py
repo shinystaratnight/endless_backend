@@ -257,9 +257,17 @@ class CompanySettingsView(APIView):
 
 
 class CompanyFileAccountsView(APIView):
+    """
+    Returns list of MYOB accounts of a given company file.
+    If company file wasnt given returns all MYOB accounts
+    """
     def get(self, request, *args, **kwargs):
-        company_file = get_object_or_404(MYOBCompanyFile, id=self.kwargs['id'])
-        myob_accounts = company_file.accounts.all()
+        if 'id' in self.kwargs:
+            company_file = get_object_or_404(MYOBCompanyFile, cf_id=self.kwargs['id'])
+            myob_accounts = company_file.accounts.all()
+        else:
+            myob_accounts = MYOBAccount.objects.all()
+
         serializer = serializers.MYOBAccountSerializer(myob_accounts, many=True)
         data = {
             'myob_accounts': serializer.data
@@ -383,6 +391,10 @@ class RefreshMYOBAccountsView(APIView):
                 continue
 
             company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created').cf_token
+
+            if not company_file_token:
+                continue
+
             accounts = client.get_accounts(company_file.cf_id, company_file_token).json()['Items']
 
             for account in accounts:
