@@ -50,6 +50,8 @@ services:
     build:
       context: .
       dockerfile: ./conf/docker/Dockerfile.dev
+    dns:
+      - 8.8.8.8
     ports:
       - "8081:8081"
     links:

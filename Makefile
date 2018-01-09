@@ -325,6 +325,7 @@ run-container:
 	$(call nginx_root$(USE_NGINX_DOCKER))
 	if test "$(DJANGO_UWSGI_PORT)" = ""; then \
         docker run -itd \
+            --dns $(DOCKER_DNS_SERVER) \
             --link "$(DOCKER_POSTGRES_NAME):$(POSTGRES_HOST)" \
             --link "$(DOCKER_REDIS_NAME):$(REDIS_HOST)" \
             --link "$(DOCKER_RABBIT_MQ_NAME):$(RABBIT_MQ_HOST)" \
@@ -340,6 +341,7 @@ run-container:
             r3sourcer-$(DOCKER_APP_NAME)-image; \
     else \
         docker run -itd \
+            --dns $(DOCKER_DNS_SERVER) \
             --link "$(DOCKER_POSTGRES_NAME):$(POSTGRES_HOST)" \
             --link "$(DOCKER_REDIS_NAME):$(REDIS_HOST)" \
             --link "$(DOCKER_RABBIT_MQ_NAME):$(RABBIT_MQ_HOST)" \
