@@ -1207,8 +1207,9 @@
             "endpoint": "/ecore/api/v2/hr/vacancy/{id}/fillin/",
             "rules": {
                 "required_states": [
-                    "and",
-                    20
+                    "or",
+                    20,
+                    50
                 ],
                 "active": [
                     20,
@@ -1236,9 +1237,11 @@
                     "or",
                     10,
                     20,
-                    30
+                    30,
+                    50
                 ],
                 "active": [
+                    30,
                     40
                 ]
             },
@@ -1256,9 +1259,13 @@
             "active": true,
             "rules": {
                 "required_states": [
-                    "and",
-                    20,
-                    30
+                    "or",
+                    40,
+                    [
+                        "and",
+                        20,
+                        30
+                    ]
                 ],
                 "active": [
                     50

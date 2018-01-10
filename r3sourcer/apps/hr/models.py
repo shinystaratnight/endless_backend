@@ -1,8 +1,6 @@
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
-import pytz
-
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
@@ -399,7 +397,8 @@ class Vacancy(core_models.AbstractBaseOrder):
                 industry_price_list__industry_price_list_rates__skill=self.position,
                 industry_price_list__industry_price_list_rates__hourly_rate__gt=0
             ),
-            effective=True, valid_from__lte=today, valid_until__gte=today,
+            models.Q(valid_until__gte=today) | models.Q(valid_until__isnull=True),
+            effective=True, valid_from__lte=today,
         ).exists()
     has_active_price_list_and_rate.short_description = _('Customer active price list for skill')
 
