@@ -974,6 +974,7 @@ class Company(
 
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
+        from r3sourcer.apps.hr.models import PayslipRule
 
         super(Company, self).save(*args, **kwargs)
 
@@ -982,6 +983,12 @@ class Company(
 
         if not hasattr(self, 'myob_settings'):
             MYOBSettings.objects.create(company=self)
+
+        if not self.payslip_rules.all():
+            PayslipRule.objects.create(company=self)
+
+        if not self.invoice_rules.all():
+            InvoiceRule.objects.create(company=self)
 
 
 class CompanyRel(
