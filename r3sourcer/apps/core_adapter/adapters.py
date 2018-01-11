@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
-    'showIf', 'title', 'send', 'text_color', 'display'
+    'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query'
 )
 
 
@@ -97,6 +97,8 @@ class AngularApiAdapter(BaseAdapter):
                 )
                 if field.get('add_label'):
                     adapted['templateOptions']['add_label'] = field['add_label']
+                if field.get('metadata_query'):
+                    adapted['metadata_query'] = field['metadata_query']
             elif component_type != constants.FIELD_SUBMIT:
                 adapted['templateOptions']['action'] = field['action']
 
@@ -292,6 +294,7 @@ class AngularListApiAdapter(AngularApiAdapter):
     fields = None
     list_editable = None
     is_formset = False
+    list_editable_type = 'default'
 
     metadata_info = [
         MetaDataInfo('metadata_fields', GETTER, []),
@@ -316,6 +319,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         self.adapted_fields = {}
         self.fields = []
         self.list_editable = []
+        self.list_editable_type = kwargs.pop('editable_type', 'default')
         self.is_formset = kwargs.pop('is_formset', False)
 
         super(AngularListApiAdapter, self).__init__(*args, **kwargs)
@@ -733,9 +737,14 @@ class AngularListApiAdapter(AngularApiAdapter):
 
         return res_buttons
 
+    def adapt_list_editable(self, list_editable):
+        if isinstance(list_editable, dict):
+            list_editable = list_editable.get(self.list_editable_type, [])
+        return list_editable
+
     def render(self, config):  # pragma: no cover
         self.fields = config['metadata_fields']
-        self.list_editable = config['list_editable']
+        self.list_editable = self.adapt_list_editable(config['list_editable'])
         if self.is_formset and self.list_editable:
             display_fields = self.list_editable
         else:

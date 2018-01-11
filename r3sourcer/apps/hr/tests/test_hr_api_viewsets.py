@@ -291,7 +291,9 @@ class TestApiViewset:
 
         assert len(response.data) == 1
 
-    def test_evaluate(self, rf, timesheet):
+    @mock.patch.object(TimeSheetViewset, 'get_object')
+    def test_evaluate(self, mock_obj, rf, timesheet, user):
+        mock_obj.return_value = timesheet
         data = {
             'was_on_time': True,
             'was_motivated': True,

@@ -263,24 +263,24 @@ class TestCandidateContact:
         assert workflow_object.active
 
     @mock.patch('r3sourcer.apps.candidate.tasks.send_verify_sms')
-    def test_after_state_creation_state_11(self, mock_send_task, candidate, workflow_state):
+    def test_after_state_created_state_11(self, mock_send_task, candidate, workflow_state):
         workflow_object = core_models.WorkflowObject(
             object_id=candidate.id, state=workflow_state, comment='comment', active=True
         )
 
-        candidate.after_state_creation(workflow_object)
+        candidate.after_state_created(workflow_object)
 
         assert mock_send_task.apply_async.called
 
     @mock.patch('r3sourcer.apps.candidate.tasks.send_verify_sms')
-    def test_after_state_creation(self, mock_send_task, candidate, workflow_state):
+    def test_after_state_created(self, mock_send_task, candidate, workflow_state):
         workflow_state.number = 100
 
         workflow_object = core_models.WorkflowObject(
             object_id=candidate.id, state=workflow_state, comment='comment', active=True
         )
 
-        candidate.after_state_creation(workflow_object)
+        candidate.after_state_created(workflow_object)
 
         assert not mock_send_task.apply_async.called
 
