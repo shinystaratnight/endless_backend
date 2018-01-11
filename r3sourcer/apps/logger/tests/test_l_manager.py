@@ -1,8 +1,16 @@
-from datetime import timedelta
+from datetime import timedelta, datetime
 
+import freezegun
 import pytest
-from r3sourcer.apps.logger.manager import *
+import pytz
+
+from django.utils import timezone
+from django.conf import settings as dj_settings
+from r3sourcer.apps.logger.manager import get_endless_logger, EndlessLogger, ClickHouseLogger
 from r3sourcer.apps.logger.models import LogHistory
+
+
+tz = pytz.timezone(dj_settings.TIME_ZONE)
 
 
 def test_get_endless_logger():
@@ -140,6 +148,7 @@ class TestClickhouseLogger:
             assert int(item['by']['id']) == 1
             assert item['by']['name'] == str(user)
 
+    @freezegun.freeze_time(tz.localize(datetime(2017, 1, 1, 7)))
     def test_get_object_history_filtered_by_date(self, test_model):
         new_instance = test_model.objects.create(name='Dates range test', id=5)
 
@@ -165,7 +174,7 @@ class TestClickhouseLogger:
                                      old_value='Dates range test',
                                      new_value='Dates range test 2')
         # second update logging
-        now = timezone.localtime(timezone.now())
+        now = timezone.now()
         general_logger_fields['date'] = now.date()
         general_logger_fields['updated_at'] = int(round(now.timestamp() * 1000))
 
@@ -176,7 +185,7 @@ class TestClickhouseLogger:
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id)
         assert len(history) == 3
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id,
-                                                 from_date=timezone.localtime(timezone.now()).date())
+                                                 from_date=timezone.now())
         assert len(history) == 1
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id,
                                                  from_date=week_ago.date(),

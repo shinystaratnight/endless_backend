@@ -332,7 +332,7 @@ class AppsList(ViewSet):
         """
         Return a list of applications
         """
-        return Response([app for app in settings.INSTALLED_APPS])
+        return Response([app.replace('r3sourcer.apps.', '') for app in settings.INSTALLED_APPS])
 
 
 class ModelsList(ViewSet):

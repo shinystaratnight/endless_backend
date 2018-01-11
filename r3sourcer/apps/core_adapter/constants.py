@@ -1,3 +1,6 @@
+from django.utils.translation import ugettext_lazy as _
+
+
 CONTAINER_ROW = 'row'
 CONTAINER_TABLE = 'table'
 CONTAINER_COLLAPSE = 'collapse'
@@ -46,3 +49,13 @@ DEFAULT_ACTION_SEND = 'send'
 DEFAULT_ACTION_LINK = 'link'
 DEFAULT_ACTION_SEND_SMS = 'sendSMS'
 DEFAULT_ACTION_SEND_EMAIL = 'sendEmail'
+
+
+BUTTON_DELETE = {
+    'type': FIELD_BUTTON,
+    'icon': 'fa-times-circle',
+    'field': 'id',
+    'action': DEFAULT_ACTION_DELETE,
+    'text_color': '#f32700',
+    'title': _('Delete'),
+}

@@ -33,12 +33,21 @@ class FavouriteListEndpoint(ApiEndpoint):
             'label': _('Company Manager'),
         }, 'company', 'jobsite', 'vacancy',
     )
-    list_editable = (
-        'company_contact', {
-            'field': 'company.manager',
-            'label': _('Company Manager'),
-        }, 'company', 'jobsite', 'vacancy',
-    )
+    list_editable = {
+        'default': (
+            'company_contact', {
+                'field': 'company.manager',
+                'label': _('Company Manager'),
+            }, 'company', 'jobsite', 'vacancy',
+        ),
+        'vacancy': (
+            'company_contact', 'candidate_contact', 'vacancy', {
+                'label': _('Actions'),
+                'delim': ' ',
+                'fields': (constants.BUTTON_DELETE,)
+            },
+        )
+    }
     list_filter = [
         'company_contact', 'candidate_contact', 'company', 'jobsite', 'vacancy'
     ]
@@ -101,7 +110,7 @@ class VacancyOfferEndpoint(ApiEndpoint):
             'label': _('Timesheets'),
             'field': 'timesheets',
             'text': _('Link to TimeSheet'),
-            'link': format_lazy('{}{{field}}', api_reverse_lazy('hr/timesheets'))
+            'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('hr/timesheets'))
         }, {
             'label': _('Actions'),
             'delim': ' ',
@@ -129,14 +138,7 @@ class VacancyOfferEndpoint(ApiEndpoint):
                 'endpoint': format_lazy('{}{{id}}/resend', api_reverse_lazy('hr/vacancyoffers')),
                 'text_color': '#f0ad4e',
                 'title': _('Resend VO'),
-            }, {
-                'type': constants.FIELD_BUTTON,
-                'icon': 'fa-times-circle',
-                'field': 'id',
-                'action': constants.DEFAULT_ACTION_DELETE,
-                'text_color': '#f32700',
-                'title': _('Delete'),
-            }),
+            }, constants.BUTTON_DELETE),
         }
     )
     ordering = ('-shift.date.shift_date', )
@@ -373,6 +375,37 @@ class VacancyEndpoint(ApiEndpoint):
         'add_label': _('Fill in'),
         'add_endpoint': api_reverse_lazy('hr/vacancyoffers'),
         'endpoint': api_reverse_lazy('hr/vacancyoffers'),
+    }, {
+        'type': constants.CONTAINER_ROW,
+        'label': _('Vacancy state timeline'),
+        'fields': (
+            {
+                'type': constants.FIELD_TIMELINE,
+                'label': _('States Timeline'),
+                'field': 'id',
+                'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+                'query': {
+                    'model': 'hr.vacancy',
+                    'object_id': '{id}',
+                }
+            },
+        )
+    }, {
+        'type': constants.FIELD_LIST,
+        'field': 'id_',
+        'query': {
+            'company_contact': '{customer_representative.id}',
+        },
+        'metadata_query': {
+            'editable_type': 'vacancy',
+        },
+        'label': _('Favourite List'),
+        'add_label': _('Add candidate'),
+        'endpoint': api_reverse_lazy('hr/favouritelists'),
+        'prefilled': {
+            'company_contact': '{customer_representative.id}',
+            'vacancy': '{id}',
+        }
     })
 
     def get_list_filter(self):
@@ -438,13 +471,10 @@ class ShiftEndpoint(ApiEndpoint):
                 3: 'minus-circle',
             },
         }, {
-            'type': constants.FIELD_BUTTON,
-            'icon': 'fa-times-circle',
-            'field': 'id',
-            'action': constants.DEFAULT_ACTION_DELETE,
-            'text_color': '#f32700',
             'label': _('Actions'),
-        }
+            'delim': ' ',
+            'fields': (constants.BUTTON_DELETE,)
+        },
     )
     ordering = ('-date.shift_date', '-time')
 

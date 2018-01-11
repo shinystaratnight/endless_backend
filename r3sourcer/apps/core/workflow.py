@@ -125,6 +125,9 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
 
         # TODO: add check that rule is formed properly
         if isinstance(rule, list):
+            if len(rule) == 1:
+                rule.insert(0, 'and')
+
             if self._get_rule_sign(rule) == "or":
                 return self._or_check(rule[1:])
             else:
@@ -185,6 +188,9 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         """
         message = ""
         if isinstance(rule, list):
+            if len(rule) == 1:
+                rule.insert(0, 'and')
+
             if self._get_rule_sign(rule) == "or":
                 return self._get_or_message(rule[1:], new_state)
             else:
@@ -315,7 +321,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         """
         pass
 
-    def after_state_creation(self, workflow_object):
+    def after_state_created(self, workflow_object):
         """
         Lifecycle callback: after some state created
 

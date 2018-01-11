@@ -7,27 +7,17 @@ from django.utils import timezone
 from freezegun import freeze_time
 from unittest.mock import patch
 
-from r3sourcer.apps.core.models import (
-    User, Address, Country, Region, City, Company, CompanyContact, CompanyRel,
-    CompanyContactRelationship, InvoiceRule, Invoice, VAT
-)
-from r3sourcer.apps.hr.models import (
-    Jobsite, JobsiteAddress, Vacancy, VacancyDate, Shift, TimeSheet,
-    VacancyOffer, CarrierList, BlackList, FavouriteList, TimeSheetIssue,
-    PayslipRule
-)
+from r3sourcer.apps.candidate import models as candidate_models
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.skills.models import Skill
-from r3sourcer.apps.pricing.models import (
-    Industry, IndustryPriceList, IndustryPriceListRate, PriceList,
-    PriceListRate, RateCoefficient, RateCoefficientModifier, AllowanceWorkRule,
-    DynamicCoefficientRule
-)
+from r3sourcer.apps.pricing import models as pricing_models
 from r3sourcer.apps.sms_interface import models as sms_models
 
 
 @pytest.fixture
 def user(db):
-    return User.objects.create_user(
+    return core_models.User.objects.create_user(
         email='test@test.tt', phone_mobile='+12345678901',
         password='test1234'
     )
@@ -35,7 +25,7 @@ def user(db):
 
 @pytest.fixture
 def user_another(db):
-    return User.objects.create_user(
+    return core_models.User.objects.create_user(
         email='test2@test.tt', phone_mobile='+12345678902',
         password='test2345'
     )
@@ -83,14 +73,14 @@ def contact_another(db, user_another, contact_data_another):
 
 @pytest.fixture
 def candidate_contact(db, contact):
-    return CandidateContact.objects.create(
+    return candidate_models.CandidateContact.objects.create(
         contact=contact
     )
 
 
 @pytest.fixture
 def company_contact(db, contact):
-    return CompanyContact.objects.create(
+    return core_models.CompanyContact.objects.create(
         contact=contact,
         pin_code='1234'
     )
@@ -98,40 +88,40 @@ def company_contact(db, contact):
 
 @pytest.fixture
 def company_contact_another(db, contact_another):
-    return CompanyContact.objects.create(
+    return core_models.CompanyContact.objects.create(
         contact=contact_another
     )
 
 
 @pytest.fixture
 def master_company(db):
-    return Company.objects.create(
+    return core_models.Company.objects.create(
         name='Master',
         business_id='123',
         registered_for_gst=True,
-        type=Company.COMPANY_TYPES.master,
-        timesheet_approval_scheme=Company.TIMESHEET_APPROVAL_SCHEME.PIN
+        type=core_models.Company.COMPANY_TYPES.master,
+        timesheet_approval_scheme=core_models.Company.TIMESHEET_APPROVAL_SCHEME.PIN
     )
 
 
 @pytest.fixture
 def regular_company(db):
-    return Company.objects.create(
+    return core_models.Company.objects.create(
         name='Regular',
         business_id='321',
         registered_for_gst=True,
-        type=Company.COMPANY_TYPES.regular
+        type=core_models.Company.COMPANY_TYPES.regular
     )
 
 
 @pytest.fixture
 def industry(db):
-    return Industry.objects.create(type='test')
+    return pricing_models.Industry.objects.create(type='test')
 
 
 @pytest.fixture
 def jobsite(db, master_company, company_contact, industry):
-    return Jobsite.objects.create(
+    return hr_models.Jobsite.objects.create(
         industry=industry,
         master_company=master_company,
         start_date=datetime.date.today(),
@@ -144,10 +134,10 @@ def jobsite(db, master_company, company_contact, industry):
 @patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
        return_value=(42, 42))
 def address(db):
-    country, _ = Country.objects.get_or_create(name='Australia', code2='AU')
-    state = Region.objects.create(name='test', country=country)
-    city = City.objects.create(name='city', country=country)
-    return Address.objects.create(
+    country, _ = core_models.Country.objects.get_or_create(name='Australia', code2='AU')
+    state = core_models.Region.objects.create(name='test', country=country)
+    city = core_models.City.objects.create(name='city', country=country)
+    return core_models.Address.objects.create(
         street_address="test street",
         postal_code="123456",
         city=city,
@@ -157,7 +147,7 @@ def address(db):
 
 @pytest.fixture
 def jobsite_address(db, address, jobsite, regular_company):
-    return JobsiteAddress.objects.create(
+    return hr_models.JobsiteAddress.objects.create(
         jobsite=jobsite,
         address=address,
         regular_company=regular_company
@@ -176,7 +166,7 @@ def skill(db):
 
 @pytest.fixture
 def vacancy(db, master_company, regular_company, jobsite, skill):
-    return Vacancy.objects.create(
+    return hr_models.Vacancy.objects.create(
         provider_company=master_company,
         customer_company=regular_company,
         jobsite=jobsite,
@@ -187,7 +177,7 @@ def vacancy(db, master_company, regular_company, jobsite, skill):
 
 @pytest.fixture
 def vacancy_date(db, vacancy):
-    return VacancyDate.objects.create(
+    return hr_models.VacancyDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 2)
     )
@@ -195,91 +185,91 @@ def vacancy_date(db, vacancy):
 
 @pytest.fixture
 def shift(db, vacancy_date):
-    return Shift.objects.create(
+    return hr_models.Shift.objects.create(
         date=vacancy_date,
         time=datetime.time(hour=8, minute=30)
     )
 
 
 @pytest.fixture
-@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
 def vacancy_offer(mock_check, db, shift, candidate_contact):
-    return VacancyOffer.objects.create(
+    return hr_models.VacancyOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact
     )
 
 
 @pytest.fixture
-@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
 def accepted_vo(mock_check, db, shift, candidate_contact):
-    return VacancyOffer.objects.create(
+    return hr_models.VacancyOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact,
-        status=VacancyOffer.STATUS_CHOICES.accepted
+        status=hr_models.VacancyOffer.STATUS_CHOICES.accepted
     )
 
 
 @pytest.fixture
-@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
 def cancelled_vo(mock_check, db, shift, candidate_contact):
-    return VacancyOffer.objects.create(
+    return hr_models.VacancyOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact,
-        status=VacancyOffer.STATUS_CHOICES.cancelled
+        status=hr_models.VacancyOffer.STATUS_CHOICES.cancelled
     )
 
 
 @pytest.fixture
-@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
 def vacancy_offer_yesterday(mock_check, db, vacancy, candidate_contact):
-    vacancy_date_yesterday = VacancyDate.objects.create(
+    vacancy_date_yesterday = hr_models.VacancyDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 1)
     )
-    shift_yesterday = Shift.objects.create(
+    shift_yesterday = hr_models.Shift.objects.create(
         date=vacancy_date_yesterday,
         time=datetime.time(hour=8, minute=30)
     )
 
-    return VacancyOffer.objects.create(
+    return hr_models.VacancyOffer.objects.create(
         shift=shift_yesterday,
         candidate_contact=candidate_contact,
-        status=VacancyOffer.STATUS_CHOICES.accepted
+        status=hr_models.VacancyOffer.STATUS_CHOICES.accepted
     )
 
 
 @pytest.fixture
-@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
 def vacancy_offer_tomorrow(mock_check, db, vacancy, candidate_contact):
-    vacancy_date_tomorrow = VacancyDate.objects.create(
+    vacancy_date_tomorrow = hr_models.VacancyDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 3)
     )
-    shift_tomorrow = Shift.objects.create(
+    shift_tomorrow = hr_models.Shift.objects.create(
         date=vacancy_date_tomorrow,
         time=datetime.time(hour=8, minute=30)
     )
 
-    return VacancyOffer.objects.create(
+    return hr_models.VacancyOffer.objects.create(
         shift=shift_tomorrow,
         candidate_contact=candidate_contact
     )
 
 
 @pytest.fixture
-@patch.object(VacancyOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
 def vacancy_offer_tomorrow_night(mock_check, db, vacancy, candidate_contact):
-    vacancy_date_tomorrow = VacancyDate.objects.create(
+    vacancy_date_tomorrow = hr_models.VacancyDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 3)
     )
-    shift_tomorrow = Shift.objects.create(
+    shift_tomorrow = hr_models.Shift.objects.create(
         date=vacancy_date_tomorrow,
         time=datetime.time(hour=19, minute=0)
     )
 
-    return VacancyOffer.objects.create(
+    return hr_models.VacancyOffer.objects.create(
         shift=shift_tomorrow,
         candidate_contact=candidate_contact
     )
@@ -288,7 +278,7 @@ def vacancy_offer_tomorrow_night(mock_check, db, vacancy, candidate_contact):
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 1))
 def timesheet(db, vacancy_offer, company_contact):
-    return TimeSheet.objects.create(
+    return hr_models.TimeSheet.objects.create(
         vacancy_offer=vacancy_offer,
         supervisor=company_contact
     )
@@ -297,7 +287,7 @@ def timesheet(db, vacancy_offer, company_contact):
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 1))
 def timesheet_approved(db, vacancy_offer, company_contact):
-    return TimeSheet.objects.create(
+    return hr_models.TimeSheet.objects.create(
         vacancy_offer=vacancy_offer,
         supervisor=company_contact,
         supervisor_approved_at=timezone.now(),
@@ -309,7 +299,7 @@ def timesheet_approved(db, vacancy_offer, company_contact):
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 2))
 def timesheet_tomorrow(db, vacancy_offer, company_contact):
-    return TimeSheet.objects.create(
+    return hr_models.TimeSheet.objects.create(
         vacancy_offer=vacancy_offer,
         supervisor=company_contact
     )
@@ -317,7 +307,7 @@ def timesheet_tomorrow(db, vacancy_offer, company_contact):
 
 @pytest.fixture
 def timesheet_issue(db, timesheet, company_contact):
-    return TimeSheetIssue.objects.create(
+    return hr_models.TimeSheetIssue.objects.create(
         time_sheet=timesheet,
         subject='subject',
         description='description',
@@ -328,7 +318,7 @@ def timesheet_issue(db, timesheet, company_contact):
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 1))
 def carrier_list(db, candidate_contact, vacancy_offer):
-    return CarrierList.objects.create(
+    return hr_models.CarrierList.objects.create(
         candidate_contact=candidate_contact,
         vacancy_offer=vacancy_offer
     )
@@ -336,7 +326,7 @@ def carrier_list(db, candidate_contact, vacancy_offer):
 
 @pytest.fixture
 def black_list(master_company, candidate_contact):
-    return BlackList.objects.create(
+    return hr_models.BlackList.objects.create(
         company=master_company,
         candidate_contact=candidate_contact
     )
@@ -344,7 +334,7 @@ def black_list(master_company, candidate_contact):
 
 @pytest.fixture
 def favourite_list(company_contact, candidate_contact):
-    return FavouriteList.objects.create(
+    return hr_models.FavouriteList.objects.create(
         company_contact=company_contact,
         candidate_contact=candidate_contact
     )
@@ -352,7 +342,7 @@ def favourite_list(company_contact, candidate_contact):
 
 @pytest.fixture
 def company_rel(db, master_company, regular_company, company_contact):
-    return CompanyRel.objects.create(
+    return core_models.CompanyRel.objects.create(
         master_company=master_company,
         regular_company=regular_company,
         primary_contact=company_contact
@@ -361,7 +351,7 @@ def company_rel(db, master_company, regular_company, company_contact):
 
 @pytest.fixture
 def company_contact_rel(db, regular_company, company_contact):
-    return CompanyContactRelationship.objects.create(
+    return core_models.CompanyContactRelationship.objects.create(
         company=regular_company,
         company_contact=company_contact
     )
@@ -380,14 +370,14 @@ def picture(faker):
 
 @pytest.fixture
 def industry_price_list(db, industry):
-    return IndustryPriceList.objects.create(
+    return pricing_models.IndustryPriceList.objects.create(
         industry=industry,
     )
 
 
 @pytest.fixture
 def price_list(db, master_company, industry_price_list):
-    return PriceList.objects.create(
+    return pricing_models.PriceList.objects.create(
         company=master_company,
         industry_price_list=industry_price_list,
     )
@@ -395,7 +385,7 @@ def price_list(db, master_company, industry_price_list):
 
 @pytest.fixture
 def price_list_rate(db, price_list, skill):
-    return PriceListRate.objects.create(
+    return pricing_models.PriceListRate.objects.create(
         price_list=price_list,
         skill=skill,
         hourly_rate=10,
@@ -404,7 +394,7 @@ def price_list_rate(db, price_list, skill):
 
 @pytest.fixture
 def industry_price_list_rate(db, industry_price_list, skill):
-    return IndustryPriceListRate.objects.create(
+    return pricing_models.IndustryPriceListRate.objects.create(
         industry_price_list=industry_price_list,
         skill=skill,
     )
@@ -412,37 +402,37 @@ def industry_price_list_rate(db, industry_price_list, skill):
 
 @pytest.fixture
 def invoice_rule_master_company(db, master_company):
-    return InvoiceRule.objects.create(
+    return core_models.InvoiceRule.objects.create(
         company=master_company,
     )
 
 
 @pytest.fixture
 def invoice_rule_company(db, regular_company):
-    return InvoiceRule.objects.create(
+    return core_models.InvoiceRule.objects.create(
         company=regular_company,
     )
 
 
 @pytest.fixture
 def payslip_rule_master_company(db, master_company):
-    return PayslipRule.objects.create(
+    return hr_models.PayslipRule.objects.create(
         company=master_company,
     )
 
 
 @pytest.fixture
 def payslip_rule_company(db, regular_company):
-    return PayslipRule.objects.create(
+    return hr_models.PayslipRule.objects.create(
         company=regular_company,
     )
 
 
 @pytest.fixture
 def rate_coefficient(db):
-    coeff = RateCoefficient.objects.create(name='test')
-    RateCoefficientModifier.objects.create(
-        type=RateCoefficientModifier.TYPE_CHOICES.company,
+    coeff = pricing_models.RateCoefficient.objects.create(name='test')
+    pricing_models.RateCoefficientModifier.objects.create(
+        type=pricing_models.RateCoefficientModifier.TYPE_CHOICES.company,
         rate_coefficient=coeff,
         multiplier=2,
     )
@@ -452,14 +442,14 @@ def rate_coefficient(db):
 
 @pytest.fixture
 def allowance_rate_coefficient(db):
-    coeff = RateCoefficient.objects.create(name='test')
-    RateCoefficientModifier.objects.create(
-        type=RateCoefficientModifier.TYPE_CHOICES.company,
+    coeff = pricing_models.RateCoefficient.objects.create(name='test')
+    pricing_models.RateCoefficientModifier.objects.create(
+        type=pricing_models.RateCoefficientModifier.TYPE_CHOICES.company,
         rate_coefficient=coeff,
         fixed_override=10,
     )
-    rule = AllowanceWorkRule.objects.create(allowance_description='Travel')
-    DynamicCoefficientRule.objects.create(
+    rule = pricing_models.AllowanceWorkRule.objects.create(allowance_description='Travel')
+    pricing_models.DynamicCoefficientRule.objects.create(
         rate_coefficient=coeff,
         rule=rule,
     )
@@ -470,7 +460,7 @@ def allowance_rate_coefficient(db):
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 1))
 def invoice(db, master_company, regular_company):
-    return Invoice.objects.create(
+    return core_models.Invoice.objects.create(
         provider_company=master_company,
         customer_company=regular_company,
     )
@@ -478,8 +468,8 @@ def invoice(db, master_company, regular_company):
 
 @pytest.fixture
 def vat():
-    country, _ = Country.objects.get_or_create(name='Australia', code2='AU')
-    return VAT.objects.create(
+    country, _ = core_models.Country.objects.get_or_create(name='Australia', code2='AU')
+    return core_models.VAT.objects.create(
         country=country,
         name='GST',
         rate=0.1,

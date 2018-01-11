@@ -894,9 +894,7 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = core_models.WorkflowNode
-        fields = (
-            'id', 'name_before_activation', 'name_after_activation',
-        )
+        fields = ('id', 'name_before_activation', 'name_after_activation', 'endpoint')
 
     def __init__(self, *args, **kwargs):
         self.target = kwargs.pop('target', None)
