@@ -699,7 +699,9 @@ class CandidateRel(core_models.UUIDModel):
         core_models.CompanyContact,
         related_name="candidate_rels",
         on_delete=models.PROTECT,
-        verbose_name=_("Company Contact")
+        verbose_name=_("Company Contact"),
+        blank=True,
+        null=True
     )
 
     class Meta:
