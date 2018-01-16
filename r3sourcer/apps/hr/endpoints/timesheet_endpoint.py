@@ -7,6 +7,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from django.utils.translation import ugettext_lazy as _
 
+from r3sourcer.apps.candidate import models as hr_models
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.models import CompanyContact
 from r3sourcer.apps.core_adapter import constants
@@ -37,6 +38,14 @@ class TimeSheetEndpoint(ApiEndpoint):
             for jt in CompanyContact.objects.filter(id__in=ids)
         ]
 
+    def _get_all_candidates(self):
+        ids = TimeSheet.objects.all().values_list(
+            'vacancy_offer__candidate_contact', flat=True).distinct()
+        return [
+            {'label': str(jt), 'value': jt.id}
+            for jt in hr_models.CandidateContact.objects.filter(id__in=ids)
+        ]
+
     def get_list_filter(self):
         return [{
             'field': 'shift_started_at',
@@ -45,6 +54,12 @@ class TimeSheetEndpoint(ApiEndpoint):
             'type': constants.FIELD_SELECT,
             'field': 'supervisor',
             'choices': self._get_all_supervisors,
+            'is_qs': True,
+        }, {
+            'type': constants.FIELD_SELECT,
+            'field': 'candidate',
+            'label': _('Candidate Contact'),
+            'choices': self._get_all_candidates,
             'is_qs': True,
         }]
 
