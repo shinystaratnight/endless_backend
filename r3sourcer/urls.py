@@ -34,6 +34,7 @@ _urlpatterns = [
     url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/'.format(api_versions), journal_detail),
     url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/'.format(api_versions), journal_list),
     url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.company_settings.urls')),
+    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.hr.urls')),
     url(r'^api/{}/'.format(api_versions), include(router.urls, namespace='api')),
     url(r'^', include('filer.urls', namespace='filer')),
     url(r'^admin/', include('loginas.urls')),

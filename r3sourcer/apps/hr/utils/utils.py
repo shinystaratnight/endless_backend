@@ -107,14 +107,18 @@ def calculate_distances_for_jobsite(contacts, jobsite):
     contacts_dict = defaultdict(list)
     for contact in contacts:
         if hasattr(contact, 'candidate_contacts')\
-                and contact.recruitee_contacts.transportation_to_work == CandidateContact.TRANSPORTATION_CHOICES.public:
+                and contact.candidate_contacts.transportation_to_work == CandidateContact.TRANSPORTATION_CHOICES.public:
             contacts_dict[MODE_TRANSIT].append(contact)
         else:
             contacts_dict[None].append(contact)
 
     for mode, contact_list in contacts_dict.items():
-        addresses = [c.get_full_address() for c in contact_list]
-        result = calc_distance(jobsite.get_full_address(), addresses, mode=mode)
+        addresses = [c.address.get_full_address() for c in contact_list]
+        jobsite_address = jobsite.get_address()
+        if jobsite_address is None:
+            continue
+
+        result = calc_distance(jobsite_address.get_full_address(), addresses, mode=mode)
         if not result:
             return bool(result)
         for distance, contact in zip(result, contact_list):
@@ -138,3 +142,22 @@ def get_vo_sms_sending_task(vacancy_offer):  # pragme: no cover
 def send_vo_rejection(vacancy_offer):  # pragme: no cover
     from r3sourcer.apps.hr.tasks import send_placement_rejection_sms
     send_placement_rejection_sms.delay(vacancy_offer.pk)
+
+
+def meters_to_km(meters):
+    """
+    Converts meters to kilometers
+    """
+    if meters:
+        return round(int(meters) / 1000, 1)
+    else:
+        return 0
+
+
+def seconds_to_hrs(seconds):
+    """
+    Converts seconds to hours
+    """
+    minutes = int(seconds) // 60
+    hours = minutes // 60
+    return "%02d:%02d" % (hours, minutes % 60)

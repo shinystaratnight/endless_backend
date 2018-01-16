@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
-    'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query'
+    'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field',
 )
 
 
@@ -578,7 +578,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         adapted = []
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
-            'replace_by', 'text_color', 'title', 'display'
+            'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field',
         )
 
         for display_field in display_fields:
@@ -679,6 +679,7 @@ class AngularListApiAdapter(AngularApiAdapter):
     def adapt_highlight(self, highlight):
         field_name = highlight.get('field')
         field = self._get_field(self.fields, field_name)
+        print('!', field)
         if not field:
             return
 
@@ -686,13 +687,19 @@ class AngularListApiAdapter(AngularApiAdapter):
             'field': field_name,
         }
 
-        if field['type'] != constants.FIELD_CHECKBOX and (
+        values = highlight.get('values', [])
+        is_dict_values = isinstance(values, dict)
+
+        if field['type'] != constants.FIELD_CHECKBOX and not is_dict_values and(
             field['type'] != constants.FIELD_SELECT or
             'choices' not in field
         ):
             return
 
-        adapted['values'] = {key: True for key in highlight.get('values', [])}
+        if not is_dict_values:
+            adapted['values'] = {key: True for key in values}
+
+        adapted['values'] = values
 
         return adapted
 

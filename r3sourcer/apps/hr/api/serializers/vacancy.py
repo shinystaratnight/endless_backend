@@ -1,8 +1,13 @@
+from datetime import date
+
+from django.db.models import Max
 from django.utils import timezone
+from rest_framework import serializers
 
 from r3sourcer.apps.activity.api import mixins as activity_mixins
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
 
+from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.hr import models as hr_models
 
 
@@ -189,3 +194,90 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
 
     def get_is_fulfilled(self, obj):  # pragma: no cover
         return obj and obj.is_fulfilled()
+
+
+class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = (
+        'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'skills_score',
+        'count_timesheets', 'hourly_rate', 'average_score', 'evaluation', 'color',
+    )
+
+    vos = serializers.IntegerField(read_only=True)
+
+    class Meta:
+        model = candidate_models.CandidateContact
+        fields = (
+            'id', 'recruitment_agent', 'tag_rels', 'nationality', 'transportation_to_work', 'strength', 'language',
+            'vos', {
+                'contact': ['gender'],
+                'candidate_scores': ['reliability'],
+                'tag_rels': ['tag'],
+            }
+        )
+
+    def get_available(self, obj):
+        partially_available_candidates = self.context['partially_available_candidates']
+
+        dates = partially_available_candidates.get(obj.id, [])
+
+        return dates
+
+    def get_days_from_last_timesheet(self, obj):
+        last_timesheet = hr_models.TimeSheet.objects.filter(
+            vacancy_offer__candidate_contact=obj.id
+        ).order_by('-shift_started_at').first()
+        if last_timesheet:
+            today = date.today()
+            if last_timesheet.shift_started_at:
+                return (today - timezone.localtime(last_timesheet.shift_started_at).date()).days
+            else:
+                return 0
+        else:
+            return 0
+
+    def get_distance_to_jobsite(self, obj):
+        distancematrix = self.context['vacancy'].get_distance_matrix(obj)
+        return distancematrix["distance"] if distancematrix else -1
+
+    def get_time_to_jobsite(self, obj):
+        distancematrix = self.context['vacancy'].get_distance_matrix(obj)
+        return distancematrix["time"] if distancematrix else -1
+
+    def get_skills_score(self, obj):
+        max_score = obj.candidate_skills.filter(
+            score__gt=0, skill__active=True
+        ).aggregate(Max('score'))["score__max"]
+        return max_score or 0
+
+    def get_count_timesheets(self, obj):
+        return hr_models.TimeSheet.objects.filter(vacancy_offer__candidate_contact=obj.id).count()
+
+    def get_hourly_rate(self, obj):
+        hourly_rate = obj.get_rate_for_skill(
+            self.context['vacancy'].position, score__gt=0, skill__active=True
+        )
+        return hourly_rate.hourly_rate if hourly_rate else 0
+
+    def get_average_score(self, obj):
+        return obj.candidate_scores.get_average_score()
+
+    def get_evaluation(self, obj):
+        return '{} ({})'.format(obj.total_evaluation_average(), obj.candidate_evaluations.count())
+
+    def get_is_favourite(self, obj):
+        return obj.id in self.context['favourite_list']
+
+    def get_color(self, obj):
+        is_partially_avail = obj.id in self.context['partially_available_candidates']
+        if obj.id in self.context['overpriced']:
+            if is_partially_avail:
+                return 5
+            return 3
+        elif is_partially_avail:
+            return 4
+        elif obj.id in self.context['carrier_list'] or obj.id in self.context['booked_before_list']:
+            if obj.vos > 0:
+                return 2
+            return 1
+        return 0

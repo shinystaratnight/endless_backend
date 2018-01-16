@@ -50,7 +50,7 @@ def list_route(methods=None, serializer=None, fieldsets=None, endpoint=None, lis
     return decorator
 
 
-def detail_route(methods=None, serializer=None, fieldsets=None, endpoint=None, **kwargs):
+def detail_route(methods=None, serializer=None, fieldsets=None, endpoint=None, list_display=None, ** kwargs):
     methods = ['get'] if (methods is None) else methods
     if 'options' not in methods:
         methods.extend(['options'])
@@ -59,9 +59,8 @@ def detail_route(methods=None, serializer=None, fieldsets=None, endpoint=None, *
         def metadata_wrapper(self, request, *args, **kwargs):
             if request.method == 'OPTIONS':
                 return metadata(
-                    self, request, serializer=serializer,
-                    fieldsets=fieldsets, endpoint=endpoint,
-                    *args, **kwargs
+                    self, request, serializer=serializer, fieldsets=fieldsets, endpoint=endpoint,
+                    list_display=list_display, *args, **kwargs
                 )
 
             return func(self, request, *args, **kwargs)
