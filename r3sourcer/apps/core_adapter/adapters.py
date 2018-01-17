@@ -578,7 +578,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         adapted = []
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
-            'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field',
+            'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query',
         )
 
         for display_field in display_fields:

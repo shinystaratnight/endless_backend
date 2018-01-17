@@ -1,4 +1,7 @@
 import datetime
+import operator
+
+from functools import reduce
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -75,6 +78,8 @@ class VacancyFillinEndpoint(ApiEndpoint):
             5: '#ff7f50',
         },
     }
+
+    search_fields = ('contact__first_name', 'contact__last_name')
 
     def get_list_filter(self):
         return [{
@@ -655,11 +660,9 @@ class VacancyViewset(BaseApiViewset):
                 transportation = int(transportation)
                 candidate_contacts = candidate_contacts.filter(transportation_to_work=transportation)
 
-        # TODO: hm...
-        # search_term = ''
-        # if request.GET.get('q', ''):
-        #     search_term = request.GET.get('q', '')
-        #     candidate_contacts = self.search_candidate_contacts(candidate_contacts, search_term)
+        search_term = request.GET.get('q', '')
+        if search_term:
+            candidate_contacts = self.search_candidate_contacts(candidate_contacts, search_term)
 
         # do:
         # filter overpriced candidates
@@ -803,7 +806,7 @@ class VacancyViewset(BaseApiViewset):
             })
 
         serializer = vacancy_serializers.VacancyFillinSerialzier(
-            candidate_contacts, context=context, many=True
+            candidate_contacts[:51], context=context, many=True
         )
         return Response({
             'vacancy': vacacy_ctx,
@@ -878,3 +881,18 @@ class VacancyViewset(BaseApiViewset):
             )
 
         return when_list
+
+    def search_candidate_contacts(self, candidate_contacts, search_term=''):
+        """
+        Make search by candidate contact first name, last name and title
+        :param candidate_contacts:
+        :param search_term: search parameter
+        :return:
+        """
+        search_fields = ['contact__first_name', 'contact__last_name', 'contact__title']
+        orm_lookups = ["%s__icontains" % search_field for search_field in search_fields]
+
+        for bit in search_term.split():
+            or_queries = [Q(**{orm_lookup: bit}) for orm_lookup in orm_lookups]
+            candidate_contacts = candidate_contacts.filter(reduce(operator.or_, or_queries))
+        return candidate_contacts
