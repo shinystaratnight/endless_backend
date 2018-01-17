@@ -210,7 +210,9 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         fields = (
             'id', 'recruitment_agent', 'tag_rels', 'nationality', 'transportation_to_work', 'strength', 'language',
             'vos', {
-                'contact': ['gender'],
+                'contact': ['gender', {
+                    'address': ('longitude', 'latitude'),
+                }],
                 'candidate_scores': ['reliability'],
                 'tag_rels': ['tag'],
             }

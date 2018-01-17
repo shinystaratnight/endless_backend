@@ -60,7 +60,10 @@ class VacancyFillinEndpoint(ApiEndpoint):
     model = candidate_models.CandidateContact
     serializer = vacancy_serializers.VacancyFillinSerialzier
 
-    list_buttons = []
+    list_buttons = [{
+        'label': _('Show map'),
+        'action': 'openMap'
+    }]
 
     highlight = {
         'field': 'color',
@@ -72,6 +75,12 @@ class VacancyFillinEndpoint(ApiEndpoint):
             5: '#ff7f50',
         },
     }
+
+    def get_list_filter(self):
+        return [{
+            'field': 'transportation_to_work',
+            'type': constants.FIELD_SELECT,
+        }]
 
 
 class TimeSheetViewset(BaseApiViewset):
@@ -641,6 +650,11 @@ class VacancyViewset(BaseApiViewset):
         else:
             candidate_contacts = self.get_available_candidate_list(vacancy)
 
+            transportation = request.GET.get('transportation_to_work', None)
+            if transportation:
+                transportation = int(transportation)
+                candidate_contacts = candidate_contacts.filter(transportation_to_work=transportation)
+
         # TODO: hm...
         # search_term = ''
         # if request.GET.get('q', ''):
@@ -753,11 +767,6 @@ class VacancyViewset(BaseApiViewset):
         #     full_contact_info = [contact for contact in full_contact_info
         #                          if contact['distance_to_jobsite'] > -1
         #                          and contact['distance_to_jobsite'] <= restrict_radius]
-
-        transportation = request.GET.get('transportation', None)
-        if transportation:
-            transportation = int(transportation)
-            candidate_contacts = candidate_contacts.filter(transportation_to_work=transportation)
 
         # TODO: add sorting
         # order = request.GET.get('order', 'distance_to_jobsite')

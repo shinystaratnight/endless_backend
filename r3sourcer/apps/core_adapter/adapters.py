@@ -679,7 +679,6 @@ class AngularListApiAdapter(AngularApiAdapter):
     def adapt_highlight(self, highlight):
         field_name = highlight.get('field')
         field = self._get_field(self.fields, field_name)
-        print('!', field)
         if not field:
             return
 
@@ -697,7 +696,7 @@ class AngularListApiAdapter(AngularApiAdapter):
             return
 
         if not is_dict_values:
-            adapted['values'] = {key: True for key in values}
+            values = {key: True for key in values}
 
         adapted['values'] = values
 
