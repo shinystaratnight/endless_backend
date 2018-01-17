@@ -17,9 +17,10 @@ from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.core.api.viewsets import BaseApiViewset
-from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.decorators import detail_route, list_route
+from r3sourcer.apps.core.api.endpoints import ApiEndpoint
+from r3sourcer.apps.core.api.filters import ApiOrderingFilter
+from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
@@ -81,11 +82,42 @@ class VacancyFillinEndpoint(ApiEndpoint):
 
     search_fields = ('contact__first_name', 'contact__last_name')
 
-    def get_list_filter(self):
-        return [{
-            'field': 'transportation_to_work',
-            'type': constants.FIELD_SELECT,
-        }]
+    list_filter = [{
+        'field': 'transportation_to_work',
+        'type': constants.FIELD_SELECT,
+    }, {
+        'field': 'available',
+        'label': _('Available'),
+        'type': constants.FIELD_SELECT,
+        'default': 'True',
+        'choices': [
+            {'label': _('All dates'), 'value': 'True'},
+            {'label': _('Partially'), 'value': 'False'}
+        ]
+    }, {
+        'field': 'overpriced',
+        'label': _('Overpriced'),
+        'type': constants.FIELD_SELECT,
+        'default': 'False',
+        'choices': [
+            {'label': _('All candidates'), 'value': 'True'},
+            {'label': _('Without overpriced'), 'value': 'False'}
+        ]
+    }, {
+        'field': 'distance_to_jobsite',
+        'label': _('Distance'),
+        'type': constants.FIELD_TEXT,
+        'default': 50,
+        'min': 0,
+        'max': 200,
+    }]
+
+    ordering_mapping = {
+        'distance_to_jobsite': 'distance_to_jobsite',
+        'time_to_jobsite': 'time_to_jobsite'
+    }
+
+    ordering = ('distance_to_jobsite')
 
 
 class TimeSheetViewset(BaseApiViewset):
@@ -666,7 +698,7 @@ class VacancyViewset(BaseApiViewset):
 
         # do:
         # filter overpriced candidates
-        overpriced = request.GET.get('overpriced', None)
+        overpriced = request.GET.get('overpriced', False)
         overpriced_candidates = []
         if vacancy.hourly_rate_default:
             overpriced_qry = Q(
@@ -690,7 +722,7 @@ class VacancyViewset(BaseApiViewset):
 
         # do:
         # filter partially available
-        partially_available = request.GET.get('partially', None)
+        partially_available = request.GET.get('available', True)
         partially_available_candidates = {}
         if init_shifts:
             partially_available_candidates = get_partially_available_candidate_ids(candidate_contacts, init_shifts)
@@ -762,14 +794,26 @@ class VacancyViewset(BaseApiViewset):
             preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(top_contacts)])
             candidate_contacts = candidate_contacts.order_by(preserved)
 
-        candidate_contacts = candidate_contacts.prefetch_related('tag_rels__tag')
+        candidate_contacts = candidate_contacts.annotate(
+            distance_to_jobsite=Case(
+                When(contact__distance_caches__jobsite=vacancy.jobsite,
+                     then='contact__distance_caches__distance'),
+                default=-1
+            ),
+            time_to_jobsite=Case(
+                When(contact__distance_caches__jobsite=vacancy.jobsite,
+                     contact__distance_caches__time__isnull=False,
+                     then='contact__distance_caches__time'),
+                default=-1
+            ),
+        ).prefetch_related('tag_rels__tag')
 
-        # TODO: add restrict by radius
-        # restrict_radius = int(request.GET.get('restrict_radius', -1))
-        # if restrict_radius > -1:
-        #     full_contact_info = [contact for contact in full_contact_info
-        #                          if contact['distance_to_jobsite'] > -1
-        #                          and contact['distance_to_jobsite'] <= restrict_radius]
+        restrict_radius = int(request.GET.get('distance_to_jobsite', -1))
+        if restrict_radius > -1:
+            candidate_contacts = candidate_contacts.filter(distance_to_jobsite__lte=restrict_radius * 1000)
+
+        # candidate_contacts = self.filter_queryset(candidate_contacts)
+        candidate_contacts = ApiOrderingFilter().filter_queryset(request, candidate_contacts, self)
 
         # TODO: add sorting
         # order = request.GET.get('order', 'distance_to_jobsite')

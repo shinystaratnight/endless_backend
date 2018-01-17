@@ -9,6 +9,7 @@ from r3sourcer.apps.core.api import serializers as core_serializers, mixins as c
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.hr.utils import utils as hr_utils
 
 
 class VacancySerializer(
@@ -200,7 +201,7 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'skills_score',
-        'count_timesheets', 'hourly_rate', 'average_score', 'evaluation', 'color',
+        'count_timesheets', 'hourly_rate', 'average_score', 'evaluation', 'color', 'overpriced',
     )
 
     vos = serializers.IntegerField(read_only=True)
@@ -239,12 +240,10 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
             return 0
 
     def get_distance_to_jobsite(self, obj):
-        distancematrix = self.context['vacancy'].get_distance_matrix(obj)
-        return distancematrix["distance"] if distancematrix else -1
+        return hr_utils.meters_to_km(obj.distance_to_jobsite) if obj.distance_to_jobsite > -1 else -1
 
     def get_time_to_jobsite(self, obj):
-        distancematrix = self.context['vacancy'].get_distance_matrix(obj)
-        return distancematrix["time"] if distancematrix else -1
+        return hr_utils.seconds_to_hrs(obj.time_to_jobsite) if obj.time_to_jobsite and obj.time_to_jobsite > 0 else -1
 
     def get_skills_score(self, obj):
         max_score = obj.candidate_skills.filter(
@@ -270,9 +269,12 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
     def get_is_favourite(self, obj):
         return obj.id in self.context['favourite_list']
 
+    def get_overpriced(self, obj):
+        return obj.id in self.context['overpriced']
+
     def get_color(self, obj):
         is_partially_avail = obj.id in self.context['partially_available_candidates']
-        if obj.id in self.context['overpriced']:
+        if self.get_overpriced(obj):
             if is_partially_avail:
                 return 5
             return 3
