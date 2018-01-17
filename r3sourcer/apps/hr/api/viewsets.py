@@ -815,18 +815,6 @@ class VacancyViewset(BaseApiViewset):
         # candidate_contacts = self.filter_queryset(candidate_contacts)
         candidate_contacts = ApiOrderingFilter().filter_queryset(request, candidate_contacts, self)
 
-        # TODO: add sorting
-        # order = request.GET.get('order', 'distance_to_jobsite')
-        # full_contact_info = self.order_contact_info(full_contact_info, order)
-        # candidate_contacts = candidate_contacts.annotate(
-        #     order=Case(
-        #         When(id__in=favourite_list, then=Value(3)),
-        #         When(id__in=booked_before_list + carrier_list, then=Value(1)),
-        #         default=Value(0),
-        #         output_field=IntegerField()
-        #     )
-        # ).order_by('-order')
-
         context = {
             'partially_available_candidates': partially_available_candidates,
             'overpriced': overpriced_candidates,
