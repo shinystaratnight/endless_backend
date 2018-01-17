@@ -441,6 +441,24 @@ class Vacancy(core_models.AbstractBaseOrder):
         if just_added:
             self.create_state(10)
 
+    def get_distance_matrix(self, candidate_contact):
+        """
+        Get temporal and metric distance from the candidate contact to jobsite
+        :param candidate_contact:
+        :return: dictionary {"distance": float, "time": str, "seconds": int} or None
+        """
+        if self.jobsite:
+            distancematrix_obj = ContactJobsiteDistanceCache.objects.filter(
+                jobsite=self.jobsite, contact=candidate_contact.contact
+            )
+            if distancematrix_obj:
+                return {
+                    "distance": hr_utils.meters_to_km(distancematrix_obj.distance),
+                    "time": hr_utils.seconds_to_hrs(distancematrix_obj.time) if distancematrix_obj.time else 0,
+                    "seconds": int(distancematrix_obj.time) if distancematrix_obj.time else -1
+                }
+        return None
+
 
 class VacancyDate(core_models.UUIDModel):
 
@@ -507,7 +525,7 @@ class Shift(core_models.UUIDModel):
 
     date = models.ForeignKey(
         VacancyDate,
-        related_name="vacancy_dates",
+        related_name="shifts",
         on_delete=models.CASCADE,
         verbose_name=_("Date")
     )

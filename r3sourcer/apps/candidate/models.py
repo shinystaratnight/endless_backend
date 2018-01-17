@@ -1,6 +1,6 @@
 from datetime import timedelta, date
 
-from django.contrib.contenttypes.fields import GenericRelation
+from django.core.cache import cache
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -324,9 +324,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         return bool(self.height is not None and
                     self.weight is not None and
                     self.transportation_to_work is not None and
-                    self.strength and self.language and
-                    self.candidate_scores.reliability and
-                    self.candidate_scores.loyalty)
+                    self.strength and self.language)
     is_personal_info_filled.short_description = _(
         'All personal info is required'
     )
@@ -347,7 +345,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     @workflow_function
     def is_formalities_filled(self):
         return bool(self.tax_file_number and
-                    self.super_annual_fund_name and
+                    self.superannuation_fund and
                     self.super_member_number and
                     self.bank_account and
                     self.emergency_contact_name and
@@ -486,6 +484,33 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
             from r3sourcer.apps.candidate.tasks import send_verify_sms
 
             send_verify_sms.apply_async(args=(self.id, workflow_object.id), countdown=10)
+
+    def get_rate_for_skill(self, skill, **skill_kwargs):
+        """
+        :param skill: pepro.crm_hr.models.Skill
+        :return: pepro.crm_hr.models.SkillBaseRate or None
+        """
+        candidate_skill = self.candidate_skills.filter(skill=skill, **skill_kwargs).first()
+        if candidate_skill:
+            candidate_skill_rate = candidate_skill.get_valid_rate()
+            if candidate_skill_rate:
+                return candidate_skill_rate.hourly_rate
+        return None
+
+    def total_evaluation_average(self):
+        cached_key = 'candidate:evaluation:avg:{}'.format(self.id)
+        result = cache.get(cached_key, None)
+
+        if result is None:
+            total = 0
+            counter = 0
+            for evaluation in self.candidate_evaluations.all():
+                if evaluation.single_evaluation_average() > 0:
+                    total += evaluation.single_evaluation_average()
+                    counter += 1
+            result = total / counter if counter > 0 else 0
+            cache.set(cached_key, result)
+        return result
 
 
 class TagRel(core_models.UUIDModel):

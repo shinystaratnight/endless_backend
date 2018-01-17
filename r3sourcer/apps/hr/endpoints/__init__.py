@@ -179,6 +179,7 @@ class CandidateEvaluationEndpoint(ApiEndpoint):
 
 class VacancyEndpoint(ApiEndpoint):
     model = hr_models.Vacancy
+    base_viewset = hr_viewsets.VacancyViewset
     serializer = vacancy_serializers.VacancySerializer
     filter_class = hr_filters.VacancyFilter
 
