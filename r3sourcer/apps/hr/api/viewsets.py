@@ -4,6 +4,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, Count, F, Sum
+from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -589,7 +590,7 @@ class VacancyViewset(BaseApiViewset):
                 'type': constants.FIELD_STATIC,
                 'field': 'distance_to_jobsite',
                 'async': True,
-                'endpoint': '/',
+                'endpoint': reverse_lazy('get_candidate_distance', kwargs={'version': 'v2'}),
                 'method': 'post',
                 'query': {
                     'candidates': '{id}'
@@ -599,7 +600,7 @@ class VacancyViewset(BaseApiViewset):
                 'type': constants.FIELD_STATIC,
                 'field': 'time_to_jobsite',
                 'async': True,
-                'endpoint': '/',
+                'endpoint': reverse_lazy('get_candidate_distance', kwargs={'version': 'v2'}),
                 'method': 'post',
                 'query': {
                     'candidates': '{id}'
