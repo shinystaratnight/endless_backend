@@ -29,7 +29,7 @@ from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models, payment
 from r3sourcer.apps.hr.api.filters import TimesheetFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, vacancy as vacancy_serializers
-from r3sourcer.apps.hr.utils.vacancy import get_partially_available_candidate_ids
+from r3sourcer.apps.hr.utils import vacancy as vacancy_utils
 
 
 class ExtranetTimesheetEndpoint(ApiEndpoint):
@@ -683,6 +683,9 @@ class VacancyViewset(BaseApiViewset):
             ))
         ).filter(accepted_vo_count__lt=F('workers')).select_related('date').order_by('date__shift_date', 'time'))
 
+        if request.method == 'POST':
+            return self.fillin_post(request, init_shifts)
+
         if not init_shifts:
             candidate_contacts = candidate_models.CandidateContact.objects.none()
         else:
@@ -726,7 +729,7 @@ class VacancyViewset(BaseApiViewset):
         partially_available = request.GET.get('available', 'True') == 'True'
         partially_available_candidates = {}
         if init_shifts:
-            partially_available_candidates = get_partially_available_candidate_ids(candidate_contacts, init_shifts)
+            partially_available_candidates = vacancy_utils.get_partially_available_candidate_ids(candidate_contacts, init_shifts)
 
             unavailable_all = [
                 partial for partial, shifts in partially_available_candidates.items()
@@ -845,6 +848,25 @@ class VacancyViewset(BaseApiViewset):
         return Response({
             'vacancy': vacacy_ctx,
             'list': serializer.data,
+        })
+
+    def fillin_post(self, request, shifts):
+        candidate_ids = request.data
+
+        for candidate_id in candidate_ids:
+            for shift in shifts:
+                unavailable = vacancy_utils.get_partially_available_candidate_ids_for_vs(
+                    candidate_models.CandidateContact.objects.filter(id=candidate_id),
+                    shift.date.shift_date, shift.time
+                )
+                if len(unavailable) == 0:
+                    hr_models.VacancyOffer.objects.create(
+                        shift=shift,
+                        candidate_contact_id=candidate_id,
+                    )
+
+        return Response({
+            'status': 'ok',
         })
 
     def get_available_candidate_list(self, vacancy):
