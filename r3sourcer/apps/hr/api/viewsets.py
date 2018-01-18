@@ -846,15 +846,20 @@ class VacancyViewset(BaseApiViewset):
             candidate_contacts[:51], context=context, many=True
         )
         return Response({
+            'shifts': [{'key': shift.id, 'value': str(shift)} for shift in init_shifts],
             'vacancy': vacacy_ctx,
             'list': serializer.data,
         })
 
     def fillin_post(self, request, shifts):
-        candidate_ids = request.data
+        candidate_ids = request.data.get('candidates')
+        fill_shifts = request.data.get('shifts', None)
 
         for candidate_id in candidate_ids:
             for shift in shifts:
+                if str(shift.id) not in fill_shifts:
+                    continue
+
                 unavailable = vacancy_utils.get_partially_available_candidate_ids_for_vs(
                     candidate_models.CandidateContact.objects.filter(id=candidate_id),
                     shift.date.shift_date, shift.time
