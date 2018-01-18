@@ -236,8 +236,8 @@ class VacancyEndpoint(ApiEndpoint):
             'type': constants.FIELD_BUTTON,
             'icon': 'fa-sign-in',
             'text': _('Fill-in'),
-            'action': constants.DEFAULT_ACTION_EDIT,
-            'hidden': 'can_fillin',
+            'action': 'fillin',
+            'hidden': 'hide_fillin',
             'field': 'id',
         })
     }, {

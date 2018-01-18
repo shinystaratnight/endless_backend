@@ -23,8 +23,8 @@ def get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date,
           vacancy_offers__shift__time__gte=from_date.timetz()) |
         Q(vacancy_offers__shift__date__shift_date__gt=from_date.date()),
         Q(vacancy_offers__shift__date__shift_date=to_date.date(),
-          vacancy_offers__shift__time__gte=to_date.timetz()) |
-        Q(vacancy_offers__shift__date__shift_date__gt=to_date.date())
+          vacancy_offers__shift__time__lte=to_date.timetz()) |
+        Q(vacancy_offers__shift__date__shift_date__lt=to_date.date())
     ).exclude(
         vacancy_offers__status=VacancyOffer.STATUS_CHOICES.cancelled
     ).values_list('id', flat=True))

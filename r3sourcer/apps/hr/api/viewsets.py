@@ -13,13 +13,15 @@ from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.core.api.viewsets import BaseApiViewset
-from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.decorators import detail_route, list_route
+from r3sourcer.apps.core.api.endpoints import ApiEndpoint
+from r3sourcer.apps.core.api.filters import ApiOrderingFilter
+from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
@@ -27,7 +29,7 @@ from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models, payment
 from r3sourcer.apps.hr.api.filters import TimesheetFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, vacancy as vacancy_serializers
-from r3sourcer.apps.hr.utils.vacancy import get_partially_available_candidate_ids
+from r3sourcer.apps.hr.utils import vacancy as vacancy_utils
 
 
 class ExtranetTimesheetEndpoint(ApiEndpoint):
@@ -81,11 +83,42 @@ class VacancyFillinEndpoint(ApiEndpoint):
 
     search_fields = ('contact__first_name', 'contact__last_name')
 
-    def get_list_filter(self):
-        return [{
-            'field': 'transportation_to_work',
-            'type': constants.FIELD_SELECT,
-        }]
+    list_filter = [{
+        'field': 'transportation_to_work',
+        'type': constants.FIELD_SELECT,
+    }, {
+        'field': 'available',
+        'label': _('Available'),
+        'type': constants.FIELD_SELECT,
+        'default': 'True',
+        'choices': [
+            {'label': _('Partially'), 'value': 'True'},
+            {'label': _('All dates'), 'value': 'False'}
+        ]
+    }, {
+        'field': 'overpriced',
+        'label': _('Overpriced'),
+        'type': constants.FIELD_SELECT,
+        'default': 'False',
+        'choices': [
+            {'label': _('All candidates'), 'value': 'True'},
+            {'label': _('Without overpriced'), 'value': 'False'}
+        ]
+    }, {
+        'field': 'distance_to_jobsite',
+        'label': _('Distance'),
+        'type': constants.FIELD_TEXT,
+        'default': 50,
+        'min': 0,
+        'max': 200,
+    }]
+
+    ordering_mapping = {
+        'distance_to_jobsite': 'distance_to_jobsite',
+        'time_to_jobsite': 'time_to_jobsite'
+    }
+
+    ordering = ('distance_to_jobsite')
 
 
 class TimeSheetViewset(BaseApiViewset):
@@ -643,12 +676,15 @@ class VacancyViewset(BaseApiViewset):
             date__vacancy=vacancy,
             date__cancelled=False,
         ).annotate(
-            accepted_vo_count=Count(Case(
+            accepted_vo_count=Sum(Case(
                 When(vacancy_offers__status=hr_models.VacancyOffer.STATUS_CHOICES.accepted, then=Value(1)),
                 default=Value(0),
                 output_field=IntegerField(),
             ))
         ).filter(accepted_vo_count__lt=F('workers')).select_related('date').order_by('date__shift_date', 'time'))
+
+        if request.method == 'POST':
+            return self.fillin_post(request, init_shifts)
 
         if not init_shifts:
             candidate_contacts = candidate_models.CandidateContact.objects.none()
@@ -666,7 +702,7 @@ class VacancyViewset(BaseApiViewset):
 
         # do:
         # filter overpriced candidates
-        overpriced = request.GET.get('overpriced', None)
+        overpriced = request.GET.get('overpriced', 'False') == 'True'
         overpriced_candidates = []
         if vacancy.hourly_rate_default:
             overpriced_qry = Q(
@@ -690,10 +726,10 @@ class VacancyViewset(BaseApiViewset):
 
         # do:
         # filter partially available
-        partially_available = request.GET.get('partially', None)
+        partially_available = request.GET.get('available', 'True') == 'True'
         partially_available_candidates = {}
         if init_shifts:
-            partially_available_candidates = get_partially_available_candidate_ids(candidate_contacts, init_shifts)
+            partially_available_candidates = vacancy_utils.get_partially_available_candidate_ids(candidate_contacts, init_shifts)
 
             unavailable_all = [
                 partial for partial, shifts in partially_available_candidates.items()
@@ -721,7 +757,9 @@ class VacancyViewset(BaseApiViewset):
                     return cache_dates[vs.id]
 
                 for r_id, shifts in partially_available_candidates.items():
-                    partially_available_candidates[r_id] = map(map_dates, init_shifts.exclude(id__in=shifts))
+                    partially_available_candidates[r_id] = map(
+                        map_dates, [shift for shift in init_shifts if shift.id not in shifts]
+                    )
         # end
 
         when_list = self._get_undefined_vo_lookups(init_shifts)
@@ -762,26 +800,25 @@ class VacancyViewset(BaseApiViewset):
             preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(top_contacts)])
             candidate_contacts = candidate_contacts.order_by(preserved)
 
-        candidate_contacts = candidate_contacts.prefetch_related('tag_rels__tag')
+        candidate_contacts = candidate_contacts.annotate(
+            distance_to_jobsite=Case(
+                When(contact__distance_caches__jobsite=vacancy.jobsite,
+                     then='contact__distance_caches__distance'),
+                default=-1
+            ),
+            time_to_jobsite=Case(
+                When(contact__distance_caches__jobsite=vacancy.jobsite,
+                     contact__distance_caches__time__isnull=False,
+                     then='contact__distance_caches__time'),
+                default=-1
+            ),
+        ).prefetch_related('tag_rels__tag')
 
-        # TODO: add restrict by radius
-        # restrict_radius = int(request.GET.get('restrict_radius', -1))
-        # if restrict_radius > -1:
-        #     full_contact_info = [contact for contact in full_contact_info
-        #                          if contact['distance_to_jobsite'] > -1
-        #                          and contact['distance_to_jobsite'] <= restrict_radius]
+        restrict_radius = int(request.GET.get('distance_to_jobsite', -1))
+        if restrict_radius > -1:
+            candidate_contacts = candidate_contacts.filter(distance_to_jobsite__lte=restrict_radius * 1000)
 
-        # TODO: add sorting
-        # order = request.GET.get('order', 'distance_to_jobsite')
-        # full_contact_info = self.order_contact_info(full_contact_info, order)
-        # candidate_contacts = candidate_contacts.annotate(
-        #     order=Case(
-        #         When(id__in=favourite_list, then=Value(3)),
-        #         When(id__in=booked_before_list + carrier_list, then=Value(1)),
-        #         default=Value(0),
-        #         output_field=IntegerField()
-        #     )
-        # ).order_by('-order')
+        candidate_contacts = self.sort_candidates(request, candidate_contacts)
 
         context = {
             'partially_available_candidates': partially_available_candidates,
@@ -811,6 +848,25 @@ class VacancyViewset(BaseApiViewset):
         return Response({
             'vacancy': vacacy_ctx,
             'list': serializer.data,
+        })
+
+    def fillin_post(self, request, shifts):
+        candidate_ids = request.data
+
+        for candidate_id in candidate_ids:
+            for shift in shifts:
+                unavailable = vacancy_utils.get_partially_available_candidate_ids_for_vs(
+                    candidate_models.CandidateContact.objects.filter(id=candidate_id),
+                    shift.date.shift_date, shift.time
+                )
+                if len(unavailable) == 0:
+                    hr_models.VacancyOffer.objects.create(
+                        shift=shift,
+                        candidate_contact_id=candidate_id,
+                    )
+
+        return Response({
+            'status': 'ok',
         })
 
     def get_available_candidate_list(self, vacancy):
@@ -895,4 +951,13 @@ class VacancyViewset(BaseApiViewset):
         for bit in search_term.split():
             or_queries = [Q(**{orm_lookup: bit}) for orm_lookup in orm_lookups]
             candidate_contacts = candidate_contacts.filter(reduce(operator.or_, or_queries))
+        return candidate_contacts
+
+    def sort_candidates(self, request, candidate_contacts):
+        params = request.query_params.get(api_settings.ORDERING_PARAM)
+        if params:
+            fields = [param.strip() for param in params.split(',')]
+
+            return candidate_contacts.order_by(*fields)
+
         return candidate_contacts

@@ -450,7 +450,7 @@ class Vacancy(core_models.AbstractBaseOrder):
         if self.jobsite:
             distancematrix_obj = ContactJobsiteDistanceCache.objects.filter(
                 jobsite=self.jobsite, contact=candidate_contact.contact
-            )
+            ).first()
             if distancematrix_obj:
                 return {
                     "distance": hr_utils.meters_to_km(distancematrix_obj.distance),
@@ -1509,9 +1509,9 @@ class ContactJobsiteDistanceCache(core_models.UUIDModel):
         verbose_name=_("Jobsite")
     )
 
-    distance = models.CharField(max_length=10)
+    distance = models.IntegerField()
 
-    time = models.CharField(max_length=10, null=True, blank=True)
+    time = models.IntegerField(null=True, blank=True)
 
     updated_at = models.DateTimeField(
         verbose_name=_("Updated at"),

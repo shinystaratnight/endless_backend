@@ -415,6 +415,7 @@ class AngularListApiAdapter(AngularApiAdapter):
                 adapted.update({
                     'query': field_qry,
                     'options': choices,
+                    'default': list_filter.get('default'),
                 })
             elif field_type in [constants.FIELD_DATE,
                                 constants.FIELD_DATETIME]:
@@ -454,6 +455,16 @@ class AngularListApiAdapter(AngularApiAdapter):
                     }]
 
                 adapted['list'] = action_list
+            elif field_type == constants.FIELD_TEXT:
+                if 'min' in list_filter:
+                    adapted['min'] = list_filter['min']
+
+                if 'max' in list_filter:
+                    adapted['max'] = list_filter['max']
+
+                adapted.update({
+                    'default': list_filter.get('default'),
+                })
             else:
                 continue  # pragma: no cover
 
