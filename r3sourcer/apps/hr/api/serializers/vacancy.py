@@ -17,7 +17,7 @@ class VacancySerializer(
     core_serializers.ApiBaseModelSerializer
 ):
 
-    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_vds', 'can_fillin', 'todays_timesheets', 'title')
+    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_vds', 'hide_fillin', 'todays_timesheets', 'title')
 
     class Meta:
         model = hr_models.Vacancy
@@ -47,11 +47,11 @@ class VacancySerializer(
             shift_date__gt=timezone.localtime(timezone.now()).date(), cancelled=False
         ).exists()
 
-    def get_can_fillin(self, obj):  # pragma: no cover
+    def get_hide_fillin(self, obj):  # pragma: no cover
         if obj is None:
             return True
 
-        return obj.can_fillin()
+        return not obj.can_fillin()
 
     def get_todays_timesheets(self, obj):
         result = "-"

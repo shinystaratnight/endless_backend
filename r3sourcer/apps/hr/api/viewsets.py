@@ -13,6 +13,7 @@ from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
+from rest_framework.settings import api_settings
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
@@ -91,8 +92,8 @@ class VacancyFillinEndpoint(ApiEndpoint):
         'type': constants.FIELD_SELECT,
         'default': 'True',
         'choices': [
-            {'label': _('All dates'), 'value': 'True'},
-            {'label': _('Partially'), 'value': 'False'}
+            {'label': _('Partially'), 'value': 'True'},
+            {'label': _('All dates'), 'value': 'False'}
         ]
     }, {
         'field': 'overpriced',
@@ -675,7 +676,7 @@ class VacancyViewset(BaseApiViewset):
             date__vacancy=vacancy,
             date__cancelled=False,
         ).annotate(
-            accepted_vo_count=Count(Case(
+            accepted_vo_count=Sum(Case(
                 When(vacancy_offers__status=hr_models.VacancyOffer.STATUS_CHOICES.accepted, then=Value(1)),
                 default=Value(0),
                 output_field=IntegerField(),
@@ -698,7 +699,7 @@ class VacancyViewset(BaseApiViewset):
 
         # do:
         # filter overpriced candidates
-        overpriced = request.GET.get('overpriced', False)
+        overpriced = request.GET.get('overpriced', 'False') == 'True'
         overpriced_candidates = []
         if vacancy.hourly_rate_default:
             overpriced_qry = Q(
@@ -722,7 +723,7 @@ class VacancyViewset(BaseApiViewset):
 
         # do:
         # filter partially available
-        partially_available = request.GET.get('available', True)
+        partially_available = request.GET.get('available', 'True') == 'True'
         partially_available_candidates = {}
         if init_shifts:
             partially_available_candidates = get_partially_available_candidate_ids(candidate_contacts, init_shifts)
@@ -753,7 +754,9 @@ class VacancyViewset(BaseApiViewset):
                     return cache_dates[vs.id]
 
                 for r_id, shifts in partially_available_candidates.items():
-                    partially_available_candidates[r_id] = map(map_dates, init_shifts.exclude(id__in=shifts))
+                    partially_available_candidates[r_id] = map(
+                        map_dates, [shift for shift in init_shifts if shift.id not in shifts]
+                    )
         # end
 
         when_list = self._get_undefined_vo_lookups(init_shifts)
@@ -812,8 +815,7 @@ class VacancyViewset(BaseApiViewset):
         if restrict_radius > -1:
             candidate_contacts = candidate_contacts.filter(distance_to_jobsite__lte=restrict_radius * 1000)
 
-        # candidate_contacts = self.filter_queryset(candidate_contacts)
-        candidate_contacts = ApiOrderingFilter().filter_queryset(request, candidate_contacts, self)
+        candidate_contacts = self.sort_candidates(request, candidate_contacts)
 
         context = {
             'partially_available_candidates': partially_available_candidates,
@@ -927,4 +929,13 @@ class VacancyViewset(BaseApiViewset):
         for bit in search_term.split():
             or_queries = [Q(**{orm_lookup: bit}) for orm_lookup in orm_lookups]
             candidate_contacts = candidate_contacts.filter(reduce(operator.or_, or_queries))
+        return candidate_contacts
+
+    def sort_candidates(self, request, candidate_contacts):
+        params = request.query_params.get(api_settings.ORDERING_PARAM)
+        if params:
+            fields = [param.strip() for param in params.split(',')]
+
+            return candidate_contacts.order_by(*fields)
+
         return candidate_contacts
