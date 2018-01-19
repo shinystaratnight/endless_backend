@@ -6,7 +6,7 @@ from functools import reduce
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
-from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, Count, F, Sum
+from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -115,7 +115,9 @@ class VacancyFillinEndpoint(ApiEndpoint):
 
     ordering_mapping = {
         'distance_to_jobsite': 'distance_to_jobsite',
-        'time_to_jobsite': 'time_to_jobsite'
+        'time_to_jobsite': 'time_to_jobsite',
+        'candidate_scores.average_score': 'candidate_scores__average_score',
+        'skills_score': 'skills_score',
     }
 
     ordering = ('distance_to_jobsite')
@@ -193,8 +195,11 @@ class TimeSheetViewset(BaseApiViewset):
         return Response(serializer.data)
 
     def handle_history(self, request):
-        qs_approved = TimesheetFilter.get_filter_for_approved(request.user.contact)
-        queryset = hr_models.TimeSheet.objects.filter(qs_approved)
+        if request.user.is_authenticated:
+            qs_approved = TimesheetFilter.get_filter_for_approved(request.user.contact)
+            queryset = hr_models.TimeSheet.objects.filter(qs_approved)
+        else:
+            queryset = hr_models.TimeSheet.objects.none()
 
         return self.paginated(queryset)
 
@@ -658,7 +663,7 @@ class VacancyViewset(BaseApiViewset):
                 'field': 'transportation_to_work',
                 'type': constants.FIELD_SELECT,
             },
-            'average_score', 'candidate_scores.reliability', 'strength', 'language', {
+            'candidate_scores.reliability', 'candidate_scores.average_score', 'strength', 'language', {
                 'field': 'hourly_rate',
                 'type': constants.FIELD_STATIC,
                 'display': '${field}/h',
@@ -812,6 +817,13 @@ class VacancyViewset(BaseApiViewset):
                      then='contact__distance_caches__time'),
                 default=-1
             ),
+            skills_score=Max(Case(
+                When(candidate_skills__score__gt=0,
+                     candidate_skills__skill__active=True,
+                     then='candidate_skills__score'),
+                default=0
+            )),
+            last_timesheet_date=Max('vacancy_offers__time_sheets__shift_started_at')
         ).prefetch_related('tag_rels__tag')
 
         restrict_radius = int(request.GET.get('distance_to_jobsite', -1))

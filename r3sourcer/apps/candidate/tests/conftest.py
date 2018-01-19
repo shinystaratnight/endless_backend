@@ -62,7 +62,7 @@ def bank_account(db, contact):
 
 
 @pytest.fixture
-def candidate_data(employment_classification, bank_account):
+def candidate_data(employment_classification, bank_account, superannuation_fund):
     return dict(
         height=178,
         weight=86,
@@ -75,7 +75,8 @@ def candidate_data(employment_classification, bank_account):
         bank_account=bank_account,
         emergency_contact_name="emergency name",
         emergency_contact_phone="+41789232323",
-        employment_classification=employment_classification
+        employment_classification=employment_classification,
+        superannuation_fund=superannuation_fund,
     )
 
 
@@ -89,10 +90,11 @@ def candidate(db, contact, candidate_data):
     rc.candidate_scores.loyalty = 2
     rc.candidate_scores.save(update_fields=['reliability', 'loyalty'])
 
-    keys = ('height weight transportation_to_work strength language'
-            ' tax_file_number super_annual_fund_name super_member_number bank_account'
-            ' emergency_contact_name emergency_contact_phone'
-            ' employment_classification').split()
+    keys = [
+        'height', 'weight', 'transportation_to_work', 'strength', 'language', 'tax_file_number', 'superannuation_fund',
+        'super_member_number', 'bank_account', 'emergency_contact_name', 'emergency_contact_phone',
+        'employment_classification'
+    ]
     for key in keys:
         setattr(rc, key, candidate_data[key])
     return rc
