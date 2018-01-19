@@ -564,9 +564,9 @@ class TestAddressSerializer:
     def test_save_address_with_valid_city_region_country(self, mock_geo, city, region, country):
         address_data = {
             'street_address': 'test',
-            'country': country.id,
-            'state': region.id,
-            'city': city.id,
+            'country': str(country.id),
+            'state': str(region.id),
+            'city': str(city.id),
             'postal_code': '111',
         }
 
@@ -583,8 +583,8 @@ class TestAddressSerializer:
     def test_save_address_with_invalid_region_for_country(self, country, invalid_region):
         address_data = {
             'street_address': 'test',
-            'country': country.id,
-            'state': invalid_region.id,
+            'country': str(country.id),
+            'state': str(invalid_region.id),
             'postal_code': '111',
         }
 
@@ -596,8 +596,8 @@ class TestAddressSerializer:
     def test_save_address_with_invalid_city_for_country(self, country, invalid_city):
         address_data = {
             'street_address': 'test',
-            'country': country.id,
-            'city': invalid_city.id,
+            'country': str(country.id),
+            'city': str(invalid_city.id),
             'postal_code': '111',
         }
 
@@ -609,9 +609,9 @@ class TestAddressSerializer:
     def test_save_address_with_invalid_city_for_region(self, country, city, invalid_au_region):
         address_data = {
             'street_address': 'test',
-            'country': country.id,
-            'state': invalid_au_region.id,
-            'city': city.id,
+            'country': str(country.id),
+            'state': str(invalid_au_region.id),
+            'city': str(city.id),
             'postal_code': '111',
         }
 

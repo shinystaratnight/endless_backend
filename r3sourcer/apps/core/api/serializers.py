@@ -497,7 +497,8 @@ class AddressSerializer(ApiBaseModelSerializer):
         if not value:
             return
 
-        if value and value.country.id != self.initial_data.get('country'):
+        country = self.initial_data.get('country')
+        if value and str(value.country.id) != country:
             raise serializers.ValidationError(
                 "Country has no '%s' state" % value.name)
         return value
@@ -507,11 +508,12 @@ class AddressSerializer(ApiBaseModelSerializer):
             return
 
         state = self.initial_data.get('state')
-        if state and value.region.id != state:
+        if state and str(value.region.id) != state:
             raise serializers.ValidationError(
                 "State has no '%s' city" % value.name)
 
-        if value and value.country.id != self.initial_data.get('country'):
+        country = self.initial_data.get('country')
+        if value and str(value.country.id) != country:
             raise serializers.ValidationError(
                 "Country has no '%s' city" % str(value))
 

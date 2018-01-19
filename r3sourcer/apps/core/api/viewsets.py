@@ -544,3 +544,11 @@ class FormViewSet(BaseApiViewset):
             Q(company__isnull=True) |
             Q(company__in=companies)
         )
+
+
+class CitiesLightViewSet(BaseApiViewset):
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        return qs.order_by('name')
