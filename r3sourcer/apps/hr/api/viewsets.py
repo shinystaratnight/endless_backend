@@ -4,7 +4,6 @@ import operator
 from functools import reduce
 
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max
 from django.urls import reverse_lazy
@@ -17,10 +16,8 @@ from rest_framework.settings import api_settings
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
-from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api.decorators import detail_route, list_route
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.api.filters import ApiOrderingFilter
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.text import format_lazy
@@ -694,7 +691,7 @@ class VacancyViewset(BaseApiViewset):
         if not init_shifts:
             candidate_contacts = candidate_models.CandidateContact.objects.none()
         else:
-            candidate_contacts = self.get_available_candidate_list(vacancy)
+            candidate_contacts = vacancy_utils.get_available_candidate_list(vacancy)
 
             transportation = request.GET.get('transportation_to_work', None)
             if transportation:
@@ -734,7 +731,9 @@ class VacancyViewset(BaseApiViewset):
         partially_available = request.GET.get('available', 'True') == 'True'
         partially_available_candidates = {}
         if init_shifts:
-            partially_available_candidates = vacancy_utils.get_partially_available_candidate_ids(candidate_contacts, init_shifts)
+            partially_available_candidates = vacancy_utils.get_partially_available_candidate_ids(
+                candidate_contacts, init_shifts
+            )
 
             unavailable_all = [
                 partial for partial, shifts in partially_available_candidates.items()
@@ -885,44 +884,6 @@ class VacancyViewset(BaseApiViewset):
         return Response({
             'status': 'ok',
         })
-
-    def get_available_candidate_list(self, vacancy):
-        """
-        Gets the list of available candidate contacts for the vacancy fillin form
-        :param vacancy: vacancy object
-        :return: queryset of the candidate contacts
-        """
-        today = datetime.date.today()
-
-        content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
-        objects = core_models.WorkflowObject.objects.filter(
-            state__number=70,
-            state__workflow__model=content_type,
-            active=True,
-        ).distinct('object_id').values_list('object_id', flat=True)
-
-        candidate_contacts = candidate_models.CandidateContact.objects.filter(
-            contact__is_available=True,
-            candidate_skills__skill=vacancy.position,
-            candidate_skills__candidate_skill_rates__valid_from__lte=today,
-            candidate_skills__candidate_skill_rates__valid_until__gte=today,
-            candidate_skills__skill__active=True,
-            candidate_skills__score__gt=0,
-            id__in=objects
-        ).distinct()
-
-        if candidate_contacts.exists():
-            blacklists_candidates = hr_models.BlackList.objects.filter(
-                Q(jobsite=vacancy.jobsite) | Q(company_contact=vacancy.jobsite.primary_contact),
-                candidate_contact__in=candidate_contacts
-            ).values_list('candidate_contact', flat=True)
-
-            candidate_contacts = candidate_contacts.exclude(id__in=blacklists_candidates)
-
-            if vacancy.transportation_to_work:
-                candidate_contacts = candidate_contacts.filter(transportation_to_work=vacancy.transportation_to_work)
-
-        return candidate_contacts
 
     def _get_undefined_vo_lookups(self, init_shifts):
         when_list = []
