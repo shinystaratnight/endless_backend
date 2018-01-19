@@ -1212,11 +1212,34 @@ class ContentTypeEndpoint(ApiEndpoint):
     search_fields = ('model', )
 
 
+class CountryEndpoint(ApiEndpoint):
+
+    model = models.Country
+    base_viewset = viewsets.CitiesLightViewSet
+    search_fields = ('name', 'alternate_names')
+
+
+class RegionEndpoint(ApiEndpoint):
+
+    model = models.Region
+    base_viewset = viewsets.CitiesLightViewSet
+    search_fields = ('name', 'alternate_names')
+    filter_fields = ('country',)
+
+
+class CityEndpoint(ApiEndpoint):
+
+    model = models.City
+    base_viewset = viewsets.CitiesLightViewSet
+    search_fields = ('name', 'alternate_names')
+    filter_fields = ('country', 'region')
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(models.Address, serializer=serializers.AddressSerializer)
 router.register(models.BankAccount)
-router.register(models.City, filter_fields=('country', 'region'))
+router.register(endpoint=CityEndpoint())
 router.register(endpoint=CompanyEndpoint())
 router.register(endpoint=CompanyAddressEndpoint())
 router.register(endpoint=CompanyContactEndpoint())
@@ -1226,14 +1249,14 @@ router.register(endpoint=CompanyRelEndpoint())
 router.register(models.CompanyTradeReference)
 router.register(endpoint=ContactEndpoint())
 router.register(models.ContactUnavailability)
-router.register(models.Country)
+router.register(endpoint=CountryEndpoint())
 router.register(models.FileStorage)
 router.register(models.Invoice, filter_fields=['customer_company'])
 router.register(models.InvoiceLine)
 router.register(endpoint=NavigationEndpoint())
 router.register(models.Note)
 router.register(models.Order, filter_fields=('provider_company',))
-router.register(models.Region, filter_fields=('country',))
+router.register(endpoint=RegionEndpoint())
 router.register(models.Tag)
 router.register(endpoint=SiteEndpoint())
 router.register(endpoint=WorkflowNodeEndpoint())
