@@ -201,7 +201,7 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'skills_score',
-        'count_timesheets', 'hourly_rate', 'average_score', 'evaluation', 'color', 'overpriced',
+        'count_timesheets', 'hourly_rate', 'evaluation', 'color', 'overpriced',
     )
 
     vos = serializers.IntegerField(read_only=True)
@@ -214,7 +214,7 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 'contact': ['gender', 'first_name', 'last_name', {
                     'address': ('longitude', 'latitude'),
                 }],
-                'candidate_scores': ['reliability'],
+                'candidate_scores': ['reliability', 'average_score'],
                 'tag_rels': ['tag'],
             }
         )
@@ -227,15 +227,10 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         return dates
 
     def get_days_from_last_timesheet(self, obj):
-        last_timesheet = hr_models.TimeSheet.objects.filter(
-            vacancy_offer__candidate_contact=obj.id
-        ).order_by('-shift_started_at').first()
+        last_timesheet = obj.last_timesheet_date
         if last_timesheet:
             today = date.today()
-            if last_timesheet.shift_started_at:
-                return (today - timezone.localtime(last_timesheet.shift_started_at).date()).days
-            else:
-                return 0
+            return (today - timezone.localtime(last_timesheet).date()).days
         else:
             return 0
 
@@ -259,9 +254,6 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
             self.context['vacancy'].position, score__gt=0, skill__active=True
         )
         return hourly_rate.hourly_rate if hourly_rate else 0
-
-    def get_average_score(self, obj):
-        return obj.candidate_scores.get_average_score()
 
     def get_evaluation(self, obj):
         return '{} ({})'.format(obj.total_evaluation_average(), obj.candidate_evaluations.count())

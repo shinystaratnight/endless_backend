@@ -1833,6 +1833,14 @@ class CandidateScore(core_models.UUIDModel):
         null=True
     )
 
+    average_score = models.DecimalField(
+        decimal_places=2,
+        max_digits=3,
+        verbose_name=_("Average Score"),
+        null=True,
+        editable=False
+    )
+
     class Meta:
         verbose_name = _("Candidate Score")
         verbose_name_plural = _("Candidates' Scores")
@@ -1945,21 +1953,26 @@ class CandidateScore(core_models.UUIDModel):
         self.recalc_reliability()
         self.recalc_loyalty()
         self.recalc_recruitment_score()
+        self.average_score = self.get_average_score()
         self.save()
 
     def get_average_score(self):
-        total_score = 0
-        scores_count = 0
-        if self.client_feedback is not None:
-            total_score += self.client_feedback
-            scores_count += 1
-        if self.reliability is not None:
-            total_score += self.reliability
-            scores_count += 1
-        if self.loyalty is not None:
-            total_score += self.loyalty
-            scores_count += 1
-        if self.recruitment_score is not None:
-            total_score += self.recruitment_score
-            scores_count += 1
-        return total_score / scores_count if scores_count else None
+        if not self.average_score:
+            total_score = 0
+            scores_count = 0
+            if self.client_feedback is not None:
+                total_score += self.client_feedback
+                scores_count += 1
+            if self.reliability is not None:
+                total_score += self.reliability
+                scores_count += 1
+            if self.loyalty is not None:
+                total_score += self.loyalty
+                scores_count += 1
+            if self.recruitment_score is not None:
+                total_score += self.recruitment_score
+                scores_count += 1
+            self.average_score = total_score / scores_count if scores_count else None
+            self.save(update_fields=['average_score'])
+
+        return self.average_score

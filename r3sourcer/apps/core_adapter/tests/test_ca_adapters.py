@@ -1140,7 +1140,7 @@ class TestAngularListApiAdapter:
     def test_adapt_filers_no_type(self, mock_get_field, adapter):
         mock_get_field.return_value = {
             'key': 'field',
-            'type': 'text',
+            'type': 'test',
             'label': 'label',
         }
 
