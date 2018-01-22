@@ -57,7 +57,7 @@ class Skill(UUIDModel):
         have_default_price_list_rate = self.price_list_rates.filter(default_rate=True).count()
 
         if self.active and (not have_default_base_rate or not have_default_price_list_rate):
-            raise ValidationError("Skill cant be active it doesnt have default price list rate and defalut base rate.")
+            raise ValidationError("Skill cant be active. It doesnt have default price list rate and defalut base rate.")
 
         super(Skill, self).clean(*args, **kwargs)
 
