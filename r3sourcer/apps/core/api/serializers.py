@@ -118,6 +118,8 @@ class ApiFullRelatedFieldsMixin():
                     self.fields[field_name] = self._get_id_related_field(
                         field, field.Meta.model.objects
                     )
+                elif isinstance(field, ApiBaseModelSerializer):
+                    continue
                 else:
                     context['related_setting'] = related_setting
                     kwargs = dict(
@@ -249,7 +251,10 @@ class ApiFullRelatedFieldsMixin():
             if isinstance(field, serializers.ModelSerializer):
                 model = field.Meta.model
                 instance = validated_data.pop(field_name, None)
-                if instance is not None and not isinstance(instance, model):
+                if instance is None:
+                    continue
+
+                if not isinstance(instance, model):
                     instance = model.objects.create(**instance)
                 validated_data[field_name] = instance
 

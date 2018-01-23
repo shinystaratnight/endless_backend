@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
-    'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field',
+    'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
 )
 
 
@@ -99,6 +99,8 @@ class AngularApiAdapter(BaseAdapter):
                     adapted['templateOptions']['add_label'] = field['add_label']
                 if field.get('metadata_query'):
                     adapted['metadata_query'] = field['metadata_query']
+                if field.get('max'):
+                    adapted['max'] = field['max']
             elif component_type != constants.FIELD_SUBMIT:
                 adapted['templateOptions']['action'] = field['action']
 
