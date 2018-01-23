@@ -12,7 +12,7 @@ def core_exception_handler(exc, context):
             'errors': response.data
         }
         response.data = new_response
-    elif exc:
+    elif exc and hasattr(exc, 'messages'):
         data = {
             'status': 'error',
             'errors': {"non_field_errors": exc.messages}

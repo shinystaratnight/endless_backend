@@ -637,11 +637,11 @@ class TestNavigationViewset(ResourceMixin):
         assert response.data['count'] == 1
         assert response.data['results'][0]['url'] == candidate_url
 
-    def test_navigation_retrieve_unknown_role(self, rf, user):
+    def test_navigation_retrieve_unknown_role(self, rf, secondary_user):
         with pytest.raises(exceptions.ValidationError) as exc:
             url = '/core/extranetnavigations/'
             request = rf.get(url)
-            force_authenticate(request, user=user)
+            force_authenticate(request, user=secondary_user)
             self.get_response_as_view(request, actions={'get': 'list'})
 
         assert exc.value.message == 'Unknown user role'

@@ -74,6 +74,8 @@ def permission_delete(db):
 
 @pytest.fixture
 def payslip_rule(db, company):
+    company.payslip_rules.all().delete()
+
     return PayslipRule.objects.create(
         company=company,
         comment='comment',
@@ -82,6 +84,8 @@ def payslip_rule(db, company):
 
 @pytest.fixture
 def invoice_rule(db, company):
+    company.invoice_rules.all().delete()
+
     return InvoiceRule.objects.create(
         company=company,
         serial_number='TEST',
