@@ -59,3 +59,12 @@ BUTTON_DELETE = {
     'text_color': '#f32700',
     'title': _('Delete'),
 }
+
+BUTTON_EDIT = {
+    'type': FIELD_BUTTON,
+    'icon': 'fa-pencil',
+    'field': 'id',
+    'action': DEFAULT_ACTION_EDIT,
+    'text_color': '#f0ad4e',
+    'title': _('Edit'),
+}
