@@ -10,11 +10,11 @@ from django.utils.translation import ugettext_lazy as _
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.models import CompanyContact, Company
+from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
-from ..api.serializers.timesheet import (
-    TimeSheetSignatureSerializer, PinCodeSerializer
-)
+from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers
 from ..api import viewsets, filters
 
 __all__ = [
@@ -28,7 +28,79 @@ class TimeSheetEndpoint(ApiEndpoint):
 
     model = hr_models.TimeSheet
     base_viewset = viewsets.TimeSheetViewset
+    serializer = timesheet_serializers.TimeSheetSerializer
     filter_class = filters.TimesheetFilter
+
+    list_display = (
+        {
+            'label': _('Company / Jobsite / Supervisor'),
+            'fields': ({
+                'type': constants.FIELD_LINK,
+                'field': 'company',
+                'endpoint': format_lazy('{}{{company.id}}', api_reverse_lazy('core/companies')),
+            }, {
+                'type': constants.FIELD_LINK,
+                'field': 'jobsite',
+                'endpoint': format_lazy('{}{{jobsite.id}}', api_reverse_lazy('hr/jobsites')),
+            }, {
+                'type': constants.FIELD_LINK,
+                'field': 'supervisor',
+                'endpoint': format_lazy('{}{{supervisor.id}}', api_reverse_lazy('core/companycontacts')),
+            }),
+        }, {
+            'label': _('Position / Candidate'),
+            'fields': ({
+                'type': constants.FIELD_LINK,
+                'field': 'position',
+                'endpoint': format_lazy('{}{{position.id}}', api_reverse_lazy('skills/skills')),
+            }, {
+                'type': constants.FIELD_LINK,
+                'field': 'vacancy_offer.candidate_contact',
+                'endpoint': format_lazy(
+                    '{}{{vacancy_offer.candidate_contact.id}}',
+                    api_reverse_lazy('candidate/candidatecontacts')
+                ),
+            }),
+        }, {
+            'label': _('Links'),
+            'delim': ' / ',
+            'fields': ({
+                'type': constants.FIELD_LINK,
+                'field': 'vacancy',
+                'text': _('Vacancy'),
+                'endpoint': format_lazy('{}{{vacancy.id}}', api_reverse_lazy('hr/vacancies')),
+            }, ),
+        }, {
+            'label': _('Shift started/ended'),
+            'fields': ('shift_started_ended',)
+        }, {
+            'label': _('Break started/ended'),
+            'fields': ('break_started_ended',)
+        }, {
+            'label': _('Morning check'),
+            'fields': ('going_to_work_confirmation', {
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-commenting',
+                'text': 'Candidate Going To Work',
+                'endpoint': format_lazy(
+                    '{}{{going_to_work_sent_sms.id}}',
+                    api_reverse_lazy('sms-interface/smsmessages')
+                ),
+                'field': 'going_to_work_sent_sms',
+                'action': constants.DEFAULT_ACTION_EDIT,
+            }, {
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-commenting',
+                'text': 'Reply',
+                'endpoint': format_lazy(
+                    '{}{{going_to_work_reply_sms.id}}',
+                    api_reverse_lazy('sms-interface/smsmessages')
+                ),
+                'field': 'going_to_work_reply_sms',
+                'action': constants.DEFAULT_ACTION_EDIT,
+            })
+        },
+    )
 
     def _get_all_supervisors(self):
         ids = hr_models.TimeSheet.objects.all().values_list(
@@ -103,7 +175,7 @@ class TimeSheetEndpoint(ApiEndpoint):
 
         time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
-        serializer = PinCodeSerializer(instance=time_sheet, data=request.data)
+        serializer = timesheet_serializers.PinCodeSerializer(instance=time_sheet, data=request.data)
         serializer.is_valid(raise_exception=True)
 
         # check if already approved
@@ -139,7 +211,7 @@ class TimeSheetEndpoint(ApiEndpoint):
                 "description": _("TimeSheet already confirmed")
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = TimeSheetSignatureSerializer(instance=time_sheet, data=request.data)
+        serializer = timesheet_serializers.TimeSheetSignatureSerializer(instance=time_sheet, data=request.data)
         serializer.is_valid(raise_exception=True)
 
         logger.debug("TimeSheet {ts_id} approved through signature.".format(
