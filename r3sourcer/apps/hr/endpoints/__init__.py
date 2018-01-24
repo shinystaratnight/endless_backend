@@ -17,6 +17,20 @@ from r3sourcer.apps.hr.endpoints.payment import InvoiceEndpoint
 from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint
 
 
+class JobsiteEndpoint(ApiEndpoint):
+    model = hr_models.Jobsite
+
+    search_fields = (
+        'jobsite_addresses__address__city__search_names', 'jobsite_addresses__address__street_address',
+        'master_company__name'
+    )
+
+    fieldsets = (
+        'industry', 'master_company', 'portfolio_manager', 'primary_contact', 'is_available', 'notes', 'start_date',
+        'end_date',
+    )
+
+
 class FavouriteListEndpoint(ApiEndpoint):
 
     model = hr_models.FavouriteList
@@ -488,10 +502,7 @@ class VacancyDateEndpoint(ApiEndpoint):
     fieldsets = ('vacancy', 'shift_date', 'workers', 'hourly_rate')
 
 
-router.register(hr_models.Jobsite, search_fields=(
-    'jobsite_addresses__address__city__search_names', 'jobsite_addresses__address__street_address',
-    'master_company__name'
-))
+router.register(endpoint=JobsiteEndpoint())
 router.register(hr_models.JobsiteUnavailability)
 router.register(hr_models.JobsiteAddress)
 router.register(endpoint=VacancyEndpoint())

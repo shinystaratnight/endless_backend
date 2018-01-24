@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db import models
@@ -448,8 +449,11 @@ class MetaFields(serializers.SerializerMetaclass):
                 all_fields = model._meta.get_fields() if model is not None else []
                 all_fields = [
                     field.name for field in all_fields
-                    if ((not hasattr(field, 'field') and getattr(field, 'related_name', None) is None) or
-                        isinstance(field, models.OneToOneRel))
+                    if (
+                        ((not hasattr(field, 'field') and getattr(field, 'related_name', None) is None) or
+                         isinstance(field, models.OneToOneRel)) and
+                        not isinstance(field, GenericForeignKey)
+                    )
                 ]
                 fields = chain(
                     all_fields, [field for field in fields if isinstance(field, dict)])

@@ -1,3 +1,6 @@
+from django.conf import settings
+from django.utils import timezone
+from django.utils.formats import time_format, date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
@@ -60,7 +63,7 @@ class PinCodeSerializer(ValidateApprovalScheme):
 
 class TimeSheetSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('company', 'jobsite', 'position')
+    method_fields = ('company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'vacancy')
 
     class Meta:
         model = TimeSheet
@@ -75,15 +78,42 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_company(self, obj):
         if obj:
-            return str(obj.get_closest_company())
+            company = obj.get_closest_company()
+            return {'id': company.id, '__str__': str(company)}
 
     def get_jobsite(self, obj):
         if obj:
-            return str(obj.vacancy_offer.vacancy.jobsite)
+            jobsite = obj.vacancy_offer.vacancy.jobsite
+            return {'id': jobsite.id, '__str__': str(jobsite)}
 
     def get_position(self, obj):
         if obj:
-            return str(obj.vacancy_offer.vacancy.position)
+            position = obj.vacancy_offer.vacancy.position
+            return {'id': position.id, '__str__': str(position)}
+
+    def _format_date_range(self, date_start, date_end):
+        if date_start:
+            dt = timezone.make_naive(date_start)
+            start = date_format(dt, settings.DATETIME_FORMAT)
+        else:
+            start = '-'
+
+        if date_end:
+            end = time_format(timezone.make_naive(date_end), settings.TIME_FORMAT)
+        else:
+            end = '-'
+
+        return '{} / {}'.format(start, end)
+
+    def get_shift_started_ended(self, obj):
+        return self._format_date_range(obj.shift_started_at, obj.shift_ended_at)
+
+    def get_break_started_ended(self, obj):
+        return self._format_date_range(obj.break_started_at, obj.break_ended_at)
+
+    def get_vacancy(self, obj):
+        vacancy = obj.vacancy_offer.vacancy
+        return {'id': vacancy.id, '__str__': str(vacancy)}
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):

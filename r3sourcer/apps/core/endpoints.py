@@ -837,7 +837,7 @@ class CompanyEndpoint(ApiEndpoint):
 class CompanyContactRelationEndpoint(ApiEndpoint):
 
     model = models.CompanyContactRelationship
-    serializers = serializers.CompanyContactRelationshipSerializer
+    serializer = serializers.CompanyContactRelationshipSerializer
     filter_class = filters.CompanyContactRelationshipFilter
 
 
