@@ -15,7 +15,7 @@ def core_exception_handler(exc, context):
     elif exc:
         data = {
             'status': 'error',
-            'errors': {"non_field_errors": exc.messages}
+            'errors': {"non_field_errors": exc.messages if hasattr(exc, 'messages') else str(exc)}
         }
         response = Response(data, status=status.HTTP_400_BAD_REQUEST)
 

@@ -7,14 +7,14 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from django.utils.translation import ugettext_lazy as _
 
-from r3sourcer.apps.candidate import models as hr_models
+from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.models import CompanyContact
+from r3sourcer.apps.core.models import CompanyContact, Company
 from r3sourcer.apps.core_adapter import constants
 from ..api.serializers.timesheet import (
     TimeSheetSignatureSerializer, PinCodeSerializer
 )
-from ..models import TimeSheet
+from r3sourcer.apps.hr import models as hr_models
 from ..api import viewsets, filters
 
 __all__ = [
@@ -26,12 +26,12 @@ logger = logging.getLogger(__name__)
 
 class TimeSheetEndpoint(ApiEndpoint):
 
-    model = TimeSheet
+    model = hr_models.TimeSheet
     base_viewset = viewsets.TimeSheetViewset
     filter_class = filters.TimesheetFilter
 
     def _get_all_supervisors(self):
-        ids = TimeSheet.objects.all().values_list(
+        ids = hr_models.TimeSheet.objects.all().values_list(
             'supervisor', flat=True).distinct()
         return [
             {'label': str(jt), 'value': jt.id}
@@ -39,11 +39,29 @@ class TimeSheetEndpoint(ApiEndpoint):
         ]
 
     def _get_all_candidates(self):
-        ids = TimeSheet.objects.all().values_list(
+        ids = hr_models.TimeSheet.objects.all().values_list(
             'vacancy_offer__candidate_contact', flat=True).distinct()
         return [
             {'label': str(jt), 'value': jt.id}
-            for jt in hr_models.CandidateContact.objects.filter(id__in=ids)
+            for jt in candidate_models.CandidateContact.objects.filter(id__in=ids)
+        ]
+
+    def _get_all_companies(self):
+        ids = hr_models.TimeSheet.objects.all().values_list(
+            'vacancy_offer__shift__date__vacancy__customer_company_id', flat=True
+        ).distinct()
+        return [
+            {'label': str(jt), 'value': jt.id}
+            for jt in Company.objects.filter(id__in=ids)
+        ]
+
+    def _get_all_jobsites(self):
+        ids = hr_models.TimeSheet.objects.all().values_list(
+            'vacancy_offer__shift__date__vacancy__jobsite_id', flat=True
+        ).distinct()
+        return [
+            {'label': str(jt), 'value': jt.id}
+            for jt in hr_models.Jobsite.objects.filter(id__in=ids)
         ]
 
     def get_list_filter(self):
@@ -61,6 +79,18 @@ class TimeSheetEndpoint(ApiEndpoint):
             'label': _('Candidate Contact'),
             'choices': self._get_all_candidates,
             'is_qs': True,
+        }, {
+            'type': constants.FIELD_SELECT,
+            'field': 'company',
+            'label': _('Company'),
+            'choices': self._get_all_companies,
+            'is_qs': True,
+        }, {
+            'type': constants.FIELD_SELECT,
+            'field': 'jobsite',
+            'label': _('Jobsite'),
+            'choices': self._get_all_jobsites,
+            'is_qs': True,
         }]
 
     @transaction.atomic
@@ -71,7 +101,7 @@ class TimeSheetEndpoint(ApiEndpoint):
         Would be used for approving through pin code.
         """
 
-        time_sheet = get_object_or_404(TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
         serializer = PinCodeSerializer(instance=time_sheet, data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -101,7 +131,7 @@ class TimeSheetEndpoint(ApiEndpoint):
         Would be used for approving through signature.
         """
 
-        time_sheet = get_object_or_404(TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
         # check if already approved
         if time_sheet.supervisor_approved_at:
