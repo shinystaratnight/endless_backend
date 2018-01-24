@@ -115,7 +115,6 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
                         pricing_models.DynamicCoefficientRule.objects.create(
                             rate_coefficient=obj, rule=rule_obj
                         )
-
                 else:
                     rule_obj = model.objects.create(**data)
 
@@ -136,6 +135,6 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
         return obj
 
     def update(self, obj, validated_data):
-        self._get_rule_objects(validated_data)
+        self._get_rule_objects(validated_data, obj)
 
         return super(RateCoefficientSerializer, self).update(obj, validated_data)

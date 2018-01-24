@@ -141,7 +141,7 @@ class TestCompanyFileAccountsView:
                                               uri="/GeneralLedger/Account/eb043b43-1d66-472b-a6ee-ad48def81b96",
                                               row_version="5548997690873872384",
                                               company_file=company_file)
-        url = reverse('company_file_accounts', kwargs={'version': 'v2', 'id': company_file.id})
+        url = reverse('company_file_accounts', kwargs={'version': 'v2', 'id': company_file.cf_id})
         client.force_login(user)
         response = client.get(url)
 
