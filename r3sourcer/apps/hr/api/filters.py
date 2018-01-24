@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils import timezone
 
-from django_filters import UUIDFilter, NumberFilter, BooleanFilter
+from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFromToRangeFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core import models as core_models
@@ -19,7 +19,7 @@ class TimesheetFilter(FilterSet):
 
     class Meta:
         model = hr_models.TimeSheet
-        fields = ['supervisor']
+        fields = ['shift_started_at']
 
     def filter_candidate(self, queryset, name, value):
         return queryset.filter(
