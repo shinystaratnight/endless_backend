@@ -663,19 +663,14 @@ class CompanyEndpoint(ApiEndpoint):
             }
         },
         {
-            'type': constants.CONTAINER_COLLAPSE,
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Jobsites'),
-            'fields': (
-                {
-                    'label': _('Jobsites'),
-                    'type': constants.FIELD_RELATED,
-                    'list': True,
-                    'edit': True,
-                    'field': 'jobsites',
-                    'endpoint': api_reverse_lazy('core/jobsites'),
-                },
-            )
+            'query': {
+                'company': '{id}',
+            },
+            'label': _('Jobsites'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('hr/jobsiteaddresses'),
         },
         {
             'type': constants.CONTAINER_COLLAPSE,
@@ -712,7 +707,6 @@ class CompanyEndpoint(ApiEndpoint):
         },
         {
             'type': constants.FIELD_LIST,
-            'field': 'id_',
             'collapsed': True,
             'query': {
                 'company': '{id}',

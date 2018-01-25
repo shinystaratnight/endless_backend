@@ -19,6 +19,7 @@ from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint
 
 class JobsiteEndpoint(ApiEndpoint):
     model = hr_models.Jobsite
+    filter_class = hr_filters.JobsiteFilter
 
     search_fields = (
         'jobsite_addresses__address__city__search_names', 'jobsite_addresses__address__street_address',
@@ -28,6 +29,22 @@ class JobsiteEndpoint(ApiEndpoint):
     fieldsets = (
         'industry', 'master_company', 'portfolio_manager', 'primary_contact', 'is_available', 'notes', 'start_date',
         'end_date',
+    )
+
+    list_editable = (
+        '__str__', 'primary_contact', 'start_date', 'end_date', 'notes',
+    )
+
+
+class JobsiteAddressEndpoint(ApiEndpoint):
+    model = hr_models.JobsiteAddress
+    filter_class = hr_filters.JobsiteAddressFilter
+    serializer = vacancy_serializers.JobsiteAddressSerializer
+
+    fieldsets = ('address', 'jobsite', 'regular_company', )
+
+    list_editable = (
+        '__str__', 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
     )
 
 
@@ -504,7 +521,7 @@ class VacancyDateEndpoint(ApiEndpoint):
 
 router.register(endpoint=JobsiteEndpoint())
 router.register(hr_models.JobsiteUnavailability)
-router.register(hr_models.JobsiteAddress)
+router.register(endpoint=JobsiteAddressEndpoint())
 router.register(endpoint=VacancyEndpoint())
 router.register(endpoint=VacancyDateEndpoint())
 router.register(endpoint=ShiftEndpoint())
