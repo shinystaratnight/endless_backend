@@ -156,6 +156,13 @@ class RateCoefficientModifierEndpoint(ApiEndpoint):
     },)
 
 
+class PriceListEndpoint(ApiEndpoint):
+    model = models.PriceList
+
+    list_filter = ('company', )
+    list_editable = ('valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at')
+
+
 router.register(endpoint=RateCoefficientEndpoint())
 router.register(models.RateCoefficientGroup)
 router.register(endpoint=RateCoefficientModifierEndpoint())
@@ -163,7 +170,7 @@ router.register(models.Industry)
 router.register(models.IndustryPriceList)
 router.register(models.IndustryPriceListRate)
 router.register(models.IndustryRateCoefficient)
-router.register(models.PriceList)
+router.register(endpoint=PriceListEndpoint())
 router.register(endpoint=PriceListRateEndpoint())
 router.register(models.PriceListRateCoefficient)
 router.register(endpoint=DynamicCoefficientRuleEndpoint())
