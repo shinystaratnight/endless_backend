@@ -78,7 +78,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_company(self, obj):
         if obj:
-            company = obj.get_closest_company()
+            company = obj.vacancy_offer.vacancy.customer_company
             return {'id': company.id, '__str__': str(company)}
 
     def get_jobsite(self, obj):

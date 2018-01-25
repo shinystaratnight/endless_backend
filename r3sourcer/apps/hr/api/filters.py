@@ -14,8 +14,8 @@ from r3sourcer.apps.hr import models as hr_models
 class TimesheetFilter(FilterSet):
     candidate = UUIDFilter(method='filter_candidate')
     approved = BooleanFilter(method='filter_approved')
-    company = BooleanFilter(method='filter_company')
-    jobsite = BooleanFilter(method='filter_jobsite')
+    company = UUIDFilter('vacancy_offer__shift__date__vacancy__customer_company_id')
+    jobsite = UUIDFilter('vacancy_offer__shift__date__vacancy__jobsite_id')
 
     class Meta:
         model = hr_models.TimeSheet
