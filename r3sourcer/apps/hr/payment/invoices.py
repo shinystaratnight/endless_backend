@@ -147,7 +147,7 @@ class InvoiceService(BasePaymentService):
         return file_obj
 
     def _prepare_invoice(self, company, from_date=None, timesheets=None,
-                         show_candidate=False, to_date=None):
+                         show_candidate=False):
 
         if hasattr(company, 'subcontractor'):
             candidate = company.subcontractor.primary_contact
@@ -181,7 +181,7 @@ class InvoiceService(BasePaymentService):
 
             return invoice
 
-    def prepare(self, company, from_date):  # , to_date=None):
+    def prepare(self, company, from_date):
         try:
             return Invoice.objects.filter(
                 customer_company=company,
@@ -219,5 +219,4 @@ class InvoiceService(BasePaymentService):
                 self._prepare_invoice(
                     company, from_date, timesheets,
                     show_candidate=invoice_rule.show_candidate_name,
-#                    to_date=to_date
                 )
