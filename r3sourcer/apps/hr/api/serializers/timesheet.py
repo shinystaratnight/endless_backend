@@ -1,4 +1,5 @@
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.formats import time_format, date_format
 from django.utils.translation import ugettext_lazy as _
@@ -6,6 +7,8 @@ from rest_framework import serializers
 
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
+from r3sourcer.apps.sms_interface import models as sms_models
+from r3sourcer.apps.sms_interface.api import serializers as sms_serializers
 
 from ...models import TimeSheet, CandidateEvaluation
 
@@ -63,13 +66,15 @@ class PinCodeSerializer(ValidateApprovalScheme):
 
 class TimeSheetSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'vacancy')
+    method_fields = (
+        'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'vacancy', 'related_sms',
+    )
 
     class Meta:
         model = TimeSheet
         fields = '__all__'
         related_fields = {
-            'vacancy_offer': ({
+            'vacancy_offer': ('id', {
                 'candidate_contact': ('id', {
                     'contact': ('picture', ),
                 }, ),
@@ -78,7 +83,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_company(self, obj):
         if obj:
-            company = obj.get_closest_company()
+            company = obj.vacancy_offer.vacancy.customer_company
             return {'id': company.id, '__str__': str(company)}
 
     def get_jobsite(self, obj):
@@ -114,6 +119,14 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
     def get_vacancy(self, obj):
         vacancy = obj.vacancy_offer.vacancy
         return {'id': vacancy.id, '__str__': str(vacancy)}
+
+    def get_related_sms(self, obj):
+        ct = ContentType.objects.get_for_model(TimeSheet)
+        smses = sms_models.SMSMessage.objects.filter(
+            related_objects__content_type=ct, related_objects__object_id=obj.id
+        )
+        if smses.exists():
+            return sms_serializers.SMSMessageSerializer(smses, many=True, fields=['id', '__str__']).data
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):

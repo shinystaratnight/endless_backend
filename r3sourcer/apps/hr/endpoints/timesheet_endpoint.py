@@ -33,7 +33,7 @@ class TimeSheetEndpoint(ApiEndpoint):
 
     list_display = (
         {
-            'label': _('Company / Jobsite / Supervisor'),
+            'label': _('Client / Jobsite / Supervisor'),
             'fields': ({
                 'type': constants.FIELD_LINK,
                 'field': 'company',
@@ -102,67 +102,41 @@ class TimeSheetEndpoint(ApiEndpoint):
         },
     )
 
-    def _get_all_supervisors(self):
-        ids = hr_models.TimeSheet.objects.all().values_list(
-            'supervisor', flat=True).distinct()
-        return [
-            {'label': str(jt), 'value': jt.id}
-            for jt in CompanyContact.objects.filter(id__in=ids)
-        ]
-
-    def _get_all_candidates(self):
-        ids = hr_models.TimeSheet.objects.all().values_list(
-            'vacancy_offer__candidate_contact', flat=True).distinct()
-        return [
-            {'label': str(jt), 'value': jt.id}
-            for jt in candidate_models.CandidateContact.objects.filter(id__in=ids)
-        ]
-
-    def _get_all_companies(self):
-        ids = hr_models.TimeSheet.objects.all().values_list(
-            'vacancy_offer__shift__date__vacancy__customer_company_id', flat=True
-        ).distinct()
-        return [
-            {'label': str(jt), 'value': jt.id}
-            for jt in Company.objects.filter(id__in=ids)
-        ]
-
-    def _get_all_jobsites(self):
-        ids = hr_models.TimeSheet.objects.all().values_list(
-            'vacancy_offer__shift__date__vacancy__jobsite_id', flat=True
-        ).distinct()
-        return [
-            {'label': str(jt), 'value': jt.id}
-            for jt in hr_models.Jobsite.objects.filter(id__in=ids)
-        ]
+    fieldsets = (
+        'id', 'vacancy_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
+        'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
+        'candidate_submitted_at', 'supervisor_approved_at', 'candidate_rate', 'rate_overrides_approved_by',
+        'rate_overrides_approved_at', 'created_at', 'updated_at', {
+            'field': 'related_sms',
+            'type': constants.FIELD_RELATED,
+            'many': True,
+            'endpoint': api_reverse_lazy('sms-interface/smsmessages'),
+        }
+    )
 
     def get_list_filter(self):
         return [{
             'field': 'shift_started_at',
             'type': constants.FIELD_DATE,
         }, {
-            'type': constants.FIELD_SELECT,
+            'type': constants.FIELD_RELATED,
             'field': 'supervisor',
-            'choices': self._get_all_supervisors,
-            'is_qs': True,
+            'related_endpoint': 'core/companycontacts',
         }, {
-            'type': constants.FIELD_SELECT,
+            'type': constants.FIELD_RELATED,
             'field': 'candidate',
             'label': _('Candidate Contact'),
-            'choices': self._get_all_candidates,
-            'is_qs': True,
+            'related_endpoint': 'candidate/candidatecontacts',
         }, {
-            'type': constants.FIELD_SELECT,
+            'type': constants.FIELD_RELATED,
             'field': 'company',
-            'label': _('Company'),
-            'choices': self._get_all_companies,
-            'is_qs': True,
+            'label': _('Client'),
+            'endpoint': api_reverse_lazy('core/companies'),
         }, {
-            'type': constants.FIELD_SELECT,
+            'type': constants.FIELD_RELATED,
             'field': 'jobsite',
             'label': _('Jobsite'),
-            'choices': self._get_all_jobsites,
-            'is_qs': True,
+            'endpoint': api_reverse_lazy('hr/jobsites'),
         }]
 
     @transaction.atomic
