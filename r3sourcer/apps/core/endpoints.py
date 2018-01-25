@@ -711,19 +711,15 @@ class CompanyEndpoint(ApiEndpoint):
             )
         },
         {
-            'type': constants.CONTAINER_COLLAPSE,
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
             'collapsed': True,
-            'name': _('Price list'),
-            'fields': (
-                {
-                    'label': _('Price list'),
-                    'type': constants.FIELD_RELATED,
-                    'list': True,
-                    'edit': True,
-                    'field': 'price_lists',
-                    'endpoint': api_reverse_lazy('core/pricelists'),
-                },
-            )
+            'query': {
+                'company': '{id}',
+            },
+            'label': _('Price list'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('pricing/pricelists'),
         },
         {
             'type': constants.CONTAINER_COLLAPSE,
