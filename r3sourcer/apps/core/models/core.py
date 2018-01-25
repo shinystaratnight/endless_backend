@@ -1738,9 +1738,8 @@ class Invoice(AbstractOrder):
         null=True
     )
 
-    order_number = models.CharField(
+    order_number = models.TextField(
         verbose_name=_("Order Number"),
-        max_length=255,
         null=True
     )
 

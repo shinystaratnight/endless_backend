@@ -17,30 +17,22 @@ def format_date_to_myob(date_time, only_date=False):
 
 class InvoiceMapper:
 
-    def map_to_myob(self, invoice, tax, account_debit, account_tax,
-                    account_credit):
+    def map_to_myob(self, invoice, tax, account_debit, account_tax, account_credit):
         data = {
-            'DateOccurred': format_date_to_myob(invoice.date),
-            'IsTaxInclusive': False,
-            'IsYearEndAdjustment': False,
+            "DateOccurred": format_date_to_myob(invoice.date),
+            "Customer": {'UID': 'TODO'},
+            "TotalTax": "TODO",
+            "TotalAmount": "TODO"
         }
+        lines = list()
 
-        lines = [{
-            'Account': {'UID': account_debit['UID']},
-            'TaxCode': {'UID': tax['UID']},
-            'Amount': invoice.total_with_tax,
-            'IsCredit': False
-        }, {
-            'Account': {'UID': account_credit['UID']},
-            'TaxCode': {'UID': tax['UID']},
-            'Amount': invoice.total,
-            'IsCredit': True
-        }, {
-            'Account': {'UID': account_tax['UID']},
-            'TaxCode': {'UID': tax['UID']},
-            'Amount': invoice.tax,
-            'IsCredit': True
-        }]
+        for invoice_line in invoice.invoice_lines.all():
+            lines.append({
+                "Hours": "TODO",
+                "Rate": "TODO",
+                "Total": "TODO",
+                "TaxCode": {"TODO": "TODO"},
+            })
 
         data['Lines'] = lines
 

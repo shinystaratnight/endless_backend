@@ -314,10 +314,8 @@ class PaymentSync(BaseSync):
 
 
 class InvoiceSync(PaymentSync):
-
     app = "core"
     model = "Invoice"
-
     mapper_class = InvoiceMapper
 
     def _find_old_myob_card(self, invoice, resource=None):
@@ -353,10 +351,8 @@ class InvoiceSync(PaymentSync):
 
 
 class PayslipSync(PaymentSync):
-
     app = "hr"
     model = "Payslip"
-
     mapper_class = PayslipMapper
 
     def _find_old_myob_card(self, payslip, resource=None):
