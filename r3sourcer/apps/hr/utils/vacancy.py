@@ -1,4 +1,4 @@
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, date
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -16,7 +16,7 @@ def get_available_candidate_list(vacancy):
     from r3sourcer.apps.core import models as core_models
     from r3sourcer.apps.hr import models as hr_models
 
-    today = datetime.date.today()
+    today = date.today()
 
     content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
     objects = core_models.WorkflowObject.objects.filter(
