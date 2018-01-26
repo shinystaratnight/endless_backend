@@ -1021,7 +1021,7 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
 
 
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
-    method_fields = ('primary_contact', 'terms_of_pay')
+    method_fields = ('primary_contact', 'terms_of_pay', 'regular_company_rel')
 
     class Meta:
         model = core_models.Company
@@ -1031,8 +1031,15 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
                 'manager': (
                     'id', '__str__',
                 ),
+                'groups': ('id', '__str__')
             }
         )
+        extra_kwargs = {
+            'company_settings': {'read_only': True},
+            'myob_settings': {'read_only': True},
+            'subcontractor': {'read_only': True},
+            'groups': {'read_only': True},
+        }
 
     def get_company_rel(self, company):
         company_rel = cache.get('company_rel_{}'.format(company.id), None)
@@ -1079,6 +1086,10 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             return
 
         return obj.get_terms_of_payment()
+
+    def get_regular_company_rel(self, obj):
+        relation = obj.regular_companies.all().last()
+        return relation and core_field.ApiBaseRelatedField.to_read_only_data(relation)
 
 
 class FormStorageSerializer(ApiBaseModelSerializer):
