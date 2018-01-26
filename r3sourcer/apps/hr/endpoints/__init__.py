@@ -1,3 +1,5 @@
+import datetime
+
 from functools import partial
 
 from django.utils.functional import lazy
@@ -358,10 +360,16 @@ class VacancyEndpoint(ApiEndpoint):
                         'label': _('Provider company'),
                         'field': 'provider_company',
                         'type': constants.FIELD_RELATED,
+                        'query': {
+                            'type': 'master',
+                        }
                     }, {
                         'label': _('Company representative'),
                         'field': 'provider_representative',
                         'type': constants.FIELD_RELATED,
+                        'query': {
+                            'company': '{provider_company.id}',
+                        }
                     }, {
                         'label': _('Accepted at'),
                         'field': 'provider_signed_at',
@@ -371,7 +379,26 @@ class VacancyEndpoint(ApiEndpoint):
             }, {
                 'type': constants.CONTAINER_COLUMN,
                 'fields': (
-                    'jobsite', 'position', 'work_start_date', 'default_shift_starting_time', {
+                    {
+                        'label': _('Jobsite'),
+                        'field': 'jobsite',
+                        'type': constants.FIELD_RELATED,
+                        'query': {
+                            'company': '{customer_company.id}',
+                        }
+                    }, {
+                        'label': _('Position'),
+                        'field': 'position',
+                        'type': constants.FIELD_RELATED,
+                        'query': {
+                            'company': '{customer_company.id}',
+                        }
+                    }, {
+                        'field': 'work_start_date',
+                        'type': constants.FIELD_DATE,
+                        'default': datetime.date.today(),
+                    }, 'default_shift_starting_time',
+                    {
                         'type': constants.FIELD_RELATED,
                         'label': _('Candidate rate default'),
                         'query': {

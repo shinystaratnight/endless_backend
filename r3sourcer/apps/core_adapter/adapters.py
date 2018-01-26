@@ -1,6 +1,6 @@
 import six
 
-from datetime import timedelta
+from datetime import timedelta, date, time
 from collections import OrderedDict
 
 from django.urls.exceptions import NoReverseMatch
@@ -166,7 +166,7 @@ class AngularApiAdapter(BaseAdapter):
         adapted['read_only'] = field.get('read_only', False)
         adapted['key'] = field.get('key')
         if ('default' in field and
-                isinstance(field['default'], (str, int, float, bool))):
+                isinstance(field['default'], (str, int, float, bool, date, time))):
             adapted['default'] = field['default']
 
         if 'showIf' in field:
