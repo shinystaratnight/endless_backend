@@ -420,10 +420,11 @@ class AngularListApiAdapter(AngularApiAdapter):
                     'default': list_filter.get('default'),
                 })
             elif field_type == constants.FIELD_SELECT_MULTIPLE:
+                adapted['data'] = {}
                 if 'endpoint' in list_filter:
-                    adapted['endpoint'] = list_filter['endpoint']
+                    adapted['data']['endpoint'] = list_filter['endpoint']
                 elif 'data' in list_filter:
-                    adapted['data'] = list_filter['data']
+                    adapted['data']['data'] = list_filter['data']
 
                 adapted.update({
                     'query': list_filter.get('query'),
