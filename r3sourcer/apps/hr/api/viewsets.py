@@ -19,6 +19,7 @@ from filer.models import File
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.decorators import detail_route, list_route
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
+from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.text import format_lazy
@@ -873,7 +874,7 @@ class VacancyViewset(BaseApiViewset):
             candidate_contacts[:51], context=context, many=True
         )
         return Response({
-            'shifts': [{'key': shift.id, 'value': str(shift)} for shift in init_shifts],
+            'shifts': [ApiBaseRelatedField.to_read_only_data(shift) for shift in init_shifts],
             'vacancy': vacacy_ctx,
             'list': serializer.data,
         })
