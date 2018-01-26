@@ -729,8 +729,8 @@ class CompanyEndpoint(ApiEndpoint):
                         api_reverse_lazy('core/workflownodes'),
                     ),
                     'query': {
-                        'model': 'core.company',
-                        'object_id': '{id}',
+                        'model': 'core.companyrel',
+                        'object_id': '{regular_company_rel.id}',
                     },
                 },
             )
