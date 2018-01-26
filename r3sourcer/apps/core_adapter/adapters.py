@@ -419,6 +419,16 @@ class AngularListApiAdapter(AngularApiAdapter):
                     'options': choices,
                     'default': list_filter.get('default'),
                 })
+            elif field_type == constants.FIELD_SELECT_MULTIPLE:
+                if 'endpoint' in list_filter:
+                    adapted['endpoint'] = list_filter['endpoint']
+                elif 'data' in list_filter:
+                    adapted['data'] = list_filter['data']
+
+                adapted.update({
+                    'query': list_filter.get('query'),
+                    'display': list_filter.get('display'),
+                })
             elif field_type in [constants.FIELD_DATE,
                                 constants.FIELD_DATETIME]:
                 from_qry = '%s_0' % field_qry

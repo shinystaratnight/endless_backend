@@ -10,6 +10,7 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
+from rest_framework import exceptions
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -108,6 +109,15 @@ class VacancyFillinEndpoint(ApiEndpoint):
         'default': 50,
         'min': 0,
         'max': 200,
+    }, {
+        'type': constants.FIELD_SELECT_MULTIPLE,
+        'field': 'date',
+        'label': _('Shifts'),
+        'query': {
+            'shifts': '{id}',
+        },
+        'data': 'shifts',
+        'display': '__str__'
     }]
 
     ordering_mapping = {
@@ -671,9 +681,15 @@ class VacancyViewset(BaseApiViewset):
     def fillin(self, request, *args, **kwargs):
         vacancy = self.get_object()
 
+        requested_shift_ids = request.query_params.getlist('shifts')
+
         now = timezone.now()
         today = now.date()
+
+        shifts_q = Q(id__in=requested_shift_ids) if requested_shift_ids else Q()
+
         init_shifts = list(hr_models.Shift.objects.filter(
+            shifts_q,
             Q(date__shift_date=today, time__gte=now.timetz()) | Q(date__shift_date__gt=today),
             date__vacancy=vacancy,
             date__cancelled=False,
@@ -863,7 +879,7 @@ class VacancyViewset(BaseApiViewset):
         })
 
     def fillin_post(self, request, shifts):
-        candidate_ids = request.data.get('candidates')
+        candidate_ids = request.data.get('candidates', [])
         fill_shifts = request.data.get('shifts', None)
 
         for candidate_id in candidate_ids:
@@ -880,6 +896,8 @@ class VacancyViewset(BaseApiViewset):
                         shift=shift,
                         candidate_contact_id=candidate_id,
                     )
+        else:
+            raise exceptions.ParseError(_('No Candidates has been chosen'))
 
         return Response({
             'status': 'ok',
