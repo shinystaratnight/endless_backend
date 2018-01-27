@@ -69,11 +69,11 @@ class TimesheetFilter(FilterSet):
         signed_delta = now - datetime.timedelta(hours=1)
 
         qs_unapproved = (Q(candidate_submitted_at__isnull=False) |
-                        Q(shift_ended_at__lt=ended_at)) &\
+                         Q(shift_ended_at__lt=ended_at)) &\
                         (Q(supervisor_approved_at__isnull=True) |
-                        Q(supervisor_approved_at__gte=signed_delta)) &\
-                        Q(supervisor__contact=contact) &\
-                        Q(going_to_work_confirmation=True)
+                         Q(supervisor_approved_at__gte=signed_delta)) &\
+                         Q(supervisor__contact=contact) &\
+                         Q(going_to_work_confirmation=True)
         return qs_unapproved
 
 
@@ -119,3 +119,31 @@ class VacancyOfferFilter(FilterSet):
 
     def filter_vacancy(self, queryset, name, value):
         return queryset.filter(shift__date__vacancy_id=value)
+
+
+class JobsiteFilter(FilterSet):
+    company = UUIDFilter(method='filter_company')
+
+    class Meta:
+        model = hr_models.Jobsite
+        fields = ['company']
+
+    def filter_company(self, queryset, name, value):
+        return queryset.filter(
+            Q(master_company_id=value) |
+            Q(jobsite_addresses__regular_company_id=value)
+        )
+
+
+class JobsiteAddressFilter(FilterSet):
+    company = UUIDFilter(method='filter_company')
+
+    class Meta:
+        model = hr_models.JobsiteAddress
+        fields = ['company']
+
+    def filter_company(self, queryset, name, value):
+        return queryset.filter(
+            Q(jobsite__master_company_id=value) |
+            Q(regular_company_id=value)
+        )

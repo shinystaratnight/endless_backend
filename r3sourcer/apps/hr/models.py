@@ -110,13 +110,16 @@ class Jobsite(
             return self.is_available
 
     def get_site_name(self):
-        address = self.get_address()
-        if address:
+        job_address = self.get_jobsite_address()
+        if job_address:
             return "{}, {}, {}".format(
-                self.master_company, address.city, address.street_address
+                job_address.regular_company, job_address.address.city, job_address.address.street_address
             )
         else:
             return str(self.master_company)
+
+    def get_jobsite_address(self):
+        return self.jobsite_addresses.first()
 
     def get_address(self):
         if self.jobsite_addresses.exists():
@@ -218,6 +221,11 @@ class JobsiteAddress(core_models.UUIDModel):
     class Meta:
         verbose_name = _("Jobsite Address")
         verbose_name_plural = _("Jobsite Addresses")
+
+    def __str__(self):
+        return "{}, {}, {}".format(
+            self.regular_company, self.address.city, self.address.street_address
+        )
 
 
 class Vacancy(core_models.AbstractBaseOrder):

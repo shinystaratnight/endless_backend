@@ -29,6 +29,10 @@ class ApiBaseRelatedField(serializers.RelatedField):
 
         return data
 
+    @classmethod
+    def to_read_only_data(cls, value):
+        return cls(read_only=True).to_representation(value)
+
 
 class ApiDateTimeTzField(serializers.DateTimeField):
 
