@@ -21,7 +21,7 @@ def user(db):
 
 
 @pytest.fixture
-def secondary_user(db, faker):
+def another_user(db, faker):
     return models.User.objects.create_user(
         password=faker.password(),
         email='secondary@test.tt', phone_mobile='+12345678922'

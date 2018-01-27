@@ -172,15 +172,6 @@ class TestApiViewset:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_get_all_supervisors(self, timesheet, company_contact):
-        endpoint = TimeSheetEndpointTest()
-
-        res = endpoint._get_all_supervisors()
-
-        assert res == [
-            {'label': '  ', 'value': company_contact.id}
-        ]
-
     @mock.patch.object(TimeSheetViewset, 'paginated')
     def test_handle_history(self, mock_paginated, rf, timesheet, user):
         mock_paginated.return_value = Response({'results': [timesheet]})
