@@ -57,7 +57,7 @@ class AngularApiAdapter(BaseAdapter):
         MetaDataInfo('fieldsets', GETTER, []),
     ]
 
-    _excluded_field = {'updated_at', 'created_at', '__str__'}
+    _excluded_field = {'__str__', }
     _hidden_fields = {'id'}
     edit = True
 
