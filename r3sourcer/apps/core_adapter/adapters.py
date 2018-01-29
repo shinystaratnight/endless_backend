@@ -1,6 +1,6 @@
 import six
 
-from datetime import timedelta
+from datetime import timedelta, date, time
 from collections import OrderedDict
 
 from django.urls.exceptions import NoReverseMatch
@@ -166,7 +166,7 @@ class AngularApiAdapter(BaseAdapter):
         adapted['read_only'] = field.get('read_only', False)
         adapted['key'] = field.get('key')
         if ('default' in field and
-                isinstance(field['default'], (str, int, float, bool))):
+                isinstance(field['default'], (str, int, float, bool, date, time))):
             adapted['default'] = field['default']
 
         if 'showIf' in field:
@@ -314,6 +314,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         MetaDataInfo('bulk_actions', GETTER, []),
         MetaDataInfo('list_tabs', GETTER, []),
         MetaDataInfo('list_buttons', GETTER, []),
+        MetaDataInfo('list_editable_buttons', GETTER, []),
         MetaDataInfo('list_editable_filter', GETTER, []),
     ]
 
@@ -794,7 +795,11 @@ class AngularListApiAdapter(AngularApiAdapter):
         highlight = config['highlight']
         bulk_actions = config['bulk_actions']
         list_tabs = config['list_tabs']
-        list_buttons = config['list_buttons']
+        list_editable_buttons = config['list_buttons']
+        if self.is_formset:
+            list_buttons = list_editable_buttons
+        else:
+            list_buttons = config['list_buttons']
 
         display_fields = self.adapt_list_display(
             display_fields, list_filters, bulk_actions

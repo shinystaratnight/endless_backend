@@ -19,6 +19,7 @@ class ApiEndpoint(Endpoint):
     list_buttons = None
 
     list_editable_filter = None
+    list_editable_buttons = None
 
     ordering = None
     ordering_mapping = None
@@ -207,3 +208,6 @@ class ApiEndpoint(Endpoint):
         if self.list_editable_filter is None:
             self.list_editable_filter = []
         return self.list_editable_filter
+
+    def get_list_editable_buttons(self):
+        return self.list_editable_buttons
