@@ -45,3 +45,75 @@ class InvoiceEndpoint(endpoints.ApiEndpoint):
             'field': 'id',
         }
     )
+
+    fieldsets = ({
+        'type': constants.CONTAINER_ROW,
+        'label': '{customer_company.__str__} - {date}',
+        'fields': (
+            {
+                'type': constants.CONTAINER_COLUMN,
+                'fields': (
+                    {
+                        'label': _('Provider Company'),
+                        'field': 'provider_company',
+                        'type': constants.FIELD_RELATED,
+                    }, {
+                        'label': _('Provider Representative'),
+                        'field': 'provider_representative',
+                        'type': constants.FIELD_RELATED,
+                    }, {
+                        'label': _('Customer Company'),
+                        'field': 'customer_company',
+                        'type': constants.FIELD_RELATED,
+                    }, {
+                        'label': _('Customer representative'),
+                        'field': 'customer_representative',
+                        'type': constants.FIELD_RELATED,
+                    },
+                ),
+            }, {
+                'type': constants.CONTAINER_COLUMN,
+                'fields': (
+                    {
+                        'type': constants.FIELD_TEXT,
+                        'field': 'total_with_tax',
+                        'label': _('Total wit GST'),
+                    }, {
+                        'type': constants.FIELD_TEXT,
+                        'field': 'total',
+                        'label': _('Total'),
+                    }, {
+                        'type': constants.FIELD_TEXT,
+                        'field': 'tax',
+                        'label': _('GST'),
+                    }, 'is_paid', {
+                        'type': constants.FIELD_DATE,
+                        'field': 'paid_at',
+                        'label': _('Paid at',)
+                    }, 'currency', {
+                        'type': constants.FIELD_TEXT,
+                        'field': 'number',
+                        'label': _('Invoice No'),
+                    }, {
+                        'type': constants.FIELD_TEXT,
+                        'field': 'order_number',
+                        'label': _('Your Order No'),
+                    }, 'date'
+                ),
+            },
+        ),
+    }, {
+        'type': constants.FIELD_LIST,
+        'field': 'id_',
+        'query': {
+            'invoice': '{id}',
+        },
+        'label': _('Invoice Lines'),
+        'add_label': _('Add'),
+        'endpoint': api_reverse_lazy('core/invoicelines'),
+        'prefilled': {
+            'invoice': '{id}',
+        }
+    }, )
+
+    filter_fields = ['customer_company']

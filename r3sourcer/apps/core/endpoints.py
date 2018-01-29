@@ -1225,6 +1225,31 @@ class CityEndpoint(ApiEndpoint):
     filter_fields = ('country', 'region')
 
 
+class InvoiceLineEndpoint(ApiEndpoint):
+
+    model = models.InvoiceLine
+    serializer = serializers.InvoiceLineSerializer
+
+    fieldsets = ('invoice', 'date', 'units', 'notes', 'unit_price', 'amount', 'unit_type', 'vat')
+
+    list_editable = (
+        'date', 'units', 'notes', 'unit_price', 'amount', {
+            'type': constants.FIELD_TEXT,
+            'field': 'vat.name',
+            'label': _('Code'),
+        }, {
+            'label': _('Actions'),
+            'delim': ' ',
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/invoicelines'))
+            }, constants.BUTTON_DELETE)
+        },
+    )
+
+    filter_fields = ('invoice', )
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(models.Address, serializer=serializers.AddressSerializer)
@@ -1242,7 +1267,7 @@ router.register(models.ContactUnavailability)
 router.register(endpoint=CountryEndpoint())
 router.register(models.FileStorage)
 router.register(models.Invoice, filter_fields=['customer_company'])
-router.register(models.InvoiceLine)
+router.register(endpoint=InvoiceLineEndpoint())
 router.register(endpoint=NavigationEndpoint())
 router.register(models.Note)
 router.register(models.Order, filter_fields=('provider_company',))
