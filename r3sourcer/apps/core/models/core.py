@@ -1591,9 +1591,8 @@ class AbstractOrder(AbstractBaseOrder):
         vat = 0
         lines = getattr(self, '{}_lines'.format(self._meta.model_name))
         if lines:
-            for group in lines.values('vat__rate') \
-                    .annotate(sum=Sum('amount')):
-                vat += group['vat__rate'] / 100 * group['sum']
+            for group in lines.values('vat__rate').annotate(sum=Sum('amount')):
+                vat += group['sum'] * group['vat__rate']
         return vat
 
     def calculate_total(self):
@@ -1738,9 +1737,8 @@ class Invoice(AbstractOrder):
         null=True
     )
 
-    order_number = models.CharField(
+    order_number = models.TextField(
         verbose_name=_("Order Number"),
-        max_length=255,
         null=True
     )
 

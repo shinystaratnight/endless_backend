@@ -314,11 +314,14 @@ class PaymentSync(BaseSync):
 
 
 class InvoiceSync(PaymentSync):
-
     app = "core"
     model = "Invoice"
-
     mapper_class = InvoiceMapper
+
+    def _get_tax_codes(self):
+        gst_code = self._get_object_by_field('GST', self.client.api.GeneralLedger.TaxCode, 'Code', True)
+        gnr_code = self._get_object_by_field('GNR', self.client.api.GeneralLedger.TaxCode, 'Code', True)
+        return {"GST": gst_code['UID'], "GNR": gnr_code['UID']}
 
     def _find_old_myob_card(self, invoice, resource=None):
         return self._get_object_by_field(
@@ -327,20 +330,24 @@ class InvoiceSync(PaymentSync):
         )
 
     def _sync_to(self, invoice, sync_obj=None):
-        if invoice.invoice_lines.filter(vat__name='GST').exists():
-            tax_code = 'GST'
-        else:
-            tax_code = 'GNR'
+        # if invoice.invoice_lines.filter(vat__name='GST').exists():
+        #     tax_code = 'GST'
+        # else:
+        #     tax_code = 'GNR'
+        # myob_tax = self._get_tax_code(tax_code)
+        # myob_debit_acc = self._get_account('1-1200')
+        # myob_tax_acc = self._get_account('2-1310')
+        # myob_credit_acc = self._get_account('4-1000')
+        # data = self.mapper.map_to_myob(
+        #     invoice, myob_tax, myob_debit_acc, myob_tax_acc, myob_credit_acc
+        # )
 
-        myob_tax = self._get_tax_code(tax_code)
-        myob_debit_acc = self._get_account('1-1200')
-        myob_tax_acc = self._get_account('2-1310')
-        myob_credit_acc = self._get_account('4-1000')
+        tax_codes = self._get_tax_codes()
+        params = {"$filter": "CompanyName eq '%s'" % invoice.customer_company.name}
+        customer_data = self.client.api.Contact.Customer.get(params=params)
+        customer_uid = customer_data['Items'][0]['UID']
 
-        data = self.mapper.map_to_myob(
-            invoice, myob_tax, myob_debit_acc, myob_tax_acc, myob_credit_acc
-        )
-
+        data = self.mapper.map_to_myob(invoice, customer_uid, tax_codes)
         resp = self.resource.post(json=data, raw_resp=True)
 
         if 200 <= resp.status_code < 400:
@@ -353,10 +360,8 @@ class InvoiceSync(PaymentSync):
 
 
 class PayslipSync(PaymentSync):
-
     app = "hr"
     model = "Payslip"
-
     mapper_class = PayslipMapper
 
     def _find_old_myob_card(self, payslip, resource=None):

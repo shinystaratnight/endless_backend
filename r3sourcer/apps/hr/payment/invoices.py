@@ -23,10 +23,10 @@ from ..utils.utils import get_invoice_rule
 
 class InvoiceService(BasePaymentService):
 
-    def _get_price_list_rate(self, skill, company, industry):
+    def _get_price_list_rate(self, skill, customer_company, industry):
         price_list_rate = PriceListRate.objects.filter(
             skill=skill,
-            price_list__company=company,
+            price_list__company=customer_company,
         ).last()
         if price_list_rate is None:
             price_list_rate = IndustryPriceListRate.objects.filter(
@@ -49,8 +49,9 @@ class InvoiceService(BasePaymentService):
             jobsite = timesheet.vacancy_offer.vacancy.jobsite
             industry = jobsite.industry
             skill = timesheet.vacancy_offer.vacancy.position
+            customer_company = timesheet.vacancy_offer.shift.date.vacancy.customer_company
             price_list_rate = self._get_price_list_rate(
-                skill, company, industry
+                skill, customer_company, industry
             )
             started_at = localtime(timesheet.shift_started_at)
             worked_hours = self._calc_worked_delta(timesheet)
@@ -68,9 +69,12 @@ class InvoiceService(BasePaymentService):
             )
 
             for raw_line in lines_iter:
-                units = Decimal(raw_line['hours'].total_seconds() / 3600)
                 rate = raw_line['rate']
                 notes = raw_line['notes']
+                units = Decimal(raw_line['hours'].total_seconds() / 3600)
+
+                if not units:
+                    continue
 
                 if show_candidate:
                     notes = '{} - {}'.format(
@@ -78,14 +82,13 @@ class InvoiceService(BasePaymentService):
                     )
 
                 vat_name = 'GST' if company.registered_for_gst else 'GNR'
-
                 lines.append({
                     'date': started_at.date(),
                     'units': units,
                     'notes': notes,
                     'unit_price': rate,
                     'amount': rate * units,
-                    'code': VAT.objects.get(name=vat_name),
+                    'vat': VAT.objects.get(name=vat_name),
                 })
                 jobsites.add(str(jobsite))
 
@@ -203,7 +206,7 @@ class InvoiceService(BasePaymentService):
                     company, from_date, timesheets,
                     show_candidate=invoice_rule.show_candidate_name
                 )
-        else:
+        elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
             timesheets = self._get_timesheets(None, from_date)
             candidates = set(timesheets.values_list(
                 'vacancy_offer__candidate_contact', flat=True
@@ -213,8 +216,7 @@ class InvoiceService(BasePaymentService):
                 timesheets = TimeSheet.objects.filter(
                     vacancy_offer__candidate_contact_id=candidate
                 )
-
                 self._prepare_invoice(
                     company, from_date, timesheets,
-                    show_candidate=invoice_rule.show_candidate_name
+                    show_candidate=invoice_rule.show_candidate_name,
                 )

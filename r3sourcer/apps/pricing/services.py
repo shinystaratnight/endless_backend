@@ -107,7 +107,7 @@ class PriceListCoefficientService(CoefficientService):
 
         industry_rate_coeff = self.get_industry_rate_coefficient(
             industry, company_type, start_datetime, skill=skill
-        ).exclude(name__in=rate_coefficients.values_list('name', flat=True))
+        ).exclude(name__in=rate_coefficients.values_list('name', flat=True)).distinct()
 
         return chain(rate_coefficients, industry_rate_coeff)
 
