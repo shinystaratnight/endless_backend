@@ -314,6 +314,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         MetaDataInfo('bulk_actions', GETTER, []),
         MetaDataInfo('list_tabs', GETTER, []),
         MetaDataInfo('list_buttons', GETTER, []),
+        MetaDataInfo('list_editable_buttons', GETTER, []),
         MetaDataInfo('list_editable_filter', GETTER, []),
     ]
 
@@ -794,7 +795,11 @@ class AngularListApiAdapter(AngularApiAdapter):
         highlight = config['highlight']
         bulk_actions = config['bulk_actions']
         list_tabs = config['list_tabs']
-        list_buttons = config['list_buttons']
+        list_editable_buttons = config['list_buttons']
+        if self.is_formset:
+            list_buttons = list_editable_buttons
+        else:
+            list_buttons = config['list_buttons']
 
         display_fields = self.adapt_list_display(
             display_fields, list_filters, bulk_actions
