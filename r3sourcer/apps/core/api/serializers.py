@@ -1343,3 +1343,12 @@ class FormStorageApproveSerializer(ApiBaseModelSerializer):
     class Meta:
         model = core_models.FormStorage
         fields = ('status',)
+
+
+class InvoiceLineSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.InvoiceLine
+        fields = ('__all__', {
+            'vat': ('id', 'name'),
+        })
