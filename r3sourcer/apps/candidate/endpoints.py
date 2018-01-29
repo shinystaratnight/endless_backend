@@ -134,7 +134,19 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'name': _('Other'),
             'collapsed': True,
             'fields': (
-                'created', 'updated',
+                {
+                    'field': 'created_at',
+                    'type': constants.FIELD_DATE,
+                    'read_only': True,
+                    'label': _('Created at'),
+                    'send': False,
+                }, {
+                    'field': 'updated_at',
+                    'type': constants.FIELD_DATE,
+                    'read_only': True,
+                    'label': _('Updated at'),
+                    'send': False,
+                }
             ),
         }, {
             'type': constants.FIELD_RELATED,

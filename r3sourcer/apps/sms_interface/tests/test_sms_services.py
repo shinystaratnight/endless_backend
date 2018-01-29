@@ -7,6 +7,7 @@ import pytest
 from django.utils import timezone
 
 from r3sourcer.apps.core.models import Contact
+from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.sms_interface.exceptions import SMSServiceError
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.services import (
@@ -128,9 +129,10 @@ class TestSMSServices:
         assert mock_log.exception.called
         assert not service._process_sms.called
 
+    @mock.patch.object(factory, 'get_instance')
     @mock.patch('r3sourcer.apps.sms_interface.utils.get_sms_service',
                 return_value=FakeSMSService)
-    def test_fake_sms_service_send(self, mock_get_service):
+    def test_fake_sms_service_send(self, mock_get_service, mock_factory):
         service = FakeSMSService()
         service.send(
             from_number='+12345678901',
@@ -141,8 +143,9 @@ class TestSMSServices:
         sms_message = SMSMessage.objects.all().first()
         assert sms_message.sid.startswith('FAKE')
 
+    @mock.patch.object(factory, 'get_instance')
     @mock.patch.object(SMSTestService, 'process_sms_send')
-    def test_send_sms_text(self, mock_sms_send, contact):
+    def test_send_sms_text(self, mock_sms_send, mock_factory, contact):
         mock_sms_send.return_value = None
 
         service = SMSTestService()
@@ -153,8 +156,9 @@ class TestSMSServices:
         assert SMSMessage.objects.all().count() == 1
         assert mock_sms_send.called
 
+    @mock.patch.object(factory, 'get_instance')
     @mock.patch.object(SMSTestService, 'process_sms_send')
-    def test_send_sms_text_service_exception(self, mock_sms_send, contact):
+    def test_send_sms_text_service_exception(self, mock_sms_send, mock_factory, contact):
         mock_sms_send.side_effect = SMSServiceError
 
         service = SMSTestService()
@@ -168,7 +172,8 @@ class TestSMSServices:
         sms_message = SMSMessage.objects.all().first()
         assert sms_message.error_message is not None
 
-    def test_fake_sms_service_fetch(self, fake_sms):
+    @mock.patch.object(factory, 'get_instance')
+    def test_fake_sms_service_fetch(self, mock_factory, fake_sms):
         sms_service = FakeSMSService()
         sms_service.fetch()
 
@@ -186,15 +191,17 @@ class TestSMSServices:
         assert SMSMessage.objects.all().count() == 1
         assert not mock_log.info.called
 
+    @mock.patch.object(factory, 'get_instance')
     @mock.patch.object(SMSMessage, 'get_sent_by_reply')
-    def test_process_sms_received(self, mock_sent_by_reply, service, fake_sms):
+    def test_process_sms_received(self, mock_sent_by_reply, mock_factory, service, fake_sms):
         fake_sms.status = SMSMessage.STATUS_CHOICES.RECEIVED
         service._process_sms(fake_sms)
 
         assert mock_sent_by_reply.called
 
+    @mock.patch.object(factory, 'get_instance')
     @mock.patch('r3sourcer.apps.sms_interface.services.logger')
-    def test_process_new_sms(self, mock_log, fake_sms):
+    def test_process_new_sms(self, mock_log, mock_factory, fake_sms):
         service = SMSTestService()
         service._process_sms(fake_sms)
 

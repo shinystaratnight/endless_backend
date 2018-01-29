@@ -469,12 +469,14 @@ def invoice(db, master_company, regular_company):
 @pytest.fixture
 def vat():
     country, _ = core_models.Country.objects.get_or_create(name='Australia', code2='AU')
-    return core_models.VAT.objects.create(
+    return core_models.VAT.objects.get_or_create(
         country=country,
         name='GST',
-        rate=0.1,
-        start_date=datetime.date(2017, 1, 1),
-    )
+        defaults={
+            'rate': 0.1,
+            'start_date': datetime.date(2017, 1, 1),
+        }
+    )[0]
 
 
 @pytest.fixture
