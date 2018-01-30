@@ -89,6 +89,7 @@ class InvoiceService(BasePaymentService):
                     'unit_price': rate,
                     'amount': rate * units,
                     'vat': VAT.objects.get(name=vat_name),
+                    'timesheet': timesheet,
                 })
                 jobsites.add(str(jobsite))
 

@@ -8,9 +8,10 @@ from django.conf import settings
 from django.db.models import Q
 
 
+from r3sourcer.apps.pricing.models import PriceListRate
 from .models import MYOBSyncObject
 from .helpers import get_myob_client
-from .mappers import InvoiceMapper, PayslipMapper
+from .mappers import InvoiceMapper, PayslipMapper, ActivityMapper
 
 
 log = logging.getLogger(__name__)
@@ -318,6 +319,9 @@ class InvoiceSync(PaymentSync):
     model = "Invoice"
     mapper_class = InvoiceMapper
 
+    def _get_resource(self):
+        return self.client.api.Sale.Invoice.TimeBilling
+
     def _get_tax_codes(self):
         gst_code = self._get_object_by_field('GST', self.client.api.GeneralLedger.TaxCode, 'Code', True)
         gnr_code = self._get_object_by_field('GNR', self.client.api.GeneralLedger.TaxCode, 'Code', True)
@@ -329,25 +333,54 @@ class InvoiceSync(PaymentSync):
             resource=resource,
         )
 
-    def _sync_to(self, invoice, sync_obj=None):
-        # if invoice.invoice_lines.filter(vat__name='GST').exists():
-        #     tax_code = 'GST'
-        # else:
-        #     tax_code = 'GNR'
-        # myob_tax = self._get_tax_code(tax_code)
-        # myob_debit_acc = self._get_account('1-1200')
-        # myob_tax_acc = self._get_account('2-1310')
-        # myob_credit_acc = self._get_account('4-1000')
-        # data = self.mapper.map_to_myob(
-        #     invoice, myob_tax, myob_debit_acc, myob_tax_acc, myob_credit_acc
-        # )
+    def _create_or_update_activities(self, invoice, tax_codes):
+        activities = dict()
 
+        for invoice_line in invoice.invoice_lines.all():
+            params = ""
+            activity_mapper = ActivityMapper()
+            vacancy = invoice_line.timesheet.vacancy_offer.vacancy
+            skill = vacancy.position
+            activity_display_id = invoice_line.id[:30]
+            position_parts = vacancy.position.name.split(' ')
+            price_list = invoice.customer_company.price_lists.first()
+            rate = PriceListRate.objects.filter(price_list=price_list, skill=skill)
+            name = ' '.join([part[:4] for part in position_parts])
+            income_account_resp = self._get_object_by_field(
+                '4-1000',
+                resource=self.client.api.GeneralLedger.Account,
+                single=True
+            )
+
+            data = activity_mapper.map_to_myob(
+                activity_display_id,
+                name[:30],
+                ActivityMapper.TYPE_HOURLY,
+                ActivityMapper.STATUS_CHARGEABLE,
+                rate=rate,
+                tax_code=tax_codes[invoice_line.vat.name],
+                income_account=income_account_resp['UID'],
+                description='{} {}'.format(vacancy.position, rate if rate else 'Base Rate')
+            )
+            activity_response = self._get_object(params, self.client.api.TimeBilling.Activity)
+
+            if not activity_response:
+                activity_response = self.client.api.TimeBilling.Activity.post(
+                    json=data, raw_resp=True
+                )
+
+            activities.update({invoice_line.id: activity_response['Items'][0]['UID']})
+
+        return activities
+
+    def _sync_to(self, invoice, sync_obj=None):
         tax_codes = self._get_tax_codes()
         params = {"$filter": "CompanyName eq '%s'" % invoice.customer_company.name}
         customer_data = self.client.api.Contact.Customer.get(params=params)
         customer_uid = customer_data['Items'][0]['UID']
+        activities = self._create_or_update_activities(invoice, tax_codes)
 
-        data = self.mapper.map_to_myob(invoice, customer_uid, tax_codes)
+        data = self.mapper.map_to_myob(invoice, customer_uid, tax_codes, activities)
         resp = self.resource.post(json=data, raw_resp=True)
 
         if 200 <= resp.status_code < 400:

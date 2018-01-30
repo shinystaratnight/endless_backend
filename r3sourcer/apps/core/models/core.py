@@ -1778,6 +1778,15 @@ class InvoiceLine(AbstractOrderLine):
         verbose_name=_("Invoice"),
     )
 
+    timesheet = models.ForeignKey(
+        'hr.TimeSheet',
+        related_name="invoice_lines",
+        on_delete=models.CASCADE,
+        verbose_name=_("TimeSheet"),
+        blank=True,
+        null=True
+    )
+
     class Meta:
         verbose_name = _("Invoice Line")
         verbose_name_plural = _("Invoice Lines")
