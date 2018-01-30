@@ -16,9 +16,9 @@ def format_date_to_myob(date_time, only_date=False):
 
 
 class InvoiceMapper:
-    def map_to_myob(self, invoice, customer_uid, tax_codes):
+    def map_to_myob(self, invoice, customer_uid, tax_codes, activities):
         data = {
-            "DateOccurred": format_date_to_myob(invoice.date),
+            "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
             "TotalTax": invoice.tax,
             "TotalAmount": invoice.total_with_tax
@@ -30,7 +30,9 @@ class InvoiceMapper:
                 "Hours": invoice_line.units,
                 "Rate": invoice_line.unit_price,
                 "Total": invoice_line.amount,
-                "TaxCode": {"UID": tax_codes[invoice_line.tax.name]},
+                "Description": invoice_line.notes,
+                "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
+                "Activity": {"UID": activities[invoice_line.id]}
             })
 
         data['Lines'] = lines
@@ -83,5 +85,53 @@ class PayslipMapper:
             }])
 
         data['Lines'] = lines
+
+        return data
+
+
+class ActivityMapper:
+    TYPE_HOURLY = 'Hourly'
+    TYPE_NON_HOURLY = 'NonHourly'
+
+    STATUS_CHARGEABLE = 'Chargeable'
+    STATUS_NON_CHARGEABLE = 'NonChargeable'
+
+    TYPES = (TYPE_HOURLY, TYPE_NON_HOURLY)
+    STATUSES = (STATUS_CHARGEABLE, STATUS_NON_CHARGEABLE)
+
+    def map_to_myob(self, display_id, name, activity_type=TYPE_NON_HOURLY,
+                    status=STATUS_NON_CHARGEABLE, income_account=None,
+                    tax_code=None, rate=None, description=None):
+        if activity_type not in self.TYPES or status not in self.STATUSES:
+            return {}
+
+        data = {
+            'DisplayID': display_id[:30],
+            'Type': activity_type,
+            'Status': status,
+            'Name': name,
+        }
+        if description:
+            data['Description'] = description[:255]
+
+        if activity_type != self.TYPE_HOURLY:
+            data['UnitOfMeasurement'] = 'Irregular'
+        else:
+            if not income_account or not tax_code:
+                return {}
+            data['ChargeableDetails'] = {
+                'IncomeAccount': {
+                    'UID': income_account
+                },
+                'TaxCode': {
+                    'UID': tax_code
+                }
+            }
+
+            if rate:
+                data['ChargeableDetails'].update({
+                    'Rate': 'ActivityRate',
+                    'ActivityRateExcludingTax': "{0:.2f}".format(rate)
+                })
 
         return data
