@@ -19,6 +19,7 @@ class ApiEndpoint(Endpoint):
     list_buttons = None
 
     list_editable_filter = None
+    list_editable_buttons = None
 
     ordering = None
     ordering_mapping = None
@@ -83,7 +84,11 @@ class ApiEndpoint(Endpoint):
     def get_metadata_fields(self, meta=True):
         serializer_class = self.get_serializer()
 
-        meta_fields = copy.copy(serializer_class.Meta.fields)
+        if hasattr(serializer_class.Meta, 'fields'):
+            meta_fields = copy.copy(serializer_class.Meta.fields)
+        else:
+            meta_fields = '__all__'
+
         if meta_fields == '__all__':
             meta_fields = self.get_fields_for_serializer()
         serializer = serializer_class()
@@ -203,3 +208,6 @@ class ApiEndpoint(Endpoint):
         if self.list_editable_filter is None:
             self.list_editable_filter = []
         return self.list_editable_filter
+
+    def get_list_editable_buttons(self):
+        return self.list_editable_buttons

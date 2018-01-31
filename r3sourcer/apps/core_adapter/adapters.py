@@ -1,6 +1,6 @@
 import six
 
-from datetime import timedelta
+from datetime import timedelta, date, time
 from collections import OrderedDict
 
 from django.urls.exceptions import NoReverseMatch
@@ -18,7 +18,7 @@ from .utils import api_reverse
 CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
-    'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field',
+    'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
 )
 
 
@@ -57,7 +57,7 @@ class AngularApiAdapter(BaseAdapter):
         MetaDataInfo('fieldsets', GETTER, []),
     ]
 
-    _excluded_field = {'updated_at', 'created_at', '__str__'}
+    _excluded_field = {'__str__', }
     _hidden_fields = {'id'}
     edit = True
 
@@ -99,6 +99,8 @@ class AngularApiAdapter(BaseAdapter):
                     adapted['templateOptions']['add_label'] = field['add_label']
                 if field.get('metadata_query'):
                     adapted['metadata_query'] = field['metadata_query']
+                if field.get('max'):
+                    adapted['max'] = field['max']
             elif component_type != constants.FIELD_SUBMIT:
                 adapted['templateOptions']['action'] = field['action']
 
@@ -164,7 +166,7 @@ class AngularApiAdapter(BaseAdapter):
         adapted['read_only'] = field.get('read_only', False)
         adapted['key'] = field.get('key')
         if ('default' in field and
-                isinstance(field['default'], (str, int, float, bool))):
+                isinstance(field['default'], (str, int, float, bool, date, time))):
             adapted['default'] = field['default']
 
         if 'showIf' in field:
@@ -312,6 +314,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         MetaDataInfo('bulk_actions', GETTER, []),
         MetaDataInfo('list_tabs', GETTER, []),
         MetaDataInfo('list_buttons', GETTER, []),
+        MetaDataInfo('list_editable_buttons', GETTER, []),
         MetaDataInfo('list_editable_filter', GETTER, []),
     ]
 
@@ -416,6 +419,17 @@ class AngularListApiAdapter(AngularApiAdapter):
                     'query': field_qry,
                     'options': choices,
                     'default': list_filter.get('default'),
+                })
+            elif field_type == constants.FIELD_SELECT_MULTIPLE:
+                adapted['data'] = {}
+                if 'endpoint' in list_filter:
+                    adapted['data']['endpoint'] = list_filter['endpoint']
+                elif 'data' in list_filter:
+                    adapted['data']['data'] = list_filter['data']
+
+                adapted.update({
+                    'query': list_filter.get('query'),
+                    'display': list_filter.get('display'),
                 })
             elif field_type in [constants.FIELD_DATE,
                                 constants.FIELD_DATETIME]:
@@ -781,7 +795,11 @@ class AngularListApiAdapter(AngularApiAdapter):
         highlight = config['highlight']
         bulk_actions = config['bulk_actions']
         list_tabs = config['list_tabs']
-        list_buttons = config['list_buttons']
+        list_editable_buttons = config['list_buttons']
+        if self.is_formset:
+            list_buttons = list_editable_buttons
+        else:
+            list_buttons = config['list_buttons']
 
         display_fields = self.adapt_list_display(
             display_fields, list_filters, bulk_actions

@@ -196,7 +196,7 @@ CACHES = {
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
 
-LANGUAGE_CODE = 'en-us'
+LANGUAGE_CODE = 'en-au'
 
 TIME_ZONE = env('TIME_ZONE')
 
@@ -350,11 +350,32 @@ SMS_SERVICE_CLASS = env('SMS_SERVICE_CLASS', 'r3sourcer.apps.sms_interface.servi
 FETCH_ADDRESS_RAISE_EXCEPTIONS = env('FETCH_ADDRESS_RAISE_EXCEPTIONS', '0') == '1'
 
 DATE_FORMAT = 'd/m/Y'
-DATETIME_FORMAT = 'd/m/Y h:i A'
-TIME_FORMAT = 'h:i A'
-
 DATE_MYOB_FORMAT = 'Y-m-d'
+DATE_INPUT_FORMATS = [
+    '%d/%m/%Y', '%Y-%m-%d',     # '25/10/2006', '2006-10-25'
+    '%b %d %Y', '%b %d, %Y',    # 'Oct 25 2006', 'Oct 25, 2006'
+    '%d %b %Y', '%d %b, %Y',    # '25 Oct 2006', '25 Oct, 2006'
+    '%B %d %Y', '%B %d, %Y',    # 'October 25 2006', 'October 25, 2006'
+    '%d %B %Y', '%d %B, %Y',    # '25 October 2006', '25 October, 2006'
+]
+
+DATETIME_FORMAT = 'd/m/Y h:i A'
 DATETIME_MYOB_FORMAT = 'Y-m-d H:i:s'
+DATETIME_INPUT_FORMATS = [
+    '%d/%m/%Y %H:%M',        # '10/25/2006 14:30'
+    '%d/%m/%Y %I:%M %p',     # '10/25/2006 2:30 PM'
+    '%Y-%m-%d %H:%M:%S',     # '2006-10-25 14:30:59'
+    '%Y-%m-%d %H:%M:%S.%f',  # '2006-10-25 14:30:59.000200'
+    '%Y-%m-%d %H:%M',        # '2006-10-25 14:30'
+    '%Y-%m-%d',              # '2006-10-25'
+]
+
+TIME_FORMAT = 'h:i A'
+TIME_INPUT_FORMATS = [
+    '%H:%M',        # '14:30'
+    '%H:%M:%S',     # '14:30:59'
+    '%H:%M:%S.%f',  # '14:30:59.000200'
+]
 
 MYOB_APP = {
     'desc': env('MYOB_APP_DESC', 'MYOB'),

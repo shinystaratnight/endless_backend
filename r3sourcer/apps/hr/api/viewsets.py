@@ -4,23 +4,22 @@ import operator
 from functools import reduce
 
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.db import transaction
 from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
+from rest_framework import exceptions
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
-from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api.decorators import detail_route, list_route
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.api.filters import ApiOrderingFilter
+from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.text import format_lazy
@@ -111,6 +110,15 @@ class VacancyFillinEndpoint(ApiEndpoint):
         'default': 50,
         'min': 0,
         'max': 200,
+    }, {
+        'type': constants.FIELD_SELECT_MULTIPLE,
+        'field': 'date',
+        'label': _('Shifts'),
+        'query': {
+            'shifts': '{id}',
+        },
+        'data': 'shifts',
+        'display': '__str__'
     }]
 
     ordering_mapping = {
@@ -674,9 +682,15 @@ class VacancyViewset(BaseApiViewset):
     def fillin(self, request, *args, **kwargs):
         vacancy = self.get_object()
 
+        requested_shift_ids = request.query_params.getlist('shifts')
+
         now = timezone.now()
         today = now.date()
+
+        shifts_q = Q(id__in=requested_shift_ids) if requested_shift_ids else Q()
+
         init_shifts = list(hr_models.Shift.objects.filter(
+            shifts_q,
             Q(date__shift_date=today, time__gte=now.timetz()) | Q(date__shift_date__gt=today),
             date__vacancy=vacancy,
             date__cancelled=False,
@@ -694,7 +708,7 @@ class VacancyViewset(BaseApiViewset):
         if not init_shifts:
             candidate_contacts = candidate_models.CandidateContact.objects.none()
         else:
-            candidate_contacts = self.get_available_candidate_list(vacancy)
+            candidate_contacts = vacancy_utils.get_available_candidate_list(vacancy)
 
             transportation = request.GET.get('transportation_to_work', None)
             if transportation:
@@ -734,7 +748,9 @@ class VacancyViewset(BaseApiViewset):
         partially_available = request.GET.get('available', 'True') == 'True'
         partially_available_candidates = {}
         if init_shifts:
-            partially_available_candidates = vacancy_utils.get_partially_available_candidate_ids(candidate_contacts, init_shifts)
+            partially_available_candidates = vacancy_utils.get_partially_available_candidate_ids(
+                candidate_contacts, init_shifts
+            )
 
             unavailable_all = [
                 partial for partial, shifts in partially_available_candidates.items()
@@ -858,13 +874,13 @@ class VacancyViewset(BaseApiViewset):
             candidate_contacts[:51], context=context, many=True
         )
         return Response({
-            'shifts': [{'key': shift.id, 'value': str(shift)} for shift in init_shifts],
+            'shifts': [ApiBaseRelatedField.to_read_only_data(shift) for shift in init_shifts],
             'vacancy': vacacy_ctx,
             'list': serializer.data,
         })
 
     def fillin_post(self, request, shifts):
-        candidate_ids = request.data.get('candidates')
+        candidate_ids = request.data.get('candidates', [])
         fill_shifts = request.data.get('shifts', None)
 
         for candidate_id in candidate_ids:
@@ -881,48 +897,12 @@ class VacancyViewset(BaseApiViewset):
                         shift=shift,
                         candidate_contact_id=candidate_id,
                     )
+        else:
+            raise exceptions.ParseError(_('No Candidates has been chosen'))
 
         return Response({
             'status': 'ok',
         })
-
-    def get_available_candidate_list(self, vacancy):
-        """
-        Gets the list of available candidate contacts for the vacancy fillin form
-        :param vacancy: vacancy object
-        :return: queryset of the candidate contacts
-        """
-        today = datetime.date.today()
-
-        content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
-        objects = core_models.WorkflowObject.objects.filter(
-            state__number=70,
-            state__workflow__model=content_type,
-            active=True,
-        ).distinct('object_id').values_list('object_id', flat=True)
-
-        candidate_contacts = candidate_models.CandidateContact.objects.filter(
-            contact__is_available=True,
-            candidate_skills__skill=vacancy.position,
-            candidate_skills__candidate_skill_rates__valid_from__lte=today,
-            candidate_skills__candidate_skill_rates__valid_until__gte=today,
-            candidate_skills__skill__active=True,
-            candidate_skills__score__gt=0,
-            id__in=objects
-        ).distinct()
-
-        if candidate_contacts.exists():
-            blacklists_candidates = hr_models.BlackList.objects.filter(
-                Q(jobsite=vacancy.jobsite) | Q(company_contact=vacancy.jobsite.primary_contact),
-                candidate_contact__in=candidate_contacts
-            ).values_list('candidate_contact', flat=True)
-
-            candidate_contacts = candidate_contacts.exclude(id__in=blacklists_candidates)
-
-            if vacancy.transportation_to_work:
-                candidate_contacts = candidate_contacts.filter(transportation_to_work=vacancy.transportation_to_work)
-
-        return candidate_contacts
 
     def _get_undefined_vo_lookups(self, init_shifts):
         when_list = []

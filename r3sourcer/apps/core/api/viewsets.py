@@ -9,7 +9,7 @@ from django.core.validators import validate_email
 from django.utils.translation import ugettext_lazy as _
 
 from phonenumber_field import phonenumber
-from rest_framework import viewsets, exceptions, status
+from rest_framework import viewsets, exceptions, status, fields
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -59,6 +59,7 @@ class BaseViewsetMixin():
 class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     _exclude_data = {'__str__'}
+    exclude_empty = False
 
     picture_fields = {'picture', 'logo'}
 
@@ -107,15 +108,14 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
         return Response(serializer.data)
 
-        return super().update(request, *args, **kwargs)
-
     def process_response_data(self, data, queryset=None):
         return data
 
     def prepare_related_data(self, data):
         res = {}
         for key, val in data.items():
-            if key in self._exclude_data:
+            is_empty = val == '' or val is fields.empty
+            if key in self._exclude_data or (self.exclude_empty and is_empty and (key != 'id' or len(data) > 1)):
                 continue
 
             if isinstance(val, dict):

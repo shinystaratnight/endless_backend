@@ -11,6 +11,7 @@ from drf_auto_endpoint.endpoints import Endpoint
 from guardian.shortcuts import assign_perm
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
+from rest_framework.request import Request
 from rest_framework.test import force_authenticate
 
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -637,11 +638,10 @@ class TestNavigationViewset(ResourceMixin):
         assert response.data['count'] == 1
         assert response.data['results'][0]['url'] == candidate_url
 
-    def test_navigation_retrieve_unknown_role(self, rf, user):
-        with pytest.raises(exceptions.ValidationError) as exc:
-            url = '/core/extranetnavigations/'
-            request = rf.get(url)
-            force_authenticate(request, user=user)
-            self.get_response_as_view(request, actions={'get': 'list'})
+    def test_navigation_retrieve_unknown_role(self, rf, another_user):
+        url = '/core/extranetnavigations/'
+        request = rf.get(url)
+        force_authenticate(request, user=another_user)
+        response = self.get_response_as_view(request, actions={'get': 'list'})
 
-        assert exc.value.message == 'Unknown user role'
+        assert response.data['errors']['non_field_errors'] == ['Unknown user role']

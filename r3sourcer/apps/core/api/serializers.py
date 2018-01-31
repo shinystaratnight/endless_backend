@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
 from django.contrib.auth.password_validation import validate_password
+from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db import models
@@ -118,6 +119,8 @@ class ApiFullRelatedFieldsMixin():
                     self.fields[field_name] = self._get_id_related_field(
                         field, field.Meta.model.objects
                     )
+                elif isinstance(field, ApiBaseModelSerializer):
+                    continue
                 else:
                     context['related_setting'] = related_setting
                     kwargs = dict(
@@ -249,7 +252,10 @@ class ApiFullRelatedFieldsMixin():
             if isinstance(field, serializers.ModelSerializer):
                 model = field.Meta.model
                 instance = validated_data.pop(field_name, None)
-                if instance is not None and not isinstance(instance, model):
+                if instance is None:
+                    continue
+
+                if not isinstance(instance, model):
                     instance = model.objects.create(**instance)
                 validated_data[field_name] = instance
 
@@ -443,8 +449,11 @@ class MetaFields(serializers.SerializerMetaclass):
                 all_fields = model._meta.get_fields() if model is not None else []
                 all_fields = [
                     field.name for field in all_fields
-                    if ((not hasattr(field, 'field') and getattr(field, 'related_name', None) is None) or
-                        isinstance(field, models.OneToOneRel))
+                    if (
+                        ((not hasattr(field, 'field') and getattr(field, 'related_name', None) is None) or
+                         isinstance(field, models.OneToOneRel)) and
+                        not isinstance(field, GenericForeignKey)
+                    )
                 ]
                 fields = chain(
                     all_fields, [field for field in fields if isinstance(field, dict)])
@@ -810,8 +819,8 @@ class CompanyAddressSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseMod
         if not company_rel:
             return
 
-        return company_rel and company_rel.primary_contact and \
-            str(company_rel.primary_contact.contact)
+        if company_rel:
+            return CompanyContactSerializer(company_rel.primary_contact).data
 
     def get_active_states(self, obj):
         if obj:
@@ -1012,7 +1021,7 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
 
 
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
-    method_fields = ('primary_contact', 'terms_of_pay')
+    method_fields = ('primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company')
 
     class Meta:
         model = core_models.Company
@@ -1022,8 +1031,15 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
                 'manager': (
                     'id', '__str__',
                 ),
+                'groups': ('id', '__str__')
             }
         )
+        extra_kwargs = {
+            'company_settings': {'read_only': True},
+            'myob_settings': {'read_only': True},
+            'subcontractor': {'read_only': True},
+            'groups': {'read_only': True},
+        }
 
     def get_company_rel(self, company):
         company_rel = cache.get('company_rel_{}'.format(company.id), None)
@@ -1056,8 +1072,19 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         if not company_rel:
             return
 
-        return company_rel and company_rel.primary_contact and \
-            str(company_rel.primary_contact.contact)
+        if company_rel:
+            return core_field.ApiBaseRelatedField.to_read_only_data(company_rel.primary_contact)
+
+    def get_master_company(self, obj):
+        if not obj:
+            return
+
+        company_rel = self.get_company_rel(obj)
+        if not company_rel:
+            return
+
+        if company_rel:
+            return core_field.ApiBaseRelatedField.to_read_only_data(company_rel.master_company)
 
     def get_active_states(self, obj):
         if obj:
@@ -1070,6 +1097,10 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             return
 
         return obj.get_terms_of_payment()
+
+    def get_regular_company_rel(self, obj):
+        relation = obj.regular_companies.all().last()
+        return relation and core_field.ApiBaseRelatedField.to_read_only_data(relation)
 
 
 class FormStorageSerializer(ApiBaseModelSerializer):
@@ -1323,3 +1354,12 @@ class FormStorageApproveSerializer(ApiBaseModelSerializer):
     class Meta:
         model = core_models.FormStorage
         fields = ('status',)
+
+
+class InvoiceLineSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.InvoiceLine
+        fields = ('__all__', {
+            'vat': ('id', 'name'),
+        })

@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils import timezone
 
-from django_filters import UUIDFilter, NumberFilter, BooleanFilter
+from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFromToRangeFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core import models as core_models
@@ -14,14 +14,26 @@ from r3sourcer.apps.hr import models as hr_models
 class TimesheetFilter(FilterSet):
     candidate = UUIDFilter(method='filter_candidate')
     approved = BooleanFilter(method='filter_approved')
+    company = UUIDFilter('vacancy_offer__shift__date__vacancy__customer_company_id')
+    jobsite = UUIDFilter('vacancy_offer__shift__date__vacancy__jobsite_id')
 
     class Meta:
         model = hr_models.TimeSheet
-        fields = ['supervisor']
+        fields = ['shift_started_at']
 
     def filter_candidate(self, queryset, name, value):
         return queryset.filter(
             vacancy_offer__candidate_contact_id=value
+        )
+
+    def filter_company(self, queryset, name, value):
+        return queryset.filter(
+            vacancy_offer__shift__date__vacancy__customer_company_id=value
+        )
+
+    def filter_jobsite(self, queryset, name, value):
+        return queryset.filter(
+            vacancy_offer__shift__date__vacancy__jobsite_id=value
         )
 
     def filter_approved(self, queryset, name, value):
@@ -35,7 +47,7 @@ class TimesheetFilter(FilterSet):
     def get_filter_for_approved(contact):
         """
         Prepare filter params for approved timesheets
-        :param contact: request.user.contact 
+        :param contact: request.user.contact
         :return: Q object
         """
         qs_approved = Q(going_to_work_confirmation=True)
@@ -49,19 +61,19 @@ class TimesheetFilter(FilterSet):
     def get_filter_for_unapproved(contact):
         """
         Prepare filter params for unapproved timesheets
-        :param contact: request.user.contact 
-        :return: Q object 
+        :param contact: request.user.contact
+        :return: Q object
         """
         now = timezone.now()
         ended_at = now - datetime.timedelta(hours=4)
         signed_delta = now - datetime.timedelta(hours=1)
 
         qs_unapproved = (Q(candidate_submitted_at__isnull=False) |
-                        Q(shift_ended_at__lt=ended_at)) &\
+                         Q(shift_ended_at__lt=ended_at)) &\
                         (Q(supervisor_approved_at__isnull=True) |
-                        Q(supervisor_approved_at__gte=signed_delta)) &\
-                        Q(supervisor__contact=contact) &\
-                        Q(going_to_work_confirmation=True)
+                         Q(supervisor_approved_at__gte=signed_delta)) &\
+                         Q(supervisor__contact=contact) &\
+                         Q(going_to_work_confirmation=True)
         return qs_unapproved
 
 
@@ -107,3 +119,31 @@ class VacancyOfferFilter(FilterSet):
 
     def filter_vacancy(self, queryset, name, value):
         return queryset.filter(shift__date__vacancy_id=value)
+
+
+class JobsiteFilter(FilterSet):
+    company = UUIDFilter(method='filter_company')
+
+    class Meta:
+        model = hr_models.Jobsite
+        fields = ['company']
+
+    def filter_company(self, queryset, name, value):
+        return queryset.filter(
+            Q(master_company_id=value) |
+            Q(jobsite_addresses__regular_company_id=value)
+        )
+
+
+class JobsiteAddressFilter(FilterSet):
+    company = UUIDFilter(method='filter_company')
+
+    class Meta:
+        model = hr_models.JobsiteAddress
+        fields = ['company']
+
+    def filter_company(self, queryset, name, value):
+        return queryset.filter(
+            Q(jobsite__master_company_id=value) |
+            Q(regular_company_id=value)
+        )

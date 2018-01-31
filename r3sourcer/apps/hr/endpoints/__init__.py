@@ -1,3 +1,5 @@
+import datetime
+
 from functools import partial
 
 from django.utils.functional import lazy
@@ -15,6 +17,37 @@ from r3sourcer.apps.hr.api import filters as hr_filters, viewsets as hr_viewsets
 from r3sourcer.apps.hr.api.serializers import vacancy as vacancy_serializers
 from r3sourcer.apps.hr.endpoints.payment import InvoiceEndpoint
 from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint
+
+
+class JobsiteEndpoint(ApiEndpoint):
+    model = hr_models.Jobsite
+    filter_class = hr_filters.JobsiteFilter
+
+    search_fields = (
+        'jobsite_addresses__address__city__search_names', 'jobsite_addresses__address__street_address',
+        'master_company__name'
+    )
+
+    fieldsets = (
+        'industry', 'master_company', 'portfolio_manager', 'primary_contact', 'is_available', 'notes', 'start_date',
+        'end_date',
+    )
+
+    list_editable = (
+        '__str__', 'primary_contact', 'start_date', 'end_date', 'notes',
+    )
+
+
+class JobsiteAddressEndpoint(ApiEndpoint):
+    model = hr_models.JobsiteAddress
+    filter_class = hr_filters.JobsiteAddressFilter
+    serializer = vacancy_serializers.JobsiteAddressSerializer
+
+    fieldsets = ('address', 'jobsite', 'regular_company', )
+
+    list_editable = (
+        '__str__', 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
+    )
 
 
 class FavouriteListEndpoint(ApiEndpoint):
@@ -327,10 +360,16 @@ class VacancyEndpoint(ApiEndpoint):
                         'label': _('Provider company'),
                         'field': 'provider_company',
                         'type': constants.FIELD_RELATED,
+                        'query': {
+                            'type': 'master',
+                        }
                     }, {
                         'label': _('Company representative'),
                         'field': 'provider_representative',
                         'type': constants.FIELD_RELATED,
+                        'query': {
+                            'company': '{provider_company.id}',
+                        }
                     }, {
                         'label': _('Accepted at'),
                         'field': 'provider_signed_at',
@@ -340,7 +379,26 @@ class VacancyEndpoint(ApiEndpoint):
             }, {
                 'type': constants.CONTAINER_COLUMN,
                 'fields': (
-                    'jobsite', 'position', 'work_start_date', 'default_shift_starting_time', {
+                    {
+                        'label': _('Jobsite'),
+                        'field': 'jobsite',
+                        'type': constants.FIELD_RELATED,
+                        'query': {
+                            'company': '{customer_company.id}',
+                        }
+                    }, {
+                        'label': _('Position'),
+                        'field': 'position',
+                        'type': constants.FIELD_RELATED,
+                        'query': {
+                            'company': '{customer_company.id}',
+                        }
+                    }, {
+                        'field': 'work_start_date',
+                        'type': constants.FIELD_DATE,
+                        'default': datetime.date.today(),
+                    }, 'default_shift_starting_time',
+                    {
                         'type': constants.FIELD_RELATED,
                         'label': _('Candidate rate default'),
                         'query': {
@@ -488,12 +546,9 @@ class VacancyDateEndpoint(ApiEndpoint):
     fieldsets = ('vacancy', 'shift_date', 'workers', 'hourly_rate')
 
 
-router.register(hr_models.Jobsite, search_fields=(
-    'jobsite_addresses__address__city__search_names', 'jobsite_addresses__address__street_address',
-    'master_company__name'
-))
+router.register(endpoint=JobsiteEndpoint())
 router.register(hr_models.JobsiteUnavailability)
-router.register(hr_models.JobsiteAddress)
+router.register(endpoint=JobsiteAddressEndpoint())
 router.register(endpoint=VacancyEndpoint())
 router.register(endpoint=VacancyDateEndpoint())
 router.register(endpoint=ShiftEndpoint())

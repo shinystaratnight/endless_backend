@@ -1678,10 +1678,10 @@ class AbstractOrderLine(UUIDModel):
         abstract = True
 
     def get_tax(self):
-        return self.vat.rate / 100 * self.unit_price
+        return self.vat.rate * self.unit_price
 
     def save(self, *args, **kwargs):
-        self.total_price = self.unit_price * self.quantity
+        self.amount = self.unit_price * self.units
         super().save(*args, **kwargs)
 
 

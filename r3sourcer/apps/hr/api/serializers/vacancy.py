@@ -277,3 +277,12 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 return 2
             return 1
         return 0
+
+
+class JobsiteAddressSerializer(core_serializers.ApiBaseModelSerializer):
+
+    class Meta:
+        model = hr_models.JobsiteAddress
+        fields = ('__all__', {
+            'jobsite': ('primary_contact', 'start_date', 'end_date', 'notes'),
+        })
