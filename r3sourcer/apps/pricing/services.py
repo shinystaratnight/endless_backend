@@ -27,7 +27,7 @@ class CoefficientService:
             id__in=industry_rate_coeff_ids,
             rate_coefficient_modifiers__type=modifier_type,
             active=True
-        ).order_by('-priority')
+        ).order_by('-priority').distinct()
 
     def process_rate_coefficients(self, rate_coefficients, start_datetime,
                                   worked_hours, break_started=None,

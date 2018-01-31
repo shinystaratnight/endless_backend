@@ -1742,6 +1742,18 @@ class Invoice(AbstractOrder):
         null=True
     )
 
+    period = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    separation_rule = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
     class Meta:
         verbose_name = _("Company Invoice")
         verbose_name_plural = _("Company Invoices")

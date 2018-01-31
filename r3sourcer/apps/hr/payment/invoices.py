@@ -162,10 +162,13 @@ class InvoiceService(BasePaymentService):
         if lines:
             master_company = company.get_master_company()
             provider_company = master_company[0] if master_company else company
+            invoice_rule = company.invoice_rules.first()
             invoice = Invoice.objects.create(
                 provider_company=provider_company,
                 customer_company=company,
-                order_number=', '.join(jobsites)
+                order_number=', '.join(jobsites),
+                period=invoice_rule.period,
+                separation_rule=invoice_rule.separation_rule
             )
 
             invoice_lines = []
