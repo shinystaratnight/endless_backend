@@ -545,12 +545,12 @@ class CompanyEndpoint(ApiEndpoint):
         {
             'label': _('Primary Contact'),
             'type': constants.FIELD_STATIC,
-            'field': 'primary_contact',
+            'field': 'manager.__str__',
         },
         {
-            'label': _('Manager'),
+            'label': _('Portfolio Manager'),
             'type': constants.FIELD_STATIC,
-            'field': 'manager.__str__',
+            'field': 'primary_contact',
         },
         {
             'label': _('Available'),
@@ -601,13 +601,9 @@ class CompanyEndpoint(ApiEndpoint):
                 'name', 'business_id', 'registered_for_gst', 'tax_number',
                 {
                     'label': _('Primary Contact'),
-                    'type': constants.FIELD_STATIC,
-                    'field': 'primary_contact',
-                },
-                {
-                    'label': _('Primary Contact'),
-                    'type': constants.FIELD_STATIC,
+                    'type': constants.FIELD_RELATED,
                     'field': 'manager',
+                    'endpoint': api_reverse_lazy('core/companycontacts'),
                 },
                 'website', 'type', 'company_rating',
                 {
@@ -759,16 +755,14 @@ class CompanyEndpoint(ApiEndpoint):
                 {
                     'label': _('Master company'),
                     'type': constants.FIELD_RELATED,
-                    'list': True,
-                    'readonly': True,
-                    'field': 'get_master_company',
+                    'field': 'master_company',
                     'endpoint': api_reverse_lazy('core/companies'),
                 },
                 {
-                    'label': _('Portfolio manager'),
+                    'label': _('Portfolio Manager'),
                     'type': constants.FIELD_RELATED,
-                    'field': 'manager',
-                    'endpoint': '',
+                    'field': 'primary_contact',
+                    'endpoint': api_reverse_lazy('core/companycontacts'),
                 }, 'timesheet_approval_scheme',
                 {
                     'label': _('Parent'),
