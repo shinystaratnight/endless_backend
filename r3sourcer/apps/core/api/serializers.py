@@ -819,8 +819,8 @@ class CompanyAddressSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseMod
         if not company_rel:
             return
 
-        return company_rel and company_rel.primary_contact and \
-            str(company_rel.primary_contact.contact)
+        if company_rel:
+            return CompanyContactSerializer(company_rel.primary_contact).data
 
     def get_active_states(self, obj):
         if obj:
@@ -1021,7 +1021,7 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
 
 
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
-    method_fields = ('primary_contact', 'terms_of_pay', 'regular_company_rel')
+    method_fields = ('primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company')
 
     class Meta:
         model = core_models.Company
@@ -1072,8 +1072,19 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         if not company_rel:
             return
 
-        return company_rel and company_rel.primary_contact and \
-            str(company_rel.primary_contact.contact)
+        if company_rel:
+            return core_field.ApiBaseRelatedField.to_read_only_data(company_rel.primary_contact)
+
+    def get_master_company(self, obj):
+        if not obj:
+            return
+
+        company_rel = self.get_company_rel(obj)
+        if not company_rel:
+            return
+
+        if company_rel:
+            return core_field.ApiBaseRelatedField.to_read_only_data(company_rel.master_company)
 
     def get_active_states(self, obj):
         if obj:
