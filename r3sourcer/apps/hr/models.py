@@ -1077,6 +1077,14 @@ class TimeSheet(
     def get_vacancy_offer(self):
         return self.vacancy_offer
 
+    @property
+    def master_company(self):
+        return self.vacancy_offer.shift.date.vacancy.jobsite.master_company
+
+    @property
+    def regular_company(self):
+        return self.vacancy_offer.shift.date.vacancy.jobsite.jobsite_addresses.first().regular_company
+
     @classmethod
     def get_or_create_for_vacancy_offer_accepted(cls, vacancy_offer):
         data = {
