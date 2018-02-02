@@ -48,7 +48,6 @@ class CoefficientService:
                     )
                     if hours == timedelta(hours=-1):
                         is_allowance = True
-                        hours = timedelta(hours=1)
 
                     used_hours = min(hours, used_hours)
 
@@ -56,6 +55,9 @@ class CoefficientService:
                         break
 
                 if used_hours.total_seconds() > 0 or is_allowance:
+                    if is_allowance:
+                        used_hours = timedelta(hours=1)
+
                     res.append({
                         'coefficient': rate_coefficient,
                         'hours': used_hours
