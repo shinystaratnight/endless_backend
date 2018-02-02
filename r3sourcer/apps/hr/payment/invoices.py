@@ -39,7 +39,7 @@ class InvoiceService(BasePaymentService):
     def calculate(self, company, from_date=None, timesheets=None,
                   show_candidate=False):
 
-        timesheets = self._get_timesheets(timesheets, from_date)
+        timesheets = self._get_timesheets(timesheets, from_date, company)
         coefficient_service = PriceListCoefficientService()
 
         lines = []

@@ -67,14 +67,19 @@ class BasePaymentService:
 
         return delta
 
-    def _get_timesheets(self, timesheets, from_date=None, candidate=None):
+    def _get_timesheets(self, timesheets, from_date=None, candidate=None, company=None):
         timesheets = timesheets or TimeSheet.objects.order_by(
             'shift_started_at'
         )
         timesheets = timesheets.filter(
             candidate_submitted_at__isnull=False,
-            supervisor_approved_at__isnull=False
+            supervisor_approved_at__isnull=False,
         )
+
+        if company:
+            timesheets = timesheets.filter(
+                vacancy_offer__shift__date__vacancy__jobsite__jobsite_addresses__regular_company=company
+            )
 
         if candidate:
             timesheets = timesheets.filter(
