@@ -541,30 +541,39 @@ class CompanyEndpoint(ApiEndpoint):
                 api_reverse_lazy('core/companies')
             ),
             'field': 'name',
-        },
-        {
+        }, {
+            'label': _('State'),
+            'type': constants.FIELD_TEXT,
+            'field': 'state',
+        }, {
+            'label': _('City'),
+            'type': constants.FIELD_TEXT,
+            'field': 'city',
+        }, {
             'label': _('Primary Contact'),
-            'type': constants.FIELD_STATIC,
-            'field': 'manager.__str__',
-        },
-        {
+            'type': constants.FIELD_LINK,
+            'field': 'manager',
+            'endpoint': format_lazy(
+                '{}{{manager.id}}/',
+                api_reverse_lazy('core/companycontacts')
+            ),
+        }, {
             'label': _('Portfolio Manager'),
-            'type': constants.FIELD_STATIC,
+            'type': constants.FIELD_LINK,
             'field': 'primary_contact',
-        },
-        {
+            'endpoint': format_lazy(
+                '{}{{primary_contact.id}}/',
+                api_reverse_lazy('core/companycontacts')
+            ),
+        }, {
             'label': _('Available'),
             'read_only': True,
             'field': 'available',
-        },
-        {
+        }, {
             'label': _('Credit Info'),
             'fields': ({
                 'type': constants.FIELD_STATIC,
-                'field': 'credit_check',
-            }, {
-                'type': constants.FIELD_DATE,
-                'field': 'credit_check_date',
+                'field': 'credit_approved',
             }, {
                 'type': constants.FIELD_STATIC,
                 'field': 'approved_credit_limit',
@@ -572,9 +581,8 @@ class CompanyEndpoint(ApiEndpoint):
                 'type': constants.FIELD_STATIC,
                 'field': 'terms_of_pay',
             }),
-        },
-        {
-            'label': _('State'),
+        }, {
+            'label': _('Company State'),
             'field': 'active_states',
         },
     )
@@ -816,6 +824,34 @@ class CompanyEndpoint(ApiEndpoint):
         'name', 'company_addresses__address__street_address', 'company_addresses__address__city__search_names',
         'notes', 'description'
     )
+
+    def get_list_filter(self):
+        states_part = partial(
+            models.WorkflowNode.get_model_all_states, models.CompanyRel
+        )
+        list_filter = [{
+            'type': constants.FIELD_SELECT,
+            'field': 'status',
+            'label': _('Status'),
+            'choices': lazy(states_part, list),
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'portfolio_manager',
+            'label': _('Portfolio Manager'),
+            'endpoint': api_reverse_lazy('core/companycontacts'),
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'state',
+            'endpoint': api_reverse_lazy('core/regions'),
+            'value': 'naem'
+        }, {
+            'type': constants.FIELD_SELECT,
+            'field': 'credit_check',
+            'choices': [{'label': 'Approved', 'value': 'True'},
+                        {'label': 'Unapproved', 'value': 'False'}]
+        }]
+
+        return list_filter
 
 
 class CompanyContactRelationEndpoint(ApiEndpoint):

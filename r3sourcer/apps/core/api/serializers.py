@@ -10,6 +10,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db import models
 from django.utils import six, timezone
+from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
 from rest_framework.fields import empty
@@ -111,6 +112,11 @@ class ApiFullRelatedFieldsMixin():
                 continue
             elif isinstance(field, serializers.ImageField):
                 self.fields[field_name] = core_field.ApiContactPictureField(
+                    *field._args, **field._kwargs
+                )
+                continue
+            elif isinstance(field, serializers.FileField):
+                self.fields[field_name] = core_field.ApiBase64FileField(
                     *field._args, **field._kwargs
                 )
                 continue
@@ -1021,7 +1027,9 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
 
 
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
-    method_fields = ('primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company')
+    method_fields = (
+        'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved'
+    )
 
     class Meta:
         model = core_models.Company
@@ -1101,6 +1109,26 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
     def get_regular_company_rel(self, obj):
         relation = obj.regular_companies.all().last()
         return relation and core_field.ApiBaseRelatedField.to_read_only_data(relation)
+
+    def get_address(self, obj):
+        return obj.company_addresses.filter(hq=True).first()
+
+    def get_state(self, obj):
+        address = self.get_address(obj)
+
+        if address:
+            return address.address.state.name
+
+    def get_city(self, obj):
+        address = self.get_address(obj)
+
+        if address:
+            return address.address.city.name
+
+    def get_credit_approved(self, obj):
+        if obj.credit_check == core_models.Company.CREDIT_CHECK_CHOICES.approved:
+            return '%s %s' % (_('Approved'), date_format(obj.credit_check_date, settings.DATE_FORMAT))
+        return _('Not Approved')
 
 
 class FormStorageSerializer(ApiBaseModelSerializer):
