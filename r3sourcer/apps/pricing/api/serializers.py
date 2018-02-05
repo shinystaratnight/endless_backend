@@ -138,3 +138,21 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
         self._get_rule_objects(validated_data, obj)
 
         return super(RateCoefficientSerializer, self).update(obj, validated_data)
+
+
+class IndustryRateCoefficientSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = pricing_models.IndustryRateCoefficient
+        fields = ('__all__', {
+            'industry_price_list': ('id', {
+                'industry': ('id', ),
+            })
+        })
+
+
+class IndustrySerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = pricing_models.Industry
+        fields = ('__all__',)
