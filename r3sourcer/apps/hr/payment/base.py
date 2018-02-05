@@ -73,7 +73,7 @@ class BasePaymentService:
         )
         timesheets = timesheets.filter(
             candidate_submitted_at__isnull=False,
-            supervisor_approved_at__isnull=False,
+            supervisor_approved_at__isnull=False
         )
 
         if company:

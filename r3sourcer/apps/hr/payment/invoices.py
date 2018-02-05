@@ -202,7 +202,8 @@ class InvoiceService(BasePaymentService):
                 show_candidate=invoice_rule.show_candidate_name
             )
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
-            for jobsite in company.jobsites.all():
+            jobsites = [x.jobsite for x in company.jobsite_addresses.all()]
+            for jobsite in set(jobsites):
                 timesheets = TimeSheet.objects.filter(
                     vacancy_offer__shift__date__vacancy__jobsite=jobsite
                 )
