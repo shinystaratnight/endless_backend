@@ -12,6 +12,7 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group
 from django.contrib.postgres.fields import JSONField
 from django.contrib.sites.models import Site
+from django.core.cache import cache
 from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -601,7 +602,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     )
 
     receive_order_confirmation_sms = models.BooleanField(
-        verbose_name=_("Receive order confirmation sms"),
+        verbose_name=_("Receive Vacancy confirmation sms"),
         default=True
     )
 
@@ -972,6 +973,10 @@ class Company(
 
         return qs
 
+    @property
+    def invoice_rule(self):
+        return self.invoice_rules.first()
+
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
         from r3sourcer.apps.hr.models import PayslipRule
@@ -1060,6 +1065,8 @@ class CompanyRel(
 
         if just_added:
             self.create_state(10)
+
+        cache.set('company_rel_{}'.format(self.regular_company.id), None)
 
 
 class CompanyContactRelationship(

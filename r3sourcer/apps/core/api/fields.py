@@ -42,9 +42,9 @@ class ApiDateTimeTzField(serializers.DateTimeField):
         return super().to_representation(value)
 
 
-class ApiBase64ImageField(serializers.ImageField):
+class ApiBase64FileField(serializers.FileField):
     """
-    A Django REST framework field for handling image-uploads through raw post data.
+    A Django REST framework field for handling file-uploads through raw post data.
     It uses base64 for encoding and decoding the contents of the file.
     """
 
@@ -62,7 +62,7 @@ class ApiBase64ImageField(serializers.ImageField):
             try:
                 decoded_file = base64.b64decode(data.encode('ascii'))
             except (TypeError, UnicodeEncodeError):
-                self.fail('invalid_image')
+                self.fail('invalid')
 
             file_name = str(uuid.uuid4())
             file_extension = self.get_file_extension(file_name, decoded_file)
@@ -74,7 +74,16 @@ class ApiBase64ImageField(serializers.ImageField):
         return super().to_internal_value(data)
 
     def get_file_extension(self, file_name, decoded_file):
-        extension = what(file_name, decoded_file)
+        return what(file_name, decoded_file)
+
+
+class ApiBase64ImageField(ApiBase64FileField, serializers.ImageField):
+    """
+    A Django REST framework field for handling image-uploads through raw post data.
+    It uses base64 for encoding and decoding the contents of the file.
+    """
+    def get_file_extension(self, file_name, decoded_file):
+        extension = super().get_file_extension(file_name, decoded_file)
         extension = "jpg" if extension == "jpeg" else extension
 
         return extension
@@ -114,7 +123,10 @@ class ApiChoicesField(serializers.ChoiceField):
             if type(data) != bool:
                 data = int(float(data))
         except ValueError:
-            pass
+            if data in serializers.BooleanField.TRUE_VALUES:
+                data = True
+            elif data in serializers.BooleanField.FALSE_VALUES:
+                data = False
 
         try:
             return self.choice_strings_to_values[six.text_type(data)]
