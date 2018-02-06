@@ -15,6 +15,42 @@ def format_date_to_myob(date_time, only_date=False):
     return date_time and date_format(date_time, settings.DATE_MYOB_FORMAT)
 
 
+class StandardPayMapMixin:
+    def map_standard_pay(self, payroll_details_uid, payroll_categories, base_category=None, memo=None):
+        data = {
+            'EmployeePayrollDetails': {'UID': payroll_details_uid},
+            'PayrollCategories': []
+        }
+        if memo:
+            data['Memo'] = memo[:255]
+
+        base_category_uid = None
+        if base_category and base_category['Count']:
+            base_category_uid = base_category['Items'][0]['UID']
+
+        for payroll_category in payroll_categories:
+            payroll_category_id = payroll_category['PayrollCategory']['UID']
+            item = {
+                'PayrollCategory': {'UID': payroll_category_id},
+                'IsCalculated': payroll_category['IsCalculated']
+            }
+            if not payroll_category['IsCalculated']:
+                item.update({
+                    'Hours': payroll_category['Hours'],
+                    'Amount': payroll_category['Amount'],
+                })
+            if payroll_category_id == base_category_uid:
+                item['Hours'] = 0
+                if not payroll_category['IsCalculated']:
+                    item['Amount'] = 0
+            if payroll_category['Job']:
+                item['Job'] = {'UID': payroll_category['Job']['UID']}
+
+            data['PayrollCategories'].append(item)
+
+        return data
+
+
 class InvoiceMapper:
     def map_to_myob(self, invoice, customer_uid, tax_codes, activities):
         data = {
@@ -133,5 +169,83 @@ class ActivityMapper:
                     'Rate': 'ActivityRate',
                     'ActivityRateExcludingTax': "{0:.2f}".format(rate)
                 })
+
+        return data
+
+
+class TimeSheetMapper(StandardPayMapMixin):
+
+    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date):
+        data = {
+            'StartDate': format_date_to_myob(start_date),
+            'EndDate': format_date_to_myob(end_date),
+            'Employee': {
+                'UID': employee_uid
+            },
+        }
+
+        lines = []
+
+        for payroll_cat_uid, timesheets_data in timesheets_with_rates.items():
+            entries = []
+
+            for timesheet_dict in timesheets_data.get('timesheets', []):
+                started = format_date_to_myob(timesheet_dict['timesheet'].shift_started_at, only_date=True)
+
+                if isinstance(timesheet_dict['hours'], str):
+                    hours = timesheet_dict['hours']
+                else:
+                    hours = "{0:.2f}".format(timesheet_dict['hours'].seconds / 3600)
+
+                entry = {
+                    'Date': started,
+                    'Hours': hours
+                }
+
+                entries.append(entry)
+
+            line = {
+                'PayrollCategory': {
+                    'UID': payroll_cat_uid
+                },
+                'Entries': entries
+            }
+
+            lines.append(line)
+
+        data['Lines'] = lines
+
+        return data
+
+    def map_rate_to_myob_wage_category(self, name, fixed=None, mult=None):
+        data = {
+            'Name': name[:31].strip(),
+            'WageType': 'Hourly',
+            'HourlyDetails': {}
+        }
+
+        if fixed and fixed > 0:
+            data['HourlyDetails'] = {
+                'PayRate': 'FixedHourly',
+                'FixedHourlyRate': str(fixed)
+            }
+        elif mult and mult > 0:
+            data['HourlyDetails'] = {
+                'PayRate': 'RegularRate',
+                'RegularRateMultiplier': str(mult)
+            }
+        else:
+            return {}
+
+        return data
+
+    def map_extra_rates(self, new_rates, rates=None):
+        if rates is None:
+            rates = []
+        data = {
+            'WageCategories': [{'UID': uid['UID']} for uid in rates if uid['UID'] not in new_rates]
+        }
+
+        data['WageCategories'].extend([{'UID': uid} for uid in new_rates])
 
         return data

@@ -11,7 +11,7 @@ from model_utils import Choices
 
 from r3sourcer.apps.core.models import UUIDModel, Company, CompanyContact
 from r3sourcer.apps.skills.models import Skill
-from r3sourcer.apps.pricing.models.rules import all_rules
+from r3sourcer.apps.pricing.models.rules import all_rules, AllowanceWorkRule
 
 
 class PriceListMixin(models.Model):
@@ -114,6 +114,15 @@ class RateCoefficient(UUIDModel):
 
     def __str__(self):
         return self.name
+
+    @property
+    def is_allowance(self):
+        allowance_ct = ContentType.objects.get_for_model(AllowanceWorkRule)
+        return self.rate_coefficient_rules.filter(rule_type=allowance_ct).exists()
+
+    @property
+    def candidate_modifier(self):
+        return self.rate_coefficient_modifiers.filter(type=RateCoefficientModifier.TYPE_CHOICES.candidate).first()
 
 
 class IndustryPriceList(PriceListMixin, UUIDModel):

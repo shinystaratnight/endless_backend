@@ -15,7 +15,7 @@ from r3sourcer.apps.pricing.models import (
     RateCoefficientModifier, PriceListRate, IndustryPriceListRate,
 )
 
-from .base import BasePaymentService
+from .base import BasePaymentService, calc_worked_delta
 
 from ..models import TimeSheet
 from ..utils.utils import get_invoice_rule
@@ -54,7 +54,7 @@ class InvoiceService(BasePaymentService):
                 skill, customer_company, industry
             )
             started_at = localtime(timesheet.shift_started_at)
-            worked_hours = self._calc_worked_delta(timesheet)
+            worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc_company(
                 company, industry, skill,
                 RateCoefficientModifier.TYPE_CHOICES.company,

@@ -3,6 +3,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
+from r3sourcer.apps.core.mixins import MYOBMixin
 from r3sourcer.apps.core.models import UUIDModel
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
@@ -22,7 +23,7 @@ class EmploymentClassification(UUIDModel):
         return self.name
 
 
-class Skill(UUIDModel):
+class Skill(MYOBMixin, UUIDModel):
 
     name = models.CharField(max_length=63, verbose_name=_("Skill Name"))
 
@@ -67,6 +68,22 @@ class Skill(UUIDModel):
 
     def __str__(self):
         return self.name
+
+    def get_myob_name(self):
+        name = self.short_name
+        if not name:
+            parts = self.name.split(' ')
+            parts_len = len(parts)
+            trim_size = 1
+
+            if parts_len == 1:
+                trim_size = 6
+            elif parts_len == 2 or parts_len == 3:
+                trim_size = 6 // parts_len
+
+            name = ''.join([p[:trim_size] for p in parts])
+
+        return name[:6]
 
 
 class SkillBaseRate(UUIDModel):

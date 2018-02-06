@@ -49,3 +49,12 @@ class CategoryFolderMixin(object):
             parent_folder, created = Folder.objects.get_or_create(name=self._meta.verbose_name_plural)
             self.files = Folder.objects.create(name=self.id, parent=parent_folder)
         super().save(*args, **kwargs)
+
+
+class MYOBMixin(object):
+
+    def get_myob_card_number(self):
+        return str(self.id)[-15:]
+
+    def get_myob_name(self):
+        raise NotImplementedError()
