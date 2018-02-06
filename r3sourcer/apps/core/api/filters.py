@@ -22,7 +22,7 @@ class CompanyFilter(FilterSet):
 
     class Meta:
         model = Company
-        fields = ['name', 'business_id', 'country']
+        fields = ['name', 'business_id', 'country', 'type']
 
     def filter_name(self, queryset, name, value):
         return queryset.filter(
@@ -89,7 +89,7 @@ class CompanyAddressFilter(FilterSet):
 
     class Meta:
         model = CompanyAddress
-        fields = ['portfolio_manager', ]
+        fields = ['portfolio_manager', 'company']
 
     def filter_portfolio_manager(self, queryset, name, value):
         return queryset.filter(

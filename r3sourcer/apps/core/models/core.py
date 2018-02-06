@@ -601,7 +601,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     )
 
     receive_order_confirmation_sms = models.BooleanField(
-        verbose_name=_("Receive order confirmation sms"),
+        verbose_name=_("Receive Vacancy confirmation sms"),
         default=True
     )
 
@@ -971,6 +971,10 @@ class Company(
             qs = qs.filter(price_list_rates__skill=position)
 
         return qs
+
+    @property
+    def invoice_rule(self):
+        return self.invoice_rules.first()
 
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings

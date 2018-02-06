@@ -46,7 +46,15 @@ class JobsiteAddressEndpoint(ApiEndpoint):
     fieldsets = ('address', 'jobsite', 'regular_company', )
 
     list_editable = (
-        '__str__', 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
+        {
+            'label': _('Address'),
+            'type': constants.FIELD_LINK,
+            'field': '__str__',
+            'endpoint': format_lazy(
+                '{}{{id}}/',
+                api_reverse_lazy('hr/jobsiteaddresses')
+            ),
+        }, 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
     )
 
 

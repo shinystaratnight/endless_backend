@@ -160,7 +160,10 @@ class PriceListEndpoint(ApiEndpoint):
     model = models.PriceList
 
     list_filter = ('company', )
-    list_editable = ('valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at')
+    list_editable = ('valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at', {
+        **constants.BUTTON_EDIT,
+        'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelists'))
+    }, constants.BUTTON_DELETE,)
 
 
 router.register(endpoint=RateCoefficientEndpoint())

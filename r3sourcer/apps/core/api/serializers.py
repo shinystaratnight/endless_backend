@@ -729,7 +729,11 @@ class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = core_models.CompanyContactRelationship
-        fields = '__all__'
+        fields = ('__all__', {
+            'company_contact': ('id', 'job_title', 'receive_order_confirmation_sms', {
+                'contact': ('id', 'first_name', 'last_name', 'phone_mobile', 'email')
+            })
+        })
 
 
 class CompanyContactRenderSerializer(CompanyContactSerializer):
@@ -1024,6 +1028,13 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
         extra_kwargs = {
             'company_contact': {'read_only': True}
         }
+
+
+class InvoiceRuleSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.InvoiceRule
+        fields = ('__all__', )
 
 
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
