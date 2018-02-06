@@ -22,7 +22,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED)
-from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_field
+from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 
 rest_settings = settings.REST_FRAMEWORK
 
@@ -799,26 +799,24 @@ class CompanyAddressSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseMod
         model = core_models.CompanyAddress
 
     def get_company_rel(self, obj):
-        company_rel = cache.get('company_rel_{}'.format(obj.id), None)
+        company = obj.company
+        company_rel = cache.get('company_rel_{}'.format(company.id), None)
         if not company_rel:
             current_site = get_current_site(self.context.get('request'))
 
             site_company = core_models.SiteCompany.objects.filter(
-                site=current_site
+                site=current_site,
+                company__master_companies__regular_company=company
             ).last()
             master_type = core_models.Company.COMPANY_TYPES.master
             if not site_company or site_company.company.type != master_type:
                 return
 
-            company_rel = obj.company.regular_companies.filter(
+            company_rel = company.regular_companies.filter(
                 master_company=site_company.company
             ).last()
-            if company_rel is None:
-                company_rel = obj.company.master_companies.filter(
-                    master_company=site_company.company
-                ).last()
 
-            cache.set('company_rel_{}'.format(obj.id), company_rel)
+            cache.set('company_rel_{}'.format(company.id), company_rel)
         return company_rel
 
     def get_portfolio_manager(self, obj):
@@ -1066,7 +1064,8 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             current_site = get_current_site(self.context.get('request'))
 
             site_company = core_models.SiteCompany.objects.filter(
-                site=current_site
+                site=current_site,
+                company__master_companies__regular_company=company
             ).last()
             master_type = core_models.Company.COMPANY_TYPES.master
             if not site_company or site_company.company.type != master_type:
@@ -1075,10 +1074,6 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             company_rel = company.regular_companies.filter(
                 master_company=site_company.company
             ).last()
-            if company_rel is None:
-                company_rel = company.master_companies.filter(
-                    master_company=site_company.company
-                ).last()
 
             cache.set('company_rel_{}'.format(company.id), company_rel)
         return company_rel
@@ -1128,13 +1123,13 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         address = self.get_address(obj)
 
         if address:
-            return address.address.state.name
+            return address.address.state and address.address.state.name
 
     def get_city(self, obj):
         address = self.get_address(obj)
 
         if address:
-            return address.address.city.name
+            return address.address.city and address.address.city.name
 
     def get_credit_approved(self, obj):
         if obj.credit_check == core_models.Company.CREDIT_CHECK_CHOICES.approved:

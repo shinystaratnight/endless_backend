@@ -12,6 +12,7 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group
 from django.contrib.postgres.fields import JSONField
 from django.contrib.sites.models import Site
+from django.core.cache import cache
 from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -1064,6 +1065,8 @@ class CompanyRel(
 
         if just_added:
             self.create_state(10)
+
+        cache.set('company_rel_{}'.format(self.regular_company.id), None)
 
 
 class CompanyContactRelationship(
