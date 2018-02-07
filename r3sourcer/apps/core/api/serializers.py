@@ -277,8 +277,14 @@ class ApiFullRelatedFieldsMixin():
                     continue
 
                 if not isinstance(instance, model):  # pragma: no cover
-                    instance = model.objects.create(**instance)
-                setattr(obj, field_name, instance)
+                    instance_id = instance.get('id')
+                    if instance_id:
+                        instance = model.objects.filter(id=instance_id).update(**instance)
+                    else:
+                        instance = model.objects.create(**instance)
+
+                if not isinstance(getattr(obj.__class__, field_name, None), property):
+                    setattr(obj, field_name, instance)
 
         return super(ApiFullRelatedFieldsMixin, self).update(obj, validated_data)
 
@@ -1033,6 +1039,9 @@ class InvoiceRuleSerializer(ApiBaseModelSerializer):
     class Meta:
         model = core_models.InvoiceRule
         fields = ('__all__', )
+        extra_kwargs = {
+            'serial_number': {'required': False},
+        }
 
 
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
@@ -1040,11 +1049,14 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved'
     )
 
+    invoice_rule = InvoiceRuleSerializer(required=False)
+
     class Meta:
         model = core_models.Company
         fields = (
             '__all__',
             {
+                'invoice_rule': '__all__',
                 'manager': (
                     'id', '__str__',
                 ),
@@ -1133,8 +1145,12 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
 
     def get_credit_approved(self, obj):
         if obj.credit_check == core_models.Company.CREDIT_CHECK_CHOICES.approved:
-            return '%s %s' % (_('Approved'), date_format(obj.credit_check_date, settings.DATE_FORMAT))
-        return _('Not Approved')
+            msg = _('Approved')
+            if obj.credit_check_date:
+                msg = '%s %s' % (msg, date_format(obj.credit_check_date, settings.DATE_FORMAT))
+        else:
+            msg = _('Not Approved')
+        return msg
 
 
 class FormStorageSerializer(ApiBaseModelSerializer):
