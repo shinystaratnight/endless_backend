@@ -553,6 +553,13 @@ class CompanyEndpoint(ApiEndpoint):
 
     fields = (
         '__all__',
+        {
+            'invoice_rule': '__all__',
+            'manager': (
+                'id', '__str__',
+            ),
+            'groups': ('id', '__str__')
+        }
     )
 
     list_display = (
@@ -606,7 +613,7 @@ class CompanyEndpoint(ApiEndpoint):
             }),
         }, {
             'label': _('Company State'),
-            'field': 'active_states',
+            'fields': ('active_states', )
         },
     )
 
@@ -757,14 +764,14 @@ class CompanyEndpoint(ApiEndpoint):
         }, {
             'type': constants.FIELD_LIST,
             'query': {
-                'object_id': '{id}'
+                'object_id': '{regular_company_rel.id}'
             },
             'collapsed': True,
             'label': _('States History'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/workflowobjects'),
             'prefilled': {
-                'object_id': '{id}',
+                'object_id': '{regular_company_rel.id}',
             }
         }, {
             'type': constants.CONTAINER_COLLAPSE,
@@ -782,13 +789,59 @@ class CompanyEndpoint(ApiEndpoint):
                 },
             )
         }, {
-            'type': constants.FIELD_LIST,
-            'query': {
-                'company': '{id}'
-            },
+            'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
-            'label': _('Invoice Rule'),
-            'endpoint': api_reverse_lazy('core/invoicerules'),
+            'name': _('Invoice Rule'),
+            'fields': (
+                {
+                    'field': 'invoice_rule.id',
+                    'type': constants.FIELD_TEXT,
+                    'hidden': True,
+                },
+                'invoice_rule.separation_rule', 'invoice_rule.period',
+                {
+                    'field': 'invoice_rule.period_zero_reference',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                }, {
+                    'field': 'invoice_rule.serial_number',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                }, {
+                    'field': 'invoice_rule.starting_number',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                }, {
+                    'field': 'invoice_rule.notice',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                }, {
+                    'field': 'invoice_rule.comment',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                },
+                'invoice_rule.show_candidate_name',
+            )
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
@@ -1007,6 +1060,7 @@ class WorkflowObjectEndpoint(ApiEndpoint):
 
     model = models.WorkflowObject
     serializer = serializers.WorkflowObjectSerializer
+    filter_class = filters.WorkflowObjectFilter
 
     fieldsets = ({
         'type': constants.FIELD_TEXT,

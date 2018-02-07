@@ -217,3 +217,10 @@ class FormFieldFilter(FilterSet):
     class Meta:
         model = FormField
         fields = ('group',)
+
+
+class WorkflowObjectFilter(FilterSet):
+
+    class Meta:
+        model = WorkflowObject
+        fields = ('object_id',)
