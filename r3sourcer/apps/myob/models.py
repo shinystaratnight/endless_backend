@@ -239,17 +239,6 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
         verbose_name=_("Enable Until")
     )
 
-    MYOB_CF_TOKEN_TYPES = Choices(
-        (0, 'invoices', _('Invoices')),
-        (1, 'payslips', _('Payslips'))
-    )
-
-    type = models.PositiveIntegerField(
-        verbose_name=_("MYOB Company FIle Token type"),
-        choices=MYOB_CF_TOKEN_TYPES,
-        default=MYOB_CF_TOKEN_TYPES.invoices
-    )
-
     objects = MYOBCompanyFileTokenManager()
 
     class Meta:

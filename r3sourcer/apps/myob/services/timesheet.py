@@ -37,8 +37,6 @@ class TimeSheetSync(
     mapper_class = TimeSheetMapper
     timesheet_rates_calc = None
 
-    cf_token_type = MYOBCompanyFileToken.MYOB_CF_TOKEN_TYPES.payslips
-
     rates_cache = {}
 
     def __init__(self, myob_client=None, company=None):
@@ -53,7 +51,7 @@ class TimeSheetSync(
         timesheets_q = (Q(candidate_submitted_at__isnull=True) | Q(candidate_submitted_at=None) |
                         Q(supervisor_approved_at__isnull=True) | Q(supervisor_approved_at=None))
 
-        for company_file_token in self.company.company_file_tokens.filter(type=self.cf_token_type):
+        for company_file_token in self.company.company_file_tokens.all():
             enabled_qry = Q()
             if company_file_token.enable_from:
                 enabled_qry |= Q(shift_started_at__date__lt=company_file_token.enable_from)

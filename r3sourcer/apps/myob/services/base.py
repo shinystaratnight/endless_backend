@@ -19,17 +19,13 @@ class BaseSync:
     mapper = None
 
     resource = None
-    cf_token_type = None
 
     _clients = {}
 
     required_put_keys = ('UID', 'RowVersion', 'DisplayID')
 
-    def __init__(self, myob_client=None, company=None, cf_id=None, token_type=None):
-        if self.cf_token_type and not token_type:
-            token_type = self.cf_token_type
-
-        self.client = myob_client or get_myob_client(cf_id=cf_id, company=company, token_type=token_type)
+    def __init__(self, myob_client=None, company=None, cf_id=None):
+        self.client = myob_client or get_myob_client(cf_id=cf_id, company=company)
         if self.client is None:
             return
 
@@ -37,8 +33,6 @@ class BaseSync:
         self._clients[self.client.cf_data.id] = self.client
 
         self.company = company or self.client.cf_data.company
-        if not self.cf_token_type:
-            self.cf_token_type = self.client.cf_data.type
 
         if not self.mapper:
             self.mapper = self.mapper_class and self.mapper_class()
@@ -49,7 +43,6 @@ class BaseSync:
         kwargs = {
             'company': self.company,
             'date': date,
-            'token_type': self.cf_token_type,
         }
         if company_file_token is not None:
             kwargs = {'cf_id': company_file_token.company_file.cf_id}
