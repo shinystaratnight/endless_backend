@@ -880,12 +880,15 @@ class VacancyViewset(BaseApiViewset):
         })
 
     def fillin_post(self, request, shifts):
-        candidate_ids = request.data.get('candidates', [])
-        fill_shifts = request.data.get('shifts', None)
+        candidate_ids = request.data.get('candidates', []) if isinstance(request.data, dict) else request.data
+        fill_shifts = request.data.get('shifts', None) if isinstance(request.data, dict) else None
+
+        if not candidate_ids:
+            raise exceptions.ParseError(_('No Candidates has been chosen'))
 
         for candidate_id in candidate_ids:
             for shift in shifts:
-                if str(shift.id) not in fill_shifts:
+                if fill_shifts and str(shift.id) not in fill_shifts:
                     continue
 
                 unavailable = vacancy_utils.get_partially_available_candidate_ids_for_vs(
@@ -897,8 +900,6 @@ class VacancyViewset(BaseApiViewset):
                         shift=shift,
                         candidate_contact_id=candidate_id,
                     )
-        else:
-            raise exceptions.ParseError(_('No Candidates has been chosen'))
 
         return Response({
             'status': 'ok',
