@@ -12,6 +12,7 @@ from r3sourcer.apps.hr.payment import calc_worked_delta
 from r3sourcer.apps.myob.mappers import TimeSheetMapper, format_date_to_myob
 from r3sourcer.apps.myob.models import MYOBSyncObject, MYOBCompanyFileToken
 from r3sourcer.apps.myob.services.base import BaseSync
+from r3sourcer.apps.myob.services.candidate import CandidateSync
 from r3sourcer.apps.myob.services.decorators import myob_enabled_mode
 from r3sourcer.apps.myob.services.mixins import BaseCategoryMixin, StandardPayMixin, CandidateCardFinderMixin
 from r3sourcer.apps.pricing.models import RateCoefficientModifier
@@ -97,11 +98,11 @@ class TimeSheetSync(
 
         # TODO: fix this when candidate sync will be done
         # if resource was not exists then stop processing
-        # if not myob_employee:
-        #     rs = CandidateSync(self.client, self.company)
-        #     rs.sync_to_myob(instance.candidate_contact, force=True)
+        if not myob_employee:
+            rs = CandidateSync(self.client, self.company)
+            rs.sync_to_myob(candidate, force=True)
 
-        #     myob_employee = self._get_myob_employee_data(instance)
+            myob_employee = self._get_myob_employee_data(candidate)
 
         if not myob_employee:
             return

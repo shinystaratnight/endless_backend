@@ -661,8 +661,7 @@ class SkillRateRel(MYOBMixin, core_models.UUIDModel):
         return str(self.hourly_rate)
 
     def get_myob_name(self):
-        return '{} {}'.format(str(self.hourly_rate.skill.get_myob_name()),
-                              str(self.hourly_rate.hourly_rate))
+        return '{} {}'.format(str(self.hourly_rate.skill.get_myob_name()), str(self.hourly_rate.hourly_rate))
 
 
 class InterviewSchedule(core_models.UUIDModel):
