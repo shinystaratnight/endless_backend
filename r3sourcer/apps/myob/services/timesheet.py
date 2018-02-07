@@ -99,7 +99,7 @@ class TimeSheetSync(
         # TODO: fix this when candidate sync will be done
         # if resource was not exists then stop processing
         if not myob_employee:
-            rs = CandidateSync(self.client, self.company, token_type=self.cf_token_type)
+            rs = CandidateSync(self.client, self.company)
             rs.sync_to_myob(candidate, force=True)
 
             myob_employee = self._get_myob_employee_data(candidate)

@@ -23,8 +23,6 @@ class CandidateSync(
 
     mapper_class = CandidateMapper
 
-    cf_token_type = MYOBCompanyFileToken.MYOB_CF_TOKEN_TYPES.payslips
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
 
