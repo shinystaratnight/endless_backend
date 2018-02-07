@@ -6,8 +6,7 @@ from r3sourcer.apps.candidate.models import CandidateContact, CandidateRel
 from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
 from r3sourcer.apps.core.models import InvoiceRule, User, Company, CompanyContact, CompanyContactRelationship
 from r3sourcer.apps.hr.models import PayslipRule
-from r3sourcer.apps.myob.api.wrapper import MYOBAuthData
-from r3sourcer.apps.myob.models import MYOBCompanyFileToken, MYOBCompanyFile
+from r3sourcer.apps.myob.models import MYOBCompanyFileToken, MYOBCompanyFile, MYOBAuthData
 
 
 @pytest.fixture

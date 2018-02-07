@@ -5,6 +5,7 @@ import datetime
 import decimal
 import json
 import logging
+import re
 import time
 
 import pytz
@@ -14,15 +15,22 @@ from django.conf import settings
 from django.core.urlresolvers import reverse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.exceptions import APIException
 
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBAuthData, MYOBCompanyFileToken, MYOBCompanyFile
+from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBCompanyFileToken, MYOBCompanyFile
 from r3sourcer.apps.myob.api.utils import get_myob_app_info
 
 
 log = logging.getLogger(__name__)
+
+
+def check_account_id(url1, url2):
+    pattern = '^(?P<protocol>\w+)\:\/\/(?P<domain_name>[\w,\d,\.]+)\/' \
+              'accountright\/(?P<account_id>[\d,\w\-]+)(?P<path>.+)?'
+    return re.match(pattern, url1).groupdict()['account_id'] == re.match(pattern, url2).groupdict()['account_id']
 
 
 class MYOBException(APIException):
@@ -316,7 +324,7 @@ class MYOBAuth(object):
             }
 
         url = self.get_token_url()
-        now = datetime.datetime.now()
+        now = timezone.now()
         resp = myob_request('post', url, data=data)
         log.info('%s %s', resp.status_code, resp.content)
 
@@ -522,7 +530,7 @@ class MYOBAccountRightV2API(object):
             return
 
         for uri in data['Resources']:
-            if not uri.startswith(cf_uri):
+            if not check_account_id(uri, cf_uri):
                 msg = _("Resource URI differs from Company File URI")
                 raise MYOBImplementationException(msg)
             uri_path = uri[len(cf_uri):]
@@ -552,7 +560,7 @@ class MYOBAccountRightV2API(object):
             uri = user_access['ResourcePath']
             available_methods = user_access['Access']
 
-            if not uri.startswith(cf_uri):
+            if not check_account_id(uri, cf_uri):
                 msg = _("Resource (Access) URI differs from Company File URI")
                 raise MYOBImplementationException(msg)
             uri_path = uri[len(cf_uri):]

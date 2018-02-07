@@ -64,7 +64,7 @@ class TestInvoiceService:
         assert res is None
 
     @mock.patch.object(PriceListCoefficientService, 'calc_company')
-    @mock.patch.object(InvoiceService, '_calc_worked_delta')
+    @mock.patch('r3sourcer.apps.hr.payment.invoices.calc_worked_delta')
     @mock.patch.object(InvoiceService, '_get_price_list_rate')
     @mock.patch.object(InvoiceService, '_get_timesheets')
     def test_calculate(
@@ -88,7 +88,7 @@ class TestInvoiceService:
         assert len(jobsites) == 1
 
     @mock.patch.object(PriceListCoefficientService, 'calc_company')
-    @mock.patch.object(InvoiceService, '_calc_worked_delta')
+    @mock.patch('r3sourcer.apps.hr.payment.invoices.calc_worked_delta')
     @mock.patch.object(InvoiceService, '_get_price_list_rate')
     @mock.patch.object(InvoiceService, '_get_timesheets')
     def test_calculate_show_candidate(

@@ -42,7 +42,7 @@ from ..utils.user import get_default_company
 from ..managers import (
     TagManager, AbstractCompanyContactOwnerManager, AbstractObjectOwnerManager
 )
-from ..mixins import CompanyLookupMixin, MasterCompanyLookupMixin, CategoryFolderMixin
+from ..mixins import CompanyLookupMixin, MasterCompanyLookupMixin, CategoryFolderMixin, MYOBMixin
 from ..service import factory
 from ..utils.geo import fetch_geo_coord_by_address
 from ..utils.validators import string_is_numeric
@@ -71,8 +71,10 @@ class UUIDModel(models.Model):
 
 
 class Contact(
-        CategoryFolderMixin,
-        UUIDModel):
+    CategoryFolderMixin,
+    MYOBMixin,
+    UUIDModel
+):
 
     EXCLUDE_INPUT_FIELDS = (
         'files',

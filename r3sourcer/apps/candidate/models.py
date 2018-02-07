@@ -9,6 +9,7 @@ from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.mixins import MYOBMixin
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.skills import models as skill_models
 from r3sourcer.apps.core.decorators import workflow_function
@@ -631,7 +632,7 @@ class SkillRel(core_models.UUIDModel):
                                                  valid_until__gte=today).last()
 
 
-class SkillRateRel(core_models.UUIDModel):
+class SkillRateRel(MYOBMixin, core_models.UUIDModel):
 
     candidate_skill = models.ForeignKey(
         SkillRel,
@@ -658,6 +659,10 @@ class SkillRateRel(core_models.UUIDModel):
 
     def __str__(self):
         return str(self.hourly_rate)
+
+    def get_myob_name(self):
+        return '{} {}'.format(str(self.hourly_rate.skill.get_myob_name()),
+                              str(self.hourly_rate.hourly_rate))
 
 
 class InterviewSchedule(core_models.UUIDModel):
