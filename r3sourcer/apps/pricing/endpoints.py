@@ -19,7 +19,7 @@ class RateCoefficientEndpoint(ApiEndpoint):
     base_viewset = viewsets.RateCoefficientViewset
     serializer = serializers.RateCoefficientSerializer
 
-    list_display = ('__str__', 'rules', 'group', 'active')
+    list_display = ('__str__', 'industry', 'rules', 'group', 'active')
 
     fieldsets = (
         {
@@ -28,7 +28,7 @@ class RateCoefficientEndpoint(ApiEndpoint):
             'fields': (
                 {
                     'type': constants.CONTAINER_COLUMN,
-                    'fields': ('name', {
+                    'fields': ('industry', 'name', {
                         'type': constants.FIELD_RELATED,
                         'field': 'group',
                     }, 'active'),

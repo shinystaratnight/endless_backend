@@ -77,7 +77,7 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = pricing_models.RateCoefficient
-        fields = ('id', 'name', 'active', 'group', 'overtime', 'weekdays', 'timeofday', 'allowance')
+        fields = ('id', 'industry', 'name', 'active', 'group', 'overtime', 'weekdays', 'timeofday', 'allowance')
 
     def get_rules(self, obj):
         if obj is None:
