@@ -16,10 +16,13 @@ from ..utils.user import get_default_company
 class CompanyFilter(FilterSet):
     name = CharFilter(name='name', method='filter_name')
     country = CharFilter(name='addresses', method='filter_country')
+    state = UUIDFilter(method='filter_state')
+    status = NumberFilter(method='filter_status')
+    portfolio_manager = UUIDFilter(method='filter_portfolio_manager')
 
     class Meta:
         model = Company
-        fields = ['name', 'business_id', 'country']
+        fields = ['name', 'business_id', 'country', 'type']
 
     def filter_name(self, queryset, name, value):
         return queryset.filter(
@@ -31,6 +34,35 @@ class CompanyFilter(FilterSet):
             company_addresses__hq=True,
             company_addresses__address__country=value
         )
+
+    def filter_state(self, queryset, name, value):
+        return queryset.filter(
+            company_addresses__hq=True,
+            company_addresses__address__state=value
+        )
+
+    def filter_status(self, queryset, name, value):
+        objects = self._fetch_workflow_objects(value)
+        return queryset.filter(
+            Q(regular_companies__id__in=objects) |
+            Q(master_companies__id__in=objects)
+        )
+
+    def filter_portfolio_manager(self, queryset, name, value):
+        return queryset.filter(
+            Q(regular_companies__primary_contact=value) |
+            Q(master_companies__primary_contact=value)
+        )
+
+    def _fetch_workflow_objects(self, value):  # pragma: no cover
+        content_type = ContentType.objects.get_for_model(CompanyRel)
+        objects = WorkflowObject.objects.filter(
+            state__number=value,
+            state__workflow__model=content_type,
+            active=True,
+        ).distinct('object_id').values_list('object_id', flat=True)
+
+        return objects
 
 
 class CompanyLocalizationFilter(FilterSet):
@@ -57,7 +89,7 @@ class CompanyAddressFilter(FilterSet):
 
     class Meta:
         model = CompanyAddress
-        fields = ['portfolio_manager', ]
+        fields = ['portfolio_manager', 'company']
 
     def filter_portfolio_manager(self, queryset, name, value):
         return queryset.filter(
@@ -185,3 +217,10 @@ class FormFieldFilter(FilterSet):
     class Meta:
         model = FormField
         fields = ('group',)
+
+
+class WorkflowObjectFilter(FilterSet):
+
+    class Meta:
+        model = WorkflowObject
+        fields = ('object_id',)

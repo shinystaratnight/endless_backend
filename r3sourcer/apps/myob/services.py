@@ -37,8 +37,8 @@ class BaseSync:
 
     required_put_keys = ('UID', 'RowVersion', 'DisplayID')
 
-    def __init__(self, myob_client=None, company=None):
-        self.client = myob_client or get_myob_client(company=company)
+    def __init__(self, myob_client=None, company=None, cf_id=None):
+        self.client = myob_client or get_myob_client(cf_id=cf_id, company=company)
         if self.client is None:
             return
 

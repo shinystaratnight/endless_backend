@@ -93,5 +93,5 @@ class Migration(migrations.Migration):
                 'abstract': False,
             },
         ),
-        migrations.RunPython(create_settings)
+        migrations.RunPython(create_settings, migrations.RunPython.noop)
     ]

@@ -10,6 +10,7 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.db import models
 from django.utils import six, timezone
+from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
 from rest_framework.fields import empty
@@ -21,7 +22,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED)
-from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_field
+from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 
 rest_settings = settings.REST_FRAMEWORK
 
@@ -111,6 +112,11 @@ class ApiFullRelatedFieldsMixin():
                 continue
             elif isinstance(field, serializers.ImageField):
                 self.fields[field_name] = core_field.ApiContactPictureField(
+                    *field._args, **field._kwargs
+                )
+                continue
+            elif isinstance(field, serializers.FileField):
+                self.fields[field_name] = core_field.ApiBase64FileField(
                     *field._args, **field._kwargs
                 )
                 continue
@@ -271,8 +277,14 @@ class ApiFullRelatedFieldsMixin():
                     continue
 
                 if not isinstance(instance, model):  # pragma: no cover
-                    instance = model.objects.create(**instance)
-                setattr(obj, field_name, instance)
+                    instance_id = instance.get('id')
+                    if instance_id:
+                        instance = model.objects.filter(id=instance_id).update(**instance)
+                    else:
+                        instance = model.objects.create(**instance)
+
+                if not isinstance(getattr(obj.__class__, field_name, None), property):
+                    setattr(obj, field_name, instance)
 
         return super(ApiFullRelatedFieldsMixin, self).update(obj, validated_data)
 
@@ -723,7 +735,11 @@ class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = core_models.CompanyContactRelationship
-        fields = '__all__'
+        fields = ('__all__', {
+            'company_contact': ('id', 'job_title', 'receive_order_confirmation_sms', {
+                'contact': ('id', 'first_name', 'last_name', 'phone_mobile', 'email')
+            })
+        })
 
 
 class CompanyContactRenderSerializer(CompanyContactSerializer):
@@ -789,26 +805,24 @@ class CompanyAddressSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseMod
         model = core_models.CompanyAddress
 
     def get_company_rel(self, obj):
-        company_rel = cache.get('company_rel_{}'.format(obj.id), None)
+        company = obj.company
+        company_rel = cache.get('company_rel_{}'.format(company.id), None)
         if not company_rel:
             current_site = get_current_site(self.context.get('request'))
 
             site_company = core_models.SiteCompany.objects.filter(
-                site=current_site
+                site=current_site,
+                company__master_companies__regular_company=company
             ).last()
             master_type = core_models.Company.COMPANY_TYPES.master
             if not site_company or site_company.company.type != master_type:
                 return
 
-            company_rel = obj.company.regular_companies.filter(
+            company_rel = company.regular_companies.filter(
                 master_company=site_company.company
             ).last()
-            if company_rel is None:
-                company_rel = obj.company.master_companies.filter(
-                    master_company=site_company.company
-                ).last()
 
-            cache.set('company_rel_{}'.format(obj.id), company_rel)
+            cache.set('company_rel_{}'.format(company.id), company_rel)
         return company_rel
 
     def get_portfolio_manager(self, obj):
@@ -1020,14 +1034,29 @@ class UserDashboardModuleSerializer(ApiBaseModelSerializer):
         }
 
 
+class InvoiceRuleSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.InvoiceRule
+        fields = ('__all__', )
+        extra_kwargs = {
+            'serial_number': {'required': False},
+        }
+
+
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
-    method_fields = ('primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company')
+    method_fields = (
+        'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved'
+    )
+
+    invoice_rule = InvoiceRuleSerializer(required=False)
 
     class Meta:
         model = core_models.Company
         fields = (
             '__all__',
             {
+                'invoice_rule': '__all__',
                 'manager': (
                     'id', '__str__',
                 ),
@@ -1047,7 +1076,8 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             current_site = get_current_site(self.context.get('request'))
 
             site_company = core_models.SiteCompany.objects.filter(
-                site=current_site
+                site=current_site,
+                company__master_companies__regular_company=company
             ).last()
             master_type = core_models.Company.COMPANY_TYPES.master
             if not site_company or site_company.company.type != master_type:
@@ -1056,10 +1086,6 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             company_rel = company.regular_companies.filter(
                 master_company=site_company.company
             ).last()
-            if company_rel is None:
-                company_rel = company.master_companies.filter(
-                    master_company=site_company.company
-                ).last()
 
             cache.set('company_rel_{}'.format(company.id), company_rel)
         return company_rel
@@ -1101,6 +1127,30 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
     def get_regular_company_rel(self, obj):
         relation = obj.regular_companies.all().last()
         return relation and core_field.ApiBaseRelatedField.to_read_only_data(relation)
+
+    def get_address(self, obj):
+        return obj.company_addresses.filter(hq=True).first()
+
+    def get_state(self, obj):
+        address = self.get_address(obj)
+
+        if address:
+            return address.address.state and address.address.state.name
+
+    def get_city(self, obj):
+        address = self.get_address(obj)
+
+        if address:
+            return address.address.city and address.address.city.name
+
+    def get_credit_approved(self, obj):
+        if obj.credit_check == core_models.Company.CREDIT_CHECK_CHOICES.approved:
+            msg = _('Approved')
+            if obj.credit_check_date:
+                msg = '%s %s' % (msg, date_format(obj.credit_check_date, settings.DATE_FORMAT))
+        else:
+            msg = _('Not Approved')
+        return msg
 
 
 class FormStorageSerializer(ApiBaseModelSerializer):

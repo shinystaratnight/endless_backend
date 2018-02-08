@@ -26,7 +26,7 @@ from r3sourcer.apps.core.models import (
     WorkflowObject, WorkflowNode, ExtranetNavigation
 )
 from r3sourcer.apps.core.workflow import (
-    NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED
+    NEED_REQUIREMENTS, ALLOWED, NOT_ALLOWED
 )
 
 
@@ -766,7 +766,7 @@ class TestCompanyContactSerializer(SerializerMixin):
         context = dict(request=mock, approved_by_staff=True, approved_by_primary_contact=False)
         company_contact_data['contact'] = None
         serializer = self.serializer_class(data=company_contact_data, context=context)
-        with pytest.raises(exceptions.ValidationError) as e:
+        with pytest.raises(exceptions.ValidationError):
             serializer.is_valid(raise_exception=True)
 
     @freeze_time("2012-01-14")
@@ -885,11 +885,11 @@ class TestCompanyAddressSerializer:
     @patch('r3sourcer.apps.core.api.serializers.get_current_site')
     def test_get_company_rel(self, mock_current_site, mock_cache_get,
                              mock_cache_set, site, site_company,
-                             company_address, company_rel):
+                             company_address_regular, company_rel):
         mock_current_site.return_value = site
 
         serializer = CompanyAddressTestSerializer()
-        rel = serializer.get_company_rel(company_address)
+        rel = serializer.get_company_rel(company_address_regular)
 
         assert rel.id == company_rel.id
 
@@ -898,11 +898,11 @@ class TestCompanyAddressSerializer:
     @patch('r3sourcer.apps.core.api.serializers.get_current_site')
     def test_get_company_rel_no_site_company(
             self, mock_current_site, mock_cache_get, mock_cache_set, site,
-            company_address, company_rel):
+            company_address_regular, company_rel):
         mock_current_site.return_value = site
 
         serializer = CompanyAddressTestSerializer()
-        rel = serializer.get_company_rel(company_address)
+        rel = serializer.get_company_rel(company_address_regular)
 
         assert rel is None
 
@@ -960,7 +960,7 @@ class TestCompanyAddressSerializer:
 
             portfolio_manager = serializer.get_portfolio_manager(company_address)
 
-            assert portfolio_manager == str(company_rel.primary_contact.contact)
+            assert portfolio_manager['id'] == str(company_rel.primary_contact.id)
 
     def test_get_portfolio_manager_obj_company_rel_none(self, company_address,
                                                         company_rel):
@@ -980,8 +980,7 @@ class TestCompanyAddressSerializer:
 
         assert state is None
 
-    def test_get_active_states_obj_company_rel(self, company_address,
-                                       company_rel):
+    def test_get_active_states_obj_company_rel(self, company_address, company_rel):
         serializer = CompanyAddressTestSerializer()
 
         with patch.object(serializer, 'get_company_rel') as mock_comp_rel:
@@ -995,8 +994,7 @@ class TestCompanyAddressSerializer:
 
                 assert state == ['new']
 
-    def test_get_active_states_obj_company_rel_none(self, company_address,
-                                            company_rel):
+    def test_get_active_states_obj_company_rel_none(self, company_address, company_rel):
         serializer = CompanyAddressTestSerializer()
 
         with patch.object(serializer, 'get_company_rel') as mock_comp_rel:
