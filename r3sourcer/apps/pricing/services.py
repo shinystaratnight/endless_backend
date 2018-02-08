@@ -1,10 +1,7 @@
 from datetime import timedelta
 from itertools import chain
 
-from .models import (
-    RateCoefficient, PriceList, RateCoefficientModifier, IndustryPriceList,
-    PriceListRateCoefficient, IndustryRateCoefficient,
-)
+from .models import RateCoefficient, PriceList, RateCoefficientModifier, PriceListRateCoefficient
 from .exceptions import RateNotApplicable
 
 
@@ -12,22 +9,16 @@ class CoefficientService:
 
     def get_industry_rate_coefficient(self, industry, modifier_type,
                                       start_datetime, skill=None):
-        industry_price_lists = IndustryPriceList.objects.filter(
-            industry=industry
-        )
-        if skill:
-            industry_price_lists = industry_price_lists.filter(
-                industry_price_list_rates__skill=skill
-            )
-        industry_rate_coeff_ids = IndustryRateCoefficient.objects.filter(
-            industry_price_list__in=industry_price_lists
-        ).values_list('rate_coefficient', flat=True).distinct()
-
-        return RateCoefficient.objects.filter(
-            id__in=industry_rate_coeff_ids,
+        rate_coefficients = RateCoefficient.objects.filter(
+            industry=industry,
             rate_coefficient_modifiers__type=modifier_type,
             active=True
-        ).order_by('-priority').distinct()
+        )
+
+        if skill:
+            rate_coefficients = rate_coefficients.filter(price_lists__price_list_rates__skill=skill)
+
+        return rate_coefficients.order_by('-priority').distinct()
 
     def process_rate_coefficients(self, rate_coefficients, start_datetime,
                                   worked_hours, break_started=None,

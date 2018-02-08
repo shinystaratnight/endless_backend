@@ -11,9 +11,7 @@ from filer.models import Folder, File
 
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
 from r3sourcer.apps.pricing.services import PriceListCoefficientService
-from r3sourcer.apps.pricing.models import (
-    RateCoefficientModifier, PriceListRate, IndustryPriceListRate,
-)
+from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 
 from .base import BasePaymentService, calc_worked_delta
 
@@ -28,11 +26,6 @@ class InvoiceService(BasePaymentService):
             skill=skill,
             price_list__company=customer_company,
         ).last()
-        if price_list_rate is None:
-            price_list_rate = IndustryPriceListRate.objects.filter(
-                skill=skill,
-                industry_price_list__industry=industry,
-            ).latest('updated_at')
 
         return price_list_rate
 

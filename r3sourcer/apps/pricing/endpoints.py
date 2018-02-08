@@ -174,42 +174,10 @@ class IndustryEndpoint(ApiEndpoint):
     fieldsets = ('type', )
 
 
-class IndustryRateCoefficientEndpoint(ApiEndpoint):
-    model = models.IndustryRateCoefficient
-    serializer = serializers.IndustryRateCoefficientSerializer
-
-    list_display = ({
-        'label': _('Industry'),
-        'type': constants.FIELD_LINK,
-        'field': 'industry_price_list.industry',
-        'endpoint': format_lazy(
-            '{}{{industry_price_list.industry.id}}/',
-            api_reverse_lazy('pricing/industries')
-        )
-    }, {
-        'label': _('Rate Coefficient'),
-        'type': constants.FIELD_LINK,
-        'field': 'rate_coefficient',
-        'endpoint': format_lazy(
-            '{}{{rate_coefficient.id}}/',
-            api_reverse_lazy('pricing/ratecoefficients')
-        )
-    },)
-    fieldsets = ('industry_price_list', 'rate_coefficient')
-    list_filter = ({
-        'type': constants.FIELD_RELATED,
-        'field': 'industry_price_list.industry',
-        'endpoint': api_reverse_lazy('pricing/industries')
-    },)
-
-
 router.register(endpoint=RateCoefficientEndpoint())
 router.register(models.RateCoefficientGroup)
 router.register(endpoint=RateCoefficientModifierEndpoint())
 router.register(endpoint=IndustryEndpoint())
-router.register(models.IndustryPriceList)
-router.register(models.IndustryPriceListRate)
-router.register(endpoint=IndustryRateCoefficientEndpoint())
 router.register(endpoint=PriceListEndpoint())
 router.register(endpoint=PriceListRateEndpoint())
 router.register(models.PriceListRateCoefficient)
