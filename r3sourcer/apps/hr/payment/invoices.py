@@ -39,7 +39,7 @@ class InvoiceService(BasePaymentService):
     def calculate(self, company, from_date=None, timesheets=None,
                   show_candidate=False):
 
-        timesheets = self._get_timesheets(timesheets, from_date, company)
+        timesheets = self._get_timesheets(timesheets, from_date, company=company)
         coefficient_service = PriceListCoefficientService()
 
         lines = []
@@ -212,7 +212,7 @@ class InvoiceService(BasePaymentService):
                     show_candidate=invoice_rule.show_candidate_name
                 )
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
-            timesheets = self._get_timesheets(None, from_date)
+            timesheets = self._get_timesheets(None, from_date, company=company)
             candidates = set(timesheets.values_list(
                 'vacancy_offer__candidate_contact', flat=True
             ))

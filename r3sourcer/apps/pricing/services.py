@@ -111,7 +111,7 @@ class PriceListCoefficientService(CoefficientService):
             industry, company_type, start_datetime, skill=skill
         ).exclude(name__in=rate_coefficients.values_list('name', flat=True)).distinct()
 
-        return chain(rate_coefficients, industry_rate_coeff)
+        return set(rate_coefficients + industry_rate_coeff)
 
     def calc_company(self, company, industry, skill, modifier_type,
                      start_datetime, worked_hours, break_started=None,
