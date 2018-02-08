@@ -126,6 +126,8 @@ class RateCoefficientEndpoint(ApiEndpoint):
         },
     )
 
+    list_filter = ('industry', )
+
 
 class PriceListRateEndpoint(ApiEndpoint):
     model = models.PriceListRate
