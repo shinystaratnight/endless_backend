@@ -65,10 +65,6 @@ class InvoiceEndpoint(endpoints.ApiEndpoint):
                         'label': _('Customer Company'),
                         'field': 'customer_company',
                         'type': constants.FIELD_RELATED,
-                    }, {
-                        'label': _('Customer representative'),
-                        'field': 'customer_representative',
-                        'type': constants.FIELD_RELATED,
                     },
                 ),
             }, {
