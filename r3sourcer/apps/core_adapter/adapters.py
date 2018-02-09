@@ -19,6 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
+    'add_endpoint',
 )
 
 
@@ -92,7 +93,7 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LIST:
                 adapted.update(
                     collapsed=field.get('collapsed', False),
-                    **{attr: field[attr] for attr in ('endpoint', 'prefilled')
+                    **{attr: field[attr] for attr in ('endpoint', 'prefilled', 'add_endpoint')
                        if field.get(attr) is not None}
                 )
                 if field.get('add_label'):
@@ -795,7 +796,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         highlight = config['highlight']
         bulk_actions = config['bulk_actions']
         list_tabs = config['list_tabs']
-        list_editable_buttons = config['list_buttons']
+        list_editable_buttons = config['list_editable_buttons']
         if self.is_formset:
             list_buttons = list_editable_buttons
         else:

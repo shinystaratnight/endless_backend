@@ -706,6 +706,7 @@ class VacancyDateConfig(BaseConfig):
             hr_models.Shift.objects.get_or_create(
                 date=instance,
                 time=dt.time(),
+                workers=row['workers'],
             )
 
 
