@@ -22,19 +22,10 @@ class TestInvoiceService:
     def service(self):
         return InvoiceService()
 
-    def test_get_price_list_rate(self, price_list_rate, service, skill,
-                                 master_company, industry):
+    def test_get_price_list_rate(self, price_list_rate, service, skill, master_company, industry):
         res = service._get_price_list_rate(skill, master_company, industry)
 
         assert res == price_list_rate
-
-    def test_get_price_list_rate_industry(
-            self, industry_price_list_rate, service, skill, master_company,
-            industry):
-
-        res = service._get_price_list_rate(skill, master_company, industry)
-
-        assert res == industry_price_list_rate
 
     @mock.patch.object(InvoiceService, 'generate_pdf')
     @mock.patch.object(InvoiceService, 'calculate')

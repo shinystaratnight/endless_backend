@@ -81,6 +81,13 @@ class RateCoefficientGroup(UUIDModel):
 
 class RateCoefficient(UUIDModel):
 
+    industry = models.ForeignKey(
+        Industry,
+        related_name='rate_coefficients',
+        on_delete=models.PROTECT,
+        verbose_name=_("Industry"),
+    )
+
     name = models.CharField(
         max_length=18,
         verbose_name=_("Name"),
@@ -125,91 +132,7 @@ class RateCoefficient(UUIDModel):
         return self.rate_coefficient_modifiers.filter(type=RateCoefficientModifier.TYPE_CHOICES.candidate).first()
 
 
-class IndustryPriceList(PriceListMixin, UUIDModel):
-
-    industry = models.ForeignKey(
-        Industry,
-        on_delete=models.PROTECT,
-        related_name='industry_price_lists',
-        verbose_name=_('Industry'),
-    )
-
-    industry_rate_coefficients = models.ManyToManyField(
-        RateCoefficient,
-        related_name='industry_price_lists',
-        verbose_name=_('Industry Rate Coefficients'),
-        through='IndustryRateCoefficient',
-    )
-
-    class Meta:
-        verbose_name = _('Industry Price List')
-        verbose_name_plural = _('Industry Price Lists')
-
-    def __str__(self):
-        res = '{}: {}'.format(
-            str(self.industry),
-            date_format(self.valid_from, settings.DATE_FORMAT),
-        )
-
-        if self.valid_until:
-            res = '{} - {}'.format(
-                res,
-                date_format(self.valid_until, settings.DATE_FORMAT),
-            )
-
-        return res
-
-
-class IndustryPriceListRate(PriceListRateMixin, UUIDModel):
-
-    industry_price_list = models.ForeignKey(
-        IndustryPriceList,
-        on_delete=models.PROTECT,
-        related_name='industry_price_list_rates',
-        verbose_name=_('Industry Price List'),
-    )
-
-    skill = models.ForeignKey(
-        Skill,
-        on_delete=models.PROTECT,
-        related_name='industry_price_list_rates',
-        verbose_name=_('Skill'),
-    )
-
-    class Meta:
-        verbose_name = _('Industry Price List Rate')
-        verbose_name_plural = _('Industry Price List Rates')
-
-    def __str__(self):
-        return _('{}: ${}/h').format(str(self.skill), str(self.hourly_rate))
-
-
-class IndustryRateCoefficient(UUIDModel):
-
-    industry_price_list = models.ForeignKey(
-        IndustryPriceList,
-        on_delete=models.PROTECT,
-        verbose_name=_('Industry Price List'),
-    )
-
-    rate_coefficient = models.ForeignKey(
-        RateCoefficient,
-        on_delete=models.PROTECT,
-        verbose_name=_('Rate Coefficient'),
-    )
-
-    class Meta:
-        unique_together = ('industry_price_list', 'rate_coefficient')
-
-
 class PriceList(PriceListMixin, UUIDModel):
-
-    industry_price_list = models.ForeignKey(
-        IndustryPriceList,
-        on_delete=models.PROTECT,
-        related_name='price_lists',
-        verbose_name=_('Industry Price List'),
-    )
 
     company = models.ForeignKey(
         Company,
@@ -427,8 +350,7 @@ class DynamicCoefficientRule(UUIDModel):
 
 __all__ = [
     'PriceListMixin', 'PriceListRateMixin', 'Industry', 'RateCoefficientGroup',
-    'RateCoefficient', 'IndustryPriceList', 'IndustryPriceListRate',
-    'IndustryRateCoefficient', 'PriceList', 'PriceListRate',
+    'RateCoefficient', 'PriceList', 'PriceListRate',
     'PriceListRateCoefficient', 'RateCoefficientModifier',
     'DynamicCoefficientRule',
 ]

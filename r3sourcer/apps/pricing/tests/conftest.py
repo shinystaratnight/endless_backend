@@ -5,8 +5,7 @@ import pytest
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.pricing.models import (
     WeekdayWorkRule, OvertimeWorkRule, TimeOfDayWorkRule, AllowanceWorkRule,
-    RateCoefficient, RateCoefficientModifier, IndustryPriceList,
-    IndustryRateCoefficient, Industry, PriceList, PriceListRateCoefficient,
+    RateCoefficient, RateCoefficientModifier, Industry, PriceList, PriceListRateCoefficient,
     PriceListRate,
 )
 from r3sourcer.apps.skills.models import Skill
@@ -80,8 +79,8 @@ def allowance_rule(db):
 
 
 @pytest.fixture
-def rate_coefficient(db):
-    coeff = RateCoefficient.objects.create(name='test')
+def rate_coefficient(db, industry):
+    coeff = RateCoefficient.objects.create(name='test', industry=industry)
     RateCoefficientModifier.objects.create(
         type=RateCoefficientModifier.TYPE_CHOICES.candidate,
         rate_coefficient=coeff,
@@ -92,8 +91,8 @@ def rate_coefficient(db):
 
 
 @pytest.fixture
-def rate_coefficient_another(db):
-    coeff = RateCoefficient.objects.create(name='test 1')
+def rate_coefficient_another(db, industry):
+    coeff = RateCoefficient.objects.create(name='test 1', industry=industry)
     RateCoefficientModifier.objects.create(
         type=RateCoefficientModifier.TYPE_CHOICES.candidate,
         rate_coefficient=coeff,
@@ -104,8 +103,8 @@ def rate_coefficient_another(db):
 
 
 @pytest.fixture
-def rate_coefficient_company(db):
-    coeff = RateCoefficient.objects.create(name='test company')
+def rate_coefficient_company(db, industry):
+    coeff = RateCoefficient.objects.create(name='test company', industry=industry)
     RateCoefficientModifier.objects.create(
         type=RateCoefficientModifier.TYPE_CHOICES.company,
         rate_coefficient=coeff,
@@ -116,8 +115,8 @@ def rate_coefficient_company(db):
 
 
 @pytest.fixture
-def rate_coefficient_company_another(db):
-    coeff = RateCoefficient.objects.create(name='test company 1.5')
+def rate_coefficient_company_another(db, industry):
+    coeff = RateCoefficient.objects.create(name='test company 1.5', industry=industry)
     RateCoefficientModifier.objects.create(
         type=RateCoefficientModifier.TYPE_CHOICES.company,
         rate_coefficient=coeff,
@@ -128,43 +127,9 @@ def rate_coefficient_company_another(db):
 
 
 @pytest.fixture
-def industry_price_list(db, industry):
-    return IndustryPriceList.objects.create(
-        industry=industry,
-    )
-
-
-@pytest.fixture
-def industry_rate_coefficient(db, industry_price_list, rate_coefficient):
-    return IndustryRateCoefficient.objects.create(
-        industry_price_list=industry_price_list,
-        rate_coefficient=rate_coefficient,
-    )
-
-
-@pytest.fixture
-def industry_rate_coefficient_another(db, industry_price_list,
-                                      rate_coefficient_another):
-    return IndustryRateCoefficient.objects.create(
-        industry_price_list=industry_price_list,
-        rate_coefficient=rate_coefficient_another,
-    )
-
-
-@pytest.fixture
-def industry_rate_coefficient_company(db, industry_price_list,
-                                      rate_coefficient_company_another):
-    return IndustryRateCoefficient.objects.create(
-        industry_price_list=industry_price_list,
-        rate_coefficient=rate_coefficient_company_another,
-    )
-
-
-@pytest.fixture
-def price_list(db, company, industry_price_list):
+def price_list(db, company):
     return PriceList.objects.create(
         company=company,
-        industry_price_list=industry_price_list,
     )
 
 

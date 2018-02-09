@@ -400,10 +400,6 @@ class Vacancy(core_models.AbstractBaseOrder):
             models.Q(
                 price_list_rates__skill=self.position,
                 price_list_rates__hourly_rate__gt=0
-            ) |
-            models.Q(
-                industry_price_list__industry_price_list_rates__skill=self.position,
-                industry_price_list__industry_price_list_rates__hourly_rate__gt=0
             ),
             models.Q(valid_until__gte=today) | models.Q(valid_until__isnull=True),
             effective=True, valid_from__lte=today,

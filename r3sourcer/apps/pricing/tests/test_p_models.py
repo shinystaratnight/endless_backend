@@ -5,8 +5,7 @@ from django.contrib.contenttypes.models import ContentType
 
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.pricing.models import (
-    Industry, IndustryPriceList, IndustryPriceListRate, PriceList,
-    PriceListRate, RateCoefficientGroup, RateCoefficient,
+    Industry, PriceList, PriceListRate, RateCoefficientGroup, RateCoefficient,
     RateCoefficientModifier, DynamicCoefficientRule,
 )
 from r3sourcer.apps.skills.models import Skill
@@ -19,17 +18,11 @@ rate_coeff_fake = RateCoefficient(name='coefficient')
 
 str_test_data = [
     (industry_fake, 'test'),
-    (IndustryPriceList(industry=industry_fake, valid_from=date(2017, 1, 1)),
-        'test: 01/01/2017'),
-    (IndustryPriceList(industry=industry_fake, valid_from=date(2017, 1, 1),
-                       valid_until=date(2017, 2, 1)),
-        'test: 01/01/2017 - 01/02/2017'),
     (PriceList(company=Company(name='company'), valid_from=date(2017, 1, 1)),
         'company: 01/01/2017'),
     (PriceList(company=Company(name='company'), valid_from=date(2017, 1, 1),
                valid_until=date(2017, 2, 1)),
         'company: 01/01/2017 - 01/02/2017'),
-    (IndustryPriceListRate(skill=skill_f, hourly_rate=1.23), 'skill: $1.23/h'),
     (PriceListRate(skill=skill_f, hourly_rate=1.23), 'skill: $1.23/h'),
     (RateCoefficientGroup(name='group'), 'group'),
     (rate_coeff_fake, 'coefficient'),

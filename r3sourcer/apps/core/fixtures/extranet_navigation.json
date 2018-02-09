@@ -698,57 +698,6 @@
   },
   {
     "model": "core.extranetnavigation",
-    "pk": 42,
-    "fields": {
-      "updated_at": "2017-10-13T07:23:29.577Z",
-      "created_at": "2017-10-13T07:23:29.577Z",
-      "parent": 40,
-      "name": "Industry price lists",
-      "url": "/pricing/industrypricelists",
-      "endpoint": "/ecore/api/v2/pricing/industrypricelists",
-      "access_level": "manager",
-      "lft": 23,
-      "rght": 24,
-      "tree_id": 2,
-      "level": 2
-    }
-  },
-  {
-    "model": "core.extranetnavigation",
-    "pk": 43,
-    "fields": {
-      "updated_at": "2017-10-13T07:24:06.414Z",
-      "created_at": "2017-10-13T07:24:06.414Z",
-      "parent": 40,
-      "name": "Industry price list rate",
-      "url": "/pricing/industrypricelistrates/",
-      "endpoint": "/ecore/api/v2/pricing/industrypricelistrates/",
-      "access_level": "manager",
-      "lft": 25,
-      "rght": 26,
-      "tree_id": 2,
-      "level": 2
-    }
-  },
-  {
-    "model": "core.extranetnavigation",
-    "pk": 44,
-    "fields": {
-      "updated_at": "2017-10-13T07:24:46.425Z",
-      "created_at": "2017-10-13T07:24:46.426Z",
-      "parent": 40,
-      "name": "Industry rate coefficients",
-      "url": "/pricing/industryratecoefficients/",
-      "endpoint": "/ecore/api/v2/pricing/industryratecoefficients/",
-      "access_level": "manager",
-      "lft": 27,
-      "rght": 28,
-      "tree_id": 2,
-      "level": 2
-    }
-  },
-  {
-    "model": "core.extranetnavigation",
     "pk": 45,
     "fields": {
       "updated_at": "2017-10-13T07:24:56.951Z",
