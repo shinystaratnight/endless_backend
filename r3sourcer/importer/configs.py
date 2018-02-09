@@ -855,20 +855,19 @@ class CandidateEvaluationConfig(BaseConfig):
 
 
 ALL_CONFIGS = [
-    # ContactConfig, ContactUnavailabilityConfig, ClientContactConfig,
-    # AccountContactConfig, AccountCompanyConfig, ClientCompanyConfig,
-    # CompanyRelConfig, ClientAddressConfig, BankAccountConfig,
-    # ClientContactRelConfig, ContactNoteConfig, VisaTypeConfig, TagConfig,
-    # EmploymentClassificationConfig, SuperannuationFundConfig,
-    # CandidateContactConfig, TagRelConfig, SkillConfig,
-    SkillBaseRateConfig,
-    # SkillRelConfig, SkillRateRelConfig, IndustryConfig,
-    # RateCoefficientGroupConfig, RateCoefficientConfig,
-    # RateCoefficientModifierCompanyConfig,
-    # RateCoefficientModifierCandidateConfig, PriceListConfig,
-    # PriceListRateConfig, PriceListRateCoefficientConfig,
-    # JobsiteConfig, JobsiteUnavailabilityConfig,
-    # VacancyConfig, VacancyDateConfig, VacancyOfferConfig, TimeSheetConfig,
-    # BlackListConfig, FavouriteListConfig, CarrierListConfig,
-    # CandidateEvaluationConfig
+    ContactConfig, ContactUnavailabilityConfig, ClientContactConfig,
+    AccountContactConfig, AccountCompanyConfig, ClientCompanyConfig,
+    CompanyRelConfig, ClientAddressConfig, BankAccountConfig,
+    ClientContactRelConfig, ContactNoteConfig, VisaTypeConfig, TagConfig,
+    EmploymentClassificationConfig, SuperannuationFundConfig,
+    CandidateContactConfig, TagRelConfig, SkillConfig, SkillBaseRateConfig,
+    SkillRelConfig, SkillRateRelConfig, IndustryConfig,
+    RateCoefficientGroupConfig, RateCoefficientConfig,
+    RateCoefficientModifierCompanyConfig,
+    RateCoefficientModifierCandidateConfig, PriceListConfig,
+    PriceListRateConfig, PriceListRateCoefficientConfig,
+    JobsiteConfig, JobsiteUnavailabilityConfig,
+    VacancyConfig, VacancyDateConfig, VacancyOfferConfig, TimeSheetConfig,
+    BlackListConfig, FavouriteListConfig, CarrierListConfig,
+    CandidateEvaluationConfig
 ]
