@@ -1773,17 +1773,27 @@ class Invoice(AbstractOrder):
             date_format(self.date, settings.DATE_FORMAT)
         )
 
+    def get_invoice_number(self, rule):
+        invoice_number = ''
+
+        if rule.serial_number:
+            invoice_number += rule.serial_number
+
+        starting_number = format(rule.starting_number, '08')
+        invoice_number += starting_number
+
+        return invoice_number
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         if just_added:
-            rule = None
             if self.customer_company.invoice_rules.exists():
                 rule = self.customer_company.invoice_rules.first()
             else:
                 rule = self.provider_company.invoice_rules.first()
 
             if rule:
-                self.number = "{}{}".format(rule.serial_number, rule.starting_number)
+                self.number = self.get_invoice_number(rule)
                 rule.starting_number += 1
                 rule.save()
 
