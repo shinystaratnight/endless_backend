@@ -1,7 +1,7 @@
+from datetime import datetime
 from decimal import Decimal
 
 from django.core.files.base import ContentFile
-from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.contrib.sites.models import Site
 from django.template import Context
 from django.template.loader import get_template
@@ -21,7 +21,7 @@ from ..utils.utils import get_invoice_rule
 
 class InvoiceService(BasePaymentService):
 
-    def _get_price_list_rate(self, skill, customer_company, industry):
+    def _get_price_list_rate(self, skill, customer_company):
         price_list_rate = PriceListRate.objects.filter(
             skill=skill,
             price_list__company=customer_company,
@@ -29,14 +29,10 @@ class InvoiceService(BasePaymentService):
 
         return price_list_rate
 
-    def calculate(self, company, from_date=None, timesheets=None,
-                  show_candidate=False):
-
+    def calculate(self, company, from_date=None, timesheets=None, show_candidate=False):
         timesheets = self._get_timesheets(timesheets, from_date, company=company)
         coefficient_service = PriceListCoefficientService()
-
         lines = []
-        jobsites = set()
 
         for timesheet in timesheets:
             jobsite = timesheet.vacancy_offer.vacancy.jobsite
@@ -84,9 +80,8 @@ class InvoiceService(BasePaymentService):
                     'vat': VAT.objects.get(name=vat_name),
                     'timesheet': timesheet,
                 })
-                jobsites.add(str(jobsite))
 
-        return lines, jobsites
+        return lines, timesheets
 
     @classmethod
     def generate_pdf(cls, invoice):
@@ -149,8 +144,7 @@ class InvoiceService(BasePaymentService):
                 vacancy_offer__candidate_contact=candidate
             )
 
-        lines, jobsites = self.calculate(company, from_date, timesheets,
-                                         show_candidate)
+        lines, timesheets = self.calculate(company, from_date, timesheets, show_candidate)
 
         if lines:
             master_company = company.get_master_company()
@@ -159,7 +153,7 @@ class InvoiceService(BasePaymentService):
             invoice = Invoice.objects.create(
                 provider_company=provider_company,
                 customer_company=company,
-                order_number=', '.join(jobsites),
+                order_number=self._get_order_number(invoice_rule, from_date, timesheets[0]),
                 period=invoice_rule.period,
                 separation_rule=invoice_rule.separation_rule
             )
@@ -218,3 +212,15 @@ class InvoiceService(BasePaymentService):
                     company, from_date, timesheets,
                     show_candidate=invoice_rule.show_candidate_name,
                 )
+
+    def _get_order_number(self, rule, date_from, timesheet):
+        if rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
+            order_number = '{} - {}'.format(date_from, datetime.now().date())
+        elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
+            jobsite = timesheet.vacancy_offer.shift.date.vacancy.jobsite
+            city = jobsite.jobsite_addresses.first().address.city
+            order_number = str(city)
+        elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
+            order_number = str(timesheet.vacancy_offer.candidate_contact)
+
+        return order_number
