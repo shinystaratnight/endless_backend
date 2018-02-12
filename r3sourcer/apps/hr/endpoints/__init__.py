@@ -430,7 +430,7 @@ class VacancyEndpoint(ApiEndpoint):
         'add_endpoint': api_reverse_lazy('hr/vacancydates'),
         'endpoint': api_reverse_lazy('hr/shifts'),
         'prefilled': {
-            'date.vacancy': '{id}',
+            'vacancy': '{id}',
         }
     }, {
         'type': constants.FIELD_LIST,
@@ -483,6 +483,7 @@ class VacancyEndpoint(ApiEndpoint):
                 'type': constants.FIELD_DATE,
                 'label': _('Shift start date'),
                 'field': 'vacancy_dates.shift_date',
+                'distinct': True,
             }, 'jobsite', {
                 'label': _('Skill'),
                 'field': 'position',
@@ -511,47 +512,87 @@ class ShiftEndpoint(ApiEndpoint):
 
     fieldsets = ('date', 'time', 'workers', 'hourly_rate')
 
-    list_editable = (
-        {
-            'type': constants.FIELD_DATE,
-            'label': _('Date'),
-            'name': 'date.shift_date',
-            'field': 'date.shift_date',
-        }, 'workers', {
-            'type': constants.FIELD_TEXT,
-            'label': _('Candidate rate'),
-            'field': 'hourly_rate.hourly_rate',
-            'display': '${field}/h',
-        }, {
-            'type': constants.FIELD_TIME,
-            'field': 'time',
-            'name': 'time',
-            'label': _('Shift start time'),
-        }, {
-            'type': constants.FIELD_ICON,
-            'field': 'is_fulfilled',
-            'label': _('Fulfilled'),
-            'values': {
-                0: 'times-circle',
-                1: 'check-circle',
-                2: 'exclamation-circle',
-                3: 'minus-circle',
+    list_editable = {
+        'default': (
+            {
+                'type': constants.FIELD_DATE,
+                'label': _('Date'),
+                'name': 'date.shift_date',
+                'field': 'date.shift_date',
+            }, 'workers', {
+                'type': constants.FIELD_TEXT,
+                'label': _('Candidate rate'),
+                'field': 'hourly_rate.hourly_rate',
+                'display': '${field}/h',
+            }, {
+                'type': constants.FIELD_TIME,
+                'field': 'time',
+                'name': 'time',
+                'label': _('Shift start time'),
+            }, {
+                'type': constants.FIELD_ICON,
+                'field': 'is_fulfilled',
+                'label': _('Fulfilled'),
+                'values': {
+                    0: 'times-circle',
+                    1: 'check-circle',
+                    2: 'exclamation-circle',
+                    3: 'minus-circle',
+                },
+            }, {
+                'label': _('Actions'),
+                'delim': ' ',
+                'fields': (constants.BUTTON_DELETE,)
             },
-        }, {
-            'label': _('Actions'),
-            'delim': ' ',
-            'fields': (constants.BUTTON_DELETE,)
-        },
-    )
+        ),
+        'vacancy_date': (
+            {
+                'type': constants.FIELD_TIME,
+                'field': 'time',
+                'name': 'time',
+                'label': _('Shift start time'),
+            }, 'workers', {
+                'type': constants.FIELD_TEXT,
+                'label': _('Candidate rate'),
+                'field': 'hourly_rate.hourly_rate',
+                'display': '${field}/h',
+            }, {
+                'label': _('Actions'),
+                'delim': ' ',
+                'fields': (constants.BUTTON_DELETE,)
+            },
+        )
+    }
+
     ordering = ('-date.shift_date', '-time')
 
     search_fields = ('date__vacancy', )
+
+    list_editable_buttons = []
 
 
 class VacancyDateEndpoint(ApiEndpoint):
     model = hr_models.VacancyDate
 
-    fieldsets = ('vacancy', 'shift_date', 'workers', 'hourly_rate')
+    fieldsets = (
+        'vacancy', 'shift_date', 'workers', 'hourly_rate',
+        {
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'date': '{id}',
+            },
+            'metadata_query': {
+                'editable_type': 'vacancy_date',
+            },
+            'label': _('Shifts'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('hr/shifts'),
+            'prefilled': {
+                'date': '{id}',
+            }
+        },
+    )
 
 
 router.register(endpoint=JobsiteEndpoint())
