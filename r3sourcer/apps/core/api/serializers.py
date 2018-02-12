@@ -1412,4 +1412,7 @@ class InvoiceLineSerializer(ApiBaseModelSerializer):
         model = core_models.InvoiceLine
         fields = ('__all__', {
             'vat': ('id', 'name'),
+            'timesheet': ('id', {
+                'vacancy_offer': ('id', 'candidate_contact'),
+            })
         })

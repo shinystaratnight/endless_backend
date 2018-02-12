@@ -1302,7 +1302,7 @@ class InvoiceLineEndpoint(ApiEndpoint):
     fieldsets = ('invoice', 'date', 'units', 'notes', 'unit_price', 'amount', 'unit_type', 'vat')
 
     list_editable = (
-        'date', 'units', 'notes', 'unit_price', 'amount', {
+        'date', 'units', 'notes', 'timesheet.vacancy_offer.candidate_contact', 'unit_price', 'amount', {
             'type': constants.FIELD_TEXT,
             'field': 'vat.name',
             'label': _('Code'),
