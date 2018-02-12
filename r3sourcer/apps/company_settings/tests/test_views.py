@@ -40,6 +40,8 @@ class TestCompanySettingsView:
         assert response.data['invoice_rule']['show_candidate_name'] == invoice_rule.show_candidate_name
         assert response.data['invoice_rule']['id'] == str(invoice_rule.id)
         assert response.data['invoice_rule']['period'] == invoice_rule.period
+        assert response.data['invoice_rule']['starting_number'] == invoice_rule.starting_number
+        assert response.data['invoice_rule']['serial_number'] == invoice_rule.serial_number
 
     def test_get_company_settings_as_manager(self, client, company, user, invoice_rule, payslip_rule, myob_account):
         company_contact = user.contact.company_contact.first()
@@ -90,7 +92,9 @@ class TestCompanySettingsView:
                 'font': 'new_font'
             },
             'invoice_rule': {
-                'period': 'fortnightly'
+                'period': 'fortnightly',
+                'starting_number': 9999,
+                'serial_number': '1NEW',
             },
         }
         url = reverse('company_settings', kwargs={'version': 'v2'})
@@ -105,6 +109,8 @@ class TestCompanySettingsView:
         assert payslip_rule.period != payslip_rule_new.period
         assert company.company_settings.font != company_settings_new.font
         assert invoice_rule_new.period == data['invoice_rule']['period']
+        assert invoice_rule_new.serial_number == data['invoice_rule']['serial_number']
+        assert invoice_rule_new.starting_number == data['invoice_rule']['starting_number']
         assert payslip_rule_new.period == data['payslip_rule']['period']
         assert company_settings_new.font == data['company_settings']['font']
 
