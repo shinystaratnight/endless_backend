@@ -41,3 +41,6 @@ beat_schedule = {
         'schedule': timedelta(seconds=60)
     }
 }
+
+task_ignore_result = True
+task_store_errors_even_if_ignored = True
