@@ -483,6 +483,7 @@ class VacancyEndpoint(ApiEndpoint):
                 'type': constants.FIELD_DATE,
                 'label': _('Shift start date'),
                 'field': 'vacancy_dates.shift_date',
+                'distinct': True,
             }, 'jobsite', {
                 'label': _('Skill'),
                 'field': 'position',
