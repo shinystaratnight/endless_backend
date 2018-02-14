@@ -1,1 +1,152 @@
-[{"model": "sms_interface.smstemplate", "pk": "19d86eac-3608-42ae-8e0c-2373a4f8c686", "fields": {"updated_at": "2017-12-12T14:12:06.265Z", "created_at": "2017-11-16T13:25:28.726Z", "name": "Mobile Phone Verification", "slug": "mobile-phone-verification", "message_text_template": "Dear [[contact]], thank you for registering as Recruitee Candidate with Labourking. Please verify your phone by replying with YES. Best regards, [[manager]].", "reply_timeout": 60, "delivery_timeout": 10, "company": null, "type": "sms"}}, {"model": "sms_interface.smstemplate", "pk": "24187173-85c2-4cce-9ed1-e888d70d8683", "fields": {"updated_at": "2017-08-03T07:56:46.726Z", "created_at": "2017-08-03T07:56:41.228Z", "name": "Login SMS Token", "slug": "login-sms-token", "message_text_template": "Mobile login for [[contact]]. Please follow this link: [[auth_url]]. If the link has expired please request a new one by replying with LOGIN or visiting [[project_url]]", "reply_timeout": 10, "delivery_timeout": 10, "company": null, "type": "sms"}}, {"model": "sms_interface.smstemplate", "pk": "68f2eaf7-6f82-4a3e-a61a-abee81e6177c", "fields": {"updated_at": "2017-12-08T14:46:35.039Z", "created_at": "2017-12-08T14:46:35.039Z", "name": "Vacancy Offer 1st", "slug": "vacancy-offer-1st", "message_text_template": "[[candidate_contact]]. JOB OFFER!\r\n[[vacancy__position]] in [[jobsite_address__city__name]]/[[jobsite_address__state__name]].\r\nShift starts at [[target_date_and_time]].\r\nReply YES to confirm or NO to decline.\r\nR3sourcer", "reply_timeout": 10, "delivery_timeout": 360, "company": null, "type": "sms"}}, {"model": "sms_interface.smstemplate", "pk": "86e81740-28cf-4883-a4e0-08ce2efbcb21", "fields": {"updated_at": "2017-12-08T15:06:20.636Z", "created_at": "2017-12-08T14:55:36.364Z", "name": "Candidate VO Cancelled <1 hrs", "slug": "candidate-vo-cancelled-1-hrs", "message_text_template": "[[candidate_contact]],\r\nThe [[vacancy__position]] shift starting at [[target_date_and_time]] for [[vacancy__jobsite]] job booking has been CANCELLED. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]", "reply_timeout": 10, "delivery_timeout": 0, "company": null, "type": "sms"}}, {"model": "sms_interface.smstemplate", "pk": "a6c45191-f6c9-4817-a991-9470c093e5d6", "fields": {"updated_at": "2017-12-08T14:48:05.029Z", "created_at": "2017-12-08T14:48:05.029Z", "name": "Vacancy Offer Recurring", "slug": "vacancy-offer-recurring", "message_text_template": "[[candidate_contact]].\r\nAre you able to work at the same site? [[vacancy__position]].\r\n[[vacancy__jobsite__get_address]]\r\nShift starts at [[target_date_and_time]]. \r\nReply YES to confirm or NO to decline.\r\nR3sourcer", "reply_timeout": 10, "delivery_timeout": 360, "company": null, "type": "sms"}}, {"model": "sms_interface.smstemplate", "pk": "df02c5a8-57c0-459b-b316-4c1bb1003043", "fields": {"updated_at": "2017-12-08T15:00:55.969Z", "created_at": "2017-12-08T14:53:05.998Z", "name": "Candidate VO Cancelled", "slug": "candidate-vo-cancelled", "message_text_template": "[[candidate_contact]],\r\nThe [[vacancy__position]] shift starting at [[target_date_and_time]] for [[vacancy__jobsite]] job has been CANCELLED. We may send you another offer. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]", "reply_timeout": 10, "delivery_timeout": 0, "company": null, "type": "sms"}}, {"model": "sms_interface.smstemplate", "pk": "e4e610f7-5d24-4dc4-94e0-0a01fa6ba375", "fields": {"updated_at": "2017-12-12T10:36:55.341Z", "created_at": "2017-12-12T10:36:10.914Z", "name": "Vacancy Offer Rejection", "slug": "vacancy-offer-rejection", "message_text_template": "[[candidate_contact]],\r\nUnfortunately, the shift for [[vacancy__jobsite]] at [[target_date_and_time]] has been filled!\r\nBe ready for more offers... R3sourcer", "reply_timeout": 10, "delivery_timeout": 0, "company": null, "type": "sms"}}]
+[
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "19d86eac-3608-42ae-8e0c-2373a4f8c686",
+  "fields": {
+    "updated_at": "2017-12-12T14:12:06.265Z",
+    "created_at": "2017-11-16T13:25:28.726Z",
+    "name": "Mobile Phone Verification",
+    "slug": "mobile-phone-verification",
+    "message_text_template": "Dear [[contact]], thank you for registering as Recruitee Candidate with Labourking. Please verify your phone by replying with YES. Best regards, [[manager]].",
+    "reply_timeout": 60,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "24187173-85c2-4cce-9ed1-e888d70d8683",
+  "fields": {
+    "updated_at": "2017-08-03T07:56:46.726Z",
+    "created_at": "2017-08-03T07:56:41.228Z",
+    "name": "Login SMS Token",
+    "slug": "login-sms-token",
+    "message_text_template": "Mobile login for [[contact]]. Please follow this link: [[auth_url]]. If the link has expired please request a new one by replying with LOGIN or visiting [[project_url]]",
+    "reply_timeout": 10,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "28e7ff56-040e-4ed3-8b2e-56007735ecbc",
+  "fields": {
+    "updated_at": "2018-02-14T12:41:18.354Z",
+    "created_at": "2018-02-14T12:40:39.863Z",
+    "name": "Candidate TimeSheet Hours (old shift)",
+    "slug": "candidate-timesheet-hours-old",
+    "message_text_template": "Hello [[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked on [[shift_end_date]]. Once you have submitted your hours, your site foreman today will be asked to approve them. Please make sure you are accurate and honest or your hours will not get approved. If you are unable to open the link, please submit your hours on a computer: https://crm.labourking.com.au -> Customer Access. Thank you.",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "68f2eaf7-6f82-4a3e-a61a-abee81e6177c",
+  "fields": {
+    "updated_at": "2017-12-08T14:46:35.039Z",
+    "created_at": "2017-12-08T14:46:35.039Z",
+    "name": "Vacancy Offer 1st",
+    "slug": "vacancy-offer-1st",
+    "message_text_template": "[[candidate_contact]]. JOB OFFER!\r\n[[vacancy__position]] in [[jobsite_address__city__name]]/[[jobsite_address__state__name]].\r\nShift starts at [[target_date_and_time]].\r\nReply YES to confirm or NO to decline.\r\nR3sourcer",
+    "reply_timeout": 10,
+    "delivery_timeout": 360,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "86e81740-28cf-4883-a4e0-08ce2efbcb21",
+  "fields": {
+    "updated_at": "2017-12-08T15:06:20.636Z",
+    "created_at": "2017-12-08T14:55:36.364Z",
+    "name": "Candidate VO Cancelled <1 hrs",
+    "slug": "candidate-vo-cancelled-1-hrs",
+    "message_text_template": "[[candidate_contact]],\r\nThe [[vacancy__position]] shift starting at [[target_date_and_time]] for [[vacancy__jobsite]] job booking has been CANCELLED. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
+    "reply_timeout": 10,
+    "delivery_timeout": 0,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "a0259f85-cb1c-44da-b649-099f9a68f375",
+  "fields": {
+    "updated_at": "2018-02-14T12:44:41.721Z",
+    "created_at": "2018-02-14T12:44:41.721Z",
+    "name": "Candidate TimeSheet Agree",
+    "slug": "candidate-timesheet-agree",
+    "message_text_template": "[[candidate_contact]],\r\nUnfortunately your time sheet for [[shift_start_date]] was REJECTED by [[supervisor]]. Mobile: [[supervisor__contact__phone_mobile]]\r\nStart time: [[shift_start_time]]\r\nFinish time: [[shift_end_time]]\r\nBreak: [[shift_break_hours]]\r\nTotal: [[shift_worked_hours]]\r\nIf you do not agree to time sheet correction, please contact site manager in [[supervisor_timeout]] hours to correct the timesheet.\r\nRegards, [[candidate_contact__recruitment_agent__contact]]",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "a6c45191-f6c9-4817-a991-9470c093e5d6",
+  "fields": {
+    "updated_at": "2017-12-08T14:48:05.029Z",
+    "created_at": "2017-12-08T14:48:05.029Z",
+    "name": "Vacancy Offer Recurring",
+    "slug": "vacancy-offer-recurring",
+    "message_text_template": "[[candidate_contact]].\r\nAre you able to work at the same site? [[vacancy__position]].\r\n[[vacancy__jobsite__get_address]]\r\nShift starts at [[target_date_and_time]]. \r\nReply YES to confirm or NO to decline.\r\nR3sourcer",
+    "reply_timeout": 10,
+    "delivery_timeout": 360,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "c3397e10-b6f9-43b7-9ded-ddf647516cd2",
+  "fields": {
+    "updated_at": "2018-02-14T12:41:09.817Z",
+    "created_at": "2018-02-14T12:38:58.505Z",
+    "name": "Candidate TimeSheet Hours",
+    "slug": "candidate-timesheet-hours",
+    "message_text_template": "[[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked today. If you are unable to open the link, please submit your hours on a computer: https://crm.labourking.com.au -> Customer Access. Thank you.",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "df02c5a8-57c0-459b-b316-4c1bb1003043",
+  "fields": {
+    "updated_at": "2017-12-08T15:00:55.969Z",
+    "created_at": "2017-12-08T14:53:05.998Z",
+    "name": "Candidate VO Cancelled",
+    "slug": "candidate-vo-cancelled",
+    "message_text_template": "[[candidate_contact]],\r\nThe [[vacancy__position]] shift starting at [[target_date_and_time]] for [[vacancy__jobsite]] job has been CANCELLED. We may send you another offer. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
+    "reply_timeout": 10,
+    "delivery_timeout": 0,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "e4e610f7-5d24-4dc4-94e0-0a01fa6ba375",
+  "fields": {
+    "updated_at": "2017-12-12T10:36:55.341Z",
+    "created_at": "2017-12-12T10:36:10.914Z",
+    "name": "Vacancy Offer Rejection",
+    "slug": "vacancy-offer-rejection",
+    "message_text_template": "[[candidate_contact]],\r\nUnfortunately, the shift for [[vacancy__jobsite]] at [[target_date_and_time]] has been filled!\r\nBe ready for more offers... R3sourcer",
+    "reply_timeout": 10,
+    "delivery_timeout": 0,
+    "company": null,
+    "type": "sms"
+  }
+}
+]

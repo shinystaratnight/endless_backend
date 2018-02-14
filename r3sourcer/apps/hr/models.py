@@ -1118,6 +1118,10 @@ class TimeSheet(
     def get_closest_company(self):
         return self.get_vacancy_offer().vacancy.get_closest_company()
 
+    @property
+    def candidate_contact(self):
+        return self.vacancy_offer.candidate_contact
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         super().save(*args, **kwargs)

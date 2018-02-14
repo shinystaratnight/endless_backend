@@ -11,16 +11,22 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone, formats
+from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.models import Company, InvoiceRule, Invoice, Contact
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.hr.payment import InvoiceService, PayslipService
+from r3sourcer.apps.hr.utils.utils import get_invoice_rule, get_payslip_rule, calculate_distances_for_jobsite
+from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface.utils import get_sms_service
-from .payment import InvoiceService, PayslipService
-from .utils.utils import get_invoice_rule, get_payslip_rule, calculate_distances_for_jobsite
+from r3sourcer.apps.email_interface.utils import get_email_service
 
 
 logger = get_task_logger(__name__)
+
+GOING_TO_WORK, SHIFT_ENDING, RECRUITEE_SUBMITTED, SUPERVISOR_DECLINED = range(7)
+SITE_URL = settings.SITE_URL
 
 
 @shared_task
@@ -314,3 +320,135 @@ def send_placement_rejection_sms(self, vacancy_offer_id):
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
             send_vacancy_offer_sms(vacancy_offer, 'vacancy-offer-rejection')
+
+
+@app.task(queue='sms')
+def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
+    """
+    Send time sheet log sms notification.
+
+    :param time_sheet_id: UUID TimeSheet instance
+    :param event: str [SHIFT_ENDING, RECRUITEE_SUBMITTED, SUPERVISOR_DECLINED]
+    :return:
+    """
+    events_dict = {
+        SHIFT_ENDING: {
+            'sms_tpl': 'candidate-timesheet-hours',
+            'sms_old_tpl': 'candidate-timesheet-hours-old',
+            'email_subject': _('Please fill time sheet'),
+            'email_text': _('Please fill time sheet'),
+            'email_tpl': 'candidate-timesheet-hours',
+            'email_old_tpl': 'candidate-timesheet-hours-old',
+            'delta_hours': 1,
+        },
+        SUPERVISOR_DECLINED: {
+            'sms_tpl': 'candidate-timesheet-agree',
+            'email_subject': _('Your time sheet was declined'),
+            'email_text': _('Your time sheet was declined'),
+            'email_tpl': '',
+        },
+    }
+
+    try:
+        time_sheet = hr_models.TimeSheet.objects.get(id=time_sheet_id)
+    except hr_models.TimeSheet.DoesNotExist as e:
+        logger.error(e)
+    else:
+        candidate = time_sheet.candidate_contact
+        target_date_and_time = timezone.localtime(time_sheet.shift_started_at)
+        end_date_and_time = timezone.localtime(time_sheet.shift_ended_at)
+        contacts = {
+            'candidate_contact': candidate,
+            'company_contact': time_sheet.supervisor
+        }
+
+        with transaction.atomic():
+            data_dict = dict(
+                supervisor=contacts['client_contact'],
+                candidate_contact=contacts['candidate_contact'],
+                get_fill_time_sheet_url="%shr/timesheets" % SITE_URL,
+                get_supervisor_redirect_url="%shr/timesheets" % SITE_URL,
+                get_supervisor_sign_url="%shr/timesheets" % SITE_URL,
+                shift_start_date=formats.date_format(target_date_and_time, settings.DATETIME_FORMAT),
+                shift_end_date=formats.date_format(end_date_and_time.date(), settings.DATE_FORMAT),
+                booking=time_sheet.booking,
+                vacancy=time_sheet.booking.vacancy,
+                related_obj=time_sheet,
+            )
+
+            if event == SUPERVISOR_DECLINED:
+                end_date_and_time = timezone.localtime(time_sheet.shift_ended_at)
+
+                if time_sheet.break_started_at and time_sheet.break_ended_at:
+                    break_delta = time_sheet.break_ended_at - time_sheet.break_started_at
+                    break_str = format_timedelta(break_delta)
+                else:
+                    break_str = ''
+                    break_delta = timedelta()
+
+                worked_str = format_timedelta(time_sheet.shift_ended_at - time_sheet.shift_started_at - break_delta)
+
+                data_dict.update(
+                    shift_start_date=formats.date_format(target_date_and_time, settings.DATE_FORMAT),
+                    shift_start_time=formats.time_format(target_date_and_time.time(), settings.TIME_FORMAT),
+                    shift_end_time=formats.time_format(end_date_and_time.time(), settings.TIME_FORMAT),
+                    shift_break_hours=break_str,
+                    shift_worked_hours=worked_str,
+                    supervisor_timeout=format_timedelta(timedelta(seconds=settings.SUPERVISOR_DECLINE_TIMEOUT))
+                )
+
+                time_sheet.candidate_submitted_at = None
+                time_sheet.save(update_fields=['candidate_submitted_at'])
+
+                autoconfirm_rejected_timesheet.apply_async(
+                    args=[time_sheet_id], countdown=settings.SUPERVISOR_DECLINE_TIMEOUT
+                )
+
+            today = date.today()
+
+            if event == RECRUITEE_SUBMITTED:
+                recipient = time_sheet.supervisor
+            else:
+                recipient = time_sheet.candidate_contact
+
+            if candidate.by_sms:
+                try:
+                    sms_interface = get_sms_service()
+                except ImportError:
+                    logger.exception('Cannot load SMS service')
+                    return
+
+                sms_tpl = events_dict[event]['sms_tpl']
+                if end_date_and_time.date() != today:
+                    sms_tpl = events_dict[event].get('sms_old_tpl', sms_tpl)
+
+                sms_interface.send_tpl(recipient.contact.phone_mobile, sms_tpl, check_reply=False, **data_dict)
+
+            if candidate.by_email:
+                try:
+                    email_interface = get_email_service()
+                except ImportError:
+                    logger.exception('Cannot load SMS service')
+                    return
+
+                email_tpl = events_dict[event]['email_tpl']
+                if end_date_and_time.date() != today:
+                    email_tpl = events_dict[event].get('email_old_tpl', email_tpl)
+
+                if not email_tpl:
+                    return
+
+                email_interface.send_tpl(recipient.contact.email, tpl_name=email_tpl, **data_dict)
+
+
+@app.task(bind=True)
+@one_sms_task_at_the_same_time
+def autoconfirm_rejected_timesheet(self, time_sheet_id):
+    try:
+        time_sheet = hr_models.TimeSheet.objects.get(id=time_sheet_id)
+    except hr_models.TimeSheet.DoesNotExist as e:
+        logger.error(e)
+    else:
+        if time_sheet.candidate_submitted_at is None:
+            time_sheet.candidate_submitted_at = timezone.now()
+            time_sheet.save(update_fields=['candidate_submitted_at'])

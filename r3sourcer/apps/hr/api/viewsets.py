@@ -566,6 +566,32 @@ class TimeSheetViewset(BaseApiViewset):
     def approved(self, request, *args, **kwargs):  # pragma: no cover
         return self.handle_history(request)
 
+    @detail_route(
+        methods=['POST'],
+    )
+    def confirm(self, request, pk, *args, **kwargs):
+        obj = self.get_object()
+
+        obj.going_to_work_confirmation = True
+        obj.save(update_fields=['going_to_work_confirmation'])
+
+        return Response({
+            'status': 'success'
+        })
+
+    @detail_route(
+        methods=['POST'],
+    )
+    def resend_sms(self, request, pk, *args, **kwargs):
+        obj = self.get_object()
+
+        from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
+        process_time_sheet_log_and_send_notifications.apply_async(args=[pk, SHIFT_ENDING])
+
+        return Response({
+            'status': 'success'
+        })
+
 
 class InvoiceViewset(BaseApiViewset):
 

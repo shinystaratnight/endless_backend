@@ -1,0 +1,36 @@
+[
+{
+  "model": "email_interface.emailtemplate",
+  "pk": "4b773386-b9a6-421c-85c7-6a1cb6243386",
+  "fields": {
+    "updated_at": "2018-02-14T12:53:50.702Z",
+    "created_at": "2018-02-14T12:53:43.575Z",
+    "name": "Candidate TimeSheet Hours (old shift)",
+    "slug": "candidate-timesheet-hours-old",
+    "subject_template": "Please fill time sheet",
+    "message_text_template": "Hi [[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked on [[shift_end_date]]. Once you have submitted your hours, your site foreman today will be asked to approve them. Please make sure you are accurate and honest or your hours will not get approved. If you are unable to open the link, please submit your hours on a computer: https://crm.labourking.com.au -> Customer Access. Thank you.",
+    "message_html_template": "",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
+  "pk": "99980b4c-497d-4e7d-ab81-9dddda9ce144",
+  "fields": {
+    "updated_at": "2018-02-14T12:52:00.122Z",
+    "created_at": "2018-02-14T12:52:00.122Z",
+    "name": "Candidate TimeSheet Hours",
+    "slug": "candidate-timesheet-hours",
+    "subject_template": "Please fill time sheet",
+    "message_text_template": "Hi [[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked today. Once you have submitted your hours, your site foreman today will be asked to approve them. Please make sure you are accurate and honest or your hours will not get approved. If you are unable to open the link, please submit your hours on a computer: https://crm.labourking.com.au -> Customer Access. Thank you.",
+    "message_html_template": "",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email"
+  }
+}
+]

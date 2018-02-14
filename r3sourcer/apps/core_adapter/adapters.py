@@ -39,8 +39,8 @@ def to_html_tag(component_type):
     custom_types = [
         constants.FIELD_CHECKBOX, constants.FIELD_RADIO, constants.FIELD_TEXTAREA, constants.FIELD_SELECT,
         constants.FIELD_RADIO_GROUP, constants.FIELD_CHECKBOX_GROUP, constants.FIELD_BUTTON, constants.FIELD_LINK,
-        constants.FIELD_SUBMIT, constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_RULE,
-        constants.FIELD_ICON, constants.FIELD_TIMELINE, constants.FIELD_LIST,
+        constants.FIELD_SUBMIT, constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_STATIC_ICON,
+        constants.FIELD_RULE, constants.FIELD_ICON, constants.FIELD_TIMELINE, constants.FIELD_LIST,
     ]
     if component_type in custom_types:
         return component_type
@@ -680,7 +680,7 @@ class AngularListApiAdapter(AngularApiAdapter):
                 sorting_field = column['name']
                 sort = (
                     field in self.adapted_fields and
-                    self.adapted_fields[field]['type'] != constants.FIELD_STATIC and
+                    self.adapted_fields[field]['type'] not in [constants.FIELD_STATIC, constants.FIELD_STATIC_ICON] and
                     sorting_field in ordering_fields
                 )
 
