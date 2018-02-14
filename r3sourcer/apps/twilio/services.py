@@ -36,12 +36,13 @@ class TwilioSMSService(BaseSMSService):
 
                 """ Update current account (messages) """
                 params = {
-                    'date_sent>': account.get_last_sync()}  # get all messages sent_at after `self.get_last_sync()`
+                    'date_sent_after': account.get_last_sync()
+                }  # get all messages sent_at after `self.get_last_sync()`
 
                 acc_last_sync = timezone.localtime(timezone.now()).date()
                 logger.info("Sync params: {}".format(params))
 
-                for sms_message in remote_account.messages.iter(**params):
+                for sms_message in remote_account.messages.stream(**params):
                     sms_list.append(models.TwilioSMSMessage.fetch_remote(account, sms_message))
 
                 account.last_sync = acc_last_sync
