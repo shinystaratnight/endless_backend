@@ -28,10 +28,10 @@ class TwilioSMSService(BaseSMSService):
 
             phone_numbers = []
             last_sync = timezone.now()
-            for n in c.client.phone_numbers.iter():
+            for n in c.client.api.incoming_phone_numbers.stream():
                 phone_numbers.append(models.TwilioPhoneNumber.fetch_remote(n, c.company))
 
-            for remote_account in c.client.accounts.iter():
+            for remote_account in c.client.api.accounts.stream():
                 account = models.TwilioAccount.fetch_remote(c, remote_account)
 
                 """ Update current account (messages) """
