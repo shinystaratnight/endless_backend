@@ -25,7 +25,7 @@ from r3sourcer.apps.email_interface.utils import get_email_service
 
 logger = get_task_logger(__name__)
 
-GOING_TO_WORK, SHIFT_ENDING, RECRUITEE_SUBMITTED, SUPERVISOR_DECLINED = range(7)
+GOING_TO_WORK, SHIFT_ENDING, RECRUITEE_SUBMITTED, SUPERVISOR_DECLINED = range(4)
 SITE_URL = settings.SITE_URL
 
 
@@ -364,15 +364,13 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
 
         with transaction.atomic():
             data_dict = dict(
-                supervisor=contacts['client_contact'],
+                supervisor=contacts['company_contact'],
                 candidate_contact=contacts['candidate_contact'],
-                get_fill_time_sheet_url="%shr/timesheets" % SITE_URL,
-                get_supervisor_redirect_url="%shr/timesheets" % SITE_URL,
-                get_supervisor_sign_url="%shr/timesheets" % SITE_URL,
+                get_fill_time_sheet_url="%s/hr/timesheets" % SITE_URL,
+                get_supervisor_redirect_url="%s/hr/timesheets" % SITE_URL,
+                get_supervisor_sign_url="%s/hr/timesheets" % SITE_URL,
                 shift_start_date=formats.date_format(target_date_and_time, settings.DATETIME_FORMAT),
                 shift_end_date=formats.date_format(end_date_and_time.date(), settings.DATE_FORMAT),
-                booking=time_sheet.booking,
-                vacancy=time_sheet.booking.vacancy,
                 related_obj=time_sheet,
             )
 
@@ -411,7 +409,7 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
             else:
                 recipient = time_sheet.candidate_contact
 
-            if candidate.by_sms:
+            if candidate.message_by_sms:
                 try:
                     sms_interface = get_sms_service()
                 except ImportError:
@@ -424,7 +422,7 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
 
                 sms_interface.send_tpl(recipient.contact.phone_mobile, sms_tpl, check_reply=False, **data_dict)
 
-            if candidate.by_email:
+            if candidate.message_by_email:
                 try:
                     email_interface = get_email_service()
                 except ImportError:

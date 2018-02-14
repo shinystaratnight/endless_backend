@@ -586,7 +586,7 @@ class TimeSheetViewset(BaseApiViewset):
         obj = self.get_object()
 
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
-        process_time_sheet_log_and_send_notifications.apply_async(args=[pk, SHIFT_ENDING])
+        process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SHIFT_ENDING])
 
         return Response({
             'status': 'success'
