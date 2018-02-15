@@ -52,9 +52,9 @@ class TimesheetFilter(FilterSet):
         """
         qs_approved = Q(going_to_work_confirmation=True)
         if contact.company_contact.exists():
-            qs_approved &= Q(supervisor_approved_at__isnull=False)
+            qs_approved &= Q(supervisor_approved_at__isnull=False, supervisor__contact=contact)
         else:
-            qs_approved &= Q(candidate_submitted_at__isnull=False)
+            qs_approved &= Q(candidate_submitted_at__isnull=False, shift__candidate_contact__contact=contact)
         return qs_approved
 
     @staticmethod
@@ -68,12 +68,14 @@ class TimesheetFilter(FilterSet):
         ended_at = now - datetime.timedelta(hours=4)
         signed_delta = now - datetime.timedelta(hours=1)
 
-        qs_unapproved = (Q(candidate_submitted_at__isnull=False) |
-                         Q(shift_ended_at__lt=ended_at)) &\
-                        (Q(supervisor_approved_at__isnull=True) |
-                         Q(supervisor_approved_at__gte=signed_delta)) &\
-                         Q(supervisor__contact=contact) &\
-                         Q(going_to_work_confirmation=True)
+        qs_unapproved = (
+            Q(candidate_submitted_at__isnull=False) |
+            Q(shift_ended_at__lt=ended_at)
+        ) & (
+            Q(supervisor_approved_at__isnull=True) |
+            Q(supervisor_approved_at__gte=signed_delta)
+        ) & Q(supervisor__contact=contact, going_to_work_confirmation=True)
+
         return qs_unapproved
 
 
