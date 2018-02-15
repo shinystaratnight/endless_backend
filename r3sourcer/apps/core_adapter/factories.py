@@ -43,7 +43,7 @@ def filter_factory(endpoint):
         field_qry = field.replace('.', '__')
         distinct = list_filter.get('distinct', False)
 
-        if field_type == constants.FIELD_RELATED:
+        if field_type in [constants.FIELD_RELATED, constants.FIELD_LINK]:
             attrs[field_qry] = CharFilter(lookup_expr='id', distinct=distinct)
         elif field_type == constants.FIELD_SELECT:
             if 'choices' in list_filter:
@@ -82,6 +82,20 @@ def filter_factory(endpoint):
                 name=field_qry,
                 distinct=distinct
             )
+        elif field_type == constants.FIELD_CHECKBOX:
+            if 'choices' in list_filter:
+                choices = list_filter['choices']
+            else:
+                choices = [('True', 'Yes'), ('False', 'No')]
+
+            kwargs = {
+                'name': field_qry,
+                'empty_label': _('All'),
+                'distinct': distinct,
+                'choices': choices,
+            }
+
+            attrs[field_qry] = ChoiceFilter(**kwargs)
         else:
             continue  # pragma: no cover
 
