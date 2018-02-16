@@ -102,7 +102,7 @@ class AngularApiAdapter(BaseAdapter):
                     adapted['metadata_query'] = field['metadata_query']
                 if field.get('max'):
                     adapted['max'] = field['max']
-            elif component_type != constants.FIELD_SUBMIT:
+            elif component_type not in [constants.FIELD_SUBMIT, constants.FIELD_LINKS_LIST]:
                 adapted['templateOptions']['action'] = field['action']
 
             query_params = field.get('query')
@@ -122,7 +122,7 @@ class AngularApiAdapter(BaseAdapter):
                 except NoReverseMatch:
                     return {'key': field['key']}
             else:
-                endpoint = field['endpoint']
+                endpoint = field.get('endpoint')
             adapted = {
                 'type': component_type,
                 'endpoint': endpoint,
@@ -378,7 +378,7 @@ class AngularListApiAdapter(AngularApiAdapter):
                 'label': label,
             }
 
-            if field_type == constants.FIELD_RELATED:
+            if field_type in [constants.FIELD_RELATED, constants.FIELD_LINK]:
                 if 'endpoint' in list_filter:
                     endpoint = list_filter['endpoint']
                 elif 'related_endpoint' in meta_field:
@@ -399,11 +399,18 @@ class AngularListApiAdapter(AngularApiAdapter):
                         'value': list_filter.get('value', '__str__'),
                     }
                 })
-            elif field_type == constants.FIELD_SELECT:
+                if constants.FIELD_LINK:
+                    adapted['type'] = constants.FIELD_RELATED
+            elif field_type in [constants.FIELD_SELECT, constants.FIELD_CHECKBOX]:
                 if 'choices' in list_filter:
                     choices = list_filter['choices']
                 elif 'choices' in meta_field:
                     choices = list(meta_field['choices'])
+                elif field_type == constants.FIELD_CHECKBOX:
+                    choices = [
+                        {'label': 'Yes', 'value': 'True'},
+                        {'label': 'No', 'value': 'False'}
+                    ]
                 else:
                     continue  # pragma: no cover
 
@@ -423,6 +430,8 @@ class AngularListApiAdapter(AngularApiAdapter):
                     'options': choices,
                     'default': list_filter.get('default'),
                 })
+                if field_type == constants.FIELD_CHECKBOX:
+                    adapted['type'] = constants.FIELD_SELECT
             elif field_type == constants.FIELD_SELECT_MULTIPLE:
                 adapted['data'] = {}
                 if 'endpoint' in list_filter:
