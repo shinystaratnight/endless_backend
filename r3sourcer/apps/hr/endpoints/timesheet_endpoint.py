@@ -7,9 +7,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from django.utils.translation import ugettext_lazy as _
 
-from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.models import CompanyContact, Company
 from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
@@ -167,6 +165,39 @@ class TimeSheetEndpoint(ApiEndpoint):
                 'field': 'going_to_work_reply_sms',
                 'action': constants.DEFAULT_ACTION_EDIT,
             })
+        }, {
+            'label': _('Confirmations'),
+            'fields': ({
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-external-link',
+                'text': _('Fill'),
+                'endpoint': format_lazy(
+                    '{}{{id}}/candidate_fill',
+                    api_reverse_lazy('hr/timesheets'),
+                ),
+                'field': 'id',
+                'action': constants.DEFAULT_ACTION_EDIT,
+                'showIf': [
+                    {
+                        'resend_sms_candidate': True,
+                    }
+                ],
+            }, {
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-external-link',
+                'text': _('Approve'),
+                'endpoint': format_lazy(
+                    '{}{{id}}/supervisor_approve',
+                    api_reverse_lazy('hr/timesheets'),
+                ),
+                'field': 'id',
+                'action': constants.DEFAULT_ACTION_EDIT,
+                'showIf': [
+                    {
+                        'resend_sms_supervisor': True,
+                    }
+                ],
+            },),
         },
     )
 

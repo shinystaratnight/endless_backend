@@ -1,19 +1,18 @@
 def format_timedelta(time_delta, with_seconds=False):
     seconds = time_delta.total_seconds()
     hours = seconds // 3600
+    minutes = (seconds % 3600) // 60
+    seconds = seconds % 60
+
+    parts = []
 
     if hours:
-        res_str = '{:g}h '.format(hours)
-    else:
-        res_str = ''
-
-    minutes = (seconds % 3600) // 60
+        parts.append('{:g}h'.format(hours))
 
     if minutes:
-        res_str = '{}{:g}min '.format(res_str, minutes)
+        parts.append('{:g}min'.format(minutes))
 
-    seconds = seconds % 60
     if with_seconds and seconds:
-        res_str = '{}{:g}s'.format(res_str, seconds)
+        parts.append('{:g}s'.format(seconds))
 
-    return res_str.rstrip()
+    return ' '.join(parts)

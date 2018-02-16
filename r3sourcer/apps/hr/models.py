@@ -1122,6 +1122,14 @@ class TimeSheet(
     def candidate_contact(self):
         return self.vacancy_offer.candidate_contact
 
+    @property
+    def shift_delta(self):
+        return self.shift_ended_at - self.shift_started_at
+
+    @property
+    def break_delta(self):
+        return self.break_ended_at - self.break_started_at
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         super().save(*args, **kwargs)

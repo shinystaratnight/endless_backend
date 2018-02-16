@@ -76,6 +76,21 @@
 },
 {
   "model": "sms_interface.smstemplate",
+  "pk": "960128a2-b9bd-4894-9ea0-6590316ad7d9",
+  "fields": {
+    "updated_at": "2018-02-15T14:09:48.260Z",
+    "created_at": "2018-02-15T14:09:48.260Z",
+    "name": "Supervisor TimeSheet Sign Reminder",
+    "slug": "supervisor-timesheet-sign-reminder",
+    "message_text_template": "Hi [[supervisor]], you still have outstanding timesheets to approve, please action immediately by clicking the link [[get_url]] or login via your computer crm.labourking.com.au -> Customer access.\r\nPlease note failure to do so will affect worker wages and your rates for the next order.\r\nAny issues please contact [[portfolio_manager]] [[portfolio_manager__contact__phone_mobile]].\r\nThank you",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
   "pk": "a0259f85-cb1c-44da-b649-099f9a68f375",
   "fields": {
     "updated_at": "2018-02-14T12:44:41.721Z",
@@ -145,6 +160,21 @@
     "message_text_template": "[[candidate_contact]],\r\nUnfortunately, the shift for [[vacancy__jobsite]] at [[target_date_and_time]] has been filled!\r\nBe ready for more offers... R3sourcer",
     "reply_timeout": 10,
     "delivery_timeout": 0,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "f32739f6-c95a-4156-8ca3-c8f8acda1a84",
+  "fields": {
+    "updated_at": "2018-02-15T13:48:18.181Z",
+    "created_at": "2018-02-15T13:48:18.181Z",
+    "name": "Supervisor TimeSheet Sign",
+    "slug": "supervisor-timesheet-sign",
+    "message_text_template": "Hi [[supervisor]] please approve or amend hours for your worker(s) by clinking the link [[get_url]] Please do so urgently so that workers can get paid for hours worked. If you cannot access the link simply reply LOGIN to this SMS and a new link will be sent to you.\r\nYou can also approve hours online: https://crm.labourking.com.au -> Customer Access. Thank you!",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
     "company": null,
     "type": "sms"
   }

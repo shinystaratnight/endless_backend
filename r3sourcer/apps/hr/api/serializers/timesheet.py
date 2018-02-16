@@ -9,6 +9,7 @@ from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.api import serializers as sms_serializers
+from r3sourcer.apps.pricing.utils.utils import format_timedelta
 
 from ...models import TimeSheet, CandidateEvaluation
 
@@ -73,7 +74,12 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = TimeSheet
-        fields = '__all__'
+        fields = (
+            'id', 'vacancy_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
+            'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
+            'candidate_submitted_at', 'supervisor_approved_at', 'supervisor_approved_scheme', 'candidate_rate',
+            'rate_overrides_approved_by', 'rate_overrides_approved_at'
+        )
         related_fields = {
             'vacancy_offer': ('id', {
                 'candidate_contact': ('id', {
@@ -153,3 +159,37 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
     class Meta:
         model = CandidateEvaluation
         fields = '__all__'
+
+
+class TimeSheetManualSerializer(ApiBaseModelSerializer):
+
+    method_fields = (
+        'shift_total', 'break_total', 'total_worked'
+    )
+
+    no_break = serializers.BooleanField(required=False)
+    send_supervisor_message = serializers.BooleanField(required=False)
+    send_candidate_message = serializers.BooleanField(required=False)
+
+    class Meta:
+        model = TimeSheet
+        fields = (
+            'id', 'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'no_break',
+            'send_supervisor_message', 'send_candidate_message'
+        )
+
+    def validate(self, data):
+        if data.get('no_break'):
+            data['break_started_at'] = None
+            data['break_ended_at'] = None
+
+        return data
+
+    def get_shift_total(self, obj):
+        return format_timedelta(obj.shift_delta)
+
+    def get_break_total(self, obj):
+        return format_timedelta(obj.break_delta)
+
+    def get_total_worked(self, obj):
+        return format_timedelta(obj.shift_delta - obj.break_delta)

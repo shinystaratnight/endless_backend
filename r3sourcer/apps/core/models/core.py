@@ -608,6 +608,16 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
         default=True
     )
 
+    message_by_sms = models.BooleanField(
+        default=True,
+        verbose_name=_('By SMS')
+    )
+
+    message_by_email = models.BooleanField(
+        default=True,
+        verbose_name=_('By E-Mail')
+    )
+
     legacy_myob_card_number = models.CharField(
         max_length=15,
         verbose_name=_("Legacy MYOB card number"),
@@ -2172,9 +2182,9 @@ class AbstractPayRuleMixin(models.Model):
         abstract = True
 
     def clean(self):
-        if (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.weekly and self.period_zero_reference > 7) \
-                or (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.fortnightly and self.period_zero_reference > 14) \
-                or (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.monthly and self.period_zero_reference > 29):
+        if ((self.period == AbstractPayRuleMixin.PERIOD_CHOICES.weekly and self.period_zero_reference > 7)
+                or (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.fortnightly and self.period_zero_reference > 14)
+                or (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.monthly and self.period_zero_reference > 29)):
             raise ValidationError(_('Incorrect period zero reference'))
 
 
@@ -2509,6 +2519,12 @@ class PublicHoliday(UUIDModel):
         ordering = ['country', 'date']
         verbose_name = _("Public holiday")
         verbose_name_plural = _("Public holidays")
+
+    @classmethod
+    def is_holiday(cls, date, country=None):
+        if country is None:
+            country = Country.objects.get(code2='AU')
+        return cls.objects.filter(country=country, date=date).exists()
 
 
 class ExtranetNavigation(MPTTModel, UUIDModel):

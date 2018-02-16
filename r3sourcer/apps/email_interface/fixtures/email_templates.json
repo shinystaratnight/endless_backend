@@ -1,6 +1,23 @@
 [
 {
   "model": "email_interface.emailtemplate",
+  "pk": "09a8d821-6668-4c03-87f4-b7981d1aedad",
+  "fields": {
+    "updated_at": "2018-02-15T13:50:17.095Z",
+    "created_at": "2018-02-15T13:50:17.095Z",
+    "name": "Supervisor TimeSheet Sign",
+    "slug": "supervisor-timesheet-sign",
+    "subject_template": "",
+    "message_text_template": "Hi [[supervisor]] please approve hours for your worker(s) . Please approve or change the hours submitted by clinking the link [[get_url]] Please do so urgently so that workers can get paid for hours worked. If you cannot access the link simply reply LOGIN to this email and a new link will be sent to you. Alternatively you can submit your hours on a computer: https://crm.labourking.com.au -> Customer Access. Thank you!",
+    "message_html_template": "",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
   "pk": "4b773386-b9a6-421c-85c7-6a1cb6243386",
   "fields": {
     "updated_at": "2018-02-14T12:53:50.702Z",
@@ -26,6 +43,23 @@
     "slug": "candidate-timesheet-hours",
     "subject_template": "Please fill time sheet",
     "message_text_template": "Hi [[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked today. Once you have submitted your hours, your site foreman today will be asked to approve them. Please make sure you are accurate and honest or your hours will not get approved. If you are unable to open the link, please submit your hours on a computer: https://crm.labourking.com.au -> Customer Access. Thank you.",
+    "message_html_template": "",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
+  "pk": "cfbda311-a000-4c38-9cff-df4120852877",
+  "fields": {
+    "updated_at": "2018-02-15T14:10:59.413Z",
+    "created_at": "2018-02-15T14:10:59.413Z",
+    "name": "Supervisor TimeSheet Sign Reminder",
+    "slug": "supervisor-timesheet-sign-reminder",
+    "subject_template": "Sign time sheets reminder",
+    "message_text_template": "Hi [[supervisor]] we have not yet received your approval for the hours worked on your jobsite today. Please approve or change the hours submitted by clicking the link [[get_url]] or open on your computer https://crm.labourking.com.au -> Customer access. Please note failure to do so, will result in workers not getting paid for today, and can affect the price of your next order. If you have any issues please contact [[portfolio_manager]] [[portfolio_manager__contact__phone_mobile]] immediately. Thank you",
     "message_html_template": "",
     "reply_timeout": 0,
     "delivery_timeout": 10,

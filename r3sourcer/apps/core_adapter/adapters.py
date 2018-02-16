@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint',
+    'add_endpoint', 'disabledIf',
 )
 
 
@@ -177,7 +177,9 @@ class AngularApiAdapter(BaseAdapter):
             adapted['send'] = field['send']
 
         field_ui = field.get('ui', {})
-        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display')
+        ui_options = (
+            'placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display', 'disabledIf',
+        )
         adapted['templateOptions'].update({
             'type': component_type,
             'label': field.get('label', field_ui.get('label', '')),
@@ -604,7 +606,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         adapted = []
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
-            'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query',
+            'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query', 'showIf',
         )
 
         for display_field in display_fields:

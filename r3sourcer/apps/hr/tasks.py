@@ -13,14 +13,17 @@ from django.db import transaction
 from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
 
-from r3sourcer.apps.core.models import Company, InvoiceRule, Invoice, Contact
+from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
+from r3sourcer.apps.email_interface.models import EmailMessage
+from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.payment import InvoiceService, PayslipService
 from r3sourcer.apps.hr.utils.utils import get_invoice_rule, get_payslip_rule, calculate_distances_for_jobsite
+from r3sourcer.apps.login.models import TokenLogin
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
+from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
-from r3sourcer.apps.email_interface.utils import get_email_service
 
 
 logger = get_task_logger(__name__)
@@ -34,13 +37,13 @@ def prepare_invoices():
     service = InvoiceService()
     now = timezone.localtime(timezone.now())
 
-    for company in Company.objects.filter(type='regular'):
+    for company in core_models.Company.objects.filter(type='regular'):
         invoice_rule = get_invoice_rule(company)
 
         if not invoice_rule:
             continue
 
-        if invoice_rule.period == InvoiceRule.PERIOD_CHOICES.monthly and \
+        if invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.monthly and \
                 invoice_rule.period_zero_reference == now.day:
             if now.month == 1:
                 year = now.year - 1
@@ -53,17 +56,17 @@ def prepare_invoices():
             day = now.day if now.day <= last_day else last_day
 
             from_date = date(year, month, day)
-        elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.fortnightly:
+        elif invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.fortnightly:
             from_date = (now - timedelta(days=14)).date()
-        elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.weekly:
+        elif invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.weekly:
             from_date = (now - timedelta(days=7)).date()
-        elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.daily:
+        elif invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.daily:
             from_date = (now - timedelta(days=1)).date()
         else:
             from_date = None
 
         if from_date:
-            existing_invoice = Invoice.objects.filter(
+            existing_invoice = core_models.Invoice.objects.filter(
                 company=company,
                 date__gte=from_date
             )
@@ -79,7 +82,7 @@ def prepare_payslips():
     service = PayslipService()
     now = timezone.localtime(timezone.now())
 
-    for company in Company.objects.all():
+    for company in core_models.Company.objects.all():
         payslip_rule = get_payslip_rule(company)
 
         if not payslip_rule:
@@ -131,7 +134,7 @@ def update_all_distances():
 
     for jobsite in all_calculated_jobsites:
         if not (jobsite.latitude == 0 and jobsite.longitude == 0):
-            contacts = Contact.objects.filter(distance_caches__jobsite=jobsite)
+            contacts = core_models.Contact.objects.filter(distance_caches__jobsite=jobsite)
             if not calculate_distances_for_jobsite(contacts, jobsite):
                 break
 
@@ -450,3 +453,167 @@ def autoconfirm_rejected_timesheet(self, time_sheet_id):
         if time_sheet.candidate_submitted_at is None:
             time_sheet.candidate_submitted_at = timezone.now()
             time_sheet.save(update_fields=['candidate_submitted_at'])
+
+
+def send_supervisor_timesheet_message(
+    supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl=None, **kwargs
+):
+    email_tpl = email_tpl or sms_tpl
+
+    with transaction.atomic():
+        sign_navigation = core_models.ExtranetNavigation.objects.get(id=119)
+        extranet_login = TokenLogin.objects.create(
+            contact=supervisor.contact,
+            redirect_to=sign_navigation.url
+        )
+
+        company_rel = supervisor.relationships.all().first()
+        if company_rel:
+            portfolio_manager = company_rel.company.manager
+
+        data_dict = dict(
+            supervisor=supervisor,
+            portfolio_manager=portfolio_manager,
+            get_url="%s/%s" % (settings.SITE_URL, extranet_login.auth_url),
+            related_obj=supervisor,
+            related_objs=[extranet_login],
+        )
+        data_dict.update(kwargs)
+
+        if should_send_sms and supervisor.contact.phone_mobile:
+            try:
+                sms_interface = get_sms_service()
+            except ImportError:
+                logger.exception('Cannot load SMS service')
+                return
+
+            sms_interface.send_tpl(supervisor.contact.phone_mobile, sms_tpl, check_reply=False, **data_dict)
+
+        if should_send_email:
+            try:
+                email_interface = get_email_service()
+            except ImportError:
+                logger.exception('Cannot load SMS service')
+                return
+
+            email_interface.send_tpl(supervisor.contact.email, tpl_name=email_tpl, **data_dict)
+
+
+@app.task(bind=True)
+@one_sms_task_at_the_same_time
+def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
+    try:
+        supervisor = core_models.CompanyContact.objects.get(id=supervisor_id)
+    except core_models.CompanyContact.DoesNotExist:
+        supervisor = None
+
+    try:
+        timesheet = hr_models.TimeSheet.objects.get(id=timesheet_id)
+    except hr_models.TimeSheet.DoesNotExist:
+        timesheet = None
+
+    if not supervisor or not timesheet:
+        return
+
+    try:
+        now = timezone.localtime(timezone.now())
+        today = now.date()
+
+        should_send_sms = False
+        sms_tpl = 'supervisor-timesheet-sign'
+        if supervisor.message_by_sms:
+            if not SMSMessage.objects.filter(to_number=supervisor.contact.phone_mobile,
+                                             template__slug=sms_tpl, sent_at__date=today).exists():
+                should_send_sms = True
+
+        should_send_email = False
+        email_tpl = 'supervisor-timesheet-sign'
+        if supervisor.message_by_email:
+            if not EmailMessage.objects.filter(to_addresses=supervisor.contact.email,
+                                               template__slug=email_tpl, sent_at__date=today).exists():
+                should_send_email = True
+
+        if not should_send_email and not should_send_sms:
+            return
+
+        if hr_models.TimeSheet.objects.filter(shift_ended_at__date=today, going_to_work_confirmation=True,
+                                              supervisor=supervisor).exists():
+
+            today_shift_end = hr_models.TimeSheet.objects.filter(
+                shift_ended_at__date=today,
+                going_to_work_confirmation=True,
+                supervisor=supervisor
+            ).latest('shift_ended_at').shift_ended_at
+
+            timesheets = hr_models.TimeSheet.objects.filter(
+                shift_ended_at__date=today,
+                shift_ended_at__lte=today_shift_end,
+                going_to_work_confirmation=True,
+                supervisor=supervisor
+            )
+
+            not_signed_timesheets = timesheets.filter(
+                recruitee_signed_at__isnull=True,
+                supervisor=supervisor
+            )
+
+            if not_signed_timesheets.exists():
+                return
+
+            signed_timesheets_started = timesheets.filter(
+                recruitee_signed_at__isnull=False,
+                supervisor=supervisor
+            ).order_by('shift_started_at').values_list(
+                'shift_started_at', flat=True
+            ).distinct()
+            signed_timesheets_started = list(signed_timesheets_started)
+
+            if timesheet.shift_started_at not in signed_timesheets_started:
+                signed_timesheets_started.append(timesheet.shift_started_at)
+
+            if len(signed_timesheets_started) == 0:
+                return
+
+            send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl)
+
+            eta = now + timedelta(hours=4)
+            is_today_reminder = True
+            if eta.time() > time(19, 0):
+                is_today_reminder = False
+                eta = timezone.make_aware(datetime.combine(date.today(), time(19, 0)))
+            elif eta.time() < time(7, 0):
+                eta = timezone.make_aware(datetime.combine(date.today(), time(7, 0)))
+
+            if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
+                send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder], eta=eta)
+    except Exception as e:
+        logger.error(e)
+
+
+@app.task(bind=True)
+@one_sms_task_at_the_same_time
+def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
+    today = date.today()
+    if not is_today:
+        today -= timedelta(days=1)
+
+    try:
+        supervisor = core_models.CompanyContact.objects.get(
+            id=supervisor_id,
+            timesheet_reminder=True
+        )
+    except core_models.CompanyContact.DoesNotExist:
+        return
+
+    timesheets = hr_models.TimeSheet.objects.filter(
+        shift_ended_at__date=today,
+        going_to_work_confirmation=True,
+        recruitee_signed_at__isnull=False,
+        supervisor_signed_at__isnull=True,
+        supervisor=supervisor
+    )
+
+    if timesheets.exists():
+        send_supervisor_timesheet_message(
+            supervisor, supervisor.by_sms, supervisor.by_email, 'supervisor-timesheet-sign-reminder'
+        )

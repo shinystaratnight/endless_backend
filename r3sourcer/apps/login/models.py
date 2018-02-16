@@ -70,4 +70,4 @@ class TokenLogin(UUIDModel,
 
     @property
     def auth_url(self):
-        return '/#/login/{}'.format(self.auth_token)
+        return '/login/{}'.format(self.auth_token)

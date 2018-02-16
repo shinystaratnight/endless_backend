@@ -592,6 +592,108 @@ class TimeSheetViewset(BaseApiViewset):
             'status': 'success'
         })
 
+    @detail_route(
+        methods=['GET', 'POST'],
+        serializer=timesheet_serializers.TimeSheetManualSerializer,
+        fieldsets=(
+            'shift_started_at', 'shift_ended_at',
+            {
+                'type': constants.FIELD_CHECKBOX,
+                'label': _('No Break'),
+                'field': 'no_break',
+            }, {
+                'type': constants.FIELD_DATETIME,
+                'field': 'break_started_at',
+                'disabledIf': {
+                    'no_break': True,
+                },
+            }, {
+                'type': constants.FIELD_DATETIME,
+                'field': 'break_ended_at',
+                'disabledIf': {
+                    'no_break': True,
+                },
+            }, {
+                'type': constants.FIELD_STATIC,
+                'label': _('Total: {shift_total} - {break_total} = {total_worked}'),
+                'field': 'total_worked'
+            }, {
+                'type': constants.FIELD_CHECKBOX,
+                'label': _('Send confirmation message to supervisor'),
+                'field': 'send_supervisor_message',
+            }
+        )
+    )
+    def candidate_fill(self, request, pk, *args, **kwargs):
+        obj = self.get_object()
+
+        if request.method == 'POST':
+            data = self.prepare_related_data(request.data)
+            serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            if serializer.validated_data.get('send_supervisor_message'):
+                from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
+                send_supervisor_timesheet_sign.delay(obj.supervisor.id, obj.id)
+        else:
+            serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
+
+        return Response(serializer.data)
+
+    @detail_route(
+        methods=['GET', 'POST'],
+        serializer=timesheet_serializers.TimeSheetManualSerializer,
+        fieldsets=(
+            'shift_started_at', 'shift_ended_at',
+            {
+                'type': constants.FIELD_CHECKBOX,
+                'label': _('No Break'),
+                'field': 'no_break',
+            }, {
+                'type': constants.FIELD_DATETIME,
+                'field': 'break_started_at',
+                'disabledIf': {
+                    'no_break': True,
+                },
+            }, {
+                'type': constants.FIELD_DATETIME,
+                'field': 'break_ended_at',
+                'disabledIf': {
+                    'no_break': True,
+                },
+            }, {
+                'type': constants.FIELD_STATIC,
+                'label': _('Total: {shift_total} - {break_total} = {total_worked}'),
+                'field': 'total_worked'
+            }, {
+                'type': constants.FIELD_CHECKBOX,
+                'label': _('Send confirmation message to supervisor'),
+                'field': 'send_supervisor_message',
+            }
+        )
+    )
+    def supervisor_approve(self, request, pk, *args, **kwargs):
+        obj = self.get_object()
+
+        if request.method == 'POST':
+            data = self.prepare_related_data(request.data)
+            serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
+            serializer.is_valid(raise_exception=True)
+            serializer.save()
+
+            if serializer.validated_data.get('send_supervisor_message'):
+                from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
+                send_supervisor_timesheet_sign.delay(obj.supervisor.id, obj.id)
+
+            if serializer.validated_data.get('send_candidate_message'):
+                from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SUPERVISOR_DECLINED
+                process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
+        else:
+            serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
+
+        return Response(serializer.data)
+
 
 class InvoiceViewset(BaseApiViewset):
 
