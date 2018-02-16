@@ -613,8 +613,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         'contact_unavailabilities': 'contact',
     }
 
-    method_fields = ('job_title', 'availability', 'is_candidate_contact',
-                     'is_company_contact')
+    method_fields = ('job_title', 'availability', 'is_candidate_contact', 'is_company_contact', 'master_company')
 
     def get_job_title(self, obj):
         return obj.get_job_title() if obj and obj.is_company_contact() else None
@@ -627,6 +626,10 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
 
     def get_is_company_contact(self, obj):
         return obj.is_company_contact() if obj else None
+
+    def get_master_company(self, obj):
+        master_company = obj.get_closest_company()
+        return master_company and core_field.ApiBaseRelatedField.to_read_only_data(master_company)
 
     def to_representation(self, instance):
         data = super(ContactSerializer, self).to_representation(instance)
@@ -654,16 +657,17 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         model = core_models.Contact
         read_only = ('is_available', 'address', 'company_contact', 'object_history', 'notes')
         fields = (
-            'title', 'first_name', 'last_name', 'email', 'phone_mobile',
-            'gender', 'is_available', 'marital_status', 'birthday', 'spouse_name',
-            'children', 'picture', 'address', 'phone_mobile_verified', 'email_verified',
+            'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'marital_status',
+            'birthday', 'spouse_name', 'children', 'picture', 'address', 'phone_mobile_verified', 'email_verified',
             # FIXME: change related fields
             {
+                'user': ('id',),
                 'notes': ('id', 'note'),
                 'company_contact': (
                     'id', 'job_title', 'rating_unreliable', 'legacy_myob_card_number', 'voip_username',
                     'voip_password', 'receive_order_confirmation_sms'
                 ),
+                'candidate_contacts': ('id', 'recruitment_agent'),
                 'contact_unavailabilities': ('id', 'unavailable_from', 'unavailable_until', 'notes',),
             }
         )
