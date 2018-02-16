@@ -3,12 +3,12 @@ import freezegun
 from datetime import datetime, date, timedelta
 from django.utils import timezone
 
-from r3sourcer.apps.core.models import InvoiceRule
+from r3sourcer.apps.core.models import InvoiceRule, Invoice, InvoiceLine
 from r3sourcer.apps.hr.models import PayslipRule
 from r3sourcer.apps.hr.utils.utils import (
     today_5_am, today_7_am, today_12_pm, today_12_30_pm, today_3_30_pm,
     tomorrow, tomorrow_5_am, tomorrow_7_am, tomorrow_end_5_am, _time_diff,
-    get_invoice_rule, get_payslip_rule
+    get_invoice_rule, get_payslip_rule, get_invoice, get_invoice_dates
 )
 
 
@@ -96,3 +96,222 @@ class TestUtils:
         res = get_payslip_rule(regular_company)
 
         assert res is None
+
+
+class TestGetInvoice:
+    def test_get_invoice_one_invoice(self, master_company, regular_company, timesheet, vat):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice = Invoice.objects.create(
+            provider_company=master_company,
+            customer_company=regular_company,
+        )
+        InvoiceLine.objects.create(
+            invoice=invoice,
+            units=1,
+            unit_price=1,
+            date=date.today(),
+            timesheet=timesheet,
+            vat=vat,
+            amount=1,
+            notes=''
+        )
+        date_from, date_to = get_invoice_dates(invoice_rule)
+        result_invoice = get_invoice(regular_company, date_from, date_to, timesheet)
+
+        assert invoice == result_invoice
+
+    def test_get_invoice_per_candidate(self, master_company, regular_company, timesheet, vat, candidate_contact):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.separation_rule = 'per_candidate'
+        invoice_rule.save()
+        vacancy_offer = timesheet.vacancy_offer
+        vacancy_offer.candidate_contact = candidate_contact
+        vacancy_offer.save()
+        invoice = Invoice.objects.create(
+            provider_company=master_company,
+            customer_company=regular_company,
+        )
+        InvoiceLine.objects.create(
+            invoice=invoice,
+            units=1,
+            unit_price=1,
+            date=date.today(),
+            timesheet=timesheet,
+            vat=vat,
+            amount=1,
+            notes=''
+        )
+        date_from, date_to = get_invoice_dates(invoice_rule)
+        result_invoice = get_invoice(regular_company, date_from, date_to, timesheet)
+
+        assert invoice == result_invoice
+
+    def test_get_invoice_per_jobsite(self, master_company, regular_company, timesheet, vat, jobsite):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.separation_rule = 'per_jobsite'
+        invoice_rule.save()
+        vacancy = timesheet.vacancy_offer.shift.date.vacancy
+        vacancy.jobsite = jobsite
+        vacancy.save()
+        invoice = Invoice.objects.create(
+            provider_company=master_company,
+            customer_company=regular_company,
+        )
+        InvoiceLine.objects.create(
+            invoice=invoice,
+            units=1,
+            unit_price=1,
+            date=date.today(),
+            timesheet=timesheet,
+            vat=vat,
+            amount=1,
+            notes=''
+        )
+        date_from, date_to = get_invoice_dates(invoice_rule)
+        result_invoice = get_invoice(regular_company, date_from, date_to, timesheet)
+
+        assert invoice == result_invoice
+
+
+class TestGetInvoiceDates:
+    @freezegun.freeze_time(datetime(2017, 1, 1, 0, 0, 0))
+    def test_get_invoice_dates_daily(self, regular_company):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'daily'
+        invoice_rule.save()
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2017, 1, 1)
+        assert date_to == date(2017, 1, 2)
+
+    @freezegun.freeze_time(datetime(2017, 1, 1, 0, 0, 0))
+    def test_get_invoice_dates_weekly(self, regular_company):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'weekly'
+        invoice_rule.save()
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2016, 12, 26)
+        assert date_to == date(2017, 1, 2)
+
+    @freezegun.freeze_time(datetime(2017, 1, 1, 0, 0, 0))
+    def test_get_invoice_dates_fortnightly_first_invoice(self, regular_company):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'fortnightly'
+        invoice_rule.save()
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2016, 12, 26)
+        assert date_to == date(2017, 1, 9)
+
+    @freezegun.freeze_time(datetime(2017, 1, 1, 0, 0, 0))
+    def test_get_invoice_dates_fortnightly(self, regular_company, master_company):
+        freezer = freezegun.freeze_time("2016-01-26 12:00:00")
+        freezer.start()
+        Invoice.objects.create(
+            provider_company=master_company,
+            customer_company=regular_company,
+        )
+        freezer.stop()
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'fortnightly'
+        invoice_rule.save()
+
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2016, 12, 26)
+        assert date_to == date(2017, 1, 9)
+
+    @freezegun.freeze_time(datetime(2017, 1, 16, 0, 0, 0))
+    def test_get_invoice_dates_fortnightly_new_invoice(self, regular_company, master_company):
+        freezer = freezegun.freeze_time("2016-12-26 12:00:00")
+        freezer.start()
+        Invoice.objects.create(
+            provider_company=master_company,
+            customer_company=regular_company,
+        )
+        freezer.stop()
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'fortnightly'
+        invoice_rule.save()
+
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2017, 1, 9)
+        assert date_to == date(2017, 1, 23)
+
+    @freezegun.freeze_time(datetime(2017, 1, 18, 0, 0, 0))
+    def test_get_invoice_dates_fortnightly_new_invoice_2(self, regular_company, master_company):
+        freezer = freezegun.freeze_time("2017-01-04 12:00:00")
+        freezer.start()
+        Invoice.objects.create(
+            provider_company=master_company,
+            customer_company=regular_company,
+        )
+        freezer.stop()
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'fortnightly'
+        invoice_rule.save()
+
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2017, 1, 16)
+        assert date_to == date(2017, 1, 30)
+
+    @freezegun.freeze_time(datetime(2017, 2, 22, 0, 0, 0))
+    def test_get_invoice_dates_fortnightly_new_invoice_empty_weeks(self, regular_company, master_company):
+        freezer = freezegun.freeze_time("2017-01-02 12:00:00")
+        freezer.start()
+        Invoice.objects.create(
+            provider_company=master_company,
+            customer_company=regular_company,
+        )
+        freezer.stop()
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'fortnightly'
+        invoice_rule.save()
+
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2017, 2, 13)
+        assert date_to == date(2017, 2, 27)
+
+    @freezegun.freeze_time(datetime(2018, 1, 1, 0, 0, 0))
+    def test_get_invoice_dates_monthly(self, regular_company):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'monthly'
+        invoice_rule.save()
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2018, 1, 1)
+        assert date_to == date(2018, 1, 29)
+
+    @freezegun.freeze_time(datetime(2017, 1, 1, 0, 0, 0))
+    def test_get_invoice_dates_monthly_overlapped_end(self, regular_company):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'monthly'
+        invoice_rule.save()
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2016, 12, 26)
+        assert date_to == date(2017, 1, 30)
+
+    @freezegun.freeze_time(datetime(2017, 2, 2, 0, 0, 0))
+    def test_get_invoice_dates_monthly_overlapped_start_end(self, regular_company):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'monthly'
+        invoice_rule.save()
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2017, 1, 30)
+        assert date_to == date(2017, 2, 27)
+
+    @freezegun.freeze_time(datetime(2017, 4, 5, 0, 0, 0))
+    def test_get_invoice_dates_monthly_overlapped_start(self, regular_company):
+        invoice_rule = regular_company.invoice_rules.first()
+        invoice_rule.period = 'monthly'
+        invoice_rule.save()
+        date_from, date_to = get_invoice_dates(invoice_rule)
+
+        assert date_from == date(2017, 3, 27)
+        assert date_to == date(2017, 5, 1)

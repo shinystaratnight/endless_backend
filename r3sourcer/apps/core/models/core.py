@@ -1622,6 +1622,7 @@ class Order(AbstractOrder):
         verbose_name_plural = _("Orders")
 
     @workflow_function
+    @workflow_function
     def is_state_50_available(self):
         return self._is_state_available(50)
 
@@ -1737,6 +1738,11 @@ class Invoice(AbstractOrder):
     date = models.DateField(
         verbose_name=_("Creation date"),
         auto_now_add=True,
+        null=True
+    )
+
+    updated = models.DateField(
+        auto_now=True,
         null=True
     )
 
@@ -2227,6 +2233,24 @@ class InvoiceRule(AbstractPayRuleMixin, UUIDModel):
         verbose_name=_("Show Candidate Name"),
         default=False
     )
+
+    @property
+    def last_invoice_created(self):
+        date = None
+
+        if self.company.customer_invoices.exists():
+            date = self.company.customer_invoices.order_by('-date')[0].date
+
+        return date
+
+    @property
+    def last_invoice_updated(self):
+        date = None
+
+        if self.company.customer_invoices.exists():
+            date = self.company.customer_invoices.order_by('-updated')[0].updated
+
+        return date
 
     class Meta:
         verbose_name = _("Invoice Rule")

@@ -15,9 +15,9 @@ from django.utils import timezone, formats
 from r3sourcer.apps.core.models import Company, InvoiceRule, Invoice, Contact
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.hr.utils import utils
+from r3sourcer.apps.hr.payment import InvoiceService, PayslipService
 from r3sourcer.apps.sms_interface.utils import get_sms_service
-from .payment import InvoiceService, PayslipService
-from .utils.utils import get_invoice_rule, get_payslip_rule, calculate_distances_for_jobsite
 
 
 logger = get_task_logger(__name__)
@@ -29,7 +29,7 @@ def prepare_invoices():
     now = timezone.localtime(timezone.now())
 
     for company in Company.objects.filter(type='regular'):
-        invoice_rule = get_invoice_rule(company)
+        invoice_rule = utils.get_invoice_rule(company)
 
         if not invoice_rule:
             continue
@@ -74,7 +74,7 @@ def prepare_payslips():
     now = timezone.localtime(timezone.now())
 
     for company in Company.objects.all():
-        payslip_rule = get_payslip_rule(company)
+        payslip_rule = utils.get_payslip_rule(company)
 
         if not payslip_rule:
             continue
@@ -126,7 +126,7 @@ def update_all_distances():
     for jobsite in all_calculated_jobsites:
         if not (jobsite.latitude == 0 and jobsite.longitude == 0):
             contacts = Contact.objects.filter(distance_caches__jobsite=jobsite)
-            if not calculate_distances_for_jobsite(contacts, jobsite):
+            if not utils.calculate_distances_for_jobsite(contacts, jobsite):
                 break
 
 
@@ -314,3 +314,21 @@ def send_placement_rejection_sms(self, vacancy_offer_id):
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
             send_vacancy_offer_sms(vacancy_offer, 'vacancy-offer-rejection')
+
+
+@shared_task
+def generate_invoice(timesheet):
+    """
+    Generates new or updates existing invoice. Accepts regular(customer) company.
+    """
+    company = timesheet.regular_company
+    service = InvoiceService()
+    invoice_rule = utils.get_invoice_rule(company)
+
+    date_from, date_to = utils.get_invoice_dates(invoice_rule)
+    invoice = utils.get_invoice(company, date_from, date_to, timesheet)
+
+    if invoice:
+        service.update_invoice(invoice, date_from, date_to)
+    else:
+        service.generate_invoice(company, date_from, date_to)
