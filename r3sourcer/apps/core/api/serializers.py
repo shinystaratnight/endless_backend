@@ -1098,7 +1098,7 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         if not company_rel:
             return
 
-        if company_rel:
+        if company_rel and company_rel.primary_contact:
             return core_field.ApiBaseRelatedField.to_read_only_data(company_rel.primary_contact)
 
     def get_master_company(self, obj):
