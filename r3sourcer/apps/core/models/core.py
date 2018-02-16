@@ -12,6 +12,7 @@ from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group
 from django.contrib.postgres.fields import JSONField
 from django.contrib.sites.models import Site
+from django.core.cache import cache
 from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -41,7 +42,7 @@ from ..utils.user import get_default_company
 from ..managers import (
     TagManager, AbstractCompanyContactOwnerManager, AbstractObjectOwnerManager
 )
-from ..mixins import CompanyLookupMixin, MasterCompanyLookupMixin, CategoryFolderMixin
+from ..mixins import CompanyLookupMixin, MasterCompanyLookupMixin, CategoryFolderMixin, MYOBMixin
 from ..service import factory
 from ..utils.geo import fetch_geo_coord_by_address
 from ..utils.validators import string_is_numeric
@@ -70,8 +71,10 @@ class UUIDModel(models.Model):
 
 
 class Contact(
-        CategoryFolderMixin,
-        UUIDModel):
+    CategoryFolderMixin,
+    MYOBMixin,
+    UUIDModel
+):
 
     EXCLUDE_INPUT_FIELDS = (
         'files',
@@ -601,7 +604,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     )
 
     receive_order_confirmation_sms = models.BooleanField(
-        verbose_name=_("Receive order confirmation sms"),
+        verbose_name=_("Receive Vacancy confirmation sms"),
         default=True
     )
 
@@ -972,6 +975,10 @@ class Company(
 
         return qs
 
+    @property
+    def invoice_rule(self):
+        return self.invoice_rules.first()
+
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
         from r3sourcer.apps.hr.models import PayslipRule
@@ -1060,6 +1067,8 @@ class CompanyRel(
 
         if just_added:
             self.create_state(10)
+
+        cache.set('company_rel_{}'.format(self.regular_company.id), None)
 
 
 class CompanyContactRelationship(
@@ -1739,6 +1748,18 @@ class Invoice(AbstractOrder):
 
     order_number = models.TextField(
         verbose_name=_("Order Number"),
+        null=True
+    )
+
+    period = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True
+    )
+
+    separation_rule = models.CharField(
+        max_length=255,
+        blank=True,
         null=True
     )
 

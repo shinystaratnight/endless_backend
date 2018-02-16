@@ -41,9 +41,10 @@ def filter_factory(endpoint):
         meta_field = _get_field(meta_fields, field) or list_filter
         field_type = list_filter.get('type', meta_field.get('type'))
         field_qry = field.replace('.', '__')
+        distinct = list_filter.get('distinct', False)
 
         if field_type == constants.FIELD_RELATED:
-            attrs[field_qry] = CharFilter(lookup_expr='id')
+            attrs[field_qry] = CharFilter(lookup_expr='id', distinct=distinct)
         elif field_type == constants.FIELD_SELECT:
             if 'choices' in list_filter:
                 choices = list_filter['choices']
@@ -55,6 +56,7 @@ def filter_factory(endpoint):
             kwargs = {
                 'name': field_qry,
                 'empty_label': _('All'),
+                'distinct': distinct
             }
             if list_filter.get('is_qs', False):
                 choice_filter_class = ValuesFilter
@@ -77,7 +79,8 @@ def filter_factory(endpoint):
                 field_class = DateTimeFromToRangeFilter
 
             attrs[field_qry] = field_class(
-                name=field_qry
+                name=field_qry,
+                distinct=distinct
             )
         else:
             continue  # pragma: no cover

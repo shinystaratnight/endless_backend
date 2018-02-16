@@ -19,7 +19,7 @@ class RateCoefficientEndpoint(ApiEndpoint):
     base_viewset = viewsets.RateCoefficientViewset
     serializer = serializers.RateCoefficientSerializer
 
-    list_display = ('__str__', 'rules', 'group', 'active')
+    list_display = ('__str__', 'industry', 'rules', 'group', 'active')
 
     fieldsets = (
         {
@@ -28,7 +28,7 @@ class RateCoefficientEndpoint(ApiEndpoint):
             'fields': (
                 {
                     'type': constants.CONTAINER_COLUMN,
-                    'fields': ('name', {
+                    'fields': ('industry', 'name', {
                         'type': constants.FIELD_RELATED,
                         'field': 'group',
                     }, 'active'),
@@ -126,6 +126,8 @@ class RateCoefficientEndpoint(ApiEndpoint):
         },
     )
 
+    list_filter = ('industry', )
+
 
 class PriceListRateEndpoint(ApiEndpoint):
     model = models.PriceListRate
@@ -160,16 +162,24 @@ class PriceListEndpoint(ApiEndpoint):
     model = models.PriceList
 
     list_filter = ('company', )
-    list_editable = ('valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at')
+    list_editable = ('valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at', {
+        **constants.BUTTON_EDIT,
+        'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelists'))
+    }, constants.BUTTON_DELETE,)
+
+
+class IndustryEndpoint(ApiEndpoint):
+    model = models.Industry
+    serializer = serializers.IndustrySerializer
+
+    list_display = ('type', )
+    fieldsets = ('type', )
 
 
 router.register(endpoint=RateCoefficientEndpoint())
 router.register(models.RateCoefficientGroup)
 router.register(endpoint=RateCoefficientModifierEndpoint())
-router.register(models.Industry)
-router.register(models.IndustryPriceList)
-router.register(models.IndustryPriceListRate)
-router.register(models.IndustryRateCoefficient)
+router.register(endpoint=IndustryEndpoint())
 router.register(endpoint=PriceListEndpoint())
 router.register(endpoint=PriceListRateEndpoint())
 router.register(models.PriceListRateCoefficient)

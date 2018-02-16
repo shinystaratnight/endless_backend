@@ -37,8 +37,8 @@ class BaseSync:
 
     required_put_keys = ('UID', 'RowVersion', 'DisplayID')
 
-    def __init__(self, myob_client=None, company=None):
-        self.client = myob_client or get_myob_client(company=company)
+    def __init__(self, myob_client=None, company=None, cf_id=None):
+        self.client = myob_client or get_myob_client(cf_id=cf_id, company=company)
         if self.client is None:
             return
 
@@ -337,13 +337,12 @@ class InvoiceSync(PaymentSync):
         activities = dict()
 
         for invoice_line in invoice.invoice_lines.all():
-            params = ""
             activity_mapper = ActivityMapper()
             vacancy = invoice_line.timesheet.vacancy_offer.vacancy
             skill = vacancy.position
-            activity_display_id = invoice_line.id[:30]
+            activity_display_id = str(vacancy.id)[:30]
             position_parts = vacancy.position.name.split(' ')
-            price_list = invoice.customer_company.price_lists.first()
+            price_list = invoice.customer_company.price_lists.get(effective=True)
             rate = PriceListRate.objects.filter(price_list=price_list, skill=skill)
             name = ' '.join([part[:4] for part in position_parts])
             income_account_resp = self._get_object_by_field(
@@ -362,14 +361,17 @@ class InvoiceSync(PaymentSync):
                 income_account=income_account_resp['UID'],
                 description='{} {}'.format(vacancy.position, rate if rate else 'Base Rate')
             )
-            activity_response = self._get_object(params, self.client.api.TimeBilling.Activity)
+            activity_response = self._get_object_by_field(activity_display_id,
+                                                          self.client.api.TimeBilling.Activity,
+                                                          single=True)
 
             if not activity_response:
-                activity_response = self.client.api.TimeBilling.Activity.post(
-                    json=data, raw_resp=True
-                )
+                self.client.api.TimeBilling.Activity.post(json=data, raw_resp=True)
+                activity_response = self._get_object_by_field(activity_display_id,
+                                                              self.client.api.TimeBilling.Activity,
+                                                              single=True)
 
-            activities.update({invoice_line.id: activity_response['Items'][0]['UID']})
+            activities.update({invoice_line.id: activity_response['UID']})
 
         return activities
 

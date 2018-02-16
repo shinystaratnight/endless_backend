@@ -369,17 +369,9 @@ def picture(faker):
 
 
 @pytest.fixture
-def industry_price_list(db, industry):
-    return pricing_models.IndustryPriceList.objects.create(
-        industry=industry,
-    )
-
-
-@pytest.fixture
-def price_list(db, master_company, industry_price_list):
+def price_list(db, master_company):
     return pricing_models.PriceList.objects.create(
         company=master_company,
-        industry_price_list=industry_price_list,
     )
 
 
@@ -389,14 +381,6 @@ def price_list_rate(db, price_list, skill):
         price_list=price_list,
         skill=skill,
         hourly_rate=10,
-    )
-
-
-@pytest.fixture
-def industry_price_list_rate(db, industry_price_list, skill):
-    return pricing_models.IndustryPriceListRate.objects.create(
-        industry_price_list=industry_price_list,
-        skill=skill,
     )
 
 
@@ -429,8 +413,8 @@ def payslip_rule_company(db, regular_company):
 
 
 @pytest.fixture
-def rate_coefficient(db):
-    coeff = pricing_models.RateCoefficient.objects.create(name='test')
+def rate_coefficient(db, industry):
+    coeff = pricing_models.RateCoefficient.objects.create(name='test', industry=industry)
     pricing_models.RateCoefficientModifier.objects.create(
         type=pricing_models.RateCoefficientModifier.TYPE_CHOICES.company,
         rate_coefficient=coeff,
@@ -441,8 +425,8 @@ def rate_coefficient(db):
 
 
 @pytest.fixture
-def allowance_rate_coefficient(db):
-    coeff = pricing_models.RateCoefficient.objects.create(name='test')
+def allowance_rate_coefficient(db, industry):
+    coeff = pricing_models.RateCoefficient.objects.create(name='test', industry=industry)
     pricing_models.RateCoefficientModifier.objects.create(
         type=pricing_models.RateCoefficientModifier.TYPE_CHOICES.company,
         rate_coefficient=coeff,

@@ -400,10 +400,6 @@ class Vacancy(core_models.AbstractBaseOrder):
             models.Q(
                 price_list_rates__skill=self.position,
                 price_list_rates__hourly_rate__gt=0
-            ) |
-            models.Q(
-                industry_price_list__industry_price_list_rates__skill=self.position,
-                industry_price_list__industry_price_list_rates__hourly_rate__gt=0
             ),
             models.Q(valid_until__gte=today) | models.Q(valid_until__isnull=True),
             effective=True, valid_from__lte=today,
@@ -1076,6 +1072,14 @@ class TimeSheet(
 
     def get_vacancy_offer(self):
         return self.vacancy_offer
+
+    @property
+    def master_company(self):
+        return self.vacancy_offer.shift.date.vacancy.jobsite.master_company
+
+    @property
+    def regular_company(self):
+        return self.vacancy_offer.shift.date.vacancy.jobsite.jobsite_addresses.first().regular_company
 
     @classmethod
     def get_or_create_for_vacancy_offer_accepted(cls, vacancy_offer):

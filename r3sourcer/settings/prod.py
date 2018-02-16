@@ -338,7 +338,7 @@ BOWER_INSTALLED_APPS = (
     'bootstrap#3.3.7'
 )
 
-DEFAULT_CURRENCY = 'USD'
+DEFAULT_CURRENCY = 'AUD'
 REPLY_TIMEOUT_SMS = 4
 DELIVERY_TIMEOUT_SMS = 4
 
@@ -396,3 +396,15 @@ DEFAULT_SMTP_TLS = env('DEFAULT_SMTP_TLS', '1') == '1'
 
 # time delta in hours
 VACANCY_FILLING_TIME_DELTA = 8
+
+ENABLED_MYOB_WORKING = env('ENABLED_MYOB_WORKING', '0') == '1'
+
+
+CITIES_LIGHT_CITY_SOURCES = [
+    'http://download.geonames.org/export/dump/cities15000.zip',
+    'http://download.geonames.org/export/dump/AU.zip',
+]
+
+CITIES_LIGHT_INCLUDE_CITY_TYPES = [
+    'PPL', 'PPLA', 'PPLA2', 'PPLA3', 'PPLA4', 'PPLC', 'PPLF', 'PPLG', 'PPLL', 'PPLR', 'PPLS', 'STLMT', 'PPLX'
+]

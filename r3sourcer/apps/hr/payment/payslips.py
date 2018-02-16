@@ -14,7 +14,7 @@ from r3sourcer.apps.pricing.models import RateCoefficientModifier
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.candidate.models import SkillRateRel, CandidateContact
 
-from .base import BasePaymentService
+from .base import BasePaymentService, calc_worked_delta
 from ..models import PayslipLine, Payslip, VacancyOffer, TimeSheet
 
 
@@ -55,7 +55,7 @@ class PayslipService(BasePaymentService):
             skill_rate = self._get_skill_rate(candidate, skill)
 
             started_at = localtime(timesheet.shift_started_at)
-            worked_hours = self._calc_worked_delta(timesheet)
+            worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc(
                 industry,
                 RateCoefficientModifier.TYPE_CHOICES.company,

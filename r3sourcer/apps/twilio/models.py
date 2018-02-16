@@ -9,8 +9,8 @@ from django.utils.translation import ugettext_lazy as _
 from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
 from r3sourcer.apps.sms_interface import models as sms_models
 from model_utils import Choices
-from twilio import TwilioRestException
-from twilio.rest import TwilioRestClient
+from twilio.base.exceptions import TwilioRestException
+from twilio.rest import Client
 
 import datetime
 import logging
@@ -65,7 +65,7 @@ class TwilioCredential(UUIDModel, DeadlineCheckingMixin):
     def check_connection(self):
         """ Check account credentials """
         try:
-            self.client.accounts.list()
+            self.client.api.accounts.list()
         except Exception as e:
             error_text = self.INVALID_CREDENTIALS % str(e)
             raise ValidationError({'sid': error_text, 'auth_token': error_text})
@@ -75,7 +75,7 @@ class TwilioCredential(UUIDModel, DeadlineCheckingMixin):
 
     @cached_property
     def client(self):
-        return TwilioRestClient(self.sid, self.auth_token)
+        return Client(self.sid, self.auth_token)
 
     @property
     def is_synced(self):
@@ -194,7 +194,7 @@ class TwilioAccount(UUIDModel):
 
     @property
     def remote_record(self):
-        return self.client.accounts.get(self.sid)
+        return self.client.api.accounts.get(self.sid)
 
     def get_owner_account(self):
         """
@@ -213,7 +213,7 @@ class TwilioAccount(UUIDModel):
         """
         values_set = self.STATUS_CHOICES._db_values
         assert status.upper() in values_set, self.INCORRECT_STATUS_ERROR % list(values_set)
-        self.remote_record.update_instance(status=status.lower())
+        self.remote_record.update(status=status.lower())
         old_status = self.status
         self.status = status
         self.save(update_fields=['status'])
@@ -221,7 +221,7 @@ class TwilioAccount(UUIDModel):
 
     def get_message(self, message_sid):
         try:
-            return self.client.messages.get(message_sid)
+            return self.client.api.messages.get(message_sid).fetch()
         except TwilioRestException as e:
             logger.error("[Get message error]: {}".format(e))
 

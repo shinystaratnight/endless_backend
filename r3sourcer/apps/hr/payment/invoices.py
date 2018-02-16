@@ -11,11 +11,9 @@ from filer.models import Folder, File
 
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
 from r3sourcer.apps.pricing.services import PriceListCoefficientService
-from r3sourcer.apps.pricing.models import (
-    RateCoefficientModifier, PriceListRate, IndustryPriceListRate,
-)
+from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 
-from .base import BasePaymentService
+from .base import BasePaymentService, calc_worked_delta
 
 from ..models import TimeSheet
 from ..utils.utils import get_invoice_rule
@@ -28,18 +26,13 @@ class InvoiceService(BasePaymentService):
             skill=skill,
             price_list__company=customer_company,
         ).last()
-        if price_list_rate is None:
-            price_list_rate = IndustryPriceListRate.objects.filter(
-                skill=skill,
-                industry_price_list__industry=industry,
-            ).latest('updated_at')
 
         return price_list_rate
 
     def calculate(self, company, from_date=None, timesheets=None,
                   show_candidate=False):
 
-        timesheets = self._get_timesheets(timesheets, from_date)
+        timesheets = self._get_timesheets(timesheets, from_date, company=company)
         coefficient_service = PriceListCoefficientService()
 
         lines = []
@@ -54,7 +47,7 @@ class InvoiceService(BasePaymentService):
                 skill, customer_company, industry
             )
             started_at = localtime(timesheet.shift_started_at)
-            worked_hours = self._calc_worked_delta(timesheet)
+            worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc_company(
                 company, industry, skill,
                 RateCoefficientModifier.TYPE_CHOICES.company,
@@ -162,10 +155,13 @@ class InvoiceService(BasePaymentService):
         if lines:
             master_company = company.get_master_company()
             provider_company = master_company[0] if master_company else company
+            invoice_rule = company.invoice_rules.first()
             invoice = Invoice.objects.create(
                 provider_company=provider_company,
                 customer_company=company,
-                order_number=', '.join(jobsites)
+                order_number=', '.join(jobsites),
+                period=invoice_rule.period,
+                separation_rule=invoice_rule.separation_rule
             )
 
             invoice_lines = []
@@ -199,7 +195,8 @@ class InvoiceService(BasePaymentService):
                 show_candidate=invoice_rule.show_candidate_name
             )
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
-            for jobsite in company.jobsites.all():
+            jobsites = [x.jobsite for x in company.jobsite_addresses.all()]
+            for jobsite in set(jobsites):
                 timesheets = TimeSheet.objects.filter(
                     vacancy_offer__shift__date__vacancy__jobsite=jobsite
                 )
@@ -208,7 +205,7 @@ class InvoiceService(BasePaymentService):
                     show_candidate=invoice_rule.show_candidate_name
                 )
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
-            timesheets = self._get_timesheets(None, from_date)
+            timesheets = self._get_timesheets(None, from_date, company=company)
             candidates = set(timesheets.values_list(
                 'vacancy_offer__candidate_contact', flat=True
             ))

@@ -1,6 +1,7 @@
 import datetime
 
 from django.db import models
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
@@ -147,11 +148,11 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
     def persist(cls, auth_client):
         return cls.objects.update_or_create(
             client_id=auth_client.get_api_key(),
+            myob_user_uid=auth_client.get_user_uid(),
             defaults={
                 'client_secret': auth_client.get_api_secret(),
                 'access_token': auth_client.get_access_token(),
                 'refresh_token': auth_client.get_refresh_token(),
-                'myob_user_uid': auth_client.get_user_uid(),
                 'myob_user_username': auth_client.get_user_username(),
                 'expires_in': auth_client.get_expires_in(),
                 'expires_at': auth_client.get_expires_at(),
@@ -199,6 +200,19 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
         )
 
 
+class MYOBCompanyFileTokenManager(models.Manager):
+
+    def enabled(self, date=None):
+        date = date or timezone.localtime(timezone.now()).date()
+        if isinstance(date, datetime.datetime):
+            date = timezone.localtime(date).date()
+
+        return self.get_queryset().filter(
+            (models.Q(enable_from__isnull=True) | models.Q(enable_from__lte=date)) &
+            (models.Q(enable_until__isnull=True) | models.Q(enable_until__gte=date))
+        )
+
+
 class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
     """
     Contains all information needed for authorization and fetching information related to a specific company file
@@ -225,6 +239,8 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
         verbose_name=_("Enable Until")
     )
 
+    objects = MYOBCompanyFileTokenManager()
+
     class Meta:
         verbose_name = _("MYOB Company File Token")
         verbose_name_plural = _("MYOB Company File Tokens")
@@ -232,7 +248,8 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
     @classmethod
     def persist(cls, myob_client, company=None):
         auth_data = MYOBAuthData.objects.get(
-            client_id=myob_client.auth.get_api_key()
+            client_id=myob_client.auth.get_api_key(),
+            myob_user_uid=myob_client.auth.get_user_uid()
         )
 
         company_file, created = MYOBCompanyFile.persist(myob_client)
@@ -251,7 +268,10 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
         return obj, created
 
     def is_enabled(self, date=None):
-        date = date or datetime.date.today()
+        date = date or timezone.now()
+        if isinstance(date, datetime.datetime):
+            date = timezone.localtime(date).date()
+
         return (not self.enable_from or self.enable_from <= date) and \
             (not self.enable_until or self.enable_until >= date)
 
@@ -279,6 +299,14 @@ class MYOBSyncObject(UUIDModel, models.Model):
         related_name='sync_objects',
         null=True,
         blank=True
+    )
+
+    company_file = models.ForeignKey(
+        MYOBCompanyFile,
+        verbose_name=_("MYOB Company File"),
+        related_name='sync_objects',
+        null=True,
+        blank=True,
     )
 
     record = models.UUIDField(

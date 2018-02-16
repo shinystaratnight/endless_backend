@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.utils import timezone
 from model_utils import Choices
 
@@ -402,14 +403,36 @@ class SkillConfig(BaseConfig):
     lbk_model = 'crm_hr_skill'
     order_by = 'name'
 
+    @classmethod
+    def prepare_data(cls, row):  # pragma: no cover
+        if row['active']:
+            row['active'] = False
+
+        return row
+
 
 class SkillBaseRateConfig(BaseConfig):
     columns = {
-        'id', 'skill_id', 'hourly_rate',
+        'id', 'skill_id', 'hourly_rate', 'default_rate',
+    }
+    columns_map = {
+        'active': 'default_rate',
     }
     model = skill_models.SkillBaseRate
-    lbk_model = 'crm_hr_skillbaserate'
+    lbk_model = (
+        'crm_hr_skillbaserate as sbr LEFT JOIN '
+        'crm_hr_skill as s on sbr.skill_id=s.id'
+    )
     order_by = 'hourly_rate'
+    select = 'sbr.*, s.active'
+
+    @classmethod
+    def post_process(cls, row, instance):   # pragma: no cover
+        try:
+            instance.skill.active = row['active']
+            instance.skill.save(update_fields=['active'])
+        except ValidationError:
+            pass
 
 
 class SkillRelConfig(BaseConfig):
@@ -444,13 +467,6 @@ class IndustryConfig(BaseConfig):
     lbk_model = 'crm_hr_jobsitetype'
     order_by = 'type'
 
-    @classmethod
-    def post_process(cls, row, instance):   # pragma: no cover
-        pricing_models.IndustryPriceList.objects.get_or_create(
-            industry_id=row['id'],
-            defaults={'effective': True}
-        )
-
 
 class RateCoefficientGroupConfig(BaseConfig):
     columns = {
@@ -462,7 +478,7 @@ class RateCoefficientGroupConfig(BaseConfig):
 
 class RateCoefficientConfig(BaseConfig):
     columns = {
-        'id', 'name', 'group_id', 'active', 'created_at', 'updated_at',
+        'id', 'name', 'group_id', 'active', 'created_at', 'updated_at', 'industry_id',
     }
     model = pricing_models.RateCoefficient
     lbk_model = 'crm_hr_ratecoefficient'
@@ -558,32 +574,10 @@ class RateCoefficientModifierCandidateConfig(BaseConfig):
         return row
 
 
-class IndustryPriceListCoefficientsConfig(BaseConfig):
-    columns = {
-        'industry_price_list_id', 'rate_coefficient_id'
-    }
-    model = pricing_models.IndustryRateCoefficient
-    lbk_model = 'crm_hr_ratecoefficient'
-
-    @classmethod
-    def prepare_data(cls, row):  # pragma: no cover
-        row['industry_price_list_id'] = (
-            pricing_models.IndustryPriceList.objects.get(
-                industry_id=row['industry_id']
-            ).id
-        )
-        row['rate_coefficient_id'] = (
-            pricing_models.RateCoefficient.objects.get(name=row['name']).id
-        )
-
-        return row
-
-
 class PriceListConfig(BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'company_id', 'valid_from',
         'valid_until', 'effective', 'approved_by_id', 'approved_at',
-        'industry_price_list_id',
     }
     columns_map = {
         'client_id': 'company_id',
@@ -592,28 +586,6 @@ class PriceListConfig(BaseConfig):
     }
     model = pricing_models.PriceList
     lbk_model = 'crm_hr_pricelist'
-
-    @classmethod
-    def prepare_data(cls, row):  # pragma: no cover
-        row['industry_price_list_id'] = (
-            pricing_models.IndustryPriceList.objects.get(
-                industry_id='0a0a4325-15e4-4b8f-b261-5c08f639c6b0'
-            ).id
-        )
-
-        return row
-
-    @classmethod
-    def post_process(cls, row, instance):   # pragma: no cover
-        coeffs = pricing_models.IndustryRateCoefficient.objects.filter(
-            industry_price_list=instance.industry_price_list
-        )
-
-        for coeff in coeffs:
-            pricing_models.PriceListRateCoefficient.objects.get_or_create(
-                price_list=instance,
-                rate_coefficient=coeff.rate_coefficient
-            )
 
 
 class PriceListRateConfig(BaseConfig):
@@ -632,6 +604,28 @@ class PriceListRateConfig(BaseConfig):
     )
     select = 'plbr.*, plr.*'
     order_by = 'plr.id'
+
+
+class PriceListRateCoefficientConfig(BaseConfig):
+    columns = {
+        'id', 'created_at', 'updated_at', 'rate_coefficient_id', 'price_list_id'
+    }
+    columns_map = {
+        'plr.price_list_id': 'price_list_id',
+    }
+    model = pricing_models.PriceListRateCoefficient
+    lbk_model = (
+        'crm_hr_pricelistratecoefficient as plrc LEFT JOIN '
+        'crm_hr_pricelistrate as plr on plrc.price_list_rate_id=plr.id'
+    )
+    select = 'plrc.*, plr.*'
+    order_by = 'plrc.id'
+
+    @classmethod
+    def exists(cls, row):   # pragma: no cover
+        return cls.model.objects.filter(
+            price_list_id=row['price_list_id'], rate_coefficient_id=row['rate_coefficient_id']
+        ).exists()
 
 
 class JobsiteConfig(BaseConfig):
@@ -712,6 +706,7 @@ class VacancyDateConfig(BaseConfig):
             hr_models.Shift.objects.get_or_create(
                 date=instance,
                 time=dt.time(),
+                workers=row['workers'],
             )
 
 
@@ -869,10 +864,10 @@ ALL_CONFIGS = [
     CandidateContactConfig, TagRelConfig, SkillConfig, SkillBaseRateConfig,
     SkillRelConfig, SkillRateRelConfig, IndustryConfig,
     RateCoefficientGroupConfig, RateCoefficientConfig,
-    IndustryPriceListCoefficientsConfig,
     RateCoefficientModifierCompanyConfig,
     RateCoefficientModifierCandidateConfig, PriceListConfig,
-    PriceListRateConfig, JobsiteConfig, JobsiteUnavailabilityConfig,
+    PriceListRateConfig, PriceListRateCoefficientConfig,
+    JobsiteConfig, JobsiteUnavailabilityConfig,
     VacancyConfig, VacancyDateConfig, VacancyOfferConfig, TimeSheetConfig,
     BlackListConfig, FavouriteListConfig, CarrierListConfig,
     CandidateEvaluationConfig

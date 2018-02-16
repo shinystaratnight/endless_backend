@@ -422,6 +422,29 @@ class CompanyAddressEndpoint(ApiEndpoint):
         }
     )
 
+    list_editable = (
+        'name', {
+            'label': _('Address'),
+            'type': constants.FIELD_LINK,
+            'field': 'address',
+            'endpoint': format_lazy(
+                '{}{{address.id}}/',
+                api_reverse_lazy('core/addresses')
+            ),
+        }, 'hq', {
+            'label': _('Primary Contact'),
+            'type': constants.FIELD_LINK,
+            'field': 'primary_contact',
+            'endpoint': format_lazy(
+                '{}{{primary_contact.id}}/',
+                api_reverse_lazy('core/companycontacts')
+            ),
+        }, 'active', {
+            **constants.BUTTON_EDIT,
+            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/companyaddresses'))
+        }, constants.BUTTON_DELETE
+    )
+
     fieldsets = (
         'name', 'company', 'address', 'hq', 'termination_date',
         'primary_contact', 'active'
@@ -530,6 +553,13 @@ class CompanyEndpoint(ApiEndpoint):
 
     fields = (
         '__all__',
+        {
+            'invoice_rule': '__all__',
+            'manager': (
+                'id', '__str__',
+            ),
+            'groups': ('id', '__str__')
+        }
     )
 
     list_display = (
@@ -541,30 +571,39 @@ class CompanyEndpoint(ApiEndpoint):
                 api_reverse_lazy('core/companies')
             ),
             'field': 'name',
-        },
-        {
+        }, {
+            'label': _('State'),
+            'type': constants.FIELD_TEXT,
+            'field': 'state',
+        }, {
+            'label': _('City'),
+            'type': constants.FIELD_TEXT,
+            'field': 'city',
+        }, {
             'label': _('Primary Contact'),
-            'type': constants.FIELD_STATIC,
+            'type': constants.FIELD_LINK,
+            'field': 'manager',
+            'endpoint': format_lazy(
+                '{}{{manager.id}}/',
+                api_reverse_lazy('core/companycontacts')
+            ),
+        }, {
+            'label': _('Portfolio Manager'),
+            'type': constants.FIELD_LINK,
             'field': 'primary_contact',
-        },
-        {
-            'label': _('Manager'),
-            'type': constants.FIELD_STATIC,
-            'field': 'manager.__str__',
-        },
-        {
+            'endpoint': format_lazy(
+                '{}{{primary_contact.id}}/',
+                api_reverse_lazy('core/companycontacts')
+            ),
+        }, {
             'label': _('Available'),
             'read_only': True,
             'field': 'available',
-        },
-        {
+        }, {
             'label': _('Credit Info'),
             'fields': ({
                 'type': constants.FIELD_STATIC,
-                'field': 'credit_check',
-            }, {
-                'type': constants.FIELD_DATE,
-                'field': 'credit_check_date',
+                'field': 'credit_approved',
             }, {
                 'type': constants.FIELD_STATIC,
                 'field': 'approved_credit_limit',
@@ -572,97 +611,90 @@ class CompanyEndpoint(ApiEndpoint):
                 'type': constants.FIELD_STATIC,
                 'field': 'terms_of_pay',
             }),
-        },
-        {
-            'label': _('State'),
-            'field': 'active_states',
+        }, {
+            'label': _('Company State'),
+            'fields': ('active_states', )
         },
     )
 
     fieldsets = (
         {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('Picture'),
+            'type': constants.CONTAINER_ROW,
+            'label': '{name}',
             'fields': (
                 {
-                    'type': constants.FIELD_PICTURE,
-                    'field': 'logo',
-                    'label_upload': _('Choose a file'),
-                    'label_photo': _('Take a photo'),
-                },
-            ),
-        },
-        {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('General'),
-            'fields': (
-                'name', 'business_id', 'registered_for_gst', 'tax_number',
-                {
-                    'label': _('Primary Contact'),
-                    'type': constants.FIELD_STATIC,
-                    'field': 'primary_contact',
-                },
-                {
-                    'label': _('Primary Contact'),
-                    'type': constants.FIELD_STATIC,
-                    'field': 'manager',
-                },
-                'website', 'type', 'company_rating',
-                {
-                    'label': _('Date of incorporation'),
-                    'type': constants.FIELD_DATE,
-                    'field': 'date_of_incorporation'
-                },
-            ),
-        },
-        {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Company Address'),
-            'fields': (
-                {
-                    'label': _('Addresses'),
-                    'type': constants.FIELD_RELATED,
-                    'list': True,
-                    'edit': True,
-                    'field': 'company_addresses',
-                    'endpoint': api_reverse_lazy('core/notes'),
-                },
-                {
-                    'label': _('HQ Address'),
-                    'type': constants.CONTAINER_COLLAPSE,
-                    'collapsed': False,
+                    'type': constants.CONTAINER_COLUMN,
                     'fields': (
-                        'get_hq_address.address.__str__', 'get_hq_address.hq',
-                        'get_hq_address.name',
                         {
-                            'label': _('Termination date'),
-                            'type': constants.FIELD_DATE,
-                            'field': 'get_hq_address.termination_date'
-                        }, 'get_hq_address.primary_contact.__str__',
-                        'get_hq_address.active', 'get_hq_address.created',
-                        'get_hq_address.updated',
-                    )
+                            'type': constants.FIELD_PICTURE,
+                            'field': 'logo',
+                            'label_upload': _('Choose a file'),
+                            'label_photo': _('Take a photo'),
+                        },
+                    ),
                 },
-
-            )
-        },
-        {
+            ),
+        }, {
+            'type': constants.CONTAINER_ROW,
+            'label': _('General'),
+            'collapsed': False,
+            'fields': (
+                {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': (
+                        'type', 'company_rating', {
+                            'label': _('Date of incorporation'),
+                            'type': constants.FIELD_DATE,
+                            'field': 'date_of_incorporation'
+                        }, 'business_id', 'registered_for_gst',
+                    ),
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': (
+                        'name', 'website', {
+                            'label': _('Primary Contact'),
+                            'type': constants.FIELD_RELATED,
+                            'field': 'manager',
+                            'endpoint': api_reverse_lazy('core/companycontacts'),
+                        }, {
+                            'label': _('Master company'),
+                            'type': constants.FIELD_RELATED,
+                            'field': 'master_company',
+                            'endpoint': format_lazy('{}?type=master', api_reverse_lazy('core/companies')),
+                        }, {
+                            'label': _('Portfolio Manager'),
+                            'type': constants.FIELD_RELATED,
+                            'field': 'primary_contact',
+                            'endpoint': api_reverse_lazy('core/companycontacts'),
+                        },
+                    ),
+                },
+            ),
+        }, {
             'query': {
                 'company': '{id}'
             },
             'type': constants.FIELD_LIST,
             'collapsed': True,
-            'label': _('Company contact relationships'),
-            'endpoint': api_reverse_lazy('core/companycontactrelationships'),
-            'add_label': _('Add Company Contact Relationship'),
+            'label': _('Company Address'),
+            'endpoint': api_reverse_lazy('core/companyaddresses'),
+            'add_label': _('Add'),
             'prefilled': {
                 'company': '{id}',
             }
-        },
-        {
+        }, {
+            'query': {
+                'company': '{id}'
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Company Contacts'),
+            'endpoint': api_reverse_lazy('core/companycontactrelationships'),
+            'add_label': _('Add'),
+            'prefilled': {
+                'company': '{id}',
+            }
+        }, {
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'query': {
@@ -671,8 +703,7 @@ class CompanyEndpoint(ApiEndpoint):
             'label': _('Jobsites'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/jobsiteaddresses'),
-        },
-        {
+        }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Credit info'),
@@ -690,8 +721,7 @@ class CompanyEndpoint(ApiEndpoint):
                 }, 'approved_credit_limit',
                 'terms_of_payment', 'payment_due_date',
             )
-        },
-        {
+        }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Banking details'),
@@ -702,10 +732,8 @@ class CompanyEndpoint(ApiEndpoint):
                     'field': 'bank_account',
                     'endpoint': api_reverse_lazy('core/bankaccounts'),
                 },
-                'expense_account'
             )
-        },
-        {
+        }, {
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'query': {
@@ -714,11 +742,10 @@ class CompanyEndpoint(ApiEndpoint):
             'label': _('Price list'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('pricing/pricelists'),
-        },
-        {
+        }, {
             'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Company state timeline'),
+            'collapsed': False,
+            'name': _('State'),
             'fields': (
                 {
                     'type': constants.FIELD_TIMELINE,
@@ -734,8 +761,19 @@ class CompanyEndpoint(ApiEndpoint):
                     },
                 },
             )
-        },
-        {
+        }, {
+            'type': constants.FIELD_LIST,
+            'query': {
+                'object_id': '{regular_company_rel.id}'
+            },
+            'collapsed': True,
+            'label': _('States History'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/workflowobjects'),
+            'prefilled': {
+                'object_id': '{regular_company_rel.id}',
+            }
+        }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Notes'),
@@ -750,72 +788,68 @@ class CompanyEndpoint(ApiEndpoint):
                     'endpoint': api_reverse_lazy('core/notes'),
                 },
             )
-        },
-        {
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Invoice Rule'),
+            'fields': (
+                {
+                    'field': 'invoice_rule.id',
+                    'type': constants.FIELD_TEXT,
+                    'hidden': True,
+                },
+                'invoice_rule.separation_rule', 'invoice_rule.period',
+                {
+                    'field': 'invoice_rule.period_zero_reference',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                }, {
+                    'field': 'invoice_rule.serial_number',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                }, {
+                    'field': 'invoice_rule.starting_number',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                }, {
+                    'field': 'invoice_rule.notice',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                }, {
+                    'field': 'invoice_rule.comment',
+                    'type': constants.FIELD_TEXT,
+                    'showIf': [
+                        {
+                            'type': str(models.Company.COMPANY_TYPES.master),
+                        }
+                    ]
+                },
+                'invoice_rule.show_candidate_name',
+            )
+        }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Other'),
             'fields': (
-                {
-                    'label': _('Master company'),
-                    'type': constants.FIELD_RELATED,
-                    'list': True,
-                    'readonly': True,
-                    'field': 'get_master_company',
-                    'endpoint': api_reverse_lazy('core/companies'),
-                },
-                {
-                    'label': _('Portfolio manager'),
-                    'type': constants.FIELD_RELATED,
-                    'field': 'manager',
-                    'endpoint': '',
-                }, 'timesheet_approval_scheme',
-                {
-                    'label': _('Parent'),
-                    'type': constants.FIELD_RELATED,
-                    'field': 'parent.__str__',
-                    'endpoint': api_reverse_lazy('core/companies'),
-                },
-                {
-                    'label': _('Created date'),
-                    'type': constants.FIELD_DATETIME,
-                    'field': 'created',
-                },
-                {
-                    'label': _('Updated date'),
-                    'type': constants.FIELD_DATETIME,
-                    'field': 'updated',
-                },
+                'timesheet_approval_scheme', 'description'
             )
         },
-        {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Logo'),
-            'fields': (
-                {
-                    'type': constants.FIELD_PICTURE,
-                    'field': 'logo',
-                    'label_upload': _('Choose a file'),
-                    'label_photo': _('Take a photo'),
-                },
-            ),
-        },
-        {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('History'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'field': 'object_history',
-                    'many': True,
-                    'list': True,
-                    'readonly': True,
-                    'endpoint': api_reverse_lazy('log')
-                },
-            )
-        }
     )
 
     search_fields = (
@@ -823,12 +857,46 @@ class CompanyEndpoint(ApiEndpoint):
         'notes', 'description'
     )
 
+    def get_list_filter(self):
+        states_part = partial(
+            models.WorkflowNode.get_model_all_states, models.CompanyRel
+        )
+        list_filter = [{
+            'type': constants.FIELD_SELECT,
+            'field': 'status',
+            'label': _('Status'),
+            'choices': lazy(states_part, list),
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'portfolio_manager',
+            'label': _('Portfolio Manager'),
+            'endpoint': api_reverse_lazy('core/companycontacts'),
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'state',
+            'endpoint': api_reverse_lazy('core/regions'),
+            'value': 'naem'
+        }, {
+            'type': constants.FIELD_SELECT,
+            'field': 'credit_check',
+            'choices': [{'label': 'Approved', 'value': 'True'},
+                        {'label': 'Unapproved', 'value': 'False'}]
+        }]
+
+        return list_filter
+
 
 class CompanyContactRelationEndpoint(ApiEndpoint):
 
     model = models.CompanyContactRelationship
     serializer = serializers.CompanyContactRelationshipSerializer
     filter_class = filters.CompanyContactRelationshipFilter
+
+    list_editable = (
+        'company_contact.job_title', 'company_contact.contact.first_name', 'company_contact.contact.last_name',
+        'company_contact.contact.phone_mobile', 'company_contact.contact.email',
+        'company_contact.receive_order_confirmation_sms'
+    )
 
 
 class CompanyContactEndpoint(ApiEndpoint):
@@ -992,6 +1060,7 @@ class WorkflowObjectEndpoint(ApiEndpoint):
 
     model = models.WorkflowObject
     serializer = serializers.WorkflowObjectSerializer
+    filter_class = filters.WorkflowObjectFilter
 
     fieldsets = ({
         'type': constants.FIELD_TEXT,
@@ -1233,7 +1302,7 @@ class InvoiceLineEndpoint(ApiEndpoint):
     fieldsets = ('invoice', 'date', 'units', 'notes', 'unit_price', 'amount', 'unit_type', 'vat')
 
     list_editable = (
-        'date', 'units', 'notes', 'unit_price', 'amount', {
+        'date', 'units', 'notes', 'timesheet.vacancy_offer.candidate_contact', 'unit_price', 'amount', {
             'type': constants.FIELD_TEXT,
             'field': 'vat.name',
             'label': _('Code'),
@@ -1248,6 +1317,19 @@ class InvoiceLineEndpoint(ApiEndpoint):
     )
 
     filter_fields = ('invoice', )
+
+
+class InvoiceRuleEndpoint(ApiEndpoint):
+
+    model = models.InvoiceRule
+    serializer = serializers.InvoiceRuleSerializer
+
+    list_editable = (
+        'separation_rule', 'show_candidate_name', 'notice', 'serial_number', 'period', 'period_zero_reference',
+        'starting_number', 'comment',
+    )
+
+    list_filter = ('company', )
 
 
 router.register(endpoint=DashboardModuleEndpoint())
@@ -1293,3 +1375,4 @@ router.register(endpoint=ModelFormFieldEndpoint())
 router.register(endpoint=FileFormFieldEndpoint())
 router.register(endpoint=CheckBoxFormFieldEndpoint())
 router.register(endpoint=ContentTypeEndpoint())
+router.register(endpoint=InvoiceRuleEndpoint())

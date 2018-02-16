@@ -1,11 +1,11 @@
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import status
+from rest_framework import status, exceptions
 from rest_framework.response import Response
 
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 
-from r3sourcer.apps.core.api.decorators import list_route
+from r3sourcer.apps.core.api.decorators import list_route, detail_route
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models import Company, InvoiceRule
 
@@ -100,6 +100,72 @@ class CandidateContactViewset(BaseApiViewset):
         return Response(serializer.data,
                         status=status.HTTP_201_CREATED,
                         headers=headers)
+
+    @detail_route(
+        methods=['get'],
+        fieldsets=(
+            {
+                'type': constants.CONTAINER_ROW,
+                # TODO: needs front-end implementation
+                'wrapper': True,
+                'fields': ({
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ({
+                        # TODO: needs front-end implementation
+                        'type': constants.CONTAINER_ROW,
+                        # TODO: needs front-end implementation
+                        'inline': True,
+                        'fields': ('contact.picture', 'contact.__str__'),
+                    }, {
+                        'type': constants.CONTAINER_COLLAPSE,
+                        'label': _('Residency'),
+                        'fields': ('residency', 'visa_type', 'visa_expiry_date', 'nationality'),
+                    }, ),
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ({
+                        'type': constants.CONTAINER_COLLAPSE,
+                        'label': _('Personal Traits'),
+                        'fields': (
+                            'contact.gender', 'weight', 'transportation_to_work', 'strength', 'language',
+                            'candidate_scores.reliability', 'candidate_scores.loyalty',
+                            'candidate_scores.recruitment_score', 'candidate_scores.client_feedback',
+                        ),
+                    }, ),
+                })
+            }, {
+                'type': constants.FIELD_RELATED,
+                'delete': False,
+                'list': True,
+                'many': True,
+                'create': False,
+                'edit': False,
+                'collapsed': True,
+                'label': _('Skills'),
+                'field': 'candidate_skills',
+            }, {
+                'type': constants.FIELD_RELATED,
+                'delete': False,
+                'list': True,
+                'many': True,
+                'create': False,
+                'edit': False,
+                'collapsed': True,
+                'label': _('Tags'),
+                'field': 'tag_rels',
+            }, {
+                'type': constants.CONTAINER_COLLAPSE,
+                'label': _('Contact Details'),
+                'fields': (
+                    'contact.email', 'contact.phone_mobile', 'contact.address.phone_landline',
+                    'contact.address.phone_fax', 'contact.address.street_address', 'contact.address.postal_code',
+                    'contact.address.city', 'contact.address.state', 'contact.address.country',
+                ),
+            }
+        )
+    )
+    def profile(self, request, pk, *args, **kwargs):
+        return self.retrieve(request, pk=pk, *args, **kwargs)
 
 
 class SubcontractorViewset(BaseApiViewset):

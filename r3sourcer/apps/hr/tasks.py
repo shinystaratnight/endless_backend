@@ -28,7 +28,7 @@ def prepare_invoices():
     service = InvoiceService()
     now = timezone.localtime(timezone.now())
 
-    for company in Company.objects.all():
+    for company in Company.objects.filter(type='regular'):
         invoice_rule = get_invoice_rule(company)
 
         if not invoice_rule:

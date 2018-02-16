@@ -11,7 +11,7 @@ from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
 from r3sourcer.apps.activity import models as activity_models
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.pricing.models import PriceList, IndustryPriceList, Industry
+from r3sourcer.apps.pricing.models import PriceList, Industry
 from r3sourcer.apps.skills import models as skills_models
 
 
@@ -298,15 +298,7 @@ def industry(db):
 
 
 @pytest.fixture
-def industry_price_list(db, industry):
-    return IndustryPriceList.objects.create(
-        industry=industry,
-    )
-
-
-@pytest.fixture
-def price_list(db, company, industry_price_list):
+def price_list(db, company):
     return PriceList.objects.create(
         company=company,
-        industry_price_list=industry_price_list,
     )

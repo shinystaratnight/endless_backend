@@ -104,7 +104,7 @@ class ShiftFilter(FilterSet):
 
     class Meta:
         model = hr_models.Shift
-        fields = ['vacancy']
+        fields = ['vacancy', 'date']
 
     def filter_vacancy(self, queryset, name, value):
         return queryset.filter(date__vacancy_id=value)
