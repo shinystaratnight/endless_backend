@@ -311,18 +311,18 @@ class CompanyAddressViewset(BaseApiViewset):
 
     def get_queryset(self):
         current_site = get_current_site(self.request)
-
-        site_company = models.SiteCompany.objects.filter(
-            site=current_site
-        ).last()
         master_type = models.Company.COMPANY_TYPES.master
-        if not site_company or site_company.company.type != master_type:
+
+        site_companies = models.SiteCompany.objects.filter(
+            site=current_site,
+            company__type=master_type,
+        ).values_list('company_id', flat=True)
+        if not site_companies.exists():
             return models.CompanyAddress.objects.none()
         else:
-            master_company = site_company.company
             return models.CompanyAddress.objects.filter(
-                Q(company=master_company) |
-                Q(company__regular_companies__master_company=master_company)
+                Q(company__in=site_companies) |
+                Q(company__regular_companies__master_company__in=site_companies)
             ).distinct()
 
 
