@@ -155,6 +155,15 @@ def jobsite_address(db, address, jobsite, regular_company):
 
 
 @pytest.fixture
+def jobsite_address_master(db, address, jobsite, master_company):
+    return hr_models.JobsiteAddress.objects.create(
+        jobsite=jobsite,
+        address=address,
+        regular_company=master_company
+    )
+
+
+@pytest.fixture
 def skill(db):
     return Skill.objects.create(
         name="Driver",

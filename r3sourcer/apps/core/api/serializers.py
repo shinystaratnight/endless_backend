@@ -194,10 +194,16 @@ class ApiFullRelatedFieldsMixin():
             ):
                 continue  # pragma: no cover
 
-            if not isinstance(data, list) and data is not empty:
+            if not isinstance(data, list) and data is not empty and not field.read_only:
                 related_data = data.get(field_name, empty)
             else:
                 related_data = empty
+
+            if isinstance(related_data, list):
+                related_data = [
+                    {'id': related_item} if isinstance(related_item, str) else related_item
+                    for related_item in related_data
+                ]
 
             kwargs = dict(
                 required=field.required and not is_many_relation,
@@ -279,7 +285,7 @@ class ApiFullRelatedFieldsMixin():
                 if not isinstance(instance, model):  # pragma: no cover
                     instance_id = instance.get('id')
                     if instance_id:
-                        instance = model.objects.filter(id=instance_id).update(**instance)
+                        instance, _ = model.objects.update_or_create(id=instance_id, defaults=instance)
                     else:
                         instance = model.objects.create(**instance)
 
@@ -602,13 +608,11 @@ class NoteSerializer(ApiBaseModelSerializer):
 
 
 class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
-    notes = NoteSerializer(many=True, read_only=True)
     company_contact = CompanyContactSerializer(many=True, read_only=True)
     contact_unavailabilities = ContactUnavailabilitySerializer(many=True, read_only=True)
 
     image_fields = ('picture', )
     many_related_fields = {
-        'notes': 'contact',
         'company_contact': 'contact',
         'contact_unavailabilities': 'contact',
     }
@@ -641,8 +645,8 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         if not isinstance(address, core_models.Address):
             try:
                 address = core_models.Address.objects.create(**address)
-            except ValidationError as e:
-                raise serializers.ValidationError(e.messages)
+            except (ValidationError, TypeError) as e:
+                raise serializers.ValidationError(getattr(e, 'messages', _('Cannot create Contact without address')))
         contact = core_models.Contact.objects.create(
             address=address, **validated_data)
         return contact
@@ -673,7 +677,10 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         )
         related = RELATED_DIRECT
         extra_kwargs = {
-            'address': {'required': True}
+            'candidate_contacts': {'read_only': True},
+            'company_contact': {'read_only': True},
+            'master_company': {'read_only': True},
+            'user': {'read_only': True},
         }
 
 

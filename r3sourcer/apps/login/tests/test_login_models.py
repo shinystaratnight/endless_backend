@@ -10,7 +10,7 @@ class TestTokenLogin:
         assert token_login.auth_token == '1'*8
 
     def test_get_auth_url(self, token_login):
-        assert token_login.auth_url == '/#/login/11111111'
+        assert token_login.auth_url == '/login/11111111'
 
     def test_token_login_str(self, token_login, contact):
         assert str(token_login) == 'Token Login {}'.format(str(contact))
