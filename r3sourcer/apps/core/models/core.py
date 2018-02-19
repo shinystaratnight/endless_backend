@@ -904,6 +904,12 @@ class Company(
         default='4-1000',
     )
 
+    is_system = models.BooleanField(
+        default=False,
+        editable=False,
+        verbose_name=_('System Company')
+    )
+
     groups = models.ManyToManyField(Group, related_name='companies')
 
     class Meta:
