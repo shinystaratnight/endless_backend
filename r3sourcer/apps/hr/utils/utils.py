@@ -164,19 +164,23 @@ def seconds_to_hrs(seconds):
     return "%02d:%02d" % (hours, minutes % 60)
 
 
-def get_invoice_dates(invoice_rule):
+def get_invoice_dates(invoice_rule, timesheet=None):
     """
     Accepts invoice rule and returns date_from and date_to needed for invoice generation based on period setting.
     """
 
     date_from = None
     date_to = None
+    today = date.today()
+
+    if timesheet:
+        today = timesheet.shift_started_at.date()
 
     if invoice_rule.period == InvoiceRule.PERIOD_CHOICES.daily:
-        date_from = date.today()
+        date_from = today
         date_to = date_from + timedelta(days=1)
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.weekly:
-        date_from = date.today() - timedelta(datetime.now().date().weekday())
+        date_from = today - timedelta(datetime.now().date().weekday())
         date_to = date_from + timedelta(days=7)
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.fortnightly:
         if invoice_rule.last_invoice_created:
@@ -185,7 +189,7 @@ def get_invoice_dates(invoice_rule):
 
             date_from = first_invoice_day
             while True:
-                days_spent = (date.today() - date_from).days
+                days_spent = (today - date_from).days
 
                 if days_spent > 14:
                     date_from += timedelta(days=14)
@@ -194,11 +198,11 @@ def get_invoice_dates(invoice_rule):
 
             date_to = date_from + timedelta(days=14)
         else:
-            date_from = date.today() - timedelta(datetime.now().date().weekday())
+            date_from = today - timedelta(datetime.now().date().weekday())
             date_to = date_from + timedelta(days=14)
 
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.monthly:
-        date_from = date.today().replace(day=1) - timedelta(date.today().replace(day=1).weekday())
+        date_from = today.replace(day=1) - timedelta(today.replace(day=1).weekday())
 
         month_end = date_from + timedelta(days=28)
         month = (date_from + timedelta(days=15)).month
