@@ -9,7 +9,7 @@ import djmoney.models.fields
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0017_auto_20180208_1938'),
+        ('core', '0019_is_system_company_field'),
     ]
 
     operations = [
