@@ -324,11 +324,6 @@ def generate_invoice(timesheet):
     company = timesheet.regular_company
     service = InvoiceService()
     invoice_rule = utils.get_invoice_rule(company)
-
     date_from, date_to = utils.get_invoice_dates(invoice_rule)
     invoice = utils.get_invoice(company, date_from, date_to, timesheet)
-
-    if invoice:
-        service.update_invoice(invoice, date_from, date_to)
-    else:
-        service.generate_invoice(company, date_from, date_to)
+    service.generate_invoice(date_from, date_to, company=company, invoice=invoice)
