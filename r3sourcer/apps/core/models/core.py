@@ -35,6 +35,7 @@ from model_utils import Choices
 from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
+from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
@@ -252,6 +253,15 @@ class Contact(
         elif self.is_candidate_contact():
             return self.candidate_contacts.id
         return None
+
+    def get_closest_company(self):
+        if self.is_candidate_contact():
+            return self.candidate_contacts.get_closest_company()
+        elif self.is_company_contact():
+            master_company = self.company_contact.first().get_master_company()
+            return master_company[0] if len(master_company) > 0 else get_default_company()
+
+        return get_default_company()
 
 
 class ContactUnavailability(UUIDModel):
