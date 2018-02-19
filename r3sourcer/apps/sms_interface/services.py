@@ -6,6 +6,7 @@ from django.db.models import Q
 from django.conf import settings
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
+from phonenumber_field.phonenumber import PhoneNumber
 
 from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.core.service import factory
@@ -37,6 +38,13 @@ class BaseSMSService(metaclass=ABCMeta):
     @transaction.atomic
     def send(self, to_number, text, from_number=None, related_obj=None, **kwargs):
         sender_contact = kwargs.get('sender_contact')
+
+        if isinstance(to_number, PhoneNumber):
+            to_number = to_number.as_e164
+
+        if isinstance(from_number, PhoneNumber):
+            from_number = from_number.as_e164
+
         sms_message = get_sms(from_number=from_number, to_number=to_number, text=text, **kwargs)
         try:
 

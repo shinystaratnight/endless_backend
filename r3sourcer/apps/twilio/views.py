@@ -23,7 +23,9 @@ class SMSDialogTemplateView(MessageView, FormView):
         choices = []
 
         for phone in phones:
-            item = (str(phone.id), "{company} {phone_number}".format(company=phone.company, phone_number=phone.phone_number))
+            item = (str(phone.id), "{company} {phone_number}".format(
+                company=phone.company, phone_number=phone.phone_number
+            ))
             choices.append(item)
 
         return choices
