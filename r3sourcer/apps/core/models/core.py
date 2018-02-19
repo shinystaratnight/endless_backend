@@ -35,6 +35,7 @@ from model_utils import Choices
 from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
+from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
@@ -252,6 +253,15 @@ class Contact(
         elif self.is_candidate_contact():
             return self.candidate_contacts.id
         return None
+
+    def get_closest_company(self):
+        if self.is_candidate_contact():
+            return self.candidate_contacts.get_closest_company()
+        elif self.is_company_contact():
+            master_company = self.company_contact.first().get_master_company()
+            return master_company[0] if len(master_company) > 0 else get_default_company()
+
+        return get_default_company()
 
 
 class ContactUnavailability(UUIDModel):
@@ -608,6 +618,16 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
         default=True
     )
 
+    message_by_sms = models.BooleanField(
+        default=True,
+        verbose_name=_('By SMS')
+    )
+
+    message_by_email = models.BooleanField(
+        default=True,
+        verbose_name=_('By E-Mail')
+    )
+
     legacy_myob_card_number = models.CharField(
         max_length=15,
         verbose_name=_("Legacy MYOB card number"),
@@ -892,6 +912,12 @@ class Company(
         max_length=6,
         verbose_name=_('MYOB Expense Account'),
         default='4-1000',
+    )
+
+    is_system = models.BooleanField(
+        default=False,
+        editable=False,
+        verbose_name=_('System Company')
     )
 
     groups = models.ManyToManyField(Group, related_name='companies')
@@ -2188,9 +2214,9 @@ class AbstractPayRuleMixin(models.Model):
         abstract = True
 
     def clean(self):
-        if (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.weekly and self.period_zero_reference > 7) \
-                or (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.fortnightly and self.period_zero_reference > 14) \
-                or (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.monthly and self.period_zero_reference > 29):
+        if ((self.period == AbstractPayRuleMixin.PERIOD_CHOICES.weekly and self.period_zero_reference > 7)
+                or (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.fortnightly and self.period_zero_reference > 14)
+                or (self.period == AbstractPayRuleMixin.PERIOD_CHOICES.monthly and self.period_zero_reference > 29)):
             raise ValidationError(_('Incorrect period zero reference'))
 
 
@@ -2543,6 +2569,12 @@ class PublicHoliday(UUIDModel):
         ordering = ['country', 'date']
         verbose_name = _("Public holiday")
         verbose_name_plural = _("Public holidays")
+
+    @classmethod
+    def is_holiday(cls, date, country=None):
+        if country is None:
+            country = Country.objects.get(code2='AU')
+        return cls.objects.filter(country=country, date=date).exists()
 
 
 class ExtranetNavigation(MPTTModel, UUIDModel):

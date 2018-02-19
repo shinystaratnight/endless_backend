@@ -499,3 +499,11 @@ prepare-compose:
 	export LOGGER_PASSWORD="$(LOGGER_PASSWORD)" \
 	    && export LOGGER_USER="$(LOGGER_USER)" \
 	    && envsubst '$${LOGGER_USER} $${LOGGER_PASSWORD}' < conf/templates/users.xml > $(CURRENT_PATH)/users.xml
+
+load_fixtures:
+	$(call docker_exec, bin/django load_workflow, -it)
+	$(call docker_exec, bin/django load_hr_workflow, -it)
+	$(call docker_exec, bin/django loaddata r3sourcer/apps/core/fixtures/company_localization.json, -it)
+	$(call docker_exec, bin/django loaddata r3sourcer/apps/core/fixtures/extranet_navigation.json, -it)
+	$(call docker_exec, bin/django loaddata r3sourcer/apps/sms_interface/fixtures/sms_templates.json, -it)
+	$(call docker_exec, bin/django loaddata r3sourcer/apps/email_interface/fixtures/email_templates.json, -it)

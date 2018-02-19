@@ -50,7 +50,7 @@ wheel==0.29.0
 django_compressor==2.1
 infi.clickhouse_orm==0.9.4
 googlemaps==2.5.1
-twilio==5.6.0
+twilio==6.10.3
 weasyprint==0.40
 
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light

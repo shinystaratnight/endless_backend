@@ -11,14 +11,24 @@ def get_default_user():
                                         is_active=False)
     return user
 
+
 factory.register('get_default_user', get_default_user)
 
 
 def get_default_company():
     from ..models import Company
-    if Company.objects.filter(name=settings.SYSTEM_MASTER_COMPANY).exists():
-        company = Company.objects.get(name=settings.SYSTEM_MASTER_COMPANY)
-    else:
-        company = Company.objects.create(name=settings.SYSTEM_MASTER_COMPANY,
-                                         type=Company.COMPANY_TYPES.master)
+
+    try:
+        company = Company.objects.get(is_system=True)
+    except Company.DoesNotExist:
+        if Company.objects.filter(name=settings.SYSTEM_MASTER_COMPANY).exists():
+            company = Company.objects.get(name=settings.SYSTEM_MASTER_COMPANY)
+            company.is_system = True
+            company.save(update_fields=['is_system'])
+        else:
+            company = Company.objects.create(
+                name=settings.SYSTEM_MASTER_COMPANY,
+                type=Company.COMPANY_TYPES.master,
+                is_system=True,
+            )
     return company

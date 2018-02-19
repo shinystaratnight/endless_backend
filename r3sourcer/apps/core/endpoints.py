@@ -80,212 +80,114 @@ class ContactEndpoint(ApiEndpoint):
 
     fieldsets = (
         {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('Picture'),
+            'type': constants.CONTAINER_ROW,
+            'label': '{title} {first_name} {last_name}',
             'fields': (
                 {
-                    'type': constants.FIELD_PICTURE,
-                    'field': 'picture',
-                    'read_only': True
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': (
+                        {
+                            'type': constants.FIELD_PICTURE,
+                            'field': 'picture',
+                            'label_upload': _('Choose a file'),
+                            'label_photo': _('Take a photo'),
+                        },
+                    ),
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': (
+                        {
+                            'type': constants.FIELD_STATIC,
+                            'field': 'address.__str__',
+                        }, {
+                            'type': constants.FIELD_STATIC,
+                            'field': 'phone_mobile',
+                        }, {
+                            'type': constants.FIELD_STATIC,
+                            'field': 'email',
+                        },
+                    ),
                 },
             ),
-        },
-        {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('Name'),
-            'fields': (
-                'title', 'first_name', 'last_name'
-            ),
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('User relation'),
+            'type': constants.CONTAINER_ROW,
+            'label': _('General'),
             'fields': (
                 {
-                    'type': constants.FIELD_RELATED,
-                    'field': 'company_contact',
-                    'edit': True,
-                    'delete': True,
-                    'create': True,
-                    'list': True
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ('title', 'first_name', 'last_name'),
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': (
+                        'email', 'phone_mobile', 'address.phone_landline', 'address.phone_fax',
+                        {
+                            'type': constants.FIELD_RELATED,
+                            'field': 'address',
+                            'edit': True,
+                            'delete': True,
+                            'create': True
+                        }
+                    ),
                 },
-            )
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Contact information'),
-            'fields': (
-                'email', 'phone_mobile', 'address.phone_landline', 'address.phone_fax',
-                {
-                    'type': constants.FIELD_RELATED,
-                    'field': 'address',
-                    'edit': True,
-                    'delete': True,
-                    'create': True
-                }
-            )
+            ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Personal information'),
-            'fields': (
-                'gender', 'birthday', 'marital_status', 'spouse_name',
-                'children'
-            )
+            'fields': ('gender', 'birthday', 'marital_status', 'spouse_name', 'children')
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Misc'),
-            'fields': (
-                'is_available', 'phone_mobile_verified', 'email_verified'
-            )
+            'fields': ('is_available', 'phone_mobile_verified', 'email_verified')
+        }, {
+            'query': {
+                'object_id': '{id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Notes'),
+            'endpoint': api_reverse_lazy('core/notes'),
+            'add_label': _('Add note'),
+            'prefilled': {
+                'object_id': '{id}',
+            },
+        }, {
+            'query': {
+                'contact': '{id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Contact Unavailabilities'),
+            'endpoint': api_reverse_lazy('core/contactunavailabilities'),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
-            'name': _('Other'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'company_contact',
-                },
-            )
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Notes'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'notes',
-                },
-            )
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Contact unavailabilitie\'s'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'contact_unavailabilities',
-                },
-            )
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Company contact'),
-            'fields': (
-                {
-                    'type': constants.FIELD_RELATED,
-                    'delete': True,
-                    'list': True,
-                    'many': True,
-                    'create': True,
-                    'edit': True,
-                    'field': 'company_contact',
-                },
-            )
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('Candidate contact'),
-            'fields': (
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.residency',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.nationality',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.visa_type',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.visa_expiry_date',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.vevo_checked_at',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.weight',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.height',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.strength',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.language',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.candidate_scores.loyalty',
-                },
-                {
-                    'type': constants.FIELD_STATIC,
-                    'field': 'candidate_contacts.candidate_scores.reliability',
-                },
-            ),
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('Picture'),
-            'fields': (
-                {
-                    'type': constants.FIELD_PICTURE,
-                    'field': 'picture',
-                    'label_upload': _('Choose a file'),
-                    'label_photo': _('Take a photo'),
-                },
-            ),
+            'name': _('Relations'),
+            'fields': ({
+                'type': constants.FIELD_RELATED,
+                'label': _('User'),
+                'field': 'user',
+                'read_only': True,
+            }, {
+                'type': constants.FIELD_RELATED,
+                'label': _('Candidate Contact'),
+                'field': 'candidate_contacts',
+            }, {
+                'type': constants.FIELD_RELATED,
+                'label': _('Recruitment Agent'),
+                'field': 'candidate_contacts.recruitment_agent',
+            }, {
+                'type': constants.FIELD_RELATED,
+                'label': _('Company Contact'),
+                'field': 'company_contact',
+            }, {
+                'type': constants.FIELD_RELATED,
+                'label': _('Master Company'),
+                'field': 'master_company',
+                'endpoint': api_reverse_lazy('core/companies'),
+            },),
         },
-        {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('History'),
-            'fields': (
-                {
-                    'type': constants.CONTAINER_COLLAPSE,
-                    'collapsed': True,
-                    'name': _('History'),
-                    'fields': (
-                        {
-                            'type': constants.FIELD_RELATED,
-                            'field': 'object_history',
-                            'many': True,
-                            'list': True,
-                            'readonly': True,
-                            'endpoint': api_reverse_lazy('log')
-                        },
-                    )
-                }
-            ),
-        }
     )
 
     list_filter = [{
@@ -1302,7 +1204,7 @@ class InvoiceLineEndpoint(ApiEndpoint):
     fieldsets = ('invoice', 'date', 'units', 'notes', 'unit_price', 'amount', 'unit_type', 'vat')
 
     list_editable = (
-        'date', 'units', 'notes', 'unit_price', 'amount', {
+        'date', 'units', 'notes', 'timesheet.vacancy_offer.candidate_contact', 'unit_price', 'amount', {
             'type': constants.FIELD_TEXT,
             'field': 'vat.name',
             'label': _('Code'),
@@ -1332,6 +1234,34 @@ class InvoiceRuleEndpoint(ApiEndpoint):
     list_filter = ('company', )
 
 
+class NoteEndpoint(ApiEndpoint):
+
+    model = models.Note
+
+    list_editable = (
+        'note', 'created_at', 'updated_at', {
+            **constants.BUTTON_EDIT,
+            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/notes'))
+        }, constants.BUTTON_DELETE,
+    )
+
+    list_filter = ('object_id', )
+
+
+class ContactUnavailabilityEndpoint(ApiEndpoint):
+
+    model = models.ContactUnavailability
+
+    list_editable = (
+        'unavailable_from', 'unavailable_until', 'notes', 'created_at', 'updated_at', {
+            **constants.BUTTON_EDIT,
+            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/notes'))
+        }, constants.BUTTON_DELETE,
+    )
+
+    list_filter = ('contact', )
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(models.Address, serializer=serializers.AddressSerializer)
@@ -1345,13 +1275,13 @@ router.register(endpoint=CompanyLocalizationEndpoint())
 router.register(endpoint=CompanyRelEndpoint())
 router.register(models.CompanyTradeReference)
 router.register(endpoint=ContactEndpoint())
-router.register(models.ContactUnavailability)
+router.register(endpoint=ContactUnavailabilityEndpoint())
 router.register(endpoint=CountryEndpoint())
 router.register(models.FileStorage)
 router.register(models.Invoice, filter_fields=['customer_company'])
 router.register(endpoint=InvoiceLineEndpoint())
 router.register(endpoint=NavigationEndpoint())
-router.register(models.Note)
+router.register(endpoint=NoteEndpoint())
 router.register(models.Order, filter_fields=('provider_company',))
 router.register(endpoint=RegionEndpoint())
 router.register(models.Tag)
@@ -1376,3 +1306,4 @@ router.register(endpoint=FileFormFieldEndpoint())
 router.register(endpoint=CheckBoxFormFieldEndpoint())
 router.register(endpoint=ContentTypeEndpoint())
 router.register(endpoint=InvoiceRuleEndpoint())
+router.register(models.User)

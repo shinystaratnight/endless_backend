@@ -7,9 +7,7 @@ from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from django.utils.translation import ugettext_lazy as _
 
-from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.models import CompanyContact, Company
 from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
@@ -77,8 +75,76 @@ class TimeSheetEndpoint(ApiEndpoint):
             'label': _('Break started/ended'),
             'fields': ('break_started_ended',)
         }, {
-            'label': _('Morning check'),
-            'fields': ('going_to_work_confirmation', {
+            'label': _('Confirmations'),
+            'fields': ({
+                'type': constants.FIELD_STATIC_ICON,
+                'label': _('Morning check'),
+                'field': 'going_to_work_confirmation',
+                'showIf': [
+                    {
+                        'going_to_work_confirmation': True,
+                    }
+                ],
+            }, {
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-external-link',
+                'label': '%s:' % _('Morning check'),
+                'text': _('Confirm'),
+                'endpoint': format_lazy(
+                    '{}{{company.id}}/confirm',
+                    api_reverse_lazy('hr/timesheets'),
+                ),
+                'field': 'going_to_work_confirmation',
+                'action': constants.DEFAULT_ACTION_POST,
+                'showIf': [
+                    {
+                        'going_to_work_confirmation': False,
+                    }
+                ],
+            }, {
+                'type': constants.FIELD_STATIC_ICON,
+                'label': _('Candidate filled'),
+                'field': 'candidate_filled',
+                'showIf': [
+                    {
+                        'candidate_filled': True,
+                    }
+                ],
+            }, {
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-external-link',
+                'text': _('Send TS SMS'),
+                'endpoint': format_lazy(
+                    '{}{{company.id}}/resend_sms',
+                    api_reverse_lazy('hr/timesheets'),
+                ),
+                'field': 'resend_sms_candidate',
+                'action': constants.DEFAULT_ACTION_POST,
+                'showIf': [
+                    {
+                        'resend_sms_candidate': True,
+                    }
+                ],
+            }, {
+                'type': constants.FIELD_STATIC,
+                'label': _('Supervisor approved'),
+                'field': 'supervisor_approved',
+            }, {
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-external-link',
+                'text': _('Send TS SMS'),
+                'endpoint': format_lazy(
+                    '{}{{company.id}}/resend_sms',
+                    api_reverse_lazy('hr/timesheets'),
+                ),
+                'field': 'resend_sms_supervisor',
+                'action': constants.DEFAULT_ACTION_POST,
+                'showIf': [
+                    {
+                        'resend_sms_supervisor': True,
+                    }
+                ],
+            }, {
                 'type': constants.FIELD_BUTTON,
                 'icon': 'fa-commenting',
                 'text': 'Candidate Going To Work',
@@ -99,6 +165,39 @@ class TimeSheetEndpoint(ApiEndpoint):
                 'field': 'going_to_work_reply_sms',
                 'action': constants.DEFAULT_ACTION_EDIT,
             })
+        }, {
+            'label': _('Confirmations'),
+            'fields': ({
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-external-link',
+                'text': _('Fill'),
+                'endpoint': format_lazy(
+                    '{}{{id}}/candidate_fill',
+                    api_reverse_lazy('hr/timesheets'),
+                ),
+                'field': 'id',
+                'action': constants.DEFAULT_ACTION_EDIT,
+                'showIf': [
+                    {
+                        'resend_sms_candidate': True,
+                    }
+                ],
+            }, {
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-external-link',
+                'text': _('Approve'),
+                'endpoint': format_lazy(
+                    '{}{{id}}/supervisor_approve',
+                    api_reverse_lazy('hr/timesheets'),
+                ),
+                'field': 'id',
+                'action': constants.DEFAULT_ACTION_EDIT,
+                'showIf': [
+                    {
+                        'resend_sms_supervisor': True,
+                    }
+                ],
+            },),
         },
     )
 

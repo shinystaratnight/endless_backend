@@ -19,6 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
+    'add_endpoint', 'disabledIf',
 )
 
 
@@ -38,8 +39,8 @@ def to_html_tag(component_type):
     custom_types = [
         constants.FIELD_CHECKBOX, constants.FIELD_RADIO, constants.FIELD_TEXTAREA, constants.FIELD_SELECT,
         constants.FIELD_RADIO_GROUP, constants.FIELD_CHECKBOX_GROUP, constants.FIELD_BUTTON, constants.FIELD_LINK,
-        constants.FIELD_SUBMIT, constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_RULE,
-        constants.FIELD_ICON, constants.FIELD_TIMELINE, constants.FIELD_LIST,
+        constants.FIELD_SUBMIT, constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_STATIC_ICON,
+        constants.FIELD_RULE, constants.FIELD_ICON, constants.FIELD_TIMELINE, constants.FIELD_LIST,
     ]
     if component_type in custom_types:
         return component_type
@@ -92,7 +93,7 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LIST:
                 adapted.update(
                     collapsed=field.get('collapsed', False),
-                    **{attr: field[attr] for attr in ('endpoint', 'prefilled')
+                    **{attr: field[attr] for attr in ('endpoint', 'prefilled', 'add_endpoint')
                        if field.get(attr) is not None}
                 )
                 if field.get('add_label'):
@@ -101,7 +102,7 @@ class AngularApiAdapter(BaseAdapter):
                     adapted['metadata_query'] = field['metadata_query']
                 if field.get('max'):
                     adapted['max'] = field['max']
-            elif component_type != constants.FIELD_SUBMIT:
+            elif component_type not in [constants.FIELD_SUBMIT, constants.FIELD_LINKS_LIST]:
                 adapted['templateOptions']['action'] = field['action']
 
             query_params = field.get('query')
@@ -121,7 +122,7 @@ class AngularApiAdapter(BaseAdapter):
                 except NoReverseMatch:
                     return {'key': field['key']}
             else:
-                endpoint = field['endpoint']
+                endpoint = field.get('endpoint')
             adapted = {
                 'type': component_type,
                 'endpoint': endpoint,
@@ -176,7 +177,9 @@ class AngularApiAdapter(BaseAdapter):
             adapted['send'] = field['send']
 
         field_ui = field.get('ui', {})
-        ui_options = ('placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display')
+        ui_options = (
+            'placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display', 'disabledIf',
+        )
         adapted['templateOptions'].update({
             'type': component_type,
             'label': field.get('label', field_ui.get('label', '')),
@@ -375,7 +378,7 @@ class AngularListApiAdapter(AngularApiAdapter):
                 'label': label,
             }
 
-            if field_type == constants.FIELD_RELATED:
+            if field_type in [constants.FIELD_RELATED, constants.FIELD_LINK]:
                 if 'endpoint' in list_filter:
                     endpoint = list_filter['endpoint']
                 elif 'related_endpoint' in meta_field:
@@ -396,11 +399,18 @@ class AngularListApiAdapter(AngularApiAdapter):
                         'value': list_filter.get('value', '__str__'),
                     }
                 })
-            elif field_type == constants.FIELD_SELECT:
+                if constants.FIELD_LINK:
+                    adapted['type'] = constants.FIELD_RELATED
+            elif field_type in [constants.FIELD_SELECT, constants.FIELD_CHECKBOX]:
                 if 'choices' in list_filter:
                     choices = list_filter['choices']
                 elif 'choices' in meta_field:
                     choices = list(meta_field['choices'])
+                elif field_type == constants.FIELD_CHECKBOX:
+                    choices = [
+                        {'label': 'Yes', 'value': 'True'},
+                        {'label': 'No', 'value': 'False'}
+                    ]
                 else:
                     continue  # pragma: no cover
 
@@ -420,6 +430,8 @@ class AngularListApiAdapter(AngularApiAdapter):
                     'options': choices,
                     'default': list_filter.get('default'),
                 })
+                if field_type == constants.FIELD_CHECKBOX:
+                    adapted['type'] = constants.FIELD_SELECT
             elif field_type == constants.FIELD_SELECT_MULTIPLE:
                 adapted['data'] = {}
                 if 'endpoint' in list_filter:
@@ -603,7 +615,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         adapted = []
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
-            'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query',
+            'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query', 'showIf',
         )
 
         for display_field in display_fields:
@@ -679,7 +691,7 @@ class AngularListApiAdapter(AngularApiAdapter):
                 sorting_field = column['name']
                 sort = (
                     field in self.adapted_fields and
-                    self.adapted_fields[field]['type'] != constants.FIELD_STATIC and
+                    self.adapted_fields[field]['type'] not in [constants.FIELD_STATIC, constants.FIELD_STATIC_ICON] and
                     sorting_field in ordering_fields
                 )
 
@@ -795,7 +807,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         highlight = config['highlight']
         bulk_actions = config['bulk_actions']
         list_tabs = config['list_tabs']
-        list_editable_buttons = config['list_buttons']
+        list_editable_buttons = config['list_editable_buttons']
         if self.is_formset:
             list_buttons = list_editable_buttons
         else:
