@@ -521,14 +521,21 @@ class MYOBAccountRightV2API(object):
         self._init_api_access_methods()
 
     def _init_api_resources(self):
+        print(1)
         cf_uri = self._client.get_cf_uri()
+        print(2)
         resp = self._client.get_resources()
+        print(3)
         data = resp.json()
 
         if 'Resources' not in data:
+            print('  -->  ', data)
             self._init_api_resources()
+            print(5)
             return
 
+        print(6)
+        print(len(data['Resources']), '  --> ', data)
         for uri in data['Resources']:
             if not check_account_id(uri, cf_uri):
                 msg = _("Resource URI differs from Company File URI")

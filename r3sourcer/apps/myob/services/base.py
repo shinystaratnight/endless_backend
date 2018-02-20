@@ -168,11 +168,11 @@ class BaseSync:
             return resp['Items'][0] if resp['Count'] else None
         return resp
 
-    def _get_object_by_field(self, card_number, resource=None, myob_field='DisplayID', single=False):
-        if card_number is None:
+    def _get_object_by_field(self, value, resource=None, myob_field='DisplayID', single=False):
+        if value is None:
             return
         return self._get_object(
-            {"$filter": "{} eq '{}'".format(myob_field, card_number.replace("'", "''"))},
+            {"$filter": "{} eq '{}'".format(myob_field, value.replace("'", "''"))},
             resource=resource, single=single
         )
 
