@@ -545,13 +545,18 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
 
 @shared_task
 def check_unpaid_invoices():
-    master_companies = core_models.Invoice.objects.filter(is_paid=False).values_list('master_company').distinct()
+    master_companies = core_models.Company.objects.filter(provider_invoices__is_paid=False).distinct()
 
     for company in master_companies:
         unpaid_invoices = core_models.Invoice.objects.filter(provider_company=company, is_paid=False)
-        date_from = unpaid_invoices.order_by['-date'][0].date - timedelta(days=1)
+        date_from = unpaid_invoices.order_by('-date')[0].date - timedelta(days=32)
         cf_token = MYOBCompanyFileToken.objects.filter(company=company).latest('created')
         client = MYOBClient(cf_data=cf_token)
+        initialized = client.init_api(timeout=True)
+
+        if not initialized:
+            continue
+
         params = {"$filter": "Status eq 'Closed' and Date gt datetime'%s'" % date_from.strftime('%Y-%m-%d')}
         invoices = client.api.Sale.Invoice.Service.get(params=params)['Items']
         invoice_numbers = [x['Number'] for x in invoices]

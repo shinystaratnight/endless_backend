@@ -504,10 +504,10 @@ class MYOBClient(object):
         uri = self.get_cf_uri() + '/CurrentUser'
         return self.api_call('get', uri)
 
-    def init_api(self):
+    def init_api(self, timeout=False):
         if self.api is None:
             self.api = MYOBAccountRightV2API(self)
-            self.api._init_api()
+            self.api._init_api(timeout)
 
 
 class MYOBAccountRightV2API(object):
@@ -516,25 +516,21 @@ class MYOBAccountRightV2API(object):
     def __init__(self, myob_client):
         self._client = myob_client
 
-    def _init_api(self):
-        self._init_api_resources()
+    def _init_api(self, timeout=False):
+        self._init_api_resources(timeout)
         self._init_api_access_methods()
 
-    def _init_api_resources(self):
-        print(1)
+    def _init_api_resources(self, timeout=False):
         cf_uri = self._client.get_cf_uri()
-        print(2)
         resp = self._client.get_resources()
-        print(3)
         data = resp.json()
 
         if 'Resources' not in data:
-            print('  -->  ', data)
-            self._init_api_resources()
-            print(5)
-            return
+            if timeout:
+                return
 
-        print(6)
+            self._init_api_resources()
+
         print(len(data['Resources']), '  --> ', data)
         for uri in data['Resources']:
             if not check_account_id(uri, cf_uri):
