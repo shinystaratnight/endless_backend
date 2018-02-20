@@ -526,12 +526,13 @@ class MYOBAccountRightV2API(object):
         data = resp.json()
 
         if 'Resources' not in data:
-            if timeout:
+            message = data.get('Message', None)
+
+            if timeout and message == 'Access denied':
                 return
 
             self._init_api_resources()
 
-        print(len(data['Resources']), '  --> ', data)
         for uri in data['Resources']:
             if not check_account_id(uri, cf_uri):
                 msg = _("Resource URI differs from Company File URI")
@@ -550,14 +551,18 @@ class MYOBAccountRightV2API(object):
 
         print('api resources initialized')
 
-    def _init_api_access_methods(self):
+    def _init_api_access_methods(self, timeout=False):
         cf_uri = self._client.get_cf_uri()
         resp = self._client.get_current_user()
         data = resp.json()
 
         if 'UserAccess' not in data:
+            message = data.get('Message', None)
+
+            if timeout and message == 'Access denied':
+                return
+
             self._init_api_access_methods()
-            return
 
         for user_access in data['UserAccess']:
             uri = user_access['ResourcePath']
