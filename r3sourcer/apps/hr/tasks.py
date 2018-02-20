@@ -369,7 +369,7 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
             data_dict = dict(
                 supervisor=contacts['company_contact'],
                 candidate_contact=contacts['candidate_contact'],
-                get_fill_time_sheet_url="%s/hr/timesheets" % SITE_URL,
+                get_fill_time_sheet_url="%s/hr/timesheets-candidate" % SITE_URL,
                 get_supervisor_redirect_url="%s/hr/timesheets/unapproved" % SITE_URL,
                 get_supervisor_sign_url="%s/hr/timesheets/unapproved" % SITE_URL,
                 shift_start_date=formats.date_format(target_date_and_time, settings.DATETIME_FORMAT),
@@ -407,10 +407,18 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
 
             today = date.today()
 
-            if event == RECRUITEE_SUBMITTED:
-                recipient = time_sheet.supervisor
-            else:
+            if event == SHIFT_ENDING:
                 recipient = time_sheet.candidate_contact
+
+                sign_navigation = core_models.ExtranetNavigation.objects.get(id=124)
+                extranet_login = TokenLogin.objects.create(
+                    contact=recipient.contact,
+                    redirect_to=sign_navigation.url
+                )
+
+                data_dict['get_fill_time_sheet_url'] = "%s/%s" % (settings.SITE_URL, extranet_login.auth_url)
+            else:
+                recipient = time_sheet.supervisor
 
             if candidate.message_by_sms:
                 try:

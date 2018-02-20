@@ -54,10 +54,7 @@ class TimesheetFilter(FilterSet):
         if contact.company_contact.exists():
             qs_approved &= Q(supervisor_approved_at__isnull=False, supervisor__contact=contact)
         else:
-            qs_approved &= Q(
-                candidate_submitted_at__isnull=False,
-                vacancy_offer__candidate_contact__contact=contact
-            )
+            qs_approved &= Q(candidate_submitted_at__isnull=False, vacancy_offer__candidate_contact__contact=contact)
         return qs_approved
 
     @staticmethod

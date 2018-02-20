@@ -298,3 +298,65 @@ class TimeSheetEndpoint(ApiEndpoint):
         )
 
         return Response(status=status.HTTP_200_OK)
+
+
+class ExtranetCandidateTimesheetEndpoint(ApiEndpoint):
+
+    model = hr_models.TimeSheet
+    base_viewset = viewsets.TimeSheetCandidateViewset
+    serializer = timesheet_serializers.TimeSheetSerializer
+
+    list_display = [{
+        'label': _('Times'),
+        'fields': ({
+            'type': constants.FIELD_STATIC,
+            'text': format_lazy('{{shift_started_at__date}}'),
+            'label': _('Shift date'),
+            'field': 'shift_started_at',
+        }, {
+            'type': constants.FIELD_STATIC,
+            'text': format_lazy('{{shift_started_at__time}}'),
+            'label': _('Shift started at'),
+            'field': 'shift_started_at',
+        }, {
+            'type': constants.FIELD_STATIC,
+            'text': format_lazy(
+                '{{break_started_at__time}} - {{break_ended_at__time}}'),
+            'label': _('Break'),
+            'field': 'break_started_at',
+        }, {
+            'type': constants.FIELD_STATIC,
+            'text': format_lazy('{{shift_ended_at__time}}'),
+            'label': _('Shift ended at'),
+            'field': 'shift_ended_at',
+        }),
+    }, {
+        'type': constants.FIELD_RELATED,
+        'label': _('Jobsite'),
+        'field': 'jobsite',
+        'endpoint': api_reverse_lazy('hr/jobsites'),
+    }, {
+        'label': _('Going to work'),
+        'field': 'going_to_work_confirmation',
+        'type': constants.FIELD_ICON,
+    }, {
+        'label': _('Signed by'),
+        'fields': ({
+            'type': constants.FIELD_RELATED,
+            'field': 'supervisor',
+            'hidden': [{'supervisor_approved': False}],
+        }, 'supervisor_approved_at')
+    }]
+
+    list_buttons = []
+
+    list_filter = [{
+        'field': 'shift_started_at',
+        'type': constants.FIELD_DATE,
+    }, {
+        'type': constants.FIELD_SELECT,
+        'field': 'approved',
+        'label': _('Status'),
+        'choices': [{'label': 'Approved', 'value': 'True'},
+                    {'label': 'Unapproved', 'value': 'False'}]
+    }]
