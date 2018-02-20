@@ -121,6 +121,10 @@ class ContactEndpoint(ApiEndpoint):
                     'fields': (
                         'email', 'phone_mobile', 'address.phone_landline', 'address.phone_fax',
                         {
+                            'type': constants.FIELD_TEXT,
+                            'field': 'address.street_address',
+                            'hide': True,
+                        }, {
                             'type': constants.FIELD_RELATED,
                             'field': 'address',
                             'edit': True,
