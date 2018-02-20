@@ -192,7 +192,11 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 ),
                 'action': 'showCandidateProfile',
                 'field': 'vacancy_offer.candidate_contact',
-            }, 'position'),
+            }, {
+                'type': constants.FIELD_STATIC,
+                'field': 'position',
+                'label': _('Position'),
+            }),
         }, {
             'label': _('Times'),
             'fields': ({
@@ -213,7 +217,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 'field': 'break_started_at',
             }, {
                 'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
+                'text': format_lazy('{{shift_ended_at__time}}'),
                 'label': _('Shift ended at'),
                 'field': 'shift_ended_at',
             }),
@@ -368,7 +372,11 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 ),
                 'action': 'showCandidateProfile',
                 'field': 'vacancy_offer.candidate_contact',
-            }, 'position'),
+            }, {
+                'type': constants.FIELD_STATIC,
+                'field': 'position',
+                'label': _('Position'),
+            }),
         }, {
             'label': _('Times'),
             'fields': ({
@@ -389,7 +397,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 'field': 'break_started_at',
             }, {
                 'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
+                'text': format_lazy('{{shift_ended_at__time}}'),
                 'label': _('Shift ended at'),
                 'field': 'shift_ended_at',
             }),
