@@ -518,7 +518,7 @@ class MYOBAccountRightV2API(object):
 
     def _init_api(self, timeout=False):
         self._init_api_resources(timeout)
-        self._init_api_access_methods()
+        self._init_api_access_methods(timeout)
 
     def _init_api_resources(self, timeout=False):
         cf_uri = self._client.get_cf_uri()
