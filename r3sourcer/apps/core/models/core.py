@@ -1818,16 +1818,12 @@ class Invoice(AbstractOrder):
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
-        if just_added:
-            if self.customer_company.invoice_rules.exists():
-                rule = self.customer_company.invoice_rules.first()
-            else:
-                rule = self.provider_company.invoice_rules.first()
 
-            if rule:
-                self.number = self.get_invoice_number(rule)
-                rule.starting_number += 1
-                rule.save()
+        if just_added:
+            rule = self.provider_company.invoice_rules.first()
+            self.number = self.get_invoice_number(rule)
+            rule.starting_number += 1
+            rule.save()
 
         super(Invoice, self).save(*args, **kwargs)
 
