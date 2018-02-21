@@ -38,7 +38,7 @@ class SMSMessageSerializer(ApiBaseModelSerializer):
         else:
             resp = []
 
-        for related in obj.get_related_objects():
+        for related in obj.related_objects.all():
             resp.append(self._related_item(related.content_object, related.content_type))
 
         return resp or '-'

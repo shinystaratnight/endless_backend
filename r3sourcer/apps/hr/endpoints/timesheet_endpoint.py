@@ -345,7 +345,16 @@ class ExtranetCandidateTimesheetEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'supervisor',
             'hidden': [{'supervisor_approved': False}],
-        }, 'supervisor_approved_at')
+        }, 'supervisor_approved_at'),
+    }, {
+        'type': constants.FIELD_BUTTON,
+        'icon': 'fa-pencil',
+        'text': _('Submit'),
+        'color': 'success',
+        'action': constants.DEFAULT_ACTION_EDIT,
+        'field': 'id',
+        'hidden': 'candidate_submit_hidden',
+        'endpoint': format_lazy('{}{{id}}/submit/', api_reverse_lazy('hr/timesheets-candidate')),
     }]
 
     list_buttons = []

@@ -959,7 +959,7 @@ class TimeSheetCandidateViewset(
             approved=Case(When(qs_approved, then=True),
                           When(qs_unapproved, then=False),
                           output_field=BooleanField(), default=False)
-        ).order_by('approved')
+        ).order_by('approved', 'shift_started_at')
 
         return queryset
 

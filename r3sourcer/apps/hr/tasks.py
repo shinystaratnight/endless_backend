@@ -369,6 +369,7 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
             data_dict = dict(
                 supervisor=contacts['company_contact'],
                 candidate_contact=contacts['candidate_contact'],
+                site_url=SITE_URL,
                 get_fill_time_sheet_url="%s/hr/timesheets-candidate" % SITE_URL,
                 get_supervisor_redirect_url="%s/hr/timesheets/unapproved" % SITE_URL,
                 get_supervisor_sign_url="%s/hr/timesheets/unapproved" % SITE_URL,
@@ -405,7 +406,8 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
                     args=[time_sheet_id], countdown=settings.SUPERVISOR_DECLINE_TIMEOUT
                 )
 
-            today = date.today()
+            # today = date.today()
+            today = date(2018, 2, 6)
 
             if event == SHIFT_ENDING:
                 recipient = time_sheet.candidate_contact
@@ -413,10 +415,13 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
                 sign_navigation = core_models.ExtranetNavigation.objects.get(id=124)
                 extranet_login = TokenLogin.objects.create(
                     contact=recipient.contact,
-                    redirect_to=sign_navigation.url
+                    redirect_to='{}{}/submit/'.format(sign_navigation.url, time_sheet_id)
                 )
 
-                data_dict['get_fill_time_sheet_url'] = "%s/%s" % (settings.SITE_URL, extranet_login.auth_url)
+                data_dict.update({
+                    'get_fill_time_sheet_url': "%s%s" % (settings.SITE_URL, extranet_login.auth_url),
+                    'related_objs': [extranet_login],
+                })
             else:
                 recipient = time_sheet.supervisor
 
