@@ -189,7 +189,7 @@ class InvoiceService(BasePaymentService):
             invoice_rule = get_invoice_rule(company)
 
         if invoice:
-            invoice_rule = invoice.provider_company.invoice_rules.first()
+            invoice_rule = invoice.customer_company.invoice_rules.first()
             company = invoice.customer_company
 
         separation_rule = invoice_rule.separation_rule
