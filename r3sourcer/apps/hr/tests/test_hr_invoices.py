@@ -147,7 +147,7 @@ class TestInvoiceService:
     def test_prepare_per_jobsite(
             self, mock_calc, mock_invoice_rule, mock_prepare_invoice,
             mock_timesheets, regular_company, invoice_rule_master_company,
-            timesheet_approved, jobsite, jobsite_address, service):
+            timesheet_approved, jobsite, jobsite_address, service, jobsite_address_master):
 
         invoice_rule_master_company.separation_rule = \
             InvoiceRule.SEPARATION_CHOICES.per_jobsite
