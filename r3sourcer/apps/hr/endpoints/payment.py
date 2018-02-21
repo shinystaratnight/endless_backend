@@ -19,7 +19,7 @@ class InvoiceEndpoint(endpoints.ApiEndpoint):
     model = models.Invoice
     base_viewset = InvoiceViewset
     list_display = (
-        'customer_company', 'date', 'total', 'tax', 'total_with_tax', {
+        'customer_company', 'date', 'total', 'tax', 'total_with_tax', 'period', 'separation_rule', {
             'type': constants.FIELD_TEXT,
             'field': 'number',
             'read_only': False,
@@ -94,7 +94,7 @@ class InvoiceEndpoint(endpoints.ApiEndpoint):
                         'type': constants.FIELD_TEXT,
                         'field': 'order_number',
                         'label': _('Your Order No'),
-                    }, 'date'
+                    }, 'period', 'separation_rule', 'date'
                 ),
             },
         ),
