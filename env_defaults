@@ -25,7 +25,7 @@ RABBIT_MQ_PORT=5672
 DJANGO_UWSGI_PORT=8081
 SUPERVISOR_CONF=conf/production/supervisor.conf
 
-DOMAIN_NAME=core.endless.pro
+DOMAIN_NAME=r3.labourking.com.au
 
 DJANGO_DEBUG=1
 DJANGO_SECRET_KEY=9ifdsgtncr3yb&3uhb!=lwxa-a$=k#zq593=4a^b!agsx-l4s9

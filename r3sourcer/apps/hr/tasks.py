@@ -406,8 +406,7 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
                     args=[time_sheet_id], countdown=settings.SUPERVISOR_DECLINE_TIMEOUT
                 )
 
-            # today = date.today()
-            today = date(2018, 2, 6)
+            today = date.today()
 
             if event == SHIFT_ENDING:
                 recipient = time_sheet.candidate_contact
@@ -487,7 +486,8 @@ def send_supervisor_timesheet_message(
         data_dict = dict(
             supervisor=supervisor,
             portfolio_manager=portfolio_manager,
-            get_url="%s/%s" % (settings.SITE_URL, extranet_login.auth_url),
+            get_url="%s%s" % (settings.SITE_URL, extranet_login.auth_url),
+            site_url=settings.SITE_URL,
             related_obj=supervisor,
             related_objs=[extranet_login],
         )
@@ -566,7 +566,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
             )
 
             not_signed_timesheets = timesheets.filter(
-                recruitee_signed_at__isnull=True,
+                candidate_submitted_at__isnull=True,
                 supervisor=supervisor
             )
 
@@ -574,7 +574,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
                 return
 
             signed_timesheets_started = timesheets.filter(
-                recruitee_signed_at__isnull=False,
+                candidate_submitted_at__isnull=False,
                 supervisor=supervisor
             ).order_by('shift_started_at').values_list(
                 'shift_started_at', flat=True
@@ -621,8 +621,8 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
     timesheets = hr_models.TimeSheet.objects.filter(
         shift_ended_at__date=today,
         going_to_work_confirmation=True,
-        recruitee_signed_at__isnull=False,
-        supervisor_signed_at__isnull=True,
+        candidate_submitted_at__isnull=False,
+        supervisor_approved_at_at__isnull=True,
         supervisor=supervisor
     )
 
