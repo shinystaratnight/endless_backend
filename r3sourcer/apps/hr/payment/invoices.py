@@ -40,7 +40,7 @@ class InvoiceService(BasePaymentService):
 
         return price_list_rate
 
-    def calculate(self, company, date_from=None, date_to=None, timesheets=None, show_candidate=False):
+    def calculate(self, company, date_from=None, date_to=None, timesheets=None):
         timesheets = self._get_timesheets(timesheets, date_from, date_to, company=company)
         coefficient_service = PriceListCoefficientService()
         lines = []
@@ -74,11 +74,6 @@ class InvoiceService(BasePaymentService):
                 if not units:
                     continue
 
-                if show_candidate:
-                    notes = '{} - {}'.format(
-                        notes, str(timesheet.vacancy_offer.candidate_contact)
-                    )
-
                 vat_name = 'GST' if company.registered_for_gst else 'GNR'
                 lines.append({
                     'date': started_at.date(),
@@ -93,7 +88,7 @@ class InvoiceService(BasePaymentService):
         return lines, timesheets
 
     @classmethod
-    def generate_pdf(cls, invoice):
+    def generate_pdf(cls, invoice, show_candidate=False):
         template = get_template('payment/invoices.html')
 
         code_data = {
@@ -118,6 +113,7 @@ class InvoiceService(BasePaymentService):
             'company': invoice.customer_company,
             'code_data': code_data,
             'master_company': invoice.provider_company,
+            'show_candidate': show_candidate,
             'STATIC_URL': 'https://%s/static' % domain
         })
 
@@ -151,7 +147,7 @@ class InvoiceService(BasePaymentService):
                 vacancy_offer__candidate_contact=candidate
             )
 
-        lines, timesheets = self.calculate(company, date_from, date_to, timesheets, show_candidate)
+        lines, timesheets = self.calculate(company, date_from, date_to, timesheets)
 
         if lines:
             if not invoice:
@@ -180,7 +176,7 @@ class InvoiceService(BasePaymentService):
             invoice.save(update_fields=['total', 'tax', 'total_with_tax'])
 
             # TODO: decide when to trigger pdf generation
-            # self.generate_pdf(invoice)
+            # self.generate_pdf(invoice, show_candidate)
 
             return invoice
 
