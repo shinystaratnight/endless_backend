@@ -1212,7 +1212,13 @@ class InvoiceLineEndpoint(ApiEndpoint):
             'type': constants.FIELD_TEXT,
             'field': 'vat.name',
             'label': _('Code'),
-        }, {
+        },{
+            'type': constants.FIELD_LINK,
+            'label': _('Timesheets'),
+            'field': 'timesheet',
+            'text': _('Timesheet'),
+            'endpoint': format_lazy('{}{{timesheet.id}}', api_reverse_lazy('hr/timesheets'))
+        },{
             'label': _('Actions'),
             'delim': ' ',
             'fields': ({

@@ -68,10 +68,9 @@ class BasePaymentService:
 
     modifier_type = RateCoefficientModifier.TYPE_CHOICES.company
 
-    def _get_timesheets(self, timesheets, from_date=None, candidate=None, company=None):
-        timesheets = timesheets or TimeSheet.objects.order_by(
-            'shift_started_at'
-        )
+    def _get_timesheets(self, timesheets, date_from=None, date_to=None, candidate=None, company=None):
+
+        timesheets = timesheets or TimeSheet.objects.order_by('shift_started_at')
         timesheets = timesheets.filter(
             candidate_submitted_at__isnull=False,
             supervisor_approved_at__isnull=False
@@ -87,9 +86,10 @@ class BasePaymentService:
                 vacancy_offer__candidate_contact=candidate,
             )
 
-        if from_date:
+        if date_from:
             timesheets = timesheets.filter(
-                shift_started_at__date__gt=from_date,
+                shift_started_at__date__gte=date_from,
+                shift_started_at__date__lt=date_to,
             )
         return timesheets
 

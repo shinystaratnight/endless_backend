@@ -10,7 +10,6 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.base import ContentFile
 from django.utils import timezone
-from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.models.core import TemplateMessage
@@ -19,7 +18,7 @@ from freezegun import freeze_time
 from r3sourcer.apps.core.models import (
     User, CompanyContact, BankAccount, CompanyAddress, ContactUnavailability,
     CompanyTradeReference, Note, Tag, InvoiceLine, FileStorage, Contact,
-    Company, CompanyLocalization, Country, WorkflowObject, WorkflowNode,
+    Company, CompanyLocalization, Country, Invoice, WorkflowNode,
     Workflow, SiteCompany, CompanyRel, CompanyContactRelationship
 )
 
@@ -543,8 +542,37 @@ class TestCompanyContactRelationship:
 
 @pytest.mark.django_db
 class TestInvoice:
-    def test_invoice_number(self, invoice):
-        assert invoice.number == 'None1'
+    def test_invoice_number(self, company, company_regular):
+        invoice_rule = company_regular.invoice_rules.first()
+        invoice_rule.serial_number = 'TEST'
+        invoice_rule.starting_number = 100
+        invoice_rule.save()
+
+        invoice = Invoice.objects.create(
+            provider_company=company,
+            customer_company=company_regular,
+            total_with_tax=20,
+            total=15,
+            tax=5,
+            myob_number='test'
+        )
+        assert invoice.number == 'TEST00000100'
+
+    def test_invoice_number_without_serial_number(self, company, company_regular):
+        invoice_rule = company_regular.invoice_rules.first()
+        invoice_rule.serial_number = ''
+        invoice_rule.starting_number = 100
+        invoice_rule.save()
+
+        invoice = Invoice.objects.create(
+            provider_company=company,
+            customer_company=company_regular,
+            total_with_tax=20,
+            total=15,
+            tax=5,
+            myob_number='test'
+        )
+        assert invoice.number == '00000100'
 
 
 @pytest.fixture

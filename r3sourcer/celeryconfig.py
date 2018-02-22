@@ -1,5 +1,6 @@
 import os
 from datetime import timedelta
+from celery.schedules import crontab
 
 from kombu import Queue, Exchange
 
@@ -39,6 +40,10 @@ beat_schedule = {
     'fetch_twilio_accounts': {
         'task': 'r3sourcer.apps.sms_interface.tasks.fetch_remote_sms',
         'schedule': timedelta(seconds=60)
+    },
+    'check_unpaid_invoices': {
+        'task': 'r3sourcer.apps.hr.tasks.check_unpaid_invoices',
+        'schedule': crontab(hour=5, minute=00)
     }
 }
 

@@ -1648,6 +1648,7 @@ class Order(AbstractOrder):
         verbose_name_plural = _("Orders")
 
     @workflow_function
+    @workflow_function
     def is_state_50_available(self):
         return self._is_state_available(50)
 
@@ -1766,6 +1767,11 @@ class Invoice(AbstractOrder):
         null=True
     )
 
+    updated = models.DateField(
+        auto_now=True,
+        null=True
+    )
+
     number = models.CharField(
         verbose_name=_("Number"),
         max_length=20,
@@ -1799,19 +1805,25 @@ class Invoice(AbstractOrder):
             date_format(self.date, settings.DATE_FORMAT)
         )
 
+    def get_invoice_number(self, rule):
+        invoice_number = ''
+
+        if rule.serial_number:
+            invoice_number += rule.serial_number
+
+        starting_number = format(rule.starting_number, '08')
+        invoice_number += starting_number
+
+        return invoice_number
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
-        if just_added:
-            rule = None
-            if self.customer_company.invoice_rules.exists():
-                rule = self.customer_company.invoice_rules.first()
-            else:
-                rule = self.provider_company.invoice_rules.first()
 
-            if rule:
-                self.number = "{}{}".format(rule.serial_number, rule.starting_number)
-                rule.starting_number += 1
-                rule.save()
+        if just_added:
+            rule = self.provider_company.invoice_rules.first()
+            self.number = self.get_invoice_number(rule)
+            rule.starting_number += 1
+            rule.save()
 
         super(Invoice, self).save(*args, **kwargs)
 
@@ -2243,6 +2255,24 @@ class InvoiceRule(AbstractPayRuleMixin, UUIDModel):
         verbose_name=_("Show Candidate Name"),
         default=False
     )
+
+    @property
+    def last_invoice_created(self):
+        date = None
+
+        if self.company.customer_invoices.exists():
+            date = self.company.customer_invoices.order_by('-date')[0].date
+
+        return date
+
+    @property
+    def last_invoice_updated(self):
+        date = None
+
+        if self.company.customer_invoices.exists():
+            date = self.company.customer_invoices.order_by('-updated')[0].updated
+
+        return date
 
     class Meta:
         verbose_name = _("Invoice Rule")

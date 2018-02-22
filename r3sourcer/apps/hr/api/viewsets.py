@@ -28,6 +28,7 @@ from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models, payment
 from r3sourcer.apps.hr.api.filters import TimesheetFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, vacancy as vacancy_serializers
+from r3sourcer.apps.hr.tasks import generate_invoice
 from r3sourcer.apps.hr.utils import vacancy as vacancy_utils
 
 
@@ -127,9 +128,8 @@ class BaseTimeSheetViewsetMixin:
             time_sheet, data=data, partial=True
         )
         serializer.is_valid(raise_exception=True)
-
         serializer.save()
-
+        generate_invoice.delay(time_sheet)
         return Response(serializer.data)
 
     def handle_request(self, request, pk, is_candidate=True, *args, **kwargs):

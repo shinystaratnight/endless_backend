@@ -5,8 +5,9 @@ from collections import defaultdict
 
 from django.utils import timezone
 
-from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
 from r3sourcer.apps.candidate.models import CandidateContact
+from r3sourcer.apps.core.models import InvoiceRule, Invoice
+from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
 
 
 log = logging.getLogger(__name__)
@@ -161,3 +162,83 @@ def seconds_to_hrs(seconds):
     minutes = int(seconds) // 60
     hours = minutes // 60
     return "%02d:%02d" % (hours, minutes % 60)
+
+
+def get_invoice_dates(invoice_rule, timesheet=None):
+    """
+    Accepts invoice rule and returns date_from and date_to needed for invoice generation based on period setting.
+    """
+
+    date_from = None
+    date_to = None
+    today = date.today()
+
+    if timesheet:
+        today = timesheet.shift_started_at.date()
+
+    if invoice_rule.period == InvoiceRule.PERIOD_CHOICES.daily:
+        date_from = today
+        date_to = date_from + timedelta(days=1)
+    elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.weekly:
+        date_from = today - timedelta(datetime.now().date().weekday())
+        date_to = date_from + timedelta(days=7)
+    elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.fortnightly:
+        if invoice_rule.last_invoice_created:
+            last_invoice_date = invoice_rule.last_invoice_created
+            first_invoice_day = last_invoice_date - timedelta(days=last_invoice_date.weekday())
+
+            date_from = first_invoice_day
+            while True:
+                days_spent = (today - date_from).days
+
+                if days_spent > 14:
+                    date_from += timedelta(days=14)
+                else:
+                    break
+
+            date_to = date_from + timedelta(days=14)
+        else:
+            date_from = today - timedelta(datetime.now().date().weekday())
+            date_to = date_from + timedelta(days=14)
+
+    elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.monthly:
+        date_from = today.replace(day=1) - timedelta(today.replace(day=1).weekday())
+
+        month_end = date_from + timedelta(days=28)
+        month = (date_from + timedelta(days=15)).month
+        last_week_overlapped = (month_end + timedelta(days=6-month_end.weekday())).month != month
+
+        if last_week_overlapped:
+            date_to = month_end
+        else:
+            date_to = month_end + timedelta(days=7)
+
+    if not date_from:
+        raise Exception("Wrong invoice rule period.")
+
+    return date_from, date_to
+
+
+def get_invoice(company, date_from, date_to, timesheet):
+    """
+    Checks if needed invoice already exists and returns it to update with new timesheets.
+    """
+    invoice = None
+    invoice_rule = company.invoice_rules.first()
+
+    try:
+        if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
+            invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to)
+
+        elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
+            jobsite = timesheet.vacancy_offer.shift.date.vacancy.jobsite
+            invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
+                                          invoice_lines__timesheet__vacancy_offer__shift__date__vacancy__jobsite=jobsite)
+        elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
+            candidate = timesheet.vacancy_offer.candidate_contact
+            invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
+                                          invoice_lines__timesheet__vacancy_offer__candidate_contact=candidate)
+    except:
+        pass
+
+    return invoice

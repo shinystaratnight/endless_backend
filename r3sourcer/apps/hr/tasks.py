@@ -1,5 +1,4 @@
 from datetime import timedelta, date, time, datetime
-from calendar import monthrange
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -18,9 +17,11 @@ from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.payment import InvoiceService, PayslipService
-from r3sourcer.apps.hr.utils.utils import get_invoice_rule, get_payslip_rule, calculate_distances_for_jobsite
+from r3sourcer.apps.hr.payment import InvoiceService
+from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
+from r3sourcer.apps.myob.api.wrapper import MYOBClient
+from r3sourcer.apps.myob.models import MYOBCompanyFileToken
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
@@ -30,97 +31,6 @@ logger = get_task_logger(__name__)
 
 GOING_TO_WORK, SHIFT_ENDING, RECRUITEE_SUBMITTED, SUPERVISOR_DECLINED = range(4)
 SITE_URL = settings.SITE_URL
-
-
-@shared_task
-def prepare_invoices():
-    service = InvoiceService()
-    now = timezone.localtime(timezone.now())
-
-    for company in core_models.Company.objects.filter(type='regular'):
-        invoice_rule = get_invoice_rule(company)
-
-        if not invoice_rule:
-            continue
-
-        if invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.monthly and \
-                invoice_rule.period_zero_reference == now.day:
-            if now.month == 1:
-                year = now.year - 1
-                month = 12
-            else:
-                year = now.year
-                month = month - 1
-
-            last_day = monthrange(year, month)
-            day = now.day if now.day <= last_day else last_day
-
-            from_date = date(year, month, day)
-        elif invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.fortnightly:
-            from_date = (now - timedelta(days=14)).date()
-        elif invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.weekly:
-            from_date = (now - timedelta(days=7)).date()
-        elif invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.daily:
-            from_date = (now - timedelta(days=1)).date()
-        else:
-            from_date = None
-
-        if from_date:
-            existing_invoice = core_models.Invoice.objects.filter(
-                company=company,
-                date__gte=from_date
-            )
-            if existing_invoice.exists():
-                existing_invoice = existing_invoice.latest('date')
-                from_date = existing_invoice.date + timedelta(days=1)
-
-            service.prepare(company, from_date)
-
-
-@shared_task
-def prepare_payslips():
-    service = PayslipService()
-    now = timezone.localtime(timezone.now())
-
-    for company in core_models.Company.objects.all():
-        payslip_rule = get_payslip_rule(company)
-
-        if not payslip_rule:
-            continue
-
-        to_date = now.date()
-        if payslip_rule.period == hr_models.PayslipRule.PERIOD_CHOICES.monthly and \
-                payslip_rule.period_zero_reference == now.day:
-            if now.month == 1:
-                year = now.year - 1
-                month = 12
-            else:
-                year = now.year
-                month = month - 1
-
-            last_day = monthrange(year, month)
-            day = now.day if now.day <= last_day else last_day
-
-            from_date = date(year, month, day)
-        elif payslip_rule.period == hr_models.PayslipRule.PERIOD_CHOICES.fortnightly:
-            from_date = (now - timedelta(days=14)).date()
-        elif payslip_rule.period == hr_models.PayslipRule.PERIOD_CHOICES.weekly:
-            from_date = (now - timedelta(days=7)).date()
-        elif payslip_rule.period == hr_models.PayslipRule.PERIOD_CHOICES.daily:
-            from_date = (now - timedelta(days=1)).date()
-        else:
-            from_date = None
-
-        if from_date:
-            existing_payslip = hr_models.Payslip.objects.filter(
-                company=company,
-                from_date__gte=from_date,
-            )
-            if existing_payslip.exists():
-                existing_payslip = existing_payslip.latest('date')
-                from_date = existing_payslip.from_date + timedelta(days=1)
-
-            service.prepare(company, from_date, to_date)
 
 
 @shared_task
@@ -134,8 +44,9 @@ def update_all_distances():
 
     for jobsite in all_calculated_jobsites:
         if not (jobsite.latitude == 0 and jobsite.longitude == 0):
+
             contacts = core_models.Contact.objects.filter(distance_caches__jobsite=jobsite)
-            if not calculate_distances_for_jobsite(contacts, jobsite):
+            if not utils.calculate_distances_for_jobsite(contacts, jobsite):
                 break
 
 
@@ -323,6 +234,19 @@ def send_placement_rejection_sms(self, vacancy_offer_id):
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
             send_vacancy_offer_sms(vacancy_offer, 'vacancy-offer-rejection')
+
+
+@shared_task
+def generate_invoice(timesheet):
+    """
+    Generates new or updates existing invoice. Accepts regular(customer) company.
+    """
+    company = timesheet.regular_company
+    service = InvoiceService()
+    invoice_rule = utils.get_invoice_rule(company)
+    date_from, date_to = utils.get_invoice_dates(invoice_rule, timesheet)
+    invoice = utils.get_invoice(company, date_from, date_to, timesheet)
+    service.generate_invoice(date_from, date_to, company=company, invoice=invoice)
 
 
 @app.task(queue='sms')
@@ -630,3 +554,24 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
         send_supervisor_timesheet_message(
             supervisor, supervisor.by_sms, supervisor.by_email, 'supervisor-timesheet-sign-reminder'
         )
+
+
+@shared_task
+def check_unpaid_invoices():
+    master_companies = core_models.Company.objects.filter(provider_invoices__is_paid=False).distinct()
+
+    for company in master_companies:
+        unpaid_invoices = core_models.Invoice.objects.filter(provider_company=company, is_paid=False)
+        date_from = unpaid_invoices.order_by('-date')[0].date - timedelta(days=32)
+        cf_token = MYOBCompanyFileToken.objects.filter(company=company).latest('created')
+        client = MYOBClient(cf_data=cf_token)
+        initialized = client.init_api(timeout=True)
+
+        if not initialized:
+            continue
+
+        params = {"$filter": "Status eq 'Closed' and Date gt datetime'%s'" % date_from.strftime('%Y-%m-%d')}
+        invoices = client.api.Sale.Invoice.Service.get(params=params)['Items']
+        invoice_numbers = [x['Number'] for x in invoices]
+        closed_invoices = core_models.Invoice.objects.filter(is_paid=False, number__in=invoice_numbers)
+        closed_invoices.update(is_paid=True)
