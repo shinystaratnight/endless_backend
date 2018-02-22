@@ -1,27 +1,48 @@
+from django.utils.translation import ugettext_lazy as _
 from drf_auto_endpoint.router import router
 
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
+from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
+from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.skills import models
-from r3sourcer.apps.skills.api import filters as skills_filters
+from r3sourcer.apps.skills.api import filters as skills_filters, serializers as skill_serializer
 
 
 class SkillEndpoint(ApiEndpoint):
-    filter_class = skills_filters.SkillFilter
-
     model = models.Skill
+    filter_class = skills_filters.SkillFilter
+    serializer = skill_serializer.SkillSerializer
+
     fieldsets = (
         'name', 'short_name',  'carrier_list_reserve', 'employment_classification', 'active',
         {
-            'field': 'skill_rate_defaults',
-            'type': constants.FIELD_RELATED,
-            'list': True
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'skill': '{id}',
+            },
+            'collapsed': False,
+            'label': _('Skill Rate Defaults'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('skills/skillbaserates'),
+            'prefilled': {
+                'skill': '{id}',
+            }
+        }, {
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'skill': '{id}',
+            },
+            'collapsed': False,
+            'label': _('Price List Rates'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('pricing/pricelistrates'),
+            'prefilled': {
+                'skill': '{id}',
+            }
         },
-        {
-            'field': 'price_list_rates',
-            'type': constants.FIELD_RELATED,
-            'list': True
-        }
     )
 
     list_display = (
@@ -59,7 +80,10 @@ class EmploymentClassificationEndpoint(ApiEndpoint):
 
 class SkillBaseRateEndpoint(ApiEndpoint):
     model = models.SkillBaseRate
+    serializer = skill_serializer.SkillBaseRateSerializer
+
     search_fields = ('skill__name',)
+    filter_fields = ('skill', )
     list_display = (
         {
             "field": "hourly_rate",
@@ -70,6 +94,19 @@ class SkillBaseRateEndpoint(ApiEndpoint):
             "type": constants.FIELD_CHECKBOX
         }
     )
+
+    list_editable = (
+        'hourly_rate', 'default_rate',
+        {
+            'label': _('Actions'),
+            'delim': ' ',
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('skills/skillbaserates'))
+            }, constants.BUTTON_DELETE)
+        },
+    )
+    list_editable_buttons = []
 
 
 router.register(endpoint=SkillEndpoint())

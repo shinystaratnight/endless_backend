@@ -143,6 +143,29 @@ class PriceListRateEndpoint(ApiEndpoint):
         }
     )
 
+    list_editable = (
+        {
+            'label': _('Price List'),
+            'type': constants.FIELD_LINK,
+            'field': 'price_list',
+            'endpoint': format_lazy(
+                '{}{{price_list.id}}/',
+                api_reverse_lazy('pricing/pricelists')
+            ),
+        },
+        'hourly_rate', 'default_rate',
+        {
+            'label': _('Actions'),
+            'delim': ' ',
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelists'))
+            }, constants.BUTTON_DELETE)
+        }
+    )
+    list_editable_buttons = []
+    list_filter = ('skill',)
+
 
 class RateCoefficientModifierEndpoint(ApiEndpoint):
     model = models.RateCoefficientModifier
