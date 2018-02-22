@@ -286,3 +286,41 @@ class JobsiteAddressSerializer(core_serializers.ApiBaseModelSerializer):
         fields = ('__all__', {
             'jobsite': ('primary_contact', 'start_date', 'end_date', 'notes'),
         })
+
+
+class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
+
+    jobsite_address = core_serializers.AddressSerializer(read_only=True)
+
+    method_fields = ('jobsite_address', 'hide_buttons', 'status', 'hide_text')
+
+    class Meta:
+        model = hr_models.VacancyOffer
+        fields = [
+            '__all__',
+            {
+                'jobsite_address': ('__all__', ),
+                'shift': ['id', 'time', {
+                    'date': ['shift_date', {
+                        'vacancy': ['position', 'customer_company', {
+                            'jobsite': ['primary_contact'],
+                        }],
+                    }],
+                }],
+            }
+        ]
+
+    def get_jobsite_address(self, obj):
+        address = obj.vacancy.jobsite.get_address()
+        return address and core_serializers.AddressSerializer(address).data
+
+    def get_hide_buttons(self, obj):
+        return obj.status != hr_models.VacancyOffer.STATUS_CHOICES.undefined
+
+    def get_hide_text(self, obj):
+        return not self.get_hide_buttons(obj)
+
+    def get_status(self, obj):
+        if obj.status == hr_models.VacancyOffer.STATUS_CHOICES.undefined:
+            return ' '
+        return hr_models.VacancyOffer.STATUS_CHOICES[obj.status]
