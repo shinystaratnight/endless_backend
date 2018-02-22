@@ -10,18 +10,18 @@ from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import exceptions
+from rest_framework import exceptions, mixins
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
+from rest_framework.viewsets import GenericViewSet
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.decorators import detail_route, list_route
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
-from r3sourcer.apps.core.api.viewsets import BaseApiViewset
-from r3sourcer.apps.core.models.constants import CANDIDATE
+from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
@@ -38,26 +38,6 @@ class ExtranetTimesheetEndpoint(ApiEndpoint):
     serializer = timesheet_serializers.TimeSheetSerializer
 
     list_buttons = []
-
-
-class ExtranetCandidateTimesheetEndpoint(ApiEndpoint):
-
-    model = hr_models.TimeSheet
-    serializer = timesheet_serializers.TimeSheetSerializer
-
-    list_buttons = []
-
-    def get_list_filter(self):
-        return [{
-            'field': 'shift_started_at',
-            'type': constants.FIELD_DATE,
-        }, {
-            'type': constants.FIELD_SELECT,
-            'field': 'approved',
-            'label': _('Status'),
-            'choices': [{'label': 'Approved', 'value': 'True'},
-                        {'label': 'Unapproved', 'value': 'False'}]
-        }]
 
 
 class VacancyFillinEndpoint(ApiEndpoint):
@@ -132,16 +112,12 @@ class VacancyFillinEndpoint(ApiEndpoint):
     ordering = ('distance_to_jobsite')
 
 
-class TimeSheetViewset(BaseApiViewset):
+class BaseTimeSheetViewsetMixin:
 
     TIME_FORM = {
         'type': constants.CONTAINER_ROW,
-        'fields': ('shift_started_at', 'break_started_at',
-                   'break_ended_at', 'shift_ended_at')
+        'fields': ('shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at')
     }
-
-    EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets',
-                   'met_expectations', 'representation')
 
     def submit_hours(self, data, time_sheet, is_candidate=True):
         if is_candidate:
@@ -155,28 +131,6 @@ class TimeSheetViewset(BaseApiViewset):
         serializer.save()
         generate_invoice.delay(time_sheet)
         return Response(serializer.data)
-
-    def get_unapproved_queryset(self, request):
-        qs_unapproved = TimesheetFilter.get_filter_for_unapproved(request.user.contact)
-        queryset = hr_models.TimeSheet.objects.filter(qs_unapproved).distinct()
-        return queryset
-
-    def get_candidate_queryset(self, request):
-        contact = request.user.contact
-        role = contact.get_role()
-
-        qs_approved = TimesheetFilter.get_filter_for_approved(request.user.contact)
-        qs_unapproved = TimesheetFilter.get_filter_for_unapproved(request.user.contact)
-
-        queryset = hr_models.TimeSheet.objects.annotate(
-            approved=Case(When(qs_approved, then=True),
-                          When(qs_unapproved, then=False),
-                          output_field=BooleanField(), default=False)
-        ).order_by('approved')
-
-        if role == CANDIDATE:
-            queryset = queryset.filter(vacancy_offer__candidate_contact_id=contact.candidate_contacts.id)
-        return queryset
 
     def handle_request(self, request, pk, is_candidate=True, *args, **kwargs):
         time_sheet = get_object_or_404(
@@ -202,6 +156,17 @@ class TimeSheetViewset(BaseApiViewset):
         serializer = timesheet_serializers.TimeSheetSerializer(queryset, many=True)
         return Response(serializer.data)
 
+
+class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
+
+    EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets',
+                   'met_expectations', 'representation')
+
+    def get_unapproved_queryset(self, request):
+        qs_unapproved = TimesheetFilter.get_filter_for_unapproved(request.user.contact)
+        queryset = hr_models.TimeSheet.objects.filter(qs_unapproved).distinct()
+        return queryset
+
     def handle_history(self, request):
         if request.user.is_authenticated:
             qs_approved = TimesheetFilter.get_filter_for_approved(request.user.contact)
@@ -210,33 +175,6 @@ class TimeSheetViewset(BaseApiViewset):
             queryset = hr_models.TimeSheet.objects.none()
 
         return self.paginated(queryset)
-
-    @transaction.atomic
-    @detail_route(
-        methods=['GET', 'PUT'],
-        serializer=timesheet_serializers.TimeSheetSerializer,
-        fieldsets=({
-            'type': constants.CONTAINER_ROW,
-            'fields': ({
-                'type': constants.FIELD_STATIC,
-                'field': 'supervisor',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'company',
-                'label': _('Company'),
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'jobsite',
-                'label': _('Jobsite'),
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'position',
-                'label': _('Position'),
-            })
-        }, TIME_FORM)
-    )
-    def submit(self, request, pk, *args, **kwargs):  # pragma: no cover
-        return self.handle_request(request, pk, *args, **kwargs)
 
     @list_route(
         methods=['GET'],
@@ -254,7 +192,11 @@ class TimeSheetViewset(BaseApiViewset):
                 ),
                 'action': 'showCandidateProfile',
                 'field': 'vacancy_offer.candidate_contact',
-            }, 'position'),
+            }, {
+                'type': constants.FIELD_STATIC,
+                'field': 'position',
+                'label': _('Position'),
+            }),
         }, {
             'label': _('Times'),
             'fields': ({
@@ -275,7 +217,7 @@ class TimeSheetViewset(BaseApiViewset):
                 'field': 'break_started_at',
             }, {
                 'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
+                'text': format_lazy('{{shift_ended_at__time}}'),
                 'label': _('Shift ended at'),
                 'field': 'shift_ended_at',
             }),
@@ -322,100 +264,6 @@ class TimeSheetViewset(BaseApiViewset):
     def unapproved(self, request, *args, **kwargs):  # pragma: no cover
         return self.paginated(self.get_unapproved_queryset(request))
 
-    @list_route(
-        methods=['GET'],
-        endpoint=ExtranetCandidateTimesheetEndpoint(),
-        list_display=[{
-            'field': 'vacancy_offer.candidate_contact.contact.picture',
-            'type': constants.FIELD_PICTURE,
-        }, {
-            'label': _('Position'),
-            'fields': ({
-                'type': constants.FIELD_LINK,
-                'endpoint': format_lazy(
-                    '{}{{vacancy_offer.candidate_contact.id}}/',
-                    api_reverse_lazy('candidate/candidatecontacts')
-                ),
-                'action': 'showCandidateProfile',
-                'field': 'vacancy_offer.candidate_contact',
-            }, 'position'),
-        }, {
-            'label': _('Times'),
-            'fields': ({
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__date}}'),
-                'label': _('Shift date'),
-                'field': 'shift_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
-                'label': _('Shift started at'),
-                'field': 'shift_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy(
-                    '{{break_started_at__time}} - {{break_ended_at__time}}'),
-                'label': _('Break'),
-                'field': 'break_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
-                'label': _('Shift ended at'),
-                'field': 'shift_ended_at',
-            }),
-        }, {
-            'type': constants.FIELD_BUTTON,
-            'icon': 'fa-check',
-            'label': _('Approve'),
-            'text': _('Approve'),
-            'color': 'success',
-            'action': 'approveTimesheet',
-            'field': 'id',
-            'hidden': 'supervisor_approved_at',
-            'replace_by': 'supervisor',
-            'endpoint': format_lazy(
-                '{}{{id}}/approve/', api_reverse_lazy('hr/timesheets')
-            ),
-        }, {
-            'type': constants.FIELD_BUTTON,
-            'icon': 'fa-pencil',
-            'label': _('Change'),
-            'text': _('Change'),
-            'color': 'danger',
-            'action': 'changeTimesheet',
-            'field': 'id',
-            'hidden': 'supervisor_approved_at',
-            'endpoint': format_lazy(
-                '{}{{id}}/not_agree/',
-                api_reverse_lazy('hr/timesheets')
-            ),
-        }, {
-            'type': constants.FIELD_BUTTON,
-            'icon': 'fa-star',
-            'repeat': 5,
-            'label': _('Evaluate'),
-            'color': 'warning',
-            'action': 'evaluateCandidate',
-            'field': 'id',
-            'endpoint': format_lazy(
-                '{}{{id}}/evaluate/',
-                api_reverse_lazy('hr/timesheets')
-            ),
-        }, {
-            'label': _('Jobsite'),
-            'fields': ('jobsite', 'supervisor')
-        }, {
-            'label': _('Going to work'),
-            'field': 'going_to_work_confirmation',
-            'type': constants.FIELD_ICON,
-        }, {
-            'label': _('Signed by'),
-            'fields': ('supervisor', 'supervisor_approved_at')
-        }]
-    )
-    def candidate(self, request, *args, **kwargs):
-        return self.paginated(self.get_candidate_queryset(request))
-
     @transaction.atomic
     @detail_route(methods=['PUT'])
     def approve(self, request, pk, *args, **kwargs):  # pragma: no cover
@@ -426,7 +274,7 @@ class TimeSheetViewset(BaseApiViewset):
     @detail_route(
         methods=['PUT'],
         serializer=timesheet_serializers.TimeSheetSerializer,
-        fieldsets=(TIME_FORM, )
+        fieldsets=(BaseTimeSheetViewsetMixin.TIME_FORM, )
     )
     def not_agree(self, request, pk, *args, **kwargs):  # pragma: no cover
         data = dict(request.data)
@@ -524,7 +372,11 @@ class TimeSheetViewset(BaseApiViewset):
                 ),
                 'action': 'showCandidateProfile',
                 'field': 'vacancy_offer.candidate_contact',
-            }, 'position'),
+            }, {
+                'type': constants.FIELD_STATIC,
+                'field': 'position',
+                'label': _('Position'),
+            }),
         }, {
             'label': _('Times'),
             'fields': ({
@@ -545,7 +397,7 @@ class TimeSheetViewset(BaseApiViewset):
                 'field': 'break_started_at',
             }, {
                 'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
+                'text': format_lazy('{{shift_ended_at__time}}'),
                 'label': _('Shift ended at'),
                 'field': 'shift_ended_at',
             }),
@@ -1087,3 +939,57 @@ class VacancyViewset(BaseApiViewset):
             return candidate_contacts.order_by(*fields)
 
         return candidate_contacts
+
+
+class TimeSheetCandidateViewset(
+    BaseTimeSheetViewsetMixin,
+    BaseViewsetMixin,
+    mixins.ListModelMixin,
+    GenericViewSet
+):
+    def get_candidate_queryset(self, request):
+        contact = request.user.contact
+
+        qs_approved = TimesheetFilter.get_filter_for_approved(request.user.contact)
+        qs_unapproved = TimesheetFilter.get_filter_for_unapproved(request.user.contact)
+
+        queryset = hr_models.TimeSheet.objects.filter(
+            vacancy_offer__candidate_contact_id=contact.candidate_contacts.id
+        ).annotate(
+            approved=Case(When(qs_approved, then=True),
+                          When(qs_unapproved, then=False),
+                          output_field=BooleanField(), default=False)
+        ).order_by('approved', 'shift_started_at')
+
+        return queryset
+
+    def list(self, request, *args, **kwargs):
+        return self.paginated(self.get_candidate_queryset(request))
+
+    @transaction.atomic
+    @detail_route(
+        methods=['GET', 'PUT'],
+        serializer=timesheet_serializers.TimeSheetSerializer,
+        fieldsets=({
+            'type': constants.CONTAINER_ROW,
+            'fields': ({
+                'type': constants.FIELD_STATIC,
+                'field': 'supervisor',
+                'label': _('Supervisor'),
+            }, {
+                'type': constants.FIELD_STATIC,
+                'field': 'company',
+                'label': _('Company'),
+            }, {
+                'type': constants.FIELD_STATIC,
+                'field': 'jobsite',
+                'label': _('Jobsite'),
+            }, {
+                'type': constants.FIELD_STATIC,
+                'field': 'position',
+                'label': _('Position'),
+            })
+        }, BaseTimeSheetViewsetMixin.TIME_FORM)
+    )
+    def submit(self, request, pk, *args, **kwargs):  # pragma: no cover
+        return self.handle_request(request, pk, *args, **kwargs)

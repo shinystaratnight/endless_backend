@@ -69,7 +69,8 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     method_fields = (
         'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'vacancy', 'related_sms',
-        'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor'
+        'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor',
+        'candidate_submit_hidden'
     )
 
     class Meta:
@@ -152,6 +153,9 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
             obj.going_to_work_confirmation and obj.candidate_submitted_at is not None and
             obj.supervisor_approved_at is None and obj.shift_ended_at <= timezone.now()
         )
+
+    def get_candidate_submit_hidden(self, obj):
+        return not self.get_resend_sms_candidate(obj)
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):
