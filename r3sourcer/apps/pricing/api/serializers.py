@@ -145,3 +145,10 @@ class IndustrySerializer(ApiBaseModelSerializer):
     class Meta:
         model = pricing_models.Industry
         fields = ('__all__',)
+
+
+class PriceListRateSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = pricing_models.PriceListRate
+        fields = ('__all__',)

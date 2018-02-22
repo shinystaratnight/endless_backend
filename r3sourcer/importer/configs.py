@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from model_utils import Choices
@@ -46,6 +47,24 @@ class BaseConfig(object):
     @classmethod
     def post_process(cls, row, instance):   # pragma: no cover
         pass
+
+
+class BaseRateMixin:
+
+    @classmethod
+    def fetch_skill_base_rate(cls, row, rate_var):
+        skill_base_rate_exists = not skill_models.SkillBaseRate.objects.filter(id=row[rate_var]).exists()
+        if skill_base_rate_exists and row['skill_id'] and row['h_rate']:
+            try:
+                row[rate_var] = skill_models.SkillBaseRate.objects.get(
+                    skill_id=row['skill_id'], hourly_rate=row['h_rate']
+                ).id
+            except skill_models.SkillBaseRate.DoesNotExist as e:
+                print(e)
+
+                row[rate_var] = None
+
+        return row
 
 
 class AddressConfig(BaseConfig):
@@ -427,6 +446,12 @@ class SkillBaseRateConfig(BaseConfig):
     select = 'sbr.*, s.active'
 
     @classmethod
+    def exists(cls, row):   # pragma: no cover
+        return cls.model.objects.filter(
+            Q(id=row['id']) | Q(skill_id=row['skill_id'], hourly_rate=row['hourly_rate'])
+        ).exists()
+
+    @classmethod
     def post_process(cls, row, instance):   # pragma: no cover
         try:
             instance.skill.active = row['active']
@@ -447,7 +472,7 @@ class SkillRelConfig(BaseConfig):
     lbk_model = 'crm_hr_recruiteeskill'
 
 
-class SkillRateRelConfig(BaseConfig):
+class SkillRateRelConfig(BaseRateMixin, BaseConfig):
     columns = {
         'id', 'candidate_skill_id', 'hourly_rate_id', 'valid_from',
         'valid_until', 'created_at', 'updated_at',
@@ -456,7 +481,17 @@ class SkillRateRelConfig(BaseConfig):
         'recruitee_skill_id': 'candidate_skill_id',
     }
     model = candidate_models.SkillRateRel
-    lbk_model = 'crm_hr_recruiteeskillrate'
+    lbk_model = (
+        'crm_hr_recruiteeskillrate as rsr LEFT JOIN '
+        'crm_hr_skillbaserate as sbr ON rsr.hourly_rate_id=sbr.id'
+    )
+    select = 'rsr.*, sbr.skill_id as skill_id, sbr.hourly_rate as h_rate'
+
+    @classmethod
+    def prepare_data(cls, row):
+        row = cls.fetch_skill_base_rate(row, 'hourly_rate_id')
+
+        return row
 
 
 class IndustryConfig(BaseConfig):
@@ -690,12 +725,19 @@ class VacancyDateConfig(BaseConfig):
         'top_hourly_rate_id': 'hourly_rate_id',
     }
     model = hr_models.VacancyDate
-    lbk_model = 'crm_hr_vacancydate'
+    lbk_model = (
+        'crm_hr_vacancydate as vd LEFT JOIN crm_hr_skillbaserate as sbr ON vd.top_hourly_rate_id=sbr.id'
+    )
+    select = (
+        'vd.*, sbr.skill_id as skill_id, sbr.hourly_rate as h_rate'
+    )
 
     @classmethod
     def prepare_data(cls, row):  # pragma: no cover
         dt = timezone.localtime(row['shift_date'])
         row['shift_date'] = dt.date()
+
+        row = cls.fetch_skill_base_rate(row, 'hourly_rate_id')
 
         return row
 
@@ -728,11 +770,12 @@ class VacancyConfig(BaseConfig):
     }
     model = hr_models.Vacancy
     lbk_model = (
-        'crm_hr_vacancy as v LEFT JOIN crm_core_order as o on v.order_id=o.id'
+        'crm_hr_vacancy as v LEFT JOIN crm_core_order as o on v.order_id=o.id '
+        'LEFT JOIN crm_hr_skillbaserate as sbr ON v.top_hourly_rate_default_id=sbr.id'
     )
     select = (
-        'v.*, o.client_id, o.client_representative_id, '
-        'o.account_representative_id, o.account_accepted_at'
+        'v.*, o.client_id, o.client_representative_id, o.account_representative_id, o.account_accepted_at, '
+        'sbr.skill_id as skill_id, sbr.hourly_rate as h_rate'
     )
 
     @classmethod
@@ -744,6 +787,8 @@ class VacancyConfig(BaseConfig):
         row['provider_company_id'] = (
             companies[0].id if len(companies) > 0 else row['client_id']
         )
+
+        row = cls.fetch_skill_base_rate(row, 'hourly_rate_default_id')
 
         return row
 
@@ -793,11 +838,17 @@ class TimeSheetConfig(BaseConfig):
     }
     model = hr_models.TimeSheet
     lbk_model = (
-        'crm_hr_timesheet as ts LEFT JOIN crm_hr_vacancyoffer as vo '
-        'on ts.booking_id=vo.booking_id '
-        'where ts.shift_started_at::date = vo.target_date_and_time::date'
+        'crm_hr_timesheet as ts LEFT JOIN crm_hr_vacancyoffer as vo on ts.booking_id=vo.booking_id '
+        'LEFT JOIN crm_hr_skillbaserate as sbr ON ts.recruitee_rate_id=sbr.id '
+        'where ts.shift_started_at::date = vo.target_date_and_time::date and ts.recruitee_rate_id is not null'
     )
-    select = 'ts.*, vo.id as vacancy_offer_id'
+    select = 'ts.*, vo.id as vacancy_offer_id, sbr.skill_id as skill_id, sbr.hourly_rate as h_rate'
+
+    @classmethod
+    def prepare_data(cls, row):
+        row = cls.fetch_skill_base_rate(row, 'candidate_rate_id')
+
+        return row
 
 
 class BlackListConfig(BaseConfig):
@@ -856,17 +907,14 @@ class CandidateEvaluationConfig(BaseConfig):
 
 
 ALL_CONFIGS = [
-    ContactConfig, ContactUnavailabilityConfig, ClientContactConfig,
-    AccountContactConfig, AccountCompanyConfig, ClientCompanyConfig,
-    CompanyRelConfig, ClientAddressConfig, BankAccountConfig,
-    ClientContactRelConfig, ContactNoteConfig, VisaTypeConfig, TagConfig,
-    EmploymentClassificationConfig, SuperannuationFundConfig,
-    CandidateContactConfig, TagRelConfig, SkillConfig, SkillBaseRateConfig,
-    SkillRelConfig, SkillRateRelConfig, IndustryConfig,
-    RateCoefficientGroupConfig, RateCoefficientConfig,
-    RateCoefficientModifierCompanyConfig,
-    RateCoefficientModifierCandidateConfig, PriceListConfig,
-    PriceListRateConfig, PriceListRateCoefficientConfig,
+    ContactConfig, ContactUnavailabilityConfig, ClientContactConfig, AccountContactConfig,
+    AccountCompanyConfig, ClientCompanyConfig, CompanyRelConfig, ClientAddressConfig,
+    BankAccountConfig, ClientContactRelConfig, ContactNoteConfig, VisaTypeConfig,
+    TagConfig, EmploymentClassificationConfig, SuperannuationFundConfig,
+    CandidateContactConfig, TagRelConfig,
+    SkillConfig, SkillBaseRateConfig, SkillRelConfig, SkillRateRelConfig,
+    IndustryConfig, RateCoefficientGroupConfig, RateCoefficientConfig, RateCoefficientModifierCompanyConfig,
+    RateCoefficientModifierCandidateConfig, PriceListConfig, PriceListRateConfig, PriceListRateCoefficientConfig,
     JobsiteConfig, JobsiteUnavailabilityConfig,
     VacancyConfig, VacancyDateConfig, VacancyOfferConfig, TimeSheetConfig,
     BlackListConfig, FavouriteListConfig, CarrierListConfig,

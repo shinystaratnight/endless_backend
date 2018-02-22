@@ -3,13 +3,14 @@ from drf_auto_endpoint.router import router
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.skills import models
-from r3sourcer.apps.skills.api import filters as skills_filters
+from r3sourcer.apps.skills.api import filters as skills_filters, serializers as skill_serializer
 
 
 class SkillEndpoint(ApiEndpoint):
-    filter_class = skills_filters.SkillFilter
-
     model = models.Skill
+    filter_class = skills_filters.SkillFilter
+    serializer = skill_serializer.SkillSerializer
+
     fieldsets = (
         'name', 'short_name',  'carrier_list_reserve', 'employment_classification', 'active',
         {
