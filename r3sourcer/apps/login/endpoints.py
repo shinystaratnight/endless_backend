@@ -22,3 +22,4 @@ class LoginEndpoint(ApiEndpoint):
 
 
 router.register(endpoint=LoginEndpoint(), url='auth')
+router.register(TokenLogin)

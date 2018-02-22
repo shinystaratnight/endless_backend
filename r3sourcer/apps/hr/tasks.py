@@ -369,7 +369,8 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
             data_dict = dict(
                 supervisor=contacts['company_contact'],
                 candidate_contact=contacts['candidate_contact'],
-                get_fill_time_sheet_url="%s/hr/timesheets" % SITE_URL,
+                site_url=SITE_URL,
+                get_fill_time_sheet_url="%s/hr/timesheets-candidate" % SITE_URL,
                 get_supervisor_redirect_url="%s/hr/timesheets/unapproved" % SITE_URL,
                 get_supervisor_sign_url="%s/hr/timesheets/unapproved" % SITE_URL,
                 shift_start_date=formats.date_format(target_date_and_time, settings.DATETIME_FORMAT),
@@ -407,10 +408,21 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
 
             today = date.today()
 
-            if event == RECRUITEE_SUBMITTED:
-                recipient = time_sheet.supervisor
-            else:
+            if event == SHIFT_ENDING:
                 recipient = time_sheet.candidate_contact
+
+                sign_navigation = core_models.ExtranetNavigation.objects.get(id=124)
+                extranet_login = TokenLogin.objects.create(
+                    contact=recipient.contact,
+                    redirect_to='{}{}/submit/'.format(sign_navigation.url, time_sheet_id)
+                )
+
+                data_dict.update({
+                    'get_fill_time_sheet_url': "%s%s" % (settings.SITE_URL, extranet_login.auth_url),
+                    'related_objs': [extranet_login],
+                })
+            else:
+                recipient = time_sheet.supervisor
 
             if candidate.message_by_sms:
                 try:
@@ -474,7 +486,8 @@ def send_supervisor_timesheet_message(
         data_dict = dict(
             supervisor=supervisor,
             portfolio_manager=portfolio_manager,
-            get_url="%s/%s" % (settings.SITE_URL, extranet_login.auth_url),
+            get_url="%s%s" % (settings.SITE_URL, extranet_login.auth_url),
+            site_url=settings.SITE_URL,
             related_obj=supervisor,
             related_objs=[extranet_login],
         )
@@ -553,7 +566,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
             )
 
             not_signed_timesheets = timesheets.filter(
-                recruitee_signed_at__isnull=True,
+                candidate_submitted_at__isnull=True,
                 supervisor=supervisor
             )
 
@@ -561,7 +574,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
                 return
 
             signed_timesheets_started = timesheets.filter(
-                recruitee_signed_at__isnull=False,
+                candidate_submitted_at__isnull=False,
                 supervisor=supervisor
             ).order_by('shift_started_at').values_list(
                 'shift_started_at', flat=True
@@ -608,8 +621,8 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
     timesheets = hr_models.TimeSheet.objects.filter(
         shift_ended_at__date=today,
         going_to_work_confirmation=True,
-        recruitee_signed_at__isnull=False,
-        supervisor_signed_at__isnull=True,
+        candidate_submitted_at__isnull=False,
+        supervisor_approved_at_at__isnull=True,
         supervisor=supervisor
     )
 

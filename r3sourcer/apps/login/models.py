@@ -1,5 +1,4 @@
 from django.db import models
-from django.urls import reverse
 from django.utils.translation import ugettext_lazy as _
 
 from model_utils import Choices
@@ -42,7 +41,7 @@ class TokenLogin(UUIDModel,
     )
 
     redirect_to = models.CharField(
-        max_length=63,
+        max_length=127,
         verbose_name=_("Redirect Url"),
         default='/'
     )
