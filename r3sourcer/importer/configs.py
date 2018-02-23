@@ -715,7 +715,7 @@ class JobsiteUnavailabilityConfig(BaseConfig):
     lbk_model = 'crm_hr_jobsiteunavailability'
 
 
-class VacancyDateConfig(BaseConfig):
+class VacancyDateConfig(BaseRateMixin, BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'vacancy_id', 'shift_date',
         'workers', 'hourly_rate_id', 'cancelled',
@@ -752,7 +752,7 @@ class VacancyDateConfig(BaseConfig):
             )
 
 
-class VacancyConfig(BaseConfig):
+class VacancyConfig(BaseRateMixin, BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'jobsite_id', 'position_id',
         'published', 'publish_on', 'expires_on', 'work_start_date',
@@ -823,7 +823,7 @@ class VacancyOfferConfig(BaseConfig):
         return row
 
 
-class TimeSheetConfig(BaseConfig):
+class TimeSheetConfig(BaseRateMixin, BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'going_to_work_confirmation',
         'shift_started_at', 'break_started_at', 'break_ended_at',
