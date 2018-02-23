@@ -1001,7 +1001,7 @@ class JobOffersCandidateViewset(
     GenericViewSet
 ):
     def get_queryset(self):
-        # contact = self.request.user.contact
+        contact = self.request.user.contact
         return super().get_queryset().filter(
-            # candidate_contact__contact=contact
+            candidate_contact__contact=contact
         )
