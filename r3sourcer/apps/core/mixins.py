@@ -47,7 +47,7 @@ class CategoryFolderMixin(object):
         if self._state.adding:
             # create folder for model by it's verbose name
             parent_folder, created = Folder.objects.get_or_create(name=self._meta.verbose_name_plural)
-            self.files = Folder.objects.create(name=self.id, parent=parent_folder)
+            self.files, _ = Folder.objects.get_or_create(name=self.id, parent=parent_folder)
         super().save(*args, **kwargs)
 
 
