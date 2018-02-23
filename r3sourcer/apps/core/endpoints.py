@@ -1212,13 +1212,13 @@ class InvoiceLineEndpoint(ApiEndpoint):
             'type': constants.FIELD_TEXT,
             'field': 'vat.name',
             'label': _('Code'),
-        },{
+        }, {
             'type': constants.FIELD_LINK,
             'label': _('Timesheets'),
             'field': 'timesheet',
             'text': _('Timesheet'),
             'endpoint': format_lazy('{}{{timesheet.id}}', api_reverse_lazy('hr/timesheets'))
-        },{
+        }, {
             'label': _('Actions'),
             'delim': ' ',
             'fields': ({
@@ -1248,6 +1248,8 @@ class NoteEndpoint(ApiEndpoint):
 
     model = models.Note
 
+    serializer_fields = ('id', 'note', 'created_at', 'updated_at', 'object_id', 'content_type')
+
     list_editable = (
         'note', 'created_at', 'updated_at', {
             **constants.BUTTON_EDIT,
@@ -1255,7 +1257,7 @@ class NoteEndpoint(ApiEndpoint):
         }, constants.BUTTON_DELETE,
     )
 
-    list_filter = ('object_id', )
+    filter_fields = ('object_id', )
 
 
 class ContactUnavailabilityEndpoint(ApiEndpoint):
@@ -1265,7 +1267,7 @@ class ContactUnavailabilityEndpoint(ApiEndpoint):
     list_editable = (
         'unavailable_from', 'unavailable_until', 'notes', 'created_at', 'updated_at', {
             **constants.BUTTON_EDIT,
-            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/notes'))
+            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/contactunavailabilities'))
         }, constants.BUTTON_DELETE,
     )
 

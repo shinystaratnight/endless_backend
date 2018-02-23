@@ -1,4 +1,6 @@
 from django.db.models import Q
+from django.contrib.contenttypes.models import ContentType
+from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.utils import timezone
 from model_utils import Choices
@@ -27,7 +29,15 @@ class BaseConfig(object):
 
     @classmethod
     def exists(cls, row):   # pragma: no cover
-        return cls.model.objects.filter(id=row['id']).exists()
+        qs = cls.model.objects.filter(id=row['id'])
+        is_exists = qs.exists()
+        is_watched = 'created_at' in row and 'updated_at' in row
+        if is_exists and is_watched and not qs.filter(
+            created_at=row['created_at'], updated_at=row['updated_at']
+        ).exists():
+            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
+            return True
+        return is_exists
 
     @classmethod
     def override(cls, **kwargs):
@@ -42,6 +52,8 @@ class BaseConfig(object):
             key: val for key, val in row.items()
             if key in cls.columns
         })
+        cls.model.objects.filter(id=row['id']).update(created_at=row['created_at'], updated_at=row['updated_at'])
+
         return obj
 
     @classmethod
@@ -191,10 +203,15 @@ class ClientContactRelConfig(BaseConfig):
 
     @classmethod
     def exists(cls, row):  # pragma: no cover
-        return cls.model.objects.filter(
+        qs = cls.model.objects.filter(
             company_contact_id=row['id'],
             company_id=row['client_id']
-        ).exists()
+        )
+        if qs.exists():
+            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
+            return True
+
+        return False
 
 
 class AccountContactConfig(BaseConfig):
@@ -221,6 +238,17 @@ class AccountCompanyConfig(BaseConfig):
     def prepare_data(cls, row):  # pragma: no cover
         row['type'] = models.Company.COMPANY_TYPES.master
         return row
+
+    @classmethod
+    def process(cls, row):   # pragma: no cover
+        defaults = {key: val for key, val in row.items() if key in cls.columns}
+        obj, created = cls.model.objects.get_or_create(name=row['name'], defaults=defaults)
+        if not created and obj.id != row['id']:
+            ids_mapping = cache.get('ids_mapping', {})
+            ids_mapping[row['id']] = str(obj.id)
+            cache.set('ids_mapping', ids_mapping)
+
+        return obj
 
 
 class ClientCompanyConfig(BaseConfig):
@@ -263,10 +291,16 @@ class CompanyRelConfig(BaseConfig):
 
     @classmethod
     def exists(cls, row):  # pragma: no cover
-        return cls.model.objects.filter(
+        qs = cls.model.objects.filter(
             master_company_id=row['account_id'],
             regular_company_id=row['id']
-        ).exists()
+        )
+
+        if qs.exists():
+            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
+            return True
+
+        return False
 
 
 class ClientAddressConfig(BaseConfig):
@@ -297,7 +331,7 @@ class BankAccountConfig(BaseConfig):
 class ContactNoteConfig(BaseConfig):
 
     columns = {
-        'id', 'object', 'note', 'updated_at', 'created_at',
+        'id', 'object_id', 'content_type', 'note', 'updated_at', 'created_at',
     }
     model = models.Note
     lbk_model = 'crm_core_contactnote'
@@ -305,7 +339,8 @@ class ContactNoteConfig(BaseConfig):
     @classmethod
     def prepare_data(cls, row):  # pragma: no cover
         contact = models.Contact.objects.get(id=row['contact_id'])
-        row['object'] = contact
+        row['object_id'] = contact.id
+        row['content_type'] = ContentType.objects.get_for_model(models.Contact)
 
         return row
 
@@ -394,13 +429,6 @@ class TagConfig(BaseConfig):
     lbk_model = 'crm_hr_tag'
     order_by = 'name'
 
-    @classmethod
-    def process(cls, row):   # pragma: no cover
-        return cls.model.add_root(**{
-            key: val for key, val in row.items()
-            if key in cls.columns
-        })
-
 
 class TagRelConfig(BaseConfig):
     columns = {
@@ -447,9 +475,15 @@ class SkillBaseRateConfig(BaseConfig):
 
     @classmethod
     def exists(cls, row):   # pragma: no cover
-        return cls.model.objects.filter(
+        qs = cls.model.objects.filter(
             Q(id=row['id']) | Q(skill_id=row['skill_id'], hourly_rate=row['hourly_rate'])
-        ).exists()
+        )
+
+        if qs.exists():
+            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
+            return True
+
+        return False
 
     @classmethod
     def post_process(cls, row, instance):   # pragma: no cover
@@ -658,9 +692,15 @@ class PriceListRateCoefficientConfig(BaseConfig):
 
     @classmethod
     def exists(cls, row):   # pragma: no cover
-        return cls.model.objects.filter(
+        qs = cls.model.objects.filter(
             price_list_id=row['price_list_id'], rate_coefficient_id=row['rate_coefficient_id']
         ).exists()
+
+        if qs.exists():
+            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
+            return True
+
+        return False
 
 
 class JobsiteConfig(BaseConfig):

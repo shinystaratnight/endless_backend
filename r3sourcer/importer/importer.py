@@ -2,6 +2,7 @@ import copy
 import logging
 
 from django.db import connections
+from django.core.cache import cache
 
 log = logging.getLogger(__name__)
 
@@ -99,6 +100,10 @@ class CoreImporter(object):
         try:
             row = cls.map_columns(row, config)
             row = config.prepare_data(row)
+
+            ids_mapping = cache.get('ids_mapping', {})
+            row = {k: ids_mapping[v] if v in ids_mapping else v for k, v in row.items()}
+
             instance = config.process(row)
             return instance
         except Exception as e:
