@@ -882,7 +882,7 @@ class TimeSheetConfig(BaseRateMixin, BaseConfig):
     lbk_model = (
         'crm_hr_timesheet as ts LEFT JOIN crm_hr_vacancyoffer as vo on ts.booking_id=vo.booking_id '
         'LEFT JOIN crm_hr_skillbaserate as sbr ON ts.recruitee_rate_id=sbr.id '
-        'where ts.shift_started_at::date = vo.target_date_and_time::date and ts.recruitee_rate_id is not null'
+        'where ts.shift_started_at::date = vo.target_date_and_time::date'
     )
     select = 'ts.*, vo.id as vacancy_offer_id, sbr.skill_id as skill_id, sbr.hourly_rate as h_rate'
 
