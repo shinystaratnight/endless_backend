@@ -159,6 +159,13 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         :param new_state: WorkflowNode value of new state
         :return: True or False
         """
+        from .models import WorkflowNode
+        if isinstance(new_state, int):
+            new_state = WorkflowNode.objects.filter(
+                workflow__model=ContentType.objects.get_for_model(self),
+                number=new_state
+            ).first()
+
         active_numbers = self.active_states.values_list(
             'state__number', flat=True
         )

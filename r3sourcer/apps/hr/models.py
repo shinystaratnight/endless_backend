@@ -442,7 +442,7 @@ class Vacancy(core_models.AbstractBaseOrder):
 
         super().save(*args, **kwargs)
 
-        if just_added:
+        if just_added and self.is_allowed(10):
             self.create_state(10)
 
     def get_distance_matrix(self, candidate_contact):
@@ -1137,7 +1137,7 @@ class TimeSheet(
         just_added = self._state.adding
         super().save(*args, **kwargs)
 
-        if just_added:
+        if just_added and self.is_allowed(10):
             self.create_state(10)
 
 

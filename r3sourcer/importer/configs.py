@@ -30,6 +30,11 @@ class BaseConfig(object):
     @classmethod
     def exists(cls, row):   # pragma: no cover
         qs = cls.model.objects.filter(id=row['id'])
+
+        return cls.is_watched_exists(row, qs)
+
+    @classmethod
+    def is_watched_exists(cls, row, qs):
         is_exists = qs.exists()
         is_watched = 'created_at' in row and 'updated_at' in row
         if is_exists and is_watched and not qs.filter(
@@ -113,6 +118,18 @@ class AddressConfig(BaseConfig):
             name=row['city'], country=row['country']).first()
 
         return row
+
+    @classmethod
+    def exists(cls, row):   # pragma: no cover
+        qs = cls.model.objects.filter(
+            country__code2=row['country'],
+            state__name=cls.STATE_CHOICES[row['state']],
+            city__name=row['city'],
+            street_address=row['street_address_1'],
+            postal_code=row['postal_code'],
+        )
+
+        return cls.is_watched_exists(row, qs)
 
 
 class UserConfig(BaseConfig):
@@ -207,11 +224,8 @@ class ClientContactRelConfig(BaseConfig):
             company_contact_id=row['id'],
             company_id=row['client_id']
         )
-        if qs.exists():
-            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
-            return True
 
-        return False
+        return cls.is_watched_exists(row, qs)
 
 
 class AccountContactConfig(BaseConfig):
@@ -296,11 +310,7 @@ class CompanyRelConfig(BaseConfig):
             regular_company_id=row['id']
         )
 
-        if qs.exists():
-            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
-            return True
-
-        return False
+        return cls.is_watched_exists(row, qs)
 
 
 class ClientAddressConfig(BaseConfig):
@@ -479,11 +489,7 @@ class SkillBaseRateConfig(BaseConfig):
             Q(id=row['id']) | Q(skill_id=row['skill_id'], hourly_rate=row['hourly_rate'])
         )
 
-        if qs.exists():
-            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
-            return True
-
-        return False
+        return cls.is_watched_exists(row, qs)
 
     @classmethod
     def post_process(cls, row, instance):   # pragma: no cover
@@ -694,13 +700,9 @@ class PriceListRateCoefficientConfig(BaseConfig):
     def exists(cls, row):   # pragma: no cover
         qs = cls.model.objects.filter(
             price_list_id=row['price_list_id'], rate_coefficient_id=row['rate_coefficient_id']
-        ).exists()
+        )
 
-        if qs.exists():
-            qs.update(created_at=row['created_at'], updated_at=row['updated_at'])
-            return True
-
-        return False
+        return cls.is_watched_exists(row, qs)
 
 
 class JobsiteConfig(BaseConfig):
