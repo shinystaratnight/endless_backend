@@ -993,3 +993,15 @@ class TimeSheetCandidateViewset(
     )
     def submit(self, request, pk, *args, **kwargs):  # pragma: no cover
         return self.handle_request(request, pk, *args, **kwargs)
+
+
+class JobOffersCandidateViewset(
+    BaseViewsetMixin,
+    mixins.ListModelMixin,
+    GenericViewSet
+):
+    def get_queryset(self):
+        contact = self.request.user.contact
+        return super().get_queryset().filter(
+            candidate_contact__contact=contact
+        )

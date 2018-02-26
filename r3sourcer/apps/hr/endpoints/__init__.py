@@ -595,6 +595,84 @@ class VacancyDateEndpoint(ApiEndpoint):
     )
 
 
+class CandidateJobOfferEndpoint(ApiEndpoint):
+    model = hr_models.VacancyOffer
+    serializer = vacancy_serializers.CandidateJobOfferSerializer
+
+    list_display = (
+        {
+            'label': _('Times'),
+            'fields': ({
+                'type': constants.FIELD_STATIC,
+                'text': format_lazy('{{shift.date.shift_date__date}}'),
+                'label': _('Shift date'),
+                'field': 'shift.date.shift_date',
+            }, {
+                'type': constants.FIELD_STATIC,
+                'label': _('Shift Time'),
+                'field': 'shift.time',
+            })
+        },
+        'shift.date.vacancy.position',
+        {
+            'field': 'shift.date.vacancy.customer_company',
+            'type': constants.FIELD_RELATED,
+            'label': _('Client'),
+        }, {
+            'type': constants.FIELD_STATIC,
+            'label': _('Job Site - Map'),
+            'delim': ' ',
+            'fields': (
+                {
+                    'type': constants.FIELD_RELATED,
+                    'field': 'jobsite_address',
+                }, {
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-map-marker',
+                    'field': 'id',
+                    'text_color': '#006ce5',
+                    'title': _('Open Map'),
+                    'action': 'openMap',
+                    'fields': ('jobsite_address.latitude', 'jobsite_address.longitude')
+                }
+            )
+        }, {
+            'type': constants.FIELD_RELATED,
+            'label': _('Job Site Contact'),
+            'field': 'shift.date.vacancy.jobsite.primary_contact',
+        }, {
+            'label': _('Status'),
+            'fields': (
+                {
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-check-circle',
+                    'field': 'hide_buttons',
+                    'action': constants.DEFAULT_ACTION_POST,
+                    'endpoint': format_lazy('{}{{id}}/accept', api_reverse_lazy('hr/vacancyoffers')),
+                    'color': 'success',
+                    'text': _('Accept'),
+                    'hidden': 'hide_buttons',
+                }, {
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-times-circle',
+                    'field': 'hide_buttons',
+                    'action': constants.DEFAULT_ACTION_POST,
+                    'endpoint': format_lazy('{}{{id}}/cancel', api_reverse_lazy('hr/vacancyoffers')),
+                    'text': _('Decline'),
+                    'color': 'danger',
+                    'hidden': 'hide_buttons',
+                }, {
+                    'type': constants.FIELD_TEXT,
+                    'field': 'status',
+                    'hidden': 'hide_text',
+                }
+            )
+        }
+    )
+
+    ordering = ('-shift.date.shift_date', '-shift.time')
+
+
 router.register(endpoint=JobsiteEndpoint())
 router.register(hr_models.JobsiteUnavailability)
 router.register(endpoint=JobsiteAddressEndpoint())
@@ -613,3 +691,4 @@ router.register(hr_models.Payslip)
 router.register(hr_models.PayslipLine)
 router.register(hr_models.PayslipRule)
 router.register(endpoint=InvoiceEndpoint(), replace=True)
+router.register(endpoint=CandidateJobOfferEndpoint(), url='hr/joboffers-candidate')

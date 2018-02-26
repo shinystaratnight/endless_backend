@@ -790,16 +790,19 @@ class VacancyOffer(core_models.UUIDModel):
                 # TODO: implement this function
                 # time_sheet.auto_fill_four_hours()
 
+    def is_quota_filled(self):
+        accepted_count = self.vacancy.get_vacancy_offers().filter(
+            status=VacancyOffer.STATUS_CHOICES.accepted,
+            shift__date__shift_date=self.shift.date.shift_date,
+            shift__time=self.shift.time
+        ).count()
+
+        return accepted_count >= self.vacancy.workers
+
     def check_vacancy_quota(self, is_initial):
         if is_initial:
-            all_vacancy_offers = self.vacancy.get_vacancy_offers()
-            accepted_count = all_vacancy_offers.filter(
-                status=VacancyOffer.STATUS_CHOICES.accepted,
-                shift__date__shift_date=self.shift.date.shift_date,
-                shift__time=self.shift.time
-            ).count()
-
-            if accepted_count >= self.vacancy.workers or self.is_cancelled():
+            if self.is_quota_filled() or self.is_cancelled():
+                all_vacancy_offers = self.vacancy.get_vacancy_offers()
                 now = timezone.now()
                 with transaction.atomic():
                     # if celery worked with VO sending

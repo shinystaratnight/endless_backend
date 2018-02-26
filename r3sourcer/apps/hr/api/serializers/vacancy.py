@@ -2,14 +2,18 @@ from datetime import date
 
 from django.db.models import Max
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 from r3sourcer.apps.activity.api import mixins as activity_mixins
+from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
+from r3sourcer.apps.core.utils.user import get_default_user
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.utils import utils as hr_utils
+from r3sourcer.apps.logger.main import endless_logger
 
 
 class VacancySerializer(
@@ -286,3 +290,64 @@ class JobsiteAddressSerializer(core_serializers.ApiBaseModelSerializer):
         fields = ('__all__', {
             'jobsite': ('primary_contact', 'start_date', 'end_date', 'notes'),
         })
+
+
+class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
+
+    jobsite_address = core_serializers.AddressSerializer(read_only=True)
+
+    method_fields = ('jobsite_address', 'hide_buttons', 'status', 'hide_text')
+
+    class Meta:
+        model = hr_models.VacancyOffer
+        fields = [
+            '__all__',
+            {
+                'jobsite_address': ('__all__', ),
+                'shift': ['id', 'time', {
+                    'date': ['shift_date', {
+                        'vacancy': ['position', 'customer_company', {
+                            'jobsite': ['primary_contact'],
+                        }],
+                    }],
+                }],
+            }
+        ]
+
+    def get_jobsite_address(self, obj):
+        address = obj.vacancy.jobsite.get_address()
+        return address and core_serializers.AddressSerializer(address).data
+
+    def get_hide_buttons(self, obj):
+        return obj.status != hr_models.VacancyOffer.STATUS_CHOICES.undefined
+
+    def get_hide_text(self, obj):
+        return not self.get_hide_buttons(obj)
+
+    def get_status(self, obj):
+        if obj.status == hr_models.VacancyOffer.STATUS_CHOICES.undefined:
+            return ' '
+
+        last_change = endless_logger.get_recent_field_change(hr_models.VacancyOffer, obj.id, 'status')
+        updated_by_id = last_change['updated_by']
+        system_user = get_default_user()
+        reply_sms = obj.reply_received_by_sms
+        jobsite_contact = obj.vacancy.jobsite.primary_contact
+
+        if obj.is_quota_filled() or (reply_sms and reply_sms.is_positive_answer() and not obj.is_accepted()):
+            return _('Already filled')
+
+        if obj.is_cancelled():
+            if obj.candidate_contact.contact.user.id == updated_by_id:
+                return _('Declined by Candidate')
+            elif system_user.id == updated_by_id:
+                if reply_sms and reply_sms.is_negative_answer():
+                    return _('Declined by Candidate')
+                else:
+                    return _('Cancelled')
+            elif jobsite_contact and jobsite_contact.contact.user.id == updated_by_id:
+                return _('Cancelled by Job Site Contact')
+            else:
+                return _('Cancelled by {name}').format(core_models.User.objects.get(id=updated_by_id))
+
+        return hr_models.VacancyOffer.STATUS_CHOICES[obj.status]

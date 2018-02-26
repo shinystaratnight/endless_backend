@@ -114,6 +114,47 @@ class EndlessLogger(object):
         """
         raise NotImplementedError
 
+    def get_history_for_fields(self, model, object_id, fields):
+        """
+        Gets history of field's changes of the object. Sorted by update time DESC
+        :param model: model of the object
+        :param object_id: id of the object for retrieving
+        :param fields: list of field to get history
+        :return: :dict: {
+            field: [
+                {
+                    "updated_by": "user_id",
+                    "updated_at": timestamp,
+                    "transaction_type": "update",
+                    "old_value": "some value",
+                    "new_value": "some value",
+                }, ...
+            ],
+            another_field: [...],
+            ...
+        }
+        :rtype: dict
+        """
+        raise NotImplementedError
+
+    def get_recent_field_change(self, model, object_id, field):
+        """
+        Gets the most recent change of the field
+        :param model: model of the object
+        :param object_id: id of the object for retrieving
+        :param fields: list of field to get history
+        :return: :dict: {
+            "updated_by": "user_id",
+            "updated_at": timestamp,
+            "transaction_type": "update",
+            "old_value": "some value",
+            "new_value": "some value",
+        }
+        :rtype: dict
+        """
+        history = self.get_history_for_fields(model, object_id, [field]).get(field, [])
+        return history[0] if len(history) > 0 else {}
+
 
 class ClickHouseLogger(EndlessLogger):
     def __init__(self):
@@ -340,5 +381,46 @@ class ClickHouseLogger(EndlessLogger):
         # TODO: fix aggregation (attribute error: infi.clickhouse_orm.query.QuerySet)
         res = self.get_log_queryset().filter(**filter_kwargs).only(
             'object_id'
-        )#.aggregate('object_id', num='count()')
+        )  # .aggregate('object_id', num='count()')
         return [log.object_id for log in res]
+
+    def _get_fields_history_qs(self, model, object_id, fields):
+        if not isinstance(fields, (list, tuple)):
+            fields = [fields]
+
+        model = '%s.%s' % (model.__module__, model.__name__)
+
+        return self.get_log_queryset().filter(
+            model=model, object_id=str(object_id), field__in=fields
+        ).order_by('-updated_at')
+
+    def _map_field_history(self, log_object):
+        updated_at = timezone.make_aware(datetime.utcfromtimestamp(log_object.updated_at / 1000))
+
+        return {
+            'updated_by': log_object.updated_by,
+            'updated_at': updated_at,
+            'transaction_type': log_object.transaction_type.name,
+            'old_value': log_object.old_value,
+            'new_value': log_object.new_value,
+        }
+
+    def get_history_for_fields(self, model, object_id, fields):
+        fields_history = {}
+
+        if not fields:
+            return fields_history
+
+        log_qs = self._get_fields_history_qs(model, object_id, fields)
+
+        for log_object in log_qs:
+            field_history = fields_history.get(log_object.field, [])
+            field_history.append(self._map_field_history(log_object))
+            fields_history[log_object.field] = field_history
+
+        return fields_history
+
+    def get_recent_field_change(self, model, object_id, field):
+        log_qs = self._get_fields_history_qs(model, object_id, [field])
+
+        return self._map_field_history(log_qs[0]) if log_qs.count() > 0 else {}
