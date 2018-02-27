@@ -1,4 +1,7 @@
+import os
+
 from django.db.models import Q
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
@@ -57,7 +60,8 @@ class BaseConfig(object):
             key: val for key, val in row.items()
             if key in cls.columns
         })
-        cls.model.objects.filter(id=row['id']).update(created_at=row['created_at'], updated_at=row['updated_at'])
+        if 'created_at' in row and 'updated_at' in row:
+            cls.model.objects.filter(id=row['id']).update(created_at=row['created_at'], updated_at=row['updated_at'])
 
         return obj
 
@@ -152,7 +156,7 @@ class ContactConfig(BaseConfig):
         'id', 'title', 'first_name', 'last_name', 'email', 'phone_mobile',
         'gender', 'marital_status', 'birthday', 'spouse_name', 'children',
         'is_available', 'email_verified', 'phone_mobile_verified', 'address',
-        'updated_at', 'created_at', 'user',
+        'updated_at', 'created_at', 'user', 'picture',
     }
     model = models.Contact
     lbk_model = 'crm_core_contact'
@@ -171,6 +175,9 @@ class ContactConfig(BaseConfig):
 
         if not row['phone_mobile']:
             row['phone_mobile'] = None
+
+        if not row['picture']:
+            row['picture'] = os.path.join('contact_pictures', 'default_picture.jpg')
 
         return row
 
@@ -283,6 +290,9 @@ class ClientCompanyConfig(BaseConfig):
     @classmethod
     def prepare_data(cls, row):  # pragma: no cover
         row['type'] = models.Company.COMPANY_TYPES.regular
+
+        if row['name'].lower() == 'labourking':
+            row['name'] = settings.SYSTEM_MASTER_COMPANY
 
         return row
 
@@ -948,6 +958,157 @@ class CandidateEvaluationConfig(BaseConfig):
     lbk_model = 'crm_hr_recruiteeevaluation'
 
 
+class StatesConfigMixin:
+    @classmethod
+    def process(cls, row):   # pragma: no cover
+        data = {key: val for key, val in row.items() if key in cls.columns}
+        try:
+            obj = cls.model.objects.get(**data)
+        except cls.model.DoesNotExist:
+            obj = cls.model(**data)
+            obj.save(raw=True, lifecycle=False)
+
+        cls.model.objects.filter(id=row['id']).update(created_at=row['created_at'], updated_at=row['updated_at'])
+
+        return obj
+
+    @classmethod
+    def get_workflow_node(cls, number, model):
+        return models.WorkflowNode.objects.get(number=number, workflow__model=ContentType.objects.get_for_model(model))
+
+
+class CandidateStatesConfig(StatesConfigMixin, BaseConfig):
+    columns = {'id', 'object_id', 'state', 'comment', 'active'}
+    columns_map = {
+        'notes': 'comment',
+        'state': 'number',
+        'recruitee_contact_id': 'object_id',
+    }
+    model = models.WorkflowObject
+    lbk_model = 'crm_hr_recruitmentstatus'
+
+    @classmethod
+    def prepare_data(cls, row):  # pragma: no cover
+        if row['number'] == 95:
+            row['number'] = 90
+
+        row['state'] = cls.get_workflow_node(row['number'], candidate_models.CandidateContact)
+
+        return row
+
+
+class CompanyStatesConfig(StatesConfigMixin, BaseConfig):
+    columns = {'id', 'object_id', 'state', 'comment', 'active'}
+    columns_map = {
+        'description': 'comment',
+        'state': 'number',
+    }
+    model = models.WorkflowObject
+    lbk_model = 'crm_core_clientstate'
+
+    @classmethod
+    def prepare_data(cls, row):  # pragma: no cover
+        row['state'] = cls.get_workflow_node(row['number'], models.CompanyRel)
+        row['object_id'] = models.CompanyRel.objects.get(regular_company_id=row['client_id']).id
+
+        return row
+
+    @classmethod
+    def exists(cls, row):
+        if row['state'] == 50:
+            return True
+
+        return super().exists(row)
+
+
+class JobsiteStatesConfig(StatesConfigMixin, BaseConfig):
+    columns = {'id', 'object_id', 'state', 'comment', 'active'}
+    columns_map = {
+        'notes': 'comment',
+        'state': 'number',
+        'jobsite_id': 'object_id',
+    }
+    model = models.WorkflowObject
+    lbk_model = 'crm_hr_jobsitestate'
+
+    @classmethod
+    def prepare_data(cls, row):  # pragma: no cover
+        row['state'] = cls.get_workflow_node(row['number'], hr_models.Jobsite)
+
+        models.WorkflowObject.objects.filter(object_id=row['object_id']).update(active=False)
+        row['active'] = True
+
+        return row
+
+
+class VacancyStatesConfig(StatesConfigMixin, BaseConfig):
+    columns = {'object_id', 'state', 'comment', 'active'}
+    columns_map = {
+        'notes': 'comment',
+        'state': 'number',
+        'vacancy_id': 'object_id',
+    }
+    model = models.WorkflowObject
+    lbk_model = (
+        'crm_hr_orderstate as os LEFT JOIN crm_core_order as o on os.order_id=o.id '
+        'LEFT JOIN crm_hr_vacancy as v on o.id=v.order_id '
+        'where v.id is not null'
+    )
+    select = 'os.*, v.id as vacancy_id'
+    order_by = 'os.created_at'
+
+    @classmethod
+    def prepare_data(cls, row):  # pragma: no cover
+        map_states = {70: 60, 50: 20, 0: 40}
+
+        if row['number'] in map_states:
+            row['number'] = map_states[row['number']]
+
+        row['state'] = cls.get_workflow_node(row['number'], hr_models.Vacancy)
+
+        models.WorkflowObject.objects.filter(object_id=row['object_id']).update(active=False)
+        row['active'] = True
+
+        return row
+
+
+class TimeSheetStatesConfig(StatesConfigMixin, BaseConfig):
+    columns = {'object_id', 'state', 'comment', 'active'}
+    columns_map = {
+        'notes': 'comment',
+        'state': 'number',
+        'timesheet_id': 'object_id',
+    }
+    model = models.WorkflowObject
+    lbk_model = (
+        'crm_hr_bookingstate as bs left join crm_hr_booking as b on b.id=bs.booking_id '
+        'left JOIN crm_hr_timesheet as t on t.booking_id=b.id '
+        'where t.id is not null'
+    )
+    select = 'bs.*, t.id as timesheet_id'
+    order_by = 'bs.created_at'
+
+    @classmethod
+    def prepare_data(cls, row):  # pragma: no cover
+        map_states = {50: 20, 0: 90, 90: 60}
+
+        if row['number'] in map_states:
+            row['number'] = map_states[row['number']]
+
+        row['state'] = cls.get_workflow_node(row['number'], hr_models.TimeSheet)
+
+        models.WorkflowObject.objects.filter(object_id=row['object_id']).update(active=False)
+        row['active'] = True
+
+        return row
+
+    @classmethod
+    def exists(cls, row):   # pragma: no cover
+        qs = cls.model.objects.filter(object_id=row['timesheet_id'], state__number=row['state'])
+
+        return cls.is_watched_exists(row, qs)
+
+
 ALL_CONFIGS = [
     ContactConfig, ContactUnavailabilityConfig, ClientContactConfig, AccountContactConfig,
     AccountCompanyConfig, ClientCompanyConfig, CompanyRelConfig, ClientAddressConfig,
@@ -959,6 +1120,6 @@ ALL_CONFIGS = [
     RateCoefficientModifierCandidateConfig, PriceListConfig, PriceListRateConfig, PriceListRateCoefficientConfig,
     JobsiteConfig, JobsiteUnavailabilityConfig,
     VacancyConfig, VacancyDateConfig, VacancyOfferConfig, TimeSheetConfig,
-    BlackListConfig, FavouriteListConfig, CarrierListConfig,
-    CandidateEvaluationConfig
+    BlackListConfig, FavouriteListConfig, CarrierListConfig, CandidateEvaluationConfig,
+    CandidateStatesConfig, CompanyStatesConfig, JobsiteStatesConfig, VacancyStatesConfig, TimeSheetStatesConfig,
 ]
