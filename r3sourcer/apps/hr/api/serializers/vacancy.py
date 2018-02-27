@@ -329,6 +329,9 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             return ' '
 
         last_change = endless_logger.get_recent_field_change(hr_models.VacancyOffer, obj.id, 'status')
+        if not last_change:
+            return hr_models.VacancyOffer.STATUS_CHOICES[obj.status]
+
         updated_by_id = last_change['updated_by']
         system_user = get_default_user()
         reply_sms = obj.reply_received_by_sms
