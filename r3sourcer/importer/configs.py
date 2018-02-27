@@ -494,8 +494,9 @@ class SkillBaseRateConfig(BaseConfig):
     @classmethod
     def post_process(cls, row, instance):   # pragma: no cover
         try:
-            instance.skill.active = row['active']
-            instance.skill.save(update_fields=['active'])
+            if instance:
+                instance.skill.active = row['active']
+                instance.skill.save(update_fields=['active'])
         except ValidationError:
             pass
 
