@@ -129,7 +129,7 @@ class BaseTimeSheetViewsetMixin:
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        generate_invoice.delay(time_sheet)
+        generate_invoice.delay(time_sheet.id)
         return Response(serializer.data)
 
     def handle_request(self, request, pk, is_candidate=True, *args, **kwargs):
@@ -409,6 +409,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             'color': 'warning',
             'action': 'evaluateCandidate',
             'field': 'id',
+            'hidden': 'evaluated',
             'endpoint': format_lazy(
                 '{}{{id}}/evaluate/',
                 api_reverse_lazy('hr/timesheets')
