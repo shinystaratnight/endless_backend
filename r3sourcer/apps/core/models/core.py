@@ -2100,7 +2100,10 @@ class WorkflowObject(UUIDModel):
         return result
 
     def save(self, *args, **kwargs):
-        self.clean()
+        is_raw = kwargs.pop('raw', False)
+        if not is_raw:
+            self.clean()
+
         just_added = self._state.adding
 
         lifecycle_enabled = kwargs.pop('lifecycle', True)
@@ -2111,7 +2114,8 @@ class WorkflowObject(UUIDModel):
         super().save(*args, **kwargs)
 
         if just_added:
-            self.model_object.workflow(self.state)
+            if not is_raw:
+                self.model_object.workflow(self.state)
 
             if lifecycle_enabled:
                 self.model_object.after_state_created(self)
