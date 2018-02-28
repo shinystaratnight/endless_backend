@@ -684,6 +684,12 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
 
     role = models.CharField(max_length=63, choices=ROLE_CHOICES, default=ROLE_CHOICES.manager, verbose_name=_('Role'))
 
+    timesheet_reminder = models.BooleanField(
+        verbose_name=_("Timesheet Reminder"),
+        help_text=_("Unmark when Company Contact does not need timesheet sign reminders"),
+        default=True
+    )
+
     objects = AbstractCompanyContactOwnerManager()
 
     class Meta:

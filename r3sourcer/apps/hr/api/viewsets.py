@@ -130,6 +130,11 @@ class BaseTimeSheetViewsetMixin:
         serializer.is_valid(raise_exception=True)
         serializer.save()
         generate_invoice.delay(time_sheet.id)
+
+        if is_candidate:
+            from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
+            send_supervisor_timesheet_sign.apply_async(args=[time_sheet.supervisor.id, time_sheet.id], countdown=10)
+
         return Response(serializer.data)
 
     def handle_request(self, request, pk, is_candidate=True, *args, **kwargs):
