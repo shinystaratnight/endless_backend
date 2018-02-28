@@ -78,6 +78,10 @@ class InvoiceSync(BaseSync):
         tax_codes = self._get_tax_codes()
         params = {"$filter": "CompanyName eq '%s'" % invoice.customer_company.name}
         customer_data = self.client.api.Contact.Customer.get(params=params)
+
+        if not customer_data['Items']:
+            raise Exception("Cant find customer in MYOB with company name: %s" % invoice.customer_company.name)
+
         customer_uid = customer_data['Items'][0]['UID']
         activities = self._create_or_update_activities(invoice, tax_codes)
 

@@ -167,10 +167,8 @@ class InvoiceService(BasePaymentService):
                 lines = [x for x in lines if not InvoiceLine.objects.filter(timesheet=x['timesheet']).exists()]
 
             invoice_lines = []
-            total = Decimal()
 
             for line in lines:
-                total += line['amount']
                 invoice_lines.append(InvoiceLine(invoice=invoice, **line))
 
             InvoiceLine.objects.bulk_create(invoice_lines)
