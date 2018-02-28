@@ -36,8 +36,13 @@ class InvoiceSync(BaseSync):
             skill = vacancy.position
             activity_display_id = str(vacancy.id)[:30]
             position_parts = vacancy.position.name.split(' ')
-            price_list = invoice.customer_company.price_lists.get(effective=True)
-            rate = PriceListRate.objects.filter(price_list=price_list, skill=skill)
+            price_list = invoice.customer_company.price_lists.filter(effective=True).first()
+            price_list_rate = PriceListRate.objects.filter(price_list=price_list, skill=skill).first()
+
+            if not price_list_rate:
+                raise Exception("PriceListRate wasnt found for given skill: %s and price_list: %s" % (skill.id, price_list.id))
+
+            rate = price_list_rate.hourly_rate
             name = ' '.join([part[:4] for part in position_parts])
             income_account_resp = self._get_object_by_field(
                 '4-1000',
@@ -53,7 +58,7 @@ class InvoiceSync(BaseSync):
                 rate=rate,
                 tax_code=tax_codes[invoice_line.vat.name],
                 income_account=income_account_resp['UID'],
-                description='{} {}'.format(vacancy.position, rate if rate else 'Base Rate')
+                description='{} {}'.format(vacancy.position, rate)
             )
             activity_response = self._get_object_by_field(activity_display_id,
                                                           self.client.api.TimeBilling.Activity,
