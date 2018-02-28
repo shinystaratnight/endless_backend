@@ -237,10 +237,15 @@ def send_placement_rejection_sms(self, vacancy_offer_id):
 
 
 @shared_task
-def generate_invoice(timesheet):
+def generate_invoice(timesheet_id):
     """
     Generates new or updates existing invoice. Accepts regular(customer) company.
     """
+    try:
+        timesheet = hr_models.TimeSheet.objects.get(id=timesheet_id)
+    except hr_models.TimeSheet.DoesNotExist:
+        return
+
     company = timesheet.regular_company
     service = InvoiceService()
     invoice_rule = utils.get_invoice_rule(company)

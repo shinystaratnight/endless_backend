@@ -70,7 +70,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
     method_fields = (
         'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'vacancy', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor',
-        'candidate_submit_hidden'
+        'candidate_submit_hidden', 'evaluated'
     )
 
     class Meta:
@@ -156,6 +156,9 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_candidate_submit_hidden(self, obj):
         return not self.get_resend_sms_candidate(obj)
+
+    def get_evaluated(self, obj):
+        return obj.candidate_evaluations.exists()
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):
