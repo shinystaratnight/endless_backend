@@ -598,6 +598,7 @@ class VacancyDateEndpoint(ApiEndpoint):
 class CandidateJobOfferEndpoint(ApiEndpoint):
     model = hr_models.VacancyOffer
     serializer = vacancy_serializers.CandidateJobOfferSerializer
+    base_viewset = hr_viewsets.JobOffersCandidateViewset
 
     list_display = (
         {
