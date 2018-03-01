@@ -262,9 +262,7 @@ class TimeSheetEndpoint(ApiEndpoint):
         time_sheet.supervisor_approved_scheme = serializer.APPROVAL_SCHEME
         time_sheet.save()
 
-        logger.debug("TimeSheet {ts_id} approved through pin.".format(
-            ts_id=time_sheet.id
-        ))
+        logger.debug("TimeSheet {ts_id} approved through pin.".format(ts_id=time_sheet.id))
 
         return Response(status=status.HTTP_200_OK)
 
@@ -351,7 +349,7 @@ class ExtranetCandidateTimesheetEndpoint(ApiEndpoint):
         'icon': 'fa-pencil',
         'text': _('Submit'),
         'color': 'success',
-        'action': constants.DEFAULT_ACTION_EDIT,
+        'action': 'changeTimesheet',
         'field': 'id',
         'hidden': 'candidate_submit_hidden',
         'endpoint': format_lazy('{}{{id}}/submit/', api_reverse_lazy('hr/timesheets-candidate')),
