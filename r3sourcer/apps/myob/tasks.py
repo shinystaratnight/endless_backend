@@ -1,12 +1,8 @@
-from .helpers import get_myob_client
-from .services import (
-    sync_recruitee_contacts_to_myob, sync_jobsites_to_myob,
-    sync_clients_to_myob, sync_employment_classification_from_myob,
-    sync_bookings_to_myob, sync_invoices_from_myob,
-    sync_superannuation_fund_from_myob, TimeSheetSync, BookingSync,
-    RecruiteeSync, JobsiteSync, APP_MODEL_MAPPINGS, RECRUITEE_CONTACT, CLIENT
-)
-from .api.wrapper import MYOBServerException
+from r3sourcer.apps.core.models.core import Invoice
+from r3sourcer.apps.myob.api.wrapper import MYOBServerException, MYOBClient
+from r3sourcer.apps.myob.helpers import get_myob_client
+from r3sourcer.apps.myob.models import MYOBCompanyFileToken
+from r3sourcer.apps.myob.services.invoice import InvoiceSync
 
 
 def retry_on_myob_error(origin_task):
@@ -25,3 +21,27 @@ def get_myob_client_for_account(company):
     if myob_client:
         myob_client.init_api()
     return myob_client
+
+
+def sync_invoice(invoice_id):
+    invoice = Invoice.objects.get(id=invoice_id)
+    company = invoice.provider_company
+    cf_token = MYOBCompanyFileToken.objects.filter(company=company).first()
+    client = MYOBClient(cf_data=cf_token)
+    service = InvoiceSync(myob_client=client, company=company)
+
+    params = {"$filter": "Number eq '%s'" % invoice.number}
+    synced_invoice = client.api.Sale.Invoice.TimeBilling.get(params=params)
+
+    if synced_invoice['Count']:
+        if synced_invoice['Count'] > 1:
+            raise Exception("Invoice with id %s is already synced" % invoice.id)
+
+        synced_invoice_lines = synced_invoice['Items'][0]['Lines']
+
+        if len(synced_invoice_lines) < invoice.invoice_lines.count():
+            service.sync_to_myob(invoice, partial=True)
+
+        raise Exception("Invoice with id %s is already synced" % invoice.id)
+    else:
+        service.sync_to_myob(invoice)
