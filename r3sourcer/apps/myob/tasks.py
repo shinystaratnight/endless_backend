@@ -35,13 +35,11 @@ def sync_invoice(invoice_id):
 
     if synced_invoice['Count']:
         if synced_invoice['Count'] > 1:
-            raise Exception("Invoice with id %s is already synced" % invoice.id)
+            raise Exception("Got 2 or more invoices with id %s from MYOB." % invoice.id)
 
         synced_invoice_lines = synced_invoice['Items'][0]['Lines']
 
         if len(synced_invoice_lines) < invoice.invoice_lines.count():
             service.sync_to_myob(invoice, partial=True)
-
-        raise Exception("Invoice with id %s is already synced" % invoice.id)
     else:
         service.sync_to_myob(invoice)
