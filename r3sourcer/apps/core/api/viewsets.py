@@ -23,6 +23,7 @@ from ..workflow import WorkflowProcess
 from . import permissions, serializers
 from .decorators import list_route, detail_route
 
+from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core_adapter import constants
 
 
@@ -494,7 +495,12 @@ class FormStorageViewSet(BaseApiViewset):
         serializer.is_valid(raise_exception=True)
         instance = serializer.save()
         if instance.status == models.FormStorage.STATUS_CHOICES.APPROVED and not instance.object_id:
-            obj = instance.create_object_from_data()
+            try:
+                obj = instance.create_object_from_data()
+            except Exception:
+                instance.status == models.FormStorage.STATUS_CHOICES.WAIT
+                instance.save()
+
             return Response({'id': str(obj.pk)}, status=status.HTTP_201_CREATED)
         return Response(status=status.HTTP_200_OK)
 
@@ -508,15 +514,22 @@ class FormStorageViewSet(BaseApiViewset):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         form_obj = serializer.validated_data['form']
-        company = serializer.validated_data['company']
         form_data = request.data.copy()
         form_data.pop('form')
         form = form_obj.get_form_class()(data=request.data, files=request.data)
         if not form.is_valid():
             return Response(form.errors, status=status.HTTP_400_BAD_REQUEST)
+
         form_storage = models.FormStorage.parse_data_to_storage(form_obj, form.cleaned_data)
-        form_storage.company = company
-        form_storage.save()
+
+        storage_helper = StorageHelper(form_storage.form.content_type.model_class(), form_storage.get_data())
+        storage_helper.process_fields()
+        if not storage_helper.validate():
+            return Response(storage_helper.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        instance = storage_helper.create_instance()
+        print(instance)
+
         return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
 
 

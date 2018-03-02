@@ -2,6 +2,7 @@ import re
 
 from django.db import models
 from django.db import transaction
+from django.forms import ModelForm, ValidationError
 
 
 __all__ = [
@@ -15,7 +16,7 @@ class StorageHelper(object):
     Would be use for creating new objects from FormStorage.
     """
 
-    __slots__ = ['_model', '_fields', '_source_fields', '_done', '_instance']
+    __slots__ = ['_model', '_fields', '_source_fields', '_done', '_instance', '_validated_fields', '_errors', '_form']
 
     LOOKUP_SEPARATOR = '__'
 
@@ -27,11 +28,13 @@ class StorageHelper(object):
         self._fields = {}
         self._done = False
         self._instance = None
+        self._errors = None
+        self._form = None
 
     def process_fields(self):
         """
-        
-        :return: 
+
+        :return:
         """
         for field_name, field_value in self._source_fields.items():
             if self.LOOKUP_SEPARATOR in field_name:
@@ -44,6 +47,50 @@ class StorageHelper(object):
             else:
                 self._fields.setdefault(field_name, SimpleFieldHelper(field_name, field_value))
 
+    def validate(self, raise_errors=False):
+        """
+        Validate fields
+        :return:
+        """
+        fields_to_validate = {}
+        self._errors = {}
+        for name, field in self._fields.items():
+            try:
+                if isinstance(field, RelatedFieldHelper):
+                    field.save_related(name)
+                    value = field.value.id
+                else:
+                    value = field.value
+
+                fields_to_validate.setdefault(name, value)
+            except ValidationError as e:
+                if hasattr(e, 'error_dict'):
+                    self._errors.update(e.error_dict)
+                elif hasattr(e, 'message'):
+                    self._errors[name] = [e.message]
+                else:
+                    self._errors[name] = e.error_list
+
+        meta_class = type('Meta', (object, ), {
+            'model': self._model,
+            'fields': [name for name, field in fields_to_validate.items()]
+        })
+
+        form = type('MForm', (ModelForm, ), {
+            'Meta': meta_class,
+        })
+
+        self._form = form(fields_to_validate)
+
+        is_valid = self._form.is_valid()
+        if not is_valid:
+            self._errors.update(self._form.errors)
+
+            if raise_errors:
+                raise ValidationError(self._errors)
+
+        return is_valid and not self._errors
+
     @transaction.atomic
     def create_instance(self):
         """
@@ -52,24 +99,25 @@ class StorageHelper(object):
         :return: self.model instance.
         """
         assert self._instance is None, 'Instance already created'
+        assert self._form is not None, 'Need to run `.validate()` first'
+        assert not self._errors, 'Form invalid'
 
-        object_params = {}
-        for name, field in self._fields.items():
-            if isinstance(field, RelatedFieldHelper):
-                field.save_related()
-            object_params.setdefault(name, field.value)
-        self._instance = self._model.objects.create(**object_params)
+        self._instance = self._form.save()
         return self._instance
+
+    @property
+    def errors(self):
+        return self._errors or {}
 
     @classmethod
     def separate_lookup_name(cls, field_name: str) -> tuple():
 
         """
         Separate lookup names.
-        
+
         >> StorageHelper.separate_lookup_name('user__name')
         << ('user', 'name')
-        
+
         >> StorageHelper.separate_lookup_name('name')
         << ('name', '')
 
@@ -120,7 +168,7 @@ class RelatedFieldHelper(object):
     Helper class for ForeignObject fields, would be used for storing and manipulation related object fields.
     """
 
-    __slots__ = ['_model', 'name', '_lookup_name', 'value', 'simple_fields', 'related_fields', '_done']
+    __slots__ = ['_model', 'name', '_lookup_name', 'value', 'simple_fields', 'related_fields', '_done', '_form']
 
     def __init__(self, model, name, value):
 
@@ -128,6 +176,7 @@ class RelatedFieldHelper(object):
 
         self.name, self._lookup_name = StorageHelper.separate_lookup_name(name)
         self._model = model._meta.get_field(self.name).related_model
+        self._form = None
 
         self.value = None
         self._done = False
@@ -151,7 +200,7 @@ class RelatedFieldHelper(object):
         """
         Merge fields from different related field instances.
         Would be use for extending field1 from field2.
-        
+
         :param field1: RelatedFieldHelper
         :param field2: RelatedFieldHelper
         """
@@ -165,18 +214,52 @@ class RelatedFieldHelper(object):
         for field_name, value in field2.simple_fields.items():
             field1.simple_fields.setdefault(field_name, value)
 
-    def save_related(self):
+    def save_related(self, parent_name=None):
         """
         Create new instance from related fields and simple fields, bind its to self._model instance.
         :return: self._model instance
         """
         if self.value is not None:
             return
+
+        related_fields = {}
+        errors = {}
         if self.related_fields:
             for name, related_field in self.related_fields.items():
-                related_field.save_related()
-        self.value = self._model(**{
-            name: field.value
-            for name, field in self.simple_fields.items()
+                try:
+                    related_field.save_related(name)
+                    related_fields[name] = related_field.value
+                except ValidationError as e:
+                    if hasattr(e, 'error_dict'):
+                        errors.update(e.error_dict)
+                    elif hasattr(e, 'message'):
+                        errors[name] = [e.message]
+                    else:
+                        errors[name] = e.error_list
+
+        data = dict(
+            **{name: field.value for name, field in self.simple_fields.items()},
+            **related_fields
+        )
+        model_form = self.get_modelform(data)
+
+        if not model_form.is_valid():
+            errors.update({
+                '{}__{}'.format(parent_name, field_name) if field_name != '__all__' else field_name: errors
+                for field_name, errors in model_form.errors.items()
+            })
+            raise ValidationError(errors)
+
+        self.value = model_form.save()
+
+    def get_modelform(self, data):
+        meta_class = type('Meta', (object, ), {
+            'model': self._model,
+            'fields': [name for name, field in self.simple_fields.items()]
         })
-        self.value.save()
+
+        form = type('RelatedForm', (ModelForm, ), {
+            'Meta': meta_class,
+        })
+
+        return form(data)

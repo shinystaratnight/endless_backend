@@ -2,6 +2,7 @@ var submitting = false;
 
 function submitForm(form) {
     $('form .form-group').find('div.errors').remove();
+    $('form .all-errors').addClass('hidden').find('li').remove();
     submitting = true;
     var formData = new FormData(form);
     formData.set('company', companyId);
@@ -21,8 +22,19 @@ function submitForm(form) {
         error: function (response) {
             for (var field in response.responseJSON) {
                 var errorElem;
-                if ($('form .form-group.field-' + field).find('[name=' + field + ']').length === 0)
+                var allErrorsContainer = $('form .all-errors');
+                var errorsList = allErrorsContainer.find('ul');
+
+                if (field === '__all__' || $('form .form-group.field-' + field).find('[name=' + field + ']').length === 0) {
+                    response.responseJSON[field].map(function (error) {
+                        $('<li/>', {
+                            text: (field === '__all__' ? '' : field + ': ') + error,
+                        }).appendTo(errorsList);
+                    });
+                    allErrorsContainer.removeClass('hidden');
                     continue
+                }
+
                 errorElem = $('form .form-group.field-' + field).find('div.errors');
 
                 console.log(field, errorElem);

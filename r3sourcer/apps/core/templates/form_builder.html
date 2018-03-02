@@ -28,6 +28,9 @@
       <div class="content__form-wrap">
         <form method="post" enctype="multipart/form-data" onsubmit="submitForm(this); return false;">
           {% csrf_token %}
+          <div class="alert alert-danger all-errors hidden" role="alert">
+            <ul></ul>
+          </div>
           <div id="form-builder" data-config='{{ form.get_ui_config }}'>
             <h4 align="center">{% trans 'Loading' %}...</h4>
           </div>
