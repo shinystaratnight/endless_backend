@@ -1149,8 +1149,11 @@ class FormEndpoint(ApiEndpoint):
     base_viewset = viewsets.FormViewSet
 
     fieldsets = (
-        'id', 'title', 'company', 'builder', 'is_active', 'short_description',
-        'save_button_text', 'submit_message',
+        'id', 'title', {
+            'type': constants.FIELD_RELATED,
+            'field': 'company',
+        },
+        'builder', 'is_active', 'short_description', 'save_button_text', 'submit_message',
         {
             'field': 'groups',
             'type': constants.FIELD_RELATED,
