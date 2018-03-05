@@ -263,6 +263,17 @@ class Contact(
 
         return get_default_company()
 
+    def save(self, *args, **kwargs):
+        is_adding = self._state.adding
+        if not self.email and not self.phone_mobile:
+            raise ValidationError(_('Contact must have email and/or mobile phone number.'))
+
+        if is_adding and self.user is None:
+            user = User.objects.create(email=self.email, phone_mobile=self.phone_mobile)
+            self.user = user
+
+        super().save(*args, **kwargs)
+
 
 class ContactUnavailability(UUIDModel):
 
