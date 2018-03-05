@@ -18,6 +18,7 @@ from .. import models, mixins
 from ..decorators import get_model_workflow_functions
 from ..service import factory
 from ..utils.companies import get_master_companies_by_contact
+from ..utils.user import get_default_company
 from ..workflow import WorkflowProcess
 
 from . import permissions, serializers
@@ -89,6 +90,9 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         data = self.prepare_related_data(request.data)
         data = self.clean_request_data(data)
 
+        return self.create_from_data(data, *args, **kwargs)
+
+    def create_from_data(self, data, *args, **kwargs):
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -557,6 +561,19 @@ class FormViewSet(BaseApiViewset):
             Q(company__isnull=True) |
             Q(company__in=companies)
         )
+
+    def create(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+
+        companies = get_master_companies_by_contact(self.request.user.contact)
+        if len(companies) > 0:
+            data['company'] = companies[0].id
+        else:
+            data['company'] = get_default_company().id
+
+        data = self.clean_request_data(data)
+
+        return self.create_from_data(data, *args, **kwargs)
 
 
 class CitiesLightViewSet(BaseApiViewset):

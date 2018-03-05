@@ -28,7 +28,7 @@ class TestEmailServices:
     def test_get_default_fake_email_service(self):
         service = get_email_service()
 
-        assert isinstance(service, SMTPEmailService)
+        assert isinstance(service, FakeEmailService)
 
     def test_get_service_by_name(self):
         service_class_name = '%s.%s' % (EmailTestService.__module__,
