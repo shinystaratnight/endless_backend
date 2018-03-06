@@ -319,6 +319,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         MetaDataInfo('list_buttons', GETTER, []),
         MetaDataInfo('list_editable_buttons', GETTER, []),
         MetaDataInfo('list_editable_filter', GETTER, []),
+        MetaDataInfo('edit_disabled', PROPERTY, False),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -835,6 +836,8 @@ class AngularListApiAdapter(AngularApiAdapter):
 
         if list_buttons is not None:
             display_fields['buttons'] = self.adapt_buttons(list_buttons)
+
+        display_fields['editDisable'] = config['edit_disabled']
 
         return {
             'fields': self.adapted_fields.values(),

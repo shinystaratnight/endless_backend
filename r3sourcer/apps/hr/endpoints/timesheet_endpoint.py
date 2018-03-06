@@ -304,6 +304,8 @@ class ExtranetCandidateTimesheetEndpoint(ApiEndpoint):
     base_viewset = viewsets.TimeSheetCandidateViewset
     serializer = timesheet_serializers.TimeSheetSerializer
 
+    edit_disabled = True
+
     list_display = [{
         'label': _('Times'),
         'fields': ({
@@ -342,7 +344,7 @@ class ExtranetCandidateTimesheetEndpoint(ApiEndpoint):
         'fields': ({
             'type': constants.FIELD_RELATED,
             'field': 'supervisor',
-            'hidden': [{'supervisor_approved': False}],
+            'showIf': ['supervisor_approved'],
         }, 'supervisor_approved_at'),
     }, {
         'type': constants.FIELD_BUTTON,
