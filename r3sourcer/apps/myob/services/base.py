@@ -287,7 +287,7 @@ class BaseSync:
         if sync_obj and self._is_synced(instance, sync_obj=sync_obj) and not partial:
             return
 
-        res = self._sync_to(instance, sync_obj)
+        res = self._sync_to(instance, sync_obj, partial)
         if res:
             self._update_sync_object(instance)
 

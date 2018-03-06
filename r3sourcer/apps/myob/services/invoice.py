@@ -74,7 +74,7 @@ class InvoiceSync(BaseSync):
 
         return activities
 
-    def _sync_to(self, invoice, sync_obj=None):
+    def _sync_to(self, invoice, sync_obj=None, partial=False):
         tax_codes = self._get_tax_codes()
         params = {"$filter": "CompanyName eq '%s'" % invoice.customer_company.name}
         customer_data = self.client.api.Contact.Customer.get(params=params)
@@ -86,7 +86,13 @@ class InvoiceSync(BaseSync):
         activities = self._create_or_update_activities(invoice, tax_codes)
 
         data = self.mapper.map_to_myob(invoice, customer_uid, tax_codes, activities)
-        resp = self.resource.post(json=data, raw_resp=True)
+
+        if partial:
+            params = {"$filter": "Number eq '%s'" % invoice.number}
+            myob_id = self.client.api.Sale.Invoice.TimeBilling.get(params=params)['Items'][0]['UID']
+            resp = self.resource.put(uid=myob_id, json=data, raw_resp=True)
+        else:
+            resp = self.resource.post(json=data, raw_resp=True)
 
         if 200 <= resp.status_code < 400:
             log.info('Invoice %s synced' % invoice.id)
@@ -95,3 +101,12 @@ class InvoiceSync(BaseSync):
             return False
 
         return True
+
+    def delete(self, invoice):
+        resp = self.resource.delete(uid=invoice.id, raw_resp=True)
+
+        if 200 <= resp.status_code < 400:
+            log.info('Invoice %s synced' % invoice.id)
+        else:
+            log.warning("[MYOB API] Invoice %s: %s", invoice.id, resp.text)
+            return False
