@@ -590,7 +590,8 @@ class VacancyDateEndpoint(ApiEndpoint):
             'endpoint': api_reverse_lazy('hr/shifts'),
             'prefilled': {
                 'date': '{id}',
-            }
+            },
+            'delay': True,
         },
     )
 

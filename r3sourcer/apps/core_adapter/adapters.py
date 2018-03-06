@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint', 'disabledIf',
+    'add_endpoint', 'disabledIf', 'delay',
 )
 
 
@@ -93,7 +93,7 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LIST:
                 adapted.update(
                     collapsed=field.get('collapsed', False),
-                    **{attr: field[attr] for attr in ('endpoint', 'prefilled', 'add_endpoint')
+                    **{attr: field[attr] for attr in ('endpoint', 'prefilled', 'add_endpoint', 'delay')
                        if field.get(attr) is not None}
                 )
                 if field.get('add_label'):
