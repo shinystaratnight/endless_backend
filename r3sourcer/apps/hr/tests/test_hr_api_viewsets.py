@@ -216,7 +216,9 @@ class TestApiViewset:
         assert len(response.data['results']) == 0
 
     @freeze_time(datetime(2017, 1, 1, 9))
-    def test_submit_hours_candidate(self, timesheet):
+    @mock.patch('r3sourcer.apps.hr.api.viewsets.send_supervisor_timesheet_sign')
+    @mock.patch('r3sourcer.apps.hr.api.viewsets.generate_invoice')
+    def test_submit_hours_candidate(self, mock_invoice, mock_task, timesheet):
         data = {
             'shift_started_at': timezone.now(),
         }
@@ -227,7 +229,8 @@ class TestApiViewset:
         assert response.data['id'] == str(timesheet.id)
 
     @freeze_time(datetime(2017, 1, 1, 9))
-    def test_submit_hours_supervisor(self, timesheet):
+    @mock.patch('r3sourcer.apps.hr.api.viewsets.generate_invoice')
+    def test_submit_hours_supervisor(self, mock_invoice, timesheet):
         data = {
             'shift_started_at': timezone.now(),
         }

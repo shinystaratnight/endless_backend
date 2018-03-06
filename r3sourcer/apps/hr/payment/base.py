@@ -3,6 +3,7 @@ from datetime import timedelta
 from io import BytesIO
 
 import weasyprint
+from django.db.models import Q
 from django.utils.timezone import localtime
 
 from r3sourcer.apps.pricing.models import (
@@ -87,10 +88,12 @@ class BasePaymentService:
             )
 
         if date_from:
-            timesheets = timesheets.filter(
-                shift_started_at__date__gte=date_from,
-                shift_started_at__date__lt=date_to,
-            )
+            qry = Q(shift_started_at__date__gte=date_from)
+            if date_to:
+                qry &= Q(shift_started_at__date__lt=date_to)
+
+            timesheets = timesheets.filter(qry)
+
         return timesheets
 
     @classmethod

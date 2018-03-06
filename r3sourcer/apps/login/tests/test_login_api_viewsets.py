@@ -108,8 +108,9 @@ class TestLoginResource:
         assert auth_user.is_authenticated
 
     def test_token_login_user_not_found(self, client):
-        contact = Contact.objects.create(email='test2@test.tt',
-                                         phone_mobile='+12345678902')
+        contact = Contact.objects.create(email='test2@test.tt', phone_mobile='+12345678902')
+        contact.user = None
+        contact.save(update_fields=['user'])
         token_login = TokenLogin.objects.create(contact=contact)
 
         response = client.get(reverse(
