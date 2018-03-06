@@ -680,20 +680,17 @@ class CompanyEndpoint(ApiEndpoint):
                 'object_id': '{regular_company_rel.id}',
             }
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'query': {
+                'object_id': '{id}',
+            },
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Notes'),
-            'fields': (
-                'description',
-                {
-                    'label': _('Notes'),
-                    'type': constants.FIELD_RELATED,
-                    'list': True,
-                    'edit': True,
-                    'field': 'notes',
-                    'endpoint': api_reverse_lazy('core/notes'),
-                },
-            )
+            'label': _('Notes'),
+            'endpoint': api_reverse_lazy('core/notes'),
+            'add_label': _('Add note'),
+            'prefilled': {
+                'object_id': '{id}',
+            },
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
