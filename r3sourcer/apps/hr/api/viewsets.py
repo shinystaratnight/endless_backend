@@ -28,7 +28,7 @@ from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models, payment
 from r3sourcer.apps.hr.api.filters import TimesheetFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, vacancy as vacancy_serializers
-from r3sourcer.apps.hr.tasks import generate_invoice
+from r3sourcer.apps.hr.tasks import generate_invoice, send_supervisor_timesheet_sign
 from r3sourcer.apps.hr.utils import vacancy as vacancy_utils
 
 
@@ -132,7 +132,6 @@ class BaseTimeSheetViewsetMixin:
         generate_invoice.delay(time_sheet.id)
 
         if is_candidate:
-            from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
             send_supervisor_timesheet_sign.apply_async(args=[time_sheet.supervisor.id, time_sheet.id], countdown=10)
 
         return Response(serializer.data)

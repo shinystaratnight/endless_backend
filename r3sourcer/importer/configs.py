@@ -176,7 +176,7 @@ class ContactConfig(BaseConfig):
         if not row['phone_mobile']:
             row['phone_mobile'] = None
 
-        if not row['picture']:
+        if not row.get('picture'):
             row['picture'] = os.path.join('contact_pictures', 'default_picture.jpg')
 
         return row

@@ -340,6 +340,7 @@ class FormStorage(UUIDModel):
         assert not self.object_id, "Object already created"
         storage_helper = StorageHelper(self.form.content_type.model_class(), self.get_data())
         storage_helper.process_fields()
+        storage_helper.validate()
         instance = storage_helper.create_instance()
         self.object_id = str(instance.pk)
         self.save(update_fields=['object_id'])

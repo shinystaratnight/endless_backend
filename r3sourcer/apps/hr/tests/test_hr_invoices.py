@@ -65,30 +65,6 @@ class TestInvoiceService:
         assert res[1]['amount'] == Decimal(70)
         assert len(jobsites) == 1
 
-    @mock.patch.object(PriceListCoefficientService, 'calc_company')
-    @mock.patch('r3sourcer.apps.hr.payment.invoices.calc_worked_delta')
-    @mock.patch.object(InvoiceService, '_get_price_list_rate')
-    @mock.patch.object(InvoiceService, '_get_timesheets')
-    def test_calculate_show_candidate(
-            self, mock_timesheets, mock_price_list_rate, mock_worked, mock_pl,
-            service, regular_company, timesheet_approved, price_list_rate,
-            rate_coefficient, vat):
-
-        mock_timesheets.return_value = [timesheet_approved]
-        mock_price_list_rate.return_value = price_list_rate
-        mock_worked.return_value = timedelta(hours=8)
-        mock_pl.return_value = [
-            {'coefficient': rate_coefficient, 'hours': timedelta(hours=1)},
-            {'coefficient': 'base', 'hours': timedelta(hours=7)},
-        ]
-
-        res, jobsites = service.calculate(regular_company, show_candidate=True)
-
-        assert len(res) == 2
-        assert res[0]['amount'] == Decimal(20)
-        assert res[1]['amount'] == Decimal(70)
-        assert len(jobsites) == 1
-
     @mock.patch.object(InvoiceService, '_get_timesheets')
     def test_calculate_no_timesheets(
             self, mock_timesheets, service, regular_company):
