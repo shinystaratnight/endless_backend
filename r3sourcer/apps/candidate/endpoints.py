@@ -26,18 +26,44 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
 
     fieldsets = (
         {
-            'type': constants.CONTAINER_COLLAPSE,
-            'name': _('General'),
+            'type': constants.CONTAINER_ROW,
+            'label': _('General'),
             'collapsed': False,
             'fields': (
-                'contact', 'recruitment_agent', {
-                    'type': constants.FIELD_PICTURE,
-                    'field': 'contact.picture',
-                    'read_only': True,
-                    'label': _('Photo'),
-                    'file': False,
-                    'photo': False
-                }
+                {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ({
+                        'type': constants.FIELD_PICTURE,
+                        'field': 'contact.picture',
+                        'read_only': True,
+                        'label': _('Photo'),
+                        'file': False,
+                        'photo': False
+                    },)
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ({
+                        'type': constants.FIELD_RELATED,
+                        'field': 'contact',
+                        'read_only': True,
+                        'label': _('Contact'),
+                        'custom': (
+                            'contact.__str__', 'contact.address.__str__', 'contact.phone_mobile', 'contact.email'
+                        ),
+                    },)
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ({
+                        'type': constants.FIELD_RELATED,
+                        'field': 'recruitment_agent',
+                        'read_only': True,
+                        'label': _('Recruitment Agent'),
+                        'custom': (
+                            'recruitment_agent.job_title', 'recruitment_agent.contact.__str__',
+                            'recruitment_agent.contact.phone_mobile'
+                        ),
+                    },)
+                },
             )
         }, {
             'type': constants.CONTAINER_COLLAPSE,

@@ -91,6 +91,9 @@ class CandidateContactSerializer(
                     'skill': ('id', )
                 }),
                 'candidate_scores': ('id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score'),
+                'recruitment_agent': ('id', 'job_title', {
+                    'contact': ('id', 'phone_mobile')
+                })
             }
         )
         read_only_fields = ('candidate_scores',)

@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint', 'disabledIf', 'delay',
+    'add_endpoint', 'disabledIf', 'delay', 'custom',
 )
 
 
@@ -139,6 +139,9 @@ class AngularApiAdapter(BaseAdapter):
             query_params = field.get('query')
             if query_params is not None:
                 adapted['query'] = query_params
+
+            if 'custom' in field:
+                adapted['custom'] = field['custom']
         elif component_type == constants.FIELD_ICON:
             default_icons = {
                 True: 'check-circle',
