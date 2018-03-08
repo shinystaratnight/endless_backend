@@ -590,7 +590,8 @@ class VacancyDateEndpoint(ApiEndpoint):
             'endpoint': api_reverse_lazy('hr/shifts'),
             'prefilled': {
                 'date': '{id}',
-            }
+            },
+            'delay': True,
         },
     )
 
@@ -599,6 +600,8 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
     model = hr_models.VacancyOffer
     serializer = vacancy_serializers.CandidateJobOfferSerializer
     base_viewset = hr_viewsets.JobOffersCandidateViewset
+
+    edit_disabled = True
 
     list_display = (
         {
@@ -620,7 +623,6 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'label': _('Client'),
         }, {
-            'type': constants.FIELD_STATIC,
             'label': _('Job Site - Map'),
             'delim': ' ',
             'fields': (
@@ -630,11 +632,10 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
                 }, {
                     'type': constants.FIELD_BUTTON,
                     'icon': 'fa-map-marker',
-                    'field': 'id',
                     'text_color': '#006ce5',
                     'title': _('Open Map'),
                     'action': 'openMap',
-                    'fields': ('jobsite_address.latitude', 'jobsite_address.longitude')
+                    'fields': ('latitude', 'longitude'),
                 }
             )
         }, {
@@ -663,10 +664,18 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
                     'color': 'danger',
                     'hidden': 'hide_buttons',
                 }, {
+                    'type': constants.FIELD_ICON,
+                    'field': 'status_icon',
+                    'showIf': ['hide_buttons'],
+                    'values': {
+                        True: 'check',
+                        False: 'times',
+                    },
+                }, {
                     'type': constants.FIELD_TEXT,
                     'field': 'status',
-                    'hidden': 'hide_text',
-                }
+                    'showIf': ['hide_buttons'],
+                },
             )
         }
     )

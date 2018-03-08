@@ -26,6 +26,7 @@ class ApiEndpoint(Endpoint):
     context_actions = None
 
     highlight = None
+    edit_disabled = False
 
     _metadata_fields = None
 

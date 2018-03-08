@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint', 'disabledIf',
+    'add_endpoint', 'disabledIf', 'delay', 'custom',
 )
 
 
@@ -93,7 +93,7 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LIST:
                 adapted.update(
                     collapsed=field.get('collapsed', False),
-                    **{attr: field[attr] for attr in ('endpoint', 'prefilled', 'add_endpoint')
+                    **{attr: field[attr] for attr in ('endpoint', 'prefilled', 'add_endpoint', 'delay')
                        if field.get(attr) is not None}
                 )
                 if field.get('add_label'):
@@ -139,6 +139,9 @@ class AngularApiAdapter(BaseAdapter):
             query_params = field.get('query')
             if query_params is not None:
                 adapted['query'] = query_params
+
+            if 'custom' in field:
+                adapted['custom'] = field['custom']
         elif component_type == constants.FIELD_ICON:
             default_icons = {
                 True: 'check-circle',
@@ -319,6 +322,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         MetaDataInfo('list_buttons', GETTER, []),
         MetaDataInfo('list_editable_buttons', GETTER, []),
         MetaDataInfo('list_editable_filter', GETTER, []),
+        MetaDataInfo('edit_disabled', PROPERTY, False),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -835,6 +839,8 @@ class AngularListApiAdapter(AngularApiAdapter):
 
         if list_buttons is not None:
             display_fields['buttons'] = self.adapt_buttons(list_buttons)
+
+        display_fields['editDisable'] = config['edit_disabled']
 
         return {
             'fields': self.adapted_fields.values(),
