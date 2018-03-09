@@ -199,10 +199,16 @@ class TestMYOBAuthorizationView:
 
 
 class TestUserGlobalPermissionListView:
-    def test_get_user_permissions(self, client, user):
+    def test_get_user_permissions(self, client, user, group):
         permission = GlobalPermission.objects.create(name='permission_name', codename='permission_codename')
         permission2 = GlobalPermission.objects.create(name='permission_name2', codename='permission_codename2')
         user.user_permissions.add(permission, permission2)
+
+        permission3 = GlobalPermission.objects.create(name='permission_name3', codename='permission_codename3')
+        permission4 = GlobalPermission.objects.create(name='permission_name4', codename='permission_codename4')
+        group.permissions.add(permission3, permission4)
+        group.user_set.add(user)
+
         url = reverse('user_global_permission_list', kwargs={'version': 'v2', 'id': user.id})
         response = client.get(url)
 
@@ -213,6 +219,12 @@ class TestUserGlobalPermissionListView:
         assert response.data['permission_list'][1]['id'] == permission2.id
         assert response.data['permission_list'][1]['name'] == permission2.name
         assert response.data['permission_list'][1]['codename'] == permission2.codename
+        assert response.data['group_permission_list'][0]['id'] == permission3.id
+        assert response.data['group_permission_list'][0]['name'] == permission3.name
+        assert response.data['group_permission_list'][0]['codename'] == permission3.codename
+        assert response.data['group_permission_list'][1]['id'] == permission4.id
+        assert response.data['group_permission_list'][1]['name'] == permission4.name
+        assert response.data['group_permission_list'][1]['codename'] == permission4.codename
 
 
 class TestGroupGlobalPermissionListView:
