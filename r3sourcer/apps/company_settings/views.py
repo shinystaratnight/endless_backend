@@ -49,7 +49,7 @@ class UserGlobalPermissionListView(ListAPIView):
     def get(self, *args, **kwargs):
         user = get_object_or_404(User, id=self.kwargs['id'])
         permissions = GlobalPermission.objects.filter(user=user)
-        group_permissions = GlobalPermission.objects.filter(group__user=user)
+        group_permissions = GlobalPermission.objects.filter(group__user=user).distinct()
         serializer = serializers.GlobalPermissionSerializer(permissions, many=True)
         group_serializer = serializers.GlobalPermissionSerializer(group_permissions, many=True)
         data = {
