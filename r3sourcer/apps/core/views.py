@@ -1,8 +1,10 @@
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.views import generic
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
-from .models import Form, Company
+from r3sourcer.apps.core.models import Form, Company, Invoice
 
 
 class FormView(generic.TemplateView):
@@ -21,3 +23,11 @@ class FormView(generic.TemplateView):
             raise Http404
         context['form'] = get_object_or_404(Form, pk=self.kwargs['pk'], company=company)
         return context
+
+
+class ApproveInvoiceView(APIView):
+    def get(self, *args, **kwargs):
+        invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
+        invoice.approved = True
+        invoice.save()
+        return Response()

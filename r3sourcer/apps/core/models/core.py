@@ -1798,6 +1798,10 @@ class Invoice(AbstractOrder):
         null=True
     )
 
+    approved = models.BooleanField(
+        default=False
+    )
+
     class Meta:
         verbose_name = _("Company Invoice")
         verbose_name_plural = _("Company Invoices")

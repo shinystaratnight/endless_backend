@@ -89,7 +89,14 @@ class InvoiceSync(BaseSync):
 
         if partial:
             params = {"$filter": "Number eq '%s'" % invoice.number}
-            myob_id = self.client.api.Sale.Invoice.TimeBilling.get(params=params)['Items'][0]['UID']
+            myob_invoice = self.client.api.Sale.Invoice.TimeBilling.get(params=params)['Items'][0]
+            myob_id = myob_invoice['UID']
+            row_version = myob_invoice['RowVersion']
+            data.update({
+                "UID": myob_id,
+                "RowVersion": row_version,
+                "Terms": {"PaymentIsDue": "DayOfMonthAfterEOM"}  # TEMP
+            })
             resp = self.resource.put(uid=myob_id, json=data, raw_resp=True)
         else:
             resp = self.resource.post(json=data, raw_resp=True)
@@ -106,7 +113,7 @@ class InvoiceSync(BaseSync):
         resp = self.resource.delete(uid=invoice.id, raw_resp=True)
 
         if 200 <= resp.status_code < 400:
-            log.info('Invoice %s synced' % invoice.id)
+            log.info('Invoice %s deleted' % invoice.id)
         else:
             log.warning("[MYOB API] Invoice %s: %s", invoice.id, resp.text)
             return False

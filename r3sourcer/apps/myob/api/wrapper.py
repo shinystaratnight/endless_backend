@@ -487,6 +487,7 @@ class MYOBClient(object):
         return r
 
     def api_call(self, method, uri, **kwargs):
+
         if 'headers' not in kwargs:
             kwargs['headers'] = self.get_headers()
         return self.api_request(method, uri, **kwargs)
@@ -498,6 +499,7 @@ class MYOBClient(object):
 
     def get_resources(self):
         uri = self.get_cf_uri()
+
         return self.api_call('get', uri)
 
     def get_current_user(self):
