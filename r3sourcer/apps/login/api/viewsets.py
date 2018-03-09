@@ -127,7 +127,8 @@ class AuthViewSet(BaseViewsetMixin,
         return Response({
             'status': 'success',
             'data': {
-                'contact': serializer.data
+                'contact': serializer.data,
+                'user': str(request.user.id)
             }
         }, status=status.HTTP_200_OK)
 
