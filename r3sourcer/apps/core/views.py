@@ -5,6 +5,8 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from r3sourcer.apps.core.models import Form, Company, Invoice
+from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.apps.myob.tasks import sync_invoice
 
 
 class FormView(generic.TemplateView):
@@ -31,3 +33,18 @@ class ApproveInvoiceView(APIView):
         invoice.approved = True
         invoice.save()
         return Response()
+
+
+class SyncInvoicesView(APIView):
+    """
+    Fetches unsynced invoices and triggers delayed task to sync them to MYOB
+    """
+    def get(self, *args, **kwargs):
+        synced_objects = MYOBSyncObject.objects.filter(app='core',
+                                                       model='Invoice',
+                                                       direction='myob') \
+                                               .values_list('record', flat=True)
+        invoice_list = Invoice.objects.exclude(id__in=synced_objects)
+
+        for invoice in invoice_list:
+            sync_invoice.delay(invoice.id)

@@ -1,3 +1,5 @@
+from celery import shared_task
+
 from r3sourcer.apps.core.models.core import Invoice
 from r3sourcer.apps.myob.api.wrapper import MYOBServerException, MYOBClient
 from r3sourcer.apps.myob.helpers import get_myob_client
@@ -22,7 +24,7 @@ def get_myob_client_for_account(company):
         myob_client.init_api()
     return myob_client
 
-
+@shared_task
 def sync_invoice(invoice_id):
     invoice = Invoice.objects.get(id=invoice_id)
     company = invoice.provider_company
