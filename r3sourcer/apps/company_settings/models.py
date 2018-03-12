@@ -12,6 +12,10 @@ class CompanySettings(UUIDModel):
     font = models.CharField(null=True, blank=True, max_length=32)
     forwarding_number = models.CharField(null=True, blank=True, max_length=32)
 
+    class Meta:
+        verbose_name = "Company settings"
+        verbose_name_plural = "Company settings"
+
 
 class MYOBAccount(UUIDModel):
     uid = models.UUIDField(unique=True)
