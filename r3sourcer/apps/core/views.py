@@ -32,6 +32,7 @@ class ApproveInvoiceView(APIView):
         invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
         invoice.approved = True
         invoice.save()
+        sync_invoice.delay(invoice.id)
         return Response()
 
 
