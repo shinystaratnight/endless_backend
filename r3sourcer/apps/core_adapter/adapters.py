@@ -102,7 +102,7 @@ class AngularApiAdapter(BaseAdapter):
                     adapted['metadata_query'] = field['metadata_query']
                 if field.get('max'):
                     adapted['max'] = field['max']
-            elif component_type not in [constants.FIELD_SUBMIT, constants.FIELD_LINKS_LIST]:
+            elif component_type not in [constants.FIELD_SUBMIT]:
                 adapted['templateOptions']['action'] = field['action']
 
             query_params = field.get('query')
@@ -197,8 +197,12 @@ class AngularApiAdapter(BaseAdapter):
         })
 
         is_hidden = field.get('hide')
-        if field['key'].split('.')[-1] in cls._hidden_fields or is_hidden:
+        custom_list = field.get('custom')
+        if field['key'].split('.')[-1] in cls._hidden_fields and custom_list is None or is_hidden:
             adapted['hide'] = True
+
+        if custom_list is not None:
+            adapted['custom'] = custom_list
 
         if field_ui.get('help'):
             adapted['templateOptions']['description'] = field_ui['help']
