@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint', 'disabledIf', 'delay', 'custom',
+    'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query',
 )
 
 
@@ -61,9 +61,11 @@ class AngularApiAdapter(BaseAdapter):
     _excluded_field = {'__str__', }
     _hidden_fields = {'id'}
     edit = True
+    fieldsets_type = 'default'
 
     def __init__(self, edit=True, * args, **kwargs):
         self.edit = edit
+        self.fieldsets_type = kwargs.pop('fieldsets_type', 'default')
 
     @classmethod
     def adapt_field(cls, field):
@@ -100,6 +102,8 @@ class AngularApiAdapter(BaseAdapter):
                     adapted['templateOptions']['add_label'] = field['add_label']
                 if field.get('metadata_query'):
                     adapted['metadata_query'] = field['metadata_query']
+                if field.get('add_metadata_query'):
+                    adapted['add_metadata_query'] = field['add_metadata_query']
                 if field.get('max'):
                     adapted['max'] = field['max']
             elif component_type not in [constants.FIELD_SUBMIT]:
@@ -295,6 +299,9 @@ class AngularApiAdapter(BaseAdapter):
     def render(self, config):
         fields = config['metadata_fields']
         fieldsets = config['fieldsets']
+
+        if isinstance(fieldsets, dict):
+            fieldsets = fieldsets.get(self.fieldsets_type, [])
 
         adapted = self._map_fieldsets(fieldsets, fields)
 
