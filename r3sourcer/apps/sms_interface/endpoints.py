@@ -21,7 +21,7 @@ class SMSMessageApiEndpoint(ApiEndpoint):
         },
         'from_number', 'to_number', 'status', 'sent_at', 'delivered_received_datetime',
         {
-            'type': constants.FIELD_LINKS_LIST,
+            'type': constants.FIELD_STATIC,
             'field': 'related',
             'label': _('Links')
         }

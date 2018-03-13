@@ -38,7 +38,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                         'read_only': True,
                         'label': _('Photo'),
                         'file': False,
-                        'photo': False
+                        'photo': False,
+                        'custom': [],
                     },)
                 }, {
                     'type': constants.CONTAINER_COLUMN,

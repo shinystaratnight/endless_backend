@@ -91,6 +91,7 @@ class ContactEndpoint(ApiEndpoint):
                             'field': 'picture',
                             'label_upload': _('Choose a file'),
                             'label_photo': _('Take a photo'),
+                            'custom': [],
                         },
                     ),
                 }, {
@@ -98,7 +99,7 @@ class ContactEndpoint(ApiEndpoint):
                     'fields': (
                         {
                             'type': constants.FIELD_RELATED,
-                            'field': 'address',
+                            'field': 'id',
                             'read_only': True,
                             'label': '',
                             'custom': ('address.__str__', 'phone_mobile','email'),
@@ -537,12 +538,13 @@ class CompanyEndpoint(ApiEndpoint):
                         'file': False,
                         'label_upload': _('Choose a file'),
                         'label_photo': _('Take a photo'),
+                        'custom': [],
                     },)
                 }, {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': ({
                         'type': constants.FIELD_RELATED,
-                        'field': 'manager',
+                        'field': 'id',
                         'read_only': True,
                         'label': _('Company'),
                         'custom': ('name', 'website'),
@@ -551,7 +553,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'type': constants.CONTAINER_COLUMN,
                     'fields': ({
                         'type': constants.FIELD_RELATED,
-                        'field': 'manager',
+                        'field': 'id',
                         'read_only': True,
                         'label': _('Primary Contact'),
                         'custom': (
