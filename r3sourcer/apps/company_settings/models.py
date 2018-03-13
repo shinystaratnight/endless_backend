@@ -55,6 +55,10 @@ class MYOBSettings(UUIDModel):
     payroll_accounts_last_refreshed = models.DateTimeField(blank=True, null=True)
     company_files_last_refreshed = models.DateTimeField(blank=True, null=True)
 
+    class Meta:
+        verbose_name = "MYOB settings"
+        verbose_name_plural = "MYOB settings"
+
 
 class GlobalPermissionManager(models.Manager):
     def get_queryset(self):
