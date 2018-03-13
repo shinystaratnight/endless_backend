@@ -77,9 +77,13 @@ class TimeSheetEndpoint(ApiEndpoint):
         }, {
             'label': _('Confirmations'),
             'fields': ({
-                'type': constants.FIELD_STATIC_ICON,
+                'type': constants.FIELD_ICON,
                 'label': _('Morning check'),
                 'field': 'going_to_work_confirmation',
+                'values': {
+                    True: 'check',
+                    False: 'times',
+                },
                 'showIf': [
                     {
                         'going_to_work_confirmation': True,
@@ -102,9 +106,13 @@ class TimeSheetEndpoint(ApiEndpoint):
                     }
                 ],
             }, {
-                'type': constants.FIELD_STATIC_ICON,
+                'type': constants.FIELD_ICON,
                 'label': _('Candidate filled'),
                 'field': 'candidate_filled',
+                'values': {
+                    True: 'check',
+                    False: 'times',
+                },
                 'showIf': [
                     {
                         'candidate_filled': True,
@@ -126,9 +134,13 @@ class TimeSheetEndpoint(ApiEndpoint):
                     }
                 ],
             }, {
-                'type': constants.FIELD_STATIC,
+                'type': constants.FIELD_ICON,
                 'label': _('Supervisor approved'),
                 'field': 'supervisor_approved',
+                'values': {
+                    True: 'check',
+                    False: 'times',
+                },
             }, {
                 'type': constants.FIELD_BUTTON,
                 'icon': 'fa-external-link',
