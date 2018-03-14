@@ -296,7 +296,7 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     jobsite_address = core_serializers.AddressSerializer(read_only=True)
 
-    method_fields = ('jobsite_address', 'hide_buttons', 'status', 'hide_text')
+    method_fields = ('jobsite_address', 'hide_buttons', 'status', 'status_icon', 'hide_text', 'latitude', 'longitude')
 
     class Meta:
         model = hr_models.VacancyOffer
@@ -341,16 +341,27 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             return _('Already filled')
 
         if obj.is_cancelled():
-            if obj.candidate_contact.contact.user.id == updated_by_id:
+            if str(obj.candidate_contact.contact.user.id) == updated_by_id:
                 return _('Declined by Candidate')
-            elif system_user.id == updated_by_id:
+            elif str(system_user.id) == updated_by_id:
                 if reply_sms and reply_sms.is_negative_answer():
                     return _('Declined by Candidate')
                 else:
                     return _('Cancelled')
-            elif jobsite_contact and jobsite_contact.contact.user.id == updated_by_id:
+            elif jobsite_contact and str(jobsite_contact.contact.user.id) == updated_by_id:
                 return _('Cancelled by Job Site Contact')
             else:
-                return _('Cancelled by {name}').format(core_models.User.objects.get(id=updated_by_id))
+                return _('Cancelled by {name}').format(name=core_models.User.objects.get(id=updated_by_id))
 
         return hr_models.VacancyOffer.STATUS_CHOICES[obj.status]
+
+    def get_status_icon(self, obj):
+        return obj.status == hr_models.VacancyOffer.STATUS_CHOICES.accepted
+
+    def get_latitude(self, obj):
+        address = obj.vacancy.jobsite.get_address()
+        return address and address.latitude
+
+    def get_longitude(self, obj):
+        address = obj.vacancy.jobsite.get_address()
+        return address and address.longitude

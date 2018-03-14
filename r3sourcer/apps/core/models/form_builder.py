@@ -19,6 +19,7 @@ from polymorphic.models import PolymorphicModel
 from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
 from .core import UUIDModel
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
+from r3sourcer.apps.core.utils.user import get_default_company
 
 
 __all__ = [
@@ -131,12 +132,14 @@ class Form(UUIDModel):
     def get_company_links(self, contact):
         """
         Get form links for contact.
-        
+
         :param contact: Contact
-        :return: 
+        :return:
         """
         companies = get_master_companies_by_contact(contact)
         result_list = []
+        if not companies:
+            companies = [self.company or get_default_company()]
         for company in companies:
             result_list.append({
                 'company': company.name,
@@ -275,7 +278,7 @@ class FormStorage(UUIDModel):
     def get_instance(self):
         """
         Return instance from object_id and form content_type data.
-        
+
         :return: models.Model instance
         """
         if self.object_id:
@@ -318,7 +321,7 @@ class FormStorage(UUIDModel):
     def get_data(self):
         """
         Would be used for cleaning string values from dict.
-        
+
         :return: dict Validated data from self.data field.
         """
         form_cls = self.form.get_form_class()   # type: forms.Form
@@ -337,6 +340,7 @@ class FormStorage(UUIDModel):
         assert not self.object_id, "Object already created"
         storage_helper = StorageHelper(self.form.content_type.model_class(), self.get_data())
         storage_helper.process_fields()
+        storage_helper.validate()
         instance = storage_helper.create_instance()
         self.object_id = str(instance.pk)
         self.save(update_fields=['object_id'])

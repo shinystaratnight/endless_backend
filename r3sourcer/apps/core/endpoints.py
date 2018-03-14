@@ -97,14 +97,11 @@ class ContactEndpoint(ApiEndpoint):
                     'type': constants.CONTAINER_COLUMN,
                     'fields': (
                         {
-                            'type': constants.FIELD_STATIC,
-                            'field': 'address.__str__',
-                        }, {
-                            'type': constants.FIELD_STATIC,
-                            'field': 'phone_mobile',
-                        }, {
-                            'type': constants.FIELD_STATIC,
-                            'field': 'email',
+                            'type': constants.FIELD_RELATED,
+                            'field': 'address',
+                            'read_only': True,
+                            'label': '',
+                            'custom': ('address.__str__', 'phone_mobile','email'),
                         },
                     ),
                 },
@@ -462,7 +459,9 @@ class CompanyEndpoint(ApiEndpoint):
         {
             'invoice_rule': '__all__',
             'manager': (
-                'id', '__str__',
+                'id', '__str__', 'job_title', {
+                    'contact': ('id', '__str__', 'email', 'phone_mobile'),
+                },
             ),
             'groups': ('id', '__str__')
         }
@@ -530,14 +529,36 @@ class CompanyEndpoint(ApiEndpoint):
             'fields': (
                 {
                     'type': constants.CONTAINER_COLUMN,
-                    'fields': (
-                        {
-                            'type': constants.FIELD_PICTURE,
-                            'field': 'logo',
-                            'label_upload': _('Choose a file'),
-                            'label_photo': _('Take a photo'),
-                        },
-                    ),
+                    'fields': ({
+                        'type': constants.FIELD_PICTURE,
+                        'field': 'logo',
+                        'read_only': True,
+                        'label': _('Logo'),
+                        'file': False,
+                        'label_upload': _('Choose a file'),
+                        'label_photo': _('Take a photo'),
+                    },)
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ({
+                        'type': constants.FIELD_RELATED,
+                        'field': 'manager',
+                        'read_only': True,
+                        'label': _('Company'),
+                        'custom': ('name', 'website'),
+                    },)
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ({
+                        'type': constants.FIELD_RELATED,
+                        'field': 'manager',
+                        'read_only': True,
+                        'label': _('Primary Contact'),
+                        'custom': (
+                            'manager.job_title', 'manager.contact.__str__',
+                            'manager.contact.phone_mobile', 'manager.contact.email'
+                        ),
+                    },)
                 },
             ),
         }, {
@@ -680,20 +701,17 @@ class CompanyEndpoint(ApiEndpoint):
                 'object_id': '{regular_company_rel.id}',
             }
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
+            'query': {
+                'object_id': '{id}',
+            },
+            'type': constants.FIELD_LIST,
             'collapsed': True,
-            'name': _('Notes'),
-            'fields': (
-                'description',
-                {
-                    'label': _('Notes'),
-                    'type': constants.FIELD_RELATED,
-                    'list': True,
-                    'edit': True,
-                    'field': 'notes',
-                    'endpoint': api_reverse_lazy('core/notes'),
-                },
-            )
+            'label': _('Notes'),
+            'endpoint': api_reverse_lazy('core/notes'),
+            'add_label': _('Add note'),
+            'prefilled': {
+                'object_id': '{id}',
+            },
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
@@ -1149,8 +1167,11 @@ class FormEndpoint(ApiEndpoint):
     base_viewset = viewsets.FormViewSet
 
     fieldsets = (
-        'id', 'title', 'company', 'builder', 'is_active', 'short_description',
-        'save_button_text', 'submit_message',
+        'id', 'title', {
+            'type': constants.FIELD_RELATED,
+            'field': 'company',
+        },
+        'builder', 'is_active', 'short_description', 'save_button_text', 'submit_message',
         {
             'field': 'groups',
             'type': constants.FIELD_RELATED,

@@ -302,9 +302,9 @@ class TestTimesheet:
     def test_get_closest_company(self, timesheet, master_company):
         assert timesheet.get_closest_company() == master_company
 
+    @patch.object(TimeSheet, 'is_allowed', return_value=True)
     @patch.object(TimeSheet, 'create_state')
-    def test_save_just_added(self, mock_create, vacancy_offer,
-                             company_contact):
+    def test_save_just_added(self, mock_create, mock_allowed, vacancy_offer, company_contact):
         TimeSheet.objects.create(
             vacancy_offer=vacancy_offer,
             supervisor=company_contact

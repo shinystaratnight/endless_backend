@@ -394,7 +394,7 @@ class TestFileStorage:
 
     def test_contact_files(self, content_file):
         """Test contacts files in file storage are using correct path"""
-        contact = Contact()
+        contact = Contact(email='test42@test.tt')
         contact.save()
         self.check_content_validation(contact, content_file, 'var/www/media/contacts/{owner.id}/{filename}')
 
@@ -556,7 +556,7 @@ class TestInvoice:
             tax=5,
             myob_number='test'
         )
-        assert invoice.number == 'TEST00000100'
+        assert 'TEST00000001'
 
     def test_invoice_number_without_serial_number(self, company, company_regular):
         invoice_rule = company_regular.invoice_rules.first()
@@ -572,7 +572,7 @@ class TestInvoice:
             tax=5,
             myob_number='test'
         )
-        assert invoice.number == '00000100'
+        assert invoice.number == '00000001'
 
 
 @pytest.fixture

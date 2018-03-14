@@ -10,7 +10,7 @@ from r3sourcer.apps.core.utils import form_builder as form_builder_utils
 class TestModelStorageHelperCls:
     """
     Testing r3sourcer.apps.core.utils.form_storage helper classes.
-    
+
     """
 
     def test_simple_field(self):
@@ -50,6 +50,7 @@ class TestModelStorageHelperCls:
             'contact__phone_mobile': '+79998887766'
         })
         storage_helper.process_fields()
+        storage_helper.validate()
 
         instance = storage_helper.create_instance()
         assert isinstance(instance, models.CompanyContact)
@@ -59,7 +60,7 @@ class TestModelStorageHelperCls:
             storage_helper.create_instance()
 
         assert str(exc.value) == 'Instance already created'
-        
+
     def test_separate_lookup_method(self):
         contact_field = 'contact'
         first_name_field = 'first_name'
