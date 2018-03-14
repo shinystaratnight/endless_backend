@@ -150,7 +150,6 @@ class ContactEndpoint(ApiEndpoint):
             'collapsed': True,
             'label': _('Notes'),
             'endpoint': api_reverse_lazy('core/notes'),
-            'add_label': _('Add note'),
             'prefilled': {
                 'object_id': '{id}',
             },
@@ -607,7 +606,6 @@ class CompanyEndpoint(ApiEndpoint):
             'collapsed': True,
             'label': _('Company Address'),
             'endpoint': api_reverse_lazy('core/companyaddresses'),
-            'add_label': _('Add'),
             'prefilled': {
                 'company': '{id}',
             }
@@ -619,7 +617,6 @@ class CompanyEndpoint(ApiEndpoint):
             'collapsed': True,
             'label': _('Company Contacts'),
             'endpoint': api_reverse_lazy('core/companycontactrelationships'),
-            'add_label': _('Add'),
             'prefilled': {
                 'company': '{id}',
             }
@@ -630,7 +627,6 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}',
             },
             'label': _('Jobsites'),
-            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/jobsiteaddresses'),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
@@ -669,7 +665,6 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}',
             },
             'label': _('Price list'),
-            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('pricing/pricelists'),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
@@ -697,7 +692,6 @@ class CompanyEndpoint(ApiEndpoint):
             },
             'collapsed': True,
             'label': _('States History'),
-            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/workflowobjects'),
             'prefilled': {
                 'object_id': '{regular_company_rel.id}',
@@ -710,7 +704,6 @@ class CompanyEndpoint(ApiEndpoint):
             'collapsed': True,
             'label': _('Notes'),
             'endpoint': api_reverse_lazy('core/notes'),
-            'add_label': _('Add note'),
             'prefilled': {
                 'object_id': '{id}',
             },
