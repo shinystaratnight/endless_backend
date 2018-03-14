@@ -28,7 +28,7 @@ class FormView(generic.TemplateView):
 
 
 class ApproveInvoiceView(APIView):
-    def get(self, *args, **kwargs):
+    def post(self, *args, **kwargs):
         invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
         invoice.approved = True
         invoice.save()
