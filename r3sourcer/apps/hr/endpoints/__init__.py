@@ -622,6 +622,10 @@ class VacancyDateEndpoint(ApiEndpoint):
                     'date': '{id}',
                 },
                 'delay': True,
+                'default': {
+                    'date': '{id}'
+                },
+                'unique': ('time', )
             },
         ),
     }
