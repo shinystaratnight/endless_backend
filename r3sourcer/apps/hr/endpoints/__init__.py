@@ -442,8 +442,11 @@ class VacancyEndpoint(ApiEndpoint):
         },
         'label': _('Vacancy Offers'),
         'add_label': _('Fill in'),
-        'add_endpoint': api_reverse_lazy('hr/vacancyoffers'),
+        'add_endpoint': format_lazy('{}{{id}}/fillin/', api_reverse_lazy('hr/vacancies')),
         'endpoint': api_reverse_lazy('hr/vacancyoffers'),
+        'add_metadata_query': {
+            'type': 'list',
+        },
     }, {
         'type': constants.CONTAINER_ROW,
         'label': _('Vacancy state timeline'),
