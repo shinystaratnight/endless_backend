@@ -431,7 +431,10 @@ class VacancyEndpoint(ApiEndpoint):
         'endpoint': api_reverse_lazy('hr/shifts'),
         'prefilled': {
             'vacancy': '{id}',
-        }
+        },
+        'add_metadata_query': {
+            'fieldsets_type': 'vacancy',
+        },
     }, {
         'type': constants.FIELD_LIST,
         'field': 'id_',
@@ -574,26 +577,54 @@ class ShiftEndpoint(ApiEndpoint):
 class VacancyDateEndpoint(ApiEndpoint):
     model = hr_models.VacancyDate
 
-    fieldsets = (
-        'vacancy', 'shift_date', 'workers', 'hourly_rate',
-        {
-            'type': constants.FIELD_LIST,
-            'field': 'id_',
-            'query': {
-                'date': '{id}',
+    fieldsets = {
+        'default': (
+            'vacancy', 'shift_date', 'workers', 'hourly_rate',
+            {
+                'type': constants.FIELD_LIST,
+                'field': 'id_',
+                'query': {
+                    'date': '{id}',
+                },
+                'metadata_query': {
+                    'editable_type': 'vacancy_date',
+                },
+                'label': _('Shifts'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('hr/shifts'),
+                'prefilled': {
+                    'date': '{id}',
+                },
+                'delay': True,
             },
-            'metadata_query': {
-                'editable_type': 'vacancy_date',
+        ),
+        'vacancy': (
+            {
+                'type': constants.FIELD_RELATED,
+                'field': 'vacancy',
+                'hide': True,
+            }, {
+                'type': constants.FIELD_DATE,
+                'field': 'shift_date',
+            }, {
+                'type': constants.FIELD_LIST,
+                'field': 'id_',
+                'query': {
+                    'date': '{id}',
+                },
+                'metadata_query': {
+                    'editable_type': 'vacancy_date',
+                },
+                'label': _('Shifts'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('hr/shifts'),
+                'prefilled': {
+                    'date': '{id}',
+                },
+                'delay': True,
             },
-            'label': _('Shifts'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/shifts'),
-            'prefilled': {
-                'date': '{id}',
-            },
-            'delay': True,
-        },
-    )
+        ),
+    }
 
 
 class CandidateJobOfferEndpoint(ApiEndpoint):
