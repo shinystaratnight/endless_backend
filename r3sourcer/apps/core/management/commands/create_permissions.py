@@ -56,7 +56,6 @@ class Command(BaseCommand):
                         pass
 
         for verbose_name, model_path in PERMISSION_LIST:
-            import pdb; pdb.set_trace()
             try:
                 for method, description in METHODS.items():
                     GlobalPermission.objects.create(
