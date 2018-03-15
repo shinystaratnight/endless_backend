@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from r3sourcer.apps.company_settings.models import GlobalPermission
+from r3sourcer.apps.core.utils.text import pluralize
 
 
 METHODS = {
@@ -39,7 +40,8 @@ class Command(BaseCommand):
             models = apps.get_app_config(app_name).get_models()
 
             for model in models:
-                model_name = model.__name__.lower() + 's'
+                model_name = model.__name__.lower()
+                model_name = pluralize(model_name)
 
                 if model_name in MODELS_TO_SKIP:
                     continue
