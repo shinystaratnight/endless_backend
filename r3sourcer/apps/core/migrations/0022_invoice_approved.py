@@ -8,7 +8,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0020_add_invoice_updated'),
+        ('core', '0021_companycontact_timesheet_reminder'),
     ]
 
     operations = [
