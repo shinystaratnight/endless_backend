@@ -24,6 +24,7 @@ class SkillEndpoint(ApiEndpoint):
             },
             'collapsed': False,
             'label': _('Skill Rate Defaults'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('skills/skillbaserates'),
             'prefilled': {
                 'skill': '{id}',
@@ -36,6 +37,7 @@ class SkillEndpoint(ApiEndpoint):
             },
             'collapsed': False,
             'label': _('Price List Rates'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('pricing/pricelistrates'),
             'prefilled': {
                 'skill': '{id}',

@@ -384,15 +384,20 @@ class ClickHouseLogger(EndlessLogger):
         )  # .aggregate('object_id', num='count()')
         return [log.object_id for log in res]
 
-    def _get_fields_history_qs(self, model, object_id, fields):
+    def _get_fields_history_qs(self, model, object_id, fields, transaction_type=None, order_by=None):
         if not isinstance(fields, (list, tuple)):
             fields = [fields]
 
         model = '%s.%s' % (model.__module__, model.__name__)
 
-        return self.get_log_queryset().filter(
+        query_set = self.get_log_queryset().filter(
             model=model, object_id=str(object_id), field__in=fields
-        ).order_by('-updated_at')
+        )
+
+        if transaction_type is not None:
+            query_set = query_set.filter(transaction_type=transaction_type)
+
+        return query_set.order_by(order_by) if order_by is not None else query_set
 
     def _map_field_history(self, log_object):
         updated_at = timezone.make_aware(datetime.utcfromtimestamp(log_object.updated_at / 1000))
@@ -411,7 +416,7 @@ class ClickHouseLogger(EndlessLogger):
         if not fields:
             return fields_history
 
-        log_qs = self._get_fields_history_qs(model, object_id, fields)
+        log_qs = self._get_fields_history_qs(model, object_id, fields, order_by='-updated_at')
 
         for log_object in log_qs:
             field_history = fields_history.get(log_object.field, [])
@@ -420,7 +425,11 @@ class ClickHouseLogger(EndlessLogger):
 
         return fields_history
 
-    def get_recent_field_change(self, model, object_id, field):
-        log_qs = self._get_fields_history_qs(model, object_id, [field])
+    def get_recent_field_change(self, model, object_id, field, transaction_type=None):
+        log_qs = self._get_fields_history_qs(
+            model, object_id, [field],
+            order_by='-updated_at',
+            transaction_type=transaction_type
+        )
 
         return self._map_field_history(log_qs[0]) if log_qs.count() > 0 else {}

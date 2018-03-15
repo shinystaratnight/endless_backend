@@ -133,6 +133,15 @@ class ApiChoicesField(serializers.ChoiceField):
         except (KeyError, ValueError):
             self.fail('invalid_choice', input=data)
 
+    def to_representation(self, value):
+        if value in ('', None):
+            return value
+
+        if isinstance(value, timedelta):
+            return int(value.total_seconds())
+
+        return self.choice_strings_to_values.get(six.text_type(value), value)
+
 
 class EmptyNullField(serializers.Field):
 
