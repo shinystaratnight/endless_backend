@@ -1293,7 +1293,7 @@ class ContactUnavailabilityEndpoint(ApiEndpoint):
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(models.Address, serializer=serializers.AddressSerializer)
-router.register(models.BankAccount)
+router.register(models.BankAccount, search_fields=('bank_name', 'bank_account_name'))
 router.register(endpoint=CityEndpoint())
 router.register(endpoint=CompanyEndpoint())
 router.register(endpoint=CompanyAddressEndpoint())
