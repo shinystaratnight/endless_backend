@@ -213,7 +213,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
             'collapsed': True,
             'label': _('Activities'),
-            'add_label': _('Add Activity'),
             'endpoint': api_reverse_lazy('activity/activities'),
             'prefilled': {
                 'contact': '{contact.id}',
@@ -234,7 +233,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
             'collapsed': True,
             'label': _('Candidate States History'),
-            'add_label': _('Add Candidate State'),
             'endpoint': api_reverse_lazy('core/workflowobjects'),
             'prefilled': {
                 'object_id': '{id}',
@@ -255,7 +253,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'collapsed': True,
             'label': _('Carrier List'),
             'endpoint': api_reverse_lazy('hr/carrierlists'),
-            'add_label': _('Add Carrier List'),
             'prefilled': {
                 'candidate_contact': '{id}',
             }
@@ -267,7 +264,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'collapsed': True,
             'label': _('Black List'),
             'endpoint': api_reverse_lazy('hr/blacklists'),
-            'add_label': _('Add Black List'),
             'prefilled': {
                 'candidate_contact': '{id}',
             }
@@ -279,7 +275,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'collapsed': True,
             'label': _('Favorite List'),
             'endpoint': api_reverse_lazy('hr/favouritelists'),
-            'add_label': _('Add Favorite List'),
             'prefilled': {
                 'candidate_contact': '{id}',
             }
@@ -291,7 +286,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'collapsed': True,
             'label': _('Evaluations'),
             'endpoint': api_reverse_lazy('hr/candidateevaluations'),
-            'add_label': _('Add Evaluation'),
             'prefilled': {
                 'candidate_contact': '{id}',
             }

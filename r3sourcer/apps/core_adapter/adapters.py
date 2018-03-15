@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query',
+    'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique',
 )
 
 
@@ -93,19 +93,16 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LINK:
                 adapted['templateOptions']['link'] = field.get('link')
             elif component_type == constants.FIELD_LIST:
+                options = (
+                    'endpoint', 'prefilled', 'add_endpoint', 'delay', 'metadata_query', 'add_metadata_query', 'max',
+                    'default', 'unique',
+                )
                 adapted.update(
                     collapsed=field.get('collapsed', False),
-                    **{attr: field[attr] for attr in ('endpoint', 'prefilled', 'add_endpoint', 'delay')
-                       if field.get(attr) is not None}
+                    **{attr: field[attr] for attr in options if field.get(attr) is not None}
                 )
                 if field.get('add_label'):
                     adapted['templateOptions']['add_label'] = field['add_label']
-                if field.get('metadata_query'):
-                    adapted['metadata_query'] = field['metadata_query']
-                if field.get('add_metadata_query'):
-                    adapted['add_metadata_query'] = field['add_metadata_query']
-                if field.get('max'):
-                    adapted['max'] = field['max']
             elif component_type not in [constants.FIELD_SUBMIT]:
                 adapted['templateOptions']['action'] = field['action']
 
