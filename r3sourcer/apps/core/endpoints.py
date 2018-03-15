@@ -149,6 +149,7 @@ class ContactEndpoint(ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Notes'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/notes'),
             'prefilled': {
                 'object_id': '{id}',
@@ -605,6 +606,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Company Address'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/companyaddresses'),
             'prefilled': {
                 'company': '{id}',
@@ -616,6 +618,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Company Contacts'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/companycontactrelationships'),
             'prefilled': {
                 'company': '{id}',
@@ -692,6 +695,7 @@ class CompanyEndpoint(ApiEndpoint):
             },
             'collapsed': True,
             'label': _('States History'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/workflowobjects'),
             'prefilled': {
                 'object_id': '{regular_company_rel.id}',
@@ -703,6 +707,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Notes'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/notes'),
             'prefilled': {
                 'object_id': '{id}',

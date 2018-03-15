@@ -216,6 +216,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
             'collapsed': True,
             'label': _('Activities'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('activity/activities'),
             'prefilled': {
                 'contact': '{contact.id}',
@@ -236,6 +237,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
             'collapsed': True,
             'label': _('Candidate States History'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/workflowobjects'),
             'prefilled': {
                 'object_id': '{id}',
@@ -255,6 +257,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Carrier List'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/carrierlists'),
             'prefilled': {
                 'candidate_contact': '{id}',
@@ -266,6 +269,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Black List'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/blacklists'),
             'prefilled': {
                 'candidate_contact': '{id}',
@@ -277,6 +281,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Favorite List'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/favouritelists'),
             'prefilled': {
                 'candidate_contact': '{id}',
@@ -288,6 +293,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Evaluations'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/candidateevaluations'),
             'prefilled': {
                 'candidate_contact': '{id}',
@@ -442,6 +448,7 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
                 'candidate_skill': '{id}',
             },
             'label': _('Rates'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('candidate/skillraterels'),
             'add_endpoint': api_reverse_lazy('candidate/skillraterels'),
             'prefilled': {

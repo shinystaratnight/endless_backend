@@ -426,6 +426,7 @@ class VacancyEndpoint(ApiEndpoint):
             'vacancy': '{id}',
         },
         'label': _('Vacancy Dates'),
+        'add_label': _('Add'),
         'add_endpoint': api_reverse_lazy('hr/vacancydates'),
         'endpoint': api_reverse_lazy('hr/shifts'),
         'prefilled': {
@@ -472,6 +473,7 @@ class VacancyEndpoint(ApiEndpoint):
             'editable_type': 'vacancy',
         },
         'label': _('Favourite List'),
+        'add_label': _('Add'),
         'endpoint': api_reverse_lazy('hr/favouritelists'),
         'prefilled': {
             'company_contact': '{customer_representative.id}',
@@ -591,6 +593,7 @@ class VacancyDateEndpoint(ApiEndpoint):
                     'editable_type': 'vacancy_date',
                 },
                 'label': _('Shifts'),
+                'add_label': _('Add'),
                 'endpoint': api_reverse_lazy('hr/shifts'),
                 'prefilled': {
                     'date': '{id}',
@@ -616,6 +619,7 @@ class VacancyDateEndpoint(ApiEndpoint):
                     'editable_type': 'vacancy_date',
                 },
                 'label': _('Shifts'),
+                'add_label': _('Add'),
                 'endpoint': api_reverse_lazy('hr/shifts'),
                 'prefilled': {
                     'date': '{id}',
