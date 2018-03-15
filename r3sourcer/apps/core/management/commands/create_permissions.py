@@ -14,11 +14,12 @@ METHODS = {
 
 PERMISSION_LIST = [
     ("note", "core/notes"),
+    ("timesheet-candidate", "hr/timesheets-candidate")
 ]
 
 # put here verbose names of models to skip them
 MODELS_TO_SKIP = [
-    'Contact Notes',
+    'contact notes',
 ]
 
 
@@ -38,11 +39,12 @@ class Command(BaseCommand):
             models = apps.get_app_config(app_name).get_models()
 
             for model in models:
-                if model._meta.verbose_name_plural in MODELS_TO_SKIP:
+                model_name = model.__name__.lower() + 's'
+
+                if model_name in MODELS_TO_SKIP:
                     continue
 
-                model_path = str("%s/%s" % (app_name.replace("_", "-"),
-                                            model._meta.verbose_name_plural.replace(" ", "").lower()))
+                model_path = str("%s/%s" % (app_name.replace("_", "-"), model_name.replace(" ", "")))
 
                 for method, description in METHODS.items():
                     try:
@@ -54,10 +56,11 @@ class Command(BaseCommand):
                         pass
 
         for verbose_name, model_path in PERMISSION_LIST:
+            import pdb; pdb.set_trace()
             try:
                 for method, description in METHODS.items():
                     GlobalPermission.objects.create(
-                        name=verbose_name,
+                        name=description % verbose_name,
                         codename='%s_%s' % (model_path, method)
                     )
             except:
