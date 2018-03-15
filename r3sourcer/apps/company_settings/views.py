@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -285,8 +286,8 @@ class MYOBAuthorizationView(APIView):
     """
     def post(self, request, *args, **kwargs):
         data = {
-            'client_id': request.data.get('api_key', None),
-            'client_secret': request.data.get('api_secret', None),
+            'client_id': settings.MYOB_APP['api_key'],
+            'client_secret': settings.MYOB_APP['api_secret'],
             'scope': 'CompanyFile',
             'code': request.data.get('code', None),
             'redirect_uri': request.data.get('redirect_uri', None),
