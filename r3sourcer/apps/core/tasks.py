@@ -28,19 +28,23 @@ def memcache_lock(lock_id, oid):
             cache.delete(lock_id)
 
 
-def one_sms_task_at_the_same_time(origin_task):
-    lock_key_id_base = 'lock:task:{}:{}'.format(origin_task.__module__, origin_task.__name__)
+def one_task_at_the_same_time(id_lock=False):
 
-    def wrap(self, *args, **kwargs):
-        lock_key_id = '{}:{}'.format(lock_key_id_base, args[0]) if len(args) > 0 else lock_key_id_base
+    def decorator(origin_task):
+        lock_key_id_base = 'lock:task:{}:{}'.format(origin_task.__module__, origin_task.__name__)
 
-        with memcache_lock(lock_key_id, self.app.oid) as acquired:
-            if acquired:
-                origin_task(self, *args, **kwargs)
+        def wrap(self, *args, **kwargs):
+            lock_key_id = '{}:{}'.format(lock_key_id_base, args[0]) if len(args) > 0 and id_lock else lock_key_id_base
 
-    wrap.__name__ = origin_task.__name__
-    wrap.__module__ = origin_task.__module__
-    return wrap
+            with memcache_lock(lock_key_id, self.app.oid) as acquired:
+                if acquired:
+                    origin_task(self, *args, **kwargs)
+
+        wrap.__name__ = origin_task.__name__
+        wrap.__module__ = origin_task.__module__
+        return wrap
+
+    return decorator
 
 
 @shared_task()
@@ -105,3 +109,6 @@ def fetch_holiday_dates(country_code, year, month):
         date = timezone.datetime(data_item['date']['year'], data_item['date']['month'], data_item['date']['day'])
         core_models.PublicHoliday.objects.get_or_create(
             country=country, name=data_item['englishName'], date=date)
+
+
+one_sms_task_at_the_same_time = one_task_at_the_same_time(True)
