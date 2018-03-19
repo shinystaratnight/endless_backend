@@ -256,12 +256,12 @@ class TimeSheetSync(
         :return:
         """
 
-        vacancy = timesheet.job_offer.vacancy
-        position = vacancy.position  # type: Position
+        job = timesheet.job_offer.job
+        position = job.position  # type: Position
         started_at = timezone.localtime(timesheet.shift_started_at)
         worked_hours = calc_worked_delta(timesheet)
         timesheets_with_rates = self.timesheet_rates_calc.calc(
-            vacancy.jobsite.industry,
+            job.jobsite.industry,
             RateCoefficientModifier.TYPE_CHOICES.candidate,
             started_at,
             worked_hours,
@@ -280,7 +280,7 @@ class TimeSheetSync(
             if coefficient == 'base':
                 myob_rate = self._get_base_rate_wage_category(rate_myob_id, base_rate=base_rate)
             else:
-                myob_rate = self._get_rate_wage_category(vacancy, coefficient, base_rate, skill_name=rate_myob_id)
+                myob_rate = self._get_rate_wage_category(job, coefficient, base_rate, skill_name=rate_myob_id)
 
             if myob_rate:
                 timesheets_rate = result[myob_rate['UID']]
@@ -311,19 +311,19 @@ class TimeSheetSync(
                 str(shift.date.hourly_rate.hourly_rate)
             ), shift.date.hourly_rate.hourly_rate
 
-        vacancy = timesheet.job_offer.vacancy
-        if vacancy.hourly_rate_default:
+        job = timesheet.job_offer.job
+        if job.hourly_rate_default:
             name = '{} {}'.format(
-                str(vacancy.hourly_rate_default.skill.get_myob_name()),
-                str(vacancy.hourly_rate_default.hourly_rate)
+                str(job.hourly_rate_default.skill.get_myob_name()),
+                str(job.hourly_rate_default.hourly_rate)
             )
-            base_rate = vacancy.top_hourly_rate_default.hourly_rate
+            base_rate = job.top_hourly_rate_default.hourly_rate
 
         if name is None:
             candidate_skill_rate = SkillRateRel.objects.filter(
                 candidate_skill__candidate_contact=offer.candidate_contact,
                 candidate_skill__skill__active=True,
-                candidate_skill__skill=vacancy.position,
+                candidate_skill__skill=job.position,
                 valid_until__gte=timezone.localtime(timesheet.shift_started_at)
             ).first()
             name = candidate_skill_rate and candidate_skill_rate.get_myob_name()
@@ -373,9 +373,9 @@ class TimeSheetSync(
 
         return myob_wage_category
 
-    def _get_rate_wage_category(self, vacancy, rate, base_rate, name=None, skill_name=''):
+    def _get_rate_wage_category(self, job, rate, base_rate, name=None, skill_name=''):
         if rate.is_allowance:
-            industry = vacancy.jobsite.industry
+            industry = job.jobsite.industry
             name = '{} {}'.format(''.join([line[0] for line in industry.type.split(' ')]), rate.name)
         if not name:
             name = format_short_wage_category_name(skill_name, rate.name)

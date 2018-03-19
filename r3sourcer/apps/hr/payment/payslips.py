@@ -49,9 +49,9 @@ class PayslipService(BasePaymentService):
         prices = {}
 
         for timesheet in timesheets:
-            jobsite = timesheet.job_offer.vacancy.jobsite
+            jobsite = timesheet.job_offer.job.jobsite
             industry = jobsite.industry
-            skill = timesheet.job_offer.vacancy.position
+            skill = timesheet.job_offer.job.position
             skill_rate = self._get_skill_rate(candidate, skill)
 
             started_at = localtime(timesheet.shift_started_at)
@@ -173,7 +173,7 @@ class PayslipService(BasePaymentService):
         to_date = to_date or localtime(now()).date()
 
         candidate_ids = JobOffer.objects.filter(
-            shift__date__vacancy__provider_company=company
+            shift__date__job__provider_company=company
         ).values_list('candidate_contact', flat=True).distinct()
 
         for candidate_id in candidate_ids:

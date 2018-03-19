@@ -150,9 +150,9 @@ class TestGetInvoice:
         invoice_rule = regular_company.invoice_rules.first()
         invoice_rule.separation_rule = 'per_jobsite'
         invoice_rule.save()
-        vacancy = timesheet.job_offer.shift.date.vacancy
-        vacancy.jobsite = jobsite
-        vacancy.save()
+        job = timesheet.job_offer.shift.date.job
+        job.jobsite = jobsite
+        job.save()
         invoice = Invoice.objects.create(
             provider_company=master_company,
             customer_company=regular_company,

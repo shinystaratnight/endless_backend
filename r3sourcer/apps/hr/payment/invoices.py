@@ -24,7 +24,7 @@ class InvoiceService(BasePaymentService):
         if rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
             order_number = '{} - {}'.format(date_from, datetime.now().date())
         elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
-            jobsite = timesheet.job_offer.shift.date.vacancy.jobsite
+            jobsite = timesheet.job_offer.shift.date.job.jobsite
             city = jobsite.jobsite_addresses.first().address.city
             order_number = str(city)
         elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
@@ -46,10 +46,10 @@ class InvoiceService(BasePaymentService):
         lines = []
 
         for timesheet in timesheets:
-            jobsite = timesheet.job_offer.vacancy.jobsite
+            jobsite = timesheet.job_offer.job.jobsite
             industry = jobsite.industry
-            skill = timesheet.job_offer.vacancy.position
-            customer_company = timesheet.job_offer.shift.date.vacancy.customer_company
+            skill = timesheet.job_offer.job.position
+            customer_company = timesheet.job_offer.shift.date.job.customer_company
             price_list_rate = self._get_price_list_rate(skill, customer_company)
             started_at = localtime(timesheet.shift_started_at)
             worked_hours = calc_worked_delta(timesheet)
@@ -204,7 +204,7 @@ class InvoiceService(BasePaymentService):
             jobsites = [address.jobsite for address in company.jobsite_addresses.all()]
 
             for jobsite in set(jobsites):
-                timesheets = TimeSheet.objects.filter(job_offer__shift__date__vacancy__jobsite=jobsite)
+                timesheets = TimeSheet.objects.filter(job_offer__shift__date__job__jobsite=jobsite)
                 self._prepare_invoice(
                     date_from=date_from,
                     date_to=date_to,

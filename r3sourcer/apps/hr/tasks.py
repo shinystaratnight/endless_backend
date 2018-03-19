@@ -73,12 +73,12 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
 
     data_dict = {
         'job_offer': job_offer,
-        'vacancy': job_offer.vacancy,
-        'jobsite_address': job_offer.vacancy.jobsite.get_address(),
+        'job': job_offer.job,
+        'jobsite_address': job_offer.job.jobsite.get_address(),
         'candidate_contact': job_offer.candidate_contact,
         'target_date_and_time': target_date_and_time,
         'related_obj': job_offer,
-        'related_objs': [job_offer.candidate_contact, job_offer.vacancy]
+        'related_objs': [job_offer.candidate_contact, job_offer.job]
     }
     sent_message = sms_interface.send_tpl(
         job_offer.candidate_contact.contact.phone_mobile, tpl_id, check_reply=bool(action_sent), **data_dict
@@ -149,7 +149,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
 def send_jo_confirmation_sms(self, job_offer_id):
     send_or_schedule_job_offer_sms(
         job_offer_id, send_jo_confirmation_sms,
-        tpl_id='vacancy-offer-1st', action_sent='offer_sent_by_sms'
+        tpl_id='job-offer-1st', action_sent='offer_sent_by_sms'
     )
 
 
@@ -158,7 +158,7 @@ def send_jo_confirmation_sms(self, job_offer_id):
 def send_recurring_jo_confirmation_sms(self, job_offer_id):
     send_or_schedule_job_offer_sms(
         job_offer_id, send_recurring_jo_confirmation_sms,
-        tpl_id='vacancy-offer-recurring', action_sent='offer_sent_by_sms'
+        tpl_id='job-offer-recurring', action_sent='offer_sent_by_sms'
     )
 
 
@@ -172,23 +172,23 @@ def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
     with transaction.atomic():
         try:
             job_offer = hr_models.JobOffer.objects.get(pk=jo_id)
-            vacancy = job_offer.vacancy
+            job = job_offer.job
         except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
             logger.info('SMS sending will not be proceed for job offer: {}'.format(jo_id))
         else:
             recipients = {
                 'candidate_contact': job_offer.candidate_contact,
-                'supervisor': vacancy.jobsite.primary_contact
+                'supervisor': job.jobsite.primary_contact
             }
             data_dict = dict(
                 recipients,
-                vacancy=vacancy,
+                job=job,
                 target_date_and_time=formats.date_format(
                     timezone.localtime(job_offer.target_date_and_time), settings.DATETIME_FORMAT
                 ),
                 related_obj=job_offer,
-                related_objs=[job_offer.candidate_contact, job_offer.vacancy]
+                related_objs=[job_offer.candidate_contact, job_offer.job]
             )
 
             sms_interface.send_tpl(
@@ -228,12 +228,12 @@ def send_placement_rejection_sms(self, job_offer_id):
     with transaction.atomic():
         job_offer = hr_models.JobOffer.objects.get(pk=job_offer_id)
         f_data = {
-            'sms__template__slug': 'vacancy-offer-rejection',
+            'sms__template__slug': 'job-offer-rejection',
             'object_model': ContentType.objects.get_for_model(hr_models.JobOffer),
             'object_id': job_offer_id
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
-            send_job_offer_sms(job_offer, 'vacancy-offer-rejection')
+            send_job_offer_sms(job_offer, 'job-offer-rejection')
 
 
 @shared_task

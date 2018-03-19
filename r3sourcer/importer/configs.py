@@ -770,12 +770,13 @@ class JobsiteUnavailabilityConfig(BaseConfig):
 
 class ShiftDateConfig(BaseRateMixin, BaseConfig):
     columns = {
-        'id', 'created_at', 'updated_at', 'vacancy_id', 'shift_date',
+        'id', 'created_at', 'updated_at', 'job_id', 'shift_date',
         'workers', 'hourly_rate_id', 'cancelled',
     }
     columns_map = {
         'shift_start_time': 'shift_date',
         'top_hourly_rate_id': 'hourly_rate_id',
+        'vacancy_id': 'job_id',
     }
     model = hr_models.ShiftDate
     lbk_model = (
@@ -805,7 +806,7 @@ class ShiftDateConfig(BaseRateMixin, BaseConfig):
             )
 
 
-class VacancyConfig(BaseRateMixin, BaseConfig):
+class JobConfig(BaseRateMixin, BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'jobsite_id', 'position_id',
         'published', 'publish_on', 'expires_on', 'work_start_date',
@@ -821,7 +822,7 @@ class VacancyConfig(BaseRateMixin, BaseConfig):
         'account_representative_id': 'provider_representative_id',
         'account_accepted_at': 'provider_signed_at',
     }
-    model = hr_models.Vacancy
+    model = hr_models.Job
     lbk_model = (
         'crm_hr_vacancy as v LEFT JOIN crm_core_order as o on v.order_id=o.id '
         'LEFT JOIN crm_hr_skillbaserate as sbr ON v.top_hourly_rate_default_id=sbr.id'
@@ -921,12 +922,13 @@ class BlackListConfig(BaseConfig):
 class FavouriteListConfig(BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'candidate_contact_id', 'company_id',
-        'vacancy_id', 'jobsite_id', 'company_contact_id',
+        'job_id', 'jobsite_id', 'company_contact_id',
     }
     columns_map = {
         'account_contact_id': 'company_contact_id',
         'client_id': 'company_id',
         'recruitee_contact_id': 'candidate_contact_id',
+        'vacancy_id': 'job_id',
     }
     model = hr_models.FavouriteList
     lbk_model = 'crm_hr_favouritelist'
@@ -1044,7 +1046,7 @@ class JobsiteStatesConfig(StatesConfigMixin, BaseConfig):
         return row
 
 
-class VacancyStatesConfig(StatesConfigMixin, BaseConfig):
+class JobStatesConfig(StatesConfigMixin, BaseConfig):
     columns = {'object_id', 'state', 'comment', 'active'}
     columns_map = {
         'notes': 'comment',
@@ -1067,7 +1069,7 @@ class VacancyStatesConfig(StatesConfigMixin, BaseConfig):
         if row['number'] in map_states:
             row['number'] = map_states[row['number']]
 
-        row['state'] = cls.get_workflow_node(row['number'], hr_models.Vacancy)
+        row['state'] = cls.get_workflow_node(row['number'], hr_models.Job)
 
         models.WorkflowObject.objects.filter(object_id=row['object_id']).update(active=False)
         row['active'] = True
@@ -1122,7 +1124,7 @@ ALL_CONFIGS = [
     IndustryConfig, RateCoefficientGroupConfig, RateCoefficientConfig, RateCoefficientModifierCompanyConfig,
     RateCoefficientModifierCandidateConfig, PriceListConfig, PriceListRateConfig, PriceListRateCoefficientConfig,
     JobsiteConfig, JobsiteUnavailabilityConfig,
-    VacancyConfig, ShiftDateConfig, JobOfferConfig, TimeSheetConfig,
+    JobConfig, ShiftDateConfig, JobOfferConfig, TimeSheetConfig,
     BlackListConfig, FavouriteListConfig, CarrierListConfig, CandidateEvaluationConfig,
-    CandidateStatesConfig, CompanyStatesConfig, JobsiteStatesConfig, VacancyStatesConfig, TimeSheetStatesConfig,
+    CandidateStatesConfig, CompanyStatesConfig, JobsiteStatesConfig, JobStatesConfig, TimeSheetStatesConfig,
 ]

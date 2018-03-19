@@ -134,7 +134,7 @@ def get_jo_sms_sending_task(job_offer):  # pragme: no cover
     elif job_offer.is_recurring():
         from r3sourcer.apps.hr.tasks import send_recurring_jo_confirmation_sms as task
     else:
-        # FIXME: send job confirmation SMS because there is pending vacancy's JOs for candidate
+        # FIXME: send job confirmation SMS because there is pending job's JOs for candidate
         from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms as task
 
     return task
@@ -231,9 +231,9 @@ def get_invoice(company, date_from, date_to, timesheet):
             invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to)
 
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
-            jobsite = timesheet.job_offer.shift.date.vacancy.jobsite
+            jobsite = timesheet.job_offer.shift.date.job.jobsite
             invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
-                                          invoice_lines__timesheet__job_offer__shift__date__vacancy__jobsite=jobsite)
+                                          invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite)
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
             candidate = timesheet.job_offer.candidate_contact
             invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,

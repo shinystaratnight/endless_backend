@@ -131,7 +131,7 @@ class TestVOTasks:
 
         mock_send.assert_called_with(
             job_offer.id, hr_tasks.send_jo_confirmation_sms,
-            tpl_id='vacancy-offer-1st', action_sent='offer_sent_by_sms'
+            tpl_id='job-offer-1st', action_sent='offer_sent_by_sms'
         )
 
     @mock.patch('r3sourcer.apps.hr.tasks.send_or_schedule_job_offer_sms')
@@ -140,5 +140,5 @@ class TestVOTasks:
 
         mock_send.assert_called_with(
             job_offer.id, hr_tasks.send_recurring_jo_confirmation_sms,
-            tpl_id='vacancy-offer-recurring', action_sent='offer_sent_by_sms'
+            tpl_id='job-offer-recurring', action_sent='offer_sent_by_sms'
         )

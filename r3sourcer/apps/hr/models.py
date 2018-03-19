@@ -152,8 +152,8 @@ class Jobsite(
 
         if not just_added and changed_primary_contact:
             # update supervisor related future timesheets
-            for vacancy in self.vacancies.all():
-                for sd in vacancy.shift_dates.all():
+            for job in self.jobs.all():
+                for sd in job.shift_dates.all():
                     TimeSheet.objects.filter(
                         job_offer__in=sd.job_offers,
                         shift_started_at__date__gte=hr_utils.tomorrow()
@@ -228,18 +228,18 @@ class JobsiteAddress(core_models.UUIDModel):
         )
 
 
-class Vacancy(core_models.AbstractBaseOrder):
+class Job(core_models.AbstractBaseOrder):
 
     jobsite = models.ForeignKey(
         Jobsite,
-        related_name="vacancies",
+        related_name="jobs",
         on_delete=models.PROTECT,
         verbose_name=_("Jobsite")
     )
 
     position = models.ForeignKey(
         Skill,
-        related_name="vacancies",
+        related_name="jobs",
         on_delete=models.PROTECT,
         verbose_name=_("Category")
     )
@@ -279,7 +279,7 @@ class Vacancy(core_models.AbstractBaseOrder):
 
     notes = models.TextField(
         verbose_name=_("Notes"),
-        help_text=_("Vacancy Description"),
+        help_text=_("Job Description"),
         blank=True
     )
 
@@ -297,7 +297,7 @@ class Vacancy(core_models.AbstractBaseOrder):
 
     hourly_rate_default = models.ForeignKey(
         SkillBaseRate,
-        related_name="vacancies",
+        related_name="jobs",
         on_delete=models.SET_NULL,
         verbose_name=_("Hourly rate default"),
         null=True,
@@ -305,8 +305,8 @@ class Vacancy(core_models.AbstractBaseOrder):
     )
 
     class Meta:
-        verbose_name = _("Vacancy")
-        verbose_name_plural = _("Vacancies")
+        verbose_name = _("Job")
+        verbose_name_plural = _("Jobs")
         unique_together = ('work_start_date', 'position', 'jobsite')
 
     def __str__(self):
@@ -321,7 +321,7 @@ class Vacancy(core_models.AbstractBaseOrder):
     get_title.short_description = _('Title')
 
     def get_job_offers(self):
-        return JobOffer.objects.filter(shift__date__vacancy=self)
+        return JobOffer.objects.filter(shift__date__job=self)
 
     def get_total_bookings_count(self):
         return self.get_job_offers().distinct('candidate_contact').count()
@@ -423,7 +423,7 @@ class Vacancy(core_models.AbstractBaseOrder):
     @workflow_function
     def is_all_timesheets_approved(self):
         return not TimeSheet.objects.filter(
-            job_offer__shift__date__vacancy=self,
+            job_offer__shift__date__job=self,
             supervisor_approved_at__isnull=True
         ).exists()
     is_all_timesheets_approved.short_description = _('All Time Sheets approvment')
@@ -431,7 +431,7 @@ class Vacancy(core_models.AbstractBaseOrder):
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
             sd, _ = ShiftDate.objects.get_or_create(
-                vacancy=self, shift_date=self.work_start_date,
+                job=self, shift_date=self.work_start_date,
                 workers=self.workers, hourly_rate=self.hourly_rate_default
             )
 
@@ -466,11 +466,11 @@ class Vacancy(core_models.AbstractBaseOrder):
 
 class ShiftDate(core_models.UUIDModel):
 
-    vacancy = models.ForeignKey(
-        Vacancy,
+    job = models.ForeignKey(
+        Job,
         related_name="shift_dates",
         on_delete=models.CASCADE,
-        verbose_name=_("Vacancy")
+        verbose_name=_("Job")
     )
 
     shift_date = models.DateField(
@@ -542,7 +542,7 @@ class Shift(core_models.UUIDModel):
 
     hourly_rate = models.ForeignKey(
         SkillBaseRate,
-        related_name="vacancy_shifts",
+        related_name="job_shifts",
         on_delete=models.SET_NULL,
         verbose_name=_("Top hourly rate"),
         null=True,
@@ -560,8 +560,8 @@ class Shift(core_models.UUIDModel):
         )
 
     @property
-    def vacancy(self):
-        return self.date.vacancy
+    def job(self):
+        return self.date.job
 
     def is_fulfilled(self):
         result = NOT_FULFILLED
@@ -638,8 +638,8 @@ class JobOffer(core_models.UUIDModel):
         ))
 
     @property
-    def vacancy(self):
-        return self.shift.vacancy
+    def job(self):
+        return self.shift.job
 
     @property
     def start_time(self):
@@ -654,20 +654,20 @@ class JobOffer(core_models.UUIDModel):
         return self.status == JobOffer.STATUS_CHOICES.cancelled
 
     def is_recurring(self):
-        return self.vacancy.get_job_offers().filter(
+        return self.job.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__date__shift_date__lt=self.shift.date.shift_date,
             status=JobOffer.STATUS_CHOICES.accepted
         ).exists()
 
     def is_first(self):
-        return not self.vacancy.get_job_offers().filter(
+        return not self.job.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__date__shift_date__lt=self.shift.date.shift_date
         ).exists()
 
     def get_future_offers(self):
-        return self.vacancy.get_job_offers().filter(
+        return self.job.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__date__shift_date__gt=self.shift.date.shift_date
         )
@@ -696,7 +696,7 @@ class JobOffer(core_models.UUIDModel):
                 candidate_contact=self.candidate_contact,
                 target_date=self.start_time,
                 confirmed_available=confirmed_available,
-                skill=self.vacancy.position
+                skill=self.job.position
             )
 
         if cl:
@@ -725,10 +725,10 @@ class JobOffer(core_models.UUIDModel):
 
     def has_future_accepted_jo(self):
         """
-        Check if there are future accepted JO for the candidate/vacancy
+        Check if there are future accepted JO for the candidate/job
         :return: True or False
         """
-        return self.vacancy.get_job_offers().filter(
+        return self.job.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__time__gt=self.shift.time,
             shift__date__shift_date__gte=self.shift.date.shift_date,
@@ -737,11 +737,11 @@ class JobOffer(core_models.UUIDModel):
 
     def has_previous_jo(self):
         """
-        Check if there are JO for the candidate/vacancy earlier than this one
+        Check if there are JO for the candidate/job earlier than this one
         :return: True or False
         """
         now = timezone.now()
-        return self.vacancy.get_job_offers().filter(
+        return self.job.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__time__gt=now,
             shift__date__shift_date__gte=now.date(),
@@ -773,7 +773,7 @@ class JobOffer(core_models.UUIDModel):
 
         try:
             time_sheet = TimeSheet.objects.filter(
-                job_offer__shift__date__vacancy=self.vacancy,
+                job_offer__shift__date__job=self.job,
                 job_offer__candidate_contact=self.candidate_contact,
                 shift_started_at__gt=now, going_to_work_confirmation=True
             ).earliest('shift_started_at')
@@ -791,18 +791,18 @@ class JobOffer(core_models.UUIDModel):
                 # time_sheet.auto_fill_four_hours()
 
     def is_quota_filled(self):
-        accepted_count = self.vacancy.get_job_offers().filter(
+        accepted_count = self.job.get_job_offers().filter(
             status=JobOffer.STATUS_CHOICES.accepted,
             shift__date__shift_date=self.shift.date.shift_date,
             shift__time=self.shift.time
         ).count()
 
-        return accepted_count >= self.vacancy.workers
+        return accepted_count >= self.job.workers
 
-    def check_vacancy_quota(self, is_initial):
+    def check_job_quota(self, is_initial):
         if is_initial:
             if self.is_quota_filled() or self.is_cancelled():
-                all_job_offers = self.vacancy.get_job_offers()
+                all_job_offers = self.job.get_job_offers()
                 now = timezone.now()
                 with transaction.atomic():
                     # if celery worked with JO sending
@@ -852,7 +852,7 @@ class JobOffer(core_models.UUIDModel):
 
         create_time_sheet = False
         if is_accepted:
-            create_time_sheet = self.check_vacancy_quota(is_initial)
+            create_time_sheet = self.check_job_quota(is_initial)
 
         super(JobOffer, self).save(*args, **kw)
 
@@ -1078,11 +1078,11 @@ class TimeSheet(
 
     @property
     def master_company(self):
-        return self.job_offer.shift.date.vacancy.jobsite.master_company
+        return self.job_offer.shift.date.job.jobsite.master_company
 
     @property
     def regular_company(self):
-        return self.job_offer.shift.date.vacancy.jobsite.jobsite_addresses.first().regular_company
+        return self.job_offer.shift.date.job.jobsite.jobsite_addresses.first().regular_company
 
     @classmethod
     def get_or_create_for_job_offer_accepted(cls, job_offer):
@@ -1092,7 +1092,7 @@ class TimeSheet(
             'break_started_at': job_offer.start_time + timedelta(hours=5),
             'break_ended_at': job_offer.start_time + timedelta(hours=5, minutes=30),
             'shift_ended_at': job_offer.start_time + timedelta(hours=8, minutes=30),
-            'supervisor': job_offer.vacancy.jobsite.primary_contact,
+            'supervisor': job_offer.job.jobsite.primary_contact,
             'candidate_rate': job_offer.shift.date.hourly_rate
         }
 
@@ -1117,7 +1117,7 @@ class TimeSheet(
         return time_sheet
 
     def get_closest_company(self):
-        return self.get_job_offer().vacancy.get_closest_company()
+        return self.get_job_offer().job.get_closest_company()
 
     @property
     def candidate_contact(self):
@@ -1248,7 +1248,7 @@ class BlackList(core_models.UUIDModel):
         with same fields values.
         """
         if self.timesheet and not self.jobsite:
-            self.jobsite = self.timesheet.job_offer.vacancy.jobsite
+            self.jobsite = self.timesheet.job_offer.job.jobsite
         if self.timesheet and not self.company_contact:
             self.company_contact = self.timesheet.supervisor
         if BlackList.objects.filter(
@@ -1296,9 +1296,9 @@ class FavouriteList(core_models.UUIDModel):
         on_delete=models.CASCADE
     )
 
-    vacancy = models.ForeignKey(
-        Vacancy,
-        verbose_name=_('Vacancy'),
+    job = models.ForeignKey(
+        Job,
+        verbose_name=_('Job'),
         related_name='favouritelists',
         blank=True,
         null=True,
@@ -1308,7 +1308,7 @@ class FavouriteList(core_models.UUIDModel):
     class Meta:
         verbose_name = _("Favourite list")
         verbose_name_plural = _("Favourite lists")
-        unique_together = ('company_contact', 'candidate_contact', 'company', 'jobsite', 'vacancy')
+        unique_together = ('company_contact', 'candidate_contact', 'company', 'jobsite', 'job')
 
     def __str__(self):
         return "{}: {}".format(str(self.company_contact), str(self.candidate_contact))
@@ -1323,8 +1323,8 @@ class FavouriteList(core_models.UUIDModel):
                 'candidate_contact': _('Please select Candidate Contact')
             })
 
-        if self.vacancy:
-            self.jobsite = self.vacancy.jobsite
+        if self.job:
+            self.jobsite = self.job.jobsite
         if self.jobsite:
             self.company = self.jobsite.master_company
         if FavouriteList.objects.filter(
@@ -1332,8 +1332,8 @@ class FavouriteList(core_models.UUIDModel):
             candidate_contact=self.candidate_contact,
             company=self.company,
             jobsite=self.jobsite,
-            vacancy=self.vacancy,
-        ).exists() and not (self.company and self.jobsite and self.vacancy):
+            job=self.job,
+        ).exists() and not (self.company and self.jobsite and self.job):
             raise ValidationError(_('Another FavoritList item with such parameters already exists'))
         super().clean()
 
@@ -1946,7 +1946,7 @@ class CandidateScore(core_models.UUIDModel):
         distances = ContactJobsiteDistanceCache.objects.filter(
             contact=self.candidate_contact.contact,
             jobsite__in=jos.values_list(
-                'shift__date__vacancy__jobsite', flat=True
+                'shift__date__job__jobsite', flat=True
             ),
         )
         if (self.candidate_contact.transportation_to_work ==

@@ -16,7 +16,7 @@ from r3sourcer.apps.hr.utils import utils as hr_utils
 from r3sourcer.apps.logger.main import endless_logger
 
 
-class VacancySerializer(
+class JobSerializer(
     activity_mixins.RelatedActivitiesColumnMixin, core_mixins.WorkflowStatesColumnMixin,
     core_serializers.ApiBaseModelSerializer
 ):
@@ -24,7 +24,7 @@ class VacancySerializer(
     method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'todays_timesheets', 'title')
 
     class Meta:
-        model = hr_models.Vacancy
+        model = hr_models.Job
         fields = (
             '__all__',
             {
@@ -65,7 +65,7 @@ class VacancySerializer(
 
         today = timezone.localtime(timezone.now()).date()
         timesheets = hr_models.TimeSheet.objects.filter(
-            job_offer__shift__date__vacancy_id=obj.id, shift_started_at__date=today
+            job_offer__shift__date__job_id=obj.id, shift_started_at__date=today
         )
         total_timesheets = timesheets.count()
 
@@ -116,7 +116,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         elif obj.shift.date.hourly_rate:
             candidate_rate = obj.shift.date.hourly_rate
         else:
-            candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.vacancy.position)
+            candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.job.position)
 
         return candidate_rate.hourly_rate if candidate_rate else None
 
@@ -124,9 +124,9 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         if not obj:
             return None
 
-        price_list = obj.vacancy.customer_company.get_effective_pricelist_qs(obj.vacancy.position).first()
+        price_list = obj.job.customer_company.get_effective_pricelist_qs(obj.job.position).first()
         if price_list:
-            price_list_rate = price_list.price_list_rates.filter(skill=obj.vacancy.position).first()
+            price_list_rate = price_list.price_list_rates.filter(skill=obj.job.position).first()
             rate = price_list_rate and price_list_rate.hourly_rate
         else:
             rate = None
@@ -165,7 +165,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         )
 
         if obj.is_cancelled() or not_received_or_scheduled:
-            last_jo = obj.vacancy.get_job_offers().filter(
+            last_jo = obj.job.get_job_offers().filter(
                 offer_sent_by_sms__isnull=False,
                 candidate_contact=obj.candidate_contact
             ).order_by('offer_sent_by_sms__sent_at').last()
@@ -201,7 +201,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         return obj and obj.is_fulfilled()
 
 
-class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
+class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'skills_score',
@@ -255,7 +255,7 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
     def get_hourly_rate(self, obj):
         hourly_rate = obj.get_rate_for_skill(
-            self.context['vacancy'].position, score__gt=0, skill__active=True
+            self.context['job'].position, score__gt=0, skill__active=True
         )
         return hourly_rate.hourly_rate if hourly_rate else 0
 
@@ -306,7 +306,7 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
                 'jobsite_address': ('__all__', ),
                 'shift': ['id', 'time', {
                     'date': ['shift_date', {
-                        'vacancy': ['position', 'customer_company', {
+                        'job': ['position', 'customer_company', {
                             'jobsite': ['primary_contact'],
                         }],
                     }],
@@ -315,7 +315,7 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         ]
 
     def get_jobsite_address(self, obj):
-        address = obj.vacancy.jobsite.get_address()
+        address = obj.job.jobsite.get_address()
         return address and core_serializers.AddressSerializer(address).data
 
     def get_hide_buttons(self, obj):
@@ -335,7 +335,7 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         updated_by_id = last_change['updated_by']
         system_user = get_default_user()
         reply_sms = obj.reply_received_by_sms
-        jobsite_contact = obj.vacancy.jobsite.primary_contact
+        jobsite_contact = obj.job.jobsite.primary_contact
 
         if obj.is_quota_filled() or (reply_sms and reply_sms.is_positive_answer() and not obj.is_accepted()):
             return _('Already filled')
@@ -359,9 +359,9 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         return obj.status == hr_models.JobOffer.STATUS_CHOICES.accepted
 
     def get_latitude(self, obj):
-        address = obj.vacancy.jobsite.get_address()
+        address = obj.job.jobsite.get_address()
         return address and address.latitude
 
     def get_longitude(self, obj):
-        address = obj.vacancy.jobsite.get_address()
+        address = obj.job.jobsite.get_address()
         return address and address.longitude

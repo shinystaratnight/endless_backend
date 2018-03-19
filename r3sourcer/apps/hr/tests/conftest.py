@@ -174,8 +174,8 @@ def skill(db):
 
 
 @pytest.fixture
-def vacancy(db, master_company, regular_company, jobsite, skill):
-    return hr_models.Vacancy.objects.create(
+def job(db, master_company, regular_company, jobsite, skill):
+    return hr_models.Job.objects.create(
         provider_company=master_company,
         customer_company=regular_company,
         jobsite=jobsite,
@@ -185,9 +185,9 @@ def vacancy(db, master_company, regular_company, jobsite, skill):
 
 
 @pytest.fixture
-def shift_date(db, vacancy):
+def shift_date(db, job):
     return hr_models.ShiftDate.objects.create(
-        vacancy=vacancy,
+        job=job,
         shift_date=datetime.date(2017, 1, 2)
     )
 
@@ -201,7 +201,7 @@ def shift(db, shift_date):
 
 
 @pytest.fixture
-@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
 def job_offer(mock_check, db, shift, candidate_contact):
     return hr_models.JobOffer.objects.create(
         shift=shift,
@@ -210,7 +210,7 @@ def job_offer(mock_check, db, shift, candidate_contact):
 
 
 @pytest.fixture
-@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
 def accepted_jo(mock_check, db, shift, candidate_contact):
     return hr_models.JobOffer.objects.create(
         shift=shift,
@@ -220,7 +220,7 @@ def accepted_jo(mock_check, db, shift, candidate_contact):
 
 
 @pytest.fixture
-@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+@patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
 def cancelled_jo(mock_check, db, shift, candidate_contact):
     return hr_models.JobOffer.objects.create(
         shift=shift,
@@ -230,10 +230,10 @@ def cancelled_jo(mock_check, db, shift, candidate_contact):
 
 
 @pytest.fixture
-@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
-def job_offer_yesterday(mock_check, db, vacancy, candidate_contact):
+@patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
+def job_offer_yesterday(mock_check, db, job, candidate_contact):
     shift_date_yesterday = hr_models.ShiftDate.objects.create(
-        vacancy=vacancy,
+        job=job,
         shift_date=datetime.date(2017, 1, 1)
     )
     shift_yesterday = hr_models.Shift.objects.create(
@@ -249,10 +249,10 @@ def job_offer_yesterday(mock_check, db, vacancy, candidate_contact):
 
 
 @pytest.fixture
-@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
-def job_offer_tomorrow(mock_check, db, vacancy, candidate_contact):
+@patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
+def job_offer_tomorrow(mock_check, db, job, candidate_contact):
     shift_date_tomorrow = hr_models.ShiftDate.objects.create(
-        vacancy=vacancy,
+        job=job,
         shift_date=datetime.date(2017, 1, 3)
     )
     shift_tomorrow = hr_models.Shift.objects.create(
@@ -267,10 +267,10 @@ def job_offer_tomorrow(mock_check, db, vacancy, candidate_contact):
 
 
 @pytest.fixture
-@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
-def job_offer_tomorrow_night(mock_check, db, vacancy, candidate_contact):
+@patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
+def job_offer_tomorrow_night(mock_check, db, job, candidate_contact):
     shift_date_tomorrow = hr_models.ShiftDate.objects.create(
-        vacancy=vacancy,
+        job=job,
         shift_date=datetime.date(2017, 1, 3)
     )
     shift_tomorrow = hr_models.Shift.objects.create(

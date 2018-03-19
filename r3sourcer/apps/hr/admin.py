@@ -5,7 +5,7 @@ from . import models
 admin.site.register(models.Jobsite)
 admin.site.register(models.JobsiteUnavailability)
 admin.site.register(models.JobsiteAddress)
-admin.site.register(models.Vacancy)
+admin.site.register(models.Job)
 admin.site.register(models.ShiftDate)
 admin.site.register(models.Shift)
 admin.site.register(models.TimeSheet)

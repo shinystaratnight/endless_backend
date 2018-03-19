@@ -68,7 +68,7 @@ class PinCodeSerializer(ValidateApprovalScheme):
 class TimeSheetSerializer(ApiBaseModelSerializer):
 
     method_fields = (
-        'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'vacancy', 'related_sms',
+        'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor',
         'candidate_submit_hidden', 'evaluated'
     )
@@ -91,17 +91,17 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_company(self, obj):
         if obj:
-            company = obj.job_offer.vacancy.customer_company
+            company = obj.job_offer.job.customer_company
             return {'id': company.id, '__str__': str(company)}
 
     def get_jobsite(self, obj):
         if obj:
-            jobsite = obj.job_offer.vacancy.jobsite
+            jobsite = obj.job_offer.job.jobsite
             return {'id': jobsite.id, '__str__': str(jobsite)}
 
     def get_position(self, obj):
         if obj:
-            position = obj.job_offer.vacancy.position
+            position = obj.job_offer.job.position
             return {'id': position.id, '__str__': str(position)}
 
     def _format_date_range(self, date_start, date_end):
@@ -124,9 +124,9 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
     def get_break_started_ended(self, obj):
         return self._format_date_range(obj.break_started_at, obj.break_ended_at)
 
-    def get_vacancy(self, obj):
-        vacancy = obj.job_offer.vacancy
-        return {'id': vacancy.id, '__str__': str(vacancy)}
+    def get_job(self, obj):
+        job = obj.job_offer.job
+        return {'id': job.id, '__str__': str(job)}
 
     def get_related_sms(self, obj):
         ct = ContentType.objects.get_for_model(TimeSheet)

@@ -14,7 +14,7 @@ from django_mock_queries.query import MockSet, MockModel
 
 from r3sourcer.apps.hr.models import (
     TimeSheet, JobsiteUnavailability, CandidateEvaluation, JobOffer, ShiftDate, TimeSheetIssue, BlackList,
-    FavouriteList, Vacancy, CarrierList, Shift, NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT
+    FavouriteList, Job, CarrierList, Shift, NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT
 )
 from r3sourcer.apps.hr.utils.utils import tomorrow
 
@@ -102,97 +102,97 @@ class TestJobsite:
 
 
 @pytest.mark.django_db
-class TestVacancy:
-    def test_get_title(self, vacancy, jobsite, skill):
-        assert str(jobsite) in str(vacancy)
-        assert str(skill) in str(vacancy)
-        assert str(vacancy.workers) in str(vacancy)
+class TestJob:
+    def test_get_title(self, job, jobsite, skill):
+        assert str(jobsite) in str(job)
+        assert str(skill) in str(job)
+        assert str(job.workers) in str(job)
 
-    def test_get_job_offers(self, vacancy, job_offer):
-        assert vacancy.get_job_offers().count() == 1
+    def test_get_job_offers(self, job, job_offer):
+        assert job.get_job_offers().count() == 1
 
-    def test_get_total_bookings_count(self, vacancy, job_offer):
-        assert vacancy.get_total_bookings_count() == 1
+    def test_get_total_bookings_count(self, job, job_offer):
+        assert job.get_total_bookings_count() == 1
 
     @freeze_time(datetime.datetime(2017, 1, 2))
-    def test_is_fulfilled_irrelevant(self, vacancy, shift_date):
-        assert vacancy.is_fulfilled() == IRRELEVANT
+    def test_is_fulfilled_irrelevant(self, job, shift_date):
+        assert job.is_fulfilled() == IRRELEVANT
 
     @freeze_time(datetime.datetime(2017, 1, 1))
     @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
-    def test_is_fulfilled_fulfilled(self, mock_sd_fulfilled, vacancy, shift_date):
-        assert vacancy.is_fulfilled() == FULFILLED
+    def test_is_fulfilled_fulfilled(self, mock_sd_fulfilled, job, shift_date):
+        assert job.is_fulfilled() == FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 1))
     @patch.object(ShiftDate, 'is_fulfilled', return_value=LIKELY_FULFILLED)
-    def test_is_fulfilled_sd_likely_fulfilled(self, mock_sd_fulfilled, vacancy,
+    def test_is_fulfilled_sd_likely_fulfilled(self, mock_sd_fulfilled, job,
                                               shift_date):
-        assert vacancy.is_fulfilled() == LIKELY_FULFILLED
+        assert job.is_fulfilled() == LIKELY_FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 1))
     @patch.object(ShiftDate, 'is_fulfilled', return_value=IRRELEVANT)
-    def test_is_fulfilled_sd_irrelevant(self, mock_sd_fulfilled, vacancy, shift_date):
-        assert vacancy.is_fulfilled() == IRRELEVANT
+    def test_is_fulfilled_sd_irrelevant(self, mock_sd_fulfilled, job, shift_date):
+        assert job.is_fulfilled() == IRRELEVANT
 
     @freeze_time(datetime.datetime(2017, 1, 1))
     @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
     @patch.object(ShiftDate, 'job_offers', new_callable=PropertyMock)
-    def test_is_fulfilled_sd_not_fulfilled_jo_not_exists(self, mock_jos, mock_sd_fulfilled, vacancy, shift_date):
+    def test_is_fulfilled_sd_not_fulfilled_jo_not_exists(self, mock_jos, mock_sd_fulfilled, job, shift_date):
         mock_jos.return_value.exists.return_value = False
 
-        assert vacancy.is_fulfilled() == NOT_FULFILLED
+        assert job.is_fulfilled() == NOT_FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 1))
     @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
     @patch.object(ShiftDate, 'job_offers', new_callable=PropertyMock)
-    def test_is_fulfilled_sd_not_fulfilled_no_unaccepted_jos(self, mock_jos, mock_sd_fulfilled, vacancy, shift_date):
+    def test_is_fulfilled_sd_not_fulfilled_no_unaccepted_jos(self, mock_jos, mock_sd_fulfilled, job, shift_date):
         mock_jos.return_value = MockSet(
             MockModel(status=JobOffer.STATUS_CHOICES.accepted)
         )
 
-        assert vacancy.is_fulfilled() == LIKELY_FULFILLED
+        assert job.is_fulfilled() == LIKELY_FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 1))
     @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
-    def test_is_fulfilled_sd_not_fulfilled_accepted_ts(self, mock_sd_fulfilled, vacancy, job_offer, shift_date):
+    def test_is_fulfilled_sd_not_fulfilled_accepted_ts(self, mock_sd_fulfilled, job, job_offer, shift_date):
         TimeSheet.objects.create(
             job_offer=job_offer,
             going_to_work_confirmation=True
         )
 
-        assert vacancy.is_fulfilled() == LIKELY_FULFILLED
+        assert job.is_fulfilled() == LIKELY_FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 1))
     @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
-    def test_is_fulfilled_sd_not_fulfilled_no_accepted_ts(self, mock_sd_fulfilled, vacancy, shift_date, timesheet):
+    def test_is_fulfilled_sd_not_fulfilled_no_accepted_ts(self, mock_sd_fulfilled, job, shift_date, timesheet):
 
-        assert vacancy.is_fulfilled() == NOT_FULFILLED
+        assert job.is_fulfilled() == NOT_FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 2))
     @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
-    def test_is_fulfilled_today_fulfilled(self, mock_fulfilled, vacancy, shift_date):
-        assert vacancy.is_fulfilled_today() == FULFILLED
+    def test_is_fulfilled_today_fulfilled(self, mock_fulfilled, job, shift_date):
+        assert job.is_fulfilled_today() == FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 2))
-    def test_is_fulfilled_today_no_sd_today(self, vacancy):
-        assert vacancy.is_fulfilled_today() == IRRELEVANT
+    def test_is_fulfilled_today_no_sd_today(self, job):
+        assert job.is_fulfilled_today() == IRRELEVANT
 
     @freeze_time(datetime.datetime(2017, 1, 2))
-    @patch.object(Vacancy, 'is_fulfilled', return_value=NOT_FULFILLED)
-    def test_can_fillin_not_fulfilled(self, mock_sd_fulfilled, vacancy):
-        assert vacancy.can_fillin()
+    @patch.object(Job, 'is_fulfilled', return_value=NOT_FULFILLED)
+    def test_can_fillin_not_fulfilled(self, mock_sd_fulfilled, job):
+        assert job.can_fillin()
 
     @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(Vacancy, 'is_fulfilled', return_value=FULFILLED)
+    @patch.object(Job, 'is_fulfilled', return_value=FULFILLED)
     @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
-    def test_can_fillin_future_sd_not_fulfilled(self, mock_fulfilled, mock_sd_fulfilled, vacancy, job_offer):
-        assert vacancy.can_fillin()
+    def test_can_fillin_future_sd_not_fulfilled(self, mock_fulfilled, mock_sd_fulfilled, job, job_offer):
+        assert job.can_fillin()
 
     @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(Vacancy, 'is_fulfilled', return_value=FULFILLED)
+    @patch.object(Job, 'is_fulfilled', return_value=FULFILLED)
     @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
-    def test_can_fillin_future_sd_fulfilled(self, mock_fulfilled, mock_sd_fulfilled, vacancy, job_offer):
-        assert not vacancy.can_fillin()
+    def test_can_fillin_future_sd_fulfilled(self, mock_fulfilled, mock_sd_fulfilled, job, job_offer):
+        assert not job.can_fillin()
 
 
 @pytest.mark.django_db
@@ -210,7 +210,7 @@ class TestShiftDate:
     def test_is_fulfilled(self, shift_date):
         assert shift_date.is_fulfilled() == NOT_FULFILLED
 
-    @patch.object(JobOffer, 'check_vacancy_quota', return_value=True)
+    @patch.object(JobOffer, 'check_job_quota', return_value=True)
     def test_is_fulfilled_true(self, mock_check, shift_date, shift, candidate_contact):
         JobOffer.objects.create(
             shift=shift,
@@ -230,13 +230,13 @@ class TestShift:
             settings.DATETIME_FORMAT
         )
 
-    def test_get_vacancy(self, shift, vacancy):
-        assert shift.vacancy == vacancy
+    def test_get_job(self, shift, job):
+        assert shift.job == job
 
     def test_is_fulfilled(self, shift_date):
         assert shift_date.is_fulfilled() == NOT_FULFILLED
 
-    @patch.object(JobOffer, 'check_vacancy_quota', return_value=True)
+    @patch.object(JobOffer, 'check_job_quota', return_value=True)
     def test_is_fulfilled_true(self, mock_check, shift, candidate_contact):
         JobOffer.objects.create(
             shift=shift,
@@ -324,8 +324,8 @@ class TestJobOffer:
         assert str(job_offer) == date_format(
             localtime(job_offer.created_at), settings.DATETIME_FORMAT)
 
-    def test_get_vacancy(self, job_offer, vacancy):
-        assert job_offer.vacancy == vacancy
+    def test_get_job(self, job_offer, job):
+        assert job_offer.job == job
 
     @pytest.mark.parametrize('jo,expected', [
         (JobOffer(status=JobOffer.STATUS_CHOICES.accepted), True),
@@ -407,7 +407,7 @@ class TestJobOffer:
         assert cl is not None
         assert cl.confirmed_available
 
-    @patch.object(JobOffer, 'check_vacancy_quota', return_value=True)
+    @patch.object(JobOffer, 'check_job_quota', return_value=True)
     def test_process_sms_reply_positive(self, mock_check, job_offer, fake_sms):
         job_offer.process_sms_reply(None, fake_sms, True)
 
@@ -543,23 +543,23 @@ class TestJobOffer:
         assert jo.scheduled_sms_datetime == eta
         mock_task.get_jo_sms_sending_task.return_value.apply_async.assert_called_with(args=[jo.id], eta=eta)
 
-    def test_check_vacancy_quota(self, job_offer):
-        res = job_offer.check_vacancy_quota(True)
+    def test_check_job_quota(self, job_offer):
+        res = job_offer.check_job_quota(True)
 
         assert res
         assert job_offer.status == JobOffer.STATUS_CHOICES.accepted
 
     @patch.object(JobOffer, 'move_candidate_to_carrier_list')
-    def test_check_vacancy_quota_cancelled(self, mock_move, job_offer):
+    def test_check_job_quota_cancelled(self, mock_move, job_offer):
         job_offer.status = JobOffer.STATUS_CHOICES.cancelled
-        res = job_offer.check_vacancy_quota(True)
+        res = job_offer.check_job_quota(True)
 
         assert not res
         assert job_offer.status == JobOffer.STATUS_CHOICES.cancelled
 
     @patch.object(JobOffer, 'move_candidate_to_carrier_list')
-    def test_check_vacancy_quota_has_accepted_gt_workers(self, mock_move, accepted_jo, job_offer):
-        res = job_offer.check_vacancy_quota(True)
+    def test_check_job_quota_has_accepted_gt_workers(self, mock_move, accepted_jo, job_offer):
+        res = job_offer.check_job_quota(True)
 
         assert not res
         assert job_offer.status == JobOffer.STATUS_CHOICES.cancelled
@@ -567,10 +567,10 @@ class TestJobOffer:
     @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 6)))
     @patch.object(JobOffer, 'move_candidate_to_carrier_list')
     @patch('r3sourcer.apps.hr.models.hr_utils')
-    def test_check_vacancy_quota_has_accepted_gt_workers_gt_now(
+    def test_check_job_quota_has_accepted_gt_workers_gt_now(
         self, mock_task, mock_move, accepted_jo, job_offer
     ):
-        res = job_offer.check_vacancy_quota(True)
+        res = job_offer.check_job_quota(True)
 
         assert not res
         assert job_offer.status == JobOffer.STATUS_CHOICES.cancelled
@@ -579,7 +579,7 @@ class TestJobOffer:
     @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 6)))
     @patch.object(JobOffer, 'move_candidate_to_carrier_list')
     @patch('r3sourcer.apps.hr.models.hr_utils')
-    def test_check_vacancy_quota_has_accepted_gt_workers_gt_now_with_sms_sent(
+    def test_check_job_quota_has_accepted_gt_workers_gt_now_with_sms_sent(
         self, mock_task, mock_move, shift, candidate_contact, job_offer, fake_sms
     ):
         accepted_jo = JobOffer.objects.create(
@@ -588,7 +588,7 @@ class TestJobOffer:
             status=JobOffer.STATUS_CHOICES.accepted,
             offer_sent_by_sms=fake_sms,
         )
-        res = job_offer.check_vacancy_quota(True)
+        res = job_offer.check_job_quota(True)
 
         assert not res
         assert job_offer.status == JobOffer.STATUS_CHOICES.cancelled
@@ -597,7 +597,7 @@ class TestJobOffer:
     @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 6)))
     @patch.object(JobOffer, 'move_candidate_to_carrier_list')
     @patch('r3sourcer.apps.hr.models.hr_utils')
-    def test_check_vacancy_quota_has_accepted_gt_workers_gt_now_with_sms_sent_self(
+    def test_check_job_quota_has_accepted_gt_workers_gt_now_with_sms_sent_self(
         self, mock_task, mock_move, shift, candidate_contact, fake_sms
     ):
         accepted_jo = JobOffer.objects.create(
@@ -606,14 +606,14 @@ class TestJobOffer:
             status=JobOffer.STATUS_CHOICES.accepted,
             offer_sent_by_sms=fake_sms,
         )
-        res = accepted_jo.check_vacancy_quota(True)
+        res = accepted_jo.check_job_quota(True)
 
         assert not res
         assert accepted_jo.status == JobOffer.STATUS_CHOICES.cancelled
         mock_task.send_jo_rejection.assert_called_with(accepted_jo)
 
-    def test_check_vacancy_quota_not_initial(self, job_offer):
-        assert job_offer.check_vacancy_quota(False)
+    def test_check_job_quota_not_initial(self, job_offer):
+        assert job_offer.check_job_quota(False)
 
 
 class TestTimeSheetIssue:
@@ -753,8 +753,8 @@ class TestFavouriteList:
 
         assert favourite_list.company == master_company
 
-    def test_save_set_jobsite(self, favourite_list, vacancy, jobsite, master_company):
-        favourite_list.vacancy = vacancy
+    def test_save_set_jobsite(self, favourite_list, job, jobsite, master_company):
+        favourite_list.job = job
         favourite_list.clean()
         favourite_list.save()
 

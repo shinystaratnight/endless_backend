@@ -64,9 +64,9 @@ class TimeSheetEndpoint(ApiEndpoint):
             'delim': ' / ',
             'fields': ({
                 'type': constants.FIELD_LINK,
-                'field': 'vacancy',
-                'text': _('Vacancy'),
-                'endpoint': format_lazy('{}{{vacancy.id}}', api_reverse_lazy('hr/vacancies')),
+                'field': 'job',
+                'text': _('Job'),
+                'endpoint': format_lazy('{}{{job.id}}', api_reverse_lazy('hr/jobs')),
             }, ),
         }, {
             'label': _('Shift started/ended'),

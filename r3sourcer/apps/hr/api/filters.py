@@ -14,8 +14,8 @@ from r3sourcer.apps.hr import models as hr_models
 class TimesheetFilter(FilterSet):
     candidate = UUIDFilter(method='filter_candidate')
     approved = BooleanFilter(method='filter_approved')
-    company = UUIDFilter('job_offer__shift__date__vacancy__customer_company_id')
-    jobsite = UUIDFilter('job_offer__shift__date__vacancy__jobsite_id')
+    company = UUIDFilter('job_offer__shift__date__job__customer_company_id')
+    jobsite = UUIDFilter('job_offer__shift__date__job__jobsite_id')
 
     class Meta:
         model = hr_models.TimeSheet
@@ -28,12 +28,12 @@ class TimesheetFilter(FilterSet):
 
     def filter_company(self, queryset, name, value):
         return queryset.filter(
-            job_offer__shift__date__vacancy__customer_company_id=value
+            job_offer__shift__date__job__customer_company_id=value
         )
 
     def filter_jobsite(self, queryset, name, value):
         return queryset.filter(
-            job_offer__shift__date__vacancy__jobsite_id=value
+            job_offer__shift__date__job__jobsite_id=value
         )
 
     def filter_approved(self, queryset, name, value):
@@ -79,15 +79,15 @@ class TimesheetFilter(FilterSet):
         return qs_unapproved
 
 
-class VacancyFilter(FilterSet):
+class JobFilter(FilterSet):
     active_states = NumberFilter(method='filter_state')
 
     class Meta:
-        model = hr_models.Vacancy
+        model = hr_models.Job
         fields = ['active_states']
 
     def _fetch_workflow_objects(self, value):  # pragma: no cover
-        content_type = ContentType.objects.get_for_model(hr_models.Vacancy)
+        content_type = ContentType.objects.get_for_model(hr_models.Job)
         objects = core_models.WorkflowObject.objects.filter(
             state__number=value,
             state__workflow__model=content_type,
@@ -102,25 +102,25 @@ class VacancyFilter(FilterSet):
 
 
 class ShiftFilter(FilterSet):
-    vacancy = UUIDFilter(method='filter_vacancy')
+    job = UUIDFilter(method='filter_job')
 
     class Meta:
         model = hr_models.Shift
-        fields = ['vacancy', 'date']
+        fields = ['job', 'date']
 
-    def filter_vacancy(self, queryset, name, value):
-        return queryset.filter(date__vacancy_id=value)
+    def filter_job(self, queryset, name, value):
+        return queryset.filter(date__job_id=value)
 
 
 class JobOfferFilter(FilterSet):
-    vacancy = UUIDFilter(method='filter_vacancy')
+    job = UUIDFilter(method='filter_job')
 
     class Meta:
         model = hr_models.Shift
-        fields = ['vacancy']
+        fields = ['job']
 
-    def filter_vacancy(self, queryset, name, value):
-        return queryset.filter(shift__date__vacancy_id=value)
+    def filter_job(self, queryset, name, value):
+        return queryset.filter(shift__date__job_id=value)
 
 
 class JobsiteFilter(FilterSet):

@@ -32,10 +32,10 @@ class InvoiceSync(BaseSync):
 
         for invoice_line in invoice.invoice_lines.all():
             activity_mapper = ActivityMapper()
-            vacancy = invoice_line.timesheet.job_offer.vacancy
-            skill = vacancy.position
-            activity_display_id = str(vacancy.id)[:30]
-            position_parts = vacancy.position.name.split(' ')
+            job = invoice_line.timesheet.job_offer.job
+            skill = job.position
+            activity_display_id = str(job.id)[:30]
+            position_parts = job.position.name.split(' ')
             price_list = invoice.customer_company.price_lists.get(effective=True)
             rate = PriceListRate.objects.filter(price_list=price_list, skill=skill)
             name = ' '.join([part[:4] for part in position_parts])
@@ -53,7 +53,7 @@ class InvoiceSync(BaseSync):
                 rate=rate,
                 tax_code=tax_codes[invoice_line.vat.name],
                 income_account=income_account_resp['UID'],
-                description='{} {}'.format(vacancy.position, rate if rate else 'Base Rate')
+                description='{} {}'.format(job.position, rate if rate else 'Base Rate')
             )
             activity_response = self._get_object_by_field(activity_display_id,
                                                           self.client.api.TimeBilling.Activity,
