@@ -248,8 +248,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'candidate_contact': '{id}'
             },
             'collapsed': True,
-            'label': _('Vacancy offers'),
-            'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/vacancyoffers')),
+            'label': _('Job Offers'),
+            'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/joboffers')),
         }, {
             'query': {
                 'candidate_contact': '{id}'

@@ -32,7 +32,7 @@ class InvoiceSync(BaseSync):
 
         for invoice_line in invoice.invoice_lines.all():
             activity_mapper = ActivityMapper()
-            vacancy = invoice_line.timesheet.vacancy_offer.vacancy
+            vacancy = invoice_line.timesheet.job_offer.vacancy
             skill = vacancy.position
             activity_display_id = str(vacancy.id)[:30]
             position_parts = vacancy.position.name.split(' ')

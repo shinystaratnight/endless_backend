@@ -94,11 +94,11 @@ class FavouriteListEndpoint(ApiEndpoint):
     ]
 
 
-class VacancyOfferEndpoint(ApiEndpoint):
-    model = hr_models.VacancyOffer
-    base_viewset = hr_viewsets.VacancyOfferViewset
-    serializer = vacancy_serializers.VacancyOfferSerializer
-    filter_class = hr_filters.VacancyOfferFilter
+class JobOfferEndpoint(ApiEndpoint):
+    model = hr_models.JobOffer
+    base_viewset = hr_viewsets.JobOfferViewset
+    serializer = vacancy_serializers.JobOfferSerializer
+    filter_class = hr_filters.JobOfferFilter
 
     list_display = ('shift.date.shift_date', 'status')
     list_editable = (
@@ -160,7 +160,7 @@ class VacancyOfferEndpoint(ApiEndpoint):
                 'icon': 'fa-check-circle',
                 'field': 'has_accept_action',
                 'action': constants.DEFAULT_ACTION_POST,
-                'endpoint': format_lazy('{}{{id}}/accept', api_reverse_lazy('hr/vacancyoffers')),
+                'endpoint': format_lazy('{}{{id}}/accept', api_reverse_lazy('hr/joboffers')),
                 'text_color': '#5cb85c',
                 'title': _('Accept'),
             }, {
@@ -168,7 +168,7 @@ class VacancyOfferEndpoint(ApiEndpoint):
                 'icon': 'fa-minus-circle',
                 'field': 'has_cancel_action',
                 'action': constants.DEFAULT_ACTION_POST,
-                'endpoint': format_lazy('{}{{id}}/cancel', api_reverse_lazy('hr/vacancyoffers')),
+                'endpoint': format_lazy('{}{{id}}/cancel', api_reverse_lazy('hr/joboffers')),
                 'text_color': '#f32700',
                 'title': _('Cancel'),
             }, {
@@ -176,9 +176,9 @@ class VacancyOfferEndpoint(ApiEndpoint):
                 'icon': 'fa-commenting',
                 'field': 'has_resend_action',
                 'action': constants.DEFAULT_ACTION_POST,
-                'endpoint': format_lazy('{}{{id}}/resend', api_reverse_lazy('hr/vacancyoffers')),
+                'endpoint': format_lazy('{}{{id}}/resend', api_reverse_lazy('hr/joboffers')),
                 'text_color': '#f0ad4e',
-                'title': _('Resend VO'),
+                'title': _('Resend JO'),
             }, constants.BUTTON_DELETE),
         }
     )
@@ -189,8 +189,8 @@ class VacancyOfferEndpoint(ApiEndpoint):
 class CarrierListEndpoint(ApiEndpoint):
     model = hr_models.CarrierList
 
-    list_display = ('candidate_contact', 'target_date', 'confirmed_available', 'vacancy_offer')
-    list_editable = ('target_date', 'confirmed_available', 'vacancy_offer')
+    list_display = ('candidate_contact', 'target_date', 'confirmed_available', 'job_offer')
+    list_editable = ('target_date', 'confirmed_available', 'job_offer')
 
 
 class BlackListEndpoint(ApiEndpoint):
@@ -269,9 +269,9 @@ class VacancyEndpoint(ApiEndpoint):
         'fields': ({
             'type': constants.FIELD_BUTTON,
             'icon': 'fa-times',
-            'text': _('Cancel Vacancy Dates'),
+            'text': _('Cancel Shift Dates'),
             'action': constants.DEFAULT_ACTION_EDIT,
-            'hidden': 'no_vds',
+            'hidden': 'no_sds',
             'field': 'id',
         }, {
             'type': constants.FIELD_BUTTON,
@@ -425,9 +425,9 @@ class VacancyEndpoint(ApiEndpoint):
         'query': {
             'vacancy': '{id}',
         },
-        'label': _('Vacancy Dates'),
+        'label': _('Shift Dates'),
         'add_label': _('Add'),
-        'add_endpoint': api_reverse_lazy('hr/vacancydates'),
+        'add_endpoint': api_reverse_lazy('hr/shiftdates'),
         'endpoint': api_reverse_lazy('hr/shifts'),
         'prefilled': {
             'vacancy': '{id}',
@@ -441,10 +441,10 @@ class VacancyEndpoint(ApiEndpoint):
         'query': {
             'vacancy': '{id}',
         },
-        'label': _('Vacancy Offers'),
+        'label': _('Job Offers'),
         'add_label': _('Fill in'),
         'add_endpoint': format_lazy('{}{{id}}/fillin/', api_reverse_lazy('hr/vacancies')),
-        'endpoint': api_reverse_lazy('hr/vacancyoffers'),
+        'endpoint': api_reverse_lazy('hr/joboffers'),
         'add_metadata_query': {
             'type': 'list',
         },
@@ -488,7 +488,7 @@ class VacancyEndpoint(ApiEndpoint):
         list_filter = [{
                 'type': constants.FIELD_DATE,
                 'label': _('Shift start date'),
-                'field': 'vacancy_dates.shift_date',
+                'field': 'shift_dates.shift_date',
                 'distinct': True,
             }, 'jobsite', {
                 'label': _('Skill'),
@@ -551,7 +551,7 @@ class ShiftEndpoint(ApiEndpoint):
                 'fields': (constants.BUTTON_DELETE,)
             },
         ),
-        'vacancy_date': (
+        'shift_date': (
             {
                 'type': constants.FIELD_TIME,
                 'field': 'time',
@@ -577,8 +577,8 @@ class ShiftEndpoint(ApiEndpoint):
     list_editable_buttons = []
 
 
-class VacancyDateEndpoint(ApiEndpoint):
-    model = hr_models.VacancyDate
+class ShiftDateEndpoint(ApiEndpoint):
+    model = hr_models.ShiftDate
 
     fieldsets = {
         'default': (
@@ -590,7 +590,7 @@ class VacancyDateEndpoint(ApiEndpoint):
                     'date': '{id}',
                 },
                 'metadata_query': {
-                    'editable_type': 'vacancy_date',
+                    'editable_type': 'shift_date',
                 },
                 'label': _('Shifts'),
                 'add_label': _('Add'),
@@ -616,7 +616,7 @@ class VacancyDateEndpoint(ApiEndpoint):
                     'date': '{id}',
                 },
                 'metadata_query': {
-                    'editable_type': 'vacancy_date',
+                    'editable_type': 'shift_date',
                 },
                 'label': _('Shifts'),
                 'add_label': _('Add'),
@@ -635,7 +635,7 @@ class VacancyDateEndpoint(ApiEndpoint):
 
 
 class CandidateJobOfferEndpoint(ApiEndpoint):
-    model = hr_models.VacancyOffer
+    model = hr_models.JobOffer
     serializer = vacancy_serializers.CandidateJobOfferSerializer
     base_viewset = hr_viewsets.JobOffersCandidateViewset
 
@@ -688,7 +688,7 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
                     'icon': 'fa-check-circle',
                     'field': 'hide_buttons',
                     'action': constants.DEFAULT_ACTION_POST,
-                    'endpoint': format_lazy('{}{{id}}/accept', api_reverse_lazy('hr/vacancyoffers')),
+                    'endpoint': format_lazy('{}{{id}}/accept', api_reverse_lazy('hr/joboffers')),
                     'color': 'success',
                     'text': _('Accept'),
                     'hidden': 'hide_buttons',
@@ -697,7 +697,7 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
                     'icon': 'fa-times-circle',
                     'field': 'hide_buttons',
                     'action': constants.DEFAULT_ACTION_POST,
-                    'endpoint': format_lazy('{}{{id}}/cancel', api_reverse_lazy('hr/vacancyoffers')),
+                    'endpoint': format_lazy('{}{{id}}/cancel', api_reverse_lazy('hr/joboffers')),
                     'text': _('Decline'),
                     'color': 'danger',
                     'hidden': 'hide_buttons',
@@ -725,12 +725,12 @@ router.register(endpoint=JobsiteEndpoint())
 router.register(hr_models.JobsiteUnavailability)
 router.register(endpoint=JobsiteAddressEndpoint())
 router.register(endpoint=VacancyEndpoint())
-router.register(endpoint=VacancyDateEndpoint())
+router.register(endpoint=ShiftDateEndpoint())
 router.register(endpoint=ShiftEndpoint())
 router.register(endpoint=TimeSheetEndpoint())
 router.register(endpoint=ExtranetCandidateTimesheetEndpoint(), url='hr/timesheets-candidate')
 router.register(hr_models.TimeSheetIssue)
-router.register(endpoint=VacancyOfferEndpoint())
+router.register(endpoint=JobOfferEndpoint())
 router.register(endpoint=CandidateEvaluationEndpoint())
 router.register(endpoint=BlackListEndpoint())
 router.register(endpoint=FavouriteListEndpoint())

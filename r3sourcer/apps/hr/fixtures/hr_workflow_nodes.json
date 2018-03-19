@@ -1217,7 +1217,7 @@
                 ],
                 "required_functions": [
                     "and",
-                    "is_all_vd_filled"
+                    "is_all_sd_filled"
                 ]
             },
             "hardlock": true
@@ -1289,7 +1289,7 @@
                 ],
                 "required_functions": [
                     "and",
-                    "is_all_vd_filled",
+                    "is_all_sd_filled",
                     "is_all_timesheets_approved"
                 ],
                 "required_states": [

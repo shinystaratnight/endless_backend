@@ -153,9 +153,9 @@ class Jobsite(
         if not just_added and changed_primary_contact:
             # update supervisor related future timesheets
             for vacancy in self.vacancies.all():
-                for vd in vacancy.vacancy_dates.all():
+                for sd in vacancy.shift_dates.all():
                     TimeSheet.objects.filter(
-                        vacancy_offer__in=vd.vacancy_offers,
+                        job_offer__in=sd.job_offers,
                         shift_started_at__date__gte=hr_utils.tomorrow()
                     ).update(supervisor=self.primary_contact)
 
@@ -320,11 +320,11 @@ class Vacancy(core_models.AbstractBaseOrder):
         )
     get_title.short_description = _('Title')
 
-    def get_vacancy_offers(self):
-        return VacancyOffer.objects.filter(shift__date__vacancy=self)
+    def get_job_offers(self):
+        return JobOffer.objects.filter(shift__date__vacancy=self)
 
     def get_total_bookings_count(self):
-        return self.get_vacancy_offers().distinct('candidate_contact').count()
+        return self.get_job_offers().distinct('candidate_contact').count()
     get_total_bookings_count.short_description = _('Bookings')
 
     def is_fulfilled(self):
@@ -336,19 +336,19 @@ class Vacancy(core_models.AbstractBaseOrder):
         result = NOT_FULFILLED
         now = timezone.now()
         today = now.date()
-        next_date = self.vacancy_dates.filter(
+        next_date = self.shift_dates.filter(
             shift_date__gt=today, cancelled=False
         ).order_by('shift_date').first()
 
         if next_date is not None:
             result = next_date.is_fulfilled()
-            if result == NOT_FULFILLED and next_date.vacancy_offers.exists():
-                unaccepted_vos = next_date.vacancy_offers.filter(
-                    status=VacancyOffer.STATUS_CHOICES.undefined
+            if result == NOT_FULFILLED and next_date.job_offers.exists():
+                unaccepted_jos = next_date.job_offers.filter(
+                    status=JobOffer.STATUS_CHOICES.undefined
                 )
 
-                for unaccepted_vo in unaccepted_vos.all():
-                    todays_timesheets = unaccepted_vo.time_sheets.filter(
+                for unaccepted_jo in unaccepted_jos.all():
+                    todays_timesheets = unaccepted_jo.time_sheets.filter(
                         going_to_work_confirmation=True,
                         shift_started_at__lte=now,
                         shift_ended_at__gte=now + timedelta(hours=1),
@@ -370,27 +370,27 @@ class Vacancy(core_models.AbstractBaseOrder):
 
         result = NOT_FULFILLED
         today = timezone.localtime(timezone.now()).date()
-        vd_today = self.vacancy_dates.filter(shift_date=today, cancelled=False).first()
-        if vd_today:
-            result = vd_today.is_fulfilled()
+        sd_today = self.shift_dates.filter(shift_date=today, cancelled=False).first()
+        if sd_today:
+            result = sd_today.is_fulfilled()
         else:
             result = IRRELEVANT
         return result
 
     def can_fillin(self):
-        not_filled_future_vd = False
+        not_filled_future_sd = False
         today = timezone.localtime(timezone.now()).date()
-        future_vds = self.vacancy_dates.filter(shift_date__gte=today)
-        for vd in future_vds:
-            if vd.is_fulfilled() == NOT_FULFILLED:
-                not_filled_future_vd = True
+        future_sds = self.shift_dates.filter(shift_date__gte=today)
+        for sd in future_sds:
+            if sd.is_fulfilled() == NOT_FULFILLED:
+                not_filled_future_sd = True
                 break
 
         # FIXME: change to new workflow
         # return self.order.get_state() not in [OrderState.STATE_CHOICES.cancelled,
         #                                       OrderState.STATE_CHOICES.completed,
         #                                       OrderState.STATE_CHOICES.new] and \
-        return self.is_fulfilled() in [NOT_FULFILLED, LIKELY_FULFILLED] or not_filled_future_vd
+        return self.is_fulfilled() in [NOT_FULFILLED, LIKELY_FULFILLED] or not_filled_future_sd
 
     @workflow_function
     def has_active_price_list_and_rate(self):
@@ -412,30 +412,30 @@ class Vacancy(core_models.AbstractBaseOrder):
     is_start_date_set.short_description = _('Work Start Date')
 
     @workflow_function
-    def is_all_vd_filled(self):
-        for vd in self.vacancy_dates.all():
-            if vd.is_fulfilled() != FULFILLED:
+    def is_all_sd_filled(self):
+        for sd in self.shift_dates.all():
+            if sd.is_fulfilled() != FULFILLED:
                 return False
 
         return True
-    is_all_vd_filled.short_description = _('Fill in all Vacancy Dates')
+    is_all_sd_filled.short_description = _('Fill in all Shift Dates')
 
     @workflow_function
     def is_all_timesheets_approved(self):
         return not TimeSheet.objects.filter(
-            vacancy_offer__shift__date__vacancy=self,
+            job_offer__shift__date__vacancy=self,
             supervisor_approved_at__isnull=True
         ).exists()
     is_all_timesheets_approved.short_description = _('All Time Sheets approvment')
 
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
-            vd, _ = VacancyDate.objects.get_or_create(
+            sd, _ = ShiftDate.objects.get_or_create(
                 vacancy=self, shift_date=self.work_start_date,
                 workers=self.workers, hourly_rate=self.hourly_rate_default
             )
 
-            Shift.objects.get_or_create(date=vd, time=hr_utils.today_7_am, workers=self.workers)
+            Shift.objects.get_or_create(date=sd, time=hr_utils.today_7_am, workers=self.workers)
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
@@ -464,11 +464,11 @@ class Vacancy(core_models.AbstractBaseOrder):
         return None
 
 
-class VacancyDate(core_models.UUIDModel):
+class ShiftDate(core_models.UUIDModel):
 
     vacancy = models.ForeignKey(
         Vacancy,
-        related_name="vacancy_dates",
+        related_name="shift_dates",
         on_delete=models.CASCADE,
         verbose_name=_("Vacancy")
     )
@@ -485,7 +485,7 @@ class VacancyDate(core_models.UUIDModel):
 
     hourly_rate = models.ForeignKey(
         SkillBaseRate,
-        related_name="vacancy_dates",
+        related_name="shift_dates",
         on_delete=models.SET_NULL,
         verbose_name=_("Hourly rate"),
         null=True,
@@ -497,8 +497,8 @@ class VacancyDate(core_models.UUIDModel):
     )
 
     class Meta:
-        verbose_name = _("Vacancy Date")
-        verbose_name_plural = _("Vacancy dates")
+        verbose_name = _("Shift Date")
+        verbose_name_plural = _("Shift Dates")
 
     def __str__(self):
         return '{}, {}: {}'.format(
@@ -510,15 +510,15 @@ class VacancyDate(core_models.UUIDModel):
         )
 
     @property
-    def vacancy_offers(self):
-        return VacancyOffer.objects.filter(shift__date=self)
+    def job_offers(self):
+        return JobOffer.objects.filter(shift__date=self)
 
     def is_fulfilled(self):
         result = NOT_FULFILLED
-        vos = self.vacancy_offers
-        accepted_vos = vos.filter(status=VacancyOffer.STATUS_CHOICES.accepted)
+        jos = self.job_offers
+        accepted_jos = jos.filter(status=JobOffer.STATUS_CHOICES.accepted)
 
-        if vos.exists() and self.workers <= accepted_vos.count():
+        if jos.exists() and self.workers <= accepted_jos.count():
             result = FULFILLED
         return result
     is_fulfilled.short_description = _('Fulfilled')
@@ -528,7 +528,7 @@ class Shift(core_models.UUIDModel):
     time = models.TimeField(verbose_name=_("Time"))
 
     date = models.ForeignKey(
-        VacancyDate,
+        ShiftDate,
         related_name="shifts",
         on_delete=models.CASCADE,
         verbose_name=_("Date")
@@ -565,15 +565,15 @@ class Shift(core_models.UUIDModel):
 
     def is_fulfilled(self):
         result = NOT_FULFILLED
-        vos = self.vacancy_offers
-        accepted_vos = vos.filter(status=VacancyOffer.STATUS_CHOICES.accepted)
+        jos = self.job_offers
+        accepted_jos = jos.filter(status=JobOffer.STATUS_CHOICES.accepted)
 
-        if vos.exists() and self.workers <= accepted_vos.count():
+        if jos.exists() and self.workers <= accepted_jos.count():
             result = FULFILLED
         return result
 
 
-class VacancyOffer(core_models.UUIDModel):
+class JobOffer(core_models.UUIDModel):
 
     sent_sms_field = 'offer_sent_by_sms'
     receive_sms_field = 'reply_received_by_sms'
@@ -581,7 +581,7 @@ class VacancyOffer(core_models.UUIDModel):
     shift = models.ForeignKey(
         Shift,
         on_delete=models.CASCADE,
-        related_name='vacancy_offers',
+        related_name='job_offers',
         verbose_name=_("Shift")
     )
 
@@ -589,7 +589,7 @@ class VacancyOffer(core_models.UUIDModel):
         CandidateContact,
         verbose_name=_("Candidate contact"),
         on_delete=models.PROTECT,
-        related_name='vacancy_offers'
+        related_name='job_offers'
     )
 
     offer_sent_by_sms = models.ForeignKey(
@@ -598,13 +598,13 @@ class VacancyOffer(core_models.UUIDModel):
         blank=True,
         verbose_name=_("Offer sent by sms"),
         on_delete=models.PROTECT,
-        related_name='vacancy_offers'
+        related_name='job_offers'
     )
 
     reply_received_by_sms = models.ForeignKey(
         SMSMessage,
         verbose_name=_("Reply received by sms"),
-        related_name='reply_vacancy_offers',
+        related_name='reply_job_offers',
         on_delete=models.PROTECT,
         null=True,
         blank=True
@@ -629,8 +629,8 @@ class VacancyOffer(core_models.UUIDModel):
     )
 
     class Meta:
-        verbose_name = _("Vacancy offer")
-        verbose_name_plural = _("Vacancy offers")
+        verbose_name = _("Job Offer")
+        verbose_name_plural = _("Job Offers")
 
     def __str__(self):
         return '{}'.format(date_format(
@@ -648,26 +648,26 @@ class VacancyOffer(core_models.UUIDModel):
         )
 
     def is_accepted(self):
-        return self.status == VacancyOffer.STATUS_CHOICES.accepted
+        return self.status == JobOffer.STATUS_CHOICES.accepted
 
     def is_cancelled(self):
-        return self.status == VacancyOffer.STATUS_CHOICES.cancelled
+        return self.status == JobOffer.STATUS_CHOICES.cancelled
 
     def is_recurring(self):
-        return self.vacancy.get_vacancy_offers().filter(
+        return self.vacancy.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__date__shift_date__lt=self.shift.date.shift_date,
-            status=VacancyOffer.STATUS_CHOICES.accepted
+            status=JobOffer.STATUS_CHOICES.accepted
         ).exists()
 
     def is_first(self):
-        return not self.vacancy.get_vacancy_offers().filter(
+        return not self.vacancy.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__date__shift_date__lt=self.shift.date.shift_date
         ).exists()
 
     def get_future_offers(self):
-        return self.vacancy.get_vacancy_offers().filter(
+        return self.vacancy.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__date__shift_date__gt=self.shift.date.shift_date
         )
@@ -701,10 +701,10 @@ class VacancyOffer(core_models.UUIDModel):
 
         if cl:
             if new_offer:
-                cl.vacancy_offer = self
+                cl.job_offer = self
             else:
-                cl.referral_vacancy_offer = self
-                cl.vacancy_offer = None
+                cl.referral_job_offer = self
+                cl.job_offer = None
             cl.save()
 
     def get_timesheets_with_going_work_unset_or_timeout(self, check_date=None):
@@ -713,7 +713,7 @@ class VacancyOffer(core_models.UUIDModel):
             check_date = now.date()
 
         bookings_with_timesheets = TimeSheet.objects.filter(
-            vacancy_offer=self,
+            job_offer=self,
             shift_started_at__date=check_date,
             going_to_work_confirmation__isnull=True,
             going_to_work_sent_sms__check_reply_at__gte=now
@@ -723,25 +723,25 @@ class VacancyOffer(core_models.UUIDModel):
     def has_timesheets_with_going_work_unset_or_timeout(self, check_date=None):
         return self.get_timesheets_with_going_work_unset_or_timeout(check_date).exists()
 
-    def has_future_accepted_vo(self):
+    def has_future_accepted_jo(self):
         """
-        Check if there are future accepted VO for the candidate/vacancy
+        Check if there are future accepted JO for the candidate/vacancy
         :return: True or False
         """
-        return self.vacancy.get_vacancy_offers().filter(
+        return self.vacancy.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__time__gt=self.shift.time,
             shift__date__shift_date__gte=self.shift.date.shift_date,
             status=self.STATUS_CHOICES.accepted
         ).exists()
 
-    def has_previous_vo(self):
+    def has_previous_jo(self):
         """
-        Check if there are VO for the candidate/vacancy earlier than this one
+        Check if there are JO for the candidate/vacancy earlier than this one
         :return: True or False
         """
         now = timezone.now()
-        return self.vacancy.get_vacancy_offers().filter(
+        return self.vacancy.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__time__gt=now,
             shift__date__shift_date__gte=now.date(),
@@ -773,8 +773,8 @@ class VacancyOffer(core_models.UUIDModel):
 
         try:
             time_sheet = TimeSheet.objects.filter(
-                vacancy_offer__shift__date__vacancy=self.vacancy,
-                vacancy_offer__candidate_contact=self.candidate_contact,
+                job_offer__shift__date__vacancy=self.vacancy,
+                job_offer__candidate_contact=self.candidate_contact,
                 shift_started_at__gt=now, going_to_work_confirmation=True
             ).earliest('shift_started_at')
         except TimeSheet.DoesNotExist:
@@ -782,17 +782,17 @@ class VacancyOffer(core_models.UUIDModel):
 
         if time_sheet is not None:
             if (time_sheet.shift_started_at - now).total_seconds() > 3600:
-                from r3sourcer.apps.hr.tasks import send_vacancy_offer_cancelled_sms
-                send_vacancy_offer_cancelled_sms.delay(self.pk)
+                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_sms
+                send_job_offer_cancelled_sms.delay(self.pk)
             else:
-                from r3sourcer.apps.hr.tasks import send_vacancy_offer_cancelled_lt_one_hour_sms
-                send_vacancy_offer_cancelled_lt_one_hour_sms.delay(self.pk)
+                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_lt_one_hour_sms
+                send_job_offer_cancelled_lt_one_hour_sms.delay(self.pk)
                 # TODO: implement this function
                 # time_sheet.auto_fill_four_hours()
 
     def is_quota_filled(self):
-        accepted_count = self.vacancy.get_vacancy_offers().filter(
-            status=VacancyOffer.STATUS_CHOICES.accepted,
+        accepted_count = self.vacancy.get_job_offers().filter(
+            status=JobOffer.STATUS_CHOICES.accepted,
             shift__date__shift_date=self.shift.date.shift_date,
             shift__time=self.shift.time
         ).count()
@@ -802,36 +802,36 @@ class VacancyOffer(core_models.UUIDModel):
     def check_vacancy_quota(self, is_initial):
         if is_initial:
             if self.is_quota_filled() or self.is_cancelled():
-                all_vacancy_offers = self.vacancy.get_vacancy_offers()
+                all_job_offers = self.vacancy.get_job_offers()
                 now = timezone.now()
                 with transaction.atomic():
-                    # if celery worked with VO sending
-                    qs = all_vacancy_offers.filter(
+                    # if celery worked with JO sending
+                    qs = all_job_offers.filter(
                         models.Q(offer_sent_by_sms=None) | models.Q(time_sheets=None),
                         shift__date__shift_date=self.shift.date.shift_date,
                         shift__time=self.shift.time
-                    ).exclude(status=VacancyOffer.STATUS_CHOICES.accepted)
+                    ).exclude(status=JobOffer.STATUS_CHOICES.accepted)
 
-                    vo_with_sms_sent = list(qs.filter(offer_sent_by_sms__isnull=False))
+                    jo_with_sms_sent = list(qs.filter(offer_sent_by_sms__isnull=False))
 
-                    qs.update(status=VacancyOffer.STATUS_CHOICES.cancelled)
+                    qs.update(status=JobOffer.STATUS_CHOICES.cancelled)
 
                     # send placement rejection sms
-                    for sent_vo in vo_with_sms_sent:
-                        if sent_vo.id == self.id:
+                    for sent_jo in jo_with_sms_sent:
+                        if sent_jo.id == self.id:
                             continue
-                        if now <= sent_vo.start_time:
-                            hr_utils.send_vo_rejection(sent_vo)
+                        if now <= sent_jo.start_time:
+                            hr_utils.send_jo_rejection(sent_jo)
 
                 self.move_candidate_to_carrier_list()
-                self.status = VacancyOffer.STATUS_CHOICES.cancelled
+                self.status = JobOffer.STATUS_CHOICES.cancelled
 
                 if now <= self.start_time:
-                    hr_utils.send_vo_rejection(self)
+                    hr_utils.send_jo_rejection(self)
 
                 return False
             else:
-                self.status = VacancyOffer.STATUS_CHOICES.accepted
+                self.status = JobOffer.STATUS_CHOICES.accepted
                 return True
         else:
             return True
@@ -842,23 +842,23 @@ class VacancyOffer(core_models.UUIDModel):
         is_accepted = self.is_accepted()
 
         if self.is_cancelled() and not just_added:
-            orig = VacancyOffer.objects.get(pk=self.pk)
+            orig = JobOffer.objects.get(pk=self.pk)
             if orig.is_accepted():
                 orig.move_candidate_to_carrier_list(confirmed_available=True)
 
         if self.is_accepted() and not just_added:
-            orig = VacancyOffer.objects.get(pk=self.pk)
+            orig = JobOffer.objects.get(pk=self.pk)
             is_accepted = orig.is_accepted() != self.is_accepted()
 
         create_time_sheet = False
         if is_accepted:
             create_time_sheet = self.check_vacancy_quota(is_initial)
 
-        super(VacancyOffer, self).save(*args, **kw)
+        super(JobOffer, self).save(*args, **kw)
 
         # TODO: implement this
         # if create_time_sheet:
-        #     TimeSheet.get_or_create_for_vacancy_offer_accepted(self)
+        #     TimeSheet.get_or_create_for_job_offer_accepted(self)
 
         if just_added:
             if not self.is_cancelled() and CarrierList.objects.filter(
@@ -866,7 +866,7 @@ class VacancyOffer(core_models.UUIDModel):
                     target_date=self.start_time).exists():
                 self.move_candidate_to_carrier_list(new_offer=True)
 
-            task = hr_utils.get_vo_sms_sending_task(self)
+            task = hr_utils.get_jo_sms_sending_task(self)
 
             if task:
                 now = timezone.localtime(timezone.now())
@@ -892,7 +892,7 @@ class VacancyOffer(core_models.UUIDModel):
                     elif eta <= now or eta >= target_date_and_time - timedelta(hours=1, minutes=30):
                         eta = now + timedelta(seconds=10)
                 else:
-                    if not self.has_future_accepted_vo() and not self.has_previous_vo()\
+                    if not self.has_future_accepted_jo() and not self.has_previous_jo()\
                             and target_date_and_time <= now + timedelta(days=4):
                         eta = now + timedelta(seconds=10)
                     else:
@@ -915,11 +915,11 @@ class TimeSheet(
     sent_sms_field = 'going_to_work_sent_sms'
     receive_sms_field = 'going_to_work_reply_sms'
 
-    vacancy_offer = models.ForeignKey(
-        VacancyOffer,
+    job_offer = models.ForeignKey(
+        JobOffer,
         on_delete=models.CASCADE,
         related_name="time_sheets",
-        verbose_name=_("Vacancy Offer")
+        verbose_name=_("Job Offer")
     )
 
     going_to_work_sent_sms = models.ForeignKey(
@@ -1050,7 +1050,7 @@ class TimeSheet(
     class Meta:
         verbose_name = _("Timesheet Entry")
         verbose_name_plural = _("Timesheet Entries")
-        unique_together = ("vacancy_offer", "shift_started_at")
+        unique_together = ("job_offer", "shift_started_at")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1073,57 +1073,55 @@ class TimeSheet(
             if self.supervisor_approved_at else ''
         )
 
-    def get_vacancy_offer(self):
-        return self.vacancy_offer
+    def get_job_offer(self):
+        return self.job_offer
 
     @property
     def master_company(self):
-        return self.vacancy_offer.shift.date.vacancy.jobsite.master_company
+        return self.job_offer.shift.date.vacancy.jobsite.master_company
 
     @property
     def regular_company(self):
-        return self.vacancy_offer.shift.date.vacancy.jobsite.jobsite_addresses.first().regular_company
+        return self.job_offer.shift.date.vacancy.jobsite.jobsite_addresses.first().regular_company
 
     @classmethod
-    def get_or_create_for_vacancy_offer_accepted(cls, vacancy_offer):
+    def get_or_create_for_job_offer_accepted(cls, job_offer):
         data = {
-            'vacancy_offer': vacancy_offer,
-            'shift_started_at': vacancy_offer.start_time,
-            'break_started_at': vacancy_offer.start_time + timedelta(hours=5),
-            'break_ended_at':
-                vacancy_offer.start_time + timedelta(hours=5, minutes=30),
-            'shift_ended_at':
-                vacancy_offer.start_time + timedelta(hours=8, minutes=30),
-            'supervisor': vacancy_offer.vacancy.jobsite.primary_contact,
-            'candidate_rate': vacancy_offer.shift.date.hourly_rate
+            'job_offer': job_offer,
+            'shift_started_at': job_offer.start_time,
+            'break_started_at': job_offer.start_time + timedelta(hours=5),
+            'break_ended_at': job_offer.start_time + timedelta(hours=5, minutes=30),
+            'shift_ended_at': job_offer.start_time + timedelta(hours=8, minutes=30),
+            'supervisor': job_offer.vacancy.jobsite.primary_contact,
+            'candidate_rate': job_offer.shift.date.hourly_rate
         }
 
         try:
             time_sheet, created = cls.objects.get_or_create(**data)
         except IntegrityError:
             time_sheet, created = cls.objects.update_or_create(
-                vacancy_offer=vacancy_offer,
-                shift_started_at=vacancy_offer.start_time,
+                job_offer=job_offer,
+                shift_started_at=job_offer.start_time,
                 defaults=data
             )
 
         now = timezone.now()
-        if now <= vacancy_offer.start_time + timedelta(hours=2):
+        if now <= job_offer.start_time + timedelta(hours=2):
             pass  # pragma: no cover
             # TODO: send sms?
             # from pepro.crm_hr.tasks import send_placement_acceptance_sms
             # send_placement_acceptance_sms.apply_async(
-            #     args=[vacancy_offer.id], countdown=10
+            #     args=[job_offer.id], countdown=10
             # )
 
         return time_sheet
 
     def get_closest_company(self):
-        return self.get_vacancy_offer().vacancy.get_closest_company()
+        return self.get_job_offer().vacancy.get_closest_company()
 
     @property
     def candidate_contact(self):
-        return self.vacancy_offer.candidate_contact
+        return self.job_offer.candidate_contact
 
     @property
     def shift_delta(self):
@@ -1250,7 +1248,7 @@ class BlackList(core_models.UUIDModel):
         with same fields values.
         """
         if self.timesheet and not self.jobsite:
-            self.jobsite = self.timesheet.vacancy_offer.vacancy.jobsite
+            self.jobsite = self.timesheet.job_offer.vacancy.jobsite
         if self.timesheet and not self.company_contact:
             self.company_contact = self.timesheet.supervisor
         if BlackList.objects.filter(
@@ -1377,17 +1375,17 @@ class CarrierList(core_models.UUIDModel):
         null=True
     )
 
-    vacancy_offer = models.ForeignKey(
-        VacancyOffer,
-        verbose_name=_('Vacancy Offer'),
+    job_offer = models.ForeignKey(
+        JobOffer,
+        verbose_name=_('Job Offer'),
         related_name='carrier_lists',
         blank=True,
         null=True
     )
 
-    referral_vacancy_offer = models.ForeignKey(
-        VacancyOffer,
-        verbose_name=_('Referral Vacancy Offer'),
+    referral_job_offer = models.ForeignKey(
+        JobOffer,
+        verbose_name=_('Referral Job Offer'),
         related_name='referral_carrier_lists',
         blank=True,
         null=True
@@ -1890,23 +1888,23 @@ class CandidateScore(core_models.UUIDModel):
         Calculate reliability score
         :return: self
         """
-        vos = VacancyOffer.objects.filter(
+        jos = JobOffer.objects.filter(
             candidate_contact=self.candidate_contact
         )
-        accepted_vos = vos.filter(
-            status=VacancyOffer.STATUS_CHOICES.accepted
+        accepted_jos = jos.filter(
+            status=JobOffer.STATUS_CHOICES.accepted
         ).count()
-        cancelled_vos = endless_logger.get_history_object_ids(
-            VacancyOffer, 'status', '2', ids=vos.values_list('id', flat=True)
+        cancelled_jos = endless_logger.get_history_object_ids(
+            JobOffer, 'status', '2', ids=jos.values_list('id', flat=True)
         )
-        absent_vos = len(endless_logger.get_history_object_ids(
-            VacancyOffer, 'status', '1', ids=cancelled_vos
+        absent_jos = len(endless_logger.get_history_object_ids(
+            JobOffer, 'status', '1', ids=cancelled_jos
         ))
 
-        total_vos = accepted_vos + absent_vos
+        total_jos = accepted_jos + absent_jos
 
         reliability = (
-            5 * (accepted_vos / total_vos) if total_vos > 4 else 0
+            5 * (accepted_jos / total_jos) if total_jos > 4 else 0
         )
         if save:
             self.reliability = reliability if reliability > 0 else None
@@ -1920,11 +1918,11 @@ class CandidateScore(core_models.UUIDModel):
         """
         loyalty = 0
         count = 1
-        vos = VacancyOffer.objects.filter(
+        jos = JobOffer.objects.filter(
             candidate_contact=self.candidate_contact
         )
-        accepted_vos = vos.filter(
-            status=VacancyOffer.STATUS_CHOICES.accepted
+        accepted_jos = jos.filter(
+            status=JobOffer.STATUS_CHOICES.accepted
         )
 
         # Calculate shift acceptance
@@ -1933,9 +1931,9 @@ class CandidateScore(core_models.UUIDModel):
         # Calculate time bonus
         time_shift = timedelta(hours=1, minutes=30)
         time_bonus = len(endless_logger.get_history_object_ids(
-            VacancyOffer, 'status', '1', ids=vos.values_list('id', flat=True)
+            JobOffer, 'status', '1', ids=jos.values_list('id', flat=True)
         ))
-        time_bonus = accepted_vos.filter(
+        time_bonus = accepted_jos.filter(
             offer_sent_by_sms__sent_at__gte=(
                 models.F('shift__date__shift_date') - time_shift
             )
@@ -1947,7 +1945,7 @@ class CandidateScore(core_models.UUIDModel):
         # Calculate distance bonus
         distances = ContactJobsiteDistanceCache.objects.filter(
             contact=self.candidate_contact.contact,
-            jobsite__in=vos.values_list(
+            jobsite__in=jos.values_list(
                 'shift__date__vacancy__jobsite', flat=True
             ),
         )

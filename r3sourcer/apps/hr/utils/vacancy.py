@@ -51,30 +51,30 @@ def get_available_candidate_list(vacancy):
 
 def get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date, shift_time):
     """
-    Get unavailable/partially available candidates for VacancyDate
+    Get unavailable/partially available candidates for ShiftDate
     :param candidate_contacts: queryset of CandidateContacts to search for
-    :param shift_start_time: shift_start_time value of VacancyDate
+    :param shift_start_time: shift_start_time value of ShiftDate
     :return: set of ids of unavailable or partially available recruits
     """
-    from r3sourcer.apps.hr.models import VacancyOffer
+    from r3sourcer.apps.hr.models import JobOffer
 
     shift_start_time = timezone.make_aware(datetime.combine(shift_date, shift_time))
 
     from_date = shift_start_time - timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
     to_date = shift_start_time + timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
     candidate_ids = list(candidate_contacts.filter(
-        Q(vacancy_offers__shift__date__shift_date=from_date.date(),
-          vacancy_offers__shift__time__gte=from_date.timetz()) |
-        Q(vacancy_offers__shift__date__shift_date__gt=from_date.date()),
-        Q(vacancy_offers__shift__date__shift_date=to_date.date(),
-          vacancy_offers__shift__time__lte=to_date.timetz()) |
-        Q(vacancy_offers__shift__date__shift_date__lt=to_date.date())
+        Q(job_offers__shift__date__shift_date=from_date.date(),
+          job_offers__shift__time__gte=from_date.timetz()) |
+        Q(job_offers__shift__date__shift_date__gt=from_date.date()),
+        Q(job_offers__shift__date__shift_date=to_date.date(),
+          job_offers__shift__time__lte=to_date.timetz()) |
+        Q(job_offers__shift__date__shift_date__lt=to_date.date())
     ).exclude(
-        vacancy_offers__status=VacancyOffer.STATUS_CHOICES.cancelled
+        job_offers__status=JobOffer.STATUS_CHOICES.cancelled
     ).values_list('id', flat=True))
 
     candidate_ids.extend(candidate_contacts.filter(
-        vacancy_offers__time_sheets__shift_started_at__range=[from_date, to_date]
+        job_offers__time_sheets__shift_started_at__range=[from_date, to_date]
     ).values_list('id', flat=True))
 
     candidate_ids.extend(candidate_contacts.filter(
@@ -83,10 +83,10 @@ def get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date,
     ).values_list('id', flat=True))
 
     candidate_ids.extend(candidate_contacts.filter(
-        carrier_lists__vacancy_offer__isnull=False,
+        carrier_lists__job_offer__isnull=False,
         carrier_lists__target_date=shift_date,
     ).exclude(
-        carrier_lists__vacancy_offer__status=VacancyOffer.STATUS_CHOICES.cancelled,
+        carrier_lists__job_offer__status=JobOffer.STATUS_CHOICES.cancelled,
     ).values_list('id', flat=True))
 
     return set(candidate_ids)

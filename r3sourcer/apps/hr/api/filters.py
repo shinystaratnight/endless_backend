@@ -14,8 +14,8 @@ from r3sourcer.apps.hr import models as hr_models
 class TimesheetFilter(FilterSet):
     candidate = UUIDFilter(method='filter_candidate')
     approved = BooleanFilter(method='filter_approved')
-    company = UUIDFilter('vacancy_offer__shift__date__vacancy__customer_company_id')
-    jobsite = UUIDFilter('vacancy_offer__shift__date__vacancy__jobsite_id')
+    company = UUIDFilter('job_offer__shift__date__vacancy__customer_company_id')
+    jobsite = UUIDFilter('job_offer__shift__date__vacancy__jobsite_id')
 
     class Meta:
         model = hr_models.TimeSheet
@@ -23,17 +23,17 @@ class TimesheetFilter(FilterSet):
 
     def filter_candidate(self, queryset, name, value):
         return queryset.filter(
-            vacancy_offer__candidate_contact_id=value
+            job_offer__candidate_contact_id=value
         )
 
     def filter_company(self, queryset, name, value):
         return queryset.filter(
-            vacancy_offer__shift__date__vacancy__customer_company_id=value
+            job_offer__shift__date__vacancy__customer_company_id=value
         )
 
     def filter_jobsite(self, queryset, name, value):
         return queryset.filter(
-            vacancy_offer__shift__date__vacancy__jobsite_id=value
+            job_offer__shift__date__vacancy__jobsite_id=value
         )
 
     def filter_approved(self, queryset, name, value):
@@ -54,7 +54,7 @@ class TimesheetFilter(FilterSet):
         if contact.company_contact.exists():
             qs_approved &= Q(supervisor_approved_at__isnull=False, supervisor__contact=contact)
         else:
-            qs_approved &= Q(candidate_submitted_at__isnull=False, vacancy_offer__candidate_contact__contact=contact)
+            qs_approved &= Q(candidate_submitted_at__isnull=False, job_offer__candidate_contact__contact=contact)
         return qs_approved
 
     @staticmethod
@@ -112,7 +112,7 @@ class ShiftFilter(FilterSet):
         return queryset.filter(date__vacancy_id=value)
 
 
-class VacancyOfferFilter(FilterSet):
+class JobOfferFilter(FilterSet):
     vacancy = UUIDFilter(method='filter_vacancy')
 
     class Meta:

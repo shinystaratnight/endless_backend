@@ -22,9 +22,9 @@ class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
         fields = '__all__'
 
 
-class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
+class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:
-        model = hr_models.VacancyOffer
+        model = hr_models.JobOffer
         fields = '__all__'
 
 

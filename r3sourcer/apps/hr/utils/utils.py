@@ -128,21 +128,21 @@ def calculate_distances_for_jobsite(contacts, jobsite):
     return True
 
 
-def get_vo_sms_sending_task(vacancy_offer):  # pragme: no cover
-    if vacancy_offer.is_first() and not vacancy_offer.is_accepted():
-        from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
-    elif vacancy_offer.is_recurring():
-        from r3sourcer.apps.hr.tasks import send_recurring_vo_confirmation_sms as task
+def get_jo_sms_sending_task(job_offer):  # pragme: no cover
+    if job_offer.is_first() and not job_offer.is_accepted():
+        from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms as task
+    elif job_offer.is_recurring():
+        from r3sourcer.apps.hr.tasks import send_recurring_jo_confirmation_sms as task
     else:
-        # FIXME: send job confirmation SMS because there is pending vacancy's VOs for candidate
-        from r3sourcer.apps.hr.tasks import send_vo_confirmation_sms as task
+        # FIXME: send job confirmation SMS because there is pending vacancy's JOs for candidate
+        from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms as task
 
     return task
 
 
-def send_vo_rejection(vacancy_offer):  # pragme: no cover
+def send_jo_rejection(job_offer):  # pragme: no cover
     from r3sourcer.apps.hr.tasks import send_placement_rejection_sms
-    send_placement_rejection_sms.delay(vacancy_offer.pk)
+    send_placement_rejection_sms.delay(job_offer.pk)
 
 
 def meters_to_km(meters):
@@ -231,13 +231,13 @@ def get_invoice(company, date_from, date_to, timesheet):
             invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to)
 
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
-            jobsite = timesheet.vacancy_offer.shift.date.vacancy.jobsite
+            jobsite = timesheet.job_offer.shift.date.vacancy.jobsite
             invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
-                                          invoice_lines__timesheet__vacancy_offer__shift__date__vacancy__jobsite=jobsite)
+                                          invoice_lines__timesheet__job_offer__shift__date__vacancy__jobsite=jobsite)
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
-            candidate = timesheet.vacancy_offer.candidate_contact
+            candidate = timesheet.job_offer.candidate_contact
             invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
-                                          invoice_lines__timesheet__vacancy_offer__candidate_contact=candidate)
+                                          invoice_lines__timesheet__job_offer__candidate_contact=candidate)
     except:
         pass
 

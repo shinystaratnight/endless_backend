@@ -50,11 +50,11 @@ def update_all_distances():
                 break
 
 
-def send_vacancy_offer_sms(vacancy_offer, tpl_id, action_sent=None):
+def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
     """
-    Send vacancy offer sms with specific template.
+    Send job offer sms with specific template.
 
-    :param vacancy_offer: VacancyOffer
+    :param job_offer: JobOffer
     :param tpl_id: SMSTemplate UUID
     :param action_sent: str Model field for waiting sms reply
     :return:
@@ -65,104 +65,104 @@ def send_vacancy_offer_sms(vacancy_offer, tpl_id, action_sent=None):
         logger.exception('Cannot load SMS service')
         return
 
-    target_date_and_time = formats.date_format(vacancy_offer.start_time, settings.DATETIME_FORMAT)
+    target_date_and_time = formats.date_format(job_offer.start_time, settings.DATETIME_FORMAT)
 
     now = timezone.localtime(timezone.now())
-    if now >= timezone.localtime(vacancy_offer.start_time):
+    if now >= timezone.localtime(job_offer.start_time):
         target_date_and_time = "ASAP"
 
     data_dict = {
-        'vacancy_offer': vacancy_offer,
-        'vacancy': vacancy_offer.vacancy,
-        'jobsite_address': vacancy_offer.vacancy.jobsite.get_address(),
-        'candidate_contact': vacancy_offer.candidate_contact,
+        'job_offer': job_offer,
+        'vacancy': job_offer.vacancy,
+        'jobsite_address': job_offer.vacancy.jobsite.get_address(),
+        'candidate_contact': job_offer.candidate_contact,
         'target_date_and_time': target_date_and_time,
-        'related_obj': vacancy_offer,
-        'related_objs': [vacancy_offer.candidate_contact, vacancy_offer.vacancy]
+        'related_obj': job_offer,
+        'related_objs': [job_offer.candidate_contact, job_offer.vacancy]
     }
     sent_message = sms_interface.send_tpl(
-        vacancy_offer.candidate_contact.contact.phone_mobile, tpl_id, check_reply=bool(action_sent), **data_dict
+        job_offer.candidate_contact.contact.phone_mobile, tpl_id, check_reply=bool(action_sent), **data_dict
     )
 
     if action_sent:
-        related_query_name = hr_models.VacancyOffer._meta.get_field(action_sent).related_query_name()
+        related_query_name = hr_models.JobOffer._meta.get_field(action_sent).related_query_name()
         cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
 
-        setattr(vacancy_offer, action_sent, sent_message)
-        vacancy_offer.scheduled_sms_datetime = None
-        vacancy_offer.save()
+        setattr(job_offer, action_sent, sent_message)
+        job_offer.scheduled_sms_datetime = None
+        job_offer.save()
 
 
-def send_or_schedule_vacancy_offer_sms(vacancy_offer_id, task=None, **kwargs):
+def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
     action_sent = kwargs.get('action_sent')
 
     with transaction.atomic():
         try:
-            vacancy_offer = hr_models.VacancyOffer.objects.select_for_update().get(
-                **{'pk': vacancy_offer_id, action_sent: None}
+            job_offer = hr_models.JobOffer.objects.select_for_update().get(
+                **{'pk': job_offer_id, action_sent: None}
             )
-        except hr_models.VacancyOffer.DoesNotExist as e:
+        except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
         else:
             log_message = None
-            if vacancy_offer.is_accepted():
-                log_message = 'Vacancy Offer %s already accepted'
-            elif vacancy_offer.is_cancelled():
-                log_message = 'Vacancy Offer %s already cancelled'
+            if job_offer.is_accepted():
+                log_message = 'Job Offer %s already accepted'
+            elif job_offer.is_cancelled():
+                log_message = 'Job Offer %s already cancelled'
 
             if log_message:
-                vacancy_offer.scheduled_sms_datetime = None
-                vacancy_offer.save(update_fields=['scheduled_sms_datetime'])
-                logger.info(log_message, str(vacancy_offer_id))
+                job_offer.scheduled_sms_datetime = None
+                job_offer.save(update_fields=['scheduled_sms_datetime'])
+                logger.info(log_message, str(job_offer_id))
                 return
 
             now = timezone.localtime(timezone.now())
             today = now.date()
-            vo_target_datetime = vacancy_offer.start_time
-            vo_target_date = vo_target_datetime.date()
-            vo_tz = vo_target_datetime.tzinfo
-            if vo_target_date > today and vacancy_offer.has_timesheets_with_going_work_unset_or_timeout():
+            jo_target_datetime = job_offer.start_time
+            jo_target_date = jo_target_datetime.date()
+            jo_tz = jo_target_datetime.tzinfo
+            if jo_target_date > today and job_offer.has_timesheets_with_going_work_unset_or_timeout():
                 eta = now + timedelta(hours=2)
                 if time(17, 0, 0, tzinfo=eta.tzinfo) > eta.timetz() > time(16, 0, 0, tzinfo=eta.tzinfo):
                     eta = datetime.combine(eta.date(), time(16, 0, tzinfo=eta.tzinfo))
                 elif eta.timetz() > time(17, 0, 0, tzinfo=eta.tzinfo):
-                    send_vacancy_offer_sms(vacancy_offer=vacancy_offer, **kwargs)
+                    send_job_offer_sms(job_offer=job_offer, **kwargs)
                     return
 
                 if task:
-                    task.apply_async(args=[vacancy_offer_id], eta=eta)
+                    task.apply_async(args=[job_offer_id], eta=eta)
 
-                    vacancy_offer.scheduled_sms_datetime = eta
-                    vacancy_offer.save(update_fields=['scheduled_sms_datetime'])
+                    job_offer.scheduled_sms_datetime = eta
+                    job_offer.save(update_fields=['scheduled_sms_datetime'])
 
-                    logger.info('VO SMS sending will be rescheduled for Vacancy Offer: %s', str(vacancy_offer_id))
-            elif vo_target_date > today and vo_target_datetime.timetz() >= time(16, 0, 0, tzinfo=vo_tz):
-                task.apply_async(args=[vacancy_offer_id], eta=vo_target_datetime - timedelta(hours=8))
-                vacancy_offer.scheduled_sms_datetime = vo_target_datetime - timedelta(hours=8)
-                vacancy_offer.save(update_fields=['scheduled_sms_datetime'])
+                    logger.info('JO SMS sending will be rescheduled for Job Offer: %s', str(job_offer_id))
+            elif jo_target_date > today and jo_target_datetime.timetz() >= time(16, 0, 0, tzinfo=jo_tz):
+                task.apply_async(args=[job_offer_id], eta=jo_target_datetime - timedelta(hours=8))
+                job_offer.scheduled_sms_datetime = jo_target_datetime - timedelta(hours=8)
+                job_offer.save(update_fields=['scheduled_sms_datetime'])
             else:
-                send_vacancy_offer_sms(vacancy_offer=vacancy_offer, **kwargs)
+                send_job_offer_sms(job_offer=job_offer, **kwargs)
 
 
 @shared_task(bind=True)
 @one_sms_task_at_the_same_time
-def send_vo_confirmation_sms(self, vacancy_offer_id):
-    send_or_schedule_vacancy_offer_sms(
-        vacancy_offer_id, send_vo_confirmation_sms,
+def send_jo_confirmation_sms(self, job_offer_id):
+    send_or_schedule_job_offer_sms(
+        job_offer_id, send_jo_confirmation_sms,
         tpl_id='vacancy-offer-1st', action_sent='offer_sent_by_sms'
     )
 
 
 @shared_task(bind=True)
 @one_sms_task_at_the_same_time
-def send_recurring_vo_confirmation_sms(self, vacancy_offer_id):
-    send_or_schedule_vacancy_offer_sms(
-        vacancy_offer_id, send_recurring_vo_confirmation_sms,
+def send_recurring_jo_confirmation_sms(self, job_offer_id):
+    send_or_schedule_job_offer_sms(
+        job_offer_id, send_recurring_jo_confirmation_sms,
         tpl_id='vacancy-offer-recurring', action_sent='offer_sent_by_sms'
     )
 
 
-def send_vacancy_offer_sms_notification(vo_id, tpl_id, recipient):
+def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
     try:
         sms_interface = get_sms_service()
     except ImportError:
@@ -171,24 +171,24 @@ def send_vacancy_offer_sms_notification(vo_id, tpl_id, recipient):
 
     with transaction.atomic():
         try:
-            vacancy_offer = hr_models.VacancyOffer.objects.get(pk=vo_id)
-            vacancy = vacancy_offer.vacancy
-        except hr_models.VacancyOffer.DoesNotExist as e:
+            job_offer = hr_models.JobOffer.objects.get(pk=jo_id)
+            vacancy = job_offer.vacancy
+        except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
-            logger.info('SMS sending will not be proceed for vacancy offer: {}'.format(vo_id))
+            logger.info('SMS sending will not be proceed for job offer: {}'.format(jo_id))
         else:
             recipients = {
-                'candidate_contact': vacancy_offer.candidate_contact,
+                'candidate_contact': job_offer.candidate_contact,
                 'supervisor': vacancy.jobsite.primary_contact
             }
             data_dict = dict(
                 recipients,
                 vacancy=vacancy,
                 target_date_and_time=formats.date_format(
-                    timezone.localtime(vacancy_offer.target_date_and_time), settings.DATETIME_FORMAT
+                    timezone.localtime(job_offer.target_date_and_time), settings.DATETIME_FORMAT
                 ),
-                related_obj=vacancy_offer,
-                related_objs=[vacancy_offer.candidate_contact, vacancy_offer.vacancy]
+                related_obj=job_offer,
+                related_objs=[job_offer.candidate_contact, job_offer.vacancy]
             )
 
             sms_interface.send_tpl(
@@ -197,43 +197,43 @@ def send_vacancy_offer_sms_notification(vo_id, tpl_id, recipient):
 
 
 @app.task()
-def send_vacancy_offer_cancelled_sms(vo_id):
+def send_job_offer_cancelled_sms(jo_id):
     """
-    Send cancellation vacancy offer sms.
+    Send cancellation job offer sms.
 
-    :param vo_id: UUID of vacancy offer
+    :param jo_id: UUID of job offer
     :return: None
     """
 
-    send_vacancy_offer_sms_notification(vo_id, 'candidate-vo-cancelled', 'candidate_contact')
+    send_job_offer_sms_notification(jo_id, 'candidate-jo-cancelled', 'candidate_contact')
 
 
 @app.task()
-def send_vacancy_offer_cancelled_lt_one_hour_sms(vo_id):
+def send_job_offer_cancelled_lt_one_hour_sms(jo_id):
     """
-    Send cancellation vacancy offer sms less than 1h.
+    Send cancellation job offer sms less than 1h.
 
-    :param vo_id: UUID of vacancy offer
+    :param jo_id: UUID of job offer
     :return: None
     """
 
-    send_vacancy_offer_sms_notification(vo_id, 'candidate-vo-cancelled-1-hrs', 'candidate_contact')
+    send_job_offer_sms_notification(jo_id, 'candidate-jo-cancelled-1-hrs', 'candidate_contact')
 
 
 @app.task(bind=True)
 @one_sms_task_at_the_same_time
-def send_placement_rejection_sms(self, vacancy_offer_id):
+def send_placement_rejection_sms(self, job_offer_id):
     from r3sourcer.apps.sms_interface.models import SMSRelatedObject
 
     with transaction.atomic():
-        vacancy_offer = hr_models.VacancyOffer.objects.get(pk=vacancy_offer_id)
+        job_offer = hr_models.JobOffer.objects.get(pk=job_offer_id)
         f_data = {
             'sms__template__slug': 'vacancy-offer-rejection',
-            'object_model': ContentType.objects.get_for_model(hr_models.VacancyOffer),
-            'object_id': vacancy_offer_id
+            'object_model': ContentType.objects.get_for_model(hr_models.JobOffer),
+            'object_id': job_offer_id
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
-            send_vacancy_offer_sms(vacancy_offer, 'vacancy-offer-rejection')
+            send_job_offer_sms(job_offer, 'vacancy-offer-rejection')
 
 
 @shared_task

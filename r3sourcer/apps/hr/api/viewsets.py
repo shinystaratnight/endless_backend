@@ -184,18 +184,18 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         methods=['GET'],
         endpoint=ExtranetTimesheetEndpoint(),
         list_display=[{
-            'field': 'vacancy_offer.candidate_contact.contact.picture',
+            'field': 'job_offer.candidate_contact.contact.picture',
             'type': constants.FIELD_PICTURE,
         }, {
             'label': _('Position'),
             'fields': ({
                 'type': constants.FIELD_LINK,
                 'endpoint': format_lazy(
-                    '{}{{vacancy_offer.candidate_contact.id}}/',
+                    '{}{{job_offer.candidate_contact.id}}/',
                     api_reverse_lazy('candidate/candidatecontacts')
                 ),
                 'action': 'showCandidateProfile',
-                'field': 'vacancy_offer.candidate_contact',
+                'field': 'job_offer.candidate_contact',
             }, {
                 'type': constants.FIELD_STATIC,
                 'field': 'position',
@@ -305,7 +305,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         timesheet = self.get_object()
 
         request.data['candidate_contact'] = (
-            timesheet.vacancy_offer.candidate_contact.id
+            timesheet.job_offer.candidate_contact.id
         )
         request.data['supervisor'] = timesheet.supervisor.pk
         request.data['reference_timesheet'] = timesheet.pk
@@ -364,18 +364,18 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         methods=['GET'],
         endpoint=ExtranetTimesheetEndpoint(),
         list_display=[{
-            'field': 'vacancy_offer.candidate_contact.contact.picture',
+            'field': 'job_offer.candidate_contact.contact.picture',
             'type': constants.FIELD_PICTURE,
         }, {
             'label': _('Position'),
             'fields': ({
                 'type': constants.FIELD_LINK,
                 'endpoint': format_lazy(
-                    '{}{{vacancy_offer.candidate_contact.id}}/',
+                    '{}{{job_offer.candidate_contact.id}}/',
                     api_reverse_lazy('candidate/candidatecontacts')
                 ),
                 'action': 'showCandidateProfile',
-                'field': 'vacancy_offer.candidate_contact',
+                'field': 'job_offer.candidate_contact',
             }, {
                 'type': constants.FIELD_STATIC,
                 'field': 'position',
@@ -579,7 +579,7 @@ class InvoiceViewset(BaseApiViewset):
         })
 
 
-class VacancyOfferViewset(BaseApiViewset):
+class JobOfferViewset(BaseApiViewset):
     @list_route(
         methods=['GET'],
         list_editable=[{
@@ -593,7 +593,7 @@ class VacancyOfferViewset(BaseApiViewset):
     @detail_route(methods=['POST'])
     def accept(self, request, *args, **kwargs):  # pragma: no cover
         obj = self.get_object()
-        obj.status = hr_models.VacancyOffer.STATUS_CHOICES.accepted
+        obj.status = hr_models.JobOffer.STATUS_CHOICES.accepted
         obj.save()
 
         return Response({'status': 'success'})
@@ -616,7 +616,7 @@ class VacancyOfferViewset(BaseApiViewset):
                     obj.offer_sent_by_sms.no_check_reply()
                 obj.cancel()
 
-            hr_models.VacancyOffer.objects.create(
+            hr_models.JobOffer.objects.create(
                 shift=obj.shift,
                 candidate_contact=obj.candidate_contact,
             )
@@ -680,12 +680,12 @@ class VacancyViewset(BaseApiViewset):
             date__vacancy=vacancy,
             date__cancelled=False,
         ).annotate(
-            accepted_vo_count=Sum(Case(
-                When(vacancy_offers__status=hr_models.VacancyOffer.STATUS_CHOICES.accepted, then=Value(1)),
+            accepted_jo_count=Sum(Case(
+                When(job_offers__status=hr_models.JobOffer.STATUS_CHOICES.accepted, then=Value(1)),
                 default=Value(0),
                 output_field=IntegerField(),
             ))
-        ).filter(accepted_vo_count__lt=F('workers')).select_related('date').order_by('date__shift_date', 'time'))
+        ).filter(accepted_jo_count__lt=F('workers')).select_related('date').order_by('date__shift_date', 'time'))
 
         if request.method == 'POST':
             return self.fillin_post(request, init_shifts)
@@ -768,10 +768,10 @@ class VacancyViewset(BaseApiViewset):
                     )
         # end
 
-        when_list = self._get_undefined_vo_lookups(init_shifts)
+        when_list = self._get_undefined_jo_lookups(init_shifts)
 
         candidate_contacts = candidate_contacts.annotate(
-            vos=Sum(Case(
+            jos=Sum(Case(
                 *when_list,
                 default=Value(0),
                 output_field=IntegerField()
@@ -793,8 +793,8 @@ class VacancyViewset(BaseApiViewset):
             favourite_list = []
 
         booked_before_list = list(candidate_contacts.filter(
-            vacancy_offers__in=vacancy.get_vacancy_offers().values('id'),
-            vacancy_offers__time_sheets__isnull=False
+            job_offers__in=vacancy.get_job_offers().values('id'),
+            job_offers__time_sheets__isnull=False
         ).values_list('id', flat=True))
 
         carrier_list = list(candidate_contacts.filter(
@@ -824,7 +824,7 @@ class VacancyViewset(BaseApiViewset):
                      then='candidate_skills__score'),
                 default=0
             )),
-            last_timesheet_date=Max('vacancy_offers__time_sheets__shift_started_at')
+            last_timesheet_date=Max('job_offers__time_sheets__shift_started_at')
         ).prefetch_related('tag_rels__tag')
 
         restrict_radius = int(request.GET.get('distance_to_jobsite', -1))
@@ -881,7 +881,7 @@ class VacancyViewset(BaseApiViewset):
                     shift.date.shift_date, shift.time
                 )
                 if len(unavailable) == 0:
-                    hr_models.VacancyOffer.objects.create(
+                    hr_models.JobOffer.objects.create(
                         shift=shift,
                         candidate_contact_id=candidate_id,
                     )
@@ -890,7 +890,7 @@ class VacancyViewset(BaseApiViewset):
             'status': 'ok',
         })
 
-    def _get_undefined_vo_lookups(self, init_shifts):
+    def _get_undefined_jo_lookups(self, init_shifts):
         when_list = []
 
         for init_shift in init_shifts:
@@ -902,19 +902,19 @@ class VacancyViewset(BaseApiViewset):
             to_date = shift_start_time + datetime.timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
 
             from_lookup = Q(
-                vacancy_offers__shift__date__shift_date=from_date.date(),
-                vacancy_offers__shift__time__gte=from_date.timetz()
-            ) | Q(vacancy_offers__shift__date__shift_date__gt=from_date.date())
+                job_offers__shift__date__shift_date=from_date.date(),
+                job_offers__shift__time__gte=from_date.timetz()
+            ) | Q(job_offers__shift__date__shift_date__gt=from_date.date())
 
             to_lookup = Q(
-                vacancy_offers__shift__date__shift_date=to_date.date(),
-                vacancy_offers__shift__time__gte=to_date.timetz()
-            ) | Q(vacancy_offers__shift__date__shift_date__gt=to_date.date())
+                job_offers__shift__date__shift_date=to_date.date(),
+                job_offers__shift__time__gte=to_date.timetz()
+            ) | Q(job_offers__shift__date__shift_date__gt=to_date.date())
 
             when_list.append(
                 When(
                     from_lookup & to_lookup &
-                    Q(vacancy_offers__status=hr_models.VacancyOffer.STATUS_CHOICES.undefined),
+                    Q(job_offers__status=hr_models.JobOffer.STATUS_CHOICES.undefined),
                     then=1
                 )
             )
@@ -959,7 +959,7 @@ class TimeSheetCandidateViewset(
         qs_unapproved = TimesheetFilter.get_filter_for_unapproved(request.user.contact)
 
         queryset = hr_models.TimeSheet.objects.filter(
-            vacancy_offer__candidate_contact_id=contact.candidate_contacts.id
+            job_offer__candidate_contact_id=contact.candidate_contacts.id
         ).annotate(
             approved=Case(When(qs_approved, then=True),
                           When(qs_unapproved, then=False),

@@ -76,13 +76,13 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
     class Meta:
         model = TimeSheet
         fields = (
-            'id', 'vacancy_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
+            'id', 'job_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
             'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
             'candidate_submitted_at', 'supervisor_approved_at', 'supervisor_approved_scheme', 'candidate_rate',
             'rate_overrides_approved_by', 'rate_overrides_approved_at'
         )
         related_fields = {
-            'vacancy_offer': ('id', {
+            'job_offer': ('id', {
                 'candidate_contact': ('id', {
                     'contact': ('picture', ),
                 }, ),
@@ -91,17 +91,17 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_company(self, obj):
         if obj:
-            company = obj.vacancy_offer.vacancy.customer_company
+            company = obj.job_offer.vacancy.customer_company
             return {'id': company.id, '__str__': str(company)}
 
     def get_jobsite(self, obj):
         if obj:
-            jobsite = obj.vacancy_offer.vacancy.jobsite
+            jobsite = obj.job_offer.vacancy.jobsite
             return {'id': jobsite.id, '__str__': str(jobsite)}
 
     def get_position(self, obj):
         if obj:
-            position = obj.vacancy_offer.vacancy.position
+            position = obj.job_offer.vacancy.position
             return {'id': position.id, '__str__': str(position)}
 
     def _format_date_range(self, date_start, date_end):
@@ -125,7 +125,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
         return self._format_date_range(obj.break_started_at, obj.break_ended_at)
 
     def get_vacancy(self, obj):
-        vacancy = obj.vacancy_offer.vacancy
+        vacancy = obj.job_offer.vacancy
         return {'id': vacancy.id, '__str__': str(vacancy)}
 
     def get_related_sms(self, obj):

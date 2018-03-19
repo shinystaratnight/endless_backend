@@ -21,7 +21,7 @@ class VacancySerializer(
     core_serializers.ApiBaseModelSerializer
 ):
 
-    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_vds', 'hide_fillin', 'todays_timesheets', 'title')
+    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'todays_timesheets', 'title')
 
     class Meta:
         model = hr_models.Vacancy
@@ -43,11 +43,11 @@ class VacancySerializer(
     def get_is_fulfilled(self, obj):
         return obj and obj.is_fulfilled()  # pragma: no cover
 
-    def get_no_vds(self, obj):  # pragma: no cover
+    def get_no_sds(self, obj):  # pragma: no cover
         if obj is None:
             return True
 
-        return not obj.vacancy_dates.filter(
+        return not obj.shift_dates.filter(
             shift_date__gt=timezone.localtime(timezone.now()).date(), cancelled=False
         ).exists()
 
@@ -65,7 +65,7 @@ class VacancySerializer(
 
         today = timezone.localtime(timezone.now()).date()
         timesheets = hr_models.TimeSheet.objects.filter(
-            vacancy_offer__shift__date__vacancy_id=obj.id, shift_started_at__date=today
+            job_offer__shift__date__vacancy_id=obj.id, shift_started_at__date=today
         )
         total_timesheets = timesheets.count()
 
@@ -88,14 +88,14 @@ class VacancySerializer(
         return obj.get_title()
 
 
-class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
+class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'candidate_rate', 'client_rate', 'timesheets', 'has_accept_action', 'has_cancel_action', 'has_resend_action'
     )
 
     class Meta:
-        model = hr_models.VacancyOffer
+        model = hr_models.JobOffer
         fields = [
             '__all__',
             {
@@ -165,13 +165,13 @@ class VacancyOfferSerializer(core_serializers.ApiBaseModelSerializer):
         )
 
         if obj.is_cancelled() or not_received_or_scheduled:
-            last_vo = obj.vacancy.get_vacancy_offers().filter(
+            last_jo = obj.vacancy.get_job_offers().filter(
                 offer_sent_by_sms__isnull=False,
                 candidate_contact=obj.candidate_contact
             ).order_by('offer_sent_by_sms__sent_at').last()
             return bool(
-                obj.offer_sent_by_sms and last_vo and
-                last_vo.offer_sent_by_sms.sent_at +
+                obj.offer_sent_by_sms and last_jo and
+                last_jo.offer_sent_by_sms.sent_at +
                 timezone.timedelta(minutes=10) < timezone.now()
             )
 
@@ -208,13 +208,13 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         'count_timesheets', 'hourly_rate', 'evaluation', 'color', 'overpriced',
     )
 
-    vos = serializers.IntegerField(read_only=True)
+    jos = serializers.IntegerField(read_only=True)
 
     class Meta:
         model = candidate_models.CandidateContact
         fields = (
             'id', 'recruitment_agent', 'tag_rels', 'nationality', 'transportation_to_work', 'strength', 'language',
-            'vos', {
+            'jos', {
                 'contact': ['gender', 'first_name', 'last_name', {
                     'address': ('longitude', 'latitude'),
                 }],
@@ -251,7 +251,7 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         return max_score or 0
 
     def get_count_timesheets(self, obj):
-        return hr_models.TimeSheet.objects.filter(vacancy_offer__candidate_contact=obj.id).count()
+        return hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj.id).count()
 
     def get_hourly_rate(self, obj):
         hourly_rate = obj.get_rate_for_skill(
@@ -277,7 +277,7 @@ class VacancyFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         elif is_partially_avail:
             return 4
         elif obj.id in self.context['carrier_list'] or obj.id in self.context['booked_before_list']:
-            if obj.vos > 0:
+            if obj.jos > 0:
                 return 2
             return 1
         return 0
@@ -299,7 +299,7 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
     method_fields = ('jobsite_address', 'hide_buttons', 'status', 'status_icon', 'hide_text', 'latitude', 'longitude')
 
     class Meta:
-        model = hr_models.VacancyOffer
+        model = hr_models.JobOffer
         fields = [
             '__all__',
             {
@@ -319,18 +319,18 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         return address and core_serializers.AddressSerializer(address).data
 
     def get_hide_buttons(self, obj):
-        return obj.status != hr_models.VacancyOffer.STATUS_CHOICES.undefined
+        return obj.status != hr_models.JobOffer.STATUS_CHOICES.undefined
 
     def get_hide_text(self, obj):
         return not self.get_hide_buttons(obj)
 
     def get_status(self, obj):
-        if obj.status == hr_models.VacancyOffer.STATUS_CHOICES.undefined:
+        if obj.status == hr_models.JobOffer.STATUS_CHOICES.undefined:
             return ' '
 
-        last_change = endless_logger.get_recent_field_change(hr_models.VacancyOffer, obj.id, 'status')
+        last_change = endless_logger.get_recent_field_change(hr_models.JobOffer, obj.id, 'status')
         if not last_change:
-            return hr_models.VacancyOffer.STATUS_CHOICES[obj.status]
+            return hr_models.JobOffer.STATUS_CHOICES[obj.status]
 
         updated_by_id = last_change['updated_by']
         system_user = get_default_user()
@@ -353,10 +353,10 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             else:
                 return _('Cancelled by {name}').format(name=core_models.User.objects.get(id=updated_by_id))
 
-        return hr_models.VacancyOffer.STATUS_CHOICES[obj.status]
+        return hr_models.JobOffer.STATUS_CHOICES[obj.status]
 
     def get_status_icon(self, obj):
-        return obj.status == hr_models.VacancyOffer.STATUS_CHOICES.accepted
+        return obj.status == hr_models.JobOffer.STATUS_CHOICES.accepted
 
     def get_latitude(self, obj):
         address = obj.vacancy.jobsite.get_address()

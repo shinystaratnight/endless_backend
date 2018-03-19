@@ -61,7 +61,7 @@ class TimeSheetSync(
 
             # do:
             # prepare queryset for time sheet excluding not signed
-            timesheet_qs = TimeSheet.objects.filter(vacancy_offer__candidate_contact=candidate).exclude(
+            timesheet_qs = TimeSheet.objects.filter(job_offer__candidate_contact=candidate).exclude(
                 timesheets_q | enabled_qry
             )
             # done;
@@ -256,7 +256,7 @@ class TimeSheetSync(
         :return:
         """
 
-        vacancy = timesheet.vacancy_offer.vacancy
+        vacancy = timesheet.job_offer.vacancy
         position = vacancy.position  # type: Position
         started_at = timezone.localtime(timesheet.shift_started_at)
         worked_hours = calc_worked_delta(timesheet)
@@ -292,7 +292,7 @@ class TimeSheetSync(
         return result
 
     def _get_candidate_skill_rate_and_name(self, timesheet):
-        offer = timesheet.vacancy_offer
+        offer = timesheet.job_offer
         shift = offer.shift
         name = None
         if timesheet.rate_overrides_approved_by and timesheet.candidate_rate:
@@ -311,7 +311,7 @@ class TimeSheetSync(
                 str(shift.date.hourly_rate.hourly_rate)
             ), shift.date.hourly_rate.hourly_rate
 
-        vacancy = timesheet.vacancy_offer.vacancy
+        vacancy = timesheet.job_offer.vacancy
         if vacancy.hourly_rate_default:
             name = '{} {}'.format(
                 str(vacancy.hourly_rate_default.skill.get_myob_name()),

@@ -15,7 +15,7 @@ from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.candidate.models import SkillRateRel, CandidateContact
 
 from .base import BasePaymentService, calc_worked_delta
-from ..models import PayslipLine, Payslip, VacancyOffer, TimeSheet
+from ..models import PayslipLine, Payslip, JobOffer, TimeSheet
 
 
 class PayslipService(BasePaymentService):
@@ -49,9 +49,9 @@ class PayslipService(BasePaymentService):
         prices = {}
 
         for timesheet in timesheets:
-            jobsite = timesheet.vacancy_offer.vacancy.jobsite
+            jobsite = timesheet.job_offer.vacancy.jobsite
             industry = jobsite.industry
-            skill = timesheet.vacancy_offer.vacancy.position
+            skill = timesheet.job_offer.vacancy.position
             skill_rate = self._get_skill_rate(candidate, skill)
 
             started_at = localtime(timesheet.shift_started_at)
@@ -172,13 +172,13 @@ class PayslipService(BasePaymentService):
     def prepare(self, company, to_date, from_date):
         to_date = to_date or localtime(now()).date()
 
-        candidate_ids = VacancyOffer.objects.filter(
+        candidate_ids = JobOffer.objects.filter(
             shift__date__vacancy__provider_company=company
         ).values_list('candidate_contact', flat=True).distinct()
 
         for candidate_id in candidate_ids:
             unsigned = TimeSheet.objects.filter(
-                vacancy_offer__candidate_contact_id=candidate_id
+                job_offer__candidate_contact_id=candidate_id
             ).exclude(
                 candidate_submitted_at__isnull=False,
                 supervisor_approved_at__isnull=False,

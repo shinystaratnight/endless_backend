@@ -185,100 +185,100 @@ def vacancy(db, master_company, regular_company, jobsite, skill):
 
 
 @pytest.fixture
-def vacancy_date(db, vacancy):
-    return hr_models.VacancyDate.objects.create(
+def shift_date(db, vacancy):
+    return hr_models.ShiftDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 2)
     )
 
 
 @pytest.fixture
-def shift(db, vacancy_date):
+def shift(db, shift_date):
     return hr_models.Shift.objects.create(
-        date=vacancy_date,
+        date=shift_date,
         time=datetime.time(hour=8, minute=30)
     )
 
 
 @pytest.fixture
-@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
-def vacancy_offer(mock_check, db, shift, candidate_contact):
-    return hr_models.VacancyOffer.objects.create(
+@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+def job_offer(mock_check, db, shift, candidate_contact):
+    return hr_models.JobOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact
     )
 
 
 @pytest.fixture
-@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
-def accepted_vo(mock_check, db, shift, candidate_contact):
-    return hr_models.VacancyOffer.objects.create(
+@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+def accepted_jo(mock_check, db, shift, candidate_contact):
+    return hr_models.JobOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact,
-        status=hr_models.VacancyOffer.STATUS_CHOICES.accepted
+        status=hr_models.JobOffer.STATUS_CHOICES.accepted
     )
 
 
 @pytest.fixture
-@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
-def cancelled_vo(mock_check, db, shift, candidate_contact):
-    return hr_models.VacancyOffer.objects.create(
+@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+def cancelled_jo(mock_check, db, shift, candidate_contact):
+    return hr_models.JobOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact,
-        status=hr_models.VacancyOffer.STATUS_CHOICES.cancelled
+        status=hr_models.JobOffer.STATUS_CHOICES.cancelled
     )
 
 
 @pytest.fixture
-@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
-def vacancy_offer_yesterday(mock_check, db, vacancy, candidate_contact):
-    vacancy_date_yesterday = hr_models.VacancyDate.objects.create(
+@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+def job_offer_yesterday(mock_check, db, vacancy, candidate_contact):
+    shift_date_yesterday = hr_models.ShiftDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 1)
     )
     shift_yesterday = hr_models.Shift.objects.create(
-        date=vacancy_date_yesterday,
+        date=shift_date_yesterday,
         time=datetime.time(hour=8, minute=30)
     )
 
-    return hr_models.VacancyOffer.objects.create(
+    return hr_models.JobOffer.objects.create(
         shift=shift_yesterday,
         candidate_contact=candidate_contact,
-        status=hr_models.VacancyOffer.STATUS_CHOICES.accepted
+        status=hr_models.JobOffer.STATUS_CHOICES.accepted
     )
 
 
 @pytest.fixture
-@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
-def vacancy_offer_tomorrow(mock_check, db, vacancy, candidate_contact):
-    vacancy_date_tomorrow = hr_models.VacancyDate.objects.create(
+@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+def job_offer_tomorrow(mock_check, db, vacancy, candidate_contact):
+    shift_date_tomorrow = hr_models.ShiftDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 3)
     )
     shift_tomorrow = hr_models.Shift.objects.create(
-        date=vacancy_date_tomorrow,
+        date=shift_date_tomorrow,
         time=datetime.time(hour=8, minute=30)
     )
 
-    return hr_models.VacancyOffer.objects.create(
+    return hr_models.JobOffer.objects.create(
         shift=shift_tomorrow,
         candidate_contact=candidate_contact
     )
 
 
 @pytest.fixture
-@patch.object(hr_models.VacancyOffer, 'check_vacancy_quota', return_value=True)
-def vacancy_offer_tomorrow_night(mock_check, db, vacancy, candidate_contact):
-    vacancy_date_tomorrow = hr_models.VacancyDate.objects.create(
+@patch.object(hr_models.JobOffer, 'check_vacancy_quota', return_value=True)
+def job_offer_tomorrow_night(mock_check, db, vacancy, candidate_contact):
+    shift_date_tomorrow = hr_models.ShiftDate.objects.create(
         vacancy=vacancy,
         shift_date=datetime.date(2017, 1, 3)
     )
     shift_tomorrow = hr_models.Shift.objects.create(
-        date=vacancy_date_tomorrow,
+        date=shift_date_tomorrow,
         time=datetime.time(hour=19, minute=0)
     )
 
-    return hr_models.VacancyOffer.objects.create(
+    return hr_models.JobOffer.objects.create(
         shift=shift_tomorrow,
         candidate_contact=candidate_contact
     )
@@ -286,18 +286,18 @@ def vacancy_offer_tomorrow_night(mock_check, db, vacancy, candidate_contact):
 
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 1))
-def timesheet(db, vacancy_offer, company_contact):
+def timesheet(db, job_offer, company_contact):
     return hr_models.TimeSheet.objects.create(
-        vacancy_offer=vacancy_offer,
+        job_offer=job_offer,
         supervisor=company_contact
     )
 
 
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 1))
-def timesheet_approved(db, vacancy_offer, company_contact):
+def timesheet_approved(db, job_offer, company_contact):
     return hr_models.TimeSheet.objects.create(
-        vacancy_offer=vacancy_offer,
+        job_offer=job_offer,
         supervisor=company_contact,
         supervisor_approved_at=timezone.now(),
         candidate_submitted_at=timezone.now(),
@@ -307,9 +307,9 @@ def timesheet_approved(db, vacancy_offer, company_contact):
 
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 2))
-def timesheet_tomorrow(db, vacancy_offer, company_contact):
+def timesheet_tomorrow(db, job_offer, company_contact):
     return hr_models.TimeSheet.objects.create(
-        vacancy_offer=vacancy_offer,
+        job_offer=job_offer,
         supervisor=company_contact
     )
 
@@ -326,10 +326,10 @@ def timesheet_issue(db, timesheet, company_contact):
 
 @pytest.fixture
 @freeze_time(datetime.datetime(2017, 1, 1))
-def carrier_list(db, candidate_contact, vacancy_offer):
+def carrier_list(db, candidate_contact, job_offer):
     return hr_models.CarrierList.objects.create(
         candidate_contact=candidate_contact,
-        vacancy_offer=vacancy_offer
+        job_offer=job_offer
     )
 
 

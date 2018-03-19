@@ -1425,6 +1425,6 @@ class InvoiceLineSerializer(ApiBaseModelSerializer):
         fields = ('__all__', {
             'vat': ('id', 'name'),
             'timesheet': ('id', {
-                'vacancy_offer': ('id', 'candidate_contact'),
+                'job_offer': ('id', 'candidate_contact'),
             })
         })
