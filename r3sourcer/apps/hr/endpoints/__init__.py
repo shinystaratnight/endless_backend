@@ -562,10 +562,6 @@ class ShiftEndpoint(ApiEndpoint):
                 'label': _('Candidate rate'),
                 'field': 'hourly_rate.hourly_rate',
                 'display': '${field}/h',
-            }, {
-                'label': _('Actions'),
-                'delim': ' ',
-                'fields': (constants.BUTTON_DELETE,)
             },
         )
     }
@@ -626,7 +622,8 @@ class ShiftDateEndpoint(ApiEndpoint):
                 },
                 'delay': True,
                 'default': {
-                    'date': '{id}'
+                    'date__shift_date': '{shift_date}',
+                    'job': '{job.id}',
                 },
                 'unique': ('time', )
             },
