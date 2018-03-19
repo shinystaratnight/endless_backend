@@ -79,12 +79,12 @@ class BasePaymentService:
 
         if company:
             timesheets = timesheets.filter(
-                vacancy_offer__shift__date__vacancy__jobsite__jobsite_addresses__regular_company=company
+                job_offer__shift__date__job__jobsite__jobsite_addresses__regular_company=company
             )
 
         if candidate:
             timesheets = timesheets.filter(
-                vacancy_offer__candidate_contact=candidate,
+                job_offer__candidate_contact=candidate,
             )
 
         if date_from:

@@ -207,7 +207,7 @@ class TestInvoiceService:
         assert not mock_prepare_invoice.called
 
     @freeze_time(datetime(2017, 1, 1, 0, 0, 0))
-    def test_generate_invoice(self, service, regular_company, vacancy_offer,
+    def test_generate_invoice(self, service, regular_company, job_offer,
                               rate_coefficient, jobsite, jobsite_address, price_list_rate):
         invoice_count = Invoice.objects.count()
         invoice_line_count = InvoiceLine.objects.count()
@@ -223,7 +223,7 @@ class TestInvoiceService:
         price_list.save()
 
         TimeSheet.objects.create(
-            vacancy_offer=vacancy_offer,
+            job_offer=job_offer,
             shift_started_at=shift_started_at,
             break_started_at=break_started_at,
             break_ended_at=break_ended_at,
@@ -245,7 +245,7 @@ class TestInvoiceService:
         assert line.unit_price == Decimal('10.00')
 
     @freeze_time(datetime(2017, 1, 4, 0, 0, 0))
-    def test_update_invoice(self, service, regular_company, vacancy_offer,
+    def test_update_invoice(self, service, regular_company, job_offer,
                               rate_coefficient, jobsite, jobsite_address, price_list_rate):
         shift_started_at = tz.localize(datetime.strptime('2017-01-02 07:00:00', '%Y-%m-%d %H:%M:%S'))
         shift_ended_at = tz.localize(datetime.strptime('2017-01-02 17:00:00', '%Y-%m-%d %H:%M:%S'))
@@ -259,7 +259,7 @@ class TestInvoiceService:
         price_list.save()
 
         TimeSheet.objects.create(
-            vacancy_offer=vacancy_offer,
+            job_offer=job_offer,
             shift_started_at=shift_started_at,
             break_started_at=break_started_at,
             break_ended_at=break_ended_at,
@@ -279,7 +279,7 @@ class TestInvoiceService:
         candidate_submitted_at = tz.localize(datetime.strptime('2017-01-04 18:00:00', '%Y-%m-%d %H:%M:%S'))
         supervisor_approved_at = tz.localize(datetime.strptime('2017-01-04 19:00:00', '%Y-%m-%d %H:%M:%S'))
         timesheet = TimeSheet.objects.create(
-            vacancy_offer=vacancy_offer,
+            job_offer=job_offer,
             shift_started_at=shift_started_at,
             break_started_at=break_started_at,
             break_ended_at=break_ended_at,
