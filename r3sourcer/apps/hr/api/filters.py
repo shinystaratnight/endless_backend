@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils import timezone
 
-from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFromToRangeFilter
+from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFromToRangeFilter, DateFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core import models as core_models
@@ -103,6 +103,7 @@ class JobFilter(FilterSet):
 
 class ShiftFilter(FilterSet):
     job = UUIDFilter(method='filter_job')
+    date__shift_date = DateFilter()
 
     class Meta:
         model = hr_models.Shift
