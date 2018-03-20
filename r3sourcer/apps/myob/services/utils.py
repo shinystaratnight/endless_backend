@@ -21,7 +21,7 @@ def sync_candidate_contacts_to_myob(myob_client=None, account=None):
     candidates_with_signed_timesheets = TimeSheet.objects.filter(
         candidate_submitted_at__isnull=False,
         supervisor_approved_at__isnull=False,
-    ).values_list('vacancy_offer__candidate_contact__id', flat=True)
+    ).values_list('job_offer__candidate_contact__id', flat=True)
 
     # get only active candidate contacts
     candidate_contacts = CandidateContact.objects.filter(id__in=candidates_with_signed_timesheets).distinct()

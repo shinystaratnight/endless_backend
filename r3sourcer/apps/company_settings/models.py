@@ -59,6 +59,14 @@ class MYOBSettings(UUIDModel):
         verbose_name = "MYOB settings"
         verbose_name_plural = "MYOB settings"
 
+    def get_client_myob_company_file(self):
+        if self.company_client_labour_hire:
+            return self.company_client_labour_hire.company_file.tokens.filter(company=self.company).first()
+        if self.company_client_gst:
+            return self.company_client_gst.company_file.tokens.filter(company=self.company).first()
+        if self.company:
+            return self.company.company_file_tokens.first()
+
 
 class GlobalPermissionManager(models.Manager):
     def get_queryset(self):
