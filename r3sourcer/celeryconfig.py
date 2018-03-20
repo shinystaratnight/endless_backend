@@ -39,12 +39,20 @@ task_routes = {
 beat_schedule = {
     'fetch_twilio_accounts': {
         'task': 'r3sourcer.apps.sms_interface.tasks.fetch_remote_sms',
-        'schedule': timedelta(seconds=60)
+        'schedule': timedelta(seconds=60),
     },
     'check_unpaid_invoices': {
         'task': 'r3sourcer.apps.hr.tasks.check_unpaid_invoices',
-        'schedule': crontab(hour=5, minute=00)
-    }
+        'schedule': crontab(hour=5, minute=00),
+    },
+    'sync_to_myob': {
+        'task': 'r3sourcer.apps.myob.tasks.sync_to_myob',
+        'schedule': crontab(minute=0, hour=1),
+    },
+    'sync_timesheets': {
+        'task': 'r3sourcer.apps.myob.tasks.sync_timesheets',
+        'schedule': crontab(minute=0, hour='2-23'),
+    },
 }
 
 task_ignore_result = True

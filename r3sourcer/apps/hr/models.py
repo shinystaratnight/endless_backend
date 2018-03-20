@@ -1082,7 +1082,8 @@ class TimeSheet(
 
     @property
     def regular_company(self):
-        return self.job_offer.shift.date.job.jobsite.jobsite_addresses.first().regular_company
+        address = self.job_offer.shift.date.job.jobsite.jobsite_addresses.first()
+        return address and address.regular_company
 
     @classmethod
     def get_or_create_for_job_offer_accepted(cls, job_offer):

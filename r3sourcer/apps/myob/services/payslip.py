@@ -16,11 +16,6 @@ class PayslipSync(BaseSync):
     def _get_resource(self):
         return self.client.api.GeneralLedger.GeneralJournal
 
-    def _get_tax_code(self, code):
-        return self._get_object_by_field(
-            code, self.client.api.GeneralLedger.TaxCode, 'Code', True
-        )
-
     def _get_account(self, display_id):
         return self._get_object_by_field(
             display_id, self.client.api.GeneralLedger.Account, single=True

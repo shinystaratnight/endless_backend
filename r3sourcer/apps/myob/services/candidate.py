@@ -4,7 +4,6 @@ import logging
 from r3sourcer.apps.candidate.models import SkillRateRel
 from r3sourcer.apps.skills.models import SkillBaseRate
 from r3sourcer.apps.myob.mappers import CandidateMapper
-from r3sourcer.apps.myob.models import MYOBCompanyFileToken
 from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.mixins import BaseCategoryMixin, StandardPayMixin, CandidateCardFinderMixin
 
@@ -18,7 +17,7 @@ class CandidateSync(
     CandidateCardFinderMixin,
     BaseSync
 ):
-    app = "crm_hr"
+    app = "candidate"
     model = "CandidateContact"
 
     mapper_class = CandidateMapper
