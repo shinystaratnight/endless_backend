@@ -19,10 +19,11 @@ class CompanyFilter(FilterSet):
     state = UUIDFilter(method='filter_state')
     status = NumberFilter(method='filter_status')
     portfolio_manager = UUIDFilter(method='filter_portfolio_manager')
+    regular_company = UUIDFilter(method='filter_regular_company')
 
     class Meta:
         model = Company
-        fields = ['name', 'business_id', 'country', 'type']
+        fields = ['name', 'business_id', 'country', 'type', 'id']
 
     def filter_name(self, queryset, name, value):
         return queryset.filter(
@@ -47,6 +48,9 @@ class CompanyFilter(FilterSet):
             Q(regular_companies__id__in=objects) |
             Q(master_companies__id__in=objects)
         )
+
+    def filter_regular_company(self, queryset, name, value):
+        return queryset.filter(master_companies__regular_company=value)
 
     def filter_portfolio_manager(self, queryset, name, value):
         return queryset.filter(

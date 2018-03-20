@@ -279,7 +279,7 @@ class Job(core_models.AbstractBaseOrder):
 
     notes = models.TextField(
         verbose_name=_("Notes"),
-        help_text=_("Job Description"),
+        help_text=_("Job Description/Instructions for candidate"),
         blank=True
     )
 
@@ -439,6 +439,8 @@ class Job(core_models.AbstractBaseOrder):
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
+        if just_added:
+            self.provider_signed_at = timezone.now()
 
         super().save(*args, **kwargs)
 

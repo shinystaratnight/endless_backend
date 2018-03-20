@@ -364,13 +364,19 @@ class JobEndpoint(ApiEndpoint):
                         'label': _('Client representative'),
                         'field': 'customer_representative',
                         'type': constants.FIELD_RELATED,
+                        'query': {
+                            'company': '{customer_company.id}',
+                        }
                     }, {
                         'label': _('Provider company'),
                         'field': 'provider_company',
                         'type': constants.FIELD_RELATED,
                         'query': {
                             'type': 'master',
-                        }
+                            'regular_company': '{customer_company.id}',
+                        },
+                        'default': '{customer_company.master_company.id}',
+                        'read_only': True,
                     }, {
                         'label': _('Company representative'),
                         'field': 'provider_representative',
@@ -382,6 +388,10 @@ class JobEndpoint(ApiEndpoint):
                         'label': _('Accepted at'),
                         'field': 'provider_signed_at',
                         'type': constants.FIELD_DATETIME,
+                        'read_only': True,
+                        'showIf': [
+                            'provider_signed_at',
+                        ]
                     }
                 )
             }, {
@@ -393,19 +403,26 @@ class JobEndpoint(ApiEndpoint):
                         'type': constants.FIELD_RELATED,
                         'query': {
                             'company': '{customer_company.id}',
+                            'primary_contact': '{customer_representative.id}'
                         }
                     }, {
                         'label': _('Position'),
                         'field': 'position',
                         'type': constants.FIELD_RELATED,
+                        'add': False,
                         'query': {
                             'company': '{customer_company.id}',
                         }
                     }, {
+                        'field': 'workers',
+                        'type': constants.FIELD_TEXT,
+                        'label': _('Number Of workers'),
+                    }, {
                         'field': 'work_start_date',
                         'type': constants.FIELD_DATE,
                         'default': datetime.date.today(),
-                    }, 'default_shift_starting_time',
+                    },
+                    'default_shift_starting_time',
                     {
                         'type': constants.FIELD_RELATED,
                         'label': _('Candidate rate default'),
@@ -415,6 +432,9 @@ class JobEndpoint(ApiEndpoint):
                         'field': 'hourly_rate_default',
                         'values': ['hourly_rate'],
                         'display': '${hourly_rate}/h',
+                    }, {
+                        'type': constants.FIELD_TEXTAREA,
+                        'field': 'notes',
                     }
                 )
             }
