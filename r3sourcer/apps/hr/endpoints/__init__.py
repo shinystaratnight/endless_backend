@@ -377,13 +377,19 @@ class JobEndpoint(ApiEndpoint):
                         },
                         'default': '{customer_company.master_company.id}',
                         'read_only': True,
+                        'showIf': [
+                            'customer_company.id',
+                        ]
                     }, {
                         'label': _('Company representative'),
                         'field': 'provider_representative',
                         'type': constants.FIELD_RELATED,
                         'query': {
                             'company': '{provider_company.id}',
-                        }
+                        },
+                        'showIf': [
+                            'customer_company.id',
+                        ]
                     }, {
                         'label': _('Accepted at'),
                         'field': 'provider_signed_at',
