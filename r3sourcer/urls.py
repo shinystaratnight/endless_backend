@@ -9,7 +9,7 @@ from r3sourcer.apps.logger.api.viewsets import journal_list, journal_detail
 from r3sourcer.apps.logger.main import autodiscover
 
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
-from r3sourcer.apps.core.views import FormView
+from r3sourcer.apps.core.views import FormView, RegisterFormView
 from r3sourcer.apps.core.forms import CoreAdminAuthenticationForm
 
 autodiscover()
@@ -26,6 +26,7 @@ _urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^i18n/', include('django.conf.urls.i18n')),
     url(r'^form-builds/(?P<company>.+)/(?P<pk>.+)/$', FormView.as_view(), name='form-builder-view'),
+    url(r'^register/$', RegisterFormView.as_view(), name='form-builder-register'),
     url(r'^rosetta/', include('rosetta.urls')),
     url(r'^twilio/', include('r3sourcer.apps.twilio.urls', namespace='twilio')),
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),

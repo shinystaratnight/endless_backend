@@ -91,6 +91,7 @@ class ContactEndpoint(ApiEndpoint):
                             'field': 'picture',
                             'label_upload': _('Choose a file'),
                             'label_photo': _('Take a photo'),
+                            'custom': [],
                         },
                     ),
                 }, {
@@ -98,7 +99,7 @@ class ContactEndpoint(ApiEndpoint):
                     'fields': (
                         {
                             'type': constants.FIELD_RELATED,
-                            'field': 'address',
+                            'field': 'id',
                             'read_only': True,
                             'label': '',
                             'custom': ('address.__str__', 'phone_mobile','email'),
@@ -148,8 +149,8 @@ class ContactEndpoint(ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Notes'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/notes'),
-            'add_label': _('Add note'),
             'prefilled': {
                 'object_id': '{id}',
             },
@@ -537,12 +538,13 @@ class CompanyEndpoint(ApiEndpoint):
                         'file': False,
                         'label_upload': _('Choose a file'),
                         'label_photo': _('Take a photo'),
+                        'custom': [],
                     },)
                 }, {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': ({
                         'type': constants.FIELD_RELATED,
-                        'field': 'manager',
+                        'field': 'id',
                         'read_only': True,
                         'label': _('Company'),
                         'custom': ('name', 'website'),
@@ -551,7 +553,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'type': constants.CONTAINER_COLUMN,
                     'fields': ({
                         'type': constants.FIELD_RELATED,
-                        'field': 'manager',
+                        'field': 'id',
                         'read_only': True,
                         'label': _('Primary Contact'),
                         'custom': (
@@ -604,8 +606,8 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Company Address'),
-            'endpoint': api_reverse_lazy('core/companyaddresses'),
             'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/companyaddresses'),
             'prefilled': {
                 'company': '{id}',
             }
@@ -616,8 +618,8 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Company Contacts'),
-            'endpoint': api_reverse_lazy('core/companycontactrelationships'),
             'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/companycontactrelationships'),
             'prefilled': {
                 'company': '{id}',
             }
@@ -628,7 +630,6 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}',
             },
             'label': _('Jobsites'),
-            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/jobsiteaddresses'),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
@@ -667,7 +668,6 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}',
             },
             'label': _('Price list'),
-            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('pricing/pricelists'),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
@@ -707,8 +707,8 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Notes'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/notes'),
-            'add_label': _('Add note'),
             'prefilled': {
                 'object_id': '{id}',
             },
@@ -1229,7 +1229,7 @@ class InvoiceLineEndpoint(ApiEndpoint):
     fieldsets = ('invoice', 'date', 'units', 'notes', 'unit_price', 'amount', 'unit_type', 'vat')
 
     list_editable = (
-        'date', 'units', 'notes', 'timesheet.vacancy_offer.candidate_contact', 'unit_price', 'amount', {
+        'date', 'units', 'notes', 'timesheet.job_offer.candidate_contact', 'unit_price', 'amount', {
             'type': constants.FIELD_TEXT,
             'field': 'vat.name',
             'label': _('Code'),
@@ -1298,7 +1298,7 @@ class ContactUnavailabilityEndpoint(ApiEndpoint):
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(models.Address, serializer=serializers.AddressSerializer)
-router.register(models.BankAccount)
+router.register(models.BankAccount, search_fields=('bank_name', 'bank_account_name'))
 router.register(endpoint=CityEndpoint())
 router.register(endpoint=CompanyEndpoint())
 router.register(endpoint=CompanyAddressEndpoint())

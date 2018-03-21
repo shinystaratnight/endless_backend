@@ -768,16 +768,17 @@ class JobsiteUnavailabilityConfig(BaseConfig):
     lbk_model = 'crm_hr_jobsiteunavailability'
 
 
-class VacancyDateConfig(BaseRateMixin, BaseConfig):
+class ShiftDateConfig(BaseRateMixin, BaseConfig):
     columns = {
-        'id', 'created_at', 'updated_at', 'vacancy_id', 'shift_date',
+        'id', 'created_at', 'updated_at', 'job_id', 'shift_date',
         'workers', 'hourly_rate_id', 'cancelled',
     }
     columns_map = {
         'shift_start_time': 'shift_date',
         'top_hourly_rate_id': 'hourly_rate_id',
+        'vacancy_id': 'job_id',
     }
-    model = hr_models.VacancyDate
+    model = hr_models.ShiftDate
     lbk_model = (
         'crm_hr_vacancydate as vd LEFT JOIN crm_hr_skillbaserate as sbr ON vd.top_hourly_rate_id=sbr.id'
     )
@@ -805,7 +806,7 @@ class VacancyDateConfig(BaseRateMixin, BaseConfig):
             )
 
 
-class VacancyConfig(BaseRateMixin, BaseConfig):
+class JobConfig(BaseRateMixin, BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'jobsite_id', 'position_id',
         'published', 'publish_on', 'expires_on', 'work_start_date',
@@ -821,7 +822,7 @@ class VacancyConfig(BaseRateMixin, BaseConfig):
         'account_representative_id': 'provider_representative_id',
         'account_accepted_at': 'provider_signed_at',
     }
-    model = hr_models.Vacancy
+    model = hr_models.Job
     lbk_model = (
         'crm_hr_vacancy as v LEFT JOIN crm_core_order as o on v.order_id=o.id '
         'LEFT JOIN crm_hr_skillbaserate as sbr ON v.top_hourly_rate_default_id=sbr.id'
@@ -846,7 +847,7 @@ class VacancyConfig(BaseRateMixin, BaseConfig):
         return row
 
 
-class VacancyOfferConfig(BaseConfig):
+class JobOfferConfig(BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'candidate_contact_id', 'status',
         'shift',
@@ -854,7 +855,7 @@ class VacancyOfferConfig(BaseConfig):
     columns_map = {
         'recruitee_contact_id': 'candidate_contact_id',
     }
-    model = hr_models.VacancyOffer
+    model = hr_models.JobOffer
     lbk_model = 'crm_hr_vacancyoffer'
 
     @classmethod
@@ -863,11 +864,11 @@ class VacancyOfferConfig(BaseConfig):
         accepted = row['accepted']
 
         if accepted:
-            row['status'] = hr_models.VacancyOffer.STATUS_CHOICES.accepted
+            row['status'] = hr_models.JobOffer.STATUS_CHOICES.accepted
         elif cancelled:
-            row['status'] = hr_models.VacancyOffer.STATUS_CHOICES.cancelled
+            row['status'] = hr_models.JobOffer.STATUS_CHOICES.cancelled
         else:
-            row['status'] = hr_models.VacancyOffer.STATUS_CHOICES.undefined
+            row['status'] = hr_models.JobOffer.STATUS_CHOICES.undefined
 
         row['shift'] = hr_models.Shift.objects.get(
             date_id=row['vacancy_date_id']
@@ -881,7 +882,7 @@ class TimeSheetConfig(BaseRateMixin, BaseConfig):
         'id', 'created_at', 'updated_at', 'going_to_work_confirmation',
         'shift_started_at', 'break_started_at', 'break_ended_at',
         'shift_ended_at', 'supervisor_id', 'candidate_submitted_at',
-        'supervisor_approved_at', 'candidate_rate_id', 'vacancy_offer_id',
+        'supervisor_approved_at', 'candidate_rate_id', 'job_offer_id',
         'rate_overrides_approved_by_id', 'rate_overrides_approved_at',
     }
     columns_map = {
@@ -895,7 +896,7 @@ class TimeSheetConfig(BaseRateMixin, BaseConfig):
         'LEFT JOIN crm_hr_skillbaserate as sbr ON ts.recruitee_rate_id=sbr.id '
         'where ts.shift_started_at::date = vo.target_date_and_time::date'
     )
-    select = 'ts.*, vo.id as vacancy_offer_id, sbr.skill_id as skill_id, sbr.hourly_rate as h_rate'
+    select = 'ts.*, vo.id as job_offer_id, sbr.skill_id as skill_id, sbr.hourly_rate as h_rate'
 
     @classmethod
     def prepare_data(cls, row):
@@ -921,12 +922,13 @@ class BlackListConfig(BaseConfig):
 class FavouriteListConfig(BaseConfig):
     columns = {
         'id', 'created_at', 'updated_at', 'candidate_contact_id', 'company_id',
-        'vacancy_id', 'jobsite_id', 'company_contact_id',
+        'job_id', 'jobsite_id', 'company_contact_id',
     }
     columns_map = {
         'account_contact_id': 'company_contact_id',
         'client_id': 'company_id',
         'recruitee_contact_id': 'candidate_contact_id',
+        'vacancy_id': 'job_id',
     }
     model = hr_models.FavouriteList
     lbk_model = 'crm_hr_favouritelist'
@@ -934,12 +936,14 @@ class FavouriteListConfig(BaseConfig):
 
 class CarrierListConfig(BaseConfig):
     columns = {
-        'id', 'created_at', 'updated_at', 'vacancy_offer_id', 'target_date',
+        'id', 'created_at', 'updated_at', 'job_offer_id', 'target_date',
         'candidate_contact_id', 'confirmed_available',
-        'referral_vacancy_offer_id',
+        'referral_job_offer_id',
     }
     columns_map = {
         'recruitee_contact_id': 'candidate_contact_id',
+        'vacancy_offer_id': 'job_offer_id',
+        'referral_vacancy_offer_id': 'referral_job_offer_id',
     }
     model = hr_models.CarrierList
     lbk_model = 'crm_hr_carrierlist'
@@ -1042,7 +1046,7 @@ class JobsiteStatesConfig(StatesConfigMixin, BaseConfig):
         return row
 
 
-class VacancyStatesConfig(StatesConfigMixin, BaseConfig):
+class JobStatesConfig(StatesConfigMixin, BaseConfig):
     columns = {'object_id', 'state', 'comment', 'active'}
     columns_map = {
         'notes': 'comment',
@@ -1065,7 +1069,7 @@ class VacancyStatesConfig(StatesConfigMixin, BaseConfig):
         if row['number'] in map_states:
             row['number'] = map_states[row['number']]
 
-        row['state'] = cls.get_workflow_node(row['number'], hr_models.Vacancy)
+        row['state'] = cls.get_workflow_node(row['number'], hr_models.Job)
 
         models.WorkflowObject.objects.filter(object_id=row['object_id']).update(active=False)
         row['active'] = True
@@ -1120,7 +1124,7 @@ ALL_CONFIGS = [
     IndustryConfig, RateCoefficientGroupConfig, RateCoefficientConfig, RateCoefficientModifierCompanyConfig,
     RateCoefficientModifierCandidateConfig, PriceListConfig, PriceListRateConfig, PriceListRateCoefficientConfig,
     JobsiteConfig, JobsiteUnavailabilityConfig,
-    VacancyConfig, VacancyDateConfig, VacancyOfferConfig, TimeSheetConfig,
+    JobConfig, ShiftDateConfig, JobOfferConfig, TimeSheetConfig,
     BlackListConfig, FavouriteListConfig, CarrierListConfig, CandidateEvaluationConfig,
-    CandidateStatesConfig, CompanyStatesConfig, JobsiteStatesConfig, VacancyStatesConfig, TimeSheetStatesConfig,
+    CandidateStatesConfig, CompanyStatesConfig, JobsiteStatesConfig, JobStatesConfig, TimeSheetStatesConfig,
 ]

@@ -115,7 +115,6 @@ class InvoiceEndpoint(endpoints.ApiEndpoint):
             'invoice': '{id}',
         },
         'label': _('Invoice Lines'),
-        'add_label': _('Add'),
         'endpoint': api_reverse_lazy('core/invoicelines'),
         'prefilled': {
             'invoice': '{id}',

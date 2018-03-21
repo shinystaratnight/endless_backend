@@ -38,7 +38,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                         'read_only': True,
                         'label': _('Photo'),
                         'file': False,
-                        'photo': False
+                        'photo': False,
+                        'custom': [],
                     },)
                 }, {
                     'type': constants.CONTAINER_COLUMN,
@@ -185,15 +186,18 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'label': _('Notes'),
             'field': 'notes',
         }, {
-            'type': constants.FIELD_RELATED,
-            'delete': True,
-            'list': True,
-            'many': True,
-            'create': True,
-            'edit': True,
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'candidate_contact': '{id}',
+            },
             'collapsed': True,
-            'label': _('Candidate Skills'),
-            'field': 'candidate_skills',
+            'label': _('Skills'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('candidate/skillrels'),
+            'prefilled': {
+                'candidate_contact': '{id}',
+            }
         }, {
             'type': constants.FIELD_RELATED,
             'delete': True,
@@ -212,7 +216,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
             'collapsed': True,
             'label': _('Activities'),
-            'add_label': _('Add Activity'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('activity/activities'),
             'prefilled': {
                 'contact': '{contact.id}',
@@ -233,7 +237,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             },
             'collapsed': True,
             'label': _('Candidate States History'),
-            'add_label': _('Add Candidate State'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/workflowobjects'),
             'prefilled': {
                 'object_id': '{id}',
@@ -244,8 +248,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'candidate_contact': '{id}'
             },
             'collapsed': True,
-            'label': _('Vacancy offers'),
-            'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/vacancyoffers')),
+            'label': _('Job Offers'),
+            'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/joboffers')),
         }, {
             'query': {
                 'candidate_contact': '{id}'
@@ -253,8 +257,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Carrier List'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/carrierlists'),
-            'add_label': _('Add Carrier List'),
             'prefilled': {
                 'candidate_contact': '{id}',
             }
@@ -265,8 +269,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Black List'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/blacklists'),
-            'add_label': _('Add Black List'),
             'prefilled': {
                 'candidate_contact': '{id}',
             }
@@ -277,8 +281,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Favorite List'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/favouritelists'),
-            'add_label': _('Add Favorite List'),
             'prefilled': {
                 'candidate_contact': '{id}',
             }
@@ -289,8 +293,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LIST,
             'collapsed': True,
             'label': _('Evaluations'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/candidateevaluations'),
-            'add_label': _('Add Evaluation'),
             'prefilled': {
                 'candidate_contact': '{id}',
             }
@@ -406,7 +410,54 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
         'candidate_contact', 'skill', 'score', 'prior_experience'
     )
 
-    list_editable = ('skill', 'score', 'prior_experience')
+    list_editable = (
+        {
+            'label': _('Skill'),
+            'type': constants.FIELD_LINK,
+            'field': 'skill',
+            'endpoint': format_lazy('{}{{skill.id}}/', api_reverse_lazy('skills/skills')),
+        },
+        'hourly_rate', 'score', 'prior_experience',
+        {
+            'label': _('Created'),
+            'fields': ('created_at', 'created_by')
+        }, {
+            'label': _('Updated'),
+            'fields': ('updated_at', 'updated_by')
+        }, {
+            'label': _('Actions'),
+            'delim': ' ',
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('candidate/skillrels'))
+            }, constants.BUTTON_DELETE)
+        },
+    )
+
+    fieldsets = (
+        {
+            'type': constants.FIELD_RELATED,
+            'field': 'candidate_contact',
+            'hide': True,
+        },
+        'skill', 'score', 'prior_experience',
+        {
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'candidate_skill': '{id}',
+            },
+            'label': _('Rates'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('candidate/skillraterels'),
+            'add_endpoint': api_reverse_lazy('candidate/skillraterels'),
+            'prefilled': {
+                'candidate_skill': '{id}',
+            }
+        }
+    )
+
+    list_filter = ('candidate_contact', )
 
 
 class TagRelEndpoint(core_endpoints.ApiEndpoint):
@@ -436,12 +487,38 @@ class SubcontractorEndpoint(core_endpoints.ApiEndpoint):
     serializer = candidate_serializers.SubcontractorSerializer
 
 
+class SkillRateRelEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.SkillRateRel
+
+    list_editable = (
+        {
+            'label': _('Rate'),
+            'type': constants.FIELD_LINK,
+            'field': 'hourly_rate',
+            'endpoint': format_lazy('{}{{hourly_rate.id}}/', api_reverse_lazy('skills/skillbaserates')),
+        },
+        'valid_from', 'valid_until'
+    )
+
+    fieldsets = (
+        {
+            'type': constants.FIELD_RELATED,
+            'field': 'candidate_skill',
+            'hide': True,
+        },
+        'hourly_rate', 'valid_from', 'valid_until'
+    )
+
+    list_filter = ('candidate_skill', )
+
+
 router.register(candidate_models.VisaType)
 router.register(candidate_models.SuperannuationFund)
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
 router.register(endpoint=TagRelEndpoint())
 router.register(endpoint=SkillRelEndpoint())
-router.register(candidate_models.SkillRateRel)
+router.register(endpoint=SkillRateRelEndpoint())
 router.register(candidate_models.InterviewSchedule)
 router.register(candidate_models.CandidateRel)

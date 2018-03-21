@@ -4,7 +4,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils import timezone
 
-from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFromToRangeFilter
+from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFromToRangeFilter, DateFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core import models as core_models
@@ -14,8 +14,8 @@ from r3sourcer.apps.hr import models as hr_models
 class TimesheetFilter(FilterSet):
     candidate = UUIDFilter(method='filter_candidate')
     approved = BooleanFilter(method='filter_approved')
-    company = UUIDFilter('vacancy_offer__shift__date__vacancy__customer_company_id')
-    jobsite = UUIDFilter('vacancy_offer__shift__date__vacancy__jobsite_id')
+    company = UUIDFilter('job_offer__shift__date__job__customer_company_id')
+    jobsite = UUIDFilter('job_offer__shift__date__job__jobsite_id')
 
     class Meta:
         model = hr_models.TimeSheet
@@ -23,17 +23,17 @@ class TimesheetFilter(FilterSet):
 
     def filter_candidate(self, queryset, name, value):
         return queryset.filter(
-            vacancy_offer__candidate_contact_id=value
+            job_offer__candidate_contact_id=value
         )
 
     def filter_company(self, queryset, name, value):
         return queryset.filter(
-            vacancy_offer__shift__date__vacancy__customer_company_id=value
+            job_offer__shift__date__job__customer_company_id=value
         )
 
     def filter_jobsite(self, queryset, name, value):
         return queryset.filter(
-            vacancy_offer__shift__date__vacancy__jobsite_id=value
+            job_offer__shift__date__job__jobsite_id=value
         )
 
     def filter_approved(self, queryset, name, value):
@@ -54,7 +54,7 @@ class TimesheetFilter(FilterSet):
         if contact.company_contact.exists():
             qs_approved &= Q(supervisor_approved_at__isnull=False, supervisor__contact=contact)
         else:
-            qs_approved &= Q(candidate_submitted_at__isnull=False, vacancy_offer__candidate_contact__contact=contact)
+            qs_approved &= Q(candidate_submitted_at__isnull=False, job_offer__candidate_contact__contact=contact)
         return qs_approved
 
     @staticmethod
@@ -79,15 +79,15 @@ class TimesheetFilter(FilterSet):
         return qs_unapproved
 
 
-class VacancyFilter(FilterSet):
+class JobFilter(FilterSet):
     active_states = NumberFilter(method='filter_state')
 
     class Meta:
-        model = hr_models.Vacancy
+        model = hr_models.Job
         fields = ['active_states']
 
     def _fetch_workflow_objects(self, value):  # pragma: no cover
-        content_type = ContentType.objects.get_for_model(hr_models.Vacancy)
+        content_type = ContentType.objects.get_for_model(hr_models.Job)
         objects = core_models.WorkflowObject.objects.filter(
             state__number=value,
             state__workflow__model=content_type,
@@ -102,29 +102,31 @@ class VacancyFilter(FilterSet):
 
 
 class ShiftFilter(FilterSet):
-    vacancy = UUIDFilter(method='filter_vacancy')
+    job = UUIDFilter(method='filter_job')
+    date__shift_date = DateFilter()
 
     class Meta:
         model = hr_models.Shift
-        fields = ['vacancy', 'date']
+        fields = ['job', 'date']
 
-    def filter_vacancy(self, queryset, name, value):
-        return queryset.filter(date__vacancy_id=value)
+    def filter_job(self, queryset, name, value):
+        return queryset.filter(date__job_id=value)
 
 
-class VacancyOfferFilter(FilterSet):
-    vacancy = UUIDFilter(method='filter_vacancy')
+class JobOfferFilter(FilterSet):
+    job = UUIDFilter(method='filter_job')
 
     class Meta:
         model = hr_models.Shift
-        fields = ['vacancy']
+        fields = ['job']
 
-    def filter_vacancy(self, queryset, name, value):
-        return queryset.filter(shift__date__vacancy_id=value)
+    def filter_job(self, queryset, name, value):
+        return queryset.filter(shift__date__job_id=value)
 
 
 class JobsiteFilter(FilterSet):
     company = UUIDFilter(method='filter_company')
+    primary_contact = UUIDFilter(method='filter_primary_contact')
 
     class Meta:
         model = hr_models.Jobsite
@@ -135,6 +137,9 @@ class JobsiteFilter(FilterSet):
             Q(master_company_id=value) |
             Q(jobsite_addresses__regular_company_id=value)
         )
+
+    def filter_primary_contact(self, queryset, name, value):
+        return queryset.filter(primary_contact=value)
 
 
 class JobsiteAddressFilter(FilterSet):

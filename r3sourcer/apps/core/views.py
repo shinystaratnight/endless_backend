@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.views import generic
@@ -5,6 +6,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 
 from r3sourcer.apps.core.models import Form, Company, Invoice
+from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.tasks import sync_invoice
 
@@ -24,6 +26,23 @@ class FormView(generic.TemplateView):
         else:
             raise Http404
         context['form'] = get_object_or_404(Form, pk=self.kwargs['pk'], company=company)
+        return context
+
+
+class RegisterFormView(generic.TemplateView):
+
+    template_name = 'form_builder.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(RegisterFormView, self).get_context_data(**kwargs)
+        context['company'] = get_default_company()
+        context['company_id'] = str(context['company'].pk)
+
+        form = Form.objects.filter(Q(company=context['company']) | Q(company=None), is_active=True).first()
+        if not form:
+            raise Http404
+
+        context['form'] = form
         return context
 
 

@@ -34,8 +34,8 @@
     {
         "model": "core.workflow",
         "fields": {
-            "model": "hr.vacancy",
-            "name": "Vacancy Workflow"
+            "model": "hr.job",
+            "name": "Job Workflow"
         },
         "pk": "240d7316-fb0f-4365-b661-630a347c408c"
     },
@@ -1204,7 +1204,7 @@
             "name_before_activation": "Fill in",
             "name_after_activation": "Filled",
             "active": true,
-            "endpoint": "/ecore/api/v2/hr/vacancy/{id}/fillin/",
+            "endpoint": "/ecore/api/v2/hr/job/{id}/fillin/",
             "rules": {
                 "required_states": [
                     "or",
@@ -1217,7 +1217,7 @@
                 ],
                 "required_functions": [
                     "and",
-                    "is_all_vd_filled"
+                    "is_all_sd_filled"
                 ]
             },
             "hardlock": true
@@ -1289,7 +1289,7 @@
                 ],
                 "required_functions": [
                     "and",
-                    "is_all_vd_filled",
+                    "is_all_sd_filled",
                     "is_all_timesheets_approved"
                 ],
                 "required_states": [

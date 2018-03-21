@@ -626,7 +626,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     )
 
     receive_order_confirmation_sms = models.BooleanField(
-        verbose_name=_("Receive Vacancy confirmation sms"),
+        verbose_name=_("Receive Job confirmation sms"),
         default=True
     )
 
@@ -744,9 +744,11 @@ class BankAccount(UUIDModel):
 
 
 class Company(
-        CategoryFolderMixin,
-        UUIDModel,
-        MasterCompanyLookupMixin):
+    CategoryFolderMixin,
+    MYOBMixin,
+    UUIDModel,
+    MasterCompanyLookupMixin
+):
 
     name = models.CharField(max_length=127, verbose_name=_("Company Name"), unique=True)
 
@@ -1018,6 +1020,10 @@ class Company(
             qs = qs.filter(price_list_rates__skill=position)
 
         return qs
+
+    def get_portfolio_manager(self):
+        company_rel = self.regular_companies.all().first()
+        return company_rel and company_rel.primary_contact
 
     @property
     def invoice_rule(self):

@@ -8,7 +8,7 @@ from pytz import timezone
 from django.conf import settings as dj_settings
 
 from r3sourcer.apps.hr.api.serializers.timesheet import TimeSheetSerializer
-from r3sourcer.apps.hr.api.serializers.vacancy import VacancySerializer
+from r3sourcer.apps.hr.api.serializers.job import JobSerializer
 
 
 tz = timezone(dj_settings.TIME_ZONE)
@@ -52,19 +52,19 @@ class TestTimeSheetSerializer:
 
 
 @pytest.mark.django_db
-class TestVacancySerializer:
+class TestJobSerializer:
 
     @pytest.fixture
     def serializer(self):
-        return VacancySerializer()
+        return JobSerializer()
 
     @freezegun.freeze_time(tz.localize(datetime(2017, 1, 1, 7)))
-    def test_get_todays_timesheets(self, timesheet, vacancy, serializer):
-        res = serializer.get_todays_timesheets(vacancy)
+    def test_get_todays_timesheets(self, timesheet, job, serializer):
+        res = serializer.get_todays_timesheets(job)
 
         assert res == '0% / 0% / 0%'
 
-    def test_get_todays_timesheets_no_timesheet(self, vacancy, serializer):
-        res = serializer.get_todays_timesheets(vacancy)
+    def test_get_todays_timesheets_no_timesheet(self, job, serializer):
+        res = serializer.get_todays_timesheets(job)
 
         assert res == '-'

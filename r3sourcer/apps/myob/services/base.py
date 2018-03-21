@@ -270,6 +270,11 @@ class BaseSync:
     def _find_old_myob_card(self, instance, resource=None):
         raise NotImplementedError()
 
+    def _get_tax_code(self, code):
+        return self._get_object_by_field(
+            code, self.client.api.GeneralLedger.TaxCode, 'Code', True
+        )
+
     @method_decorator(myob_enabled_mode)
     def sync_to_myob(self, instance, partial=False):
         if self.client is None:

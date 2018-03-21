@@ -3,6 +3,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand
 
 from r3sourcer.apps.company_settings.models import GlobalPermission
+from r3sourcer.apps.core.utils.text import pluralize
 
 
 METHODS = {
@@ -14,11 +15,12 @@ METHODS = {
 
 PERMISSION_LIST = [
     ("note", "core/notes"),
+    ("timesheet-candidate", "hr/timesheets-candidate")
 ]
 
 # put here verbose names of models to skip them
 MODELS_TO_SKIP = [
-    'Contact Notes',
+    'contact notes',
 ]
 
 
@@ -38,11 +40,13 @@ class Command(BaseCommand):
             models = apps.get_app_config(app_name).get_models()
 
             for model in models:
-                if model._meta.verbose_name_plural in MODELS_TO_SKIP:
+                model_name = model.__name__.lower()
+                model_name = pluralize(model_name)
+
+                if model_name in MODELS_TO_SKIP:
                     continue
 
-                model_path = str("%s/%s" % (app_name.replace("_", "-"),
-                                            model._meta.verbose_name_plural.replace(" ", "").lower()))
+                model_path = str("%s/%s" % (app_name.replace("_", "-"), model_name.replace(" ", "")))
 
                 for method, description in METHODS.items():
                     try:
@@ -57,7 +61,7 @@ class Command(BaseCommand):
             try:
                 for method, description in METHODS.items():
                     GlobalPermission.objects.create(
-                        name=verbose_name,
+                        name=description % verbose_name,
                         codename='%s_%s' % (model_path, method)
                     )
             except:

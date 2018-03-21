@@ -4,7 +4,7 @@ from django.conf import settings
 from django.utils import timezone
 from django.utils.formats import date_format
 
-from r3sourcer.apps.core.models import WorkflowObject
+from r3sourcer.apps.core.models import WorkflowObject, Company
 
 
 class BSBNumberError(ValueError):
@@ -21,6 +21,16 @@ def format_date_to_myob(date_time, only_date=False):
             pass
         date_time = date_time.date()
     return date_time and date_format(date_time, settings.DATE_MYOB_FORMAT)
+
+
+def get_formatted_abn(business_id):
+    abn = None
+    if business_id and len(business_id) == 11:
+        abn = '{}{} {}{}{} {}{}{} {}{}{}'.format(*business_id)
+    elif business_id and len(business_id) == 14:
+        abn = business_id
+
+    return abn
 
 
 class StandardPayMapMixin:
@@ -469,5 +479,96 @@ class CandidateMapper(StandardPayMapMixin, ContactMapper):
                 'FixedHourlyRate': str(skill_rate.hourly_rate.hourly_rate)
             }
         }
+
+        return data
+
+
+class CompanyMapper(ContactMapper):
+
+    PAYMENT_IS_DUE_MAP = {
+        Company.TERMS_PAYMENT_CHOICES.on_delivery: 'CashOnDelivery',
+        Company.TERMS_PAYMENT_CHOICES.prepaid: 'PrePaid',
+        Company.TERMS_PAYMENT_CHOICES.days: 'InAGivenNumberOfDays',
+        Company.TERMS_PAYMENT_CHOICES.day_of_month: 'OnADayOfTheMonth',
+        Company.TERMS_PAYMENT_CHOICES.days_eom: 'NumberOfDaysAfterEOM',
+        Company.TERMS_PAYMENT_CHOICES.day_of_month_eom: 'DayOfMonthAfterEOM',
+    }
+
+    def map_to_myob(self, company, tax_code, salesperson=None, income_account=None):
+        data = {
+            'IsIndividual': False,
+            'CompanyName': company.name
+        }
+
+        if company.manager:
+            data.update(self._map_contact_to_myob(company.manager.contact))
+
+        data.update(self._map_extra_data_to_myob(company, tax_code=tax_code))
+        if salesperson:
+            data['SellingDetails']['SalesPerson'] = {
+                'UID': salesperson['UID']
+            }
+
+        if income_account:
+            data['SellingDetails']['IncomeAccount'] = {
+                'UID': income_account['UID']
+            }
+
+        return data
+
+    def _map_extra_data_to_myob(self, company, tax_code):
+        addresses = []
+        primary_address = company.get_hq_address()
+        if primary_address:
+            addresses.append(self._map_address_to_myob(primary_address.address))
+            addresses_qs = company.company_addresses.exclude(id=primary_address.id)
+        else:
+            addresses_qs = company.company_addresses.all()
+
+        for address in addresses_qs:
+            addresses.append(self._map_address_to_myob(address.address, idx=len(addresses) + 1))
+
+        if addresses:
+            addresses[0]['Email'] = company.billing_email
+        elif company.billing_email:
+            addresses.append({
+                'Location': 1,
+                'Email': company.billing_email
+            })
+
+        data = {
+            'SellingDetails': {
+                'SaleLayout': 'TimeBilling',
+                'PrintedForm': 'TimeBilling - Capital Funding 180',
+                'InvoiceDelivery': 'Print',
+                'ItemPriceLevel': 'Base Selling Price',
+                'Terms': {
+                    'PaymentIsDue': self.PAYMENT_IS_DUE_MAP.get(company.terms_of_payment),
+                    'BalanceDueDate': company.payment_due_date
+                }
+            },
+        }
+
+        if addresses:
+            data['Addresses'] = addresses
+
+        if tax_code:
+            data['SellingDetails'].update({
+                'TaxCode': {
+                    'UID': tax_code['UID']
+                },
+                'FreightTaxCode': {
+                    'UID': tax_code['UID']
+                }
+            })
+
+        abn = get_formatted_abn(company.business_id)
+        if abn:
+            data['SellingDetails']['ABN'] = abn
+
+        if company.credit_check == Company.CREDIT_CHECK_CHOICES.approved:
+            data['SellingDetails']['Credit'] = {
+                'Limit': str(company.approved_credit_limit),
+            }
 
         return data

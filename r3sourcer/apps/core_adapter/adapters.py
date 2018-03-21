@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint', 'disabledIf', 'delay', 'custom',
+    'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique',
 )
 
 
@@ -61,9 +61,11 @@ class AngularApiAdapter(BaseAdapter):
     _excluded_field = {'__str__', }
     _hidden_fields = {'id'}
     edit = True
+    fieldsets_type = 'default'
 
     def __init__(self, edit=True, * args, **kwargs):
         self.edit = edit
+        self.fieldsets_type = kwargs.pop('fieldsets_type', 'default')
 
     @classmethod
     def adapt_field(cls, field):
@@ -91,18 +93,17 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LINK:
                 adapted['templateOptions']['link'] = field.get('link')
             elif component_type == constants.FIELD_LIST:
+                options = (
+                    'endpoint', 'prefilled', 'add_endpoint', 'delay', 'metadata_query', 'add_metadata_query', 'max',
+                    'default', 'unique',
+                )
                 adapted.update(
                     collapsed=field.get('collapsed', False),
-                    **{attr: field[attr] for attr in ('endpoint', 'prefilled', 'add_endpoint', 'delay')
-                       if field.get(attr) is not None}
+                    **{attr: field[attr] for attr in options if field.get(attr) is not None}
                 )
                 if field.get('add_label'):
                     adapted['templateOptions']['add_label'] = field['add_label']
-                if field.get('metadata_query'):
-                    adapted['metadata_query'] = field['metadata_query']
-                if field.get('max'):
-                    adapted['max'] = field['max']
-            elif component_type not in [constants.FIELD_SUBMIT, constants.FIELD_LINKS_LIST]:
+            elif component_type not in [constants.FIELD_SUBMIT]:
                 adapted['templateOptions']['action'] = field['action']
 
             query_params = field.get('query')
@@ -197,8 +198,12 @@ class AngularApiAdapter(BaseAdapter):
         })
 
         is_hidden = field.get('hide')
-        if field['key'].split('.')[-1] in cls._hidden_fields or is_hidden:
+        custom_list = field.get('custom')
+        if field['key'].split('.')[-1] in cls._hidden_fields and custom_list is None or is_hidden:
             adapted['hide'] = True
+
+        if custom_list is not None:
+            adapted['custom'] = custom_list
 
         if field_ui.get('help'):
             adapted['templateOptions']['description'] = field_ui['help']
@@ -291,6 +296,9 @@ class AngularApiAdapter(BaseAdapter):
     def render(self, config):
         fields = config['metadata_fields']
         fieldsets = config['fieldsets']
+
+        if isinstance(fieldsets, dict):
+            fieldsets = fieldsets.get(self.fieldsets_type, [])
 
         adapted = self._map_fieldsets(fieldsets, fields)
 

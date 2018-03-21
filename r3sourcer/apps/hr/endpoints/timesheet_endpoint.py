@@ -53,9 +53,9 @@ class TimeSheetEndpoint(ApiEndpoint):
                 'endpoint': format_lazy('{}{{position.id}}', api_reverse_lazy('skills/skills')),
             }, {
                 'type': constants.FIELD_LINK,
-                'field': 'vacancy_offer.candidate_contact',
+                'field': 'job_offer.candidate_contact',
                 'endpoint': format_lazy(
-                    '{}{{vacancy_offer.candidate_contact.id}}',
+                    '{}{{job_offer.candidate_contact.id}}',
                     api_reverse_lazy('candidate/candidatecontacts')
                 ),
             }),
@@ -64,9 +64,9 @@ class TimeSheetEndpoint(ApiEndpoint):
             'delim': ' / ',
             'fields': ({
                 'type': constants.FIELD_LINK,
-                'field': 'vacancy',
-                'text': _('Vacancy'),
-                'endpoint': format_lazy('{}{{vacancy.id}}', api_reverse_lazy('hr/vacancies')),
+                'field': 'job',
+                'text': _('Job'),
+                'endpoint': format_lazy('{}{{job.id}}', api_reverse_lazy('hr/jobs')),
             }, ),
         }, {
             'label': _('Shift started/ended'),
@@ -77,9 +77,13 @@ class TimeSheetEndpoint(ApiEndpoint):
         }, {
             'label': _('Confirmations'),
             'fields': ({
-                'type': constants.FIELD_STATIC_ICON,
+                'type': constants.FIELD_ICON,
                 'label': _('Morning check'),
                 'field': 'going_to_work_confirmation',
+                'values': {
+                    True: 'check',
+                    False: 'times',
+                },
                 'showIf': [
                     {
                         'going_to_work_confirmation': True,
@@ -102,9 +106,13 @@ class TimeSheetEndpoint(ApiEndpoint):
                     }
                 ],
             }, {
-                'type': constants.FIELD_STATIC_ICON,
+                'type': constants.FIELD_ICON,
                 'label': _('Candidate filled'),
                 'field': 'candidate_filled',
+                'values': {
+                    True: 'check',
+                    False: 'times',
+                },
                 'showIf': [
                     {
                         'candidate_filled': True,
@@ -126,9 +134,13 @@ class TimeSheetEndpoint(ApiEndpoint):
                     }
                 ],
             }, {
-                'type': constants.FIELD_STATIC,
+                'type': constants.FIELD_ICON,
                 'label': _('Supervisor approved'),
                 'field': 'supervisor_approved',
+                'values': {
+                    True: 'check',
+                    False: 'times',
+                },
             }, {
                 'type': constants.FIELD_BUTTON,
                 'icon': 'fa-external-link',
@@ -202,7 +214,7 @@ class TimeSheetEndpoint(ApiEndpoint):
     )
 
     fieldsets = (
-        'id', 'vacancy_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
+        'id', 'job_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
         'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
         'candidate_submitted_at', 'supervisor_approved_at', 'candidate_rate', 'rate_overrides_approved_by',
         'rate_overrides_approved_at', 'created_at', 'updated_at', {

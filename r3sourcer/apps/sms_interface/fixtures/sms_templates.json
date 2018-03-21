@@ -1,6 +1,21 @@
 [
 {
   "model": "sms_interface.smstemplate",
+  "pk": "187c0b76-15e5-4711-a324-270665b26517",
+  "fields": {
+    "updated_at": "2018-03-21T08:22:31.290Z",
+    "created_at": "2018-03-21T08:22:14.726Z",
+    "name": "Job Offer Placement Confirmation",
+    "slug": "job-offer-placement-confirmation",
+    "message_text_template": "[[candidate_contact]] - SHIFT CONFIRMED! [[target_date_and_time]] Start!\r\n[[job__jobsite]].\r\n[[timesheet__supervisor]], [[timesheet__supervisor__contact__phone_mobile]].\r\nMake sure you arrive 10mins early have full PPE, white card, ID and relevant licences with you. Contact site foreman upon arrival.\r\nAny issues call LabourKing immediately on 0406587777",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
   "pk": "19d86eac-3608-42ae-8e0c-2373a4f8c686",
   "fields": {
     "updated_at": "2017-12-12T14:12:06.265Z",
@@ -50,9 +65,9 @@
   "fields": {
     "updated_at": "2017-12-08T14:46:35.039Z",
     "created_at": "2017-12-08T14:46:35.039Z",
-    "name": "Vacancy Offer 1st",
-    "slug": "vacancy-offer-1st",
-    "message_text_template": "[[candidate_contact]]. JOB OFFER!\r\n[[vacancy__position]] in [[jobsite_address__city__name]]/[[jobsite_address__state__name]].\r\nShift starts at [[target_date_and_time]].\r\nReply YES to confirm or NO to decline.\r\nR3sourcer",
+    "name": "Job Offer 1st",
+    "slug": "job-offer-1st",
+    "message_text_template": "[[candidate_contact]]. JOB OFFER!\r\n[[job__position]] in [[jobsite_address__city__name]]/[[jobsite_address__state__name]].\r\nShift starts at [[target_date_and_time]].\r\nReply YES to confirm or NO to decline.\r\nR3sourcer",
     "reply_timeout": 10,
     "delivery_timeout": 360,
     "company": null,
@@ -65,9 +80,9 @@
   "fields": {
     "updated_at": "2017-12-08T15:06:20.636Z",
     "created_at": "2017-12-08T14:55:36.364Z",
-    "name": "Candidate VO Cancelled <1 hrs",
-    "slug": "candidate-vo-cancelled-1-hrs",
-    "message_text_template": "[[candidate_contact]],\r\nThe [[vacancy__position]] shift starting at [[target_date_and_time]] for [[vacancy__jobsite]] job booking has been CANCELLED. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
+    "name": "Candidate JO Cancelled <1 hrs",
+    "slug": "candidate-jo-cancelled-1-hrs",
+    "message_text_template": "[[candidate_contact]],\r\nThe [[job__position]] shift starting at [[target_date_and_time]] for [[job__jobsite]] job booking has been CANCELLED. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
     "reply_timeout": 10,
     "delivery_timeout": 0,
     "company": null,
@@ -110,9 +125,9 @@
   "fields": {
     "updated_at": "2017-12-08T14:48:05.029Z",
     "created_at": "2017-12-08T14:48:05.029Z",
-    "name": "Vacancy Offer Recurring",
-    "slug": "vacancy-offer-recurring",
-    "message_text_template": "[[candidate_contact]].\r\nAre you able to work at the same site? [[vacancy__position]].\r\n[[vacancy__jobsite__get_address]]\r\nShift starts at [[target_date_and_time]]. \r\nReply YES to confirm or NO to decline.\r\nR3sourcer",
+    "name": "Job Offer Recurring",
+    "slug": "job-offer-recurring",
+    "message_text_template": "[[candidate_contact]].\r\nAre you able to work at the same site? [[job__position]].\r\n[[job__jobsite__get_address]]\r\nShift starts at [[target_date_and_time]]. \r\nReply YES to confirm or NO to decline.\r\nR3sourcer",
     "reply_timeout": 10,
     "delivery_timeout": 360,
     "company": null,
@@ -140,9 +155,9 @@
   "fields": {
     "updated_at": "2017-12-08T15:00:55.969Z",
     "created_at": "2017-12-08T14:53:05.998Z",
-    "name": "Candidate VO Cancelled",
-    "slug": "candidate-vo-cancelled",
-    "message_text_template": "[[candidate_contact]],\r\nThe [[vacancy__position]] shift starting at [[target_date_and_time]] for [[vacancy__jobsite]] job has been CANCELLED. We may send you another offer. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
+    "name": "Candidate JO Cancelled",
+    "slug": "candidate-jo-cancelled",
+    "message_text_template": "[[candidate_contact]],\r\nThe [[job__position]] shift starting at [[target_date_and_time]] for [[job__jobsite]] job has been CANCELLED. We may send you another offer. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
     "reply_timeout": 10,
     "delivery_timeout": 0,
     "company": null,
@@ -155,11 +170,26 @@
   "fields": {
     "updated_at": "2017-12-12T10:36:55.341Z",
     "created_at": "2017-12-12T10:36:10.914Z",
-    "name": "Vacancy Offer Rejection",
-    "slug": "vacancy-offer-rejection",
-    "message_text_template": "[[candidate_contact]],\r\nUnfortunately, the shift for [[vacancy__jobsite]] at [[target_date_and_time]] has been filled!\r\nBe ready for more offers... R3sourcer",
+    "name": "Job Offer Rejection",
+    "slug": "job-offer-rejection",
+    "message_text_template": "[[candidate_contact]],\r\nUnfortunately, the shift for [[job__jobsite]] at [[target_date_and_time]] has been filled!\r\nBe ready for more offers... R3sourcer",
     "reply_timeout": 10,
     "delivery_timeout": 0,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
+  "pk": "ec4be330-4935-4616-93b6-e54d87301961",
+  "fields": {
+    "updated_at": "2018-03-21T10:12:07.133Z",
+    "created_at": "2018-03-21T10:12:07.133Z",
+    "name": "Candidate Going To Work",
+    "slug": "candidate-going-to-work",
+    "message_text_template": "[[candidate_contact]].\r\nAre you on your way to work? Confirm now by replying YES.\r\nFailure to reply in 30 minutes will result in your shift being cancelled!\r\nMake sure you have your white card and full PPE and you are on time.\r\nThanks, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
+    "reply_timeout": 30,
+    "delivery_timeout": 10,
     "company": null,
     "type": "sms"
   }

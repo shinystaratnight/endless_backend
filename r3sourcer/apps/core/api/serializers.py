@@ -663,6 +663,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         fields = (
             'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'marital_status',
             'birthday', 'spouse_name', 'children', 'picture', 'address', 'phone_mobile_verified', 'email_verified',
+            'id',
             # FIXME: change related fields
             {
                 'user': ('id',),
@@ -1424,6 +1425,6 @@ class InvoiceLineSerializer(ApiBaseModelSerializer):
         fields = ('__all__', {
             'vat': ('id', 'name'),
             'timesheet': ('id', {
-                'vacancy_offer': ('id', 'candidate_contact'),
+                'job_offer': ('id', 'candidate_contact'),
             })
         })
