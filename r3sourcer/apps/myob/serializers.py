@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from r3sourcer.apps.myob.models import MYOBCompanyFile
+from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBAuthData
 
 
 class MYOBCompanyFileSerializer(serializers.ModelSerializer):
@@ -11,3 +11,9 @@ class MYOBCompanyFileSerializer(serializers.ModelSerializer):
     class Meta:
         model = MYOBCompanyFile
         fields = ('id', 'uri', 'name', 'authenticated')
+
+
+class MYOBAuthDataSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = MYOBAuthData
+        fields = ("id", "myob_user_username")

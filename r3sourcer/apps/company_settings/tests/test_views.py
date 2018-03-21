@@ -622,3 +622,56 @@ class TestMYOBSettingsView:
         assert myob_settings.company_client_gst == account
         assert myob_settings.payroll_accounts_last_refreshed == now
         assert myob_settings.company_files_last_refreshed == now
+
+
+class TestMYOBAuthDataListView:
+    def test_get(self, user, client):
+        auth_data = MYOBAuthData.objects.create(
+            client_id='client_id1',
+            client_secret='client_secret',
+            access_token='access_token',
+            refresh_token='refresh_token',
+            myob_user_uid='myob_user_uid',
+            myob_user_username='myob_user_username',
+            expires_in=1,
+            user=user
+        )
+        auth_data2 = MYOBAuthData.objects.create(
+            client_id='client_id2',
+            client_secret='client_secret',
+            access_token='access_token',
+            refresh_token='refresh_token',
+            myob_user_uid='myob_user_uid',
+            myob_user_username='myob_user_username2',
+            expires_in=1,
+            user=user
+        )
+
+        url = reverse('auth_data', kwargs={'version': 'v2'})
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert len(response['auth_data_list']) == 2
+        assert response['auth_data_list'][0]['myob_user_username'] == auth_data.myob_user_username
+        assert response['auth_data_list'][1]['myob_user_username'] == auth_data2.myob_user_username
+
+
+class TestMYOBAuthDataDeleteView:
+    def test_delete(self, user, client):
+        auth_data = MYOBAuthData.objects.create(
+            client_id='client_id1',
+            client_secret='client_secret',
+            access_token='access_token',
+            refresh_token='refresh_token',
+            myob_user_uid='myob_user_uid',
+            myob_user_username='myob_user_username',
+            expires_in=1,
+            user=user
+        )
+
+        url = reverse('auth_data_delete', kwargs={'version': 'v2', 'id': auth_data.id})
+        client.force_login(user)
+        response = client.delete(url)
+
+        assert response.status_code == 204
+        assert MYOBAuthData.objects.all().count() == 0

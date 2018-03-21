@@ -24,10 +24,13 @@ def get_myob_client_for_account(company):
         myob_client.init_api()
     return myob_client
 
+
 @shared_task
 def sync_invoice(invoice_id):
     invoice = Invoice.objects.get(id=invoice_id)
     company = invoice.provider_company
+    # company_file = company.company_settings.invoice_company_file  # TODO: uncomment when myob form is ready
+    # cf_token = company_file.tokens.first()
     cf_token = MYOBCompanyFileToken.objects.filter(company=company).first()
     client = MYOBClient(cf_data=cf_token)
     service = InvoiceSync(myob_client=client, company=company)

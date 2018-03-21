@@ -32,4 +32,6 @@ urlpatterns = [
     url(r'^company_settings/myob_accounts/$', views.CompanyFileAccountsView.as_view(), name='myob_accounts'),
     url(r'^company_settings/myob_authorization/$', views.MYOBAuthorizationView.as_view(), name='myob_authorization'),
     url(r'^company_settings/myob_settings/$', views.MYOBSettingsView.as_view(), name='myob_settings'),
+    url(r'^company_settings/auth_data/$', views.MYOBAuthDataListView.as_view(), name='auth_data'),
+    url(r'^company_settings/auth_data/(?P<id>[\w\-]+)/delete/$', views.MYOBAuthDataDeleteView.as_view(), name='auth_data_delete'),
 ]
