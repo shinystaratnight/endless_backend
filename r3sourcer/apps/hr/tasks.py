@@ -1,3 +1,4 @@
+import operator
 from datetime import timedelta, date, time, datetime
 
 from celery import shared_task
@@ -144,7 +145,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                 send_job_offer_sms(job_offer=job_offer, **kwargs)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_jo_confirmation_sms(self, job_offer_id):
     send_or_schedule_job_offer_sms(
@@ -153,7 +154,7 @@ def send_jo_confirmation_sms(self, job_offer_id):
     )
 
 
-@shared_task(bind=True)
+@shared_task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_recurring_jo_confirmation_sms(self, job_offer_id):
     send_or_schedule_job_offer_sms(
@@ -220,7 +221,7 @@ def send_job_offer_cancelled_lt_one_hour_sms(jo_id):
     send_job_offer_sms_notification(jo_id, 'candidate-jo-cancelled-1-hrs', 'candidate_contact')
 
 
-@app.task(bind=True)
+@app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_placement_rejection_sms(self, job_offer_id):
     from r3sourcer.apps.sms_interface.models import SMSRelatedObject
@@ -383,7 +384,7 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
                 email_interface.send_tpl(recipient.contact.email, tpl_name=email_tpl, **data_dict)
 
 
-@app.task(bind=True)
+@app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def autoconfirm_rejected_timesheet(self, time_sheet_id):
     try:
@@ -441,7 +442,7 @@ def send_supervisor_timesheet_message(
             email_interface.send_tpl(supervisor.contact.email, tpl_name=email_tpl, **data_dict)
 
 
-@app.task(bind=True)
+@app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
     try:
@@ -532,7 +533,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
         logger.error(e)
 
 
-@app.task(bind=True)
+@app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
     today = date.today()
@@ -580,3 +581,118 @@ def check_unpaid_invoices():
         invoice_numbers = [x['Number'] for x in invoices]
         closed_invoices = core_models.Invoice.objects.filter(is_paid=False, number__in=invoice_numbers)
         closed_invoices.update(is_paid=True)
+
+
+def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_target_dt=False):
+    with transaction.atomic():
+        try:
+            timesheet = hr_models.TimeSheet.objects.get(pk=timesheet_id)
+        except hr_models.TimeSheet.DoesNotExist as e:
+            logger.error(e)
+            logger.info('SMS sending will not be proceed for Timesheet: {}'.format(timesheet_id))
+            return
+
+        try:
+            jo = hr_models.JobOffer.objects.get(pk=job_offer_id)
+        except hr_models.JobOffer.DoesNotExist as e:
+            logger.error(e)
+            logger.info('SMS sending will not be proceed for JO: {}'.format(job_offer_id))
+        else:
+            data_dict = dict(
+                job=jo.job,
+                candidate_contact=jo.candidate_contact,
+                supervisor=timesheet.supervisor,
+                timesheet=timesheet,
+                related_obj=jo.job,
+                related_objs=[jo.candidate_contact, timesheet.supervisor, timesheet]
+            )
+            if needs_target_dt:
+                try:
+                    target_date_and_time = timezone.localtime(jo.start_time)
+                    target_date_and_time = formats.date_format(target_date_and_time, settings.DATETIME_FORMAT)
+                except AttributeError as e:
+                    logger.error(e)
+                else:
+                    data_dict.update({'target_date_and_time': target_date_and_time})
+
+            try:
+                recipient = operator.attrgetter(recipient)(timesheet)
+            except AttributeError as e:
+                logger.error(e)
+                logger.info('Cannot get recipient for Timesheet: {}'.format(timesheet_id))
+                return
+
+            if recipient.contact.phone_mobile:
+                try:
+                    sms_interface = get_sms_service()
+                except ImportError:
+                    logger.exception('Cannot load SMS service')
+                    return
+
+                sms_interface.send_tpl(recipient.contact.phone_mobile, sms_tpl, check_reply=False, **data_dict)
+
+
+@app.task(bind=True, queue='sms')
+@one_sms_task_at_the_same_time
+def send_placement_acceptance_sms(self, timesheet_id, job_offer_id):
+    send_timesheet_sms(
+        timesheet_id, job_offer_id, 'job-offer-placement-confirmation', 'candidate_contact', needs_target_dt=True
+    )
+
+
+def send_time_sheet_confirmation_sms(time_sheet_id, action_prefix, tpl=''):
+    """
+    Send time sheet notification with specific template.
+
+    :param time_sheet_id: UUID of TimeSheet
+    :param action_prefix: str Model field prefix
+    :param tpl: str or TemplateMessage instance
+    :return:
+    """
+    action_sent = '{}sent_sms'.format(action_prefix)
+
+    with transaction.atomic():
+        try:
+            time_sheet = hr_models.TimeSheet.objects.select_for_update().get(
+                **{'pk': time_sheet_id, action_sent: None}
+            )
+        except hr_models.TimeSheet.DoesNotExist as e:
+            logger.error(e)
+        else:
+            target_date_and_time = timezone.localtime(time_sheet.shift_started_at)
+            candidate_contact = time_sheet.job_offer.candidate_contact
+            data_dict = dict(
+                job=time_sheet.job_offer.job,
+                candidate_contact=candidate_contact,
+                target_date_and_time=formats.date_format(target_date_and_time, settings.DATETIME_FORMAT),
+                related_obj=time_sheet,
+                related_objs=[time_sheet.job_offer.job, candidate_contact],
+            )
+            check_reply = not getattr(time_sheet, '{}confirmation'.format(action_prefix), None)
+
+            try:
+                sms_interface = get_sms_service()
+            except ImportError:
+                logger.exception('Cannot load SMS service')
+                return
+
+            sent_message = sms_interface.send_tpl(
+                candidate_contact.contact.phone_mobile, tpl, check_reply=check_reply, **data_dict
+            )
+            setattr(time_sheet, action_sent, sent_message)
+            time_sheet.save(update_fields=[action_sent])
+            related_query_name = hr_models.TimeSheet._meta.get_field(action_sent).related_query_name()
+            cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
+
+
+@app.task(bind=True, queue='sms')
+@one_sms_task_at_the_same_time
+def send_going_to_work_sms(time_sheet_id):
+    """
+    Send morning check sms notification.
+    Going to work sms message.
+
+    :param time_sheet_id: UUID of TimeSheet instance
+    :return:
+    """
+    send_time_sheet_confirmation_sms(time_sheet_id, 'going_to_work_', 'candidate-going-to-work')

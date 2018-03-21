@@ -858,9 +858,8 @@ class JobOffer(core_models.UUIDModel):
 
         super(JobOffer, self).save(*args, **kw)
 
-        # TODO: implement this
-        # if create_time_sheet:
-        #     TimeSheet.get_or_create_for_job_offer_accepted(self)
+        if create_time_sheet:
+            TimeSheet.get_or_create_for_job_offer_accepted(self)
 
         if just_added:
             if not self.is_cancelled() and CarrierList.objects.filter(
@@ -1047,7 +1046,6 @@ class TimeSheet(
     __original_supervisor_id = None
     __original_going_to_work_confirmation = None
     __original_candidate_submitted_at = None
-    sms_triggered_action = False
 
     class Meta:
         verbose_name = _("Timesheet Entry")
@@ -1058,8 +1056,7 @@ class TimeSheet(
         super().__init__(*args, **kwargs)
 
         self.__original_supervisor_id = self.supervisor_id
-        self.__original_going_to_work_confirmation = \
-            self.going_to_work_confirmation
+        self.__original_going_to_work_confirmation = self.going_to_work_confirmation
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
     def __str__(self):
@@ -1089,12 +1086,13 @@ class TimeSheet(
 
     @classmethod
     def get_or_create_for_job_offer_accepted(cls, job_offer):
+        start_time = job_offer.start_time
         data = {
             'job_offer': job_offer,
-            'shift_started_at': job_offer.start_time,
-            'break_started_at': job_offer.start_time + timedelta(hours=5),
-            'break_ended_at': job_offer.start_time + timedelta(hours=5, minutes=30),
-            'shift_ended_at': job_offer.start_time + timedelta(hours=8, minutes=30),
+            'shift_started_at': start_time,
+            'break_started_at': start_time + timedelta(hours=5),
+            'break_ended_at': start_time + timedelta(hours=5, minutes=30),
+            'shift_ended_at': start_time + timedelta(hours=8, minutes=30),
             'supervisor': job_offer.job.jobsite.primary_contact,
             'candidate_rate': job_offer.shift.date.hourly_rate
         }
@@ -1110,12 +1108,8 @@ class TimeSheet(
 
         now = timezone.now()
         if now <= job_offer.start_time + timedelta(hours=2):
-            pass  # pragma: no cover
-            # TODO: send sms?
-            # from pepro.crm_hr.tasks import send_placement_acceptance_sms
-            # send_placement_acceptance_sms.apply_async(
-            #     args=[job_offer.id], countdown=10
-            # )
+            from r3sourcer.apps.hr.tasks import send_placement_acceptance_sms
+            send_placement_acceptance_sms.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
 
         return time_sheet
 
@@ -1136,10 +1130,51 @@ class TimeSheet(
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
-        super().save(*args, **kwargs)
+        going_set = self.going_to_work_confirmation is not None and (
+            just_added or self.__original_going_to_work_confirmation != self.going_to_work_confirmation
+        )
+        candidate_submitted_at = self.candidate_submitted_at is not None and (
+            just_added or self.__original_candidate_submitted_at != self.candidate_submitted_at
+        )
+        if just_added:
+            if not self.supervisor and self.job_offer:
+                self.supervisor = self.job_offer.job.jobsite.primary_contact
+
+            now = timezone.now()
+            if now <= self.shift_started_at:
+                going_eta = self.shift_started_at - timedelta(minutes=settings.GOING_TO_WORK_SMS_DELAY_MINUTES)
+                if going_eta > now:
+                    from r3sourcer.apps.hr.tasks import send_going_to_work_sms
+                    send_going_to_work_sms.apply_async(args=[self.pk], eta=going_eta)
+                else:
+                    self.going_to_work_confirmation = True
+
+        super(TimeSheet, self).save(*args, **kwargs)
 
         if just_added and self.is_allowed(10):
             self.create_state(10)
+
+        if going_set and self.going_to_work_confirmation and self.is_allowed(20):
+            self.create_state(20)
+
+        if not just_added:
+            if self.candidate_submitted_at is not None and self.is_allowed(30):
+                self.create_state(30)
+            if self.supervisor_approved_at is not None and self.is_allowed(40):
+                self.create_state(40)
+            if self.is_allowed(70):
+                self.create_state(70)
+
+        # If accepted manually, disable reply checking.
+        if self.going_to_work_confirmation and self.going_to_work_sent_sms and self.going_to_work_sent_sms.check_reply:
+            self.going_to_work_sent_sms.no_check_reply()
+        self.__original_supervisor_id = self.supervisor_id
+        self.__original_going_to_work_confirmation = self.going_to_work_confirmation
+        self.__original_candidate_submitted_at = self.candidate_submitted_at
+
+        if candidate_submitted_at and self.supervisor and not self.supervisor_signed_at:
+            from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
+            send_supervisor_timesheet_sign.delay(self.supervisor.id, self.id)
 
 
 class TimeSheetIssue(
