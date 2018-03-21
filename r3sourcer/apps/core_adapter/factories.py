@@ -1,11 +1,9 @@
-from django_filters import (
-    UUIDFilter, ChoiceFilter, DateFromToRangeFilter, DateTimeFromToRangeFilter, CharFilter
-)
+from django_filters import ChoiceFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 from django.utils.translation import ugettext_lazy as _
 
 from . import constants
-from .filters import ValuesFilter
+from .filters import ValuesFilter, DateRangeFilter, DateTimeRangeFilter
 
 
 def _get_field(fields, field_name):
@@ -74,9 +72,9 @@ def filter_factory(endpoint):
                             constants.FIELD_DATETIME]:
             is_date = field_type == constants.FIELD_DATE
             if is_date:
-                field_class = DateFromToRangeFilter
+                field_class = DateRangeFilter
             else:
-                field_class = DateTimeFromToRangeFilter
+                field_class = DateTimeRangeFilter
 
             attrs[field_qry] = field_class(
                 name=field_qry,
