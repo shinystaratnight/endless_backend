@@ -563,27 +563,31 @@ class TestRefreshMYOBAccountsView:
 
 class TestMYOBSettingsView:
     def test_myob_settings_get(self, user, client, manager, company, myob_account, company_contact_rel):
-        company.myob_settings.subcontractor_contract_work = myob_account
-        company.myob_settings.subcontractor_gst = myob_account
-        company.myob_settings.candidate_wages = myob_account
-        company.myob_settings.candidate_superannuation = myob_account
-        company.myob_settings.company_client_labour_hire = myob_account
-        company.myob_settings.company_client_gst = myob_account
+        company_file = MYOBCompanyFile.objects.create(
+            cf_id='id',
+            cf_uri='uri',
+            cf_name='name'
+        )
+        company.myob_settings.invoice_activity_account = myob_account
+        company.myob_settings.invoice_company_file = company_file
+        company.myob_settings.timesheet_company_file = company_file
         company.myob_settings.save()
 
         url = reverse('myob_settings', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
-        assert response['myob_settings']['subcontractor_contract_work']['name'] == myob_account.name
-        assert response['myob_settings']['subcontractor_gst']['name'] == myob_account.name
-        assert response['myob_settings']['candidate_wages']['name'] == myob_account.name
-        assert response['myob_settings']['candidate_superannuation']['name'] == myob_account.name
-        assert response['myob_settings']['company_client_labour_hire']['name'] == myob_account.name
-        assert response['myob_settings']['company_client_gst']['name'] == myob_account.name
+        assert response['myob_settings']['timesheet_company_file']['id'] == str(company_file.id)
+        assert response['myob_settings']['invoice_company_file']['id'] == str(company_file.id)
+        assert response['myob_settings']['invoice_activity_account']['id'] == str(myob_account.id)
 
     def test_myob_settings_post(self, user, client, manager, company, company_file, company_contact_rel):
         now = timezone.now()
+        company_file = MYOBCompanyFile.objects.create(
+            cf_id='id',
+            cf_uri='uri',
+            cf_name='name'
+        )
         account = MYOBAccount.objects.create(uid="d3edc1d7-7b31-437e-9fcd-000000000002",
                                              name='Business Bank Account',
                                              display_id='1-1120',
@@ -600,12 +604,9 @@ class TestMYOBSettingsView:
                                              row_version="5548997690873872384",
                                              company_file=company_file)
         data = {
-            'subcontractor_contract_work': {"id": str(account.id)},
-            'subcontractor_gst': {"id": str(account.id)},
-            'candidate_wages': {"id": str(account.id)},
-            'candidate_superannuation': {"id": str(account.id)},
-            'company_client_labour_hire': {"id": str(account.id)},
-            'company_client_gst': {"id": str(account.id)},
+            'invoice_activity_account': {"id": str(account.id)},
+            'invoice_company_file': {"id": str(company_file.id)},
+            'timesheet_company_file': {"id": str(company_file.id)},
             'payroll_accounts_last_refreshed': str(now),
             'company_files_last_refreshed': str(now),
         }
@@ -614,12 +615,9 @@ class TestMYOBSettingsView:
         client.post(url, data=json.dumps(data), content_type='application/json')
         myob_settings = MYOBSettings.objects.get(id=company.myob_settings.id)
 
-        assert myob_settings.subcontractor_contract_work == account
-        assert myob_settings.subcontractor_gst == account
-        assert myob_settings.candidate_wages == account
-        assert myob_settings.candidate_superannuation == account
-        assert myob_settings.company_client_labour_hire == account
-        assert myob_settings.company_client_gst == account
+        assert myob_settings.invoice_activity_account == account
+        assert myob_settings.invoice_company_file == company_file
+        assert myob_settings.timesheet_company_file == company_file
         assert myob_settings.payroll_accounts_last_refreshed == now
         assert myob_settings.company_files_last_refreshed == now
 

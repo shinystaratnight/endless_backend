@@ -44,8 +44,12 @@ class InvoiceSync(BaseSync):
 
             rate = price_list_rate.hourly_rate
             name = ' '.join([part[:4] for part in position_parts])
-            # account_id = provider_company.company_settings.activity_account.display_id  # TODO: uncomment when myob form is ready
-            account_id = '4-1000'
+
+            if invoice.provider_company.company_settings.invoice_activity_account:
+                account_id = invoice.provider_company.company_settings.invoice_activity_account.display_id
+            else:
+                account_id = '4-1000'
+
             income_account_resp = self._get_object_by_field(
                 account_id,
                 resource=self.client.api.GeneralLedger.Account,

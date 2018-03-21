@@ -3,6 +3,7 @@ from django.contrib.auth.models import Permission
 from django.db import models
 
 from r3sourcer.apps.core.models import UUIDModel
+from r3sourcer.apps.myob.models import MYOBCompanyFile
 
 
 class CompanySettings(UUIDModel):
@@ -41,17 +42,12 @@ class MYOBAccount(UUIDModel):
 class MYOBSettings(UUIDModel):
     company = models.OneToOneField('core.Company', blank=True, null=True, related_name='myob_settings')
 
-    # Expense accounts
-    subcontractor_contract_work = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='subcontractor_contract_work')
-    subcontractor_gst = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='subcontractor_gst')
-    candidate_wages = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='candidate_wages')
-    candidate_superannuation = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='candidate_superannuation')
+    # form fields
+    invoice_company_file = models.ForeignKey(MYOBCompanyFile, blank=True, null=True, related_name='invoice_company_files')
+    invoice_activity_account = models.ForeignKey(MYOBAccount, blank=True, null=True)
+    timesheet_company_file = models.ForeignKey(MYOBCompanyFile, blank=True, null=True, related_name='timesheet_company_files')
 
-    # Income accounts
-    company_client_labour_hire = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='company_client_labour_hire')
-    company_client_gst = models.ForeignKey(MYOBAccount, blank=True, null=True, related_name='company_client_gst')
-
-    # Last refreshed
+    # last refreshed
     payroll_accounts_last_refreshed = models.DateTimeField(blank=True, null=True)
     company_files_last_refreshed = models.DateTimeField(blank=True, null=True)
 
