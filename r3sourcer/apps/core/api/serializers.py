@@ -901,7 +901,7 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
         return data
 
 
-class WorkflowObjectSerializer(ApiBaseModelSerializer):
+class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
     method_fields = ('state_name', )
 
     class Meta:
