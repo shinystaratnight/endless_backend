@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('myob', '0006_myobsyncobject_company_file'),
-        ('company_settings', '0009_create_uuid_models'),
+        ('company_settings', '0010_auto_20180319_2013'),
     ]
 
     operations = [
