@@ -75,7 +75,8 @@ class InvoiceMapper:
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
             "TotalTax": invoice.tax,
-            "TotalAmount": invoice.total_with_tax
+            "TotalAmount": invoice.total_with_tax,
+            "Status": "Open",
         }
         lines = list()
 

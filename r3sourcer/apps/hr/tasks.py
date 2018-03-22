@@ -238,7 +238,7 @@ def send_placement_rejection_sms(self, job_offer_id):
 
 
 @shared_task
-def generate_invoice(timesheet_id):
+def generate_invoice(timesheet_id=None):
     """
     Generates new or updates existing invoice. Accepts regular(customer) company.
     """

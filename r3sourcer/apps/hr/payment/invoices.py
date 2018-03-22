@@ -1,3 +1,5 @@
+import math
+
 from datetime import datetime
 from decimal import Decimal
 
@@ -80,7 +82,7 @@ class InvoiceService(BasePaymentService):
                     'units': units,
                     'notes': notes,
                     'unit_price': rate,
-                    'amount': rate * units,
+                    'amount': math.ceil(rate * units * 100) / 100,
                     'vat': VAT.objects.get(name=vat_name),
                     'timesheet': timesheet,
                 })
@@ -165,10 +167,8 @@ class InvoiceService(BasePaymentService):
                 lines = [x for x in lines if not InvoiceLine.objects.filter(timesheet=x['timesheet']).exists()]
 
             invoice_lines = []
-            total = Decimal()
 
             for line in lines:
-                total += line['amount']
                 invoice_lines.append(InvoiceLine(invoice=invoice, **line))
 
             InvoiceLine.objects.bulk_create(invoice_lines)

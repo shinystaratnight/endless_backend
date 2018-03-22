@@ -39,8 +39,14 @@ class InvoiceSync(BaseSync):
             price_list = invoice.customer_company.price_lists.get(effective=True)
             rate = PriceListRate.objects.filter(price_list=price_list, skill=skill)
             name = ' '.join([part[:4] for part in position_parts])
+
+            if invoice.provider_company.company_settings.invoice_activity_account:
+                account_id = invoice.provider_company.company_settings.invoice_activity_account.display_id
+            else:
+                account_id = '4-1000'
+
             income_account_resp = self._get_object_by_field(
-                '4-1000',
+                account_id,
                 resource=self.client.api.GeneralLedger.Account,
                 single=True
             )
@@ -69,15 +75,32 @@ class InvoiceSync(BaseSync):
 
         return activities
 
-    def _sync_to(self, invoice, sync_obj=None):
+    def _sync_to(self, invoice, sync_obj=None, partial=False):
         tax_codes = self._get_tax_codes()
         params = {"$filter": "CompanyName eq '%s'" % invoice.customer_company.name}
         customer_data = self.client.api.Contact.Customer.get(params=params)
+
+        if not customer_data['Items']:
+            raise Exception("Cant find customer in MYOB with company name: %s" % invoice.customer_company.name)
+
         customer_uid = customer_data['Items'][0]['UID']
         activities = self._create_or_update_activities(invoice, tax_codes)
 
         data = self.mapper.map_to_myob(invoice, customer_uid, tax_codes, activities)
-        resp = self.resource.post(json=data, raw_resp=True)
+
+        if partial:
+            params = {"$filter": "Number eq '%s'" % invoice.number}
+            myob_invoice = self.client.api.Sale.Invoice.TimeBilling.get(params=params)['Items'][0]
+            myob_id = myob_invoice['UID']
+            row_version = myob_invoice['RowVersion']
+            data.update({
+                "UID": myob_id,
+                "RowVersion": row_version,
+                "Terms": {"PaymentIsDue": "DayOfMonthAfterEOM"}  # TEMP
+            })
+            resp = self.resource.put(uid=myob_id, json=data, raw_resp=True)
+        else:
+            resp = self.resource.post(json=data, raw_resp=True)
 
         if 200 <= resp.status_code < 400:
             log.info('Invoice %s synced' % invoice.id)
@@ -86,3 +109,12 @@ class InvoiceSync(BaseSync):
             return False
 
         return True
+
+    def delete(self, invoice):
+        resp = self.resource.delete(uid=invoice.id, raw_resp=True)
+
+        if 200 <= resp.status_code < 400:
+            log.info('Invoice %s deleted' % invoice.id)
+        else:
+            log.warning("[MYOB API] Invoice %s: %s", invoice.id, resp.text)
+            return False

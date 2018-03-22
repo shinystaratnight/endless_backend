@@ -1,13 +1,16 @@
 import datetime
 
-from r3sourcer.apps.core.models import Company
+from celery import shared_task
+
+from r3sourcer.apps.core.models import Company, Invoice
 from r3sourcer.apps.core.tasks import one_task_at_the_same_time
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.hr.models import TimeSheet
-from r3sourcer.apps.myob.api.wrapper import MYOBServerException
+from r3sourcer.apps.myob.api.wrapper import MYOBServerException, MYOBClient
 from r3sourcer.apps.myob.helpers import get_myob_client
-from r3sourcer.apps.myob.models import MYOBSyncObject, MYOBRequestLog
+from r3sourcer.apps.myob.models import MYOBSyncObject, MYOBRequestLog, MYOBCompanyFileToken
 from r3sourcer.apps.myob.services.candidate import CandidateSync
+from r3sourcer.apps.myob.services.invoice import InvoiceSync
 from r3sourcer.apps.myob.services.timesheet import TimeSheetSync
 from r3sourcer.apps.myob.services.utils import sync_candidate_contacts_to_myob, sync_companies_to_myob
 from r3sourcer.celeryapp import app
@@ -103,3 +106,32 @@ def clean_myob_request_log(self):
 
     today = datetime.date.today()
     MYOBRequestLog.objects.filter(created__date__lt=today).delete()
+
+
+@shared_task
+def sync_invoice(invoice_id):
+    invoice = Invoice.objects.get(id=invoice_id)
+    company = invoice.provider_company
+
+    if company.company_settings.invoice_company_file:
+        company_file = company.company_settings.invoice_company_file
+        cf_token = company_file.tokens.first()
+    else:
+        cf_token = MYOBCompanyFileToken.objects.filter(company=company).first()
+
+    client = MYOBClient(cf_data=cf_token)
+    service = InvoiceSync(myob_client=client, company=company)
+
+    params = {"$filter": "Number eq '%s'" % invoice.number}
+    synced_invoice = client.api.Sale.Invoice.TimeBilling.get(params=params)
+
+    if synced_invoice['Count']:
+        if synced_invoice['Count'] > 1:
+            raise Exception("Got 2 or more invoices with id %s from MYOB." % invoice.id)
+
+        synced_invoice_lines = synced_invoice['Items'][0]['Lines']
+
+        if len(synced_invoice_lines) < invoice.invoice_lines.count():
+            service.sync_to_myob(invoice, partial=True)
+    else:
+        service.sync_to_myob(invoice)

@@ -1,3 +1,4 @@
+import math
 import os
 import uuid
 from datetime import date
@@ -1651,16 +1652,18 @@ class AbstractOrder(AbstractBaseOrder):
         if lines:
             for group in lines.values('vat__rate').annotate(sum=Sum('amount')):
                 vat += group['sum'] * group['vat__rate']
-        return vat
+        return math.ceil(vat * 100) / 100
 
     def calculate_total(self):
         lines = getattr(self, '{}_lines'.format(self._meta.model_name))
-        return lines.aggregate(sum=Sum('amount'))['sum'] or 0
+        sum = lines.aggregate(sum=Sum('amount'))['sum'] or 0
+        return math.ceil(sum * 100) / 100
 
     def save(self, *args, **kwargs):
         self.tax = self.calculate_vat()
         self.total = self.calculate_total()
-        self.total_with_tax = self.tax + self.total
+        total_with_tax = self.tax + self.total
+        self.total_with_tax = math.ceil(total_with_tax * 100) / 100
         super().save(*args, **kwargs)
 
 
@@ -1740,7 +1743,7 @@ class AbstractOrderLine(UUIDModel):
         return self.vat.rate * self.unit_price
 
     def save(self, *args, **kwargs):
-        self.amount = self.unit_price * self.units
+        self.amount = math.ceil(self.unit_price * self.units * 100) / 100
         super().save(*args, **kwargs)
 
 
@@ -1816,6 +1819,10 @@ class Invoice(AbstractOrder):
         max_length=255,
         blank=True,
         null=True
+    )
+
+    approved = models.BooleanField(
+        default=False
     )
 
     class Meta:

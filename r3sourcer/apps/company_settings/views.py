@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
@@ -11,7 +12,7 @@ from r3sourcer.apps.company_settings import serializers
 from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
 from r3sourcer.apps.core.models import User
 from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
-from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer
+from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
 from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
 
 
@@ -285,8 +286,8 @@ class MYOBAuthorizationView(APIView):
     """
     def post(self, request, *args, **kwargs):
         data = {
-            'client_id': request.data.get('api_key', None),
-            'client_secret': request.data.get('api_secret', None),
+            'client_id': settings.MYOB_APP['api_key'],
+            'client_secret': settings.MYOB_APP['api_secret'],
             'scope': 'CompanyFile',
             'code': request.data.get('code', None),
             'redirect_uri': request.data.get('redirect_uri', None),
@@ -308,6 +309,29 @@ class MYOBAuthorizationView(APIView):
         return Response()
 
 
+class MYOBAuthDataListView(APIView):
+    """
+    Returns list of MYOBAuthData objects of given user
+    """
+    def get(self, request, *args, **kwargs):
+        auth_data_list = MYOBAuthData.objects.filter(user=request.user)
+        serializer = MYOBAuthDataSerializer(auth_data_list, many=True)
+        data = {
+            "auth_data_list": serializer.data
+        }
+        return Response(data)
+
+
+class MYOBAuthDataDeleteView(APIView):
+    """
+    Deletes MYOBAuthData object by given id
+    """
+    def delete(self, request, *args, **kwargs):
+        auth_data = get_object_or_404(MYOBAuthData, id=kwargs['id'])
+        auth_data.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+
 class UserCompanyFilesView(APIView):
     """
     Returns all company files of current user.
@@ -326,24 +350,26 @@ class RefreshCompanyFilesView(APIView):
     """
     def get(self, request, *args, **kwargs):
         company = request.user.company
-        auth_data = request.user.auth_data.latest('created')
-        client = MYOBClient(auth_data=auth_data)
-        raw_company_files = client.get_company_files()
+        auth_data_list = request.user.auth_data.all()
         new_company_files = list()
 
-        for raw_company_file in raw_company_files:
-            company_file, created = MYOBCompanyFile.objects.update_or_create(cf_id=raw_company_file['Id'],
-                                                                             defaults={
-                                                                                 'cf_uri': raw_company_file['Uri'],
-                                                                                 'cf_name': raw_company_file['Name']
-                                                                             })
-            company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
-                                                                                  company=company,
-                                                                                  defaults={
-                                                                                      'auth_data': auth_data,
-                                                                                  })
-            if created:
-                new_company_files.append(company_file)
+        for auth_data in auth_data_list:
+            client = MYOBClient(auth_data=auth_data)
+            raw_company_files = client.get_company_files()
+
+            for raw_company_file in raw_company_files:
+                company_file, created = MYOBCompanyFile.objects.update_or_create(cf_id=raw_company_file['Id'],
+                                                                                 defaults={
+                                                                                     'cf_uri': raw_company_file['Uri'],
+                                                                                     'cf_name': raw_company_file['Name']
+                                                                                 })
+                company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
+                                                                                      company=company,
+                                                                                      defaults={
+                                                                                          'auth_data': auth_data,
+                                                                                      })
+                if created:
+                    new_company_files.append(company_file)
 
         serialzer = MYOBCompanyFileSerializer(new_company_files, many=True)
         data = {

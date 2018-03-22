@@ -2,9 +2,13 @@ from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.views import generic
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
-from r3sourcer.apps.core.models import Form, Company
+from r3sourcer.apps.core.models import Form, Company, Invoice
 from r3sourcer.apps.core.utils.user import get_default_company
+from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.apps.myob.tasks import sync_invoice
 
 
 class FormView(generic.TemplateView):
@@ -40,3 +44,27 @@ class RegisterFormView(generic.TemplateView):
 
         context['form'] = form
         return context
+
+
+class ApproveInvoiceView(APIView):
+    def post(self, *args, **kwargs):
+        invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
+        invoice.approved = True
+        invoice.save()
+        sync_invoice.delay(invoice.id)
+        return Response()
+
+
+class SyncInvoicesView(APIView):
+    """
+    Fetches unsynced invoices and triggers delayed task to sync them to MYOB
+    """
+    def get(self, *args, **kwargs):
+        synced_objects = MYOBSyncObject.objects.filter(app='core',
+                                                       model='Invoice',
+                                                       direction='myob') \
+                                               .values_list('record', flat=True)
+        invoice_list = Invoice.objects.exclude(id__in=synced_objects)
+
+        for invoice in invoice_list:
+            sync_invoice.delay(invoice.id)

@@ -276,7 +276,7 @@ class BaseSync:
         )
 
     @method_decorator(myob_enabled_mode)
-    def sync_to_myob(self, instance):
+    def sync_to_myob(self, instance, partial=False):
         if self.client is None:
             log.info('MYOB client is not defined')
             return
@@ -289,10 +289,10 @@ class BaseSync:
             return
 
         sync_obj = self._get_sync_object(instance)
-        if sync_obj and self._is_synced(instance, sync_obj=sync_obj):
+        if sync_obj and self._is_synced(instance, sync_obj=sync_obj) and not partial:
             return
 
-        res = self._sync_to(instance, sync_obj)
+        res = self._sync_to(instance, sync_obj, partial)
         if res:
             self._update_sync_object(instance)
 

@@ -43,8 +43,18 @@ class InvoiceEndpoint(endpoints.ApiEndpoint):
             'text': _('Print'),
             'icon': 'fa-print',
             'field': 'id',
-        }
-    )
+        },
+        {
+            'type': constants.FIELD_BUTTON,
+            'icon': 'fa-external-link',
+            'text': _('Approve'),
+            'endpoint': format_lazy(
+                '{}{{id}}/approve/',
+                api_reverse_lazy('core/invoices')
+            ),
+            'field': 'id',
+            'action': constants.DEFAULT_ACTION_POST,
+    })
 
     fieldsets = ({
         'type': constants.CONTAINER_ROW,
