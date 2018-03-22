@@ -182,11 +182,35 @@ class RateCoefficientModifierEndpoint(ApiEndpoint):
 class PriceListEndpoint(ApiEndpoint):
     model = models.PriceList
 
+    serializer_fields = ('id', 'company', 'valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at')
+
     list_filter = ('company', )
-    list_editable = ('valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at', {
-        **constants.BUTTON_EDIT,
-        'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelists'))
-    }, constants.BUTTON_DELETE,)
+    list_editable = (
+        {
+            'type': constants.FIELD_DATE,
+            'field': 'valid_from'
+        }, {
+            'type': constants.FIELD_DATE,
+            'field': 'valid_until'
+        },
+        'effective', 'approved_by', 'approved_at',
+        {
+            **constants.BUTTON_EDIT,
+            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelists'))
+        }, constants.BUTTON_DELETE,
+    )
+
+    fieldsets = (
+        'company',
+        {
+            'type': constants.FIELD_DATE,
+            'field': 'valid_from'
+        }, {
+            'type': constants.FIELD_DATE,
+            'field': 'valid_until'
+        },
+        'effective', 'approved_by', 'approved_at',
+    )
 
 
 class IndustryEndpoint(ApiEndpoint):

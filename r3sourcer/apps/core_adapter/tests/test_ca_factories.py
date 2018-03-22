@@ -1,13 +1,11 @@
 import mock
 import pytest
 
-from django_filters import (
-    UUIDFilter, ChoiceFilter, DateFromToRangeFilter, DateTimeFromToRangeFilter,
-    CharFilter,
-)
+from django_filters import ChoiceFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core_adapter.factories import _get_field, filter_factory
+from r3sourcer.apps.core_adapter.filters import DateRangeFilter, DateTimeRangeFilter
 
 
 class TestFunctions:
@@ -172,8 +170,7 @@ class TestFilterFactory:
 
         res_cls = filter_factory(endpoint)
 
-        assert isinstance(res_cls.declared_filters['field'],
-                          DateFromToRangeFilter)
+        assert isinstance(res_cls.declared_filters['field'], DateRangeFilter)
 
     def test_filter_factory_datetime_base(self, endpoint):
         endpoint.get_metadata_fields.return_value = [{
@@ -183,8 +180,7 @@ class TestFilterFactory:
 
         res_cls = filter_factory(endpoint)
 
-        assert isinstance(res_cls.declared_filters['field'],
-                          DateTimeFromToRangeFilter)
+        assert isinstance(res_cls.declared_filters['field'], DateTimeRangeFilter)
 
     def test_filter_factory_unsupported_base(self, endpoint):
         endpoint.get_metadata_fields.return_value = [{
