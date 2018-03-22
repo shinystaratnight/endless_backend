@@ -1,9 +1,10 @@
 import logging
 
+from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
 
+from r3sourcer.apps.core.models import SiteCompany, Company
 from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
-
 from r3sourcer.apps.sms_interface.services import BaseSMSService
 from r3sourcer.apps.twilio import models
 
@@ -12,7 +13,21 @@ logger = logging.getLogger(__name__)
 
 class TwilioSMSService(BaseSMSService):
     def process_sms_send(self, sms_message):
-        twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=sms_message.from_number)
+        try:
+            twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=sms_message.from_number)
+        except models.TwilioAccount.DoesNotExists:
+            current_site = get_current_site()
+            master_type = Company.COMPANY_TYPES.master
+            site_companies = SiteCompany.objects.filter(
+                site=current_site, company__type=master_type,
+            ).values_list('company_id', flat=True)
+
+            twilio_account = models.TwilioAccount.objects.filter(credential__company__in=site_companies).last()
+
+            if not twilio_account:
+                logger.warn('Cannot find Twilio number')
+                return
+
         sms_message.sid = twilio_account.client.api.account.messages.create(
             body=sms_message.text, from_=sms_message.from_number, to=sms_message.to_number
         ).sid
