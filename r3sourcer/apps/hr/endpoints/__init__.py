@@ -31,6 +31,22 @@ class JobsiteEndpoint(ApiEndpoint):
     fieldsets = (
         'industry', 'master_company', 'portfolio_manager', 'primary_contact', 'is_available', 'notes', 'start_date',
         'end_date',
+        {
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'jobsite': '{id}',
+            },
+            'label': _('Jobsite Addresses'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('hr/jobsiteaddresses'),
+            'prefilled': {
+                'jobsite': '{id}',
+            },
+            'metadata_query': {
+                'editable_type': 'jobsite',
+            },
+        }
     )
 
     list_editable = (
@@ -45,17 +61,33 @@ class JobsiteAddressEndpoint(ApiEndpoint):
 
     fieldsets = ('address', 'jobsite', 'regular_company', )
 
-    list_editable = (
-        {
-            'label': _('Address'),
-            'type': constants.FIELD_LINK,
-            'field': '__str__',
-            'endpoint': format_lazy(
-                '{}{{id}}/',
-                api_reverse_lazy('hr/jobsiteaddresses')
-            ),
-        }, 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
-    )
+    list_editable = {
+        'default': (
+            {
+                'label': _('Address'),
+                'type': constants.FIELD_LINK,
+                'field': '__str__',
+                'endpoint': format_lazy(
+                    '{}{{id}}/',
+                    api_reverse_lazy('hr/jobsiteaddresses')
+                ),
+            }, 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
+        ),
+        'jobsite': (
+            {
+                'label': _('Company'),
+                'type': constants.FIELD_LINK,
+                'field': 'regular_company',
+                'endpoint': format_lazy('{}{{id}}/', api_reverse_lazy('core/companies')),
+            }, {
+                'label': _('Address'),
+                'type': constants.FIELD_LINK,
+                'field': 'address',
+                'endpoint': format_lazy( '{}{{id}}/', api_reverse_lazy('hr/jobsiteaddresses')),
+            }, 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
+        ),
+    }
+    list_filter = ('jobsite', )
 
 
 class FavouriteListEndpoint(ApiEndpoint):
