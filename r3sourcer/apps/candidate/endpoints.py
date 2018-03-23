@@ -112,7 +112,11 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             'name': _('Personal Traits'),
             'collapsed': True,
             'fields': (
-                'height', 'weight', 'transportation_to_work', 'strength', 'language',
+                {
+                    'type': constants.FIELD_TEXT,
+                    'field': 'height',
+                },
+                'weight', 'transportation_to_work', 'strength', 'language',
             ),
         }, {
             'type': constants.CONTAINER_COLLAPSE,

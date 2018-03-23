@@ -1184,7 +1184,7 @@ class TimeSheet(
         self.__original_going_to_work_confirmation = self.going_to_work_confirmation
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
-        if candidate_submitted_at and self.supervisor and not self.supervisor_signed_at:
+        if candidate_submitted_at and self.supervisor and not self.supervisor_approved_at:
             from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
             send_supervisor_timesheet_sign.delay(self.supervisor.id, self.id)
 

@@ -9,11 +9,10 @@ from drf_auto_endpoint.decorators import bulk_action
 from rest_framework.response import Response
 from rest_framework.exceptions import ParseError
 
-from . import models
-from .api import serializers, viewsets, filters
-from .api.endpoints import ApiEndpoint
-from .utils.text import format_lazy
-
+from r3sourcer.apps.core import models
+from r3sourcer.apps.core.api import serializers, viewsets, filters
+from r3sourcer.apps.core.api.endpoints import ApiEndpoint
+from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 
@@ -997,13 +996,15 @@ class WorkflowObjectEndpoint(ApiEndpoint):
 
     list_filter = ('object_id', 'active', 'state.workflow.name')
 
-    list_display = (
-        'state_name', 'comment', 'active', {
-            'field': 'created_at',
-            'type': constants.FIELD_STATIC,
+    list_display = ('state_name', 'comment', 'active')
+    list_editable = (
+        'state_name', 'comment', 'active',
+        {
+            'label': _('Created'),
+            'fields': ('created_at', 'created_by')
         }, {
-            'field': 'updated_at',
-            'type': constants.FIELD_STATIC,
+            'label': _('Updated'),
+            'fields': ('updated_at', 'updated_by')
         }
     )
 
