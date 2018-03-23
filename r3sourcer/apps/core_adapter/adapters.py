@@ -818,7 +818,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         context_actions = config['context_actions'] or {}
         highlight = config['highlight']
         bulk_actions = config['bulk_actions']
-        list_tabs = config['list_tabs']
+        list_tabs = config['list_tabs'] if not self.is_formset else []
         list_editable_buttons = config['list_editable_buttons']
         if self.is_formset:
             list_buttons = list_editable_buttons

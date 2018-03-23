@@ -46,6 +46,34 @@ class JobsiteEndpoint(ApiEndpoint):
             'metadata_query': {
                 'editable_type': 'jobsite',
             },
+        }, {
+            'type': constants.FIELD_LIST,
+            'field': 'id_',
+            'query': {
+                'jobsite': '{id}',
+            },
+            'label': _('Jobs'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('hr/jobs'),
+            'prefilled': {
+                'jobsite': '{id}',
+            },
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('State'),
+            'fields': (
+                {
+                    'type': constants.FIELD_TIMELINE,
+                    'label': _('States Timeline'),
+                    'field': 'id',
+                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+                    'query': {
+                        'model': 'hr.jobsite',
+                        'object_id': '{id}',
+                    },
+                },
+            )
         }
     )
 
@@ -538,6 +566,50 @@ class JobEndpoint(ApiEndpoint):
             'job': '{id}',
         }
     })
+
+    list_editable = (
+        'workers', 'work_start_date', 'position',
+        {
+            'label': _('Fulfilled'),
+            'delim': '/',
+            'title': _('today / next day'),
+            'fields': ({
+                'field': 'is_fulfilled_today',
+                'type': constants.FIELD_ICON,
+                'values': {
+                    0: 'times-circle',
+                    1: 'check-circle',
+                    2: 'exclamation-circle',
+                    3: 'minus-circle',
+                },
+                'color': {
+                    0: 'danger',
+                    1: 'success',
+                    2: 'warning',
+                },
+            }, {
+                'field': 'is_fulfilled',
+                'type': constants.FIELD_ICON,
+                'values': {
+                    0: 'times-circle',
+                    1: 'check-circle',
+                    2: 'exclamation-circle',
+                    3: 'minus-circle',
+                },
+                'color': {
+                    0: 'danger',
+                    1: 'success',
+                    2: 'warning',
+                },
+            }),
+        }, {
+            'label': _('State'),
+            'fields': ({
+                'field': 'active_states',
+            },)
+        }
+    )
+    list_editable_buttons = []
 
     def get_list_filter(self):
         states_part = partial(
