@@ -786,11 +786,13 @@ class JobOffer(core_models.UUIDModel):
             if (time_sheet.shift_started_at - now).total_seconds() > 3600:
                 from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_sms
                 send_job_offer_cancelled_sms.delay(self.pk)
+
+                time_sheet.delete()
             else:
                 from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_lt_one_hour_sms
                 send_job_offer_cancelled_lt_one_hour_sms.delay(self.pk)
-                # TODO: implement this function
-                # time_sheet.auto_fill_four_hours()
+
+                time_sheet.auto_fill_four_hours()
 
     def is_quota_filled(self):
         accepted_count = self.job.get_job_offers().filter(
@@ -1127,6 +1129,16 @@ class TimeSheet(
     @property
     def break_delta(self):
         return self.break_ended_at - self.break_started_at
+
+    def auto_fill_four_hours(self):
+        now = timezone.now()
+        self.candidate_submitted_at = now
+        self.supervisor_approved_at = now
+        self.shift_started_at = now
+        self.shift_ended_at = now + timedelta(hours=4)
+        self.break_started_at = None
+        self.break_ended_at = None
+        self.save()
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
