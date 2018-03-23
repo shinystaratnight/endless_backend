@@ -74,6 +74,18 @@ class JobsiteEndpoint(ApiEndpoint):
                     },
                 },
             )
+        }, {
+            'type': constants.FIELD_LIST,
+            'query': {
+                'object_id': '{id}'
+            },
+            'collapsed': True,
+            'label': _('States History'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/workflowobjects'),
+            'prefilled': {
+                'object_id': '{id}',
+            }
         }
     )
 
