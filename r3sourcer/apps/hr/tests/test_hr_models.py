@@ -27,7 +27,7 @@ class TestJobsite:
     def test_get_site_name_without_address(self, jobsite):
         assert jobsite.get_site_name() == str(jobsite.master_company)
 
-    def test_get_site_name_with_address(self, jobsite, jobsite_address):
+    def test_get_site_name_with_address(self, jobsite):
         street_address = jobsite_address.address.street_address
         assert street_address in jobsite.get_site_name()
 
@@ -51,7 +51,7 @@ class TestJobsite:
     def test_get_duration(self, jobsite):
         assert jobsite.get_duration() == datetime.timedelta(7)
 
-    def test_is_address_set_successful(self, jobsite, jobsite_address):
+    def test_is_address_set_successful(self, jobsite):
         assert jobsite.is_address_set()
 
     def test_is_address_set_unsuccessful(self, jobsite):
@@ -60,8 +60,8 @@ class TestJobsite:
     def test_get_address_none(self, jobsite):
         assert jobsite.get_address() is None
 
-    def test_get_address_with_result(self, jobsite, jobsite_address):
-        assert jobsite.get_address() == jobsite_address.address
+    def test_get_address_with_result(self, jobsite, address):
+        assert jobsite.get_address() == address
 
     def test_is_supervisor_set_true(self, jobsite):
         assert jobsite.is_supervisor_set()
