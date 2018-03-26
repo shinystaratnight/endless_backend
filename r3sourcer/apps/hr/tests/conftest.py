@@ -147,7 +147,7 @@ def address(db):
 
 @pytest.fixture
 def jobsite_address(db, address, jobsite, regular_company):
-    return hr_models.JobsiteAddress.objects.create(
+    return core_models.Address.objects.create(
         jobsite=jobsite,
         address=address,
         regular_company=regular_company
@@ -156,7 +156,7 @@ def jobsite_address(db, address, jobsite, regular_company):
 
 @pytest.fixture
 def jobsite_address_master(db, address, jobsite, master_company):
-    return hr_models.JobsiteAddress.objects.create(
+    return core_models.Address.objects.create(
         jobsite=jobsite,
         address=address,
         regular_company=master_company

@@ -629,7 +629,7 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}',
             },
             'label': _('Jobsites'),
-            'endpoint': api_reverse_lazy('hr/jobsiteaddresses'),
+            'endpoint': api_reverse_lazy('hr/jobsites'),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,

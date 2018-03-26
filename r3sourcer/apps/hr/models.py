@@ -30,7 +30,8 @@ NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 class Jobsite(
         CategoryFolderMixin,
         core_models.UUIDModel,
-        WorkflowProcess):
+    WorkflowProcess
+):
 
     industry = models.ForeignKey(
         Industry,
@@ -39,11 +40,35 @@ class Jobsite(
         on_delete=models.PROTECT
     )
 
+    short_name = models.CharField(
+        max_length=63,
+        help_text=_('Used for jobsite naming'),
+        verbose_name=_("Site short name"),
+        blank=True,
+        null=True
+    )
+
     master_company = models.ForeignKey(
         core_models.Company,
         related_name="jobsites",
         verbose_name=_("Master company"),
         on_delete=models.PROTECT
+    )
+
+    regular_company = models.ForeignKey(
+        core_models.Company,
+        on_delete=models.PROTECT,
+        related_name="jobsites_regular",
+        verbose_name=_("Client"),
+    )
+
+    address = models.ForeignKey(
+        core_models.Address,
+        on_delete=models.PROTECT,
+        related_name="jobsites",
+        verbose_name=_("Address"),
+        blank=True,
+        null=True
     )
 
     portfolio_manager = models.ForeignKey(
@@ -110,29 +135,26 @@ class Jobsite(
             return self.is_available
 
     def get_site_name(self):
-        job_address = self.get_jobsite_address()
+        job_address = self.get_address()
         if job_address:
-            return "{}, {}, {}".format(
-                job_address.regular_company, job_address.address.city, job_address.address.street_address
-            )
-        else:
-            return str(self.master_company)
+            if self.short_name:
+                return "{} - {}".format(self.short_name, job_address.city)
 
-    def get_jobsite_address(self):
-        return self.jobsite_addresses.first()
+            return "{}, {}, {}".format(
+                self.regular_company, job_address.city, job_address.street_address
+            )
+
+        return self.short_name or str(self.master_company)
 
     def get_address(self):
-        if self.jobsite_addresses.exists():
-            return self.jobsite_addresses.first().address
-        else:
-            return None
+        return self.address
 
     def get_duration(self):
         return self.end_date - self.start_date
 
     @workflow_function
     def is_address_set(self):
-        return self.jobsite_addresses.all().count() > 0
+        return self.address is not None
     is_address_set.short_description = _("Address is required.")
 
     @workflow_function
@@ -193,39 +215,6 @@ class JobsiteUnavailability(core_models.UUIDModel):
     class Meta:
         verbose_name = _("Jobsite Unavailability")
         verbose_name_plural = _("Jobsite Unavailabilities")
-
-
-class JobsiteAddress(core_models.UUIDModel):
-
-    address = models.ForeignKey(
-        core_models.Address,
-        related_name='jobsite_addresses',
-        on_delete=models.PROTECT,
-        verbose_name=_("Address"),
-    )
-
-    jobsite = models.ForeignKey(
-        Jobsite,
-        related_name="jobsite_addresses",
-        on_delete=models.PROTECT,
-        verbose_name=_("Jobsite")
-    )
-
-    regular_company = models.ForeignKey(
-        core_models.Company,
-        on_delete=models.PROTECT,
-        related_name="jobsite_addresses",
-        verbose_name=_("Regular company")
-    )
-
-    class Meta:
-        verbose_name = _("Jobsite Address")
-        verbose_name_plural = _("Jobsite Addresses")
-
-    def __str__(self):
-        return "{}, {}, {}".format(
-            self.regular_company, self.address.city, self.address.street_address
-        )
 
 
 class Job(core_models.AbstractBaseOrder):
@@ -1083,8 +1072,8 @@ class TimeSheet(
 
     @property
     def regular_company(self):
-        address = self.job_offer.shift.date.job.jobsite.jobsite_addresses.first()
-        return address and address.regular_company
+        jobsite = self.job_offer.shift.date.job.jobsite
+        return jobsite and jobsite.regular_company
 
     @classmethod
     def get_or_create_for_job_offer_accepted(cls, job_offer):
