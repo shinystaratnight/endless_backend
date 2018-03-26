@@ -116,7 +116,7 @@ class ContactEndpoint(ApiEndpoint):
                 }, {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': (
-                        'email', 'phone_mobile', 'address.phone_landline', 'address.phone_fax',
+                        'email', 'phone_mobile', 'address.phone_landline',
                         {
                             'type': constants.FIELD_TEXT,
                             'field': 'address.street_address',
