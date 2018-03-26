@@ -263,6 +263,7 @@ class CarrierListEndpoint(ApiEndpoint):
 
     list_display = ('candidate_contact', 'target_date', 'confirmed_available', 'job_offer')
     list_editable = ('target_date', 'confirmed_available', 'job_offer')
+    list_filter = ('candidate_contact', )
 
 
 class BlackListEndpoint(ApiEndpoint):
@@ -270,6 +271,7 @@ class BlackListEndpoint(ApiEndpoint):
 
     list_display = ('company', 'candidate_contact', 'timesheet', 'jobsite')
     list_editable = ('company', 'timesheet', 'jobsite')
+    list_filter = ('candidate_contact', )
 
 
 class CandidateEvaluationEndpoint(ApiEndpoint):
@@ -278,7 +280,12 @@ class CandidateEvaluationEndpoint(ApiEndpoint):
     list_display = ('candidate_contact', 'supervisor', 'evaluated_at')
     list_editable = (
         'supervisor', 'evaluated_at', 'level_of_communication', 'was_on_time', 'was_motivated', 'had_ppe_and_tickets',
-        'met_expectations', 'representation', 'reference_timesheet'
+        'met_expectations', 'representation',
+        {
+            'type': constants.FIELD_LINK,
+            'field': 'reference_timesheet',
+            'endpoint': format_lazy('{}{{reference_timesheet.id}}', api_reverse_lazy('hr/timesheets')),
+        }
     )
     fieldsets = (
         'candidate_contact', 'supervisor', {
@@ -288,6 +295,7 @@ class CandidateEvaluationEndpoint(ApiEndpoint):
         }, 'level_of_communication', 'was_on_time', 'was_motivated',
         'had_ppe_and_tickets', 'met_expectations', 'representation', 'reference_timesheet'
     )
+    list_filter = ('candidate_contact', )
 
 
 class JobEndpoint(ApiEndpoint):
