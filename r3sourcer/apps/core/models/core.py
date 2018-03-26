@@ -375,6 +375,7 @@ class User(UUIDModel,
         ),
     )
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+    role = models.ManyToManyField('Role')
 
     USERNAME_FIELD = 'id'
     REQUIRED_FIELDS = ['email', 'phone_mobile']
@@ -2632,6 +2633,16 @@ class ExtranetNavigation(MPTTModel, UUIDModel):
 
     def __str__(self):
         return self.name
+
+
+class Role(UUIDModel):
+    ROLE_NAMES = Choices(
+        ('candidate', _('Candidate')),
+        ('manager', _('Manager')),
+        ('client', _('Client')),
+    )
+
+    name = models.CharField(max_length=255, choices=ROLE_NAMES)
 
 
 connect_default_signals(Country)

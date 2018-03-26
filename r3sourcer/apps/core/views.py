@@ -68,3 +68,15 @@ class SyncInvoicesView(APIView):
 
         for invoice in invoice_list:
             sync_invoice.delay(invoice.id)
+
+
+class UserRolesView(APIView):
+    """
+    Returns list of user's roles
+    """
+    def get(self, *args, **kwargs):
+        roles = [x.name for x in self.request.user.role.all()]
+        data = {
+            'roles': roles
+        }
+        return Response(data)

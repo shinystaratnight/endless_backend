@@ -479,3 +479,14 @@ class MYOBSettingsView(APIView):
         serializer.save()
 
         return Response()
+
+
+class MYOBAPIKeyView(APIView):
+    """
+    Returns API key for authentication in MYOB
+    """
+    def get(self, *args, **kwargs):
+        data = {
+            'api_key': settings.MYOB_APP['api_key']
+        }
+        return Response(data)
