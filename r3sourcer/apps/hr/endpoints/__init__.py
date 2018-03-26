@@ -263,6 +263,7 @@ class CarrierListEndpoint(ApiEndpoint):
 
     list_display = ('candidate_contact', 'target_date', 'confirmed_available', 'job_offer')
     list_editable = ('target_date', 'confirmed_available', 'job_offer')
+    list_filter = ('candidate_contact', )
 
 
 class BlackListEndpoint(ApiEndpoint):
