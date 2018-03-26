@@ -296,8 +296,8 @@ class MYOBAuthorizationView(APIView):
         auth_client = MYOBAuth(self.request)
         response = auth_client.retrieve_access_token(data=data)
         MYOBAuthData.objects.get_or_create(
-            client_id=request.data.get('api_key', None),
-            client_secret=request.data.get('api_secret', None),
+            client_id=settings.MYOB_APP['api_key'],
+            client_secret=settings.MYOB_APP['api_secret'],
             access_token=response['access_token'],
             refresh_token=response['refresh_token'],
             myob_user_uid=response['user']['uid'],
