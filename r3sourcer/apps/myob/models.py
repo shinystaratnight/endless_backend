@@ -139,7 +139,6 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
     class Meta:
         verbose_name = _("MYOB OAuth2 Data")
         verbose_name_plural = _("MYOB OAuth2 Data")
-        unique_together = ("client_id", "client_secret", "user")
 
     def __str__(self):
         return self.client_id
