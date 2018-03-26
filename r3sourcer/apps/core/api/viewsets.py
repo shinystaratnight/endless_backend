@@ -308,8 +308,9 @@ class SiteViewset(BaseApiViewset):
 class NavigationViewset(BaseApiViewset):
 
     def get_queryset(self):
-        return models.ExtranetNavigation.objects.filter(parent=None) \
-                                                .filter(access_level=self.request.user.access_level)
+        return models.ExtranetNavigation.objects.filter(
+            parent=None, access_level=self.request.user.access_level
+        ).order_by('tree_id')
 
 
 class CompanyAddressViewset(BaseApiViewset):
