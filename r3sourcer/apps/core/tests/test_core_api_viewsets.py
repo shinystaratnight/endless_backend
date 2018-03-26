@@ -638,6 +638,41 @@ class TestNavigationViewset(ResourceMixin):
         assert response.data['count'] == 1
         assert response.data['results'][0]['url'] == candidate_url
 
+    def test_navigation_retrieve_with_role_parameter(self, user, rf):
+        client_url = 'client_url'
+        manager_url = 'manager_url'
+        candidate_url = 'candidate_url'
+        url = '/core/extranetnavigations/?role=%s'
+
+        ExtranetNavigation.objects.create(url=client_url,
+                                          access_level=ExtranetNavigation.CLIENT)
+        ExtranetNavigation.objects.create(url=manager_url,
+                                          access_level=ExtranetNavigation.MANAGER)
+        ExtranetNavigation.objects.create(url=candidate_url,
+                                          access_level=ExtranetNavigation.CANDIDATE)
+
+        CompanyContact.objects.create(contact=user.contact, role=CompanyContact.MANAGER)
+        request = rf.get(url % 'manager')
+        force_authenticate(request, user=user)
+        response = self.get_response_as_view(request, actions={'get': 'list'})
+
+        assert response.data['count'] == 1
+        assert response.data['results'][0]['url'] == manager_url
+
+        request = rf.get(url % 'client')
+        force_authenticate(request, user=user)
+        response = self.get_response_as_view(request, actions={'get': 'list'})
+
+        assert response.data['count'] == 1
+        assert response.data['results'][0]['url'] == client_url
+
+        request = rf.get(url % 'candidate')
+        force_authenticate(request, user=user)
+        response = self.get_response_as_view(request, actions={'get': 'list'})
+
+        assert response.data['count'] == 1
+        assert response.data['results'][0]['url'] == candidate_url
+
     def test_navigation_retrieve_unknown_role(self, rf, another_user):
         url = '/core/extranetnavigations/'
         request = rf.get(url)

@@ -308,8 +308,15 @@ class SiteViewset(BaseApiViewset):
 class NavigationViewset(BaseApiViewset):
 
     def get_queryset(self):
+        role = self.request.GET.get('role', None)
+
+        if role:
+            access_level = self.request.GET.get('role', None)
+        else:
+            access_level = self.request.user.access_level
+
         return models.ExtranetNavigation.objects.filter(parent=None) \
-                                                .filter(access_level=self.request.user.access_level)
+                                                .filter(access_level=access_level)
 
 
 class CompanyAddressViewset(BaseApiViewset):
