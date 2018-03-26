@@ -82,7 +82,19 @@ class JobsiteEndpoint(ApiEndpoint):
             'prefilled': {
                 'object_id': '{id}',
             }
-        }
+        }, {
+            'query': {
+                'object_id': '{id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Notes'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/notes'),
+            'prefilled': {
+                'object_id': '{id}',
+            },
+        },
     )
 
     list_editable = (

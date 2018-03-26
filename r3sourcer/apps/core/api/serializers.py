@@ -601,10 +601,11 @@ class ContactUnavailabilitySerializer(ApiBaseModelSerializer):
         related = RELATED_DIRECT
 
 
-class NoteSerializer(ApiBaseModelSerializer):
+class NoteSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
+
     class Meta:
         model = core_models.Note
-        fields = ('id', 'note',)
+        fields = ('__all__', )
 
 
 class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):

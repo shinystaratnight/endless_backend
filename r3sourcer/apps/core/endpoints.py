@@ -1269,11 +1269,17 @@ class InvoiceRuleEndpoint(ApiEndpoint):
 class NoteEndpoint(ApiEndpoint):
 
     model = models.Note
-
-    serializer_fields = ('id', 'note', 'created_at', 'updated_at', 'object_id', 'content_type')
+    serializer = serializers.NoteSerializer
 
     list_editable = (
-        'note', 'created_at', 'updated_at', {
+        'note',
+        {
+            'label': _('Created'),
+            'fields': ('created_at', 'created_by')
+        }, {
+            'label': _('Updated'),
+            'fields': ('updated_at', 'updated_by')
+        }, {
             **constants.BUTTON_EDIT,
             'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/notes'))
         }, constants.BUTTON_DELETE,
