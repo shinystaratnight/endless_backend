@@ -122,7 +122,7 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
     myob_user_username = models.CharField(
         verbose_name=_(u"User Username"),
         max_length=512,
-
+        unique=True
     )
 
     expires_in = models.PositiveIntegerField(
