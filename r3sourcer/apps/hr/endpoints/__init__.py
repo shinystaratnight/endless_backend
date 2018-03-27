@@ -22,8 +22,19 @@ from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint, Ex
 class JobsiteEndpoint(ApiEndpoint):
     model = hr_models.Jobsite
     filter_class = hr_filters.JobsiteFilter
+    serializer = job_serializers.JobsiteSerializer
 
     search_fields = ('address__city__search_names', 'address__street_address', 'master_company__name')
+
+    list_display = (
+        {
+            'type': constants.FIELD_STATIC,
+            'label': _('Site Name'),
+            'fields': ('__str__', ),
+        },
+        'address.state.name', 'address.city.name', 'regular_company', 'portfolio_manager', 'industry', 'start_date',
+        'end_date', 'active_states'
+    )
 
     fieldsets = (
         {
@@ -100,6 +111,30 @@ class JobsiteEndpoint(ApiEndpoint):
     list_editable = (
         '__str__', 'primary_contact', 'start_date', 'end_date', 'notes',
     )
+
+    list_filter = (
+        'industry', 'address.state', 'regular_company', 'portfolio_manager', ''
+    )
+
+    def get_list_filter(self):
+        states_part = partial(
+            core_models.WorkflowNode.get_model_all_states, hr_models.Jobsite
+        )
+        list_filter = [
+            'industry', 'address.state',
+            {
+                'label': _('Client'),
+                'field': 'regular_company',
+            },
+            'portfolio_manager',
+            {
+                'type': constants.FIELD_SELECT,
+                'field': 'active_states',
+                'choices': lazy(states_part, list),
+            },
+        ]
+
+        return list_filter
 
 
 class FavouriteListEndpoint(ApiEndpoint):
