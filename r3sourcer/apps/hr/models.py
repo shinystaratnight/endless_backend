@@ -20,7 +20,6 @@ from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.skills.models import Skill, SkillBaseRate
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
-
 from r3sourcer.apps.hr.utils import utils as hr_utils
 
 
@@ -28,8 +27,8 @@ NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
 
 class Jobsite(
-        CategoryFolderMixin,
-        core_models.UUIDModel,
+    CategoryFolderMixin,
+    core_models.UUIDModel,
     WorkflowProcess
 ):
 
@@ -1099,10 +1098,14 @@ class TimeSheet(
 
         now = timezone.now()
         if now <= job_offer.start_time + timedelta(hours=2):
-            from r3sourcer.apps.hr.tasks import send_placement_acceptance_sms
-            send_placement_acceptance_sms.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
+            cls._send_placement_acceptance_sms(time_sheet, job_offer)
 
         return time_sheet
+
+    @classmethod
+    def _send_placement_acceptance_sms(self, time_sheet, job_offer):
+        from r3sourcer.apps.hr.tasks import send_placement_acceptance_sms
+        send_placement_acceptance_sms.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
 
     def get_closest_company(self):
         return self.get_job_offer().job.get_closest_company()
@@ -1129,6 +1132,10 @@ class TimeSheet(
         self.break_ended_at = None
         self.save()
 
+    def _send_going_to_work(self, going_eta):
+        from r3sourcer.apps.hr.tasks import send_going_to_work_sms
+        send_going_to_work_sms.apply_async(args=[self.pk], eta=going_eta)
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         going_set = self.going_to_work_confirmation is not None and (
@@ -1145,8 +1152,7 @@ class TimeSheet(
             if now <= self.shift_started_at:
                 going_eta = self.shift_started_at - timedelta(minutes=settings.GOING_TO_WORK_SMS_DELAY_MINUTES)
                 if going_eta > now:
-                    from r3sourcer.apps.hr.tasks import send_going_to_work_sms
-                    send_going_to_work_sms.apply_async(args=[self.pk], eta=going_eta)
+                    self._send_going_to_work(going_eta)
                 else:
                     self.going_to_work_confirmation = True
 
@@ -1174,8 +1180,7 @@ class TimeSheet(
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
         if candidate_submitted_at and self.supervisor and not self.supervisor_approved_at:
-            from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
-            send_supervisor_timesheet_sign.delay(self.supervisor.id, self.id)
+            hr_utils.send_supervisor_timesheet_approve(self)
 
 
 class TimeSheetIssue(
