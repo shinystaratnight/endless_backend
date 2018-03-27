@@ -15,7 +15,7 @@ class TwilioSMSService(BaseSMSService):
     def process_sms_send(self, sms_message):
         try:
             twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=sms_message.from_number)
-        except models.TwilioAccount.DoesNotExists:
+        except models.TwilioAccount.DoesNotExist:
             current_site = get_current_site()
             master_type = Company.COMPANY_TYPES.master
             site_companies = SiteCompany.objects.filter(
