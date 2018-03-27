@@ -23,6 +23,7 @@ from r3sourcer.apps.hr.endpoints import (
     TimeSheetEndpoint
 )
 from r3sourcer.apps.hr.models import TimeSheet
+from r3sourcer.apps.hr.tasks import send_going_to_work_sms
 
 
 class TimeSheetEndpointTest(TimeSheetEndpoint):
@@ -216,9 +217,10 @@ class TestApiViewset:
         assert len(response.data['results']) == 0
 
     @freeze_time(datetime(2017, 1, 1, 9))
+    @mock.patch.object(send_going_to_work_sms, 'apply_async')
     @mock.patch('r3sourcer.apps.hr.api.viewsets.send_supervisor_timesheet_sign')
     @mock.patch('r3sourcer.apps.hr.api.viewsets.generate_invoice')
-    def test_submit_hours_candidate(self, mock_invoice, mock_task, timesheet):
+    def test_submit_hours_candidate(self, mock_invoice, mock_task, mock_going_to_work, timesheet):
         data = {
             'shift_started_at': timezone.now(),
         }

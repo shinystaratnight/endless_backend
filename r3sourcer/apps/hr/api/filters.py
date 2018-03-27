@@ -135,22 +135,8 @@ class JobsiteFilter(FilterSet):
     def filter_company(self, queryset, name, value):
         return queryset.filter(
             Q(master_company_id=value) |
-            Q(jobsite_addresses__regular_company_id=value)
+            Q(regular_company_id=value)
         )
 
     def filter_primary_contact(self, queryset, name, value):
         return queryset.filter(primary_contact=value)
-
-
-class JobsiteAddressFilter(FilterSet):
-    company = UUIDFilter(method='filter_company')
-
-    class Meta:
-        model = hr_models.JobsiteAddress
-        fields = ['company']
-
-    def filter_company(self, queryset, name, value):
-        return queryset.filter(
-            Q(jobsite__master_company_id=value) |
-            Q(regular_company_id=value)
-        )
