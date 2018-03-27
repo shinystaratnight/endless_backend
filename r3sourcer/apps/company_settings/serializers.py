@@ -61,7 +61,7 @@ class MYOBSettingsSerializer(serializers.ModelSerializer):
 
         for field in fields:
             if validated_data.get(field, None):
-                company_file = MYOBCompanyFile.objects.filter(id=validated_data[field]['id']).first()
+                company_file = MYOBCompanyFile.objects.filter(cf_id=validated_data[field]['id']).first()
 
                 if company_file:
                     setattr(instance, field, company_file)
@@ -70,8 +70,8 @@ class MYOBSettingsSerializer(serializers.ModelSerializer):
         if validated_data.get('invoice_activity_account', None):
             myob_account = MYOBAccount.objects.filter(id=validated_data['invoice_activity_account']['id']).first()
             instance.invoice_activity_account = myob_account
-            validated_data.pop('invoice_activity_account')
 
+        validated_data.pop('invoice_activity_account', None)
         instance.save()
         super(MYOBSettingsSerializer, self).update(instance, validated_data)
         return instance

@@ -180,6 +180,7 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
     )
 
     authenticated = models.BooleanField(default=False)
+    auth_data = models.ForeignKey('MYOBAuthData', blank=True, null=True)
 
     class Meta:
         verbose_name = _("MYOB Company File")

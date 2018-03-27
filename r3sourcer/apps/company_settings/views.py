@@ -361,7 +361,8 @@ class RefreshCompanyFilesView(APIView):
                 company_file, created = MYOBCompanyFile.objects.update_or_create(cf_id=raw_company_file['Id'],
                                                                                  defaults={
                                                                                      'cf_uri': raw_company_file['Uri'],
-                                                                                     'cf_name': raw_company_file['Name']
+                                                                                     'cf_name': raw_company_file['Name'],
+                                                                                     'auth_data': auth_data
                                                                                  })
                 company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
                                                                                       company=company,
@@ -414,6 +415,8 @@ class RefreshMYOBAccountsView(APIView):
     def get(self, request, *args, **kwargs):
         auth_data = request.user.auth_data.latest('created')
         client = MYOBClient(auth_data=auth_data)
+        data = dict()
+        new_accounts = list()
 
         for company_file in request.user.company_files:
             if not company_file.authenticated:
@@ -427,7 +430,7 @@ class RefreshMYOBAccountsView(APIView):
             accounts = client.get_accounts(company_file.cf_id, company_file_token).json()['Items']
 
             for account in accounts:
-                MYOBAccount.objects.update_or_create(uid=account['UID'],
+                account_object, created = MYOBAccount.objects.update_or_create(uid=account['UID'],
                     defaults={
                         'name': account['Name'],
                         'display_id': account['DisplayID'],
@@ -446,10 +449,20 @@ class RefreshMYOBAccountsView(APIView):
                     }
                 )
 
+                if created:
+                    new_accounts.append(account_object)
+
         myob_settings = request.user.company.myob_settings
         myob_settings.payroll_accounts_last_refreshed = timezone.now()
         myob_settings.save()
-        return Response()
+
+        if new_accounts:
+            serializer = serializers.MYOBAccountSerializer(new_accounts, many=True)
+            data = {
+                'myob_accounts': serializer.data
+            }
+
+        return Response(data)
 
 
 class MYOBSettingsView(APIView):
