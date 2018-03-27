@@ -650,8 +650,8 @@ class TestMYOBAuthDataListView:
         response = client.get(url).json()
 
         assert len(response['auth_data_list']) == 2
-        assert response['auth_data_list'][0]['myob_user_username'] == auth_data.myob_user_username
-        assert response['auth_data_list'][1]['myob_user_username'] == auth_data2.myob_user_username
+        assert response['auth_data_list'][0]['myob_user_username'] == auth_data2.myob_user_username
+        assert response['auth_data_list'][1]['myob_user_username'] == auth_data.myob_user_username
 
 
 class TestMYOBAuthDataDeleteView:

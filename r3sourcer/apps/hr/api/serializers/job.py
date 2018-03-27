@@ -356,3 +356,21 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
     def get_longitude(self, obj):
         address = obj.job.jobsite.get_address()
         return address and address.longitude
+
+
+class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiBaseModelSerializer):
+
+    class Meta:
+        model = hr_models.Jobsite
+        fields = (
+            '__all__',
+            {
+                'address': (
+                    '__all__',
+                    {
+                        'city': ('id', 'name'),
+                        'state': ('id', 'name'),
+                    }
+                )
+            }
+        )

@@ -201,7 +201,7 @@ class InvoiceService(BasePaymentService):
             )
 
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
-            jobsites = company.jobsites.all()
+            jobsites = company.jobsites_regular.all()
 
             for jobsite in set(jobsites):
                 timesheets = TimeSheet.objects.filter(job_offer__shift__date__job__jobsite=jobsite)

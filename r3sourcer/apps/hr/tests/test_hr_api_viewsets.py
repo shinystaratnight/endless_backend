@@ -4,26 +4,19 @@ from datetime import datetime
 
 import mock
 import pytest
-from django.test.client import MULTIPART_CONTENT, BOUNDARY, encode_multipart
+from django.test.client import MULTIPART_CONTENT
 from django.contrib.auth.models import AnonymousUser
 from django.utils import timezone
 
-from drf_auto_endpoint.endpoints import Endpoint
 from rest_framework import status
-from rest_framework.exceptions import APIException, ValidationError
-from rest_framework.test import force_authenticate
 from rest_framework.response import Response
 from rest_framework.request import Request
 from freezegun import freeze_time
 
-from r3sourcer.apps.core.api.viewsets import CompanyAddressViewset
 from r3sourcer.apps.core.models import CompanyContact
 from r3sourcer.apps.hr.api.viewsets import TimeSheetViewset
-from r3sourcer.apps.hr.endpoints import (
-    TimeSheetEndpoint
-)
+from r3sourcer.apps.hr.endpoints import TimeSheetEndpoint
 from r3sourcer.apps.hr.models import TimeSheet
-from r3sourcer.apps.hr.tasks import send_going_to_work_sms
 
 
 class TimeSheetEndpointTest(TimeSheetEndpoint):
@@ -62,7 +55,9 @@ class TestApiViewset:
         self.update_scheme(master_company, master_company.TIMESHEET_APPROVAL_SCHEME.SIGNATURE)
         return master_company
 
-    def test_approve_by_failed_pin_code(self, company_rel, company_contact_rel, timesheet, master_company_with_pin, rf):
+    def test_approve_by_failed_pin_code(
+        self, company_rel, company_contact_rel, timesheet, master_company_with_pin, rf
+    ):
         req = rf.post('/{}/approve_by_pin/'.format(timesheet.pk), data=json.dumps({'pin_code': '1233'}),
                       content_type='application/json')
         response = self.get_response_as_view({'post': 'approve_by_pin'}, req, pk=timesheet.pk)
@@ -114,8 +109,9 @@ class TestApiViewset:
 
         assert timesheet.supervisor_approved_at is not None
 
-    def test_approve_with_empty_signature(self, timesheet, company_rel, company_contact_rel, signature_data,
-                                                 master_company_with_signature, rf):
+    def test_approve_with_empty_signature(
+        self, timesheet, company_rel, company_contact_rel, signature_data, master_company_with_signature, rf
+    ):
         req = rf.post('/{}/approve_by_signature/'.format(timesheet.pk), content_type=MULTIPART_CONTENT)
 
         response = self.get_response_as_view({'post': 'approve_by_signature'}, req, pk=timesheet.pk)
@@ -217,8 +213,8 @@ class TestApiViewset:
         assert len(response.data['results']) == 0
 
     @freeze_time(datetime(2017, 1, 1, 9))
-    @mock.patch.object(send_going_to_work_sms, 'apply_async')
-    @mock.patch('r3sourcer.apps.hr.api.viewsets.send_supervisor_timesheet_sign')
+    @mock.patch('r3sourcer.apps.hr.models.hr_utils')
+    @mock.patch('r3sourcer.apps.hr.api.viewsets.hr_utils')
     @mock.patch('r3sourcer.apps.hr.api.viewsets.generate_invoice')
     def test_submit_hours_candidate(self, mock_invoice, mock_task, mock_going_to_work, timesheet):
         data = {
@@ -241,7 +237,6 @@ class TestApiViewset:
         response = viewset.submit_hours(data, timesheet, False)
 
         assert response.data['id'] == str(timesheet.id)
-
 
     @freeze_time(datetime(2017, 1, 1, 0, 30))
     def test_get_unapproved_queryset(self, rf, user, timesheet_approved):

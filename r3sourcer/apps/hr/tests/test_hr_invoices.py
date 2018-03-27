@@ -125,8 +125,7 @@ class TestInvoiceService:
             mock_timesheets, regular_company, invoice_rule_master_company,
             timesheet_approved, jobsite, service):
 
-        invoice_rule_master_company.separation_rule = \
-            InvoiceRule.SEPARATION_CHOICES.per_jobsite
+        invoice_rule_master_company.separation_rule = InvoiceRule.SEPARATION_CHOICES.per_jobsite
         mock_calc.return_value = [], []
         mock_invoice_rule.return_value = invoice_rule_master_company
         mock_timesheets.return_value.filter.return_value = [timesheet_approved]
