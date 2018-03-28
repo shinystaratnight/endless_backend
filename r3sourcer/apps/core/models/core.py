@@ -433,12 +433,12 @@ class User(UUIDModel,
 
     @property
     def access_level(self) -> str:
-        if self.is_candidate():
-            return CANDIDATE
+        if self.is_manager():
+            return MANAGER
         elif self.is_client():
             return CLIENT
-        elif self.is_manager():
-            return MANAGER
+        elif self.is_candidate():
+            return CANDIDATE
         raise ValidationError("Unknown user role")
 
     def has_permission(self, permission_codename) -> bool:
