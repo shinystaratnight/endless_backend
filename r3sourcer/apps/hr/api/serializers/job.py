@@ -371,6 +371,7 @@ class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.
                         'city': ('id', 'name'),
                         'state': ('id', 'name'),
                     }
-                )
+                ),
+                'master_company': ('id', ),
             }
         )
