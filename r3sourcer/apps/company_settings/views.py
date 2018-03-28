@@ -48,23 +48,15 @@ class UserGlobalPermissionListView(ListAPIView):
     Returns list of all GlobalPermissions of a given User.
     """
     def get(self, *args, **kwargs):
-        print("111111111111")
         user = get_object_or_404(User, id=self.kwargs['id'])
-        print("22222222222222")
         permissions = GlobalPermission.objects.filter(user=user)
-        print("333333333333333")
         group_permissions = GlobalPermission.objects.filter(group__user=user).distinct()
-        print("444444444444444")
         serializer = serializers.GlobalPermissionSerializer(permissions, many=True)
-        print("55555555555555")
         group_serializer = serializers.GlobalPermissionSerializer(group_permissions, many=True)
-        print("66666666666666")
         data = {
             "permission_list": serializer.data,
             "group_permission_list": group_serializer.data,
         }
-        print("777777777777")
-        print(data)
         return Response(data)
 
 
