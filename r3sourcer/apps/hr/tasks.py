@@ -34,7 +34,7 @@ GOING_TO_WORK, SHIFT_ENDING, RECRUITEE_SUBMITTED, SUPERVISOR_DECLINED = range(4)
 SITE_URL = settings.SITE_URL
 
 
-@shared_task
+@shared_task(queue='hr')
 def update_all_distances():
 
     all_calculated_jobsites = hr_models.Jobsite.objects.filter(
