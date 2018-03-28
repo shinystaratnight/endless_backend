@@ -465,9 +465,9 @@ class User(UUIDModel,
     def company(self):
         try:
             if self.is_client() or self.is_manager():
-                return self.contact.candidate_contacts.candidate_rels.first().master_company
-            elif self.is_candidate():
                 return self.contact.company_contact.first().relationships.first().company
+            elif self.is_candidate():
+                return self.contact.candidate_contacts.candidate_rels.first().master_company
             else:
                 raise APIException("Unknown user's role.")
         except AttributeError:
