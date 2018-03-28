@@ -256,11 +256,11 @@ class Contact(
         return None
 
     def get_closest_company(self):
-        if self.is_candidate_contact():
-            return self.candidate_contacts.get_closest_company()
-        elif self.is_company_contact():
+        if self.is_company_contact():
             master_company = self.company_contact.first().get_master_company()
             return master_company[0] if len(master_company) > 0 else get_default_company()
+        elif self.is_candidate_contact():
+            return self.candidate_contacts.get_closest_company()
 
         return get_default_company()
 
