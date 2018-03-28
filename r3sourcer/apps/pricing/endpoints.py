@@ -141,28 +141,41 @@ class PriceListRateEndpoint(ApiEndpoint):
         }
     )
 
-    list_editable = (
-        {
-            'label': _('Price List'),
-            'type': constants.FIELD_LINK,
-            'field': 'price_list',
-            'endpoint': format_lazy(
-                '{}{{price_list.id}}/',
-                api_reverse_lazy('pricing/pricelists')
-            ),
-        },
-        'hourly_rate', 'default_rate',
-        {
-            'label': _('Actions'),
-            'delim': ' ',
-            'fields': ({
-                **constants.BUTTON_EDIT,
-                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelists'))
-            }, constants.BUTTON_DELETE)
-        }
-    )
+    list_editable ={
+        'default': (
+            {
+                'label': _('Price List'),
+                'type': constants.FIELD_LINK,
+                'field': 'price_list',
+                'endpoint': format_lazy(
+                    '{}{{price_list.id}}/',
+                    api_reverse_lazy('pricing/pricelists')
+                ),
+            },
+            'hourly_rate', 'default_rate',
+            {
+                'label': _('Actions'),
+                'delim': ' ',
+                'fields': ({
+                    **constants.BUTTON_EDIT,
+                    'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelistrates'))
+                }, constants.BUTTON_DELETE)
+            }
+        ),
+        'pricelist': (
+            'skill', 'hourly_rate', 'default_rate',
+            {
+                'label': _('Actions'),
+                'delim': ' ',
+                'fields': ({
+                    **constants.BUTTON_EDIT,
+                    'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelistrates'))
+                }, constants.BUTTON_DELETE)
+            }
+        )
+    }
     list_editable_buttons = []
-    list_filter = ('skill',)
+    list_filter = ('skill', 'price_list')
 
 
 class RateCoefficientModifierEndpoint(ApiEndpoint):
@@ -185,6 +198,17 @@ class PriceListEndpoint(ApiEndpoint):
     serializer_fields = ('id', 'company', 'valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at')
 
     list_filter = ('company', )
+    list_display = (
+        'company',
+        {
+            'type': constants.FIELD_DATE,
+            'field': 'valid_from'
+        }, {
+            'type': constants.FIELD_DATE,
+            'field': 'valid_until'
+        },
+        'effective', 'approved_by', 'approved_at',
+    )
     list_editable = (
         {
             'type': constants.FIELD_DATE,
@@ -210,6 +234,20 @@ class PriceListEndpoint(ApiEndpoint):
             'field': 'valid_until'
         },
         'effective', 'approved_by', 'approved_at',
+        {
+            'type': constants.FIELD_LIST,
+            'query': {
+                'price_list': '{id}',
+            },
+            'label': _('Price List Rates'),
+            'endpoint': api_reverse_lazy('pricing/pricelistrates'),
+            'metadata_query': {
+                'editable_type': 'pricelist',
+            },
+            'prefilled': {
+                'price_list': '{id}',
+            },
+        },
     )
 
 

@@ -20,7 +20,6 @@ from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.skills.models import Skill, SkillBaseRate
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
-
 from r3sourcer.apps.hr.utils import utils as hr_utils
 
 
@@ -28,9 +27,10 @@ NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
 
 class Jobsite(
-        CategoryFolderMixin,
-        core_models.UUIDModel,
-        WorkflowProcess):
+    CategoryFolderMixin,
+    core_models.UUIDModel,
+    WorkflowProcess
+):
 
     industry = models.ForeignKey(
         Industry,
@@ -39,11 +39,35 @@ class Jobsite(
         on_delete=models.PROTECT
     )
 
+    short_name = models.CharField(
+        max_length=63,
+        help_text=_('Used for jobsite naming'),
+        verbose_name=_("Site short name"),
+        blank=True,
+        null=True
+    )
+
     master_company = models.ForeignKey(
         core_models.Company,
         related_name="jobsites",
         verbose_name=_("Master company"),
         on_delete=models.PROTECT
+    )
+
+    regular_company = models.ForeignKey(
+        core_models.Company,
+        on_delete=models.PROTECT,
+        related_name="jobsites_regular",
+        verbose_name=_("Client"),
+    )
+
+    address = models.ForeignKey(
+        core_models.Address,
+        on_delete=models.PROTECT,
+        related_name="jobsites",
+        verbose_name=_("Address"),
+        blank=True,
+        null=True
     )
 
     portfolio_manager = models.ForeignKey(
@@ -110,29 +134,26 @@ class Jobsite(
             return self.is_available
 
     def get_site_name(self):
-        job_address = self.get_jobsite_address()
+        job_address = self.get_address()
         if job_address:
-            return "{}, {}, {}".format(
-                job_address.regular_company, job_address.address.city, job_address.address.street_address
-            )
-        else:
-            return str(self.master_company)
+            if self.short_name:
+                return "{} - {}".format(self.short_name, job_address.city)
 
-    def get_jobsite_address(self):
-        return self.jobsite_addresses.first()
+            return "{}, {}, {}".format(
+                self.regular_company, job_address.city, job_address.street_address
+            )
+
+        return self.short_name or str(self.master_company)
 
     def get_address(self):
-        if self.jobsite_addresses.exists():
-            return self.jobsite_addresses.first().address
-        else:
-            return None
+        return self.address
 
     def get_duration(self):
         return self.end_date - self.start_date
 
     @workflow_function
     def is_address_set(self):
-        return self.jobsite_addresses.all().count() > 0
+        return self.address is not None
     is_address_set.short_description = _("Address is required.")
 
     @workflow_function
@@ -193,39 +214,6 @@ class JobsiteUnavailability(core_models.UUIDModel):
     class Meta:
         verbose_name = _("Jobsite Unavailability")
         verbose_name_plural = _("Jobsite Unavailabilities")
-
-
-class JobsiteAddress(core_models.UUIDModel):
-
-    address = models.ForeignKey(
-        core_models.Address,
-        related_name='jobsite_addresses',
-        on_delete=models.PROTECT,
-        verbose_name=_("Address"),
-    )
-
-    jobsite = models.ForeignKey(
-        Jobsite,
-        related_name="jobsite_addresses",
-        on_delete=models.PROTECT,
-        verbose_name=_("Jobsite")
-    )
-
-    regular_company = models.ForeignKey(
-        core_models.Company,
-        on_delete=models.PROTECT,
-        related_name="jobsite_addresses",
-        verbose_name=_("Regular company")
-    )
-
-    class Meta:
-        verbose_name = _("Jobsite Address")
-        verbose_name_plural = _("Jobsite Addresses")
-
-    def __str__(self):
-        return "{}, {}, {}".format(
-            self.regular_company, self.address.city, self.address.street_address
-        )
 
 
 class Job(core_models.AbstractBaseOrder):
@@ -1083,8 +1071,8 @@ class TimeSheet(
 
     @property
     def regular_company(self):
-        address = self.job_offer.shift.date.job.jobsite.jobsite_addresses.first()
-        return address and address.regular_company
+        jobsite = self.job_offer.shift.date.job.jobsite
+        return jobsite and jobsite.regular_company
 
     @classmethod
     def get_or_create_for_job_offer_accepted(cls, job_offer):
@@ -1110,10 +1098,14 @@ class TimeSheet(
 
         now = timezone.now()
         if now <= job_offer.start_time + timedelta(hours=2):
-            from r3sourcer.apps.hr.tasks import send_placement_acceptance_sms
-            send_placement_acceptance_sms.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
+            cls._send_placement_acceptance_sms(time_sheet, job_offer)
 
         return time_sheet
+
+    @classmethod
+    def _send_placement_acceptance_sms(self, time_sheet, job_offer):
+        from r3sourcer.apps.hr.tasks import send_placement_acceptance_sms
+        send_placement_acceptance_sms.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
 
     def get_closest_company(self):
         return self.get_job_offer().job.get_closest_company()
@@ -1140,6 +1132,10 @@ class TimeSheet(
         self.break_ended_at = None
         self.save()
 
+    def _send_going_to_work(self, going_eta):
+        from r3sourcer.apps.hr.tasks import send_going_to_work_sms
+        send_going_to_work_sms.apply_async(args=[self.pk], eta=going_eta)
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         going_set = self.going_to_work_confirmation is not None and (
@@ -1156,8 +1152,7 @@ class TimeSheet(
             if now <= self.shift_started_at:
                 going_eta = self.shift_started_at - timedelta(minutes=settings.GOING_TO_WORK_SMS_DELAY_MINUTES)
                 if going_eta > now:
-                    from r3sourcer.apps.hr.tasks import send_going_to_work_sms
-                    send_going_to_work_sms.apply_async(args=[self.pk], eta=going_eta)
+                    self._send_going_to_work(going_eta)
                 else:
                     self.going_to_work_confirmation = True
 
@@ -1185,8 +1180,7 @@ class TimeSheet(
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
         if candidate_submitted_at and self.supervisor and not self.supervisor_approved_at:
-            from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
-            send_supervisor_timesheet_sign.delay(self.supervisor.id, self.id)
+            hr_utils.send_supervisor_timesheet_approve(self)
 
 
 class TimeSheetIssue(

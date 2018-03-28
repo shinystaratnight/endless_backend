@@ -9,7 +9,7 @@ from django.conf import settings
 from django_mock_queries.query import MockSet
 from freezegun import freeze_time
 
-from r3sourcer.apps.core.models import InvoiceRule, VAT, Invoice, InvoiceLine
+from r3sourcer.apps.core.models import InvoiceRule, Invoice, InvoiceLine
 from r3sourcer.apps.hr.payment import InvoiceService
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.utils import utils
@@ -123,10 +123,9 @@ class TestInvoiceService:
     def test_prepare_per_jobsite(
             self, mock_calc, mock_invoice_rule, mock_prepare_invoice,
             mock_timesheets, regular_company, invoice_rule_master_company,
-            timesheet_approved, jobsite, jobsite_address, service, jobsite_address_master):
+            timesheet_approved, jobsite, service):
 
-        invoice_rule_master_company.separation_rule = \
-            InvoiceRule.SEPARATION_CHOICES.per_jobsite
+        invoice_rule_master_company.separation_rule = InvoiceRule.SEPARATION_CHOICES.per_jobsite
         mock_calc.return_value = [], []
         mock_invoice_rule.return_value = invoice_rule_master_company
         mock_timesheets.return_value.filter.return_value = [timesheet_approved]
@@ -207,8 +206,7 @@ class TestInvoiceService:
         assert not mock_prepare_invoice.called
 
     @freeze_time(datetime(2017, 1, 1, 0, 0, 0))
-    def test_generate_invoice(self, service, regular_company, job_offer,
-                              rate_coefficient, jobsite, jobsite_address, price_list_rate):
+    def test_generate_invoice(self, service, regular_company, job_offer, rate_coefficient, jobsite, price_list_rate):
         invoice_count = Invoice.objects.count()
         invoice_line_count = InvoiceLine.objects.count()
         shift_started_at = tz.localize(datetime.strptime('2017-01-01 07:00:00', '%Y-%m-%d %H:%M:%S'))
@@ -245,8 +243,7 @@ class TestInvoiceService:
         assert line.unit_price == Decimal('10.00')
 
     @freeze_time(datetime(2017, 1, 4, 0, 0, 0))
-    def test_update_invoice(self, service, regular_company, job_offer,
-                              rate_coefficient, jobsite, jobsite_address, price_list_rate):
+    def test_update_invoice(self, service, regular_company, job_offer, rate_coefficient, jobsite, price_list_rate):
         shift_started_at = tz.localize(datetime.strptime('2017-01-02 07:00:00', '%Y-%m-%d %H:%M:%S'))
         shift_ended_at = tz.localize(datetime.strptime('2017-01-02 17:00:00', '%Y-%m-%d %H:%M:%S'))
         break_started_at = tz.localize(datetime.strptime('2017-01-02 12:00:00', '%Y-%m-%d %H:%M:%S'))

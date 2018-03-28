@@ -27,7 +27,7 @@ class InvoiceService(BasePaymentService):
             order_number = '{} - {}'.format(date_from, datetime.now().date())
         elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
             jobsite = timesheet.job_offer.shift.date.job.jobsite
-            city = jobsite.jobsite_addresses.first().address.city
+            city = jobsite.address.city
             order_number = str(city)
         elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
             order_number = str(timesheet.job_offer.candidate_contact)
@@ -201,7 +201,7 @@ class InvoiceService(BasePaymentService):
             )
 
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
-            jobsites = [address.jobsite for address in company.jobsite_addresses.all()]
+            jobsites = company.jobsites_regular.all()
 
             for jobsite in set(jobsites):
                 timesheets = TimeSheet.objects.filter(job_offer__shift__date__job__jobsite=jobsite)

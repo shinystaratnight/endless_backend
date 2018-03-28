@@ -752,11 +752,9 @@ class JobsiteConfig(BaseConfig):
             address_data[new_field] = row.get(old_field)
 
         address, _ = models.Address.objects.get_or_create(**address_data)
-        hr_models.JobsiteAddress.objects.get_or_create(
-            address=address,
-            jobsite=instance,
-            regular_company_id=row['client_id'],
-        )
+        instance.address = address
+        instance.regular_company_id = row['client_id']
+        instance.save(update_fields=['address', 'regular_company'])
 
 
 class JobsiteUnavailabilityConfig(BaseConfig):

@@ -1,3 +1,5 @@
+import mock
+
 from django.core.urlresolvers import reverse
 from rest_framework import status
 
@@ -5,7 +7,9 @@ from r3sourcer.apps.core.models import Invoice
 
 
 class TestApproveInvoiceView:
-    def test_get_user_permissions(self, client, invoice):
+
+    @mock.patch('r3sourcer.apps.core.views.sync_invoice')
+    def test_get_user_permissions(self, mock_sync, client, invoice):
         invoice.approved = False
         invoice.save()
 

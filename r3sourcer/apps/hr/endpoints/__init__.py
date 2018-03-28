@@ -22,72 +22,119 @@ from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint, Ex
 class JobsiteEndpoint(ApiEndpoint):
     model = hr_models.Jobsite
     filter_class = hr_filters.JobsiteFilter
+    serializer = job_serializers.JobsiteSerializer
 
-    search_fields = (
-        'jobsite_addresses__address__city__search_names', 'jobsite_addresses__address__street_address',
-        'master_company__name'
+    search_fields = ('address__city__search_names', 'address__street_address', 'master_company__name')
+
+    list_display = (
+        {
+            'type': constants.FIELD_STATIC,
+            'label': _('Site Name'),
+            'fields': ('__str__', ),
+        },
+        'address.state.name', 'address.city.name', 'regular_company', 'portfolio_manager', 'industry', 'start_date',
+        'end_date', 'active_states'
     )
 
     fieldsets = (
-        'industry', 'master_company', 'portfolio_manager', 'primary_contact', 'is_available', 'notes', 'start_date',
-        'end_date',
         {
+            'type': constants.CONTAINER_ROW,
+            'label': '{__str__}',
+            'fields': ({
+                'type': constants.CONTAINER_COLUMN,
+                'fields': (
+                    'industry', 'short_name', 'regular_company', 'primary_contact', 'portfolio_manager', 'address',
+                ),
+            }, )
+        }, {
+            'type': constants.CONTAINER_ROW,
+            'label': 'Timeframe',
+            'fields': ({
+                'type': constants.CONTAINER_COLUMN,
+                'fields': ('start_date', 'end_date', 'is_available',),
+            }, ),
+        }, {
             'type': constants.FIELD_LIST,
             'field': 'id_',
             'query': {
                 'jobsite': '{id}',
             },
-            'label': _('Jobsite Addresses'),
+            'label': _('Jobs'),
             'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/jobsiteaddresses'),
+            'endpoint': api_reverse_lazy('hr/jobs'),
             'prefilled': {
                 'jobsite': '{id}',
             },
-            'metadata_query': {
-                'editable_type': 'jobsite',
+        }, {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': False,
+            'name': _('State'),
+            'fields': (
+                {
+                    'type': constants.FIELD_TIMELINE,
+                    'label': _('States Timeline'),
+                    'field': 'id',
+                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+                    'query': {
+                        'model': 'hr.jobsite',
+                        'object_id': '{id}',
+                    },
+                },
+            )
+        }, {
+            'type': constants.FIELD_LIST,
+            'query': {
+                'object_id': '{id}'
             },
-        }
+            'collapsed': True,
+            'label': _('States History'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/workflowobjects'),
+            'prefilled': {
+                'object_id': '{id}',
+            }
+        }, {
+            'query': {
+                'object_id': '{id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Notes'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/notes'),
+            'prefilled': {
+                'object_id': '{id}',
+            },
+        },
     )
 
     list_editable = (
         '__str__', 'primary_contact', 'start_date', 'end_date', 'notes',
     )
 
+    list_filter = (
+        'industry', 'address.state', 'regular_company', 'portfolio_manager', ''
+    )
 
-class JobsiteAddressEndpoint(ApiEndpoint):
-    model = hr_models.JobsiteAddress
-    filter_class = hr_filters.JobsiteAddressFilter
-    serializer = job_serializers.JobsiteAddressSerializer
-
-    fieldsets = ('address', 'jobsite', 'regular_company', )
-
-    list_editable = {
-        'default': (
+    def get_list_filter(self):
+        states_part = partial(
+            core_models.WorkflowNode.get_model_all_states, hr_models.Jobsite
+        )
+        list_filter = [
+            'industry', 'address.state',
             {
-                'label': _('Address'),
-                'type': constants.FIELD_LINK,
-                'field': '__str__',
-                'endpoint': format_lazy(
-                    '{}{{id}}/',
-                    api_reverse_lazy('hr/jobsiteaddresses')
-                ),
-            }, 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
-        ),
-        'jobsite': (
-            {
-                'label': _('Company'),
-                'type': constants.FIELD_LINK,
+                'label': _('Client'),
                 'field': 'regular_company',
-                'endpoint': format_lazy('{}{{id}}/', api_reverse_lazy('core/companies')),
-            }, {
-                'label': _('Address'),
-                'type': constants.FIELD_LINK,
-                'field': 'address',
-                'endpoint': format_lazy( '{}{{id}}/', api_reverse_lazy('hr/jobsiteaddresses')),
-            }, 'jobsite.primary_contact', 'jobsite.start_date', 'jobsite.end_date', 'jobsite.notes',
-        ),
-    }
-    list_filter = ('jobsite', )
+            },
+            'portfolio_manager',
+            {
+                'type': constants.FIELD_SELECT,
+                'field': 'active_states',
+                'choices': lazy(states_part, list),
+            },
+        ]
+
+        return list_filter
 
 
 class FavouriteListEndpoint(ApiEndpoint):
@@ -223,6 +270,7 @@ class CarrierListEndpoint(ApiEndpoint):
 
     list_display = ('candidate_contact', 'target_date', 'confirmed_available', 'job_offer')
     list_editable = ('target_date', 'confirmed_available', 'job_offer')
+    list_filter = ('candidate_contact', )
 
 
 class BlackListEndpoint(ApiEndpoint):
@@ -230,6 +278,7 @@ class BlackListEndpoint(ApiEndpoint):
 
     list_display = ('company', 'candidate_contact', 'timesheet', 'jobsite')
     list_editable = ('company', 'timesheet', 'jobsite')
+    list_filter = ('candidate_contact', )
 
 
 class CandidateEvaluationEndpoint(ApiEndpoint):
@@ -238,7 +287,12 @@ class CandidateEvaluationEndpoint(ApiEndpoint):
     list_display = ('candidate_contact', 'supervisor', 'evaluated_at')
     list_editable = (
         'supervisor', 'evaluated_at', 'level_of_communication', 'was_on_time', 'was_motivated', 'had_ppe_and_tickets',
-        'met_expectations', 'representation', 'reference_timesheet'
+        'met_expectations', 'representation',
+        {
+            'type': constants.FIELD_LINK,
+            'field': 'reference_timesheet',
+            'endpoint': format_lazy('{}{{reference_timesheet.id}}', api_reverse_lazy('hr/timesheets')),
+        }
     )
     fieldsets = (
         'candidate_contact', 'supervisor', {
@@ -248,6 +302,7 @@ class CandidateEvaluationEndpoint(ApiEndpoint):
         }, 'level_of_communication', 'was_on_time', 'was_motivated',
         'had_ppe_and_tickets', 'met_expectations', 'representation', 'reference_timesheet'
     )
+    list_filter = ('candidate_contact', )
 
 
 class JobEndpoint(ApiEndpoint):
@@ -377,8 +432,8 @@ class JobEndpoint(ApiEndpoint):
     }]
 
     search_fields = (
-        'workers', 'jobsite__jobsite_addresses__address__city__search_names', 'publish_on', 'expires_on',
-        'jobsite__jobsite_addresses__address__street_address', 'jobsite__master_company__name', 'position__name'
+        'workers', 'jobsite__address__city__search_names', 'publish_on', 'expires_on',
+        'jobsite__address__street_address', 'jobsite__master_company__name', 'position__name'
     )
 
     fieldsets = ({
@@ -538,6 +593,75 @@ class JobEndpoint(ApiEndpoint):
             'job': '{id}',
         }
     })
+
+    list_editable = (
+        '__str__', 'position', 'work_start_date',
+        {
+            'type': constants.FIELD_TIME,
+            'field': 'default_shift_starting_time',
+            'label': _('Shift Starting Time'),
+        }, {
+            'label': _('Fill in'),
+            'delim': ' ',
+            'fields': ({
+                'type': constants.FIELD_BUTTON,
+                'icon': 'fa-sign-in',
+                'text': _('Fill in'),
+                'action': 'fillin',
+                'hidden': 'hide_fillin',
+                'field': 'id',
+            }, )
+        }, {
+            'label': _('Fulfilled'),
+            'delim': '/',
+            'title': _('today / next day'),
+            'fields': ({
+                'field': 'is_fulfilled_today',
+                'type': constants.FIELD_ICON,
+                'values': {
+                    0: 'times-circle',
+                    1: 'check-circle',
+                    2: 'exclamation-circle',
+                    3: 'minus-circle',
+                },
+                'color': {
+                    0: 'danger',
+                    1: 'success',
+                    2: 'warning',
+                },
+            }, {
+                'field': 'is_fulfilled',
+                'type': constants.FIELD_ICON,
+                'values': {
+                    0: 'times-circle',
+                    1: 'check-circle',
+                    2: 'exclamation-circle',
+                    3: 'minus-circle',
+                },
+                'color': {
+                    0: 'danger',
+                    1: 'success',
+                    2: 'warning',
+                },
+            }),
+        }, {
+            'label': _('State'),
+            'fields': ({
+                'field': 'active_states',
+            },)
+        }, {
+            'label': _('Actions'),
+            'delim': ' ',
+            'fields': (
+                {
+                    **constants.BUTTON_EDIT,
+                    'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('hr/jobs'))
+                },
+                constants.BUTTON_DELETE
+            )
+        },
+    )
+    list_editable_buttons = []
 
     def get_list_filter(self):
         states_part = partial(
@@ -778,7 +902,6 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
 
 router.register(endpoint=JobsiteEndpoint())
 router.register(hr_models.JobsiteUnavailability)
-router.register(endpoint=JobsiteAddressEndpoint())
 router.register(endpoint=JobEndpoint())
 router.register(endpoint=ShiftDateEndpoint())
 router.register(endpoint=ShiftEndpoint())

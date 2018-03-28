@@ -120,13 +120,15 @@ def industry(db):
 
 
 @pytest.fixture
-def jobsite(db, master_company, company_contact, industry):
+def jobsite(db, master_company, company_contact, industry, address, regular_company):
     return hr_models.Jobsite.objects.create(
         industry=industry,
         master_company=master_company,
         start_date=datetime.date.today(),
         end_date=datetime.date.today() + datetime.timedelta(days=7),
-        primary_contact=company_contact
+        primary_contact=company_contact,
+        address=address,
+        regular_company=regular_company,
     )
 
 
@@ -142,24 +144,6 @@ def address(db):
         postal_code="123456",
         city=city,
         state=state
-    )
-
-
-@pytest.fixture
-def jobsite_address(db, address, jobsite, regular_company):
-    return hr_models.JobsiteAddress.objects.create(
-        jobsite=jobsite,
-        address=address,
-        regular_company=regular_company
-    )
-
-
-@pytest.fixture
-def jobsite_address_master(db, address, jobsite, master_company):
-    return hr_models.JobsiteAddress.objects.create(
-        jobsite=jobsite,
-        address=address,
-        regular_company=master_company
     )
 
 

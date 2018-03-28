@@ -25,10 +25,11 @@ tz = timezone(settings.TIME_ZONE)
 @pytest.mark.django_db
 class TestJobsite:
     def test_get_site_name_without_address(self, jobsite):
+        jobsite.address = None
         assert jobsite.get_site_name() == str(jobsite.master_company)
 
-    def test_get_site_name_with_address(self, jobsite, jobsite_address):
-        street_address = jobsite_address.address.street_address
+    def test_get_site_name_with_address(self, jobsite):
+        street_address = jobsite.address.street_address
         assert street_address in jobsite.get_site_name()
 
     def test_get_availability_successful(self, jobsite):
@@ -51,17 +52,19 @@ class TestJobsite:
     def test_get_duration(self, jobsite):
         assert jobsite.get_duration() == datetime.timedelta(7)
 
-    def test_is_address_set_successful(self, jobsite, jobsite_address):
+    def test_is_address_set_successful(self, jobsite):
         assert jobsite.is_address_set()
 
     def test_is_address_set_unsuccessful(self, jobsite):
+        jobsite.address = None
         assert not jobsite.is_address_set()
 
     def test_get_address_none(self, jobsite):
+        jobsite.address = None
         assert jobsite.get_address() is None
 
-    def test_get_address_with_result(self, jobsite, jobsite_address):
-        assert jobsite.get_address() == jobsite_address.address
+    def test_get_address_with_result(self, jobsite, address):
+        assert jobsite.get_address() == address
 
     def test_is_supervisor_set_true(self, jobsite):
         assert jobsite.is_supervisor_set()
@@ -273,18 +276,16 @@ class TestTimesheet:
     def test_get_job_offer(self, timesheet, job_offer):
         assert timesheet.get_job_offer() == job_offer
 
-    def test_get_or_create_for_job_offer_accepted(
-            self, job_offer_tomorrow):
-
+    @patch.object(TimeSheet, '_send_placement_acceptance_sms')
+    def test_get_or_create_for_job_offer_accepted(self, mock_acceptance, job_offer_tomorrow):
         res = TimeSheet.get_or_create_for_job_offer_accepted(
             job_offer_tomorrow
         )
         assert res.job_offer == job_offer_tomorrow
 
+    @patch.object(TimeSheet, '_send_placement_acceptance_sms')
     @patch.object(TimeSheet, 'objects', new_callable=PropertyMock)
-    def test_get_or_create_for_job_offer_accepted_exists(
-            self, mock_objects, job_offer):
-
+    def test_get_or_create_for_job_offer_accepted_exists(self, mock_objects, mock_acceptance, job_offer):
         mock_objects.return_value.get_or_create.side_effect = IntegrityError
         mock_objects.return_value.update_or_create.return_value = (
             MockModel(job_offer=job_offer), True
@@ -577,10 +578,11 @@ class TestJobOffer:
         mock_task.send_jo_rejection.assert_called_with(job_offer)
 
     @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 6)))
+    @patch.object(TimeSheet, 'get_or_create_for_job_offer_accepted')
     @patch.object(JobOffer, 'move_candidate_to_carrier_list')
     @patch('r3sourcer.apps.hr.models.hr_utils')
     def test_check_job_quota_has_accepted_gt_workers_gt_now_with_sms_sent(
-        self, mock_task, mock_move, shift, candidate_contact, job_offer, fake_sms
+        self, mock_task, mock_move, mock_create_timesheet, shift, candidate_contact, job_offer, fake_sms
     ):
         accepted_jo = JobOffer.objects.create(
             shift=shift,
@@ -595,10 +597,11 @@ class TestJobOffer:
         mock_task.send_jo_rejection.assert_called_with(job_offer)
 
     @freeze_time(tz.localize(datetime.datetime(2017, 1, 2, 6)))
+    @patch.object(TimeSheet, 'get_or_create_for_job_offer_accepted')
     @patch.object(JobOffer, 'move_candidate_to_carrier_list')
     @patch('r3sourcer.apps.hr.models.hr_utils')
     def test_check_job_quota_has_accepted_gt_workers_gt_now_with_sms_sent_self(
-        self, mock_task, mock_move, shift, candidate_contact, fake_sms
+        self, mock_task, mock_move, mock_create_timesheet, shift, candidate_contact, fake_sms
     ):
         accepted_jo = JobOffer.objects.create(
             shift=shift,

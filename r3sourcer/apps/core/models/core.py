@@ -256,11 +256,11 @@ class Contact(
         return None
 
     def get_closest_company(self):
-        if self.is_candidate_contact():
-            return self.candidate_contacts.get_closest_company()
-        elif self.is_company_contact():
+        if self.is_company_contact():
             master_company = self.company_contact.first().get_master_company()
             return master_company[0] if len(master_company) > 0 else get_default_company()
+        elif self.is_candidate_contact():
+            return self.candidate_contacts.get_closest_company()
 
         return get_default_company()
 
@@ -434,12 +434,12 @@ class User(UUIDModel,
 
     @property
     def access_level(self) -> str:
-        if self.is_candidate():
-            return CANDIDATE
+        if self.is_manager():
+            return MANAGER
         elif self.is_client():
             return CLIENT
-        elif self.is_manager():
-            return MANAGER
+        elif self.is_candidate():
+            return CANDIDATE
         raise ValidationError("Unknown user role")
 
     def has_permission(self, permission_codename) -> bool:
@@ -465,10 +465,10 @@ class User(UUIDModel,
     @property
     def company(self):
         try:
-            if self.is_candidate():
-                return self.contact.candidate_contacts.candidate_rels.first().master_company
-            elif self.is_client() or self.is_manager():
+            if self.is_client() or self.is_manager():
                 return self.contact.company_contact.first().relationships.first().company
+            elif self.is_candidate():
+                return self.contact.candidate_contacts.candidate_rels.first().master_company
             else:
                 raise APIException("Unknown user's role.")
         except AttributeError:

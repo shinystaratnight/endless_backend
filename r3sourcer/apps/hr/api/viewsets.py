@@ -28,8 +28,8 @@ from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models, payment
 from r3sourcer.apps.hr.api.filters import TimesheetFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
-from r3sourcer.apps.hr.tasks import generate_invoice, send_supervisor_timesheet_sign
-from r3sourcer.apps.hr.utils import job as job_utils
+from r3sourcer.apps.hr.tasks import generate_invoice
+from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
 
 
 class ExtranetTimesheetEndpoint(ApiEndpoint):
@@ -130,9 +130,6 @@ class BaseTimeSheetViewsetMixin:
         serializer.is_valid(raise_exception=True)
         serializer.save()
         generate_invoice.delay(time_sheet.id)
-
-        if is_candidate:
-            send_supervisor_timesheet_sign.apply_async(args=[time_sheet.supervisor.id, time_sheet.id], countdown=10)
 
         return Response(serializer.data)
 
@@ -491,8 +488,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             serializer.save()
 
             if serializer.validated_data.get('send_supervisor_message'):
-                from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
-                send_supervisor_timesheet_sign.delay(obj.supervisor.id, obj.id)
+                hr_utils.send_supervisor_timesheet_approve(obj)
         else:
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
 
@@ -540,8 +536,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             serializer.save()
 
             if serializer.validated_data.get('send_supervisor_message'):
-                from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
-                send_supervisor_timesheet_sign.delay(obj.supervisor.id, obj.id)
+                hr_utils.send_supervisor_timesheet_approve(obj)
 
             if serializer.validated_data.get('send_candidate_message'):
                 from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SUPERVISOR_DECLINED

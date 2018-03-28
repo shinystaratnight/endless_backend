@@ -242,3 +242,8 @@ def get_invoice(company, date_from, date_to, timesheet):
         pass
 
     return invoice
+
+
+def send_supervisor_timesheet_approve(timesheet):
+    from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
+    send_supervisor_timesheet_sign.delay(timesheet.supervisor.id, timesheet.id)
