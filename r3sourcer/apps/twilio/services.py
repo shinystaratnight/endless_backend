@@ -1,5 +1,6 @@
 import logging
 
+from django.db.models import Q
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
 
@@ -15,6 +16,7 @@ class TwilioSMSService(BaseSMSService):
     def process_sms_send(self, sms_message):
         try:
             twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=sms_message.from_number)
+            from_number = sms_message.from_number
         except models.TwilioAccount.DoesNotExist:
             current_site = get_current_site(None)
             master_type = Company.COMPANY_TYPES.master
@@ -28,10 +30,21 @@ class TwilioSMSService(BaseSMSService):
                 logger.warn('Cannot find Twilio number')
                 return
 
+            from_number = twilio_account.phone_numbers.filter(
+                is_default=True, sms_enabled=True
+            ).first()
+            if from_number:
+                from_number = from_number.phone_number
+                sms_message.from_number = from_number
+
+        if not from_number:
+            logger.warn('Cannot find Twilio number')
+            return
+
         sms_message.sid = twilio_account.client.api.account.messages.create(
-            body=sms_message.text, from_=sms_message.from_number, to=sms_message.to_number
+            body=sms_message.text, from_=from_number, to=sms_message.to_number
         ).sid
-        sms_message.save(update_fields=['sid'])
+        sms_message.save(update_fields=['sid', 'from_number'])
 
     def process_sms_fetch(self):
         sms_list = []
