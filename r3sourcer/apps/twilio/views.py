@@ -1,10 +1,19 @@
-from django.utils.functional import cached_property
-from django.views.generic import FormView
+import logging
+
 from django.contrib import messages
+from django.http import HttpResponse
+from django.views.generic import FormView
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
+from django.utils.functional import cached_property
+from rest_framework.views import APIView
 
 from r3sourcer.apps.sms_interface.mixins import MessageView
 from r3sourcer.apps.twilio.forms import SMSForm
 from r3sourcer.apps.twilio.services import TwilioSMSService
+
+
+logger = logging.getLogger(__name__)
 
 
 class SMSDialogTemplateView(MessageView, FormView):
@@ -56,3 +65,11 @@ class SMSDialogTemplateView(MessageView, FormView):
                 messages.add_message(self.request, messages.SUCCESS, self.SUCCESS_SENDING % (
                     recipient, recipient.phone_mobile))
         return super(SMSDialogTemplateView, self).form_valid(form)
+
+
+class IncomingSMSView(APIView):
+
+    @method_decorator(csrf_exempt)
+    def post(self, request, **kwargs):
+        logger.info('Twilio request data: {}'.format(request.data))
+        return HttpResponse('<Response></Response>', content_type='application/xml')
