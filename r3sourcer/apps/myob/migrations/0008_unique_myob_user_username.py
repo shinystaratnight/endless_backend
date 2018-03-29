@@ -5,6 +5,11 @@ from __future__ import unicode_literals
 from django.db import migrations, models
 
 
+def delete_auth_data(apps, schema_editor):
+    MYOBAuthData = apps.get_model("myob", "MYOBAuthData")
+    MYOBAuthData.objects.all().delete()
+
+
 class Migration(migrations.Migration):
 
     dependencies = [
@@ -17,4 +22,5 @@ class Migration(migrations.Migration):
             name='myob_user_username',
             field=models.CharField(max_length=512, unique=True, verbose_name='User Username'),
         ),
+        migrations.RunPython(delete_auth_data, migrations.RunPython.noop)
     ]

@@ -4,13 +4,14 @@ from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBAuthData
 
 
 class MYOBCompanyFileSerializer(serializers.ModelSerializer):
-    id = serializers.CharField(source='cf_id')
+    id = serializers.CharField()
+    cf_id = serializers.CharField()
     uri = serializers.CharField(source='cf_uri')
     name = serializers.CharField(source='cf_name')
 
     class Meta:
         model = MYOBCompanyFile
-        fields = ('id', 'uri', 'name', 'authenticated')
+        fields = ('id', 'cf_id', 'uri', 'name', 'authenticated')
 
 
 class MYOBAuthDataSerializer(serializers.ModelSerializer):
