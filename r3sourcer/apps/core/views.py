@@ -75,8 +75,11 @@ class UserRolesView(APIView):
     Returns list of user's roles
     """
     def get(self, *args, **kwargs):
-        roles = [x.name for x in self.request.user.role.all()]
-        data = {
-            'roles': roles
-        }
+        if self.request.user.is_anonymous:
+            data = {}
+        else:
+            roles = [x.name for x in self.request.user.role.all()]
+            data = {
+                'roles': roles
+            }
         return Response(data)

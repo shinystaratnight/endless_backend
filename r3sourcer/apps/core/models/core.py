@@ -2644,6 +2644,9 @@ class Role(UUIDModel):
 
     name = models.CharField(max_length=255, choices=ROLE_NAMES)
 
+    def __str__(self):
+        return self.name
+
 
 connect_default_signals(Country)
 connect_default_signals(Region)
