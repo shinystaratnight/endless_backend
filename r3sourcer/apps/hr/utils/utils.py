@@ -2,8 +2,10 @@ import logging
 
 from datetime import datetime, date, time, timedelta
 from collections import defaultdict
+from functools import reduce
 
-from django.utils import timezone
+from django.conf import settings
+from django.utils import timezone, formats
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import InvoiceRule, Invoice
@@ -107,8 +109,8 @@ def calculate_distances_for_jobsite(contacts, jobsite):
     """
     contacts_dict = defaultdict(list)
     for contact in contacts:
-        if hasattr(contact, 'candidate_contacts')\
-                and contact.candidate_contacts.transportation_to_work == CandidateContact.TRANSPORTATION_CHOICES.public:
+        is_public = contact.candidate_contacts.transportation_to_work == CandidateContact.TRANSPORTATION_CHOICES.public
+        if hasattr(contact, 'candidate_contacts') and is_public:
             contacts_dict[MODE_TRANSIT].append(contact)
         else:
             contacts_dict[None].append(contact)
@@ -239,7 +241,7 @@ def get_invoice(company, date_from, date_to, timesheet):
             candidate = timesheet.job_offer.candidate_contact
             invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
                                           invoice_lines__timesheet__job_offer__candidate_contact=candidate)
-    except:
+    except Exception:
         pass
 
     return invoice
@@ -248,3 +250,33 @@ def get_invoice(company, date_from, date_to, timesheet):
 def send_supervisor_timesheet_approve(timesheet):
     from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
     send_supervisor_timesheet_sign.delay(timesheet.supervisor.id, timesheet.id)
+
+
+def send_job_confirmation_sms(job):
+    from r3sourcer.apps.hr.tasks import send_job_confirmation_sms
+    send_job_confirmation_sms.apply_async(args=[job.id], countdown=10)
+
+
+def format_dates_range(dates_list):
+    def _cmp_dates(value, element):
+        if not value:
+            return [[element]]
+        current_group = value[-1]
+        if element - current_group[-1] == timedelta(days=1):
+            current_group.append(element)
+        else:
+            value.append([element])
+        return value
+    res_dates = reduce(_cmp_dates, dates_list, [])
+
+    results = []
+    for dates in res_dates:
+        if len(dates) > 2:
+            results.append('{}-{}'.format(
+                formats.date_format(dates[0], 'd/m'),
+                formats.date_format(dates[-1], 'd/m')
+            ))
+        else:
+            results.extend([formats.date_format(fulldate, 'd/m') for fulldate in dates])
+
+    return results

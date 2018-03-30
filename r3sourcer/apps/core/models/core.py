@@ -625,7 +625,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
         default=False
     )
 
-    receive_order_confirmation_sms = models.BooleanField(
+    receive_job_confirmation_sms = models.BooleanField(
         verbose_name=_("Receive Job confirmation sms"),
         default=True
     )
