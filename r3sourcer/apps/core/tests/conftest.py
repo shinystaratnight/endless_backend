@@ -21,6 +21,14 @@ def user(db):
 
 
 @pytest.fixture
+def user_sec(db):
+    return models.User.objects.create_user(
+        email='test_sec@test.tt', phone_mobile='+12345678902',
+        password='test1234'
+    )
+
+
+@pytest.fixture
 def another_user(db, faker):
     return models.User.objects.create_user(
         password=faker.password(),
@@ -89,6 +97,11 @@ def contact(db, user, contact_data, contact_address):
     contact.address = contact_address
     contact.save()
     return contact
+
+
+@pytest.fixture
+def contact_sec(db, user_sec):
+    return user_sec.contact
 
 
 @pytest.fixture
@@ -388,9 +401,25 @@ def candidate_contact(db, contact):
 
 
 @pytest.fixture
+def candidate_contact_sec(db, contact_sec):
+    return CandidateContact.objects.create(
+        contact=contact_sec
+    )
+
+
+@pytest.fixture
 def candidate_rel(db, candidate_contact, company, company_contact):
     return CandidateRel.objects.create(
         candidate_contact=candidate_contact,
+        master_company=company,
+        company_contact=company_contact,
+    )
+
+
+@pytest.fixture
+def candidate_rel_sec(db, candidate_contact_sec, company, company_contact):
+    return CandidateRel.objects.create(
+        candidate_contact=candidate_contact_sec,
         master_company=company,
         company_contact=company_contact,
     )

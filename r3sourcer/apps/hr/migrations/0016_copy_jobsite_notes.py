@@ -9,7 +9,9 @@ def migrate_jobsite_notes(apps, schema_editor):
     Jobsite = apps.get_model('hr', 'Jobsite')
     Note = apps.get_model('core', 'Note')
     ContentType = apps.get_model('contenttypes', 'ContentType')
-    jobsite_ct = ContentType.objects.get_by_natural_key('hr', 'jobsite')
+    jobsite_ct = ContentType.objects.filter(app_label='hr', model='jobsite').first()
+    if not jobsite_ct:
+        return
 
     for jobsite in Jobsite.objects.all():
         if jobsite.notes:
@@ -20,7 +22,9 @@ def revert_jobsite_notes(apps, schema_editor):
     Jobsite = apps.get_model('hr', 'Jobsite')
     Note = apps.get_model('core', 'Note')
     ContentType = apps.get_model('contenttypes', 'ContentType')
-    jobsite_ct = ContentType.objects.get_by_natural_key('hr', 'jobsite')
+    jobsite_ct = ContentType.objects.filter(app_label='hr', model='jobsite').first()
+    if not jobsite_ct:
+        return
 
     for note in Note.objects.filter(content_type=jobsite_ct):
         Jobsite.objects.filter(id=note.object_id).update(notes=note.note)
@@ -30,6 +34,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('contenttypes', '0002_remove_content_type_name'),
+        ('core', '0023_invoice_approved'),
         ('hr', '0015_removed_jobsite_address'),
     ]
 
