@@ -12,6 +12,7 @@ from django.core.cache import cache
 from django.db import transaction
 from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
+import pytz
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
@@ -696,3 +697,79 @@ def send_going_to_work_sms(time_sheet_id):
     :return:
     """
     send_time_sheet_confirmation_sms(time_sheet_id, 'going_to_work_', 'candidate-going-to-work')
+
+
+def get_confirmation_string(job):
+    dates = formats.date_format(job.work_start_date, settings.DATE_FORMAT)
+    if job.shift_dates.exists():
+        settingstime_zone = pytz.timezone(settings.TIME_ZONE)
+        shift_dates_list = job.shift_dates.filter(
+            shift_date__gte=date.today()
+        ).order_by('shift_date').values_list('shift_date', flat=True)
+
+        if len(shift_dates_list) > 0:
+            # if year is the same removes year from the string
+            if shift_dates_list[0].year == shift_dates_list[len(shift_dates_list) - 1].year:
+                shift_dates = utils.format_dates_range(shift_dates_list)
+            else:
+                shift_dates = [
+                    formats.date_format(fulldate.astimezone(settingstime_zone), settings.DATE_FORMAT)
+                    for fulldate in shift_dates_list
+                ]
+
+            dates = ', '.join(shift_dates)
+        shift_date = job.shift_dates.filter(shift_date__gte=date.today()).order_by('shift_date').first()
+        time = formats.time_format(shift_date.shifts.order_by('time').first().time)
+    else:
+        time = formats.date_format(job.default_shift_starting_time, settings.TIME_FORMAT)
+    return _("{} {} for dates {}, shifts starting {}").format(job.workers, job.position, dates, time)
+
+
+@app.task(bind=True, queue='sms')
+@one_sms_task_at_the_same_time
+def send_job_confirmation_sms(self, job_id):
+    """
+    Send sms for Job confirmation.
+
+    :param self: Task instance
+    :param job_id: UUID of Job
+    :return: None
+    """
+
+    try:
+        job = hr_models.Job.objects.get(id=job_id)
+        jobsite = job.jobsite
+        if not jobsite.primary_contact.receive_job_confirmation_sms:
+            logger.info("Company Contact %s should\'t receive job confirmation SMS", str(job.primary_contact))
+            return
+    except hr_models.Job.DoesNotExist:
+        logger.warn('Job with id %s does not exists', str(job_id))
+        return
+
+    try:
+        sms_interface = get_sms_service()
+    except ImportError:
+        logger.exception('Cannot load SMS service')
+        return
+
+    with transaction.atomic():
+        confirmation_string = get_confirmation_string(job)
+
+        sign_navigation = core_models.ExtranetNavigation.objects.get(id=110)
+        extranet_login = TokenLogin.objects.create(
+            contact=jobsite.primary_contact.contact,
+            redirect_to='{}{}/change/'.format(sign_navigation.url, job_id)
+        )
+        data_dict = dict(
+            get_confirmation_string=confirmation_string,
+            supervisor=jobsite.primary_contact,
+            jobsite=jobsite,
+            portfolio_manager=jobsite.portfolio_manager,
+            auth_url="%s%s" % (settings.SITE_URL, extranet_login.auth_url),
+            related_obj=job,
+            related_objs=[jobsite.primary_contact, jobsite, jobsite.portfolio_manager, extranet_login],
+        )
+
+        sms_interface.send_tpl(
+            jobsite.primary_contact.contact.phone_mobile, 'job-confirmed', check_reply=False, **data_dict
+        )
