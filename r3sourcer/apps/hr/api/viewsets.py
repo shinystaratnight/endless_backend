@@ -99,7 +99,8 @@ class JobFillinEndpoint(ApiEndpoint):
             'shifts': '{id}',
         },
         'data': 'shifts',
-        'display': '__str__'
+        'display': '__str__',
+        'unique': ('date', ),
     }]
 
     ordering_mapping = {
@@ -855,7 +856,12 @@ class JobViewset(BaseApiViewset):
             candidate_contacts[:51], context=context, many=True
         )
         return Response({
-            'shifts': [ApiBaseRelatedField.to_read_only_data(shift) for shift in init_shifts],
+            'shifts': [
+                dict(
+                    date=shift.date.shift_date,
+                    **ApiBaseRelatedField.to_read_only_data(shift)
+                ) for shift in init_shifts
+            ],
             'job': job_ctx,
             'list': serializer.data,
         })
