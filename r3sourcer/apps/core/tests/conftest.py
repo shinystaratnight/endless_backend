@@ -10,6 +10,7 @@ from django.core.files.base import ContentFile
 
 from r3sourcer.apps.candidate.models import CandidateContact, CandidateRel
 from r3sourcer.apps.core import models
+from r3sourcer.apps.core.models.core import Role
 
 
 @pytest.fixture
@@ -423,3 +424,11 @@ def candidate_rel_sec(db, candidate_contact_sec, company, company_contact):
         master_company=company,
         company_contact=company_contact,
     )
+
+
+@pytest.fixture
+def roles(db):
+    candidate = Role.objects.create(name='candidate')
+    role = Role.objects.create(name='manager')
+    client = Role.objects.create(name='client')
+    return [candidate, role, client]

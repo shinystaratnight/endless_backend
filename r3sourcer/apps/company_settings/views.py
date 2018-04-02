@@ -299,8 +299,8 @@ class MYOBAuthorizationView(APIView):
         auth_client = MYOBAuth(self.request)
         response = auth_client.retrieve_access_token(data=data)
         MYOBAuthData.objects.get_or_create(
-            client_id=request.data.get('api_key', None),
-            client_secret=request.data.get('api_secret', None),
+            client_id=settings.MYOB_APP['api_key'],
+            client_secret=settings.MYOB_APP['api_secret'],
             access_token=response['access_token'],
             refresh_token=response['refresh_token'],
             myob_user_uid=response['user']['uid'],
@@ -364,7 +364,8 @@ class RefreshCompanyFilesView(APIView):
                 company_file, created = MYOBCompanyFile.objects.update_or_create(cf_id=raw_company_file['Id'],
                                                                                  defaults={
                                                                                      'cf_uri': raw_company_file['Uri'],
-                                                                                     'cf_name': raw_company_file['Name']
+                                                                                     'cf_name': raw_company_file['Name'],
+                                                                                     'auth_data': auth_data
                                                                                  })
                 company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
                                                                                       company=company,
@@ -417,6 +418,8 @@ class RefreshMYOBAccountsView(APIView):
     def get(self, request, *args, **kwargs):
         auth_data = request.user.auth_data.latest('created')
         client = MYOBClient(auth_data=auth_data)
+        data = dict()
+        new_accounts = list()
 
         for company_file in request.user.company_files:
             if not company_file.authenticated:
@@ -430,7 +433,7 @@ class RefreshMYOBAccountsView(APIView):
             accounts = client.get_accounts(company_file.cf_id, company_file_token).json()['Items']
 
             for account in accounts:
-                MYOBAccount.objects.update_or_create(uid=account['UID'],
+                account_object, created = MYOBAccount.objects.update_or_create(uid=account['UID'],
                     defaults={
                         'name': account['Name'],
                         'display_id': account['DisplayID'],
@@ -449,10 +452,20 @@ class RefreshMYOBAccountsView(APIView):
                     }
                 )
 
+                if created:
+                    new_accounts.append(account_object)
+
         myob_settings = request.user.company.myob_settings
         myob_settings.payroll_accounts_last_refreshed = timezone.now()
         myob_settings.save()
-        return Response()
+
+        if new_accounts:
+            serializer = serializers.MYOBAccountSerializer(new_accounts, many=True)
+            data = {
+                'myob_accounts': serializer.data
+            }
+
+        return Response(data)
 
 
 class MYOBSettingsView(APIView):
@@ -476,9 +489,20 @@ class MYOBSettingsView(APIView):
             raise exceptions.APIException("User has no relation to any company.")
 
         serializer = serializers.MYOBSettingsSerializer(company.myob_settings,
-                                                       data=self.request.data,
-                                                       partial=True)
+                                                        data=self.request.data,
+                                                        partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
         return Response()
+
+
+class MYOBAPIKeyView(APIView):
+    """
+    Returns API key for authentication in MYOB
+    """
+    def get(self, *args, **kwargs):
+        data = {
+            'api_key': settings.MYOB_APP['api_key']
+        }
+        return Response(data)

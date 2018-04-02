@@ -2,6 +2,7 @@ import json
 import mock
 import pytest
 
+from django.conf import settings
 from django.contrib.auth.models import Group
 from django.core.urlresolvers import reverse
 from django.utils import timezone
@@ -677,3 +678,12 @@ class TestMYOBAuthDataDeleteView:
 
         assert response.status_code == 204
         assert MYOBAuthData.objects.all().count() == 0
+
+
+class TestMYOBAPIKeyView:
+    def test_get(self, client, user):
+        url = reverse('myob_api_key', kwargs={'version': 'v2'})
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert response['api_key'] == settings.MYOB_APP['api_key']
