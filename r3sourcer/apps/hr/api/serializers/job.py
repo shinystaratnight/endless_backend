@@ -16,12 +16,9 @@ from r3sourcer.apps.hr.utils import utils as hr_utils
 from r3sourcer.apps.logger.main import endless_logger
 
 
-class JobSerializer(
-    activity_mixins.RelatedActivitiesColumnMixin, core_mixins.WorkflowStatesColumnMixin,
-    core_serializers.ApiBaseModelSerializer
-):
+class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'todays_timesheets', 'title')
+    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'title')
 
     class Meta:
         model = hr_models.Job
