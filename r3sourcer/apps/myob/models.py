@@ -122,7 +122,7 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
     myob_user_username = models.CharField(
         verbose_name=_(u"User Username"),
         max_length=512,
-
+        unique=True
     )
 
     expires_in = models.PositiveIntegerField(
@@ -139,7 +139,6 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
     class Meta:
         verbose_name = _("MYOB OAuth2 Data")
         verbose_name_plural = _("MYOB OAuth2 Data")
-        unique_together = ("client_id", "client_secret", "user")
 
     def __str__(self):
         return self.client_id
@@ -181,6 +180,7 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
     )
 
     authenticated = models.BooleanField(default=False)
+    auth_data = models.ForeignKey('MYOBAuthData', blank=True, null=True)
 
     class Meta:
         verbose_name = _("MYOB Company File")

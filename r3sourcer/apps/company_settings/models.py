@@ -36,16 +36,29 @@ class MYOBAccount(UUIDModel):
     company_file = models.ForeignKey('myob.MYOBCompanyFile', blank=True, null=True, related_name='accounts')
 
     def __str__(self):
-        return self.number + self.name
+        return '{} - {}'.format(self.number, self.name)
 
 
 class MYOBSettings(UUIDModel):
     company = models.OneToOneField('core.Company', blank=True, null=True, related_name='myob_settings')
 
     # form fields
-    invoice_company_file = models.ForeignKey(MYOBCompanyFile, blank=True, null=True, related_name='invoice_company_files')
-    invoice_activity_account = models.ForeignKey(MYOBAccount, blank=True, null=True)
-    timesheet_company_file = models.ForeignKey(MYOBCompanyFile, blank=True, null=True, related_name='timesheet_company_files')
+    invoice_company_file = models.ForeignKey(MYOBCompanyFile,
+                                             blank=True,
+                                             null=True,
+                                             on_delete=models.SET_NULL,
+                                             related_name='invoice_company_files')
+
+    invoice_activity_account = models.ForeignKey(MYOBAccount,
+                                                 blank=True,
+                                                 null=True,
+                                                 on_delete=models.SET_NULL)
+
+    timesheet_company_file = models.ForeignKey(MYOBCompanyFile,
+                                               blank=True,
+                                               null=True,
+                                               on_delete=models.SET_NULL,
+                                               related_name='timesheet_company_files')
 
     # last refreshed
     payroll_accounts_last_refreshed = models.DateTimeField(blank=True, null=True)
