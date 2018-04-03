@@ -395,8 +395,7 @@ class CheckCompanyFilesView(APIView):
         password = self.request.data.get('password', None)
         company_file_id = self.request.data.get('id', None)
         company_file = MYOBCompanyFile.objects.get(cf_id=company_file_id)
-        company = request.user.company
-        auth_data = company.company_file_tokens.first().auth_data
+        auth_data = company_file.tokens.latest('created_at').auth_data
         client = MYOBClient(auth_data=auth_data)
         is_valid = client.check_company_file(company_file_id, username, password)
         company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created')
