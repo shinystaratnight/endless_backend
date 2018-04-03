@@ -429,7 +429,12 @@ class RefreshMYOBAccountsView(APIView):
             if not company_file_token:
                 continue
 
-            accounts = client.get_accounts(company_file.cf_id, company_file_token).json()['Items']
+            account_response = client.get_accounts(company_file.cf_id, company_file_token).json()
+
+            if not 'Items' in account_response:
+                continue
+
+            accounts = account_response['Items']
 
             for account in accounts:
                 account_object, created = MYOBAccount.objects.update_or_create(uid=account['UID'],
