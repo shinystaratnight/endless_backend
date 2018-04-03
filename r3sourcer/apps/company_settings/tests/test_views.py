@@ -66,9 +66,13 @@ class TestCompanySettingsView:
         assert user.is_client()
         self._get_company_settings(client, company, user, invoice_rule, payslip_rule, myob_account)
 
-    def test_get_company_settings_as_candidate(self, client, company, user, invoice_rule, payslip_rule, myob_account, candidate_contact, candidate_rel):
-        assert user.is_candidate()
-        self._get_company_settings(client, company, user, invoice_rule, payslip_rule, myob_account)
+    def test_get_company_settings_as_candidate(
+        self, client, company, user_sec, invoice_rule, payslip_rule, myob_account, candidate_contact_sec,
+        candidate_rel_sec
+    ):
+        assert user_sec.is_candidate()
+        print('!!!', user_sec.contact.candidate_contacts.candidate_rels.first().master_company)
+        self._get_company_settings(client, company, user_sec, invoice_rule, payslip_rule, myob_account)
 
     def test_get_company_settings_as_unknown_role(self, user, client):
         url = reverse('company_settings', kwargs={'version': 'v2'})

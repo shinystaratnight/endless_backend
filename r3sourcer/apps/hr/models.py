@@ -422,8 +422,9 @@ class Job(core_models.AbstractBaseOrder):
                 job=self, shift_date=self.work_start_date,
                 workers=self.workers, hourly_rate=self.hourly_rate_default
             )
+            Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
 
-            Shift.objects.get_or_create(date=sd, time=hr_utils.today_7_am, workers=self.workers)
+            hr_utils.send_job_confirmation_sms(self)
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding

@@ -44,6 +44,11 @@ class JobsiteEndpoint(ApiEndpoint):
                 'type': constants.CONTAINER_COLUMN,
                 'fields': (
                     'industry', 'short_name', 'regular_company', 'primary_contact', 'portfolio_manager', 'address',
+                    {
+                        'field': 'master_company.id',
+                        'type': constants.FIELD_TEXT,
+                        'hidden': True,
+                    }
                 ),
             }, )
         }, {
@@ -545,6 +550,9 @@ class JobEndpoint(ApiEndpoint):
         'prefilled': {
             'job': '{id}',
         },
+        'metadata_query': {
+            'editable_type': 'job',
+        },
         'add_metadata_query': {
             'fieldsets_type': 'job',
         },
@@ -700,37 +708,54 @@ class ShiftEndpoint(ApiEndpoint):
 
     fieldsets = ('date', 'time', 'workers', 'hourly_rate')
 
+    _list_editable = (
+        {
+            'type': constants.FIELD_DATE,
+            'label': _('Date'),
+            'name': 'date.shift_date',
+            'field': 'date.shift_date',
+        }, 'workers', {
+            'type': constants.FIELD_TEXT,
+            'label': _('Candidate rate'),
+            'field': 'hourly_rate.hourly_rate',
+            'display': '${field}/h',
+        }, {
+            'type': constants.FIELD_TIME,
+            'field': 'time',
+            'name': 'time',
+            'label': _('Shift start time'),
+        }, {
+            'type': constants.FIELD_ICON,
+            'field': 'is_fulfilled',
+            'label': _('Fulfilled'),
+            'values': {
+                0: 'times-circle',
+                1: 'check-circle',
+                2: 'exclamation-circle',
+                3: 'minus-circle',
+            },
+        },
+    )
+
     list_editable = {
-        'default': (
+        'default': _list_editable + (
             {
-                'type': constants.FIELD_DATE,
-                'label': _('Date'),
-                'name': 'date.shift_date',
-                'field': 'date.shift_date',
-            }, 'workers', {
-                'type': constants.FIELD_TEXT,
-                'label': _('Candidate rate'),
-                'field': 'hourly_rate.hourly_rate',
-                'display': '${field}/h',
-            }, {
-                'type': constants.FIELD_TIME,
-                'field': 'time',
-                'name': 'time',
-                'label': _('Shift start time'),
-            }, {
-                'type': constants.FIELD_ICON,
-                'field': 'is_fulfilled',
-                'label': _('Fulfilled'),
-                'values': {
-                    0: 'times-circle',
-                    1: 'check-circle',
-                    2: 'exclamation-circle',
-                    3: 'minus-circle',
-                },
-            }, {
                 'label': _('Actions'),
                 'delim': ' ',
                 'fields': (constants.BUTTON_DELETE,)
+            },
+        ),
+        'job': _list_editable + (
+            {
+                'label': _('Actions'),
+                'delim': ' ',
+                'fields': (
+                    {
+                        **constants.BUTTON_EDIT,
+                        'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('hr/shiftdates')),
+                    },
+                    constants.BUTTON_DELETE,
+                )
             },
         ),
         'shift_date': (

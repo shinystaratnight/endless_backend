@@ -28,6 +28,7 @@ broker_transport_options = {'visibility_timeout': 2 * 60 * 60}
 task_queues = (
     Queue('celery', Exchange('celery'), routing_key='celery'),
     Queue('sms', Exchange('sms'), routing_key='sms'),
+    Queue('hr', Exchange('hr'), routing_key='hr'),
 )
 
 task_routes = {
@@ -52,6 +53,10 @@ beat_schedule = {
     'sync_timesheets': {
         'task': 'r3sourcer.apps.myob.tasks.sync_timesheets',
         'schedule': crontab(minute=0, hour='2-23'),
+    },
+    'update_all_distances': {
+        'task': 'r3sourcer.apps.hr.tasks.update_all_distances',
+        'schedule': crontab(minute=0, hour=22, day_of_week='fri,sat')
     },
 }
 

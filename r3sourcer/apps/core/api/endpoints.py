@@ -46,7 +46,7 @@ class ApiEndpoint(Endpoint):
         Example:
 
         fieldsets = (
-            ('receive_order_confirmation_sms', 'legacy_myob_card_number'),
+            ('receive_job_confirmation_sms', 'legacy_myob_card_number'),
             {
                 'type': 'row',
                 'name': 'Row',  # optional

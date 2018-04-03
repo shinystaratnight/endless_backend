@@ -106,9 +106,9 @@ class TestUser:
         assert user.is_client()
         assert user.company == company
 
-    def test_get_company_as_candidate(self, user, candidate_contact, candidate_rel, company):
-        assert user.is_candidate()
-        assert user.company == company
+    def test_get_company_as_candidate(self, user_sec, candidate_contact_sec, candidate_rel_sec, company):
+        assert user_sec.is_candidate()
+        assert user_sec.company == company
 
 
 @pytest.mark.django_db

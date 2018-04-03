@@ -633,7 +633,8 @@ class JobViewset(BaseApiViewset):
                 'endpoint': reverse_lazy('get_candidate_distance', kwargs={'version': 'v2'}),
                 'method': 'post',
                 'query': {
-                    'candidates': '{id}'
+                    'candidates': '{id}',
+                    'job': '{job.id}',
                 },
                 'request_field': 'distance',
             }, {
@@ -839,12 +840,12 @@ class JobViewset(BaseApiViewset):
 
         jobsite_address = job.jobsite.get_address()
 
-        vacacy_ctx = {
+        job_ctx = {
             'id': job.id,
             '__str__': str(job),
         }
         if jobsite_address:
-            vacacy_ctx.update({
+            job_ctx.update({
                 'address': str(jobsite_address),
                 'longitude': jobsite_address.longitude,
                 'latitude': jobsite_address.latitude,
@@ -855,7 +856,7 @@ class JobViewset(BaseApiViewset):
         )
         return Response({
             'shifts': [ApiBaseRelatedField.to_read_only_data(shift) for shift in init_shifts],
-            'job': vacacy_ctx,
+            'job': job_ctx,
             'list': serializer.data,
         })
 

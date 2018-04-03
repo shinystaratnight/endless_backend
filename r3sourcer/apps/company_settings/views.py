@@ -211,7 +211,10 @@ class CompanySettingsView(APIView):
     def get(self, *args, **kwargs):
         company = self.request.user.company
 
+        print('!', company)
+
         if not company:
+            print('!!')
             raise exceptions.APIException("User has no relation to any company.")
 
         company_settings = company.company_settings
@@ -392,8 +395,7 @@ class CheckCompanyFilesView(APIView):
         password = self.request.data.get('password', None)
         company_file_id = self.request.data.get('id', None)
         company_file = MYOBCompanyFile.objects.get(cf_id=company_file_id)
-        company = request.user.company
-        auth_data = company.company_file_tokens.first().auth_data
+        auth_data = company_file.tokens.latest('created_at').auth_data
         client = MYOBClient(auth_data=auth_data)
         is_valid = client.check_company_file(company_file_id, username, password)
         company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created')
@@ -427,7 +429,12 @@ class RefreshMYOBAccountsView(APIView):
             if not company_file_token:
                 continue
 
-            accounts = client.get_accounts(company_file.cf_id, company_file_token).json()['Items']
+            account_response = client.get_accounts(company_file.cf_id, company_file_token).json()
+
+            if not 'Items' in account_response:
+                continue
+
+            accounts = account_response['Items']
 
             for account in accounts:
                 account_object, created = MYOBAccount.objects.update_or_create(uid=account['UID'],
