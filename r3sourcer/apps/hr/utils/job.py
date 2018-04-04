@@ -3,7 +3,7 @@ from datetime import timedelta, datetime, date
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from django.utils import timezone
+from django.utils import timezone, formats
 
 
 def get_available_candidate_list(job):
@@ -68,9 +68,9 @@ def get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date,
         Q(job_offers__shift__date__shift_date__gt=from_date.date()),
         Q(job_offers__shift__date__shift_date=to_date.date(),
           job_offers__shift__time__lte=to_date.timetz()) |
-        Q(job_offers__shift__date__shift_date__lt=to_date.date())
-    ).exclude(
-        job_offers__status=JobOffer.STATUS_CHOICES.cancelled
+        Q(job_offers__shift__date__shift_date__lt=to_date.date()),
+        Q(job_offers__status=JobOffer.STATUS_CHOICES.accepted) |
+        Q(job_offers__status=JobOffer.STATUS_CHOICES.undefined)
     ).values_list('id', flat=True))
 
     candidate_ids.extend(candidate_contacts.filter(

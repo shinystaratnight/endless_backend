@@ -1,7 +1,9 @@
 from datetime import date
+from functools import partial
 
 from django.db.models import Max
-from django.utils import timezone
+from django.conf import settings
+from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
@@ -225,7 +227,8 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
         dates = partially_available_candidates.get(obj.id, [])
 
-        return dates
+        date_format = partial(formats.date_format, format=settings.DATETIME_FORMAT)
+        return map(date_format, dates)
 
     def get_days_from_last_timesheet(self, obj):
         last_timesheet = obj.last_timesheet_date
