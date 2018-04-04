@@ -31,8 +31,16 @@ class JobsiteEndpoint(ApiEndpoint):
             'type': constants.FIELD_STATIC,
             'label': _('Site Name'),
             'fields': ('__str__', ),
+        }, {
+            'type': constants.FIELD_TEXT,
+            'label': _('State'),
+            'field': 'address.state.name',
+        }, {
+            'type': constants.FIELD_TEXT,
+            'label': _('City'),
+            'field': 'address.city.name',
         },
-        'address.state.name', 'address.city.name', 'regular_company', 'portfolio_manager', 'industry', 'start_date',
+        'regular_company', 'portfolio_manager', 'industry', 'start_date',
         'end_date', 'active_states'
     )
 
@@ -43,7 +51,14 @@ class JobsiteEndpoint(ApiEndpoint):
             'fields': ({
                 'type': constants.CONTAINER_COLUMN,
                 'fields': (
-                    'industry', 'short_name', 'regular_company', 'primary_contact', 'portfolio_manager', 'address',
+                    'industry',
+                    {
+                        'type': constants.FIELD_TEXT,
+                        'label': _('Site Name'),
+                        'field': 'short_name',
+                        'help': '',
+                    },
+                    'regular_company', 'primary_contact', 'portfolio_manager', 'address',
                     {
                         'field': 'master_company.id',
                         'type': constants.FIELD_TEXT,
@@ -117,17 +132,18 @@ class JobsiteEndpoint(ApiEndpoint):
         '__str__', 'primary_contact', 'start_date', 'end_date', 'notes',
     )
 
-    list_filter = (
-        'industry', 'address.state', 'regular_company', 'portfolio_manager', ''
-    )
-
     def get_list_filter(self):
         states_part = partial(
             core_models.WorkflowNode.get_model_all_states, hr_models.Jobsite
         )
+        au_regions = partial(core_models.Region.get_countrys_regions, 'AU')
         list_filter = [
-            'industry', 'address.state',
-            {
+            'industry', {
+                'type': constants.FIELD_SELECT,
+                'field': 'state',
+                'label': _('State'),
+                'choices': lazy(au_regions, list),
+            }, {
                 'label': _('Client'),
                 'field': 'regular_company',
             },

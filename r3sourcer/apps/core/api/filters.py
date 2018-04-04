@@ -8,7 +8,7 @@ from rest_framework.filters import OrderingFilter
 
 from ..models import (
     Company, CompanyLocalization, CompanyAddress, CompanyRel, WorkflowObject,
-    WorkflowNode, DashboardModule, CompanyContact, FormField, CompanyContactRelationship
+    WorkflowNode, DashboardModule, CompanyContact, FormField, CompanyContactRelationship, Region
 )
 from ..utils.user import get_default_company
 
@@ -232,3 +232,15 @@ class WorkflowObjectFilter(FilterSet):
     class Meta:
         model = WorkflowObject
         fields = ('object_id',)
+
+
+class RegionFilter(FilterSet):
+
+    country = UUIDFilter(method='filter_country')
+
+    class Meta:
+        model = Region
+        fields = ('country',)
+
+    def filter_country(self, queryset, name, value):
+        return queryset.filter(Q(country_id=value) | Q(country__code2=value))

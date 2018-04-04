@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique',
+    'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help',
 )
 
 
@@ -205,8 +205,9 @@ class AngularApiAdapter(BaseAdapter):
         if custom_list is not None:
             adapted['custom'] = custom_list
 
-        if field_ui.get('help'):
-            adapted['templateOptions']['description'] = field_ui['help']
+        help_text = field.get('help')
+        if help_text or (help_text is None and field_ui.get('help')):
+            adapted['templateOptions']['description'] = help_text or field_ui.get('help')
 
         if 'choices' in field:
             for choice in field['choices']:

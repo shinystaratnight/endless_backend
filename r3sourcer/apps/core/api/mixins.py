@@ -1,7 +1,9 @@
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
+from django_filters import NumberFilter
 
 from r3sourcer.apps.logger.main import endless_logger
-from r3sourcer.apps.core.models import User
+from r3sourcer.apps.core.models import User, WorkflowObject
 
 
 class WorkflowStatesColumnMixin():
@@ -46,3 +48,23 @@ class CreatedUpdatedByMixin:
 
     def get_updated_by(self, obj):
         return self._get_log_updated_by(obj)
+
+
+class ActiveStateFilterMixin:
+
+    active_states = NumberFilter(method='filter_active_state')
+
+    def _fetch_workflow_objects(self, value):  # pragma: no cover
+        content_type = ContentType.objects.get_for_model(self.Meta.model)
+        objects = WorkflowObject.objects.filter(
+            state__number=value,
+            state__workflow__model=content_type,
+            active=True,
+        ).distinct('object_id').values_list('object_id', flat=True)
+        print('!!!', objects)
+
+        return objects
+
+    def filter_active_state(self, queryset, name, value):
+        objects = self._fetch_workflow_objects(value)
+        return queryset.filter(id__in=objects)

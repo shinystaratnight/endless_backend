@@ -136,14 +136,11 @@ class Jobsite(
     def get_site_name(self):
         job_address = self.get_address()
         if job_address:
-            if self.short_name:
-                return "{} - {}".format(self.short_name, job_address.city)
-
             return "{}, {}, {}".format(
-                self.regular_company, job_address.city, job_address.street_address
+                self.regular_company, job_address.street_address, job_address.city
             )
 
-        return self.short_name or str(self.master_company)
+        return str(self.master_company)
 
     def get_address(self):
         return self.address
