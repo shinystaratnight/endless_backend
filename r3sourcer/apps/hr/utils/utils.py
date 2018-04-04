@@ -125,6 +125,9 @@ def calculate_distances_for_jobsite(contacts, jobsite):
         if not result:
             return bool(result)
 
+        if len(contact_list) == 1:
+            result = [result]
+
         for distance, contact in zip(result[0], contact_list):
             create_or_update_distance_cache(contact, jobsite, distance)
 

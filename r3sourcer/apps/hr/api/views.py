@@ -13,6 +13,8 @@ class CandidateDistanceView(APIView):
     def post(self, request, *args, **kwargs):
         job = request.data.get('job', None)
         candidate_contacts = request.data.get('candidates', [])
+        if not isinstance(candidate_contacts, list):
+            candidate_contacts = [candidate_contacts]
         distances = []
         if job and candidate_contacts:
             job = hr_models.Job.objects.get(id=job)
