@@ -506,6 +506,9 @@ class AngularListApiAdapter(AngularApiAdapter):
             else:
                 continue  # pragma: no cover
 
+            if 'unique' in list_filter:
+                adapted['unique'] = list_filter['unique']
+
             adapted_filters.append(adapted)
         return adapted_filters
 
