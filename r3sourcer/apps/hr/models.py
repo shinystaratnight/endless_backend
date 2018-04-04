@@ -140,7 +140,7 @@ class Jobsite(
                 self.regular_company, job_address.street_address, job_address.city
             )
 
-        return self.master_company
+        return str(self.master_company)
 
     def get_address(self):
         return self.address
