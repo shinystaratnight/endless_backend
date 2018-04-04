@@ -211,10 +211,7 @@ class CompanySettingsView(APIView):
     def get(self, *args, **kwargs):
         company = self.request.user.company
 
-        print('!', company)
-
         if not company:
-            print('!!')
             raise exceptions.APIException("User has no relation to any company.")
 
         company_settings = company.company_settings

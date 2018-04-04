@@ -71,7 +71,6 @@ class TestCompanySettingsView:
         candidate_rel_sec
     ):
         assert user_sec.is_candidate()
-        print('!!!', user_sec.contact.candidate_contacts.candidate_rels.first().master_company)
         self._get_company_settings(client, company, user_sec, invoice_rule, payslip_rule, myob_account)
 
     def test_get_company_settings_as_unknown_role(self, user, client):

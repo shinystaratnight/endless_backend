@@ -87,7 +87,6 @@ def get_payslip_rule(company):
 
 def create_or_update_distance_cache(contact, jobsite, distance):
     from ..models import ContactJobsiteDistanceCache
-    print('!!!!!!!!!!!!!!!!!!!!!!', distance)
     if distance != -1 and distance["distance"]:
         updated_values = {
             "jobsite": jobsite,

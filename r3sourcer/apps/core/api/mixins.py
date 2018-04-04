@@ -61,7 +61,6 @@ class ActiveStateFilterMixin:
             state__workflow__model=content_type,
             active=True,
         ).distinct('object_id').values_list('object_id', flat=True)
-        print('!!!', objects)
 
         return objects
 
