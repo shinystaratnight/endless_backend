@@ -1,13 +1,12 @@
 import datetime
 
-from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils import timezone
 
 from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFilter
 from django_filters.rest_framework import FilterSet
 
-from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.hr import models as hr_models
 
 
@@ -79,26 +78,13 @@ class TimesheetFilter(FilterSet):
         return qs_unapproved
 
 
-class JobFilter(FilterSet):
-    active_states = NumberFilter(method='filter_state')
+class JobFilter(ActiveStateFilterMixin, FilterSet):
+
+    active_states = NumberFilter(method='filter_active_state')
 
     class Meta:
         model = hr_models.Job
         fields = ['active_states']
-
-    def _fetch_workflow_objects(self, value):  # pragma: no cover
-        content_type = ContentType.objects.get_for_model(hr_models.Job)
-        objects = core_models.WorkflowObject.objects.filter(
-            state__number=value,
-            state__workflow__model=content_type,
-            active=True,
-        ).distinct('object_id').values_list('object_id', flat=True)
-
-        return objects
-
-    def filter_state(self, queryset, name, value):
-        objects = self._fetch_workflow_objects(value)
-        return queryset.filter(id__in=objects)
 
 
 class ShiftFilter(FilterSet):
@@ -124,13 +110,15 @@ class JobOfferFilter(FilterSet):
         return queryset.filter(shift__date__job_id=value)
 
 
-class JobsiteFilter(FilterSet):
+class JobsiteFilter(ActiveStateFilterMixin, FilterSet):
     company = UUIDFilter(method='filter_company')
     primary_contact = UUIDFilter(method='filter_primary_contact')
+    state = UUIDFilter(method='filter_state')
+    active_states = NumberFilter(method='filter_active_state')
 
     class Meta:
         model = hr_models.Jobsite
-        fields = ['company']
+        fields = ['company', 'active_states']
 
     def filter_company(self, queryset, name, value):
         return queryset.filter(
@@ -140,3 +128,6 @@ class JobsiteFilter(FilterSet):
 
     def filter_primary_contact(self, queryset, name, value):
         return queryset.filter(primary_contact=value)
+
+    def filter_state(self, queryset, name, value):
+        return queryset.filter(address__state=value)

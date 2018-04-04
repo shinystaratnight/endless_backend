@@ -798,7 +798,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'state',
             'endpoint': api_reverse_lazy('core/regions'),
-            'value': 'naem'
+            'value': 'name',
         }, {
             'type': constants.FIELD_SELECT,
             'field': 'credit_check',
@@ -1210,6 +1210,7 @@ class RegionEndpoint(ApiEndpoint):
 
     model = models.Region
     base_viewset = viewsets.CitiesLightViewSet
+    filter_class = filters.RegionFilter
     search_fields = ('name', 'alternate_names')
     filter_fields = ('country',)
 

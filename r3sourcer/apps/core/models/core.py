@@ -495,6 +495,11 @@ class Region(UUIDModel,
         verbose_name = _("State/District")
         verbose_name_plural = _("States/Districts")
 
+    @classmethod
+    def get_countrys_regions(cls, country_code):
+        regions = cls.objects.filter(country__code2=country_code).distinct().values('id', 'name')
+        return [{'label': r['name'], 'value': r['id']} for r in regions]
+
 
 class City(UUIDModel,
            AbstractCity):
