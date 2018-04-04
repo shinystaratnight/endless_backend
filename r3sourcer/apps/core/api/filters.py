@@ -182,6 +182,7 @@ class CompanyContactFilter(FilterSet):
     company = UUIDFilter(method='filter_company')
     manager = UUIDFilter(method='filter_manager')
     is_manager = BooleanFilter(method='filter_is_manager')
+    jobsites = UUIDFilter(method='filter_jobsite')
 
     class Meta:
         model = CompanyContact
@@ -201,6 +202,9 @@ class CompanyContactFilter(FilterSet):
         return queryset.filter(
             companies__isnull=False,
         )
+
+    def filter_jobsite(self, queryset, name, value):
+        return queryset.filter(jobsites=value)
 
 
 class CompanyContactRelationshipFilter(FilterSet):

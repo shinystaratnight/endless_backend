@@ -316,7 +316,7 @@ class JobEndpoint(ApiEndpoint):
     serializer = job_serializers.JobSerializer
     filter_class = hr_filters.JobFilter
 
-    list_display = ('workers', 'work_start_date', {
+    list_display = ('workers', {
         'label': _('Jobsite'),
         'fields': ('jobsite', 'jobsite.primary_contact', {
             'type': constants.FIELD_LINK,
@@ -374,31 +374,6 @@ class JobEndpoint(ApiEndpoint):
             'field': 'id',
         })
     }, {
-        'label': _("Today's timesheets"),
-        'name': 'timesheets',
-        'fields': ({
-            'field': 'todays_timesheets',
-            'type': constants.FIELD_STATIC,
-            'title': _('going to work/submitted timesheet/supervisor approved'),
-        },)
-    }, {
-        'label': _("Activities"),
-        'delim': '/',
-        'title': _('actual / overdue / total'),
-        'fields': ({
-            'field': 'actual_activities',
-            'type': constants.FIELD_LINK,
-            'link': '/activity/activities/',
-        }, {
-            'field': 'overdue_activities',
-            'type': constants.FIELD_LINK,
-            'link': '/activity/activities/',
-        }, {
-            'field': 'total_activities',
-            'type': constants.FIELD_LINK,
-            'link': '/activity/activities/',
-        },)
-    }, {
         'label': _('State'),
         'fields': ({
             'field': 'active_states',
@@ -452,13 +427,21 @@ class JobEndpoint(ApiEndpoint):
                         'label': _('Client'),
                         'field': 'customer_company',
                         'type': constants.FIELD_RELATED,
+                        'query': {
+                            'fields': 'primary_contact',
+                        },
                     }, {
                         'label': _('Client representative'),
                         'field': 'customer_representative',
                         'type': constants.FIELD_RELATED,
                         'query': {
-                            'company': '{customer_company.id}',
-                        }
+                            'jobsites': '{jobsite.id}',
+                        },
+                        'default': '{jobsite.primary_contact.id}',
+                        'read_only': True,
+                        'showIf': [
+                            'jobsite.id',
+                        ]
                     }, {
                         'label': _('Provider company'),
                         'field': 'provider_company',
@@ -473,14 +456,16 @@ class JobEndpoint(ApiEndpoint):
                             'customer_company.id',
                         ]
                     }, {
-                        'label': _('Company representative'),
+                        'label': _('Provider representative'),
                         'field': 'provider_representative',
                         'type': constants.FIELD_RELATED,
                         'query': {
                             'company': '{provider_company.id}',
                         },
+                        'default': '{customer_company.primary_contact.id}',
+                        'read_only': True,
                         'showIf': [
-                            'customer_company.id',
+                            'provider_company.id',
                         ]
                     }, {
                         'label': _('Accepted at'),
@@ -501,7 +486,7 @@ class JobEndpoint(ApiEndpoint):
                         'type': constants.FIELD_RELATED,
                         'query': {
                             'company': '{customer_company.id}',
-                            'primary_contact': '{customer_representative.id}'
+                            'fields': 'primary_contact',
                         }
                     }, {
                         'label': _('Position'),
