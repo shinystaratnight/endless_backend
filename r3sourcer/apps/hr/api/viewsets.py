@@ -589,8 +589,7 @@ class JobOfferViewset(BaseApiViewset):
     @detail_route(methods=['POST'])
     def accept(self, request, *args, **kwargs):  # pragma: no cover
         obj = self.get_object()
-        obj.status = hr_models.JobOffer.STATUS_CHOICES.accepted
-        obj.save()
+        obj.accept()
 
         return Response({'status': 'success'})
 
@@ -610,12 +609,11 @@ class JobOfferViewset(BaseApiViewset):
             if obj.reply_received_by_sms is None:
                 if obj.offer_sent_by_sms is not None:
                     obj.offer_sent_by_sms.no_check_reply()
-                obj.cancel()
 
-            hr_models.JobOffer.objects.create(
-                shift=obj.shift,
-                candidate_contact=obj.candidate_contact,
-            )
+                if obj.is_cancelled():
+                    obj.status = hr_models.JobOffer.STATUS_CHOICES.undefined
+
+            obj.save(initial=True)
 
         return Response({'status': 'success'})
 

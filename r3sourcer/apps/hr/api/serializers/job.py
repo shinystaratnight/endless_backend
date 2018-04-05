@@ -162,8 +162,11 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         not_received_or_scheduled = (
             obj.reply_received_by_sms is None and not obj.is_accepted() and obj.scheduled_sms_datetime is None
         )
+        target_date_and_time = timezone.localtime(obj.start_time)
+        is_filled = obj.is_quota_filled()
+        is_today_or_future = target_date_and_time.date() >= timezone.now().date()
 
-        if obj.is_cancelled() or not_received_or_scheduled:
+        if (obj.is_cancelled() or not_received_or_scheduled) and not is_filled and is_today_or_future:
             last_jo = obj.job.get_job_offers().filter(
                 offer_sent_by_sms__isnull=False,
                 candidate_contact=obj.candidate_contact

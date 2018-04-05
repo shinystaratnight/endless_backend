@@ -100,11 +100,11 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
 
     with transaction.atomic():
         try:
-            job_offer = hr_models.JobOffer.objects.select_for_update().get(
-                **{'pk': job_offer_id, action_sent: None}
-            )
+            job_offer = hr_models.JobOffer.objects.select_for_update().get(id=job_offer_id)
         except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
+            job_offer.scheduled_sms_datetime = None
+            job_offer.save(update_fields=['scheduled_sms_datetime'])
         else:
             log_message = None
             if job_offer.is_accepted():

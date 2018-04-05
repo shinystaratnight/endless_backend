@@ -744,10 +744,18 @@ class JobOffer(core_models.UUIDModel):
             if self.offer_sent_by_sms == sent_sms:
                 setattr(self, self.receive_sms_field, reply_sms)
                 if positive:
-                    self.status = self.STATUS_CHOICES.accepted
-                    self.save(update_fields=['status', self.receive_sms_field])
+                    self.accept('status', self.receive_sms_field)
                 else:
                     self.cancel()
+
+    def accept(self, *update_fields):
+        self.status = JobOffer.STATUS_CHOICES.accepted
+        if update_fields:
+            self.save(update_fields=update_fields)
+        else:
+            self.save()
+
+        self._cancel_for_filled_quota()
 
     def cancel(self):
         if self.is_accepted():
@@ -787,32 +795,31 @@ class JobOffer(core_models.UUIDModel):
             shift__time=self.shift.time
         ).count()
 
-        return accepted_count >= self.job.workers
+        return accepted_count >= self.shift.workers
+
+    def _cancel_for_filled_quota(self):
+        now = timezone.now()
+
+        with transaction.atomic():
+            # if celery worked with JO sending
+            qs = self.job.get_job_offers().filter(
+                models.Q(offer_sent_by_sms=None) | models.Q(time_sheets=None), shift=self.shift
+            ).exclude(status=JobOffer.STATUS_CHOICES.accepted)
+            jo_with_sms_sent = list(qs.filter(offer_sent_by_sms__isnull=False))
+            qs.update(status=JobOffer.STATUS_CHOICES.cancelled)
+
+            # send placement rejection sms
+            for sent_jo in jo_with_sms_sent:
+                if sent_jo.id == self.id:
+                    continue
+                if now <= sent_jo.start_time:
+                    hr_utils.send_jo_rejection(sent_jo)
 
     def check_job_quota(self, is_initial):
         if is_initial:
             if self.is_quota_filled() or self.is_cancelled():
-                all_job_offers = self.job.get_job_offers()
                 now = timezone.now()
-                with transaction.atomic():
-                    # if celery worked with JO sending
-                    qs = all_job_offers.filter(
-                        models.Q(offer_sent_by_sms=None) | models.Q(time_sheets=None),
-                        shift__date__shift_date=self.shift.date.shift_date,
-                        shift__time=self.shift.time
-                    ).exclude(status=JobOffer.STATUS_CHOICES.accepted)
-
-                    jo_with_sms_sent = list(qs.filter(offer_sent_by_sms__isnull=False))
-
-                    qs.update(status=JobOffer.STATUS_CHOICES.cancelled)
-
-                    # send placement rejection sms
-                    for sent_jo in jo_with_sms_sent:
-                        if sent_jo.id == self.id:
-                            continue
-                        if now <= sent_jo.start_time:
-                            hr_utils.send_jo_rejection(sent_jo)
-
+                self._cancel_for_filled_quota()
                 self.move_candidate_to_carrier_list()
                 self.status = JobOffer.STATUS_CHOICES.cancelled
 
@@ -827,7 +834,8 @@ class JobOffer(core_models.UUIDModel):
             return True
 
     def save(self, *args, **kw):
-        just_added = self._state.adding
+        is_resend = kw.pop('initial', False)
+        just_added = self._state.adding or is_resend
         is_initial = not self.is_recurring()
         is_accepted = self.is_accepted()
 
@@ -887,10 +895,8 @@ class JobOffer(core_models.UUIDModel):
                     else:
                         # future date day shift
                         eta = datetime.combine(
-                            target_date_and_time.date() - timedelta(days=1),
-                            time(10, 0, 0, tzinfo=now.tzinfo)
+                            target_date_and_time.date() - timedelta(days=1), time(10, 0, 0, tzinfo=now.tzinfo)
                         )
-
                 if eta:
                     self.scheduled_sms_datetime = eta
                     self.save(update_fields=['scheduled_sms_datetime'])
