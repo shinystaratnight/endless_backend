@@ -96,13 +96,9 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
 
 
 def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
-    action_sent = kwargs.get('action_sent')
-
     with transaction.atomic():
         try:
-            job_offer = hr_models.JobOffer.objects.select_for_update().get(
-                **{'pk': job_offer_id, action_sent: None}
-            )
+            job_offer = hr_models.JobOffer.objects.select_for_update().get(id=job_offer_id)
         except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
         else:
