@@ -95,7 +95,7 @@ class ContactEndpoint(ApiEndpoint):
                             'field': 'id',
                             'read_only': True,
                             'label': '',
-                            'custom': ('address.__str__', 'phone_mobile','email'),
+                            'custom': ('address.__str__', 'phone_mobile', 'email'),
                         },
                     ),
                 },
@@ -147,14 +147,6 @@ class ContactEndpoint(ApiEndpoint):
             'prefilled': {
                 'object_id': '{id}',
             },
-        }, {
-            'query': {
-                'contact': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Contact Unavailabilities'),
-            'endpoint': api_reverse_lazy('core/contactunavailabilities'),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
