@@ -6,11 +6,9 @@ from django_filters import (
 from django_filters.rest_framework import FilterSet
 from rest_framework.filters import OrderingFilter
 
-from ..models import (
-    Company, CompanyLocalization, CompanyAddress, CompanyRel, WorkflowObject,
-    WorkflowNode, DashboardModule, CompanyContact, FormField, CompanyContactRelationship, Region
-)
-from ..utils.user import get_default_company
+from r3sourcer.apps.core import models
+from r3sourcer.apps.core.models.constants import CANDIDATE
+from r3sourcer.apps.core.utils.user import get_default_company
 
 
 class CompanyFilter(FilterSet):
@@ -22,7 +20,7 @@ class CompanyFilter(FilterSet):
     regular_company = UUIDFilter(method='filter_regular_company')
 
     class Meta:
-        model = Company
+        model = models.Company
         fields = ['name', 'business_id', 'country', 'type', 'id']
 
     def filter_name(self, queryset, name, value):
@@ -59,8 +57,8 @@ class CompanyFilter(FilterSet):
         )
 
     def _fetch_workflow_objects(self, value):  # pragma: no cover
-        content_type = ContentType.objects.get_for_model(CompanyRel)
-        objects = WorkflowObject.objects.filter(
+        content_type = ContentType.objects.get_for_model(models.CompanyRel)
+        objects = models.WorkflowObject.objects.filter(
             state__number=value,
             state__workflow__model=content_type,
             active=True,
@@ -74,7 +72,7 @@ class CompanyLocalizationFilter(FilterSet):
     country = CharFilter(name='country', method='filter_country')
 
     class Meta:
-        model = CompanyLocalization
+        model = models.CompanyLocalization
         fields = ['field_name', 'country']
 
     def filter_country(self, queryset, name, value):
@@ -92,7 +90,7 @@ class CompanyAddressFilter(FilterSet):
     state = NumberFilter(method='filter_state')
 
     class Meta:
-        model = CompanyAddress
+        model = models.CompanyAddress
         fields = ['portfolio_manager', 'company']
 
     def filter_portfolio_manager(self, queryset, name, value):
@@ -102,8 +100,8 @@ class CompanyAddressFilter(FilterSet):
         )
 
     def _fetch_workflow_objects(self, value):  # pragma: no cover
-        content_type = ContentType.objects.get_for_model(CompanyRel)
-        objects = WorkflowObject.objects.filter(
+        content_type = ContentType.objects.get_for_model(models.CompanyRel)
+        objects = models.WorkflowObject.objects.filter(
             state__number=value,
             state__workflow__model=content_type,
             active=True,
@@ -142,12 +140,12 @@ class ApiOrderingFilter(OrderingFilter):
 class WorkflowNodeFilter(FilterSet):
     default = BooleanFilter(method='filter_default')
     company = ModelChoiceFilter(
-        queryset=Company.objects,
+        queryset=models.Company.objects,
         method='filter_company'
     )
 
     class Meta:
-        model = WorkflowNode
+        model = models.WorkflowNode
         fields = ['workflow', 'company', 'default']
 
     def filter_default(self, queryset, name, value):
@@ -161,7 +159,7 @@ class WorkflowNodeFilter(FilterSet):
         if not value:
             return queryset
 
-        company_nodes = WorkflowNode.get_company_nodes(
+        company_nodes = models.WorkflowNode.get_company_nodes(
             value, nodes=queryset
         )
 
@@ -174,7 +172,7 @@ class DashboardModuleFilter(FilterSet):
     app_label = CharFilter(name='content_type', lookup_expr='app_label__icontains')
 
     class Meta:
-        model = DashboardModule
+        model = models.DashboardModule
         fields = ('model', 'app_label', 'is_active')
 
 
@@ -185,7 +183,7 @@ class CompanyContactFilter(FilterSet):
     jobsites = UUIDFilter(method='filter_jobsite')
 
     class Meta:
-        model = CompanyContact
+        model = models.CompanyContact
         fields = ['job_title']
 
     def filter_company(self, queryset, name, value):
@@ -211,7 +209,7 @@ class CompanyContactRelationshipFilter(FilterSet):
     company = UUIDFilter(method='filter_company')
 
     class Meta:
-        model = CompanyContactRelationship
+        model = models.CompanyContactRelationship
         fields = ['company']
 
     def filter_company(self, queryset, name, value):
@@ -223,14 +221,14 @@ class CompanyContactRelationshipFilter(FilterSet):
 class FormFieldFilter(FilterSet):
 
     class Meta:
-        model = FormField
+        model = models.FormField
         fields = ('group',)
 
 
 class WorkflowObjectFilter(FilterSet):
 
     class Meta:
-        model = WorkflowObject
+        model = models.WorkflowObject
         fields = ('object_id',)
 
 
@@ -239,8 +237,29 @@ class RegionFilter(FilterSet):
     country = UUIDFilter(method='filter_country')
 
     class Meta:
-        model = Region
+        model = models.Region
         fields = ('country',)
 
     def filter_country(self, queryset, name, value):
         return queryset.filter(Q(country_id=value) | Q(country__code2=value))
+
+
+class ContactFilter(FilterSet):
+
+    state = UUIDFilter(method='filter_state')
+    contact_type = CharFilter(method='filter_contact_type')
+
+    class Meta:
+        model = models.Contact
+        fields = ['state']
+
+    def filter_state(self, queryset, name, value):
+        return queryset.filter(address__state=value)
+
+    def filter_contact_type(self, queryset, name, value):
+        if value == CANDIDATE:
+            return queryset.filter(candidate_contacts__isnull=False)
+        elif value:
+            return queryset.filter(company_contact__role=value)
+
+        return queryset

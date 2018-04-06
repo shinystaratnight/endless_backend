@@ -610,12 +610,10 @@ class NoteSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
 
 class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
     company_contact = CompanyContactSerializer(many=True, read_only=True)
-    contact_unavailabilities = ContactUnavailabilitySerializer(many=True, read_only=True)
 
     image_fields = ('picture', )
     many_related_fields = {
         'company_contact': 'contact',
-        'contact_unavailabilities': 'contact',
     }
 
     method_fields = ('job_title', 'availability', 'is_candidate_contact', 'is_company_contact', 'master_company')
@@ -674,7 +672,6 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
                     'voip_password', 'receive_job_confirmation_sms'
                 ),
                 'candidate_contacts': ('id', 'recruitment_agent'),
-                'contact_unavailabilities': ('id', 'unavailable_from', 'unavailable_until', 'notes',),
             }
         )
         related = RELATED_DIRECT
