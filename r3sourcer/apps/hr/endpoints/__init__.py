@@ -476,7 +476,8 @@ class JobEndpoint(ApiEndpoint):
                         'field': 'provider_representative',
                         'type': constants.FIELD_RELATED,
                         'query': {
-                            'company': '{provider_company.id}',
+                            'customer_company': '{customer_company.id}',
+                            'master_company': '{provider_company.id}',
                         },
                         'default': '{customer_company.primary_contact.id}',
                         'read_only': True,
@@ -547,6 +548,7 @@ class JobEndpoint(ApiEndpoint):
         'label': _('Shift Dates'),
         'add_label': _('Add'),
         'add_endpoint': api_reverse_lazy('hr/shiftdates'),
+        'edit_endpoint': format_lazy('{}{{date.id}}', api_reverse_lazy('hr/shiftdates')),
         'endpoint': api_reverse_lazy('hr/shifts'),
         'prefilled': {
             'job': '{id}',

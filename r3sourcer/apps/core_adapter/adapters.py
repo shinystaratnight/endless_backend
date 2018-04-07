@@ -19,7 +19,7 @@ CUSTOM_FIELD_ATTRS = (
     'label', 'link', 'action', 'endpoint', 'add', 'edit', 'delete', 'read_only', 'label_upload', 'label_photo', 'many',
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
-    'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help',
+    'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
 )
 
 
@@ -95,7 +95,7 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LIST:
                 options = (
                     'endpoint', 'prefilled', 'add_endpoint', 'delay', 'metadata_query', 'add_metadata_query', 'max',
-                    'default', 'unique',
+                    'default', 'unique', 'edit_endpoint',
                 )
                 adapted.update(
                     collapsed=field.get('collapsed', False),
