@@ -2667,5 +2667,5 @@ __all__ = [
     'VAT', 'InvoiceRule',
     'CurrencyExchangeRates', 'TemplateMessage',
     'PublicHoliday', 'ExtranetNavigation',
-    'AbstractBaseOrder', 'AbstractOrder',
+    'AbstractBaseOrder', 'AbstractOrder', 'Role'
 ]
