@@ -5,7 +5,8 @@ from django.views import generic
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from r3sourcer.apps.core.models import Form, Company, Invoice
+from r3sourcer.apps.candidate.models import CandidateContact
+from r3sourcer.apps.core.models import Form, Company, Invoice, Role, User, CompanyContact
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.tasks import sync_invoice
@@ -83,3 +84,54 @@ class UserRolesView(APIView):
                 'roles': roles
             }
         return Response(data)
+
+
+class SetRolesView(APIView):
+    """
+    Sets roles to users
+    """
+    def post(self, *args, **kwargs):
+        roles = list()
+        user = get_object_or_404(User, id=kwargs['id'])
+
+        if 'manager' in self.request.POST['roles']:
+            roles.append(Role.objects.get(name='manager'))
+
+            if not hasattr(user.contact, 'company_contact'):
+                CompanyContact.objects.create(contact=user.contact)
+
+        if 'client' in self.request.POST['roles']:
+            roles.append(Role.objects.get(name='client'))
+
+            if not hasattr(user.contact, 'company_contact'):
+                CompanyContact.objects.create(contact=user.contact)
+
+        if 'candidate' in self.request.POST['roles']:
+            roles.append(Role.objects.get(name='candidate'))
+
+            if not hasattr(user.contact, 'candidate_contacts'):
+                CandidateContact.objects.create(contact=user.contact)
+
+        user.role.add(*roles)
+        return Response()
+
+
+class RevokeRolesView(APIView):
+    """
+    Revokes user roles
+    """
+    def post(self, *args, **kwargs):
+        roles = list()
+        user = get_object_or_404(User, id=kwargs['id'])
+
+        if 'manager' in self.request.POST['roles']:
+            roles.append(Role.objects.get(name='manager'))
+
+        if 'client' in self.request.POST['roles']:
+            roles.append(Role.objects.get(name='client'))
+
+        if 'candidate' in self.request.POST['roles']:
+            roles.append(Role.objects.get(name='candidate'))
+
+        user.role.remove(*roles)
+        return Response()
