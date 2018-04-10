@@ -553,7 +553,7 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
         shift_ended_at__date=today,
         going_to_work_confirmation=True,
         candidate_submitted_at__isnull=False,
-        supervisor_approved_at_at__isnull=True,
+        supervisor_approved_at__isnull=True,
         supervisor=supervisor
     )
 

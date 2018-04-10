@@ -177,12 +177,14 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
     no_break = serializers.BooleanField(required=False)
     send_supervisor_message = serializers.BooleanField(required=False)
     send_candidate_message = serializers.BooleanField(required=False)
+    candidate_submitted_at = serializers.DateTimeField(write_only=True, required=False)
+    supervisor_approved_at = serializers.DateTimeField(write_only=True, required=False)
 
     class Meta:
         model = TimeSheet
         fields = (
             'id', 'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'no_break',
-            'send_supervisor_message', 'send_candidate_message'
+            'send_supervisor_message', 'send_candidate_message', 'candidate_submitted_at', 'supervisor_approved_at'
         )
 
     def validate(self, data):

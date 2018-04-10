@@ -94,15 +94,12 @@ class TimeSheetEndpoint(ApiEndpoint):
                 'icon': 'fa-external-link',
                 'label': '%s:' % _('Morning check'),
                 'text': _('Confirm'),
-                'endpoint': format_lazy(
-                    '{}{{company.id}}/confirm',
-                    api_reverse_lazy('hr/timesheets'),
-                ),
-                'field': 'going_to_work_confirmation',
+                'endpoint': format_lazy('{}{{id}}/confirm', api_reverse_lazy('hr/timesheets')),
+                'field': 'id',
                 'action': constants.DEFAULT_ACTION_POST,
                 'showIf': [
                     {
-                        'going_to_work_confirmation': False,
+                        'going_to_work_confirmation': None,
                     }
                 ],
             }, {
@@ -122,10 +119,7 @@ class TimeSheetEndpoint(ApiEndpoint):
                 'type': constants.FIELD_BUTTON,
                 'icon': 'fa-external-link',
                 'text': _('Send TS SMS'),
-                'endpoint': format_lazy(
-                    '{}{{company.id}}/resend_sms',
-                    api_reverse_lazy('hr/timesheets'),
-                ),
+                'endpoint': format_lazy('{}{{id}}/resend_sms', api_reverse_lazy('hr/timesheets')),
                 'field': 'resend_sms_candidate',
                 'action': constants.DEFAULT_ACTION_POST,
                 'showIf': [
@@ -145,10 +139,7 @@ class TimeSheetEndpoint(ApiEndpoint):
                 'type': constants.FIELD_BUTTON,
                 'icon': 'fa-external-link',
                 'text': _('Send TS SMS'),
-                'endpoint': format_lazy(
-                    '{}{{company.id}}/resend_sms',
-                    api_reverse_lazy('hr/timesheets'),
-                ),
+                'endpoint': format_lazy('{}{{id}}/resend_sms', api_reverse_lazy('hr/timesheets')),
                 'field': 'resend_sms_supervisor',
                 'action': constants.DEFAULT_ACTION_POST,
                 'showIf': [
@@ -183,10 +174,7 @@ class TimeSheetEndpoint(ApiEndpoint):
                 'type': constants.FIELD_BUTTON,
                 'icon': 'fa-external-link',
                 'text': _('Fill'),
-                'endpoint': format_lazy(
-                    '{}{{id}}/candidate_fill',
-                    api_reverse_lazy('hr/timesheets'),
-                ),
+                'endpoint': format_lazy('{}{{id}}/candidate_fill', api_reverse_lazy('hr/timesheets')),
                 'field': 'id',
                 'action': constants.DEFAULT_ACTION_EDIT,
                 'showIf': [
