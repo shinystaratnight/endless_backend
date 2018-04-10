@@ -198,6 +198,11 @@ class TimeSheetEndpoint(ApiEndpoint):
                     }
                 ],
             },),
+        }, {
+            'field': 'related_sms',
+            'type': constants.FIELD_RELATED,
+            'many': True,
+            'endpoint': api_reverse_lazy('sms-interface/smsmessages'),
         },
     )
 
