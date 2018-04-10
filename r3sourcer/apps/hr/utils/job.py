@@ -68,9 +68,7 @@ def get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date,
         Q(job_offers__shift__date__shift_date__gt=from_date.date()),
         Q(job_offers__shift__date__shift_date=to_date.date(),
           job_offers__shift__time__lte=to_date.timetz()) |
-        Q(job_offers__shift__date__shift_date__lt=to_date.date()),
-        Q(job_offers__status=JobOffer.STATUS_CHOICES.accepted) |
-        Q(job_offers__status=JobOffer.STATUS_CHOICES.undefined)
+        Q(job_offers__shift__date__shift_date__lt=to_date.date())
     ).values_list('id', flat=True))
 
     candidate_ids.extend(candidate_contacts.filter(

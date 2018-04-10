@@ -32,3 +32,29 @@ class TestUserRolesView:
         assert 'manager' in response['roles']
         assert 'candidate' in response['roles']
         assert 'client' in response['roles']
+
+
+class TestSetRolesView:
+    def test_set_role(self, client, user, roles):
+        data = {
+            'roles': ['candidate']
+        }
+        url = reverse('set_roles', kwargs={'version': 'v2', 'id': user.id})
+        client.force_login(user)
+        client.post(url, data=data)
+
+        assert user.role.first().name == 'candidate'
+
+
+class TestRevokeRolesView:
+    def test_revoke_role(self, client, user, roles):
+        user.role.add(*roles)
+        data = {
+            'roles': ['candidate']
+        }
+        url = reverse('revoke_roles', kwargs={'version': 'v2', 'id': user.id})
+        client.force_login(user)
+        client.post(url, data=data)
+        roles = [x.name for x in user.role.all()]
+
+        assert 'candidate' not in roles

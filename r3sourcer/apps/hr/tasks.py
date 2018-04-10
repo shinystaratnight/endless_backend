@@ -106,7 +106,13 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
             if job_offer.is_accepted():
                 log_message = 'Job Offer %s already accepted'
             elif job_offer.is_cancelled():
-                log_message = 'Job Offer %s already cancelled'
+                job_offer.scheduled_sms_datetime = None
+                job_offer.status = hr_models.JobOffer.STATUS_CHOICES.undefined
+                job_offer.reply_received_by_sms = None
+                job_offer.offer_sent_by_sms = None
+                job_offer.save(update_fields=[
+                    'scheduled_sms_datetime', 'status', 'reply_received_by_sms', 'offer_sent_by_sms'
+                ])
 
             if log_message:
                 job_offer.scheduled_sms_datetime = None
@@ -182,9 +188,7 @@ def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
             data_dict = dict(
                 recipients,
                 job=job,
-                target_date_and_time=formats.date_format(
-                    timezone.localtime(job_offer.target_date_and_time), settings.DATETIME_FORMAT
-                ),
+                target_date_and_time=formats.date_format(job_offer.start_time, settings.DATETIME_FORMAT),
                 related_obj=job_offer,
                 related_objs=[job_offer.candidate_contact, job_offer.job]
             )

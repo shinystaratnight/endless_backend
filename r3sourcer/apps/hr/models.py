@@ -700,8 +700,7 @@ class JobOffer(core_models.UUIDModel):
         if check_date is None:
             check_date = now.date()
 
-        bookings_with_timesheets = TimeSheet.objects.filter(
-            job_offer=self,
+        bookings_with_timesheets = self.time_sheets.filter(
             shift_started_at__date=check_date,
             going_to_work_confirmation__isnull=True,
             going_to_work_sent_sms__check_reply_at__gte=now
@@ -768,10 +767,9 @@ class JobOffer(core_models.UUIDModel):
         time_sheet = None
 
         try:
-            time_sheet = TimeSheet.objects.filter(
-                job_offer__shift__date__job=self.job,
+            time_sheet = self.time_sheets.filter(
                 job_offer__candidate_contact=self.candidate_contact,
-                shift_started_at__gt=now, going_to_work_confirmation=True
+                shift_started_at__gt=now
             ).earliest('shift_started_at')
         except TimeSheet.DoesNotExist:
             time_sheet = None
@@ -786,7 +784,8 @@ class JobOffer(core_models.UUIDModel):
                 from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_lt_one_hour_sms
                 send_job_offer_cancelled_lt_one_hour_sms.delay(self.pk)
 
-                time_sheet.auto_fill_four_hours()
+                if time_sheet.going_to_work_confirmation:
+                    time_sheet.auto_fill_four_hours()
 
     def is_quota_filled(self):
         accepted_count = self.job.get_job_offers().filter(

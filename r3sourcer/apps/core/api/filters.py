@@ -181,10 +181,12 @@ class CompanyContactFilter(FilterSet):
     manager = UUIDFilter(method='filter_manager')
     is_manager = BooleanFilter(method='filter_is_manager')
     jobsites = UUIDFilter(method='filter_jobsite')
+    customer_company = UUIDFilter(method='filter_customer_company', distinct=True)
+    master_company = UUIDFilter(method='filter_master_company', distinct=True)
 
     class Meta:
         model = models.CompanyContact
-        fields = ['job_title']
+        fields = ['id', 'job_title']
 
     def filter_company(self, queryset, name, value):
         return queryset.filter(
@@ -203,6 +205,12 @@ class CompanyContactFilter(FilterSet):
 
     def filter_jobsite(self, queryset, name, value):
         return queryset.filter(jobsites=value)
+
+    def filter_customer_company(self, queryset, name, value):
+        return queryset.filter(company_accounts__regular_company=value).distinct()
+
+    def filter_master_company(self, queryset, name, value):
+        return queryset.filter(company_accounts__master_company=value).distinct()
 
 
 class CompanyContactRelationshipFilter(FilterSet):
