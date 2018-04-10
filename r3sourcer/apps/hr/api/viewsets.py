@@ -459,15 +459,15 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             }, {
                 'type': constants.FIELD_DATETIME,
                 'field': 'break_started_at',
-                'showIf': {
+                'showIf': [{
                     'no_break': False,
-                },
+                }],
             }, {
                 'type': constants.FIELD_DATETIME,
                 'field': 'break_ended_at',
-                'showIf': {
+                'showIf': [{
                     'no_break': False,
-                },
+                }],
             }, {
                 'type': constants.FIELD_STATIC,
                 'label': _('Total'),
@@ -509,15 +509,15 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             }, {
                 'type': constants.FIELD_DATETIME,
                 'field': 'break_started_at',
-                'showIf': {
+                'showIf': [{
                     'no_break': False,
-                },
+                }],
             }, {
                 'type': constants.FIELD_DATETIME,
                 'field': 'break_ended_at',
-                'showIf': {
+                'showIf': [{
                     'no_break': False,
-                },
+                }],
             }, {
                 'type': constants.FIELD_STATIC,
                 'label': _('Total'),
