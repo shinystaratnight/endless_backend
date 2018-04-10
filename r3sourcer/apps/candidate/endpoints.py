@@ -247,6 +247,14 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'object_id': '{id}',
             }
         }, {
+            'query': {
+                'contact': '{contact.id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Candidate Unavailabilities'),
+            'endpoint': api_reverse_lazy('core/contactunavailabilities'),
+        }, {
             'type': constants.FIELD_LIST,
             'query': {
                 'candidate_contact': '{id}'

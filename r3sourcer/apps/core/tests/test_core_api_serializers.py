@@ -652,7 +652,7 @@ class TestContactSerializer(SerializerMixin):
         expected_keys = {
             'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'marital_status',
             'birthday', 'spouse_name', 'children', 'picture', 'id', 'address', 'company_contact', 'availability',
-            'contact_unavailabilities', 'phone_mobile_verified', 'email_verified', 'notes', '__str__', 'is_available',
+            'phone_mobile_verified', 'email_verified', 'notes', '__str__', 'is_available',
             'notes', 'is_candidate_contact', 'is_company_contact', 'job_title', 'user', 'master_company',
             'candidate_contacts'
         }

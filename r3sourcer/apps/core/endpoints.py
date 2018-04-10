@@ -12,6 +12,7 @@ from rest_framework.exceptions import ParseError
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.api import serializers, viewsets, filters
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
+from r3sourcer.apps.core.models.constants import CANDIDATE, CLIENT, MANAGER
 from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
@@ -21,6 +22,7 @@ class ContactEndpoint(ApiEndpoint):
     model = models.Contact
     base_viewset = viewsets.ContactViewset
     serializer = serializers.ContactSerializer
+    filter_class = filters.ContactFilter
     search_fields = (
         'title',
         'first_name',
@@ -34,10 +36,6 @@ class ContactEndpoint(ApiEndpoint):
 
     list_display = (
         {
-            'field': 'job_title',
-            'type': constants.FIELD_TEXT
-        },
-        {
             'field': 'picture',
             'type': constants.FIELD_PICTURE,
         },
@@ -46,8 +44,7 @@ class ContactEndpoint(ApiEndpoint):
             'field': 'email',
             'link': 'mailto:{field}',
             'type': constants.FIELD_LINK,
-        },
-        {
+        }, {
             'label': _('Phone'),
             'fields': ({
                 'type': constants.FIELD_LINK,
@@ -62,16 +59,13 @@ class ContactEndpoint(ApiEndpoint):
                 'link': 'tel:{field}',
                 'field': 'address.phone_fax',
             },),
-        },
-        {
+        }, {
             'field': 'availability',
             'type': constants.FIELD_ICON
-        },
-        {
+        }, {
             'field': 'is_candidate_contact',
             'type': constants.FIELD_ICON
-        },
-        {
+        }, {
             'field': 'is_company_contact',
             'type': constants.FIELD_ICON
         }
@@ -101,7 +95,7 @@ class ContactEndpoint(ApiEndpoint):
                             'field': 'id',
                             'read_only': True,
                             'label': '',
-                            'custom': ('address.__str__', 'phone_mobile','email'),
+                            'custom': ('address.__str__', 'phone_mobile', 'email'),
                         },
                     ),
                 },
@@ -154,14 +148,6 @@ class ContactEndpoint(ApiEndpoint):
                 'object_id': '{id}',
             },
         }, {
-            'query': {
-                'contact': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Contact Unavailabilities'),
-            'endpoint': api_reverse_lazy('core/contactunavailabilities'),
-        }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Relations'),
@@ -191,10 +177,23 @@ class ContactEndpoint(ApiEndpoint):
         },
     )
 
-    list_filter = [{
-        'field': 'address.state',
-        'value': 'name',
-    }, 'is_available']
+    def get_list_filter(self):
+        au_regions = partial(models.Region.get_countrys_regions, 'AU')
+        types = [{'label': t.capitalize(), 'value': t} for t in (CANDIDATE, CLIENT, MANAGER)]
+        return [
+            {
+                'type': constants.FIELD_SELECT,
+                'field': 'state',
+                'label': _('State'),
+                'choices': lazy(au_regions, list),
+            }, {
+                'type': constants.FIELD_SELECT,
+                'field': 'contact_type',
+                'label': _('Type of Contact'),
+                'choices': types,
+            },
+            'is_available', 'phone_mobile_verified', 'email_verified',
+        ]
 
 
 class CompanyAddressEndpoint(ApiEndpoint):
