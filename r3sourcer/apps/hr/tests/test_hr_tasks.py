@@ -119,11 +119,12 @@ class TestVOTasks:
 
         assert mock_logger.info.called
 
+    @mock.patch('r3sourcer.apps.hr.tasks.send_job_offer_sms')
     @mock.patch('r3sourcer.apps.hr.tasks.logger', new_callable=mock.PropertyMock())
-    def test_send_or_schedule_job_offer_already_cancelled(self, mock_logger, cancelled_jo):
+    def test_send_or_schedule_job_offer_already_cancelled(self, mock_logger, mock_send, cancelled_jo):
         hr_tasks.send_or_schedule_job_offer_sms(cancelled_jo.id, action_sent='offer_sent_by_sms')
 
-        assert mock_logger.info.called
+        assert mock_send.called
 
     @mock.patch('r3sourcer.apps.hr.tasks.send_or_schedule_job_offer_sms')
     def test_send_jo_confirmation_sms(self, mock_send, job_offer):
