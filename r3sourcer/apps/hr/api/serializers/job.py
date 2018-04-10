@@ -146,7 +146,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         )
 
     def get_has_accept_action(self, obj):
-        if obj is None or obj.is_cancelled() or (obj.is_accepted() and not self.has_late_reply_handling(obj)):
+        if obj is None or timezone.now() >= obj.start_time or (obj.is_accepted() and not self.has_late_reply_handling(obj)):
             return None
 
         return True
