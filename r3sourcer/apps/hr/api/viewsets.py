@@ -448,7 +448,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         })
 
     @detail_route(
-        methods=['GET', 'POST'],
+        methods=['GET', 'PUT'],
         serializer=timesheet_serializers.TimeSheetManualSerializer,
         fieldsets=(
             'shift_started_at', 'shift_ended_at',
@@ -459,18 +459,18 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             }, {
                 'type': constants.FIELD_DATETIME,
                 'field': 'break_started_at',
-                'disabledIf': {
-                    'no_break': True,
-                },
+                'showIf': [{
+                    'no_break': False,
+                }],
             }, {
                 'type': constants.FIELD_DATETIME,
                 'field': 'break_ended_at',
-                'disabledIf': {
-                    'no_break': True,
-                },
+                'showIf': [{
+                    'no_break': False,
+                }],
             }, {
                 'type': constants.FIELD_STATIC,
-                'label': _('Total: {shift_total} - {break_total} = {total_worked}'),
+                'label': _('Total'),
                 'field': 'total_worked'
             }, {
                 'type': constants.FIELD_CHECKBOX,
@@ -482,11 +482,13 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     def candidate_fill(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
-        if request.method == 'POST':
+        if request.method == 'PUT':
             data = self.prepare_related_data(request.data)
+            data['candidate_submitted_at'] = timezone.now()
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
+            time_sheet = serializer.save()
+            time_sheet.candidate_submitted_at = timezone.now()
 
             if serializer.validated_data.get('send_supervisor_message'):
                 hr_utils.send_supervisor_timesheet_approve(obj)
@@ -496,7 +498,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         return Response(serializer.data)
 
     @detail_route(
-        methods=['GET', 'POST'],
+        methods=['GET', 'PUT'],
         serializer=timesheet_serializers.TimeSheetManualSerializer,
         fieldsets=(
             'shift_started_at', 'shift_ended_at',
@@ -507,31 +509,36 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             }, {
                 'type': constants.FIELD_DATETIME,
                 'field': 'break_started_at',
-                'disabledIf': {
-                    'no_break': True,
-                },
+                'showIf': [{
+                    'no_break': False,
+                }],
             }, {
                 'type': constants.FIELD_DATETIME,
                 'field': 'break_ended_at',
-                'disabledIf': {
-                    'no_break': True,
-                },
+                'showIf': [{
+                    'no_break': False,
+                }],
             }, {
                 'type': constants.FIELD_STATIC,
-                'label': _('Total: {shift_total} - {break_total} = {total_worked}'),
+                'label': _('Total'),
                 'field': 'total_worked'
             }, {
                 'type': constants.FIELD_CHECKBOX,
                 'label': _('Send confirmation message to supervisor'),
                 'field': 'send_supervisor_message',
+            }, {
+                'type': constants.FIELD_CHECKBOX,
+                'label': _('Send confirmation message to Candidate'),
+                'field': 'send_candidate_message',
             }
         )
     )
     def supervisor_approve(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
-        if request.method == 'POST':
+        if request.method == 'PUT':
             data = self.prepare_related_data(request.data)
+            data['supervisor_approved_at'] = timezone.now()
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
