@@ -550,6 +550,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SUPERVISOR_DECLINED
                 process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
         else:
+            if not obj.break_started_at or not obj.break_ended_at:
+                obj.no_break = True
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
 
         return Response(serializer.data)
