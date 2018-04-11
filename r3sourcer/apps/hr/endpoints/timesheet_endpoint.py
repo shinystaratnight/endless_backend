@@ -208,9 +208,19 @@ class TimeSheetEndpoint(ApiEndpoint):
 
     fieldsets = (
         'id', 'job_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
-        'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
-        'candidate_submitted_at', 'supervisor_approved_at', 'candidate_rate', 'rate_overrides_approved_by',
-        'rate_overrides_approved_at', 'created_at', 'updated_at', {
+        'shift_started_at',
+        {
+            'type': constants.FIELD_DATE,
+            'field': 'break_started_at',
+            'default': '-',
+        }, {
+            'type': constants.FIELD_DATE,
+            'field': 'break_started_at',
+            'default': '-',
+        },
+        'break_ended_at', 'shift_ended_at', 'supervisor', 'candidate_submitted_at', 'supervisor_approved_at',
+        'candidate_rate', 'rate_overrides_approved_by', 'rate_overrides_approved_at', 'created_at', 'updated_at',
+        {
             'field': 'related_sms',
             'type': constants.FIELD_RELATED,
             'many': True,
