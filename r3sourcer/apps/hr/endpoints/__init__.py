@@ -201,87 +201,100 @@ class JobOfferEndpoint(ApiEndpoint):
     filter_class = hr_filters.JobOfferFilter
 
     list_display = ('shift.date.shift_date', 'status')
-    list_editable = (
-        'candidate_contact', 'shift.date.shift_date', 'shift.time',
-        {
-            'label': _('Status'),
-            'delim': ' ',
-            'fields': [{
-                'field': 'status',
-                'type': constants.FIELD_ICON,
-                'values': {
-                    0: 'minus-circle',
-                    1: 'check-circle',
-                    2: 'times-circle',
-                },
+    list_editable = {
+        'default': (
+            'candidate_contact', 'shift.date.shift_date', 'shift.time',
+            {
+                'label': _('Status'),
+                'delim': ' ',
+                'fields': [{
+                    'field': 'status',
+                    'type': constants.FIELD_ICON,
+                    'values': {
+                        0: 'minus-circle',
+                        1: 'check-circle',
+                        2: 'times-circle',
+                    },
+                }, {
+                    'type': constants.FIELD_SELECT,
+                    'field': 'status',
+                }]
             }, {
-                'type': constants.FIELD_SELECT,
-                'field': 'status',
-            }]
-        }, {
-            'label': _('SMS History'),
-            'delim': ' ',
-            'fields': [{
-                'type': constants.FIELD_BUTTON,
-                'text': _('Offer'),
-                'field': 'offer_sent_by_sms.id',
-                'action': constants.DEFAULT_ACTION_EDIT,
-                'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('sms-interface/smsmessages')),
+                'label': _('SMS History'),
+                'delim': ' ',
+                'fields': [{
+                    'type': constants.FIELD_BUTTON,
+                    'text': _('Offer'),
+                    'field': 'offer_sent_by_sms.id',
+                    'action': constants.DEFAULT_ACTION_EDIT,
+                    'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('sms-interface/smsmessages')),
+                }, {
+                    'type': constants.FIELD_BUTTON,
+                    'text': _('Reply'),
+                    'field': 'reply_received_by_sms.id',
+                    'action': constants.DEFAULT_ACTION_EDIT,
+                    'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('sms-interface/smsmessages')),
+                }],
             }, {
-                'type': constants.FIELD_BUTTON,
-                'text': _('Reply'),
-                'field': 'reply_received_by_sms.id',
-                'action': constants.DEFAULT_ACTION_EDIT,
-                'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('sms-interface/smsmessages')),
-            }],
-        }, {
-            'label': _('Client/Candidate Rate'),
-            'delim': ' / ',
-            'fields': ({
-                'field': 'client_rate',
-                'type': constants.FIELD_STATIC,
-                'display': '${field}/h',
+                'label': _('Client/Candidate Rate'),
+                'delim': ' / ',
+                'fields': ({
+                    'field': 'client_rate',
+                    'type': constants.FIELD_STATIC,
+                    'display': '${field}/h',
+                }, {
+                    'field': 'candidate_rate',
+                    'type': constants.FIELD_STATIC,
+                    'display': '${field}/h',
+                })
             }, {
-                'field': 'candidate_rate',
-                'type': constants.FIELD_STATIC,
-                'display': '${field}/h',
-            })
-        }, {
-            'type': constants.FIELD_LINK,
-            'label': _('Timesheets'),
-            'field': 'timesheets',
-            'text': _('Link to TimeSheet'),
-            'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('hr/timesheets'))
-        }, {
-            'label': _('Actions'),
-            'delim': ' ',
-            'fields': ({
-                'type': constants.FIELD_BUTTON,
-                'icon': 'fa-check-circle',
-                'field': 'has_accept_action',
-                'action': constants.DEFAULT_ACTION_POST,
-                'endpoint': format_lazy('{}{{id}}/accept', api_reverse_lazy('hr/joboffers')),
-                'text_color': '#5cb85c',
-                'title': _('Accept'),
+                'type': constants.FIELD_LINK,
+                'label': _('Timesheets'),
+                'field': 'timesheets',
+                'text': _('Link to TimeSheet'),
+                'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('hr/timesheets'))
             }, {
-                'type': constants.FIELD_BUTTON,
-                'icon': 'fa-minus-circle',
-                'field': 'has_cancel_action',
-                'action': constants.DEFAULT_ACTION_POST,
-                'endpoint': format_lazy('{}{{id}}/cancel', api_reverse_lazy('hr/joboffers')),
-                'text_color': '#f32700',
-                'title': _('Cancel'),
+                'label': _('Actions'),
+                'delim': ' ',
+                'fields': ({
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-check-circle',
+                    'field': 'has_accept_action',
+                    'action': constants.DEFAULT_ACTION_POST,
+                    'endpoint': format_lazy('{}{{id}}/accept', api_reverse_lazy('hr/joboffers')),
+                    'text_color': '#5cb85c',
+                    'title': _('Accept'),
+                }, {
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-minus-circle',
+                    'field': 'has_cancel_action',
+                    'action': constants.DEFAULT_ACTION_POST,
+                    'endpoint': format_lazy('{}{{id}}/cancel', api_reverse_lazy('hr/joboffers')),
+                    'text_color': '#f32700',
+                    'title': _('Cancel'),
+                }, {
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-commenting',
+                    'field': 'has_resend_action',
+                    'action': constants.DEFAULT_ACTION_POST,
+                    'endpoint': format_lazy('{}{{id}}/resend', api_reverse_lazy('hr/joboffers')),
+                    'text_color': '#f0ad4e',
+                    'title': _('Resend JO'),
+                }, constants.BUTTON_DELETE),
+            }
+        ),
+        'extend': (
+            {
+                'type': constants.FIELD_TIME,
+                'field': 'shift.time',
+                'label': _('Shift start time'),
             }, {
-                'type': constants.FIELD_BUTTON,
-                'icon': 'fa-commenting',
-                'field': 'has_resend_action',
-                'action': constants.DEFAULT_ACTION_POST,
-                'endpoint': format_lazy('{}{{id}}/resend', api_reverse_lazy('hr/joboffers')),
-                'text_color': '#f0ad4e',
-                'title': _('Resend JO'),
-            }, constants.BUTTON_DELETE),
-        }
-    )
+                'type': constants.FIELD_RELATED,
+                'label': _('Candidate'),
+                'field': 'candidate_contact',
+            },
+        )
+    }
     ordering = ('-shift.date.shift_date', )
     list_filter = ['candidate_contact']
 
@@ -387,6 +400,16 @@ class JobEndpoint(ApiEndpoint):
             'text': _('Fill-in'),
             'action': 'fillin',
             'hidden': 'hide_fillin',
+            'field': 'id',
+        }, {
+            'type': constants.FIELD_BUTTON,
+            'icon': 'fa-sign-in',
+            'text': _('Extend'),
+            'action': constants.DEFAULT_ACTION_EDIT,
+            'endpoint': format_lazy('{}{{id}}/extend', api_reverse_lazy('hr/jobs')),
+            'showIf': [
+                {'extend': True}
+            ],
             'field': 'id',
         })
     }, {

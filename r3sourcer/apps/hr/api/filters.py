@@ -101,13 +101,17 @@ class ShiftFilter(FilterSet):
 
 class JobOfferFilter(FilterSet):
     job = UUIDFilter(method='filter_job')
+    shift_date = UUIDFilter(method='filter_shift_date')
 
     class Meta:
         model = hr_models.Shift
-        fields = ['job']
+        fields = ['job', 'shift_date']
 
     def filter_job(self, queryset, name, value):
         return queryset.filter(shift__date__job_id=value)
+
+    def filter_shift_date(self, queryset, name, value):
+        return queryset.filter(shift__date_id=value)
 
 
 class JobsiteFilter(ActiveStateFilterMixin, FilterSet):
