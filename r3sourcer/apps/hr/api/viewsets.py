@@ -954,6 +954,67 @@ class JobViewset(BaseApiViewset):
 
         return candidate_contacts
 
+    @detail_route(
+        methods=['GET', 'PUT'],
+        serializer=job_serializers.JobExtendSerialzier,
+        fieldsets=(
+            {
+                'type': constants.FIELD_JOB_DATES,
+                'field': 'job_shift',
+                'label': _('Select Shift dates for Job extension'),
+            },
+            'autofill',
+            {
+                'type': constants.FIELD_LIST,
+                'field': 'id_',
+                'query': {
+                    'shift_date': '{latest_date}',
+                },
+                'label': _('Candidates'),
+                'endpoint': api_reverse_lazy('hr/joboffers'),
+                'metadata_query': {
+                    'editable_type': 'extend',
+                },
+            }
+        ),
+    )
+    def extend(self, request, *args, **kwargs):
+        job = self.get_object()
+
+        if request.method == 'PUT':
+            try:
+                latest_shift_date = job.shift_dates.latest('shift_date')
+            except hr_models.ShiftDate.DoesNotExist:
+                raise exceptions.NotFound(_('Latest Shift Date not found'))
+
+            new_shift_date = datetime.datetime.strptime(request.data.get('job_shift'), '%Y-%m-%d').date()
+            new_shift_date_obj, created = hr_models.ShiftDate.objects.get_or_create(
+                job=job, shift_date=new_shift_date, defaults={
+                    'workers': job.workers,
+                    'hourly_rate': job.hourly_rate_default,
+                },
+            )
+
+            job_offers = hr_models.JobOffer.objects.filter(shift__date=latest_shift_date)
+            for exist_jo in job_offers:
+                new_shift_obj, created = hr_models.Shift.objects.get_or_create(
+                    date=new_shift_date_obj, time=exist_jo.shift.time, defaults={
+                        'workers': job.workers,
+                        'hourly_rate': job.hourly_rate_default,
+                    },
+                )
+
+                hr_models.JobOffer.objects.create(
+                    shift=new_shift_obj,
+                    candidate_contact=exist_jo.candidate_contact,
+                )
+
+            serializer = job_serializers.JobExtendSerialzier(job)
+        else:
+            serializer = job_serializers.JobExtendSerialzier(job)
+
+        return Response(serializer.data)
+
 
 class TimeSheetCandidateViewset(
     BaseTimeSheetViewsetMixin,

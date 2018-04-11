@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime
 from functools import partial
 
 from django.db.models import Max
@@ -20,7 +20,7 @@ from r3sourcer.apps.logger.main import endless_logger
 
 class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'title')
+    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'title', 'extend')
 
     class Meta:
         model = hr_models.Job
@@ -85,6 +85,16 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
             return None
 
         return obj.get_title()
+
+    def _get_unfilled_future_vds_queryset(self, obj):
+        today = date.today()
+        shift_dates = obj.shift_dates.filter(
+            shift_date__gte=today, cancelled=False
+        ).distinct()
+        return shift_dates
+
+    def get_extend(self, obj):  # pragma: no cover
+        return obj.has_state(20) and self._get_unfilled_future_vds_queryset(obj).exists()
 
 
 class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
@@ -378,3 +388,26 @@ class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.
                 'master_company': ('id', ),
             }
         )
+
+
+class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = ('job_shift', 'latest_date')
+
+    autofill = serializers.BooleanField(required=False)
+
+    class Meta:
+        model = hr_models.Job
+        fields = ('id', 'autofill')
+
+    def get_job_shift(self, obj):
+        return [
+            timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time))
+            for shift in hr_models.Shift.objects.filter(date__job=obj)
+        ]
+
+    def get_latest_date(self, obj):
+        try:
+            return obj.shift_dates.filter(cancelled=False).latest('shift_date').id
+        except hr_models.ShiftDate.DoesNotExist:
+            return None
