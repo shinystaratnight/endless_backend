@@ -448,6 +448,18 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         })
 
     @detail_route(
+        methods=['POST'],
+    )
+    def resend_supervisor_sms(self, request, pk, *args, **kwargs):
+        obj = self.get_object()
+
+        hr_utils.send_supervisor_timesheet_approve(obj)
+
+        return Response({
+            'status': 'success'
+        })
+
+    @detail_route(
         methods=['GET', 'PUT'],
         serializer=timesheet_serializers.TimeSheetManualSerializer,
         fieldsets=(
