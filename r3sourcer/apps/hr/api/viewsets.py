@@ -973,6 +973,9 @@ class JobViewset(BaseApiViewset):
                 'metadata_query': {
                     'editable_type': 'extend',
                 },
+                'showIf': [
+                    {'autofill': True},
+                ]
             }
         ),
     )
@@ -980,6 +983,7 @@ class JobViewset(BaseApiViewset):
         job = self.get_object()
 
         if request.method == 'PUT':
+            is_autofill = request.data.get('autofill', False)
             try:
                 latest_shift_date = job.shift_dates.latest('shift_date')
             except hr_models.ShiftDate.DoesNotExist:
@@ -1002,10 +1006,11 @@ class JobViewset(BaseApiViewset):
                     },
                 )
 
-                hr_models.JobOffer.objects.create(
-                    shift=new_shift_obj,
-                    candidate_contact=exist_jo.candidate_contact,
-                )
+                if is_autofill:
+                    hr_models.JobOffer.objects.create(
+                        shift=new_shift_obj,
+                        candidate_contact=exist_jo.candidate_contact,
+                    )
 
             serializer = job_serializers.JobExtendSerialzier(job)
         else:
