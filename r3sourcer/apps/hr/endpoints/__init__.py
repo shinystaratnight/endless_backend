@@ -223,6 +223,13 @@ class JobOfferEndpoint(ApiEndpoint):
                 'label': _('SMS History'),
                 'delim': ' ',
                 'fields': [{
+                    'type': constants.FIELD_DATETIME,
+                    'label': _('Sheduled'),
+                    'field': 'scheduled_sms_datetime',
+                    'showIf': [
+                        'scheduled_sms_datetime',
+                    ]
+                }, {
                     'type': constants.FIELD_BUTTON,
                     'text': _('Offer'),
                     'field': 'offer_sent_by_sms.id',
