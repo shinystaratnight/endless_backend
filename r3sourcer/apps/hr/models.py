@@ -700,12 +700,12 @@ class JobOffer(core_models.UUIDModel):
         if check_date is None:
             check_date = now.date()
 
-        bookings_with_timesheets = self.time_sheets.filter(
-            shift_started_at__date=check_date,
-            going_to_work_confirmation__isnull=True,
-            going_to_work_sent_sms__check_reply_at__gte=now
+        jos_with_timesheets = self.candidate_contact.job_offers.filter(
+            time_sheets__shift_started_at__date=check_date,
+            time_sheets__going_to_work_confirmation__isnull=True,
+            time_sheets__going_to_work_sent_sms__check_reply_at__gte=now
         )
-        return bookings_with_timesheets
+        return jos_with_timesheets
 
     def has_timesheets_with_going_work_unset_or_timeout(self, check_date=None):
         return self.get_timesheets_with_going_work_unset_or_timeout(check_date).exists()
@@ -729,11 +729,11 @@ class JobOffer(core_models.UUIDModel):
         """
         now = timezone.now()
         return self.job.get_job_offers().filter(
+            models.Q(shift__date__shift_date=now.date(), shift__time__gte=now.timetz()) |
+            models.Q(shift__date__shift_date__gt=now.date()),
+            models.Q(shift__date__shift_date=self.shift.date.shift_date, shift__time__lte=self.shift.time) |
+            models.Q(shift__date__shift_date__lt=self.shift.date.shift_date),
             candidate_contact=self.candidate_contact,
-            shift__time__gt=now,
-            shift__date__shift_date__gte=now.date(),
-            shift__time__lt=self.shift.time,
-            shift__date__shift_date__lte=self.shift.date.shift_date,
         ).exists()
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
@@ -867,11 +867,9 @@ class JobOffer(core_models.UUIDModel):
             if task:
                 now = timezone.localtime(timezone.now())
                 tomorrow = now + timedelta(days=1)
-                tomorrow_end = datetime.combine(
-                    tomorrow.date() + timedelta(days=1),
-                    time(5, 0, 0, tzinfo=tomorrow.tzinfo)
-                )
-
+                tomorrow_end = timezone.make_aware(datetime.combine(
+                    tomorrow.date() + timedelta(days=1), time(5, 0, 0)
+                ))
                 target_date_and_time = timezone.localtime(self.start_time)
 
                 # TODO: maybe need to rethink, but it should work
