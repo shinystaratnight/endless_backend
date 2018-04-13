@@ -243,10 +243,10 @@ class TimeSheetEndpoint(ApiEndpoint):
             'default': '-',
         }, {
             'type': constants.FIELD_DATE,
-            'field': 'break_started_at',
+            'field': 'break_ended_at',
             'default': '-',
         },
-        'break_ended_at', 'shift_ended_at', 'supervisor', 'candidate_submitted_at', 'supervisor_approved_at',
+        'shift_ended_at', 'supervisor', 'candidate_submitted_at', 'supervisor_approved_at',
         'candidate_rate', 'rate_overrides_approved_by', 'rate_overrides_approved_at', 'created_at', 'updated_at',
         {
             'field': 'related_sms',
