@@ -638,6 +638,21 @@ class JobOfferViewset(BaseApiViewset):
 
         return Response({'status': 'success'})
 
+    @detail_route(methods=['POST'])
+    def send(self, request, *args, **kwargs):  # pragma: no cover
+        obj = self.get_object()
+        serializer_class = self.get_serializer_class()
+
+        if serializer_class.is_available_for_send(obj):
+            obj.status = hr_models.JobOffer.STATUS_CHOICES.undefined
+            obj.save(initial=True)
+
+        return Response({'status': 'success'})
+
+    def perform_destroy(self, instance):
+        instance.time_sheets.all().delete()
+        instance.delete()
+
 
 class JobViewset(BaseApiViewset):
 
