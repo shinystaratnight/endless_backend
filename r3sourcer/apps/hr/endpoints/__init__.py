@@ -259,7 +259,8 @@ class JobOfferEndpoint(ApiEndpoint):
                 'label': _('Timesheets'),
                 'field': 'timesheets',
                 'text': _('Link to TimeSheet'),
-                'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('hr/timesheets'))
+                'action': constants.DEFAULT_ACTION_EDIT,
+                'endpoint': format_lazy('{}{{timesheets}}', api_reverse_lazy('hr/timesheets'))
             }, {
                 'label': _('Actions'),
                 'delim': ' ',
@@ -279,6 +280,14 @@ class JobOfferEndpoint(ApiEndpoint):
                     'endpoint': format_lazy('{}{{id}}/cancel', api_reverse_lazy('hr/joboffers')),
                     'text_color': '#f32700',
                     'title': _('Cancel'),
+                }, {
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-commenting',
+                    'field': 'has_send_action',
+                    'action': constants.DEFAULT_ACTION_POST,
+                    'endpoint': format_lazy('{}{{id}}/send', api_reverse_lazy('hr/joboffers')),
+                    'text_color': '#f0ad4e',
+                    'title': _('Send JO'),
                 }, {
                     'type': constants.FIELD_BUTTON,
                     'icon': 'fa-commenting',

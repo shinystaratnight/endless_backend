@@ -100,7 +100,8 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
 class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
-        'candidate_rate', 'client_rate', 'timesheets', 'has_accept_action', 'has_cancel_action', 'has_resend_action'
+        'candidate_rate', 'client_rate', 'timesheets', 'has_accept_action', 'has_cancel_action', 'has_resend_action',
+        'has_send_action',
     )
 
     class Meta:
@@ -194,6 +195,23 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             return None
 
         return self.is_available_for_resend(obj)
+
+    @classmethod
+    def is_available_for_send(cls, obj):
+        not_sent_or_scheduled = (
+            obj.offer_sent_by_sms is None and not obj.is_accepted() and obj.scheduled_sms_datetime is None
+        )
+        target_date_and_time = timezone.localtime(obj.start_time)
+        is_filled = obj.is_quota_filled()
+        is_today_or_future = target_date_and_time.date() >= timezone.now().date()
+
+        return not_sent_or_scheduled and not is_filled and is_today_or_future
+
+    def get_has_send_action(self, obj):
+        if not obj:
+            return None
+
+        return self.is_available_for_send(obj)
 
 
 class ShiftSerializer(core_serializers.ApiBaseModelSerializer):

@@ -743,12 +743,13 @@ class JobOffer(core_models.UUIDModel):
             if self.offer_sent_by_sms == sent_sms:
                 setattr(self, self.receive_sms_field, reply_sms)
                 if positive:
-                    self.accept('status', self.receive_sms_field)
+                    self.accept('status', self.receive_sms_field, 'scheduled_sms_datetime')
                 else:
                     self.cancel()
 
     def accept(self, *update_fields):
         self.status = JobOffer.STATUS_CHOICES.accepted
+        self.scheduled_sms_datetime = None
         if update_fields:
             self.save(update_fields=update_fields)
         else:
@@ -761,6 +762,7 @@ class JobOffer(core_models.UUIDModel):
             self.move_candidate_to_carrier_list()
 
         self.status = self.STATUS_CHOICES.cancelled
+        self.scheduled_sms_datetime = None
         self.save()
 
         now = timezone.now()
