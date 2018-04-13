@@ -818,6 +818,7 @@ class ShiftEndpoint(ApiEndpoint):
     ordering = ('-date.shift_date', '-time')
 
     search_fields = ('date__job', )
+    search_enabled = False
 
     list_editable_buttons = []
 
