@@ -170,9 +170,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     @classmethod
     def is_available_for_resend(cls, obj):
-        not_received_or_scheduled = (
-            obj.reply_received_by_sms is None and not obj.is_accepted() and obj.scheduled_sms_datetime is None
-        )
+        not_received_or_scheduled = obj.reply_received_by_sms is None and not obj.is_accepted()
         target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
         is_today_or_future = target_date_and_time.date() >= timezone.now().date()
@@ -198,14 +196,12 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     @classmethod
     def is_available_for_send(cls, obj):
-        not_sent_or_scheduled = (
-            obj.offer_sent_by_sms is None and not obj.is_accepted() and obj.scheduled_sms_datetime is None
-        )
+        not_sent = obj.offer_sent_by_sms is None and not obj.is_accepted()
         target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
         is_today_or_future = target_date_and_time.date() >= timezone.now().date()
 
-        return not_sent_or_scheduled and not is_filled and is_today_or_future
+        return not_sent and not is_filled and is_today_or_future
 
     def get_has_send_action(self, obj):
         if not obj:
