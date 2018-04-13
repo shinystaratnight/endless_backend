@@ -7,9 +7,10 @@ from rest_framework import serializers
 
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
+from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.api import serializers as sms_serializers
-from r3sourcer.apps.pricing.utils.utils import format_timedelta
 
 from ...models import TimeSheet, CandidateEvaluation
 
@@ -70,7 +71,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
     method_fields = (
         'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor',
-        'candidate_submit_hidden', 'evaluated'
+        'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button',
     )
 
     class Meta:
@@ -159,6 +160,22 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_evaluated(self, obj):
         return obj.candidate_evaluations.exists()
+
+    def get_myob_status(self, obj):
+        if obj.supervisor_approved_at and obj.candidate_submitted_at:
+            sync_objs = MYOBSyncObject.objects.filter(record=obj.id)
+            if sync_objs.filter(synced_at__gte=obj.updated_at).exists():
+                return _('Synced')
+            elif sync_objs.exists():
+                return _('Sync is outdated')
+            else:
+                return _('Not Synced')
+
+        return None
+
+    def get_show_sync_button(self, obj):
+        is_synced = MYOBSyncObject.objects.filter(record=obj.id, synced_at__gte=obj.updated_at).exists()
+        return bool(not is_synced and obj.supervisor_approved_at and obj.candidate_submitted_at)
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):

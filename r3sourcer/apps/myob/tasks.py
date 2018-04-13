@@ -1,6 +1,7 @@
 import datetime
 
 from celery import shared_task
+from celery.utils.log import get_task_logger
 
 from r3sourcer.apps.core.models import Company, Invoice
 from r3sourcer.apps.core.tasks import one_task_at_the_same_time
@@ -14,6 +15,9 @@ from r3sourcer.apps.myob.services.invoice import InvoiceSync
 from r3sourcer.apps.myob.services.timesheet import TimeSheetSync
 from r3sourcer.apps.myob.services.utils import sync_candidate_contacts_to_myob, sync_companies_to_myob
 from r3sourcer.celeryapp import app
+
+
+logger = get_task_logger(__name__)
 
 
 def retry_on_myob_error(origin_task):
@@ -135,3 +139,17 @@ def sync_invoice(invoice_id):
             service.sync_to_myob(invoice, partial=True)
     else:
         service.sync_to_myob(invoice)
+
+
+@app.task(bind=True)
+@one_task_at_the_same_time()
+@retry_on_myob_error
+def sync_timesheet(self, timesheet_id):
+    try:
+        timesheet = TimeSheet.objects.get(id=timesheet_id)
+    except TimeSheet.DoesNotExist:
+        logger.warn('TimeSheet with id=%s does not exist')
+        return
+
+    service = TimeSheetSync.from_candidate(timesheet.job_offer.candidate_contact)
+    service.sync_single_to_myob(timesheet)

@@ -210,7 +210,28 @@ class TimeSheetEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'many': True,
             'endpoint': api_reverse_lazy('sms-interface/smsmessages'),
-        },
+        }, {
+            'label': _('MYOB status'),
+            'fields': (
+                {
+                    'type': constants.FIELD_TEXT,
+                    'field': 'myob_status',
+                    'showIf': [
+                        {'show_sync_button': False},
+                    ]
+                }, {
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-sync-alt',
+                    'text': _('Sync'),
+                    'endpoint': format_lazy('{}{{id}}/sync', api_reverse_lazy('hr/timesheets')),
+                    'field': 'id',
+                    'action': constants.DEFAULT_ACTION_EDIT,
+                    'showIf': [
+                        {'show_sync_button': True},
+                    ]
+                },
+            ),
+        }
     )
 
     fieldsets = (
