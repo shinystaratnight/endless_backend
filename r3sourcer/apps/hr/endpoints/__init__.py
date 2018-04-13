@@ -259,7 +259,6 @@ class JobOfferEndpoint(ApiEndpoint):
                 'label': _('Timesheets'),
                 'field': 'timesheets',
                 'text': _('Link to TimeSheet'),
-                'action': constants.DEFAULT_ACTION_EDIT,
                 'endpoint': format_lazy('{}{{timesheets}}', api_reverse_lazy('hr/timesheets'))
             }, {
                 'label': _('Actions'),
