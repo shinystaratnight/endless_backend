@@ -1117,11 +1117,15 @@ class TimeSheet(
 
     @property
     def shift_delta(self):
-        return self.shift_ended_at - self.shift_started_at
+        if self.shift_ended_at and self.shift_started_at:
+            return self.shift_ended_at - self.shift_started_at
+        return timedelta()
 
     @property
     def break_delta(self):
-        return self.break_ended_at - self.break_started_at
+        if self.break_ended_at and self.break_started_at:
+            return self.break_ended_at - self.break_started_at
+        return timedelta()
 
     def auto_fill_four_hours(self):
         now = timezone.now()

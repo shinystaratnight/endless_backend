@@ -448,6 +448,18 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         })
 
     @detail_route(
+        methods=['POST'],
+    )
+    def resend_supervisor_sms(self, request, pk, *args, **kwargs):
+        obj = self.get_object()
+
+        hr_utils.send_supervisor_timesheet_approve(obj)
+
+        return Response({
+            'status': 'success'
+        })
+
+    @detail_route(
         methods=['GET', 'PUT'],
         serializer=timesheet_serializers.TimeSheetManualSerializer,
         fieldsets=(
@@ -550,6 +562,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SUPERVISOR_DECLINED
                 process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
         else:
+            if not obj.break_started_at or not obj.break_ended_at:
+                obj.no_break = True
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
 
         return Response(serializer.data)
