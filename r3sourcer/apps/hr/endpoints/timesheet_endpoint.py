@@ -210,7 +210,28 @@ class TimeSheetEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'many': True,
             'endpoint': api_reverse_lazy('sms-interface/smsmessages'),
-        },
+        }, {
+            'label': _('MYOB status'),
+            'fields': (
+                {
+                    'type': constants.FIELD_TEXT,
+                    'field': 'myob_status',
+                    'showIf': [
+                        {'show_sync_button': False},
+                    ]
+                }, {
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-sync-alt',
+                    'text': _('Sync'),
+                    'endpoint': format_lazy('{}{{id}}/sync', api_reverse_lazy('hr/timesheets')),
+                    'field': 'id',
+                    'action': constants.DEFAULT_ACTION_EDIT,
+                    'showIf': [
+                        {'show_sync_button': True},
+                    ]
+                },
+            ),
+        }
     )
 
     fieldsets = (
@@ -222,10 +243,10 @@ class TimeSheetEndpoint(ApiEndpoint):
             'default': '-',
         }, {
             'type': constants.FIELD_DATE,
-            'field': 'break_started_at',
+            'field': 'break_ended_at',
             'default': '-',
         },
-        'break_ended_at', 'shift_ended_at', 'supervisor', 'candidate_submitted_at', 'supervisor_approved_at',
+        'shift_ended_at', 'supervisor', 'candidate_submitted_at', 'supervisor_approved_at',
         'candidate_rate', 'rate_overrides_approved_by', 'rate_overrides_approved_at', 'created_at', 'updated_at',
         {
             'field': 'related_sms',

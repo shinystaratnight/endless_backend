@@ -30,6 +30,7 @@ from r3sourcer.apps.hr.api.filters import TimesheetFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
 from r3sourcer.apps.hr.tasks import generate_invoice
 from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
+from r3sourcer.apps.myob.tasks import sync_timesheet
 
 
 class ExtranetTimesheetEndpoint(ApiEndpoint):
@@ -567,6 +568,14 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
 
         return Response(serializer.data)
+
+    @detail_route(methods=['POST'])
+    def sync(self, request, pk, *args, **kwargs):
+        obj = self.get_object()
+
+        sync_timesheet.delay(obj.id)
+
+        return Response({'status': 'success'})
 
 
 class InvoiceViewset(BaseApiViewset):

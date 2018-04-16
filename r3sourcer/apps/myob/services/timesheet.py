@@ -9,8 +9,9 @@ from django.utils import timezone
 from r3sourcer.apps.candidate.models import SkillRateRel
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment import calc_worked_delta
+from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.myob.mappers import TimeSheetMapper, format_date_to_myob
-from r3sourcer.apps.myob.models import MYOBSyncObject, MYOBCompanyFileToken
+from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.candidate import CandidateSync
 from r3sourcer.apps.myob.services.decorators import myob_enabled_mode
@@ -47,6 +48,13 @@ class TimeSheetSync(
         self._customer_cache = {}
         self._employee_cache = {}
 
+    @classmethod
+    def from_candidate(cls, candidate):
+        company = candidate.get_closest_company()
+        myob_client = get_myob_client(company=company)
+
+        return cls(myob_client, company=company)
+
     @method_decorator(myob_enabled_mode)
     def sync_to_myob(self, candidate):
         timesheets_q = (Q(candidate_submitted_at__isnull=True) | Q(candidate_submitted_at=None) |
@@ -72,6 +80,14 @@ class TimeSheetSync(
 
             self._switch_client(company_file_token=company_file_token)
             self._sync_timesheets_to_myob(candidate, timesheet_qs)
+
+    @method_decorator(myob_enabled_mode)
+    def sync_single_to_myob(self, timesheet):
+        timesheets_q = (Q(candidate_submitted_at__isnull=True) | Q(candidate_submitted_at=None) |
+                        Q(supervisor_approved_at__isnull=True) | Q(supervisor_approved_at=None))
+        timesheet_qs = TimeSheet.objects.filter(id=timesheet.id).exclude(timesheets_q)
+
+        self._sync_timesheets_to_myob(timesheet.job_offer.candidate_contact, timesheet_qs)
 
     def _sync_timesheets_to_myob(self, candidate, timesheet_qs):
         if self.client is None:

@@ -231,7 +231,7 @@ def send_placement_rejection_sms(self, job_offer_id):
         job_offer = hr_models.JobOffer.objects.get(pk=job_offer_id)
         f_data = {
             'sms__template__slug': 'job-offer-rejection',
-            'object_model': ContentType.objects.get_for_model(hr_models.JobOffer),
+            'content_type': ContentType.objects.get_for_model(hr_models.JobOffer),
             'object_id': job_offer_id
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
