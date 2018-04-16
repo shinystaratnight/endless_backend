@@ -7,7 +7,6 @@ from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
-from r3sourcer.apps.activity.api import mixins as activity_mixins
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
 from r3sourcer.apps.core.utils.user import get_default_user
@@ -157,7 +156,10 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         )
 
     def get_has_accept_action(self, obj):
-        if obj is None or timezone.now() >= obj.start_time or (obj.is_accepted() and not self.has_late_reply_handling(obj)):
+        if obj is None or (obj.is_accepted() and not self.has_late_reply_handling(obj)):
+            return None
+
+        if obj.is_accepted() or obj.shift.is_fulfilled() == hr_models.FULFILLED:
             return None
 
         return True
@@ -182,8 +184,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             ).order_by('offer_sent_by_sms__sent_at').last()
             return bool(
                 obj.offer_sent_by_sms and last_jo and
-                last_jo.offer_sent_by_sms.sent_at +
-                timezone.timedelta(minutes=10) < timezone.now()
+                last_jo.offer_sent_by_sms.sent_at < timezone.now()
             )
 
         return False

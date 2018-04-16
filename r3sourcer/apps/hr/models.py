@@ -755,7 +755,8 @@ class JobOffer(core_models.UUIDModel):
         else:
             self.save()
 
-        self._cancel_for_filled_quota()
+        if self.is_quota_filled():
+            self._cancel_for_filled_quota()
 
     def cancel(self):
         if self.is_accepted():
@@ -792,8 +793,7 @@ class JobOffer(core_models.UUIDModel):
     def is_quota_filled(self):
         accepted_count = self.job.get_job_offers().filter(
             status=JobOffer.STATUS_CHOICES.accepted,
-            shift__date__shift_date=self.shift.date.shift_date,
-            shift__time=self.shift.time
+            shift=self.shift
         ).count()
 
         return accepted_count >= self.shift.workers
