@@ -233,13 +233,13 @@ class JobOfferEndpoint(ApiEndpoint):
                     'type': constants.FIELD_BUTTON,
                     'text': _('Offer'),
                     'field': 'offer_sent_by_sms.id',
-                    'action': constants.DEFAULT_ACTION_EDIT,
+                    'action': constants.DEFAULT_ACTION_MODAL_EDIT,
                     'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('sms-interface/smsmessages')),
                 }, {
                     'type': constants.FIELD_BUTTON,
                     'text': _('Reply'),
                     'field': 'reply_received_by_sms.id',
-                    'action': constants.DEFAULT_ACTION_EDIT,
+                    'action': constants.DEFAULT_ACTION_MODAL_EDIT,
                     'endpoint': format_lazy('{}{{field}}', api_reverse_lazy('sms-interface/smsmessages')),
                 }],
             }, {
