@@ -15,6 +15,7 @@ from django.utils.translation import ugettext_lazy as _
 import pytz
 
 from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
@@ -32,7 +33,6 @@ from r3sourcer.apps.sms_interface.utils import get_sms_service
 logger = get_task_logger(__name__)
 
 GOING_TO_WORK, SHIFT_ENDING, RECRUITEE_SUBMITTED, SUPERVISOR_DECLINED = range(4)
-SITE_URL = settings.SITE_URL
 
 
 @shared_task(queue='hr')
@@ -297,13 +297,14 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
         }
 
         with transaction.atomic():
+            site_url = core_companies_utils.get_site_url()
             data_dict = dict(
                 supervisor=contacts['company_contact'],
                 candidate_contact=contacts['candidate_contact'],
-                site_url=SITE_URL,
-                get_fill_time_sheet_url="%s/hr/timesheets-candidate" % SITE_URL,
-                get_supervisor_redirect_url="%s/hr/timesheets/unapproved" % SITE_URL,
-                get_supervisor_sign_url="%s/hr/timesheets/unapproved" % SITE_URL,
+                site_url=site_url,
+                get_fill_time_sheet_url="%s/hr/timesheets-candidate" % site_url,
+                get_supervisor_redirect_url="%s/hr/timesheets/unapproved" % site_url,
+                get_supervisor_sign_url="%s/hr/timesheets/unapproved" % site_url,
                 shift_start_date=formats.date_format(target_date_and_time, settings.DATETIME_FORMAT),
                 shift_end_date=formats.date_format(end_date_and_time.date(), settings.DATE_FORMAT),
                 related_obj=time_sheet,
@@ -348,8 +349,9 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
                     redirect_to='{}{}/submit/'.format(sign_navigation.url, time_sheet_id)
                 )
 
+                site_url = core_companies_utils.get_site_url()
                 data_dict.update({
-                    'get_fill_time_sheet_url': "%s%s" % (settings.SITE_URL, extranet_login.auth_url),
+                    'get_fill_time_sheet_url': "%s%s" % (site_url, extranet_login.auth_url),
                     'related_objs': [extranet_login],
                 })
             else:
@@ -414,11 +416,12 @@ def send_supervisor_timesheet_message(
         if company_rel:
             portfolio_manager = company_rel.company.manager
 
+        site_url = core_companies_utils.get_site_url()
         data_dict = dict(
             supervisor=supervisor,
             portfolio_manager=portfolio_manager,
-            get_url="%s%s" % (settings.SITE_URL, extranet_login.auth_url),
-            site_url=settings.SITE_URL,
+            get_url="%s%s" % (site_url, extranet_login.auth_url),
+            site_url=site_url,
             related_obj=supervisor,
             related_objs=[extranet_login],
         )
@@ -525,8 +528,8 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
             if eta.time() > time(19, 0):
                 is_today_reminder = False
                 eta = timezone.make_aware(datetime.combine(date.today(), time(19, 0)))
-            elif eta.time() < time(7, 0):
-                eta = timezone.make_aware(datetime.combine(date.today(), time(7, 0)))
+            elif eta.time() < time(7, 0) or eta.date() > today:
+                eta = timezone.make_aware(datetime.combine(eta.today(), time(7, 0)))
 
             if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
                 send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder], eta=eta)
@@ -559,7 +562,7 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
 
     if timesheets.exists():
         send_supervisor_timesheet_message(
-            supervisor, supervisor.by_sms, supervisor.by_email, 'supervisor-timesheet-sign-reminder'
+            supervisor, supervisor.message_by_sms, supervisor.message_by_email, 'supervisor-timesheet-sign-reminder'
         )
 
 
@@ -688,7 +691,7 @@ def send_time_sheet_confirmation_sms(time_sheet_id, action_prefix, tpl=''):
 
 @app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
-def send_going_to_work_sms(time_sheet_id):
+def send_going_to_work_sms(self, time_sheet_id):
     """
     Send morning check sms notification.
     Going to work sms message.
@@ -760,12 +763,13 @@ def send_job_confirmation_sms(self, job_id):
             contact=jobsite.primary_contact.contact,
             redirect_to='{}{}/change/'.format(sign_navigation.url, job_id)
         )
+        site_url = core_companies_utils.get_site_url()
         data_dict = dict(
             get_confirmation_string=confirmation_string,
             supervisor=jobsite.primary_contact,
             jobsite=jobsite,
             portfolio_manager=jobsite.portfolio_manager,
-            auth_url="%s%s" % (settings.SITE_URL, extranet_login.auth_url),
+            auth_url="%s%s" % (site_url, extranet_login.auth_url),
             related_obj=job,
             related_objs=[jobsite.primary_contact, jobsite, jobsite.portfolio_manager, extranet_login],
         )
