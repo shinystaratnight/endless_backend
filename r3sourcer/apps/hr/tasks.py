@@ -73,12 +73,14 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
     if now >= timezone.localtime(job_offer.start_time):
         target_date_and_time = "ASAP"
 
+    master_company = core_companies_utils.get_site_master_company(user=job_offer.candidate_contact.contact.user)
     data_dict = {
         'job_offer': job_offer,
         'job': job_offer.job,
         'jobsite_address': job_offer.job.jobsite.get_address(),
         'candidate_contact': job_offer.candidate_contact,
         'target_date_and_time': target_date_and_time,
+        'master_company': master_company,
         'related_obj': job_offer,
         'related_objs': [job_offer.candidate_contact, job_offer.job]
     }
@@ -297,7 +299,7 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
         }
 
         with transaction.atomic():
-            site_url = core_companies_utils.get_site_url()
+            site_url = core_companies_utils.get_site_url(user=contacts['candidate_contact'].contact.user)
             data_dict = dict(
                 supervisor=contacts['company_contact'],
                 candidate_contact=contacts['candidate_contact'],
@@ -349,7 +351,7 @@ def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
                     redirect_to='{}{}/submit/'.format(sign_navigation.url, time_sheet_id)
                 )
 
-                site_url = core_companies_utils.get_site_url()
+                site_url = core_companies_utils.get_site_url(user=recipient.contact.user)
                 data_dict.update({
                     'get_fill_time_sheet_url': "%s%s" % (site_url, extranet_login.auth_url),
                     'related_objs': [extranet_login],
@@ -416,7 +418,7 @@ def send_supervisor_timesheet_message(
         if company_rel:
             portfolio_manager = company_rel.company.manager
 
-        site_url = core_companies_utils.get_site_url()
+        site_url = core_companies_utils.get_site_url(user=supervisor.contact.user)
         data_dict = dict(
             supervisor=supervisor,
             portfolio_manager=portfolio_manager,
@@ -763,7 +765,7 @@ def send_job_confirmation_sms(self, job_id):
             contact=jobsite.primary_contact.contact,
             redirect_to='{}{}/change/'.format(sign_navigation.url, job_id)
         )
-        site_url = core_companies_utils.get_site_url()
+        site_url = core_companies_utils.get_site_url(user=jobsite.primary_contact.contact.user)
         data_dict = dict(
             get_confirmation_string=confirmation_string,
             supervisor=jobsite.primary_contact,

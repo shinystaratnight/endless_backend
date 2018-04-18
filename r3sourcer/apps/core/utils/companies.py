@@ -1,7 +1,8 @@
-from urllib.parse import urlparse, urljoin
+from urllib.parse import urlparse
 
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
+from django.core.cache import cache
 
 from r3sourcer.apps.core.models import Company
 
@@ -36,18 +37,25 @@ def get_master_companies_by_contact(contact):
     return master_companies
 
 
-def get_site_url(request=None):
-    site = get_current_site(request)
-    url_parts = urlparse(site.domain)
+def get_site_url(request=None, user=None):
+    domain = get_current_site(request).domain
 
-    return '{}://{}'.format(url_parts.scheme or 'https', url_parts.netloc)
+    if user:
+        domain = cache.get('user_site_%s' % str(user.id), domain)
+
+    url_parts = urlparse(domain)
+
+    return '{}://{}'.format(url_parts.scheme or 'https', url_parts.netloc or url_parts.path)
 
 
-def get_site_master_company(site=None, request=None):
+def get_site_master_company(site=None, request=None, user=None):
     if isinstance(site, str):
         site = Site.objects.get_by_natural_key(site)
     elif site is None:
         site = get_current_site(request)
+
+    if user:
+        site = Site.objects.get_by_natural_key(cache.get('user_site_%s' % str(user.id), site.domain))
 
     site_company = site.site_companies.filter(company__type=Company.COMPANY_TYPES.master).first()
 
