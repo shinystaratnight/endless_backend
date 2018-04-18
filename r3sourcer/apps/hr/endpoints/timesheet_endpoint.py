@@ -238,11 +238,11 @@ class TimeSheetEndpoint(ApiEndpoint):
         'id', 'job_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
         'shift_started_at',
         {
-            'type': constants.FIELD_DATE,
+            'type': constants.FIELD_DATETIME,
             'field': 'break_started_at',
             'default': '-',
         }, {
-            'type': constants.FIELD_DATE,
+            'type': constants.FIELD_DATETIME,
             'field': 'break_ended_at',
             'default': '-',
         },
