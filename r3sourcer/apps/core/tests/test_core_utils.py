@@ -126,6 +126,8 @@ class TestValidators:
     def test_not_numeric_values(self):
         with pytest.raises(ValidationError):
             string_is_numeric('test1')
+
+        with pytest.raises(ValidationError):
             string_is_numeric('1test')
 
     def test_numeric_values(self):

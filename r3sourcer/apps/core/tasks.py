@@ -2,6 +2,7 @@ from contextlib import contextmanager
 
 from celery import shared_task
 from celery.five import monotonic
+from celery.utils.log import get_task_logger
 
 from django.conf import settings
 from django.core.cache import cache
@@ -11,10 +12,15 @@ from r3sourcer.celeryapp import app
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.open_exchange.client import client as openexchange_client
+from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.core.utils.public_holidays import EnricoApi, EnricoApiException
+from r3sourcer.apps.email_interface.utils import get_email_service
 
 
 LOCK_EXPIRE = 5 * 60
+
+
+logger = get_task_logger(__name__)
 
 
 @contextmanager
@@ -112,3 +118,26 @@ def fetch_holiday_dates(country_code, year, month):
 
 
 one_sms_task_at_the_same_time = one_task_at_the_same_time(True)
+
+
+@app.task(bind=True)
+@one_sms_task_at_the_same_time
+def send_trial_email(self, contact_id, auto_password):
+    try:
+        contact = core_models.Contact.objects.get(id=contact_id)
+    except core_models.Contact.DoesNotExist as e:
+        logger.error(e)
+    else:
+        try:
+            email_interface = get_email_service()
+        except ImportError:
+            logger.exception('Cannot load SMS service')
+            return
+
+        data_dict = {
+            'contact': contact,
+            'password': auto_password,
+            'site_url': core_companies_utils.get_site_url(user=contact.user)
+        }
+
+        email_interface.send_tpl(contact.email, tpl_name='trial-user-register', **data_dict)

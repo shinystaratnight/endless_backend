@@ -1449,13 +1449,6 @@ class TrialSerializer(serializers.Serializer):
             raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})
 
         try:
-            if '@' not in email:
-                raise serializers.ValidationError({'email': _('Invalid email')})
-            validate_email(email)
-        except ValidationError:
-            raise serializers.ValidationError({'email': _('Invalid email')})
-
-        try:
             core_models.Contact.objects.get(models.Q(email=email) | models.Q(phone_mobile=phone_mobile))
             key = 'email' if email else 'phone_mobile'
             raise serializers.ValidationError({
@@ -1465,10 +1458,9 @@ class TrialSerializer(serializers.Serializer):
             pass
 
         try:
-            core_models.Company.objects.get(models.Q(name=company_name) | models.Q(website=website))
-            key = 'company_name' if company_name else 'website'
+            core_models.Company.objects.get(name=company_name)
             raise serializers.ValidationError({
-                key: _('Company with this name or website already registered')
+                'company_name': _('Company with this name already registered')
             })
         except core_models.Company.DoesNotExist:
             pass

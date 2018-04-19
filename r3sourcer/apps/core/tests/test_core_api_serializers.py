@@ -1268,10 +1268,3 @@ class TestTrialSerializer:
 
         assert not serializer.is_valid()
         assert 'company_name' in serializer.errors
-
-    def test_validate_company_with_website_exist(self, user_data, company):
-        user_data['website'] = company.website
-        serializer = TrialSerializer(data=user_data)
-
-        assert not serializer.is_valid()
-        assert 'company_name' in serializer.errors
