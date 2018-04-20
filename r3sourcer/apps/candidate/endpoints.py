@@ -315,64 +315,70 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
 
     list_display = (
         {
-            'field': 'contact.picture',
-            'type': constants.FIELD_PICTURE,
-        },
-        'contact', 'contact.is_available',
-        {
-            'label': _('Phone'),
-            'fields': ({
-                'type': constants.FIELD_LINK,
-                'link': 'tel:{field}',
-                'field': 'contact.phone_mobile',
-            }, {
-                'type': constants.FIELD_BUTTON,
-                'action': constants.DEFAULT_ACTION_SEND_SMS,
-                'text': _('SMS'),
-                'icon': 'fa-commenting',
-                'fields': ('contact.phone_mobile',)
-            }, {
-                'type': constants.FIELD_LINK,
-                'link': 'tel:{field}',
-                'field': 'contact.address.phone_landline',
-            }, {
-                'type': constants.FIELD_LINK,
-                'link': 'tel:{field}',
-                'field': 'contact.address.phone_fax',
-            },),
+            'field': 'id',
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'contact.picture',
+                'available': 'contact.is_available',
+                'title': 'contact',
+                'address': 'contact.address',
+                'status': 'active_states',
+            }
         }, {
-            'field': 'contact.email',
-            'link': 'mailto:{field}',
-            'type': constants.FIELD_LINK,
-            'label': _('E-mail'),
-        }, 'contact.address.city', 'contact.address.state', 'contact.gender',
-        'nationality', 'weight', 'height', 'transportation_to_work',
-        'skill_list', 'tag_list', 'candidate_scores.reliability', 'candidate_scores.loyalty',
-        'bmi', 'strength', 'language', 'average_score', 'active_states'
+            'label': _('Contacts'),
+            'fields': (
+                {
+                    'field': 'contact.email',
+                    'link': 'mailto:{field}',
+                    'type': constants.FIELD_LINK,
+                    'label': _('E-mail'),
+                }, {
+                    'type': constants.FIELD_LINK,
+                    'link': 'tel:{field}',
+                    'field': 'contact.phone_mobile',
+                }, {
+                    'type': constants.FIELD_LINK,
+                    'link': 'tel:{field}',
+                    'field': 'contact.address.phone_landline',
+                }, {
+                    'type': constants.FIELD_LINK,
+                    'link': 'tel:{field}',
+                    'field': 'contact.address.phone_fax',
+                },
+            ),
+        }, {
+            'type': constants.FIELD_SKILLS,
+            'field': 'skill_list',
+            'label': _('Skills'),
+        }, {
+            'type': constants.FIELD_TAGS,
+            'field': 'tag_list',
+        }, {
+            'type': constants.FIELD_SKILLS,
+            'field': 'candidate_scores.reliability',
+        }, {
+            'type': constants.FIELD_SKILLS,
+            'field': 'candidate_scores.loyalty',
+        }, {
+            'type': constants.FIELD_SKILLS,
+            'field': 'strength',
+        },
+        'contact.gender', 'nationality', 'weight', 'height', 'transportation_to_work', 'bmi',
+        'language',
     )
 
     list_tabs = [{
-        'label': _('Contacts'),
-        'fields': (
-            'phone', 'contact.email', 'contact.address.city',
-            'contact.address.state',
-        )
+        'label': _('Additional Info'),
+        'fields': ('nationality', 'contact.gender', 'language', 'transportation_to_work', )
     }, {
-        'label': _('Personal'),
-        'fields': (
-            'contact.gender', 'nationality', 'weight', 'height',
-            'transportation_to_work',
-        )
+        'label': _('Phisical Parameters'),
+        'fields': ('height', 'weight', 'bmi', )
     }, {
-        'label': _('Properties'),
-        'fields': (
-            'skill_list', 'tag_list', 'recruitment_agent'
-        )
+        'label': _('Character'),
+        'fields': ('candidate_scores.reliability', 'candidate_scores.loyalty', 'strength', )
     }, {
-        'label': _('Score'),
-        'fields': (
-            'candidate_scores.reliability', 'candidate_scores.loyalty', 'bmi', 'strength', 'language'
-        )
+        'label': _('Tags'),
+        'fields': ('tag_list', )
     }]
 
     search_fields = (
