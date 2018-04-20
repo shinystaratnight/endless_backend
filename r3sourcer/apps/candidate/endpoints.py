@@ -328,7 +328,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'field': 'active_states',
                     'color_attr': 'number',
                     'color': {
-                        'red': [0, 80, 90],
+                        'danger': [0, 80, 90],
                     }
                 },
             }

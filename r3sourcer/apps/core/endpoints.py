@@ -468,41 +468,33 @@ class CompanyEndpoint(ApiEndpoint):
 
     list_display = (
         {
-            'label': _('Company Name'),
-            'type': constants.FIELD_LINK,
-            'endpoint': format_lazy(
-                '{}{{id}}/',
-                api_reverse_lazy('core/companies')
-            ),
-            'field': 'name',
-        }, {
-            'label': _('State'),
-            'type': constants.FIELD_TEXT,
-            'field': 'state',
-        }, {
-            'label': _('City'),
-            'type': constants.FIELD_TEXT,
-            'field': 'city',
+            'field': 'id',
+            'label': _('Personal Info'),
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'logo.thumb',
+                'available': 'available',
+                'title': 'name',
+                'address': 'address.__str__',
+                'description': 'description,'
+            }
         }, {
             'label': _('Primary Contact'),
-            'type': constants.FIELD_LINK,
-            'field': 'manager',
-            'endpoint': format_lazy(
-                '{}{{manager.id}}/',
-                api_reverse_lazy('core/companycontacts')
+            'fields': (
+                {
+                    'type': constants.FIELD_LINK,
+                    'field': 'manager.contact',
+                    'display': '{manager.job_title}',
+                    'endpoint': format_lazy('{}{{manager.id}}/', api_reverse_lazy('core/companycontacts')),
+                },
+                'manager.contact.email', 'manager.contact.phone_mobile'
             ),
         }, {
-            'label': _('Portfolio Manager'),
+            'label': _('Manager'),
             'type': constants.FIELD_LINK,
             'field': 'primary_contact',
-            'endpoint': format_lazy(
-                '{}{{primary_contact.id}}/',
-                api_reverse_lazy('core/companycontacts')
-            ),
-        }, {
-            'label': _('Available'),
-            'read_only': True,
-            'field': 'available',
+            'display': '{primary_contact.job_title}',
+            'endpoint': format_lazy('{}{{primary_contact.id}}/', api_reverse_lazy('core/companycontacts')),
         }, {
             'label': _('Credit Info'),
             'fields': ({
@@ -517,7 +509,12 @@ class CompanyEndpoint(ApiEndpoint):
             }),
         }, {
             'label': _('Company State'),
-            'fields': ('active_states', )
+            'type': constants.FIELD_TAGS,
+            'field': 'active_states',
+            'color_attr': 'number',
+            'color': {
+                'danger': [0, 80, 90],
+            }
         },
     )
 

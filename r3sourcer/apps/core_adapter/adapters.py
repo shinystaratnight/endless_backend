@@ -20,6 +20,7 @@ CUSTOM_FIELD_ATTRS = (
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
     'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
+    'color_attr'
 )
 
 
@@ -184,6 +185,7 @@ class AngularApiAdapter(BaseAdapter):
         field_ui = field.get('ui', {})
         ui_options = (
             'placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display', 'disabledIf',
+            'color_attr',
         )
         adapted['templateOptions'].update({
             'type': component_type,
@@ -633,6 +635,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
             'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query', 'showIf',
+            'color_attr',
         )
 
         for display_field in display_fields:
@@ -676,10 +679,10 @@ class AngularListApiAdapter(AngularApiAdapter):
             adapt_field = {
                 'type': field_type,
                 'field': field,
-                **{o: format_str(display_field_attrs[o], field=field)
+                **{o: format_str(display_field_attrs[o], field=field) if o != 'display' else display_field_attrs[o]
                     for o in options
                     if display_field_attrs.get(o)},
-                **{o: format_str(adapted_field[o], field=field)
+                **{o: format_str(adapted_field[o], field=field) if o != 'display' else display_field_attrs[o]
                     for o in options
                     if o not in display_field_attrs and adapted_field.get(o)}
             }
