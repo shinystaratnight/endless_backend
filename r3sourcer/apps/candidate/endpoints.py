@@ -326,6 +326,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'address': 'contact.address.__str__',
                 'status': {
                     'field': 'active_states',
+                    'color_attr': 'number',
                     'color': {
                         'red': [0, 80, 90],
                     }
@@ -418,11 +419,11 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
             }, {
                 'type': constants.FIELD_CHECKBOX,
                 'field': 'contact.gender',
-                'multople': True,
+                'multiple': True,
             }, {
                 'type': constants.FIELD_CHECKBOX,
                 'field': 'transportation_to_work',
-                'multople': True,
+                'multiple': True,
             }, {
                 'field': 'created_at',
                 'type': constants.FIELD_DATE,

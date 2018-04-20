@@ -19,8 +19,11 @@ class WorkflowStatesColumnMixin():
         states = obj.get_active_states()
 
         return [
-            state.state.name_after_activation or state.state.name_before_activation
-            for state in states
+            {
+                '__str__': state.state.name_after_activation or state.state.name_before_activation,
+                'number': state.state.number,
+                'id': state.state.id,
+            } for state in states
         ]
 
 
