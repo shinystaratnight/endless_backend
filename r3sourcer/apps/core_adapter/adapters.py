@@ -413,6 +413,10 @@ class AngularListApiAdapter(AngularApiAdapter):
                         'value': list_filter.get('value', '__str__'),
                     }
                 })
+
+                if 'multiple' in list_filter:
+                    adapted['multiple'] = list_filter['multiple']
+
                 if constants.FIELD_LINK:
                     adapted['type'] = constants.FIELD_RELATED
             elif field_type in [constants.FIELD_SELECT, constants.FIELD_CHECKBOX]:
@@ -434,18 +438,14 @@ class AngularListApiAdapter(AngularApiAdapter):
                 if callable(choices):
                     choices = choices()
 
-                choices = [{
-                    'label': _('All'),
-                    'value': '',
-                }] + list(choices)
-
                 adapted.update({
                     'query': field_qry,
-                    'options': choices,
+                    'options': list(choices),
                     'default': list_filter.get('default'),
                 })
-                if field_type == constants.FIELD_CHECKBOX:
-                    adapted['type'] = constants.FIELD_SELECT
+
+                if 'multiple' in list_filter:
+                    adapted['multiple'] = list_filter['multiple']
             elif field_type == constants.FIELD_SELECT_MULTIPLE:
                 adapted['data'] = {}
                 if 'endpoint' in list_filter:

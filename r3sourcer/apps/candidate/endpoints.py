@@ -14,7 +14,7 @@ from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import endpoints as core_endpoints
 from r3sourcer.apps.candidate import models as candidate_models
-from r3sourcer.apps.candidate.api import viewsets as candidate_viewsets
+from r3sourcer.apps.candidate.api import viewsets as candidate_viewsets, filters as candidate_filters
 from r3sourcer.apps.candidate.api import serializers as candidate_serializers
 
 
@@ -23,6 +23,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
     model = candidate_models.CandidateContact
     base_viewset = candidate_viewsets.CandidateContactViewset
     serializer = candidate_serializers.CandidateContactSerializer
+    filter_class = candidate_filters.CandidateContactFilter
 
     fieldsets = (
         {
@@ -316,13 +317,19 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
     list_display = (
         {
             'field': 'id',
+            'label': _('Personal Info'),
             'type': constants.FIELD_INFO,
             'values': {
-                'picture': 'contact.picture',
+                'picture': 'contact.picture.thumb',
                 'available': 'contact.is_available',
-                'title': 'contact',
-                'address': 'contact.address',
-                'status': 'active_states',
+                'title': 'contact.__str__',
+                'address': 'contact.address.__str__',
+                'status': {
+                    'field': 'active_states',
+                    'color': {
+                        'red': [0, 80, 90],
+                    }
+                },
             }
         }, {
             'label': _('Contacts'),
@@ -390,14 +397,37 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         states_part = partial(
             core_models.WorkflowNode.get_model_all_states, candidate_models.CandidateContact
         )
-        list_filter = [{
-            'type': constants.FIELD_SELECT,
-            'field': 'active_states',
-            'choices': lazy(states_part, list),
-        }, 'contact.gender', 'transportation_to_work', {
-            'field': 'created_at',
-            'type': constants.FIELD_DATE,
-        }]
+        list_filter = [
+            {
+                'type': constants.FIELD_RELATED,
+                'field': 'skill',
+                'label': _('Skills'),
+                'endpoint': api_reverse_lazy('skills/skills'),
+                'multiple': True,
+            }, {
+                'type': constants.FIELD_RELATED,
+                'field': 'tag',
+                'label': _('Tags'),
+                'endpoint': api_reverse_lazy('core/tags'),
+                'multiple': True,
+            }, {
+                'type': constants.FIELD_SELECT,
+                'field': 'active_states',
+                'choices': lazy(states_part, list),
+                'multiple': True,
+            }, {
+                'type': constants.FIELD_CHECKBOX,
+                'field': 'contact.gender',
+                'multople': True,
+            }, {
+                'type': constants.FIELD_CHECKBOX,
+                'field': 'transportation_to_work',
+                'multople': True,
+            }, {
+                'field': 'created_at',
+                'type': constants.FIELD_DATE,
+            }
+        ]
 
         return list_filter
 
