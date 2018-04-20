@@ -67,6 +67,10 @@ class UUIDModel(models.Model):
     def use_logger(cls):
         return True
 
+    @classmethod
+    def is_owned(cls):
+        return True
+
     @property
     def object_history(self):
         return endless_logger.get_object_history(self.__class__, self.pk)
@@ -487,6 +491,10 @@ class Country(UUIDModel, AbstractCountry):
         verbose_name = _("Country")
         verbose_name_plural = _("Countries")
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class Region(UUIDModel,
              AbstractRegion):
@@ -494,6 +502,10 @@ class Region(UUIDModel,
     class Meta:
         verbose_name = _("State/District")
         verbose_name_plural = _("States/Districts")
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
     @classmethod
     def get_countrys_regions(cls, country_code):
@@ -507,6 +519,10 @@ class City(UUIDModel,
     class Meta:
         verbose_name = _("City")
         verbose_name_plural = _("Cities")
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
 
 class Address(UUIDModel):
@@ -1317,6 +1333,10 @@ class FileStorage(UUIDModel):
         verbose_name = _("File Storage")
         verbose_name_plural = _("File Storage")
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class CompanyLocalization(UUIDModel):
     field_name = models.CharField(
@@ -1452,6 +1472,10 @@ class Note(UUIDModel):
         verbose_name = _("Contact Note")
         verbose_name_plural = _("Contact Notes")
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class Tag(MPTTModel, UUIDModel):
     name = models.CharField(max_length=63, verbose_name=_("Tag Name"))
@@ -1501,6 +1525,10 @@ class VAT(UUIDModel):
     class Meta:
         verbose_name = _("VAT")
         verbose_name_plural = _("VATs")
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
 
 class AbstractBaseOrder(
@@ -1911,6 +1939,10 @@ class Workflow(UUIDModel):
     def __str__(self):
         return self.name
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class WorkflowNode(UUIDModel):
     workflow = models.ForeignKey(
@@ -2084,6 +2116,10 @@ class WorkflowNode(UUIDModel):
         return [
             {'label': s['name_after_activation'] or s['name_before_activation'], 'value': s['number']} for s in states
         ]
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
 
 class WorkflowObject(UUIDModel):
@@ -2343,6 +2379,10 @@ class CurrencyExchangeRates(UUIDModel):
         verbose_name_plural = _("Currency Exchange Rates")
         unique_together = ('from_currency', 'to_currency')
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class TemplateMessage(UUIDModel):
 
@@ -2415,6 +2455,10 @@ class TemplateMessage(UUIDModel):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
     def clean(self):
         """
@@ -2612,6 +2656,10 @@ class PublicHoliday(UUIDModel):
             country = Country.objects.get(code2='AU')
         return cls.objects.filter(country=country, date=date).exists()
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class ExtranetNavigation(MPTTModel, UUIDModel):
     CLIENT = 'client'
@@ -2639,6 +2687,10 @@ class ExtranetNavigation(MPTTModel, UUIDModel):
     def __str__(self):
         return self.name
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class Role(UUIDModel):
     ROLE_NAMES = Choices(
@@ -2651,6 +2703,10 @@ class Role(UUIDModel):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
 
 connect_default_signals(Country)

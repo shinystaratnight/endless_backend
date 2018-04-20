@@ -1,10 +1,21 @@
+import importlib
+
+from django.conf import settings
 from django.db import models
 
 from .utils import get_field_value_by_field_name
 
 
 def get_logger_queryset(self):
-    return LoggerQuerySet(self.model, using=self._db)
+    queryset_class = getattr(settings, 'QUERYSET_CLASS', None)
+
+    if queryset_class is not None:
+        class_name = queryset_class.split('.')[-1]
+        QuerySetClass = getattr(importlib.import_module(queryset_class.rsplit('.', 1)[0]), class_name)
+    else:
+        QuerySetClass = LoggerQuerySet
+
+    return QuerySetClass(self.model, using=self._db)
 
 
 class LoggerQuerySet(models.QuerySet):
