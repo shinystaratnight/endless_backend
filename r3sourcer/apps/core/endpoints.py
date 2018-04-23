@@ -66,14 +66,17 @@ class ContactEndpoint(ApiEndpoint):
                     'display': _('Candidate'),
                     'field': 'candidate_contacts',
                     'inline': True,
+                    'type': constants.FIELD_LINK,
                 }, {
                     'display': _('Company Contact'),
                     'field': 'company_contact',
                     'inline': True,
+                    'type': constants.FIELD_LINK,
                 }, {
                     'display': _('Master Company'),
                     'field':  'master_company',
                     'inline': True,
+                    'type': constants.FIELD_LINK,
                 }
             )
         }
