@@ -20,7 +20,7 @@ CUSTOM_FIELD_ATTRS = (
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
     'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
-    'color_attr'
+    'color_attr', 'outline', 'inline'
 )
 
 
@@ -635,7 +635,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
             'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query', 'showIf',
-            'color_attr',
+            'color_attr', 'outline', 'inline',
         )
 
         for display_field in display_fields:
