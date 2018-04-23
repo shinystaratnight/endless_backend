@@ -67,16 +67,21 @@ class ContactEndpoint(ApiEndpoint):
                     'field': 'candidate_contacts',
                     'inline': True,
                     'type': constants.FIELD_LINK,
+                    'endpoint': format_lazy(
+                        '{}{{candidate_contacts.id}}', api_reverse_lazy('candidate/candidatecontacts')
+                    ),
                 }, {
                     'display': _('Company Contact'),
                     'field': 'company_contact',
                     'inline': True,
                     'type': constants.FIELD_LINK,
+                    'endpoint': format_lazy('{}{{company_contact.id}}', api_reverse_lazy('core/companycontacts')),
                 }, {
                     'display': _('Master Company'),
                     'field':  'master_company',
                     'inline': True,
                     'type': constants.FIELD_LINK,
+                    'endpoint': format_lazy('{}{{candidate_contacts.id}}', api_reverse_lazy('core/companies')),
                 }
             )
         }
