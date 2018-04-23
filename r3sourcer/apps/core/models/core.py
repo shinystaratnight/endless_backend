@@ -40,7 +40,6 @@ from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
-from ..utils.user import get_default_company
 from ..managers import (
     TagManager, AbstractCompanyContactOwnerManager, AbstractObjectOwnerManager
 )
@@ -2697,6 +2696,7 @@ class Role(UUIDModel):
         ('candidate', _('Candidate')),
         ('manager', _('Manager')),
         ('client', _('Client')),
+        ('trial', _('Trial')),
     )
 
     name = models.CharField(max_length=255, choices=ROLE_NAMES)

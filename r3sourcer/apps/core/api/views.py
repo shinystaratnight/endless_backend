@@ -1,7 +1,9 @@
 import copy
+import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
+from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
@@ -10,9 +12,10 @@ from rest_framework import status, authentication
 from rest_framework.response import Response
 from rest_framework.views import exception_handler, APIView
 
+from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core.api import serializers
 from r3sourcer.apps.core import models
-from r3sourcer.apps.core.tasks import send_trial_email
+from r3sourcer.apps.core.tasks import send_trial_email, cancel_trial
 
 
 User = get_user_model()
@@ -58,6 +61,12 @@ class TrialUserView(APIView):
         contact.last_name = serializer.validated_data['last_name']
         contact.save(update_fields=['first_name', 'last_name'])
 
+        # set role and permissions
+        trial_role, created = models.Role.objects.get_or_create(name=models.Role.ROLE_NAMES.trial)
+        new_user.role.add(trial_role)
+        permission_list = GlobalPermission.objects.all()
+        new_user.user_permissions.add(*permission_list)
+
         company = models.Company.objects.create(
             name=serializer.validated_data['company_name'],
             type=models.Company.COMPANY_TYPES.master,
@@ -66,11 +75,12 @@ class TrialUserView(APIView):
         company_contact = models.CompanyContact.objects.create(contact=contact)
         models.CompanyContactRelationship.objects.create(company=company, company_contact=company_contact)
 
-        send_trial_email.apply_async([contact.id, new_password], countdown=10)
-
         domain = serializer.validated_data['website']
         site, created = Site.objects.get_or_create(domain=domain, defaults={'name': domain})
         models.SiteCompany.objects.get_or_create(company=company, site=site)
+
+        send_trial_email.apply_async([contact.id, new_password], countdown=10)
+        cancel_trial.apply_async([new_user.id], eta=timezone.now() + datetime.timedelta(days=30))
 
         return Response({
             'status': 'success',

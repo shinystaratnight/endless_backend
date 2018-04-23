@@ -10,6 +10,7 @@ from django.utils import timezone
 
 from r3sourcer.celeryapp import app
 
+from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.open_exchange.client import client as openexchange_client
 from r3sourcer.apps.core.utils import companies as core_companies_utils
@@ -141,3 +142,13 @@ def send_trial_email(self, contact_id, auto_password):
         }
 
         email_interface.send_tpl(contact.email, tpl_name='trial-user-register', **data_dict)
+
+
+@shared_task()
+def cancel_trial(user_id):
+    try:
+        user = core_models.User.objects.get(id=user_id, role__name=core_models.Role.ROLE_NAMES.trial)
+    except core_models.User.DoesNotExist:
+        logger.exception('Cannot find trial user')
+    else:
+        user.user_permissions.exclude(codename__icontains='_get').delete()
