@@ -20,6 +20,7 @@ CUSTOM_FIELD_ATTRS = (
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
     'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
+    'color_attr', 'outline', 'inline'
 )
 
 
@@ -41,7 +42,7 @@ def to_html_tag(component_type):
         constants.FIELD_RADIO_GROUP, constants.FIELD_CHECKBOX_GROUP, constants.FIELD_BUTTON, constants.FIELD_LINK,
         constants.FIELD_SUBMIT, constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_STATIC_ICON,
         constants.FIELD_RULE, constants.FIELD_ICON, constants.FIELD_TIMELINE, constants.FIELD_LIST,
-        constants.FIELD_JOB_DATES,
+        constants.FIELD_JOB_DATES, constants.FIELD_SKILLS, constants.FIELD_TAGS, constants.FIELD_INFO
     ]
     if component_type in custom_types:
         return component_type
@@ -184,6 +185,7 @@ class AngularApiAdapter(BaseAdapter):
         field_ui = field.get('ui', {})
         ui_options = (
             'placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display', 'disabledIf',
+            'color_attr',
         )
         adapted['templateOptions'].update({
             'type': component_type,
@@ -413,6 +415,10 @@ class AngularListApiAdapter(AngularApiAdapter):
                         'value': list_filter.get('value', '__str__'),
                     }
                 })
+
+                if 'multiple' in list_filter:
+                    adapted['multiple'] = list_filter['multiple']
+
                 if constants.FIELD_LINK:
                     adapted['type'] = constants.FIELD_RELATED
             elif field_type in [constants.FIELD_SELECT, constants.FIELD_CHECKBOX]:
@@ -434,18 +440,14 @@ class AngularListApiAdapter(AngularApiAdapter):
                 if callable(choices):
                     choices = choices()
 
-                choices = [{
-                    'label': _('All'),
-                    'value': '',
-                }] + list(choices)
-
                 adapted.update({
                     'query': field_qry,
-                    'options': choices,
+                    'options': list(choices),
                     'default': list_filter.get('default'),
                 })
-                if field_type == constants.FIELD_CHECKBOX:
-                    adapted['type'] = constants.FIELD_SELECT
+
+                if 'multiple' in list_filter:
+                    adapted['multiple'] = list_filter['multiple']
             elif field_type == constants.FIELD_SELECT_MULTIPLE:
                 adapted['data'] = {}
                 if 'endpoint' in list_filter:
@@ -633,6 +635,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
             'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query', 'showIf',
+            'color_attr', 'outline', 'inline',
         )
 
         for display_field in display_fields:
@@ -676,10 +679,10 @@ class AngularListApiAdapter(AngularApiAdapter):
             adapt_field = {
                 'type': field_type,
                 'field': field,
-                **{o: format_str(display_field_attrs[o], field=field)
+                **{o: format_str(display_field_attrs[o], field=field) if o != 'display' else display_field_attrs[o]
                     for o in options
                     if display_field_attrs.get(o)},
-                **{o: format_str(adapted_field[o], field=field)
+                **{o: format_str(adapted_field[o], field=field) if o != 'display' else display_field_attrs[o]
                     for o in options
                     if o not in display_field_attrs and adapted_field.get(o)}
             }

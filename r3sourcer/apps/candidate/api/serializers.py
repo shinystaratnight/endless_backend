@@ -121,17 +121,13 @@ class CandidateContactSerializer(
         if not obj:
             return
 
-        return ', '.join(obj.candidate_skills.all().values_list(
-            'skill__name', flat=True)
-        )
+        return SkillRelSerializer(obj.candidate_skills.all(), many=True).data
 
     def get_tag_list(self, obj):
         if not obj:
             return
 
-        return ', '.join(obj.tag_rels.all().values_list(
-            'tag__name', flat=True)
-        )
+        return TagRelSerializer(obj.tag_rels.all(), many=True).data
 
 
 class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):

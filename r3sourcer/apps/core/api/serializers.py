@@ -1056,7 +1056,8 @@ class InvoiceRuleSerializer(ApiBaseModelSerializer):
 
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
     method_fields = (
-        'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved'
+        'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
+        'address',
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
@@ -1109,7 +1110,10 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             return
 
         if company_rel and company_rel.primary_contact:
-            return core_field.ApiBaseRelatedField.to_read_only_data(company_rel.primary_contact)
+            return dict(
+                job_title=company_rel.primary_contact.job_title,
+                **core_field.ApiBaseRelatedField.to_read_only_data(company_rel.primary_contact.contact)
+            )
 
     def get_master_company(self, obj):
         if not obj:
@@ -1138,17 +1142,21 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         relation = obj.regular_companies.all().last()
         return relation and core_field.ApiBaseRelatedField.to_read_only_data(relation)
 
-    def get_address(self, obj):
+    def _get_address(self, obj):
         return obj.company_addresses.filter(hq=True).first()
 
+    def get_address(self, obj):
+        address = self._get_address(obj)
+        return address and core_field.ApiBaseRelatedField.to_read_only_data(address.address)
+
     def get_state(self, obj):
-        address = self.get_address(obj)
+        address = self._get_address(obj)
 
         if address:
             return address.address.state and address.address.state.name
 
     def get_city(self, obj):
-        address = self.get_address(obj)
+        address = self._get_address(obj)
 
         if address:
             return address.address.city and address.address.city.name

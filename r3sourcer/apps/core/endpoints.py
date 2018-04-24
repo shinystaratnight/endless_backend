@@ -36,38 +36,54 @@ class ContactEndpoint(ApiEndpoint):
 
     list_display = (
         {
-            'field': 'picture',
-            'type': constants.FIELD_PICTURE,
-        },
-        'title', 'first_name', 'last_name', 'address.state', 'address.city',
-        {
-            'field': 'email',
-            'link': 'mailto:{field}',
-            'type': constants.FIELD_LINK,
+            'field': 'id',
+            'label': _('Personal Info'),
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'picture.thumb',
+                'available': 'availability',
+                'title': '__str__',
+                'address': 'address.__str__',
+            }
         }, {
-            'label': _('Phone'),
-            'fields': ({
-                'type': constants.FIELD_LINK,
-                'link': 'tel:{field}',
-                'field': 'phone_mobile',
-            }, {
-                'type': constants.FIELD_LINK,
-                'link': 'tel:{field}',
-                'field': 'address.phone_landline',
-            }, {
-                'type': constants.FIELD_LINK,
-                'link': 'tel:{field}',
-                'field': 'address.phone_fax',
-            },),
+            'label': _('Contact'),
+            'fields': (
+                {
+                    'field': 'email',
+                    'link': 'mailto:{field}',
+                    'type': constants.FIELD_LINK,
+                    'label': _('E-mail'),
+                }, {
+                    'type': constants.FIELD_LINK,
+                    'link': 'tel:{field}',
+                    'field': 'phone_mobile',
+                }
+            ),
         }, {
-            'field': 'availability',
-            'type': constants.FIELD_ICON
-        }, {
-            'field': 'is_candidate_contact',
-            'type': constants.FIELD_ICON
-        }, {
-            'field': 'is_company_contact',
-            'type': constants.FIELD_ICON
+            'label': _('Relations'),
+            'fields': (
+                {
+                    'display': _('Candidate'),
+                    'field': 'candidate_contacts',
+                    'inline': True,
+                    'type': constants.FIELD_LINK,
+                    'endpoint': format_lazy(
+                        '{}{{candidate_contacts.id}}', api_reverse_lazy('candidate/candidatecontacts')
+                    ),
+                }, {
+                    'display': _('Company Contact'),
+                    'field': 'company_contact',
+                    'inline': True,
+                    'type': constants.FIELD_LINK,
+                    'endpoint': format_lazy('{}{{company_contact.id}}', api_reverse_lazy('core/companycontacts')),
+                }, {
+                    'display': _('Master Company'),
+                    'field':  'master_company',
+                    'inline': True,
+                    'type': constants.FIELD_LINK,
+                    'endpoint': format_lazy('{}{{candidate_contacts.id}}', api_reverse_lazy('core/companies')),
+                }
+            )
         }
     )
 
@@ -468,46 +484,57 @@ class CompanyEndpoint(ApiEndpoint):
 
     list_display = (
         {
-            'label': _('Company Name'),
-            'type': constants.FIELD_LINK,
-            'endpoint': format_lazy(
-                '{}{{id}}/',
-                api_reverse_lazy('core/companies')
-            ),
-            'field': 'name',
-        }, {
-            'label': _('State'),
-            'type': constants.FIELD_TEXT,
-            'field': 'state',
-        }, {
-            'label': _('City'),
-            'type': constants.FIELD_TEXT,
-            'field': 'city',
+            'field': 'id',
+            'label': _('Personal Info'),
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'logo.thumb',
+                'available': 'available',
+                'title': 'name',
+                'address': 'address.__str__',
+                'description': 'description',
+            }
         }, {
             'label': _('Primary Contact'),
-            'type': constants.FIELD_LINK,
-            'field': 'manager',
-            'endpoint': format_lazy(
-                '{}{{manager.id}}/',
-                api_reverse_lazy('core/companycontacts')
+            'fields': (
+                {
+                    'type': constants.FIELD_LINK,
+                    'field': 'manager.contact',
+                    'display': '{manager.job_title}',
+                    'endpoint': format_lazy('{}{{manager.id}}/', api_reverse_lazy('core/companycontacts')),
+                }, {
+                    'field': 'manager.contact.email',
+                    'link': 'mailto:{field}',
+                    'type': constants.FIELD_LINK,
+                    'label': _('E-mail'),
+                }, {
+                    'type': constants.FIELD_LINK,
+                    'link': 'tel:{field}',
+                    'field': 'manager.contact.phone_mobile',
+                }
             ),
         }, {
-            'label': _('Portfolio Manager'),
+            'label': _('Manager'),
             'type': constants.FIELD_LINK,
             'field': 'primary_contact',
-            'endpoint': format_lazy(
-                '{}{{primary_contact.id}}/',
-                api_reverse_lazy('core/companycontacts')
-            ),
-        }, {
-            'label': _('Available'),
-            'read_only': True,
-            'field': 'available',
+            'display': '{primary_contact.job_title}',
+            'endpoint': format_lazy('{}{{primary_contact.id}}/', api_reverse_lazy('core/companycontacts')),
         }, {
             'label': _('Credit Info'),
             'fields': ({
                 'type': constants.FIELD_STATIC,
                 'field': 'credit_approved',
+            }, {
+                'field': 'credit_check',
+                'type': constants.FIELD_ICON,
+                'values': {
+                    True: 'circle',
+                    False: 'circle',
+                },
+                'color': {
+                    False: 'danger',
+                    True: 'success',
+                },
             }, {
                 'type': constants.FIELD_STATIC,
                 'field': 'approved_credit_limit',
@@ -517,7 +544,13 @@ class CompanyEndpoint(ApiEndpoint):
             }),
         }, {
             'label': _('Company State'),
-            'fields': ('active_states', )
+            'type': constants.FIELD_TAGS,
+            'field': 'active_states',
+            'color_attr': 'number',
+            'outline': True,
+            'color': {
+                'danger': [0, 80, 90],
+            }
         },
     )
 

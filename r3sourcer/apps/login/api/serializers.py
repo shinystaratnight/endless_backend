@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from phonenumber_field import phonenumber
 
-from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
+from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer, ApiContactImageFieldsMixin
 from r3sourcer.apps.core.models import Contact
 
 from .. import models
@@ -58,14 +58,20 @@ class TokenLoginSerializer(ApiBaseModelSerializer):
         fields = ('contact', 'redirect_to')
 
 
-class ContactLoginSerializer(ApiBaseModelSerializer):
+class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
     name = serializers.SerializerMethodField()
     contact_type = serializers.CharField(source='get_role', read_only=True)
     contact_id = serializers.UUIDField(source='get_role_id', read_only=True)
 
+    image_fields = ('picture', )
+    method_fields = ('company', )
+
     class Meta:
         model = Contact
-        fields = ('id', 'name', 'contact_type', 'contact_id')
+        fields = ('id', 'name', 'contact_type', 'contact_id', 'picture')
 
     def get_name(self, obj):
         return str(obj)
+
+    def get_company(self, obj):
+        return obj.get_closest_company().name
