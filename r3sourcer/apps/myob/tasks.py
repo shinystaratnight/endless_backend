@@ -3,6 +3,8 @@ import datetime
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
+from django.db.models import Q
+
 from r3sourcer.apps.core.models import Company, Invoice
 from r3sourcer.apps.core.tasks import one_task_at_the_same_time
 from r3sourcer.apps.core.utils.user import get_default_company
@@ -46,15 +48,20 @@ def sync_to_myob(self):
     Sync candidate contacts, clients, jobsites to myob.
     """
 
-    companies = Company.objects.filter(company_file_tokens__isnull=False)
+    companies = Company.objects.filter(
+        Q(myob_settings__invoice_company_file__isnull=False) |
+        Q(myob_settings__timesheet_company_file__isnull=False)
+    )
     for company in companies:
-        myob_client = get_myob_client_for_account(company)
+        company_settings = getattr(company, 'myob_settings', None)
 
-        # do:
-        # sync each class
-        sync_candidate_contacts_to_myob(myob_client, company)
-        sync_companies_to_myob(myob_client, company)
-        # done;
+        if company_settings and company_settings.timesheet_company_file:
+            myob_client = get_myob_client(cf_id=company_settings.timesheet_company_file.cf_id)
+            sync_candidate_contacts_to_myob(myob_client, company)
+
+        if company_settings and company_settings.invoice_company_file:
+            myob_client = get_myob_client(cf_id=company_settings.invoice_company_file.cf_id)
+            sync_companies_to_myob(myob_client, company)
 
 
 @app.task(bind=True)
@@ -67,7 +74,12 @@ def sync_timesheets(self):
     ).select_related('job_offer__shift__date__job__jobsite', 'job_offer__candidate_contact')
 
     company = get_default_company()
-    myob_client = get_myob_client(company=company)
+    company_settings = getattr(company, 'myob_settings', None)
+    if not company_settings or not company_settings.timesheet_company_file:
+        logger.warn('Company has no TimeSheet Company Files configured')
+        return
+
+    myob_client = get_myob_client(cf_id=company_settings.timesheet_company_file.cf_id)
     sync_service = TimeSheetSync(myob_client, company=company)
     candidate_service = CandidateSync(myob_client, company=company)
 
