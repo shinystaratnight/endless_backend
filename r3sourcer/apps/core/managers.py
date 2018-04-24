@@ -23,7 +23,9 @@ class AbstractObjectOwnerQuerySet(LoggerQuerySet):
         lookups = self.get_lookups(_obj)
 
         if not lookups:
+            print('!!')
             lookups = self._get_obj_related_lookups(_obj)
+            print('!!!', lookups)
 
         if lookups:
             from operator import __or__ as OR
@@ -32,6 +34,9 @@ class AbstractObjectOwnerQuerySet(LoggerQuerySet):
 
     def get_lookups(self, _obj, path=''):
         path_list = []
+
+        if _obj is None:
+            return path_list
 
         related_fields = [
             f for f in self.model._meta.get_fields()

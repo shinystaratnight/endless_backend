@@ -134,6 +134,7 @@ class CompanyGroupListView(ListAPIView):
     Returns list of Groups of a given Company.
     """
     serializer_class = serializers.GroupSerializer
+    action = 'list'
 
     def get_queryset(self):
         company = self.request.user.company
@@ -183,6 +184,7 @@ class UserGroupListView(ListAPIView):
     Returns list of Groups of a given User.
     """
     serializer_class = serializers.UserGroupSerializer
+    action = 'list'
 
     def get_queryset(self):
         user = get_object_or_404(User, id=self.kwargs['id'])

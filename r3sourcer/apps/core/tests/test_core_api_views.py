@@ -14,7 +14,8 @@ class TestTrialUserView:
         return client.post(url, data=data)
 
     @mock.patch('r3sourcer.apps.core.api.views.send_trial_email')
-    def test_register_success(self, mock_task, client, contact_phone):
+    @mock.patch('r3sourcer.apps.core.api.views.cancel_trial')
+    def test_register_success(self, mock_task, mock_cancel, client, contact_phone):
         data = {
             'first_name': 'testuser42',
             'last_name': 'tester42',

@@ -44,7 +44,7 @@ class TestCandidateContactSerializer:
         res = serializer_obj.get_active_states(candidate)
 
         assert len(res) == 1
-        assert res == ['test']
+        assert res == [{'id': None, 'number': None, '__str__': 'test'}]
 
     def test_get_active_states_none(self, serializer_obj):
         res = serializer_obj.get_active_states(None)
@@ -86,13 +86,13 @@ class TestCandidateContactSerializer:
                             skill_rel):
         res = serializer_obj.get_skill_list(candidate)
 
-        assert res == 'Driver'
+        assert res[0]['skill']['__str__'] == 'Driver'
 
     def test_get_skill_list_no_items(self, candidate,
                                      serializer_obj):
         res = serializer_obj.get_skill_list(candidate)
 
-        assert res == ''
+        assert res == []
 
     def test_get_skill_list_none(self, serializer_obj):
         res = serializer_obj.get_skill_list(None)
@@ -103,13 +103,13 @@ class TestCandidateContactSerializer:
                           tag_rel):
         res = serializer_obj.get_tag_list(candidate)
 
-        assert res == 'Tag name'
+        assert res[0]['tag']['__str__'] == 'Tag name'
 
     def test_get_tag_list_no_items(self, candidate,
                                    serializer_obj):
         res = serializer_obj.get_tag_list(candidate)
 
-        assert res == ''
+        assert res == []
 
     def test_get_tag_list_none(self, serializer_obj):
         res = serializer_obj.get_tag_list(None)

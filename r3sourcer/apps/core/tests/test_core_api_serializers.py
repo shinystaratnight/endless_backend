@@ -993,7 +993,7 @@ class TestCompanyAddressSerializer:
 
                 state = serializer.get_active_states(company_address)
 
-                assert state == ['new']
+                assert state == [{'id': None, 'number': 10, '__str__': 'new'}]
 
     def test_get_active_states_obj_company_rel_none(self, company_address, company_rel):
         serializer = CompanyAddressTestSerializer()

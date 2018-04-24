@@ -127,9 +127,9 @@ class TestSiteMasterCompanyFilterBackend:
         queryset = Site.objects.all()
         assert queryset == self.backend_filter.filter_list_queryset(get_request, queryset, None)
 
-    def test_filter_list_queryset_empty(self, user, get_request):
+    def test_filter_list_queryset_empty(self, user, get_request, staff_relationship):
         get_request.user = user
-        queryset = Site.objects.all()
+        queryset = CompanyContactRelationship.objects.all()
         filtered = self.backend_filter.filter_list_queryset(get_request, queryset, None)
         assert len(queryset) != len(filtered)
         assert len(filtered) == 0
@@ -143,7 +143,7 @@ class TestSiteMasterCompanyFilterBackend:
         get_request.user = staff_company_contact.contact.user
         queryset = Site.objects.all()
         filtered = self.backend_filter.filter_list_queryset(get_request, queryset, None)
-        assert len(filtered) == 1
+        assert len(filtered) == 2
         assert site_company.site in filtered
 
 

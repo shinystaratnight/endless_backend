@@ -1,17 +1,13 @@
 import binascii
 import copy
-from datetime import datetime
-from unittest.mock import patch
 
 import pytest
 import pytz
 from django.core.files.base import ContentFile
-from django.core.management import call_command
 from django.utils import timezone
 from r3sourcer.apps.core.models import Company, CompanyContact, Contact, User
 
-from r3sourcer.apps.activity.models import (Activity, ActivityDate, ActivityRepeat,
-                                     ActivityTemplate)
+from r3sourcer.apps.activity.models import Activity, ActivityDate, ActivityRepeat, ActivityTemplate
 
 
 @pytest.fixture
