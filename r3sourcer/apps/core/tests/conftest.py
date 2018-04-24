@@ -166,6 +166,7 @@ def company(db, manager):
         business_id='111',
         registered_for_gst=True,
         manager=manager,
+        website='test.company.tt',
         type=models.Company.COMPANY_TYPES.master,
     )
 
@@ -261,6 +262,11 @@ def picture(faker):
 @pytest.fixture
 def contact_phone():
     return '+41789272696'
+
+
+@pytest.fixture
+def contact_phone_sec():
+    return '+41789272697'
 
 
 @pytest.fixture

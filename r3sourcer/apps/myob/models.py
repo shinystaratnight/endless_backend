@@ -6,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import UUIDModel, Company, User
+from r3sourcer.apps.core.managers import AbstractObjectOwnerManager
 
 
 class MYOBWatchdogModel(models.Model):
@@ -200,7 +201,7 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
         )
 
 
-class MYOBCompanyFileTokenManager(models.Manager):
+class MYOBCompanyFileTokenManager(AbstractObjectOwnerManager):
 
     def enabled(self, date=None):
         date = date or timezone.localtime(timezone.now()).date()

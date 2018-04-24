@@ -25,6 +25,7 @@ from . import permissions, serializers
 from .decorators import list_route, detail_route
 
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
+from r3sourcer.apps.core.api.permissions import SiteMasterCompanyFilterBackend
 from r3sourcer.apps.core_adapter import constants
 
 

@@ -273,6 +273,7 @@ CELERY_ROUTES = {}
 REST_FRAMEWORK = {
     'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
     'DEFAULT_FILTER_BACKENDS': (
+        'r3sourcer.apps.core.api.permissions.SiteMasterCompanyFilterBackend',
         'django_filters.rest_framework.DjangoFilterBackend',
         'rest_framework.filters.SearchFilter',
         'r3sourcer.apps.core.api.filters.ApiOrderingFilter',
@@ -412,3 +413,6 @@ CITIES_LIGHT_INCLUDE_CITY_TYPES = [
 
 
 SUPERVISOR_DECLINE_TIMEOUT = 4 * 60 * 60
+
+
+QUERYSET_CLASS = env('QUERYSET_CLASS', 'r3sourcer.apps.core.managers.AbstractObjectOwnerQuerySet')

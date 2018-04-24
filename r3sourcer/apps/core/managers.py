@@ -5,16 +5,21 @@ from django.db import models
 from django.db.models import Q
 from mptt.managers import TreeManager
 
+from r3sourcer.apps.logger.query import LoggerQuerySet
+
 
 class TagManager(TreeManager):
     def active(self):
         return self.get_queryset().filter(active=True)
 
 
-class AbstractObjectOwnerManager(models.Manager):
+class AbstractObjectOwnerQuerySet(LoggerQuerySet):
     passed_models = []
 
     def owned_by(self, _obj):
+        if not self.model.is_owned():
+            return self
+
         lookups = self.get_lookups(_obj)
 
         if not lookups:
@@ -22,8 +27,8 @@ class AbstractObjectOwnerManager(models.Manager):
 
         if lookups:
             from operator import __or__ as OR
-            return super().get_queryset().filter(reduce(OR, lookups)).distinct()
-        return super().get_queryset().none()
+            return self.filter(reduce(OR, lookups)).distinct()
+        return self.none()
 
     def get_lookups(self, _obj, path=''):
         path_list = []
@@ -41,11 +46,8 @@ class AbstractObjectOwnerManager(models.Manager):
 
             if related_field.related_model == _obj._meta.model:
                 path_list.append(Q(**{cur_path: _obj}))
-            elif (related_field.related_model and
-                    hasattr(related_field.related_model.objects, 'get_lookups')):
-                path_list.extend(related_field.related_model.objects.get_lookups(
-                    _obj, cur_path
-                ))
+            elif (related_field.related_model and hasattr(related_field.related_model.objects, 'get_lookups')):
+                path_list.extend(related_field.related_model.objects.get_lookups(_obj, cur_path))
 
         return path_list
 
@@ -62,9 +64,7 @@ class AbstractObjectOwnerManager(models.Manager):
                 if not is_rel_direct:
                     qs = qs.owned_by(_obj)
 
-                related_queryset_result = qs.filter(null_filter).values_list(
-                    rel.field.name, flat=True
-                )
+                related_queryset_result = qs.filter(null_filter).values_list(rel.field.name, flat=True)
 
                 if related_queryset_result:
                     q_name = 'id__in'
@@ -72,8 +72,13 @@ class AbstractObjectOwnerManager(models.Manager):
 
                     if is_rel_direct:
                         break
+
         self.passed_models.remove(self.model)
         return lookups
+
+
+class AbstractObjectOwnerManager(models.Manager.from_queryset(AbstractObjectOwnerQuerySet)):
+    pass
 
 
 class AbstractCompanyContactOwnerManager(AbstractObjectOwnerManager):

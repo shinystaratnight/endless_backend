@@ -8,10 +8,12 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.core.validators import validate_email
 from django.db import models
 from django.utils import six, timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
+from phonenumber_field import phonenumber
 from rest_framework import serializers, exceptions
 from rest_framework.fields import empty
 
@@ -1434,3 +1436,41 @@ class InvoiceLineSerializer(ApiBaseModelSerializer):
                 'job_offer': ('id', 'candidate_contact'),
             })
         })
+
+
+class TrialSerializer(serializers.Serializer):
+
+    first_name = serializers.CharField()
+    last_name = serializers.CharField()
+    email = serializers.EmailField()
+    phone_mobile = serializers.CharField()
+    company_name = serializers.CharField(max_length=127)
+    website = serializers.CharField()
+
+    def validate(self, data):
+        email = data['email']
+        company_name = data['company_name']
+        website = data['website']
+        phone_mobile = phonenumber.to_python(data['phone_mobile'])
+
+        if not phone_mobile or not phone_mobile.is_valid():
+            raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})
+
+        try:
+            core_models.Contact.objects.get(models.Q(email=email) | models.Q(phone_mobile=phone_mobile))
+            key = 'email' if email else 'phone_mobile'
+            raise serializers.ValidationError({
+                key: _('User with this email or phone number already registered')
+            })
+        except core_models.Contact.DoesNotExist:
+            pass
+
+        try:
+            core_models.Company.objects.get(name=company_name)
+            raise serializers.ValidationError({
+                'company_name': _('Company with this name already registered')
+            })
+        except core_models.Company.DoesNotExist:
+            pass
+
+        return data

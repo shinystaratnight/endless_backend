@@ -2,7 +2,7 @@ from dry_rest_permissions.generics import DRYPermissions, DRYPermissionFiltersBa
 from rest_framework import permissions
 
 from ..service import factory
-from ..utils.companies import get_master_companies, get_closest_companies
+from ..utils.companies import get_master_companies, get_closest_companies, get_site_master_company
 
 
 class SitePermissions(DRYPermissions):
@@ -56,8 +56,14 @@ class SiteMasterCompanyFilterBackend(DRYPermissionFiltersBase):
     def filter_list_queryset(self, request, queryset, view):
         if request.user.is_superuser:
             return queryset
-        master_companies = get_master_companies(request)
-        return queryset.filter(site_companies__company__in=master_companies)
+
+        if not hasattr(queryset, 'owned_by'):
+            return queryset
+
+        # NOTE: filter by current sub-domain
+        site_master_company = get_site_master_company(request=request)
+
+        return queryset.owned_by(site_master_company)
 
 
 class SiteClosestCompanyFilterBackend(DRYPermissionFiltersBase):
@@ -106,7 +112,7 @@ class ReadonlyOrIsSuperUser(DRYPermissions):
 
 class ReadOnly(DRYPermissions):
     """
-    Readonly permissions. 
+    Readonly permissions.
     Would be used for permissions.SAFE_METHODS.
     """
 

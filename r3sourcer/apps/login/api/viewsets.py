@@ -92,7 +92,7 @@ class AuthViewSet(BaseViewsetMixin,
             raise exceptions.ValidationError(message)
 
         login(request, user)
-        cache.set('user_site_%s' % str(user.id), request.META['HTTP_HOST'])
+        cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
 
         return Response({
             'status': 'success',
@@ -119,7 +119,7 @@ class AuthViewSet(BaseViewsetMixin,
         instance.loggedin_at = timezone.now()
         instance.save()
 
-        cache.set('user_site_%s' % str(user.id), request.META['HTTP_HOST'])
+        cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
 
         return Response({'status': 'success', 'data': serializer.data})
 
@@ -128,7 +128,7 @@ class AuthViewSet(BaseViewsetMixin,
         if not request.user.is_authenticated():
             raise exceptions.AuthenticationFailed()
         serializer = ContactLoginSerializer(request.user.contact)
-        cache.set('user_site_%s' % str(request.user.id), request.META['HTTP_HOST'])
+        cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
         return Response({
             'status': 'success',
             'data': {

@@ -18,7 +18,7 @@ from r3sourcer.apps.core.api.serializers import (
     UserSerializer, CompanyContactRegisterSerializer, MetaFields,
     ApiFieldsMixin, CompanyAddressSerializer, WorkflowNodeSerializer,
     WorkflowObjectSerializer, WorkflowTimelineSerializer,
-    NavigationSerializer,
+    NavigationSerializer, TrialSerializer,
     RELATED_DIRECT, RELATED_FULL, RELATED_NONE,
 )
 from r3sourcer.apps.core.models import (
@@ -1206,3 +1206,65 @@ class TestNavigationSerializer:
         childs = serializer.get_childrens(None)
 
         assert len(childs) == 0
+
+
+@pytest.mark.django_db
+class TestTrialSerializer:
+
+    @pytest.fixture
+    def user_data(self, contact_phone_sec):
+        return {
+            'first_name': 'testuser42',
+            'last_name': 'tester42',
+            'email': 'test4242@test.tt',
+            'phone_mobile': contact_phone_sec,
+            'company_name': 'Test Company',
+            'website': 'test.r3sourcer.com',
+        }
+
+    def test_validate_success(self, user_data):
+        serializer = TrialSerializer(data=user_data)
+
+        assert serializer.is_valid()
+
+    def test_validate_wrong_email(self, user_data):
+        user_data['email'] = 'test42'
+        serializer = TrialSerializer(data=user_data)
+
+        assert not serializer.is_valid()
+        assert 'email' in serializer.errors
+
+    def test_validate_invalid_email(self, user_data):
+        user_data['email'] = 'test42@ww'
+        serializer = TrialSerializer(data=user_data)
+
+        assert not serializer.is_valid()
+        assert 'email' in serializer.errors
+
+    def test_validate_wrong_phone_number(self, user_data):
+        user_data['phone_mobile'] = '+123'
+        serializer = TrialSerializer(data=user_data)
+
+        assert not serializer.is_valid()
+        assert 'phone_mobile' in serializer.errors
+
+    def test_validate_user_with_email_exist(self, user_data, contact):
+        user_data['email'] = contact.email
+        serializer = TrialSerializer(data=user_data)
+
+        assert not serializer.is_valid()
+        assert 'email' in serializer.errors
+
+    def test_validate_user_with_phone_number_exist(self, user_data, contact):
+        user_data['phone_mobile'] = contact.phone_mobile
+        serializer = TrialSerializer(data=user_data)
+
+        assert not serializer.is_valid()
+        assert 'phone_mobile' in serializer.errors
+
+    def test_validate_company_with_name_exist(self, user_data, company):
+        user_data['company_name'] = company.name
+        serializer = TrialSerializer(data=user_data)
+
+        assert not serializer.is_valid()
+        assert 'company_name' in serializer.errors

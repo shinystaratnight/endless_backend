@@ -280,8 +280,8 @@ class TestSetUserGlobalPermissionView:
         assert result_permissions[1] == permission2
 
 
+@pytest.mark.django_db
 class TestGlobalPermissionListView:
-    @pytest.mark.skip(reason='complete it when permission datamigration is done')
     def test_get_permission_list(self, client):
         permission = GlobalPermission.objects.create(name='permission_name', codename='permission_codename')
         permission2 = GlobalPermission.objects.create(name='permission_name2', codename='permission_codename2')
@@ -506,7 +506,7 @@ class TestUserCompanyFilesView:
         response = client.get(url)
 
         assert len(response.data['company_files']) == 1
-        assert response.data['company_files'][0]['id'] == company_file.cf_id
+        assert response.data['company_files'][0]['id'] == str(company_file.id)
         assert response.data['company_files'][0]['uri'] == company_file.cf_uri
         assert response.data['company_files'][0]['name'] == company_file.cf_name
         assert response.data['company_files'][0]['authenticated'] == company_file.authenticated
@@ -585,10 +585,10 @@ class TestMYOBSettingsView:
         assert response['myob_settings']['invoice_company_file']['id'] == str(company_file.id)
         assert response['myob_settings']['invoice_activity_account']['id'] == str(myob_account.id)
 
-    def test_myob_settings_post(self, user, client, manager, company, company_file, company_contact_rel):
+    def test_myob_settings_post(self, user, client, manager, company, company_contact_rel):
         now = timezone.now()
         company_file = MYOBCompanyFile.objects.create(
-            cf_id='id',
+            cf_id='d3edc1d7-7b31-437e-9fcd-000000000008',
             cf_uri='uri',
             cf_name='name'
         )
@@ -609,8 +609,8 @@ class TestMYOBSettingsView:
                                              company_file=company_file)
         data = {
             'invoice_activity_account': {"id": str(account.id)},
-            'invoice_company_file': {"id": str(company_file.id)},
-            'timesheet_company_file': {"id": str(company_file.id)},
+            'invoice_company_file': {"id": str(company_file.cf_id)},
+            'timesheet_company_file': {"id": str(company_file.cf_id)},
             'payroll_accounts_last_refreshed': str(now),
             'company_files_last_refreshed': str(now),
         }

@@ -5,4 +5,3 @@ omit =
     */apps.py
     */wsgi.py
     */urls.py
-    */views.py
