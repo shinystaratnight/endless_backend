@@ -235,7 +235,7 @@ class BaseSync:
 
         return result
 
-    def _sync_to(self, instance, sync_obj=None):
+    def _sync_to(self, instance, sync_obj=None, partial=False):
         raise NotImplementedError()
 
     def _get_myob_existing_resp(

@@ -34,7 +34,7 @@ class CandidateSync(
     def _get_resource(self):
         return self.client.api.Contact.Employee
 
-    def _sync_to(self, candidate_contact, sync_obj=None):
+    def _sync_to(self, candidate_contact, sync_obj=None, partial=False):
         visa_type = candidate_contact.visa_type
         is_holiday_visa = visa_type and visa_type.subclass in ['417', '462']
 

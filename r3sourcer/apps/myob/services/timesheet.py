@@ -9,7 +9,6 @@ from django.utils import timezone
 from r3sourcer.apps.candidate.models import SkillRateRel
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment import calc_worked_delta
-from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.myob.mappers import TimeSheetMapper, format_date_to_myob
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.services.base import BaseSync
@@ -41,8 +40,8 @@ class TimeSheetSync(
 
     rates_cache = {}
 
-    def __init__(self, myob_client=None, company=None):
-        super().__init__(myob_client, company)
+    def __init__(self, myob_client=None, company=None, cf_id=None):
+        super().__init__(myob_client=myob_client, company=company, cf_id=cf_id)
 
         self._existing_timesheets_dates = None
         self._customer_cache = {}
@@ -51,9 +50,11 @@ class TimeSheetSync(
     @classmethod
     def from_candidate(cls, candidate):
         company = candidate.get_closest_company()
-        myob_client = get_myob_client(company=company)
+        company_settings = getattr(company, 'myob_settings', None)
+        if company_settings and company_settings.timesheet_company_file:
+            return cls(cf_id=company_settings.timesheet_company_file.cf_id)
 
-        return cls(myob_client, company=company)
+        return None
 
     @method_decorator(myob_enabled_mode)
     def sync_to_myob(self, candidate):
@@ -116,7 +117,7 @@ class TimeSheetSync(
         # if resource was not exists then stop processing
         if not myob_employee:
             rs = CandidateSync(self.client, self.company)
-            rs.sync_to_myob(candidate, force=True)
+            rs.sync_to_myob(candidate, partial=True)
 
             myob_employee = self._get_myob_employee_data(candidate)
 
