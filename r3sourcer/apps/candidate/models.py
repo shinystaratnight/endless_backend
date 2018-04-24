@@ -596,7 +596,6 @@ class SkillRel(core_models.UUIDModel):
     skill = models.ForeignKey(
         skill_models.Skill,
         related_name="candidate_skills",
-        on_delete=models.PROTECT,
         verbose_name=_("Skill")
     )
 
