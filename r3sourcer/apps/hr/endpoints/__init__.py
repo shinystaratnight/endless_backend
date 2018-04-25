@@ -744,6 +744,7 @@ class ShiftEndpoint(ApiEndpoint):
     model = hr_models.Shift
     serializer = job_serializers.ShiftSerializer
     filter_class = hr_filters.ShiftFilter
+    base_viewset = hr_viewsets.ShiftViewset
 
     list_displzy = ('workers', 'time')
 
