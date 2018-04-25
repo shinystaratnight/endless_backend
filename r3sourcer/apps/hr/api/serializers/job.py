@@ -423,6 +423,6 @@ class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
 
     def get_latest_date(self, obj):
         try:
-            return obj.shift_dates.filter(cancelled=False).latest('shift_date').id
+            return obj.shift_dates.filter(cancelled=False, shifts__isnull=False).latest('shift_date').id
         except hr_models.ShiftDate.DoesNotExist:
             return None

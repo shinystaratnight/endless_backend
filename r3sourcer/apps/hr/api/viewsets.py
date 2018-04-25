@@ -1023,7 +1023,7 @@ class JobViewset(BaseApiViewset):
         if request.method == 'PUT':
             is_autofill = request.data.get('autofill', False)
             try:
-                latest_shift_date = job.shift_dates.latest('shift_date')
+                latest_shift_date = job.shift_dates.filter(cancelled=False, shifts__isnull=False).latest('shift_date')
             except hr_models.ShiftDate.DoesNotExist:
                 raise exceptions.NotFound(_('Latest Shift Date not found'))
 
@@ -1063,6 +1063,7 @@ class JobViewset(BaseApiViewset):
                     'hourly_rate': shift_obj.hourly_rate,
                 },
             )
+            print('!!!!', new_shift_obj)
 
             if is_autofill:
                 hr_models.JobOffer.objects.create(
@@ -1135,3 +1136,13 @@ class JobOffersCandidateViewset(
         return super().get_queryset().filter(
             candidate_contact__contact=contact
         )
+
+
+class ShiftViewset(BaseApiViewset):
+
+    def perform_destroy(self, instance):
+        shift_date = instance.date
+        instance.delete()
+
+        if not shift_date.shifts.exists():
+            shift_date.delete()
