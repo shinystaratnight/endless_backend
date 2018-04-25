@@ -1,23 +1,12 @@
-import copy
-import json
-
 import mock
 import pytest
-from django.contrib.contenttypes.models import ContentType
-from django.test.client import MULTIPART_CONTENT, BOUNDARY, encode_multipart
 
-from drf_auto_endpoint.endpoints import Endpoint
 from rest_framework import status
-from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.test import force_authenticate
 
-from r3sourcer.apps.activity.endpoints import (
-    ActivityViewset,
-    ActivityEndpoint
-)
-from r3sourcer.apps.core.service import FactoryService
-
+from r3sourcer.apps.activity.endpoints import ActivityEndpoint
 from r3sourcer.apps.activity.models import Activity
+from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 
 
 class ResourceMixin:
@@ -49,7 +38,10 @@ class TestDashboardModules(ResourceMixin):
         'post': 'create'
     }
 
-    def test_get_activities(self, rf, primary_activity, secondary_activity):
+    @mock.patch.object(AbstractObjectOwnerQuerySet, 'owned_by')
+    def test_get_activities(self, mock_owned, rf, primary_activity, secondary_activity):
+        mock_owned.return_value = Activity.objects.filter(id=primary_activity.id)
+
         req = rf.get('/api/v2/activity/activities/')
         force_authenticate(req, user=primary_activity.contact.user)
 

@@ -4,19 +4,17 @@ import json
 import mock
 import pytest
 
-from django.core import exceptions
 from django.test.client import MULTIPART_CONTENT, BOUNDARY, encode_multipart
-from django.core.urlresolvers import reverse
 from drf_auto_endpoint.endpoints import Endpoint
 from guardian.shortcuts import assign_perm
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
-from rest_framework.request import Request
 from rest_framework.test import force_authenticate
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import endpoints
 from r3sourcer.apps.core.api.viewsets import CompanyAddressViewset
+from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.models import Country, City, CompanyContact, DashboardModule, ExtranetNavigation
 from r3sourcer.apps.core.service import FactoryService
 
@@ -533,8 +531,10 @@ class TestDashboardModules(ResourceMixin):
         assert len(resp_data.data['results']) == 0
         assert DashboardModule.objects.filter().exists()
 
-    def test_get_active_modules(self, rf, assigned_modules):
+    @mock.patch.object(AbstractObjectOwnerQuerySet, 'owned_by')
+    def test_get_active_modules(self, mock_owned, rf, assigned_modules):
         modules, c_contact = assigned_modules
+        mock_owned.return_value = DashboardModule.objects.all()
         req = rf.get('/api/v2/core/dashboardmodules/?is_active=true')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
@@ -543,8 +543,10 @@ class TestDashboardModules(ResourceMixin):
         assert 'results' in resp_data.data
         assert len(resp_data.data['results']) == len([m for m in modules if m.is_active])
 
-    def test_get_inactive_modules(self, rf, assigned_modules):
+    @mock.patch.object(AbstractObjectOwnerQuerySet, 'owned_by')
+    def test_get_inactive_modules(self, mock_owned, rf, assigned_modules):
         modules, c_contact = assigned_modules
+        mock_owned.return_value = DashboardModule.objects.all()
         req = rf.get('/api/v2/core/dashboardmodules/?is_active=false')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
@@ -553,8 +555,10 @@ class TestDashboardModules(ResourceMixin):
         assert 'results' in resp_data.data
         assert len(resp_data.data['results']) == len([m for m in modules if not m.is_active])
 
-    def test_get_module_filtering(self, rf, assigned_modules):
+    @mock.patch.object(AbstractObjectOwnerQuerySet, 'owned_by')
+    def test_get_module_filtering(self, mock_owned, rf, assigned_modules):
         modules, c_contact = assigned_modules
+        mock_owned.return_value = DashboardModule.objects.all()
         req = rf.get('/api/v2/core/dashboardmodules/?model=companycontact')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)

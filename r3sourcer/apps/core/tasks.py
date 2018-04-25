@@ -10,12 +10,12 @@ from django.utils import timezone
 
 from r3sourcer.celeryapp import app
 
-from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.open_exchange.client import client as openexchange_client
 from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.core.utils.public_holidays import EnricoApi, EnricoApiException
 from r3sourcer.apps.email_interface.utils import get_email_service
+from r3sourcer.apps.login.models import TokenLogin
 
 
 LOCK_EXPIRE = 5 * 60
@@ -135,10 +135,14 @@ def send_trial_email(self, contact_id, auto_password):
             logger.exception('Cannot load SMS service')
             return
 
+        extranet_login = TokenLogin.objects.create(contact=contact, redirect_to='/')
+
+        site_url = core_companies_utils.get_site_url(user=contact.user)
         data_dict = {
             'contact': contact,
             'password': auto_password,
-            'site_url': core_companies_utils.get_site_url(user=contact.user)
+            'site_url': site_url,
+            'login_link': '%s%s' % (site_url, extranet_login.auth_url)
         }
 
         email_interface.send_tpl(contact.email, tpl_name='trial-user-register', **data_dict)
