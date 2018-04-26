@@ -518,8 +518,10 @@ class AngularListApiAdapter(AngularApiAdapter):
                     'min': list_filter.get('min'),
                     'max': list_filter.get('max'),
                     'input': [{
+                        'label': _('From'),
                         'query': from_qry,
                     }, {
+                        'label': _('To'),
                         'query': to_qry,
                     }]
                 })
