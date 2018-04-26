@@ -509,6 +509,20 @@ class AngularListApiAdapter(AngularApiAdapter):
                 adapted.update({
                     'default': list_filter.get('default'),
                 })
+            elif field_type == constants.FIELD_RANGE:
+                from_qry = '%s_0' % field_qry
+                to_qry = '%s_1' % field_qry
+
+                adapted.update({
+                    'default': list_filter.get('default'),
+                    'min': list_filter['min'],
+                    'max': list_filter['max'],
+                    'input': [{
+                        'query': from_qry,
+                    }, {
+                        'query': to_qry,
+                    }]
+                })
             else:
                 continue  # pragma: no cover
 

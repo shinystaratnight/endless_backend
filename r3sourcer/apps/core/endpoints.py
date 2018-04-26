@@ -637,7 +637,7 @@ class CompanyEndpoint(ApiEndpoint):
                                 {'type': 'regular'}
                             ],
                             'query': {
-                                'customer_company': '{id}',
+                                'customer_company': '{id.id}',
                                 'master_company': '{master_company.id}',
                             },
                         },
@@ -859,7 +859,7 @@ class CompanyEndpoint(ApiEndpoint):
         }, {
             'field': 'approved_credit_limit',
             'label': _('Credit Limit'),
-            'type': constants.FIELD_TEXT,
+            'type': constants.FIELD_RANGE,
             'min': 0,
             'max': 100000,
         }]
