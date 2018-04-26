@@ -37,6 +37,8 @@ _urlpatterns = [
     url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.company_settings.urls')),
     url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.core.urls')),
     url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.hr.urls')),
+    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.skills.urls')),
+    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.pricing.urls')),
     url(r'^api/{}/'.format(api_versions), include(router.urls, namespace='api')),
     url(r'^', include('filer.urls', namespace='filer')),
     url(r'^admin/', include('loginas.urls')),

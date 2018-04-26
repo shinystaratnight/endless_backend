@@ -57,8 +57,13 @@ class Skill(MYOBMixin, UUIDModel):
         have_default_base_rate = self.skill_rate_defaults.filter(default_rate=True).count()
         have_default_price_list_rate = self.price_list_rates.filter(default_rate=True).count()
 
-        if self.active and (not have_default_base_rate or not have_default_price_list_rate):
-            raise ValidationError("Skill cant be active. It doesnt have default price list rate and defalut base rate.")
+        if self.active:
+            if not have_default_base_rate and not have_default_price_list_rate:
+                raise ValidationError("Skill cant be active. It doesnt have default price list rate and defalut base rate.")
+            elif not have_default_base_rate:
+                raise ValidationError("Skill cant be active. It doesnt have default base rate.")
+            elif not have_default_price_list_rate:
+                raise ValidationError("Skill cant be active. It doesnt have default price list rate.")
 
         super(Skill, self).clean(*args, **kwargs)
 
@@ -90,7 +95,6 @@ class SkillBaseRate(UUIDModel):
 
     skill = models.ForeignKey(
         Skill,
-        on_delete=models.PROTECT,
         related_name="skill_rate_defaults",
         verbose_name=_("Skill")
     )
