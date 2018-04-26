@@ -10,6 +10,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.mixins import MYOBMixin
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.skills import models as skill_models
 from r3sourcer.apps.core.decorators import workflow_function
@@ -450,7 +451,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
             candidate_rel = self.candidate_rels.latest('created_at')
             return candidate_rel.master_company
         except CandidateRel.DoesNotExist:
-            return get_default_company()
+            return get_site_master_company()
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding

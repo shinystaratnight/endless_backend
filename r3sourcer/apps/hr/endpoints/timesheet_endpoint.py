@@ -225,7 +225,7 @@ class TimeSheetEndpoint(ApiEndpoint):
                     'text': _('Sync'),
                     'endpoint': format_lazy('{}{{id}}/sync', api_reverse_lazy('hr/timesheets')),
                     'field': 'id',
-                    'action': constants.DEFAULT_ACTION_EDIT,
+                    'action': constants.DEFAULT_ACTION_POST,
                     'showIf': [
                         {'show_sync_button': True},
                     ]
