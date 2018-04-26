@@ -18,10 +18,11 @@ class CompanyFilter(FilterSet):
     status = NumberFilter(method='filter_status')
     portfolio_manager = UUIDFilter(method='filter_portfolio_manager')
     regular_company = UUIDFilter(method='filter_regular_company')
+    approved_credit_limit = NumberFilter(lookup_expr='gte')
 
     class Meta:
         model = models.Company
-        fields = ['name', 'business_id', 'country', 'type', 'id']
+        fields = ['name', 'business_id', 'country', 'type', 'id', 'approved_credit_limit']
 
     def filter_name(self, queryset, name, value):
         return queryset.filter(

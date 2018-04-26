@@ -1063,7 +1063,6 @@ class JobViewset(BaseApiViewset):
                     'hourly_rate': shift_obj.hourly_rate,
                 },
             )
-            print('!!!!', new_shift_obj)
 
             if is_autofill:
                 hr_models.JobOffer.objects.create(

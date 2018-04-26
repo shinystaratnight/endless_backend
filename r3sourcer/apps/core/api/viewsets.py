@@ -224,6 +224,36 @@ class CompanyViewset(BaseApiViewset):
                 }
         return data
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+
+        if instance.type == models.Company.COMPANY_TYPES.master:
+            return
+
+        master_company = self.request.data.get('master_company')
+        master_company = master_company.get('id') if isinstance(master_company, dict) else master_company
+        primary_contact = self.request.data.get('primary_contact')
+        primary_contact = primary_contact.get('id') if isinstance(primary_contact, dict) else primary_contact
+        company_rel = instance.regular_companies.first()
+
+        if master_company:
+            master_company_obj = models.Company.objects.get(id=master_company)
+            if primary_contact:
+                primary_contact_obj = models.CompanyContact.objects.get(id=primary_contact)
+            else:
+                primary_contact_obj = None
+
+            if not company_rel and instance.type != models.Company.COMPANY_TYPES.master:
+                models.CompanyRel.objects.create(
+                    master_company=master_company_obj,
+                    regular_company=instance,
+                    primary_contact=primary_contact_obj
+                )
+            else:
+                company_rel.master_company = master_company_obj
+                company_rel.primary_contact = primary_contact_obj
+                company_rel.save()
+
 
 class CompanyContactViewset(BaseApiViewset):
 

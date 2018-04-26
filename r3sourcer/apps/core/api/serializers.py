@@ -387,8 +387,7 @@ class ApiMethodFieldsMixin():
                     'strings or 2-item tuples in form (field_name, method_name)'
                 )
                 raise Exception(message.format(method_field))
-            self.fields[method_field] = serializers.SerializerMethodField(
-                **field_kwargs)
+            self.fields[method_field] = serializers.SerializerMethodField(**field_kwargs)
 
     def get_method_fields(self):
         return self.method_fields or []
@@ -1084,24 +1083,7 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         }
 
     def get_company_rel(self, company):
-        company_rel = cache.get('company_rel_{}'.format(company.id), None)
-        if not company_rel:
-            current_site = get_current_site(self.context.get('request'))
-
-            site_company = core_models.SiteCompany.objects.filter(
-                site=current_site,
-                company__master_companies__regular_company=company
-            ).last()
-            master_type = core_models.Company.COMPANY_TYPES.master
-            if not site_company or site_company.company.type != master_type:
-                return
-
-            company_rel = company.regular_companies.filter(
-                master_company=site_company.company
-            ).last()
-
-            cache.set('company_rel_{}'.format(company.id), company_rel)
-        return company_rel
+        return company.regular_companies.last()
 
     def get_primary_contact(self, obj):
         if not obj:
@@ -1112,10 +1094,11 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             return
 
         if company_rel and company_rel.primary_contact:
-            return dict(
-                job_title=company_rel.primary_contact.job_title,
-                **core_field.ApiBaseRelatedField.to_read_only_data(company_rel.primary_contact.contact)
-            )
+            return {
+                'job_title': company_rel.primary_contact.job_title,
+                '__str__': str(company_rel.primary_contact.contact),
+                'id': company_rel.primary_contact.id
+            }
 
     def get_master_company(self, obj):
         if not obj:

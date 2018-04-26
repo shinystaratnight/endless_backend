@@ -564,7 +564,6 @@ class CompanyEndpoint(ApiEndpoint):
                     'fields': ({
                         'type': constants.FIELD_PICTURE,
                         'field': 'logo',
-                        'read_only': True,
                         'label': _('Logo'),
                         'file': False,
                         'label_upload': _('Choose a file'),
@@ -620,12 +619,27 @@ class CompanyEndpoint(ApiEndpoint):
                             'label': _('Master company'),
                             'type': constants.FIELD_RELATED,
                             'field': 'master_company',
-                            'endpoint': format_lazy('{}?type=master', api_reverse_lazy('core/companies')),
+                            'endpoint': api_reverse_lazy('core/companies'),
+                            'read_only': False,
+                            'showIf': [
+                                {'type': 'regular'}
+                            ],
+                            'query': {
+                                'type': 'master',
+                            },
                         }, {
                             'label': _('Portfolio Manager'),
                             'type': constants.FIELD_RELATED,
                             'field': 'primary_contact',
+                            'read_only': False,
                             'endpoint': api_reverse_lazy('core/companycontacts'),
+                            'showIf': [
+                                {'type': 'regular'}
+                            ],
+                            'query': {
+                                'customer_company': '{id}',
+                                'master_company': '{master_company.id}',
+                            },
                         },
                     ),
                 },
@@ -699,7 +713,14 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}',
             },
             'label': _('Price list'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('pricing/pricelists'),
+            'prefilled': {
+                'company': '{id}',
+            },
+            'metadata_query': {
+                'editable_type': 'company',
+            },
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': False,
@@ -813,9 +834,8 @@ class CompanyEndpoint(ApiEndpoint):
     )
 
     def get_list_filter(self):
-        states_part = partial(
-            models.WorkflowNode.get_model_all_states, models.CompanyRel
-        )
+        au_regions = partial(models.Region.get_countrys_regions, 'AU')
+        states_part = partial(models.WorkflowNode.get_model_all_states, models.CompanyRel)
         list_filter = [{
             'type': constants.FIELD_SELECT,
             'field': 'status',
@@ -827,15 +847,21 @@ class CompanyEndpoint(ApiEndpoint):
             'label': _('Portfolio Manager'),
             'endpoint': api_reverse_lazy('core/companycontacts'),
         }, {
-            'type': constants.FIELD_RELATED,
+            'type': constants.FIELD_SELECT,
             'field': 'state',
-            'endpoint': api_reverse_lazy('core/regions'),
-            'value': 'name',
+            'label': _('State'),
+            'choices': lazy(au_regions, list),
         }, {
             'type': constants.FIELD_SELECT,
             'field': 'credit_check',
             'choices': [{'label': 'Approved', 'value': 'True'},
                         {'label': 'Unapproved', 'value': 'False'}]
+        }, {
+            'field': 'approved_credit_limit',
+            'label': _('Credit Limit'),
+            'type': constants.FIELD_TEXT,
+            'min': 0,
+            'max': 100000,
         }]
 
         return list_filter

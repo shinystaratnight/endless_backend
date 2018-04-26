@@ -441,8 +441,6 @@ class AngularListApiAdapter(AngularApiAdapter):
                     choices = choices()
 
                 choices = list(choices)
-                if field_type == constants.FIELD_SELECT:
-                    choices.insert(0, {'label': _('All'), 'value': ''})
 
                 adapted.update({
                     'query': field_qry,
