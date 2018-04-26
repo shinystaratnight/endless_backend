@@ -18,7 +18,6 @@ class CompanyFilter(FilterSet):
     status = NumberFilter(method='filter_status')
     portfolio_manager = UUIDFilter(method='filter_portfolio_manager')
     regular_company = UUIDFilter(method='filter_regular_company')
-    approved_credit_limit = NumberFilter(lookup_expr='gte')
 
     class Meta:
         model = models.Company

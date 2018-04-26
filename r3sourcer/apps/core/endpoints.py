@@ -860,8 +860,6 @@ class CompanyEndpoint(ApiEndpoint):
             'field': 'approved_credit_limit',
             'label': _('Credit Limit'),
             'type': constants.FIELD_RANGE,
-            'min': 0,
-            'max': 100000,
         }]
 
         return list_filter

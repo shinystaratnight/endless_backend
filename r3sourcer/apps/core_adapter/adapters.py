@@ -515,8 +515,8 @@ class AngularListApiAdapter(AngularApiAdapter):
 
                 adapted.update({
                     'default': list_filter.get('default'),
-                    'min': list_filter['min'],
-                    'max': list_filter['max'],
+                    'min': list_filter.get('min'),
+                    'max': list_filter.get('max'),
                     'input': [{
                         'query': from_qry,
                     }, {
