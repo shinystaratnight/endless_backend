@@ -75,12 +75,15 @@ class BaseEmailService(metaclass=ABCMeta):
                 Q(name=tpl_name) | Q(slug=tpl_name)
             )
             compiled = template.compile(**kwargs)
-            message = compiled['text']
             subject = compiled['subject']
         except email_models.EmailTemplate.DoesNotExist:
             logger.exception('Cannot find email template with name %s', tpl_name)
         else:
-            self.send(recipients, subject, message, from_email=from_email, template=template, **kwargs)
+            self.send(
+                recipients, subject, compiled['text'],
+                html_message=compiled['html'], from_email=from_email, template=template,
+                **kwargs
+            )
 
     @abstractmethod
     def process_email_send(self, email_message):

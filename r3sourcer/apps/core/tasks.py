@@ -135,14 +135,11 @@ def send_trial_email(self, contact_id, auto_password):
             logger.exception('Cannot load SMS service')
             return
 
-        extranet_login = TokenLogin.objects.create(contact=contact, redirect_to='/')
-
         site_url = core_companies_utils.get_site_url(user=contact.user)
         data_dict = {
             'contact': contact,
             'password': auto_password,
             'site_url': site_url,
-            'login_link': '%s%s' % (site_url, extranet_login.auth_url)
         }
 
         email_interface.send_tpl(contact.email, tpl_name='trial-user-register', **data_dict)
