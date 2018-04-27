@@ -441,8 +441,6 @@ class AngularListApiAdapter(AngularApiAdapter):
                     choices = choices()
 
                 choices = list(choices)
-                if field_type == constants.FIELD_SELECT:
-                    choices.insert(0, {'label': _('All'), 'value': ''})
 
                 adapted.update({
                     'query': field_qry,
@@ -510,6 +508,22 @@ class AngularListApiAdapter(AngularApiAdapter):
 
                 adapted.update({
                     'default': list_filter.get('default'),
+                })
+            elif field_type == constants.FIELD_RANGE:
+                from_qry = '%s_0' % field_qry
+                to_qry = '%s_1' % field_qry
+
+                adapted.update({
+                    'default': list_filter.get('default'),
+                    'min': list_filter.get('min'),
+                    'max': list_filter.get('max'),
+                    'input': [{
+                        'label': _('From'),
+                        'query': from_qry,
+                    }, {
+                        'label': _('To'),
+                        'query': to_qry,
+                    }]
                 })
             else:
                 continue  # pragma: no cover

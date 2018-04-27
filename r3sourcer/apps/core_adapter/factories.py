@@ -3,7 +3,7 @@ from django_filters.rest_framework import FilterSet
 from django.utils.translation import ugettext_lazy as _
 
 from . import constants
-from .filters import ValuesFilter, DateRangeFilter, DateTimeRangeFilter
+from .filters import ValuesFilter, DateRangeFilter, DateTimeRangeFilter, RangeNumberFilter
 
 
 def _get_field(fields, field_name):
@@ -39,7 +39,7 @@ def filter_factory(endpoint):
         meta_field = _get_field(meta_fields, field) or list_filter
         field_type = list_filter.get('type', meta_field.get('type'))
         field_qry = field.replace('.', '__')
-        distinct = list_filter.get('distinct', False)
+        distinct = list_filter.get('distinct', True)
 
         if field_type in [constants.FIELD_RELATED, constants.FIELD_LINK]:
             attrs[field_qry] = CharFilter(lookup_expr='id', distinct=distinct)
@@ -94,6 +94,8 @@ def filter_factory(endpoint):
             }
 
             attrs[field_qry] = ChoiceFilter(**kwargs)
+        elif field_type == constants.FIELD_RANGE:
+            attrs[field_qry] = RangeNumberFilter(name=field_qry, distinct=distinct)
         else:
             continue  # pragma: no cover
 

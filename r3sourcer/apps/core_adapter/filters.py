@@ -1,4 +1,4 @@
-from django_filters.filters import ChoiceFilter, DateFromToRangeFilter, DateTimeFromToRangeFilter
+from django_filters.filters import ChoiceFilter, DateFromToRangeFilter, DateTimeFromToRangeFilter, RangeFilter
 
 
 class DistinctFilterMixin:
@@ -20,6 +20,10 @@ class ValuesFilter(ChoiceFilter):
         ).distinct()
         self.extra['choices'] = [(o, o) for o in qs]
         return super(ValuesFilter, self).field
+
+
+class RangeNumberFilter(DistinctFilterMixin, RangeFilter):
+    pass
 
 
 class DateRangeFilter(DistinctFilterMixin, DateFromToRangeFilter):

@@ -243,8 +243,7 @@ class PriceListEndpoint(ApiEndpoint):
         }, constants.BUTTON_DELETE,
     )
 
-    fieldsets = (
-        'company',
+    _field_set = (
         {
             'type': constants.FIELD_DATE,
             'field': 'valid_from'
@@ -268,6 +267,19 @@ class PriceListEndpoint(ApiEndpoint):
             },
         },
     )
+
+    fieldsets = {
+        'default': (
+            'company',
+        ) + _field_set,
+        'company': (
+            {
+                'type': constants.FIELD_RELATED,
+                'field': 'company',
+                'hide': True,
+            },
+        ) + _field_set,
+    }
 
 
 class IndustryEndpoint(ApiEndpoint):

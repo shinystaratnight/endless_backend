@@ -23,9 +23,7 @@ class AbstractObjectOwnerQuerySet(LoggerQuerySet):
         lookups = self.get_lookups(_obj)
 
         if not lookups:
-            print('!!')
             lookups = self._get_obj_related_lookups(_obj)
-            print('!!!', lookups)
 
         if lookups:
             from operator import __or__ as OR

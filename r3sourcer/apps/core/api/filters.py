@@ -21,7 +21,7 @@ class CompanyFilter(FilterSet):
 
     class Meta:
         model = models.Company
-        fields = ['name', 'business_id', 'country', 'type', 'id']
+        fields = ['name', 'business_id', 'country', 'type', 'id', 'approved_credit_limit']
 
     def filter_name(self, queryset, name, value):
         return queryset.filter(
