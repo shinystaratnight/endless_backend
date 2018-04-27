@@ -138,10 +138,19 @@ class PriceListRateEndpoint(ApiEndpoint):
         {
             "field": "default_rate",
             "type": constants.FIELD_CHECKBOX
-        }
+        },
+        {
+            "field": "skill",
+            "type": constants.FIELD_RELATED,
+            "hidden": True
+        },
+        {
+            "field": "price_list",
+            "type": constants.FIELD_RELATED
+        },
     )
 
-    list_editable ={
+    list_editable = {
         'default': (
             {
                 'label': _('Price List'),
@@ -159,7 +168,17 @@ class PriceListRateEndpoint(ApiEndpoint):
                 'fields': ({
                     **constants.BUTTON_EDIT,
                     'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelistrates'))
-                }, constants.BUTTON_DELETE)
+                },
+                {
+                    'field': 'id',
+                    'action': constants.DEFAULT_ACTION_POST,
+                    'text_color': '#f0ad4e',
+                    'title': _('Make Default'),
+                    'type': constants.FIELD_BUTTON,
+                    'icon': 'fa-check',
+                    'endpoint': format_lazy('{}{{id}}/make_default/', api_reverse_lazy('pricing/pricelistrates'))
+                },
+                constants.BUTTON_DELETE)
             }
         ),
         'pricelist': (

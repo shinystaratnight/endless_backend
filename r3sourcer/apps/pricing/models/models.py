@@ -189,11 +189,12 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
         on_delete=models.PROTECT,
         related_name='price_list_rates',
         verbose_name=_('Price List'),
+        blank=True,
+        null=True
     )
 
     skill = models.ForeignKey(
         Skill,
-        on_delete=models.PROTECT,
         related_name='price_list_rates',
         verbose_name=_('Skill'),
     )
