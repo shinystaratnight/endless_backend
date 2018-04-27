@@ -281,7 +281,8 @@ class BaseSync:
             log.info('MYOB client is not defined')
             return
 
-        self._switch_client(instance.updated_at)
+        # TODO: fix switch client
+        # self._switch_client(instance.updated_at)
 
         cf_data = self.client.cf_data
         if not cf_data.is_enabled(instance.updated_at):

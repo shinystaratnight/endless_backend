@@ -877,6 +877,19 @@ class CompanyContactRelationEndpoint(ApiEndpoint):
         'company_contact.receive_job_confirmation_sms'
     )
 
+    fieldsets = (
+        {
+            'type': constants.FIELD_TEXT,
+            'field': 'company',
+            'hide': True,
+        },
+        'company_contact', 'active',
+        {
+            'type': constants.FIELD_DATE,
+            'field': 'termination_date',
+        }
+    )
+
 
 class CompanyContactEndpoint(ApiEndpoint):
 
