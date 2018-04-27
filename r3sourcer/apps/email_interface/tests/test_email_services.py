@@ -127,13 +127,19 @@ class TestEmailServices:
     def test_send_tpl(self, mock_send, service, email_template):
         service.send_tpl('test@test.com', tpl_name='Email Template')
 
-        mock_send.assert_called_with('test@test.com', 'subject', 'template', from_email=None, template=email_template)
+        mock_send.assert_called_with(
+            'test@test.com', 'subject', 'template',
+            html_message='', from_email=None, template=email_template
+        )
 
     @mock.patch.object(EmailTestService, 'send')
     def test_send_tpl_slug(self, mock_send, service, email_template):
         service.send_tpl('test@test.com', tpl_name='email-template')
 
-        mock_send.assert_called_with('test@test.com', 'subject', 'template', from_email=None, template=email_template)
+        mock_send.assert_called_with(
+            'test@test.com', 'subject', 'template',
+            html_message='', from_email=None, template=email_template
+        )
 
     @mock.patch('r3sourcer.apps.email_interface.services.logger')
     @mock.patch.object(EmailTestService, 'send')

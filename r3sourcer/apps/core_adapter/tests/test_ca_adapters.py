@@ -1036,16 +1036,14 @@ class TestAngularListApiAdapter:
         assert len(res) == 0
 
     @mock.patch.object(AngularListApiAdapter, '_get_field')
-    def test_adapt_filers_select_simple(self, mock_get_field,
-                                        choices_filter_field, adapter):
+    def test_adapt_filers_select_simple(self, mock_get_field, choices_filter_field, adapter):
         mock_get_field.return_value = choices_filter_field
 
         res = adapter._adapt_filters(['field'])
 
         assert len(res) == 1
-        assert len(res[0]['options']) == 2
-        assert res[0]['options'][0]['value'] == ''
-        assert res[0]['options'][1]['value'] == 'val'
+        assert len(res[0]['options']) == 1
+        assert res[0]['options'][0]['value'] == 'val'
 
     @mock.patch.object(AngularListApiAdapter, '_get_field')
     def test_adapt_filers_select_callable(self, mock_get_field,
@@ -1062,9 +1060,8 @@ class TestAngularListApiAdapter:
         }])
 
         assert len(res) == 1
-        assert len(res[0]['options']) == 2
-        assert res[0]['options'][0]['value'] == ''
-        assert res[0]['options'][1]['value'] == 'val'
+        assert len(res[0]['options']) == 1
+        assert res[0]['options'][0]['value'] == 'val'
 
     @mock.patch.object(AngularListApiAdapter, '_get_field')
     def test_adapt_filers_select_dict(self, mock_get_field,
@@ -1081,8 +1078,7 @@ class TestAngularListApiAdapter:
 
         assert len(res) == 1
         assert len(res[0]['options']) == 2
-        assert res[0]['options'][0]['value'] == ''
-        assert res[0]['options'][1]['value'] == 'val1'
+        assert res[0]['options'][0]['value'] == 'val1'
 
     @mock.patch.object(AngularListApiAdapter, '_get_field')
     def test_adapt_filers_select_no_choices(self, mock_get_field,

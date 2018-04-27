@@ -60,4 +60,4 @@ class TestSkill:
         with pytest.raises(Exception) as excinfo:
             skill.save()
 
-        assert excinfo.value.messages[0] == 'Skill cant be active. It doesnt have default price list rate and defalut base rate.'
+        assert excinfo.value.messages[0] == 'Skill cant be active. It doesnt have default price list rate.'
