@@ -32,13 +32,13 @@ def filter_factory(endpoint):
             list_filter = {'field': list_filter}
 
         field = list_filter['field']
+        field_qry = field.replace('.', '__')
 
-        if field in base_class.declared_filters:
+        if field_qry in base_class.declared_filters:
             continue
 
         meta_field = _get_field(meta_fields, field) or list_filter
         field_type = list_filter.get('type', meta_field.get('type'))
-        field_qry = field.replace('.', '__')
         distinct = list_filter.get('distinct', True)
 
         if field_type in [constants.FIELD_RELATED, constants.FIELD_LINK]:
