@@ -31,6 +31,7 @@ _urlpatterns = [
     url(r'^twilio/', include('r3sourcer.apps.twilio.urls', namespace='twilio')),
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),
     url(r'^myob/', include('r3sourcer.apps.myob.urls', namespace='myob')),
+    url(r'^billing/', include('r3sourcer.apps.billing.urls', namespace='billing')),
     url(r'^admin/', admin_logger.urls),
     url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/'.format(api_versions), journal_detail),
     url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/'.format(api_versions), journal_list),

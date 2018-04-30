@@ -85,6 +85,7 @@ INSTALLED_APPS = [
     'r3sourcer.apps.activity',
     'r3sourcer.apps.myob',
     'r3sourcer.apps.company_settings',
+    'r3sourcer.apps.billing',
 
     'compressor',
     'djangobower',
