@@ -12,11 +12,13 @@ from r3sourcer.apps.login.models import TokenLogin
 
 @pytest.mark.django_db
 class TestLoginResource:
+    @mock.patch('r3sourcer.apps.candidate.models.get_site_master_company')
     @mock.patch('r3sourcer.apps.candidate.models.CandidateContact.get_active_states')
-    def test_restore_session_contact_type(self, get_active_states, client, user, token_login):
+    def test_restore_session_contact_type(self, get_active_states, mock_company, client, user, token_login, company):
         mocked_value = mock.Mock()
         mocked_value.score = 1
         get_active_states.return_value = [mocked_value]
+        mock_company.return_value = company
 
         client.get(reverse('api:auth-login-by-token', kwargs={'version': 'v2', 'auth_token': token_login.auth_token}))
         company_contact = CompanyContact.objects.create(

@@ -194,7 +194,7 @@ class TestCandidateContact:
 
         assert closest_company == company
 
-    @patch('r3sourcer.apps.candidate.models.get_default_company')
+    @patch('r3sourcer.apps.candidate.models.get_site_master_company')
     def test_get_closest_company_no_rel(self, mock_comp, candidate, company):
         mock_comp.return_value = company
         closest_company = candidate.get_closest_company()

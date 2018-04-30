@@ -1,4 +1,5 @@
-from django_filters import ModelMultipleChoiceFilter, NumberFilter, CharFilter
+from django.utils.translation import ugettext_lazy as _
+from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoiceFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -12,11 +13,12 @@ class CandidateContactFilter(ActiveStateFilterMixin, FilterSet):
     skill = ModelMultipleChoiceFilter(queryset=Skill.objects.all(), method='filter_skill')
     tag = ModelMultipleChoiceFilter(queryset=Tag.objects.all(), method='filter_tag')
     active_states = NumberFilter(method='filter_active_state')
-    contact__gender = CharFilter()
+    contact__gender = MultipleChoiceFilter(choices=(("male", _("Male")), ("female", _("Female"))))
+    transportation_to_work = MultipleChoiceFilter(choices=CandidateContact.TRANSPORTATION_CHOICES)
 
     class Meta:
         model = CandidateContact
-        fields = ['skill', 'tag', 'transportation_to_work']
+        fields = ['skill', 'tag']
 
     def filter_skill(self, queryset, name, value):
         if not value:
