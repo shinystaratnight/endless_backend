@@ -1050,6 +1050,10 @@ class Company(
     def invoice_rule(self):
         return self.invoice_rules.first()
 
+    @property
+    def is_master(self):
+        return self.type == self.COMPANY_TYPES.master
+
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
         from r3sourcer.apps.hr.models import PayslipRule
