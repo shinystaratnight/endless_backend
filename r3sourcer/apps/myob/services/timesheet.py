@@ -79,7 +79,7 @@ class TimeSheetSync(
             if not timesheet_qs.exists():
                 continue
 
-            self._switch_client(company_file_token=company_file_token)
+            # self._switch_client(company_file_token=company_file_token)
             self._sync_timesheets_to_myob(candidate, timesheet_qs)
 
     @method_decorator(myob_enabled_mode)
