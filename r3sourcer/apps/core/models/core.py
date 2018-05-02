@@ -963,6 +963,8 @@ class Company(
 
     groups = models.ManyToManyField(Group, related_name='companies')
 
+    stripe_customer = models.CharField(max_length=255, blank=True, null=True)
+
     class Meta:
         verbose_name = _("Company")
         verbose_name_plural = _("Companies")

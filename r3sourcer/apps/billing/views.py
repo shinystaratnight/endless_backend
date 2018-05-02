@@ -1,5 +1,6 @@
 import stripe
 
+from django.conf import settings
 from django.shortcuts import render
 from rest_framework import status
 from rest_framework.generics import ListAPIView
@@ -8,14 +9,14 @@ from rest_framework.views import APIView
 
 from r3sourcer.apps.billing.models import PaymentInformation, Plan
 from r3sourcer.apps.billing.serializers import PlanSerializer
+from r3sourcer.apps.billing import STRIPE_INTERVALS
+
+
+stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
 
 #  temporary view to help debug stripe integration
 def billing_index(request):
-    public_key = "pk_test_d5AKTy7WjvRJBJ9wZduzAFjI"
-    secret_key = "sk_test_y8pSRxUBV25cSB1pw80Hkd98"
-    stripe.api_key = secret_key
-
     ## one time payment
     # charge = stripe.Charge.create(
     #     amount=999,
@@ -54,11 +55,25 @@ class PlanCreateView(APIView):
     def post(self, *args, **kwargs):
         plan_type = self.request.POST['type']
         worker_count = self.request.POST['worker_count']
+        plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
+        plan = stripe.Plan.create(
+            product=settings.STRIPE_PRODUCT_ID,
+            nickname=plan_name,
+            interval=STRIPE_INTERVALS[plan_type],
+            currency='aud',
+            amount=self.request.POST['price'] * 100,
+        )
+        subscription = stripe.Subscription.create(
+            customer=self.request.user.company.stripe_customer,
+            items=[{"plan": plan.id}]
+        )
         Plan.objects.create(company=self.request.user.company,
-                            name='R3sourcer {} plan for {} workers'.format(plan_type, worker_count),
+                            name=plan_name,
                             type=plan_type,
                             worker_count=worker_count,
-                            price=self.request.POST['price'])
+                            price=self.request.POST['price'],
+                            stripe_id=plan.id,
+                            subscription_id=subscription.id)
         return Response(status=status.HTTP_201_CREATED)
 
 
@@ -70,3 +85,15 @@ class PlanListView(ListAPIView):
             "plans": serializer.data
         }
         return Response(data)
+
+
+class StripeCustomerCreateView(APIView):
+    def post(self, *args, **kwargs):
+        company = self.request.user.company
+        description = 'Customer for {} company'.format(company.name)
+        customer = stripe.Customer.create(
+            description=description,
+            source=self.request.POST['source'],
+        )
+        company.stripe_customer = customer.id
+        company.save()

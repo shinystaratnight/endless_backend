@@ -417,3 +417,14 @@ SUPERVISOR_DECLINE_TIMEOUT = 4 * 60 * 60
 
 
 QUERYSET_CLASS = env('QUERYSET_CLASS', 'r3sourcer.apps.core.managers.AbstractObjectOwnerQuerySet')
+
+
+# Stripe settings
+# TODO: changes these values after swithing to real stripe account
+STRIPE_PUBLIC_API_KEY = "pk_test_d5AKTy7WjvRJBJ9wZduzAFjI"
+STRIPE_SECRET_API_KEY = "sk_test_y8pSRxUBV25cSB1pw80Hkd98"
+
+STRIPE_PRODUCT_ID = 'prod_Cm3krNJrQwQSnu'
+
+MONTHLY_EXTRA_WORKER_FEE = 13
+ANNUAL_EXTRA_WORKER_FEE = 10
