@@ -79,10 +79,11 @@ class SMSBalance(models.Model):
 
 class Payment(models.Model):
     PAYMENT_TYPES = Choices(
-        ('annual', 'Annual'),
-        ('monthly', 'Monthly')
+        ('sms', 'SMS'),
+        ('subscription', 'Subscription')
     )
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = models.DateTimeField(auto_now_add=True)
     amount = models.IntegerField()
     status = models.CharField(max_length=255)
+    stripe_id = models.CharField(max_length=255)

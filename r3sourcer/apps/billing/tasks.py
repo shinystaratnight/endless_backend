@@ -4,7 +4,7 @@ from celery import shared_task
 from django.conf import settings
 
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.billing.models import Plan
+from r3sourcer.apps.billing.models import Plan, Payment
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -18,13 +18,20 @@ def charge_for_extra_workers(company):
     pass
 
 
-# TODO: twilio feature has to be reworked first
 @shared_task
 def charge_for_sms(company_id, amount):
-    """
-    Calculates number of sms client sent and charges for them.
-    """
     company = Company.objects.get(id=id)
+    charge = stripe.Charge.create(
+        amount=amount * 100,
+        currency='aud',
+        customer=company.stripe_customer,
+    )
+    Payment.objects.create(
+        type=Payment.PAYMENT_TYPES.sms,
+        amount=amount,
+        status=charge.status,
+        stripe_id=charge.id
+    )
 
 
 @shared_task
