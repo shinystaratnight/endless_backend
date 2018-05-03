@@ -93,7 +93,8 @@ class StripeCustomerCreateView(APIView):
         description = 'Customer for {} company'.format(company.name)
         customer = stripe.Customer.create(
             description=description,
-            source=self.request.POST.get('source', ''),
+            source=self.request.data.get('source'),
         )
         company.stripe_customer = customer.id
         company.save()
+        return Response()
