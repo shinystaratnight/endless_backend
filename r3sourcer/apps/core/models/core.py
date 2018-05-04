@@ -1,7 +1,7 @@
 import math
 import os
 import uuid
-from datetime import date
+from datetime import date, datetime, timedelta
 
 import collections
 import re
@@ -1055,6 +1055,25 @@ class Company(
     @property
     def is_master(self):
         return self.type == self.COMPANY_TYPES.master
+
+    @property
+    def currency(self):
+        try:
+            return self.company_addresses.order_by('hq').first().address.country.currency.lower()
+        except:
+            return 'aud'
+
+    @property
+    def active_subscription(self):
+        return self.subscriptions.filter(active=True).first()
+
+    def active_workers(self, start_date=None):
+        from r3sourcer.apps.candidate.models import CandidateContact
+
+        if not start_date:
+            start_date = datetime.today() - timedelta(days=31)
+
+        return CandidateContact.objects.filter(job_offers__time_sheets__shift_started_at__gt=start_date).count()
 
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings

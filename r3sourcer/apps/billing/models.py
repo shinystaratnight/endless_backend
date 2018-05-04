@@ -1,3 +1,5 @@
+import datetime
+
 import stripe
 
 from django.conf import settings
@@ -10,18 +12,7 @@ from r3sourcer.apps.core.models import Company
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
 
-class PaymentInformation(models.Model):
-    company = models.ForeignKey(Company)
-    email = models.CharField(max_length=255)
-    token_type = models.CharField(max_length=255)
-    token = models.CharField(max_length=255)
-
-    def __str__(self, *args, **kwargs):
-        return self.email
-
-
-# TODO: Rename to subscription
-class Plan(models.Model):
+class Subscription(models.Model):
     SUBSCRIPTION_TYPES = Choices(
         ('annual', 'Annual'),
         ('monthly', 'Monthly')
@@ -40,32 +31,43 @@ class Plan(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
     status = models.CharField(max_length=255, choices=SUBSCRIPTION_STATUSES)
+    current_period_start = models.DateField(blank=True, null=True)
+    current_period_end = models.DateField(blank=True, null=True)
 
     # stripe ids
-    stripe_id = models.CharField(max_length=255)  # TODO: rename it to plan_id
+    plan_id = models.CharField(max_length=255)
     subscription_id = models.CharField(max_length=255)
 
     def sync_status(self):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.status = subscription.status
-        self.save()
+
+    def sync_periods(self):
+        subscription = stripe.Subscription.retrieve(self.subscription_id)
+        self.current_period_start = datetime.datetime.fromtimestamp(subscription.current_period_start)
+        self.current_period_end = datetime.datetime.fromtimestamp(subscription.current_period_end)
 
     def save(self, *args, **kwargs):
-        super(Plan, self).save(*args, **kwargs)
+        super(Subscription, self).save(*args, **kwargs)
 
         if self.active:
-            Plan.objects.filter(company=self.company) \
+            Subscription.objects.filter(company=self.company) \
                         .exclude(id=self.id) \
                         .update(active=False)
 
 
 class SMSBalance(models.Model):
+    company = models.ForeignKey(Company)
     balance = models.IntegerField(default=0)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
+    discount = models.IntegerField(default=0)
 
-    def substract_sms_cost(self, number_of_sms):
-        self.balance = self.balance - number_of_sms * settings.COST_OF_SMS
+    # TODO: use this method every time sms is sent after twilio feature rework
+    # TODO: write tests
+    def substract_sms_cost(self, number_of_segments):
+        amount = number_of_segments * settings.COST_OF_SMS_SEGMENT * (1.0 - (float(self.discount) / 100))
+        self.balance = self.balance - amount
         self.save()
 
     def save(self, *args, **kwargs):
@@ -80,7 +82,7 @@ class SMSBalance(models.Model):
 class Payment(models.Model):
     PAYMENT_TYPES = Choices(
         ('sms', 'SMS'),
-        ('subscription', 'Subscription')
+        ('extra_workers', 'Extra Workers')
     )
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = models.DateTimeField(auto_now_add=True)

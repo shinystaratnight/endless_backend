@@ -1,9 +1,9 @@
 from rest_framework import serializers
 
-from r3sourcer.apps.billing.models import Plan
+from r3sourcer.apps.billing.models import Subscription
 
 
-class PlanSerializer(serializers.ModelSerializer):
+class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Plan
+        model = Subscription
         fields = ('company', 'name', 'type', 'price', 'worker_count', 'created', 'active', 'id')
