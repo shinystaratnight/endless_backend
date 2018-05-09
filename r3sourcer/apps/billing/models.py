@@ -23,7 +23,7 @@ class Subscription(models.Model):
         ('canceled', 'Canceled'),
         ('unpaid', 'Unpaid'),
     )
-    company = models.ForeignKey(Company)
+    company = models.ForeignKey(Company, related_name='subscriptions')
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=255, choices=SUBSCRIPTION_TYPES)
     price = models.PositiveIntegerField()
@@ -58,7 +58,7 @@ class Subscription(models.Model):
 
 class SMSBalance(models.Model):
     company = models.ForeignKey(Company)
-    balance = models.IntegerField(default=0)
+    balance = models.DecimalField(default=0)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
     discount = models.IntegerField(default=0)
@@ -76,7 +76,7 @@ class SMSBalance(models.Model):
         super(SMSBalance, self).save(*args, **kwargs)
 
         if self.balance <= self.top_up_limit:
-            charge_for_sms.delay(self.company.id, self.top_up_amount)
+            charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
 
 
 class Payment(models.Model):

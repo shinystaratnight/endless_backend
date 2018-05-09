@@ -17,6 +17,11 @@ stripe.api_key = settings.STRIPE_SECRET_API_KEY
 class SubscriptionCreateView(APIView):
     def post(self, *args, **kwargs):
         company = self.request.user.company
+
+        if not company.stripe_customer:
+            data = {'error': 'User didnt provide payment information.'}
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+
         plan_type = self.request.POST['type']
         worker_count = self.request.POST['worker_count']
         plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
@@ -25,18 +30,19 @@ class SubscriptionCreateView(APIView):
             nickname=plan_name,
             interval=STRIPE_INTERVALS[plan_type],
             currency=company.currency,
-            amount=self.request.POST['price'] * 100,
+            amount=int(self.request.POST['price']) * 100,
         )
+
         subscription = stripe.Subscription.create(
-            customer=self.request.user.company.stripe_customer,
+            customer=company.stripe_customer,
             items=[{"plan": plan.id}]
         )
-        Subscription.objects.create(company=self.request.user.company,
+        Subscription.objects.create(company=company,
                                     name=plan_name,
                                     type=plan_type,
                                     worker_count=worker_count,
                                     price=self.request.POST['price'],
-                                    stripe_id=plan.id,
+                                    plan_id=plan.id,
                                     subscription_id=subscription.id)
         return Response(status=status.HTTP_201_CREATED)
 
@@ -61,14 +67,19 @@ class StripeCustomerCreateView(APIView):
         )
         company.stripe_customer = customer.id
         company.save()
-        return Response()
+        return Response(status=status.HTTP_201_CREATED)
 
 
 class SubscriptionStatusView(APIView):
-    def get(self):
+    def get(self, *args, **kwargs):
+        status = 'not_created'
         company = self.request.user.company
         subscription = company.subscriptions.filter(active=True).first()
+
+        if subscription:
+            status = subscription.status
+
         data = {
-            'status': subscription.status
+            'status': status
         }
         return Response(data)
