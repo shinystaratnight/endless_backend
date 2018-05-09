@@ -58,13 +58,11 @@ class Subscription(models.Model):
 
 class SMSBalance(models.Model):
     company = models.ForeignKey(Company)
-    balance = models.DecimalField(default=0)
+    balance = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
     discount = models.IntegerField(default=0)
 
-    # TODO: use this method every time sms is sent after twilio feature rework
-    # TODO: write tests
     def substract_sms_cost(self, number_of_segments):
         amount = number_of_segments * settings.COST_OF_SMS_SEGMENT * (1.0 - (float(self.discount) / 100))
         self.balance = self.balance - amount
@@ -73,10 +71,11 @@ class SMSBalance(models.Model):
     def save(self, *args, **kwargs):
         from r3sourcer.apps.billing.tasks import charge_for_sms
 
-        super(SMSBalance, self).save(*args, **kwargs)
-
         if self.balance <= self.top_up_limit:
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
+            self.balance += self.top_up_amount
+
+        super(SMSBalance, self).save(*args, **kwargs)
 
 
 class Payment(models.Model):

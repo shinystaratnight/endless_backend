@@ -13,7 +13,7 @@ stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
 
 @shared_task
-def charge_for_extra_workers(company):
+def charge_for_extra_workers():
     """
     Checks number of active workers. If that number is bigger that number of workers from client's plan
     then it charges extra fee for every worker.

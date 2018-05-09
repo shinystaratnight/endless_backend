@@ -1,6 +1,7 @@
 from django.core.urlresolvers import reverse
 
 from r3sourcer.apps.billing.models import Subscription
+from r3sourcer.apps.core.models import Company
 
 
 class TestSubscriptionCreateView:
@@ -82,7 +83,7 @@ class TestStripeCustomerCreateView:
     def test_get(self, client, user, company, relationship):
         url = reverse('billing:stripe_customer_create')
         client.force_login(user)
-        response = client.post(url).json()
-        stripe_customer = company.stripe_customer
+        client.post(url).json()
 
-        import pdb; pdb.set_trace()
+        assert not company.stripe_customer
+        assert Company.objects.get(id=company.id).stripe_customer
