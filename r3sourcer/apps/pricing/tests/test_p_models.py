@@ -2,6 +2,7 @@ import pytest
 from datetime import date
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.pricing.models import (
@@ -130,3 +131,37 @@ class TestPriceListRate:
 
         assert base_rate3.default_rate
         assert not base_rate4.default_rate
+
+
+    def test_clean(self, skill, price_list):
+        skill.lower_rate_limit = 30
+        skill.upper_rate_limit = 50
+        skill.default_rate = 40
+        skill.save()
+
+        price_list_rate = PriceListRate.objects.create(
+            skill=skill,
+            price_list=price_list,
+            default_rate=True
+        )
+
+        assert price_list_rate.hourly_rate == skill.default_rate
+
+        with pytest.raises(Exception) as exception1:
+            PriceListRate.objects.create(
+                skill=skill,
+                price_list=price_list,
+                default_rate=True,
+                hourly_rate=10
+            )
+
+        with pytest.raises(Exception) as exception2:
+            PriceListRate.objects.create(
+                skill=skill,
+                price_list=price_list,
+                default_rate=True,
+                hourly_rate=100
+            )
+
+        assert exception1.typename == 'ValidationError'
+        assert exception2.typename == 'ValidationError'
