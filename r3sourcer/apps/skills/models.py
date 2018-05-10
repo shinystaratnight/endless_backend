@@ -49,6 +49,27 @@ class Skill(MYOBMixin, UUIDModel):
     )
     active = models.BooleanField(default=True, verbose_name=_("Active"))
 
+    upper_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    lower_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    default_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
     class Meta:
         verbose_name = _("Skill")
         verbose_name_plural = _("Skills")

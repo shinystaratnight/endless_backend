@@ -215,7 +215,20 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
             instance.default_rate = True
             instance.save()
 
+    def clean(self, *args, **kwargs):
+        if self.skill.upper_rate_limit:
+            if self.hourly_rate > self.skill.upper_rate_limit:
+                raise ValidationError({"hourly_rate": _("Hourly rate has to be lower than skill's upper rate limit.")})
+
+        if self.skill.lower_rate_limit:
+            if self.hourly_rate < self.skill.lower_rate_limit:
+                raise ValidationError({"hourly_rate": _("Hourly rate has to be higher than skill's lower rate limit.")})
+
     def save(self, *args, **kwargs):
+        if not self.hourly_rate:
+            self.hourly_rate = self.skill.default_rate
+
+        self.clean()
         super(PriceListRate, self).save(*args, **kwargs)
 
         if self.default_rate:
