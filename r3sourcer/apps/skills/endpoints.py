@@ -91,14 +91,10 @@ class SkillBaseRateEndpoint(ApiEndpoint):
             "field": "hourly_rate",
             "type": constants.FIELD_TEXT
         },
-        {
-            "field": "default_rate",
-            "type": constants.FIELD_CHECKBOX
-        }
     )
 
     list_editable = (
-        'hourly_rate', 'default_rate',
+        'hourly_rate',
         {
             'label': _('Actions'),
             'delim': ' ',
