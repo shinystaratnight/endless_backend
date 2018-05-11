@@ -16,7 +16,8 @@ class SkillEndpoint(ApiEndpoint):
     serializer = skill_serializer.SkillSerializer
 
     fieldsets = (
-        'name', 'short_name',  'carrier_list_reserve', 'employment_classification', 'active',
+        'name', 'short_name',  'carrier_list_reserve', 'employment_classification', 'upper_rate_limit',
+        'lower_rate_limit', 'default_rate',
         {
             'type': constants.FIELD_LIST,
             'field': 'id_',
