@@ -136,10 +136,6 @@ class PriceListRateEndpoint(ApiEndpoint):
             "type": constants.FIELD_TEXT
         },
         {
-            "field": "default_rate",
-            "type": constants.FIELD_CHECKBOX
-        },
-        {
             "field": "skill",
             "type": constants.FIELD_RELATED,
             "hidden": True
@@ -161,7 +157,7 @@ class PriceListRateEndpoint(ApiEndpoint):
                     api_reverse_lazy('pricing/pricelists')
                 ),
             },
-            'hourly_rate', 'default_rate',
+            'hourly_rate',
             {
                 'label': _('Actions'),
                 'delim': ' ',
@@ -173,7 +169,7 @@ class PriceListRateEndpoint(ApiEndpoint):
             }
         ),
         'pricelist': (
-            'skill', 'hourly_rate', 'default_rate',
+            'skill', 'hourly_rate',
             {
                 'label': _('Actions'),
                 'delim': ' ',
