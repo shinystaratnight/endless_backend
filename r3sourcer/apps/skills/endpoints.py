@@ -17,7 +17,7 @@ class SkillEndpoint(ApiEndpoint):
 
     fieldsets = (
         'name', 'short_name',  'carrier_list_reserve', 'employment_classification', 'upper_rate_limit',
-        'lower_rate_limit', 'default_rate',
+        'lower_rate_limit',
         {
             'type': constants.FIELD_LIST,
             'field': 'id_',
