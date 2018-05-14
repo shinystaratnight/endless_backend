@@ -563,7 +563,7 @@ class SkillRateRelEndpoint(core_endpoints.ApiEndpoint):
 
 
 router.register(candidate_models.VisaType)
-router.register(candidate_models.SuperannuationFund)
+router.register(candidate_models.SuperannuationFund, search_fields=['name'])
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
 router.register(endpoint=TagRelEndpoint())
