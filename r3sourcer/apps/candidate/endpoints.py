@@ -567,8 +567,17 @@ class SkillRateRelEndpoint(core_endpoints.ApiEndpoint):
     list_filter = ('candidate_skill', )
 
 
+class SuperannuationFundEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.SuperannuationFund
+
+    fieldsets = ('name', 'membership_number')
+
+    search_fields = ['name']
+
+
 router.register(candidate_models.VisaType)
-router.register(candidate_models.SuperannuationFund, search_fields=['name'])
+router.register(endpoint=SuperannuationFundEndpoint())
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
 router.register(endpoint=TagRelEndpoint())
