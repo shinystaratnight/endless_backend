@@ -438,3 +438,14 @@ def roles(db):
     role = Role.objects.create(name='manager')
     client = Role.objects.create(name='client')
     return [candidate, role, client]
+
+
+@pytest.fixture(scope='session')
+def kr_localization():
+    country = models.Country.objects.get_or_create(name='Korea', code2='KR')
+    return models.CompanyLocalization.objects.create(
+        country=country,
+        field_name='business_id',
+        verbose_value='KBN',
+        help_text='Korean Business Number'
+    )

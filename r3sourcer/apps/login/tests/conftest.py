@@ -3,9 +3,7 @@ import pytest
 
 from r3sourcer.apps.logger.manager import get_endless_logger
 
-from r3sourcer.apps.core.models import (
-    User
-)
+from r3sourcer.apps.core.models import User, Company
 from r3sourcer.apps.login.models import TokenLogin
 
 
@@ -39,3 +37,14 @@ def token_login(mock_gen_token, contact):
 @pytest.fixture(autouse=True, scope='module')
 def clickhouse_restart():
     logger = get_endless_logger()
+
+
+@pytest.fixture
+def company(db):
+    return Company.objects.create(
+        name='Company',
+        business_id='111',
+        registered_for_gst=True,
+        website='test.company.tt',
+        type=Company.COMPANY_TYPES.master,
+    )

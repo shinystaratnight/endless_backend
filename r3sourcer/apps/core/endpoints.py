@@ -923,9 +923,7 @@ class CompanyContactEndpoint(ApiEndpoint):
     )
 
     fieldsets = (
-        'contact', 'job_title', 'rating_unreliable',
-        'receive_job_confirmation_sms',
-        'voip_username', 'voip_password', 'pin_code'
+        'contact', 'job_title', 'rating_unreliable', 'receive_job_confirmation_sms', 'pin_code'
     )
 
     search_fields = ('job_title', 'contact__title', 'contact__first_name', 'contact__last_name')

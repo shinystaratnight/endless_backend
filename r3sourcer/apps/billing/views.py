@@ -67,7 +67,7 @@ class StripeCustomerCreateView(APIView):
         )
         company.stripe_customer = customer.id
         company.save()
-        return Response(status=status.HTTP_201_CREATED)
+        return Response(status=status.HTTP_201_CREATED, content_type='application/json')
 
 
 class SubscriptionStatusView(APIView):

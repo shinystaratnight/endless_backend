@@ -238,8 +238,7 @@ class ClientContactRelConfig(BaseConfig):
 class AccountContactConfig(BaseConfig):
 
     columns = {
-        'id', 'contact_id', 'job_title', 'legacy_myob_card_number',
-        'voip_username', 'voip_password', 'updated_at', 'created_at',
+        'id', 'contact_id', 'job_title', 'legacy_myob_card_number', 'updated_at', 'created_at',
     }
     model = models.CompanyContact
     lbk_model = 'crm_core_accountcontact'

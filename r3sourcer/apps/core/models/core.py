@@ -667,19 +667,6 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
         blank=True
     )
 
-    voip_username = models.CharField(
-        max_length=15,
-        verbose_name=_("VoIP Username"),
-        help_text=_("Phone Extension"),
-        blank=True
-    )
-
-    voip_password = models.CharField(
-        max_length=15,
-        verbose_name=_("VoIP Password"),
-        blank=True
-    )
-
     approved_by_primary_contact = models.ForeignKey(
         'Contact',
         verbose_name=_("Approved by primary contact"),
@@ -689,6 +676,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
         editable=False,
         related_name="primary_approvals",
     )
+
     primary_contact_approved_at = models.DateTimeField(
         verbose_name=_("Primary Contact approved at"),
         null=True,

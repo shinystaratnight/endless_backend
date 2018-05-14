@@ -47,7 +47,7 @@ class TestSkill:
     def test_validation_success(self, price_list):
         skill = Skill.objects.create(name="Driver", carrier_list_reserve=2, short_name="Drv", active=False)
         SkillBaseRate.objects.create(skill=skill, hourly_rate=20, default_rate=True)
-        PriceListRate.objects.create(skill=skill, price_list=price_list, default_rate=True)
+        PriceListRate.objects.create(skill=skill, price_list=price_list, hourly_rate=10, default_rate=True)
         skill.active = True
         skill.save()
 

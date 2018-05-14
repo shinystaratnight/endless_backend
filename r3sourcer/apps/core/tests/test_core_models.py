@@ -464,16 +464,6 @@ class TestInvoiceLine:
 @pytest.mark.django_db
 class TestCompanyLocalization:
 
-    @pytest.fixture(scope='session')
-    def kr_localization(self):
-        country = Country.objects.get(code2='KR')
-        return CompanyLocalization.objects.create(
-            country=country,
-            field_name='business_id',
-            verbose_value='KBN',
-            help_text='Korean Business Number'
-        )
-
     def test_country_metadata(self):
         metadata = CompanyLocalization.get_company_metadata('NZ')
         self.check_metadata_format(metadata)

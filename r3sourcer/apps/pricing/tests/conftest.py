@@ -146,4 +146,5 @@ def price_list_rate(db, price_list, skill):
     return PriceListRate.objects.create(
         price_list=price_list,
         skill=skill,
+        hourly_rate=10
     )
