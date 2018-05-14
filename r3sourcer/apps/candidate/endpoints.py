@@ -58,12 +58,17 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'fields': ({
                         'type': constants.FIELD_RELATED,
                         'field': 'recruitment_agent',
+                        'endpoint': api_reverse_lazy('core/companycontacts'),
                         'read_only': True,
                         'label': _('Recruitment Agent'),
                         'custom': (
                             'recruitment_agent.job_title', 'recruitment_agent.contact.__str__',
                             'recruitment_agent.contact.phone_mobile'
                         ),
+                        'default': 'session.contact.contact_id',
+                        'query': {
+                            'master_company': 'current',
+                        },
                     },)
                 },
             )
