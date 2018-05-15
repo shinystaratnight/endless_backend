@@ -440,9 +440,9 @@ def roles(db):
     return [candidate, role, client]
 
 
-@pytest.fixture(scope='session')
-def kr_localization():
-    country = models.Country.objects.get_or_create(name='Korea', code2='KR')
+@pytest.fixture()
+def kr_localization(db):
+    country, _ = models.Country.objects.get_or_create(code2='KR', defaults={'name': 'Korea'})
     return models.CompanyLocalization.objects.create(
         country=country,
         field_name='business_id',
