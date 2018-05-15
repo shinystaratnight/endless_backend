@@ -17,7 +17,7 @@ from rest_framework.viewsets import ViewSet
 from .. import models, mixins
 from ..decorators import get_model_workflow_functions
 from ..service import factory
-from ..utils.companies import get_master_companies_by_contact
+from ..utils.companies import get_master_companies_by_contact, get_site_master_company
 from ..utils.user import get_default_company
 from ..workflow import WorkflowProcess
 
@@ -25,7 +25,6 @@ from . import permissions, serializers
 from .decorators import list_route, detail_route
 
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
-from r3sourcer.apps.core.api.permissions import SiteMasterCompanyFilterBackend
 from r3sourcer.apps.core_adapter import constants
 
 
@@ -94,11 +93,17 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return self.create_from_data(data, *args, **kwargs)
 
     def create_from_data(self, data, *args, **kwargs):
+        is_response = kwargs.pop('is_response', True)
+
         serializer = self.get_serializer(data=data)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+        if is_response:
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        else:
+            return serializer
 
     def update(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
@@ -253,6 +258,45 @@ class CompanyViewset(BaseApiViewset):
                 company_rel.master_company = master_company_obj
                 company_rel.primary_contact = primary_contact_obj
                 company_rel.save()
+
+    def create(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+        data = self.clean_request_data(data)
+
+        invoice_rule_data = data.pop('invoice_rule')
+        invoice_rule_data.pop('id')
+
+        # check Invoice Rule fields for new Company
+        invoice_rule_serializer = serializers.InvoiceRuleSerializer(data=invoice_rule_data)
+        if not invoice_rule_serializer.is_valid():
+            errors = invoice_rule_serializer.errors
+            errors.pop('company', None)
+            if errors:
+                raise exceptions.ValidationError(errors)
+
+        # create Company
+        kwargs['is_response'] = False
+        instance_serializer = self.create_from_data(data, *args, **kwargs)
+
+        # update Invoice Rule object
+        invoice_rule_data['company'] = instance_serializer.instance.id
+        invoice_rule_instance = instance_serializer.instance.invoice_rules.first()
+        invoice_rule_serializer = serializers.InvoiceRuleSerializer(
+            instance=invoice_rule_instance, data=invoice_rule_data, partial=True
+        )
+        invoice_rule_serializer.is_valid(raise_exception=True)
+        invoice_rule_serializer.save()
+
+        master_company = get_site_master_company(request=request)
+        primary_contact = request.user.contact.company_contact.first()
+        models.CompanyRel.objects.create(
+            master_company=master_company,
+            regular_company=instance_serializer.instance,
+            primary_contact=primary_contact
+        )
+
+        headers = self.get_success_headers(instance_serializer.data)
+        return Response(instance_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class CompanyContactViewset(BaseApiViewset):

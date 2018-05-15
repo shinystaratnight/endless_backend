@@ -601,15 +601,6 @@ class CompanyEndpoint(ApiEndpoint):
                 {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': (
-                        'type', 'company_rating', {
-                            'label': _('Date of incorporation'),
-                            'type': constants.FIELD_DATE,
-                            'field': 'date_of_incorporation'
-                        }, 'business_id', 'registered_for_gst',
-                    ),
-                }, {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': (
                         'name', 'website', {
                             'label': _('Primary Contact'),
                             'type': constants.FIELD_RELATED,
@@ -642,6 +633,15 @@ class CompanyEndpoint(ApiEndpoint):
                             },
                         },
                     ),
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': (
+                        {
+                            'label': _('Date of incorporation'),
+                            'type': constants.FIELD_DATE,
+                            'field': 'date_of_incorporation'
+                        }, 'business_id', 'registered_for_gst',
+                    ),
                 },
             ),
         }, {
@@ -649,13 +649,13 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}'
             },
             'type': constants.FIELD_LIST,
-            'collapsed': True,
             'label': _('Company Address'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/companyaddresses'),
             'prefilled': {
                 'company': '{id}',
-            }
+            },
+            'delay': True,
         }, {
             'query': {
                 'company': '{id}'
@@ -773,9 +773,14 @@ class CompanyEndpoint(ApiEndpoint):
                     'field': 'invoice_rule.id',
                     'type': constants.FIELD_TEXT,
                     'hidden': True,
+                    'read_only': True,
                 },
-                'invoice_rule.separation_rule', 'invoice_rule.period',
+                'invoice_rule.separation_rule',
                 {
+                    'field': 'invoice_rule.period',
+                    'type': constants.FIELD_SELECT,
+                    'label': _('Invoice Frequency'),
+                }, {
                     'field': 'invoice_rule.period_zero_reference',
                     'type': constants.FIELD_TEXT,
                     'showIf': [
