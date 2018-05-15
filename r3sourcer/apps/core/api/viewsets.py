@@ -287,12 +287,12 @@ class CompanyViewset(BaseApiViewset):
         invoice_rule_serializer.is_valid(raise_exception=True)
         invoice_rule_serializer.save()
 
-        master_company = get_site_master_company(request=request)
-        primary_contact = request.user.contact.company_contact.first()
+        master_company = data.get('master_company') or get_site_master_company(request=request).id
+        primary_contact = data.get('primary_contact') or request.user.contact.company_contact.first().id
         models.CompanyRel.objects.create(
-            master_company=master_company,
+            master_company_id=master_company,
             regular_company=instance_serializer.instance,
-            primary_contact=primary_contact
+            primary_contact_id=primary_contact
         )
 
         headers = self.get_success_headers(instance_serializer.data)
