@@ -631,7 +631,11 @@ class CompanyEndpoint(ApiEndpoint):
                                 'customer_company': '{id.id}',
                                 'master_company': '{master_company.id}',
                             },
-                        },
+                        }, {
+                            'type': constants.FIELD_TEXT,
+                            'field': 'type',
+                            'hide': True,
+                        }
                     ),
                 }, {
                     'type': constants.CONTAINER_COLUMN,
@@ -640,7 +644,7 @@ class CompanyEndpoint(ApiEndpoint):
                             'label': _('Date of incorporation'),
                             'type': constants.FIELD_DATE,
                             'field': 'date_of_incorporation'
-                        }, 'business_id', 'registered_for_gst',
+                        }, 'business_id', 'registered_for_gst', 'description',
                     ),
                 },
             ),
@@ -698,14 +702,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Banking details'),
-            'fields': (
-                'billing_email',
-                {
-                    'type': constants.FIELD_RELATED,
-                    'field': 'bank_account',
-                    'endpoint': api_reverse_lazy('core/bankaccounts'),
-                },
-            )
+            'fields': ('billing_email', ),
         }, {
             'type': constants.FIELD_LIST,
             'collapsed': True,
@@ -827,9 +824,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Other'),
-            'fields': (
-                'timesheet_approval_scheme', 'description'
-            )
+            'fields': ('timesheet_approval_scheme', )
         },
     )
 
