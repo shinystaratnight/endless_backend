@@ -280,11 +280,6 @@ class ContactMapper:
         if not address:
             return myob_address
 
-        if address.phone_landline:
-            myob_address['Phone2'] = str(address.phone_landline)
-        if address.phone_fax:
-            myob_address['Fax'] = str(address.phone_fax)
-
         myob_address.update({
             'City': address.city.name if address.city else '',
             'Street': address.street_address,

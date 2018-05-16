@@ -30,8 +30,6 @@ class ContactEndpoint(ApiEndpoint):
         'address__city__search_names',
         'email',
         'phone_mobile',
-        'address__phone_landline',
-        'address__phone_fax',
     )
 
     list_display = (
@@ -126,7 +124,7 @@ class ContactEndpoint(ApiEndpoint):
                 }, {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': (
-                        'email', 'phone_mobile', 'address.phone_landline',
+                        'email', 'phone_mobile',
                         {
                             'type': constants.FIELD_TEXT,
                             'field': 'address.street_address',
@@ -277,10 +275,6 @@ class CompanyAddressEndpoint(ApiEndpoint):
                     }
                 }, 'address.__str__'),
             }, {
-                'type': constants.FIELD_LINK,
-                'link': 'tel:{field}',
-                'field': 'address.phone_landline',
-            }, {
                 'type': constants.FIELD_BUTTON,
                 'action': 'openMap',
                 'text': _('Open map'),
@@ -357,7 +351,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 '{}{{primary_contact.id}}/',
                 api_reverse_lazy('core/companycontacts')
             ),
-        }, 'active', {
+        }, 'phone_landline', 'phone_fax', 'active', {
             **constants.BUTTON_EDIT,
             'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/companyaddresses'))
         }, constants.BUTTON_DELETE
