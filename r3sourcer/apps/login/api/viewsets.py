@@ -94,6 +94,9 @@ class AuthViewSet(BaseViewsetMixin,
         login(request, user)
         cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
 
+        if not serializer.data['remember_me']:
+            request.session.set_expiry(0)
+
         return Response({
             'status': 'success',
             'data': {
@@ -120,6 +123,8 @@ class AuthViewSet(BaseViewsetMixin,
         instance.save()
 
         cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
+
+        request.session.set_expiry(0)
 
         return Response({'status': 'success', 'data': serializer.data})
 

@@ -26,10 +26,15 @@ class LoginSerializer(serializers.Serializer):
         allow_null=True,
         label=_('Password (optional)')
     )
+    remember_me = serializers.BooleanField(
+        required=False,
+        default=False,
+        label=_('Remember me')
+    )
 
     class Meta:
         model = models.TokenLogin
-        fields = ('username', 'password')
+        fields = ('username', 'password', 'remember_me')
 
     def validate(self, data):
         username = data['username']
