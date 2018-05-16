@@ -644,7 +644,12 @@ class CompanyEndpoint(ApiEndpoint):
                             'label': _('Date of incorporation'),
                             'type': constants.FIELD_DATE,
                             'field': 'date_of_incorporation'
-                        }, 'business_id', 'registered_for_gst', 'description',
+                        },
+                        'business_id', 'registered_for_gst',
+                        {
+                            'field': 'description',
+                            'type': constants.FIELD_TEXTAREA,
+                        }
                     ),
                 },
             ),
@@ -1372,10 +1377,18 @@ class ContactUnavailabilityEndpoint(ApiEndpoint):
     list_filter = ('contact', )
 
 
+class BankAccountEndpoint(ApiEndpoint):
+
+    model = models.BankAccount
+
+    fieldsets = ('bank_name', 'bank_account_name', 'bsb', 'account_number')
+    search_fields = ('bank_name', 'bank_account_name')
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(models.Address, serializer=serializers.AddressSerializer)
-router.register(models.BankAccount, search_fields=('bank_name', 'bank_account_name'))
+router.register(endpoint=BankAccountEndpoint())
 router.register(endpoint=CityEndpoint())
 router.register(endpoint=CompanyEndpoint())
 router.register(endpoint=CompanyAddressEndpoint())
