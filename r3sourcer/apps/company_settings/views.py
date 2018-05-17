@@ -11,6 +11,7 @@ from rest_framework.views import APIView
 from r3sourcer.apps.company_settings import serializers
 from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
 from r3sourcer.apps.core.models import User
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
 from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
 from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
@@ -509,3 +510,13 @@ class MYOBAPIKeyView(APIView):
             'api_key': settings.MYOB_APP['api_key']
         }
         return Response(data)
+
+
+class SiteCompanySettingsView(APIView):
+    def get(self, *args, **kwargs):
+        company = get_site_master_company(request=self.request)
+        company_settings = company.company_settings
+
+        company_settings_serializer = serializers.CompanySettingsSerializer(company_settings)
+
+        return Response(company_settings_serializer.data)

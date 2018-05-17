@@ -21,6 +21,7 @@ urlpatterns = [
 
     # Company settings
     url(r'^company_settings/users/$', views.CompanyUserListView.as_view(), name='company_users_list'),
+    url(r'^company_settings/site/$', views.SiteCompanySettingsView.as_view(), name='site_company_settings'),
     url(r'^company_settings/$', views.CompanySettingsView.as_view(), name='company_settings'),
 
     # MYOB
