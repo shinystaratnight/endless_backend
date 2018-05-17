@@ -570,7 +570,6 @@ class FormStorageViewSet(BaseApiViewset):
             return Response(storage_helper.errors, status=status.HTTP_400_BAD_REQUEST)
 
         instance = storage_helper.create_instance()
-        print(instance)
 
         return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
 

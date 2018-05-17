@@ -7,7 +7,7 @@ from rest_framework.response import Response
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import Form, Company, Invoice, Role, User, CompanyContact
-from r3sourcer.apps.core.utils.user import get_default_company
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.tasks import sync_invoice
 
@@ -36,12 +36,14 @@ class RegisterFormView(generic.TemplateView):
 
     def get_context_data(self, **kwargs):
         context = super(RegisterFormView, self).get_context_data(**kwargs)
-        context['company'] = get_default_company()
+        context['company'] = get_site_master_company(request=self.request)
         context['company_id'] = str(context['company'].pk)
 
-        form = Form.objects.filter(Q(company=context['company']) | Q(company=None), is_active=True).first()
+        form = Form.objects.filter(company=context['company'], is_active=True).first()
         if not form:
-            raise Http404
+            form = Form.objects.filter(company=None, is_active=True).first()
+            if not form:
+                raise Http404
 
         context['form'] = form
         return context

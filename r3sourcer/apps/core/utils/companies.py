@@ -51,6 +51,8 @@ def get_site_url(request=None, user=None):
 def get_site_master_company(site=None, request=None, user=None):
     if isinstance(site, str):
         site = Site.objects.get_by_natural_key(site)
+    elif request:
+        site = Site.objects.get(domain=request.get_host())
     elif site is None:
         site = get_current_site(request)
 
