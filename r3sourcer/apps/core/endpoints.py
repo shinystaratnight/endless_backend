@@ -601,15 +601,6 @@ class CompanyEndpoint(ApiEndpoint):
                 {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': (
-                        'type', 'company_rating', {
-                            'label': _('Date of incorporation'),
-                            'type': constants.FIELD_DATE,
-                            'field': 'date_of_incorporation'
-                        }, 'business_id', 'registered_for_gst',
-                    ),
-                }, {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': (
                         'name', 'website', {
                             'label': _('Primary Contact'),
                             'type': constants.FIELD_RELATED,
@@ -640,7 +631,25 @@ class CompanyEndpoint(ApiEndpoint):
                                 'customer_company': '{id.id}',
                                 'master_company': '{master_company.id}',
                             },
+                        }, {
+                            'type': constants.FIELD_TEXT,
+                            'field': 'type',
+                            'hide': True,
+                        }
+                    ),
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': (
+                        {
+                            'label': _('Date of incorporation'),
+                            'type': constants.FIELD_DATE,
+                            'field': 'date_of_incorporation'
                         },
+                        'business_id', 'registered_for_gst',
+                        {
+                            'field': 'description',
+                            'type': constants.FIELD_TEXTAREA,
+                        }
                     ),
                 },
             ),
@@ -649,13 +658,13 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}'
             },
             'type': constants.FIELD_LIST,
-            'collapsed': True,
             'label': _('Company Address'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/companyaddresses'),
             'prefilled': {
                 'company': '{id}',
-            }
+            },
+            'delay': True,
         }, {
             'query': {
                 'company': '{id}'
@@ -698,14 +707,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Banking details'),
-            'fields': (
-                'billing_email',
-                {
-                    'type': constants.FIELD_RELATED,
-                    'field': 'bank_account',
-                    'endpoint': api_reverse_lazy('core/bankaccounts'),
-                },
-            )
+            'fields': ('billing_email', ),
         }, {
             'type': constants.FIELD_LIST,
             'collapsed': True,
@@ -773,9 +775,14 @@ class CompanyEndpoint(ApiEndpoint):
                     'field': 'invoice_rule.id',
                     'type': constants.FIELD_TEXT,
                     'hidden': True,
+                    'read_only': True,
                 },
-                'invoice_rule.separation_rule', 'invoice_rule.period',
+                'invoice_rule.separation_rule',
                 {
+                    'field': 'invoice_rule.period',
+                    'type': constants.FIELD_SELECT,
+                    'label': _('Invoice Frequency'),
+                }, {
                     'field': 'invoice_rule.period_zero_reference',
                     'type': constants.FIELD_TEXT,
                     'showIf': [
@@ -822,9 +829,7 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
             'name': _('Other'),
-            'fields': (
-                'timesheet_approval_scheme', 'description'
-            )
+            'fields': ('timesheet_approval_scheme', )
         },
     )
 
@@ -1370,10 +1375,18 @@ class ContactUnavailabilityEndpoint(ApiEndpoint):
     list_filter = ('contact', )
 
 
+class BankAccountEndpoint(ApiEndpoint):
+
+    model = models.BankAccount
+
+    fieldsets = ('bank_name', 'bank_account_name', 'bsb', 'account_number')
+    search_fields = ('bank_name', 'bank_account_name')
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(models.Address, serializer=serializers.AddressSerializer)
-router.register(models.BankAccount, search_fields=('bank_name', 'bank_account_name'))
+router.register(endpoint=BankAccountEndpoint())
 router.register(endpoint=CityEndpoint())
 router.register(endpoint=CompanyEndpoint())
 router.register(endpoint=CompanyAddressEndpoint())
