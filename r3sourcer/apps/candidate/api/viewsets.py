@@ -157,9 +157,9 @@ class CandidateContactViewset(BaseApiViewset):
                 'type': constants.CONTAINER_COLLAPSE,
                 'label': _('Contact Details'),
                 'fields': (
-                    'contact.email', 'contact.phone_mobile', 'contact.address.phone_landline',
-                    'contact.address.phone_fax', 'contact.address.street_address', 'contact.address.postal_code',
-                    'contact.address.city', 'contact.address.state', 'contact.address.country',
+                    'contact.email', 'contact.phone_mobile', 'contact.address.street_address',
+                    'contact.address.postal_code', 'contact.address.city', 'contact.address.state',
+                    'contact.address.country',
                 ),
             }
         )

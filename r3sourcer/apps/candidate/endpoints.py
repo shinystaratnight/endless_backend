@@ -349,14 +349,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'type': constants.FIELD_LINK,
                     'link': 'tel:{field}',
                     'field': 'contact.phone_mobile',
-                }, {
-                    'type': constants.FIELD_LINK,
-                    'link': 'tel:{field}',
-                    'field': 'contact.address.phone_landline',
-                }, {
-                    'type': constants.FIELD_LINK,
-                    'link': 'tel:{field}',
-                    'field': 'contact.address.phone_fax',
                 },
             ),
         }, {

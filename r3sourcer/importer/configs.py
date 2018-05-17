@@ -91,8 +91,7 @@ class BaseRateMixin:
 class AddressConfig(BaseConfig):
 
     columns = {
-        'street_address', 'city', 'postal_code', 'state', 'latitude',
-        'longitude', 'country', 'phone_landline', 'phone_fax',
+        'street_address', 'city', 'postal_code', 'state', 'latitude', 'longitude', 'country',
         'updated_at', 'created_at',
     }
     columns_map = {
@@ -325,7 +324,7 @@ class CompanyRelConfig(BaseConfig):
 class ClientAddressConfig(BaseConfig):
 
     columns = {
-        'id', 'name', 'updated_at', 'created_at', 'address', 'company_id'
+        'id', 'name', 'updated_at', 'created_at', 'address', 'company_id', 'phone_landline', 'phone_fax',
     }
     columns_map = {
         'client_id': 'company_id',

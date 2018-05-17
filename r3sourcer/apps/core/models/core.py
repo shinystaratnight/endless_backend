@@ -545,8 +545,6 @@ class Address(UUIDModel):
     longitude = models.DecimalField(max_digits=9, decimal_places=6, default=0)
 
     country = models.ForeignKey(Country, to_field='code2', default='AU')
-    phone_landline = PhoneNumberField(blank=True, verbose_name=_("Landline Phone"))
-    phone_fax = PhoneNumberField(blank=True, verbose_name=_("Fax"))
 
     class Meta:
         verbose_name = _("Address")
@@ -1239,6 +1237,9 @@ class CompanyAddress(
     )
 
     active = models.BooleanField(default=True, verbose_name=_("Active"))
+
+    phone_landline = PhoneNumberField(blank=True, verbose_name=_("Landline Phone"))
+    phone_fax = PhoneNumberField(blank=True, verbose_name=_("Fax"))
 
     class Meta:
         verbose_name = _("Company Address")
