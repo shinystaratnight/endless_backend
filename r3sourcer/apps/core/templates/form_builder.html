@@ -7,14 +7,39 @@
   <link rel="stylesheet" href="{% static 'bootstrap/dist/css/bootstrap.min.css' %}"/>
   <link rel="stylesheet" href="{% static 'form-builder/css/main.css' %}"/>
   <link rel="stylesheet" href="{% static 'jquery-ui/themes/base/jquery-ui.css' %}"/>
+  <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Barlow|Lato|Open+Sans|Roboto+Condensed|Roboto:400,400i,600,700" rel="stylesheet">
   <script type="application/javascript">
       var storageApiUrl = '{% url 'api:core/formstorages-list' version='v2' %}?format=json',
           companyId = '{{ company_id }}';
   </script>
+  <style>
+    * {
+      font-family: '{{ company.company_settings.font }}', 'Source Sans Pro', sans-serif;
+    }
+    .color-default {
+     background-color: #28A3FC;
+    }
+    .color-labour {
+      background-color: #f58926;
+    }
+    .color-indigo {
+      background-color: #3f51b5;
+    }
+    .color-teal {
+      background-color: #009688;
+    }
+    .color-brown {
+      background-color: #795548;
+    }
+  </style>
 </head>
 <body>
-<nav class="navbar navbar-inverse">
-  <img src="{% static 'form-builder/img/LBK_regular_logo.png' %}"/>
+<nav class="navbar navbar-inverse color-{{ company.company_settings.color_scheme }}">
+  {% if company.company_settings.logo %}
+    <img src="{{ company.company_settings.logo.url }}"/>
+  {% else %}
+    <img src="{% static 'form-builder/img/LBK_regular_logo.png' %}" />
+  {% endif %}
 </nav>
 <div class="container">
   <div class="row">
