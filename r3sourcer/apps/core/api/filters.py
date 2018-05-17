@@ -9,6 +9,7 @@ from rest_framework.filters import OrderingFilter
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.user import get_default_company
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 
 
 class CompanyFilter(FilterSet):
@@ -182,7 +183,7 @@ class CompanyContactFilter(FilterSet):
     is_manager = BooleanFilter(method='filter_is_manager')
     jobsites = UUIDFilter(method='filter_jobsite')
     customer_company = UUIDFilter(method='filter_customer_company', distinct=True)
-    master_company = UUIDFilter(method='filter_master_company', distinct=True)
+    master_company = CharFilter(method='filter_master_company', distinct=True)
 
     class Meta:
         model = models.CompanyContact
@@ -210,7 +211,14 @@ class CompanyContactFilter(FilterSet):
         return queryset.filter(company_accounts__regular_company=value).distinct()
 
     def filter_master_company(self, queryset, name, value):
-        return queryset.filter(company_accounts__master_company=value).distinct()
+        if value == 'current':
+            company = get_site_master_company() or get_default_company()
+            value = company.id
+            qry = Q(relationships__company_id=value, relationships__active=True)
+        else:
+            qry = Q()
+
+        return queryset.filter(Q(company_accounts__master_company=value) | qry).distinct()
 
 
 class CompanyContactRelationshipFilter(FilterSet):

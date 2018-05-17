@@ -335,7 +335,7 @@ OPENEXCHANGE_APP_ID = env('OPENEXCHANGE_APP_ID', '')
 BOWER_COMPONENTS_ROOT = root('var', 'www')
 
 BOWER_INSTALLED_APPS = (
-    'font-awesome',
+    'font-awesome#4.5.0',
     'jquery-ui',
     'bootstrap#3.3.7'
 )

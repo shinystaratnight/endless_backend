@@ -58,12 +58,17 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'fields': ({
                         'type': constants.FIELD_RELATED,
                         'field': 'recruitment_agent',
+                        'endpoint': api_reverse_lazy('core/companycontacts'),
                         'read_only': True,
                         'label': _('Recruitment Agent'),
                         'custom': (
                             'recruitment_agent.job_title', 'recruitment_agent.contact.__str__',
                             'recruitment_agent.contact.phone_mobile'
                         ),
+                        'default': 'session.contact.contact_id',
+                        'query': {
+                            'master_company': 'current',
+                        },
                     },)
                 },
             )
@@ -562,8 +567,17 @@ class SkillRateRelEndpoint(core_endpoints.ApiEndpoint):
     list_filter = ('candidate_skill', )
 
 
+class SuperannuationFundEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.SuperannuationFund
+
+    fieldsets = ('name', 'membership_number')
+
+    search_fields = ['name']
+
+
 router.register(candidate_models.VisaType)
-router.register(candidate_models.SuperannuationFund)
+router.register(endpoint=SuperannuationFundEndpoint())
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
 router.register(endpoint=TagRelEndpoint())
