@@ -1077,7 +1077,7 @@ class TestAngularListApiAdapter:
         }])
 
         assert len(res) == 1
-        assert len(res[0]['options']) == 2
+        assert len(res[0]['options']) == 1
         assert res[0]['options'][0]['value'] == 'val1'
 
     @mock.patch.object(AngularListApiAdapter, '_get_field')

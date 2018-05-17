@@ -50,7 +50,7 @@ def charge_for_extra_workers():
 
 @shared_task
 def charge_for_sms(company_id, amount, sms_balance_id):
-    company = Company.objects.get(id=id)
+    company = Company.objects.get(id=company_id)
     charge = stripe.Charge.create(
         amount=amount * 100,
         currency='aud',

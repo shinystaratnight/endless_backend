@@ -588,9 +588,10 @@ class CompanyContactSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = core_models.CompanyContact
-        fields = ('id', 'job_title', 'rating_unreliable', 'contact',
-                  'legacy_myob_card_number', 'voip_username', 'voip_password',
-                  'receive_job_confirmation_sms')
+        fields = (
+            'id', 'job_title', 'rating_unreliable', 'contact', 'legacy_myob_card_number',
+            'receive_job_confirmation_sms'
+        )
         related = RELATED_DIRECT
 
 
@@ -669,8 +670,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
                 'user': ('id',),
                 'notes': ('id', 'note'),
                 'company_contact': (
-                    'id', 'job_title', 'rating_unreliable', 'legacy_myob_card_number', 'voip_username',
-                    'voip_password', 'receive_job_confirmation_sms'
+                    'id', 'job_title', 'rating_unreliable', 'legacy_myob_card_number', 'receive_job_confirmation_sms'
                 ),
                 'candidate_contacts': ('id', 'recruitment_agent'),
             }
@@ -769,9 +769,10 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
 
     class Meta:
         model = core_models.CompanyContact
-        fields = ('id', 'job_title', 'rating_unreliable', 'contact',
-                  'legacy_myob_card_number', 'voip_username', 'voip_password',
-                  'receive_job_confirmation_sms')
+        fields = (
+            'id', 'job_title', 'rating_unreliable', 'contact', 'legacy_myob_card_number',
+            'receive_job_confirmation_sms'
+        )
         related = RELATED_DIRECT
 
 

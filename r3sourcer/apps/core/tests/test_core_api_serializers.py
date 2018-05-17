@@ -745,8 +745,6 @@ class TestCompanyContactSerializer(SerializerMixin):
         company_contact_data['rating_unreliable'] = faker.boolean()
         company_contact_data['receive_order_confirmation_sms'] = faker.boolean()
         company_contact_data['legacy_myob_card_number'] = faker.credit_card_number()[:15]
-        company_contact_data['voip_username'] = faker.user_name()[:15]
-        company_contact_data['voip_password'] = faker.password(15)
         company_contact_data['contact'] = str(contact.id)
         return company_contact_data
 

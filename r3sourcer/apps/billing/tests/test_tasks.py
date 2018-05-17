@@ -12,7 +12,7 @@ from r3sourcer.apps.hr.models import JobOffer, TimeSheet
 
 class TestActiveWorkers:
     def test_active_workers_zero(self, client, user, company, relationship):
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         assert company.active_workers() == 0
 
     def test_active_workers(self, client, user, company, relationship, contact, shift):
@@ -39,7 +39,7 @@ class TestActiveWorkers:
             job_offer=job_offer2,
             shift_started_at=timezone.now()
         )
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
         assert company.active_workers() == 2
 
 
