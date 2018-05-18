@@ -800,6 +800,30 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
 
         return instance
 
+    def update(self, instance, validated_data):
+        contact = validated_data.get('contact', None)
+        errors = {}
+        if not isinstance(contact, core_models.Contact):
+            errors['contact'] = _('Contact is required')
+
+        try:
+            company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        except core_models.Company.DoesNotExist:
+            errors['company'] = _('Company is required')
+
+        if errors:
+            raise exceptions.ValidationError(errors)
+
+        instance = super(CompanyContactSerializer, self).update(instance, validated_data)
+
+        relation = instance.relationships.filter(active=True).first()
+        if relation:
+            relation.company = company
+            relation.company_contact = instance
+            relation.save()
+
+        return instance
+
 
 class CompanyContactRegisterSerializer(ContactRegisterSerializer):
 
