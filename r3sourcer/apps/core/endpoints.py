@@ -922,7 +922,20 @@ class CompanyContactEndpoint(ApiEndpoint):
     )
 
     fieldsets = (
-        'contact', 'job_title', 'rating_unreliable', 'receive_job_confirmation_sms', 'pin_code'
+        {
+            'type': constants.FIELD_RELATED,
+            'field': 'company',
+            'label': _('Client'),
+            'endpoint': api_reverse_lazy('core/companies'),
+            'read_only': False,
+            'required': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'contact',
+            'query': {
+                'is_company_contact': '3',
+            },
+        }, 'job_title', 'rating_unreliable', 'receive_job_confirmation_sms', 'pin_code'
     )
 
     search_fields = ('job_title', 'contact__title', 'contact__first_name', 'contact__last_name')
