@@ -264,10 +264,11 @@ class ContactFilter(FilterSet):
 
     state = UUIDFilter(method='filter_state')
     contact_type = CharFilter(method='filter_contact_type')
+    is_company_contact = BooleanFilter(method='filter_is_company_contact')
 
     class Meta:
         model = models.Contact
-        fields = ['state']
+        fields = ['state', 'is_company_contact']
 
     def filter_state(self, queryset, name, value):
         return queryset.filter(address__state=value)
@@ -279,3 +280,6 @@ class ContactFilter(FilterSet):
             return queryset.filter(company_contact__role=value)
 
         return queryset
+
+    def filter_is_company_contact(self, queryset, name, value):
+        return queryset.filter(company_contact__isnull=not value)

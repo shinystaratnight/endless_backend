@@ -757,8 +757,10 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
 
     method_fields = ('company', 'manager')
 
+    company = CompanySerializer(write_only=True, required=True)
+
     def get_company(self, instance):
-        rel = instance.relationships.first()
+        rel = instance.relationships.filter(active=True).first()
         if rel is not None:
             return CompanyListSerializer(rel.company).data
         return None
@@ -771,9 +773,32 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         model = core_models.CompanyContact
         fields = (
             'id', 'job_title', 'rating_unreliable', 'contact', 'legacy_myob_card_number',
-            'receive_job_confirmation_sms'
+            'receive_job_confirmation_sms', 'company'
         )
         related = RELATED_DIRECT
+
+    def create(self, validated_data):
+        contact = validated_data.get('contact', None)
+        errors = {}
+        if not isinstance(contact, core_models.Contact):
+            errors['contact'] = _('Contact is required')
+
+        try:
+            company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        except core_models.Company.DoesNotExist:
+            errors['company'] = _('Company is required')
+
+        if errors:
+            raise exceptions.ValidationError(errors)
+
+        instance = super(CompanyContactSerializer, self).create(validated_data)
+
+        CompanyContactRelationshipSerializer().create({
+            'company_contact': instance,
+            'company': company,
+        })
+
+        return instance
 
 
 class CompanyContactRegisterSerializer(ContactRegisterSerializer):

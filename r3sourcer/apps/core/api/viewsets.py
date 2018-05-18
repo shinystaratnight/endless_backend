@@ -301,11 +301,6 @@ class CompanyViewset(BaseApiViewset):
 
 class CompanyContactViewset(BaseApiViewset):
 
-    http_method_names = ['post', 'get', 'options']
-    action_map = {
-        'post': 'create'
-    }
-
     def get_serializer_context(self):
         context = super(CompanyContactViewset, self).get_serializer_context()
         user = context['request'].user
