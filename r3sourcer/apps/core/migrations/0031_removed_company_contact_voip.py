@@ -8,7 +8,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0027_company_stripe_customer'),
+        ('core', '0030_remove_labdline_and_fax_from_address'),
     ]
 
     operations = [
