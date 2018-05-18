@@ -47,7 +47,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'fields': ({
                         'type': constants.FIELD_RELATED,
                         'field': 'contact',
-                        'read_only': True,
                         'label': _('Contact'),
                         'custom': (
                             'contact.__str__', 'contact.address.__str__', 'contact.phone_mobile', 'contact.email'
@@ -59,7 +58,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                         'type': constants.FIELD_RELATED,
                         'field': 'recruitment_agent',
                         'endpoint': api_reverse_lazy('core/companycontacts'),
-                        'read_only': True,
                         'label': _('Recruitment Agent'),
                         'custom': (
                             'recruitment_agent.job_title', 'recruitment_agent.contact.__str__',
