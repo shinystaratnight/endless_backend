@@ -51,6 +51,9 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                         'custom': (
                             'contact.__str__', 'contact.address.__str__', 'contact.phone_mobile', 'contact.email'
                         ),
+                        'query': {
+                            'is_candidate_contact': '3',
+                        },
                     },)
                 }, {
                     'type': constants.CONTAINER_COLUMN,
