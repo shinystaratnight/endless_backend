@@ -120,30 +120,25 @@ class ContactEndpoint(ApiEndpoint):
             'fields': (
                 {
                     'type': constants.CONTAINER_COLUMN,
-                    'fields': ('title', 'first_name', 'last_name'),
+                    'fields': ('title', 'first_name', 'last_name', 'gender'),
                 }, {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': (
                         'email', 'phone_mobile',
                         {
-                            'type': constants.FIELD_TEXT,
-                            'field': 'address.street_address',
-                            'hide': True,
-                        }, {
                             'type': constants.FIELD_RELATED,
                             'field': 'address',
                             'edit': True,
                             'delete': True,
-                            'create': True
+                            'create': True,
+                        }, {
+                            'type': constants.FIELD_DATE,
+                            'field': 'birthday',
+                            'help': _('Optional for Client Contacts, must be filled for Candidate contacts'),
                         }
                     ),
                 },
             ),
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Personal information'),
-            'fields': ('gender', 'birthday', 'marital_status', 'spouse_name', 'children')
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
