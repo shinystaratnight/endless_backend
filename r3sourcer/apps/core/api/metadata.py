@@ -21,4 +21,4 @@ class ApiMetadata(AutoMetadata):
                 is_formset=metadata_type == METADATA_FORMSET_TYPE,
                 editable_type=editable_type
             )
-        return AngularApiAdapter(edit, fieldsets_type=fieldsets_type)
+        return AngularApiAdapter(edit, fieldsets_type=fieldsets_type, metadata_type=metadata_type)

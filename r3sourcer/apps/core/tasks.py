@@ -153,3 +153,14 @@ def cancel_trial(user_id):
         logger.exception('Cannot find trial user')
     else:
         user.user_permissions.exclude(codename__icontains='_get').delete()
+
+
+@shared_task()
+def terminate_company_contact(company_contact_rel_id):
+    try:
+        company_contact_rel = core_models.CompanyContactRelationship.objects.get(id=company_contact_rel_id)
+    except core_models.CompanyContactRelationship.DoesNotExist:
+        logger.exception('Cannot find company contact relation to terminate')
+    else:
+        company_contact_rel.active = False
+        company_contact_rel.save()

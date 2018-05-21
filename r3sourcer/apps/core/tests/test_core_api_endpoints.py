@@ -371,3 +371,19 @@ class TestApiEndpoint:
         endpoint = Endpoint()
 
         assert endpoint.get_list_editable_filter() == []
+
+    def test_get_fieldsets_add(self):
+        class Endpoint(ApiTestEndpoint):
+            fieldsets_add = ['test']
+
+        endpoint = Endpoint()
+
+        assert endpoint.get_fieldsets_add() == ['test']
+
+    def test_get_fieldsets_add_empty(self):
+        class Endpoint(ApiTestEndpoint):
+            pass
+
+        endpoint = Endpoint()
+
+        assert endpoint.get_fieldsets_add() == ('business_id', 'name')

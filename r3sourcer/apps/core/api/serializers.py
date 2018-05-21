@@ -1,3 +1,4 @@
+from datetime import datetime, time
 from itertools import chain
 from collections import OrderedDict
 
@@ -8,7 +9,6 @@ from django.contrib.auth.password_validation import validate_password
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.sites.shortcuts import get_current_site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
-from django.core.validators import validate_email
 from django.db import models
 from django.utils import six, timezone
 from django.utils.formats import date_format
@@ -22,7 +22,7 @@ from django.db.models.fields.related import (
 )
 from django.contrib.contenttypes.fields import GenericRelation
 
-from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core import models as core_models, tasks as core_tasks
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED)
 from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 
@@ -758,9 +758,11 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     method_fields = ('company', 'manager')
 
     company = CompanySerializer(write_only=True, required=True)
+    active = serializers.BooleanField(required=False)
+    termination_date = serializers.DateField(required=False, allow_null=True)
 
     def get_company(self, instance):
-        rel = instance.relationships.filter(active=True).first()
+        rel = instance.relationships.first()
         if rel is not None:
             return CompanyListSerializer(rel.company).data
         return None
@@ -773,7 +775,7 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         model = core_models.CompanyContact
         fields = (
             'id', 'job_title', 'rating_unreliable', 'contact', 'legacy_myob_card_number',
-            'receive_job_confirmation_sms', 'company'
+            'receive_job_confirmation_sms', 'company', 'active', 'termination_date',
         )
         related = RELATED_DIRECT
 
@@ -816,11 +818,23 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
 
         instance = super(CompanyContactSerializer, self).update(instance, validated_data)
 
-        relation = instance.relationships.filter(active=True).first()
-        if relation:
-            relation.company = company
-            relation.company_contact = instance
-            relation.save()
+        today = timezone.localtime(timezone.now()).date()
+        termination_date = validated_data['termination_date']
+
+        if termination_date and validated_data['active'] and termination_date <= today:
+            validated_data['termination_date'] = None
+
+        rel, created = core_models.CompanyContactRelationship.objects.update_or_create(
+            company_contact=instance, company=company,
+            defaults={
+                'active': validated_data['active'],
+                'termination_date': validated_data['termination_date']
+            }
+        )
+
+        if termination_date and termination_date > today:
+            eta = timezone.make_aware(datetime.combine(termination_date, time(2)))
+            core_tasks.terminate_company_contact.apply_async(args=[rel.id], eta=eta)
 
         return instance
 

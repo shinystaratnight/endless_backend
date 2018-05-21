@@ -58,16 +58,19 @@ class AngularApiAdapter(BaseAdapter):
     metadata_info = [
         MetaDataInfo('metadata_fields', GETTER, []),
         MetaDataInfo('fieldsets', GETTER, []),
+        MetaDataInfo('fieldsets_add', GETTER, []),
     ]
 
     _excluded_field = {'__str__', }
     _hidden_fields = {'id'}
     edit = True
     fieldsets_type = 'default'
+    metadata_type = constants.METADATA_FORM_TYPE
 
     def __init__(self, edit=True, * args, **kwargs):
         self.edit = edit
         self.fieldsets_type = kwargs.pop('fieldsets_type', 'default')
+        self.metadata_type = kwargs.pop('metadata_type', constants.METADATA_FORM_TYPE)
 
     @classmethod
     def adapt_field(cls, field):
@@ -300,6 +303,9 @@ class AngularApiAdapter(BaseAdapter):
     def render(self, config):
         fields = config['metadata_fields']
         fieldsets = config['fieldsets']
+
+        if self.metadata_type == constants.METADATA_FORMADD_TYPE:
+            fieldsets = config['fieldsets_add']
 
         if isinstance(fieldsets, dict):
             fieldsets = fieldsets.get(self.fieldsets_type, [])

@@ -1,5 +1,6 @@
 import copy
 import itertools
+from datetime import date
 
 import pytest
 
@@ -18,7 +19,7 @@ from r3sourcer.apps.core.api.serializers import (
     UserSerializer, CompanyContactRegisterSerializer, MetaFields,
     ApiFieldsMixin, CompanyAddressSerializer, WorkflowNodeSerializer,
     WorkflowObjectSerializer, WorkflowTimelineSerializer,
-    NavigationSerializer, TrialSerializer,
+    NavigationSerializer, TrialSerializer, CompanyContactRenderSerializer,
     RELATED_DIRECT, RELATED_FULL, RELATED_NONE,
 )
 from r3sourcer.apps.core.models import (
@@ -1266,3 +1267,136 @@ class TestTrialSerializer:
 
         assert not serializer.is_valid()
         assert 'company_name' in serializer.errors
+
+
+@pytest.mark.django_db
+class TestCompanyContactRenderSerializer:
+
+    @pytest.fixture
+    def company_contact_rel_data(self, staff_user, company):
+        return {
+            'contact': staff_user.contact,
+            'company': str(company.id),
+        }
+
+    @pytest.fixture
+    def company_contact_rel_update_data(self, staff_user, company):
+        return {
+            'contact': staff_user.contact,
+            'company': str(company.id),
+            'termination_date': date(2018, 5, 2),
+            'active': True,
+        }
+
+    def test_get_company(self, staff_company_contact, staff_relationship, company):
+        serializer = CompanyContactRenderSerializer()
+
+        assert serializer.get_company(staff_company_contact)['id'] == str(company.id)
+
+    def test_get_company_none(self, staff_company_contact):
+        serializer = CompanyContactRenderSerializer()
+
+        assert serializer.get_company(staff_company_contact) is None
+
+    def test_get_manager(self, staff_company_contact, staff_relationship, company):
+        serializer = CompanyContactRenderSerializer()
+
+        assert serializer.get_manager(staff_company_contact)['id'] == str(company.manager.id)
+
+    def test_get_manager_none(self, staff_company_contact):
+        serializer = CompanyContactRenderSerializer()
+
+        assert serializer.get_manager(staff_company_contact) is None
+
+    def test_create(self, company_contact_rel_data):
+        serializer = CompanyContactRenderSerializer(data=company_contact_rel_data)
+        instance = serializer.create({'contact': company_contact_rel_data['contact']})
+
+        assert instance is not None
+        assert instance.relationships.exists()
+
+    def test_create_no_contact(self, company_contact_rel_data):
+        company_contact_rel_data['contact'] = None
+        serializer = CompanyContactRenderSerializer(data=company_contact_rel_data)
+
+        with pytest.raises(serializers.ValidationError) as e:
+            serializer.create({'contact': company_contact_rel_data['contact']})
+
+            assert 'contact' in e.detail
+
+    def test_create_no_company(self, company_contact_rel_data):
+        company_contact_rel_data['company'] = None
+        serializer = CompanyContactRenderSerializer(data=company_contact_rel_data)
+
+        with pytest.raises(serializers.ValidationError) as e:
+            serializer.create({'contact': company_contact_rel_data['contact']})
+
+            assert 'company' in e.detail
+
+    def test_update(self, company_contact_rel_update_data, staff_company_contact, staff_relationship, company):
+        serializer = CompanyContactRenderSerializer(staff_relationship, data=company_contact_rel_update_data)
+        data = {k: v for k, v in company_contact_rel_update_data.items() if k != 'company'}
+        instance = serializer.update(staff_company_contact, data)
+
+        assert instance is not None
+        assert instance.relationships.exists()
+
+    def test_update_no_contact(self, company_contact_rel_update_data, staff_company_contact, staff_relationship):
+        company_contact_rel_update_data['contact'] = None
+        serializer = CompanyContactRenderSerializer(staff_relationship, data=company_contact_rel_update_data)
+
+        with pytest.raises(serializers.ValidationError) as e:
+            data = {k: v for k, v in company_contact_rel_update_data.items() if k != 'company'}
+            serializer.update(staff_company_contact, data)
+
+            assert 'contact' in e.detail
+
+    def test_update_no_company(self, staff_company_contact, company_contact_rel_update_data, staff_relationship):
+        company_contact_rel_update_data['company'] = None
+        serializer = CompanyContactRenderSerializer(staff_relationship, data=company_contact_rel_update_data)
+
+        with pytest.raises(serializers.ValidationError) as e:
+            data = {k: v for k, v in company_contact_rel_update_data.items() if k != 'company'}
+            serializer.update(staff_company_contact, data)
+
+            assert 'company' in e.detail
+
+    @freeze_time('2018-05-02')
+    def test_update_termination_date(self, staff_company_contact, company_contact_rel_update_data, staff_relationship):
+        serializer = CompanyContactRenderSerializer(staff_relationship, data=company_contact_rel_update_data)
+        company_contact_rel_update_data['active'] = False
+
+        data = {k: v for k, v in company_contact_rel_update_data.items() if k != 'company'}
+        instance = serializer.update(staff_company_contact, data)
+        rel = instance.relationships.first()
+
+        assert rel.termination_date == date(2018, 5, 2)
+        assert not rel.active
+
+    @freeze_time('2018-05-02')
+    def test_update_reactivate(self, staff_company_contact, company_contact_rel_update_data, staff_relationship):
+        serializer = CompanyContactRenderSerializer(staff_relationship, data=company_contact_rel_update_data)
+        company_contact_rel_update_data['termination_date'] = date(2018, 5, 2)
+
+        data = {k: v for k, v in company_contact_rel_update_data.items() if k != 'company'}
+        instance = serializer.update(staff_company_contact, data)
+        rel = instance.relationships.first()
+
+        assert rel.termination_date is None
+        assert rel.active
+
+    @freeze_time('2018-05-02')
+    @patch('r3sourcer.apps.core.api.serializers.core_tasks')
+    def test_update_future_termination(
+        self, mock_tasks, staff_company_contact, company_contact_rel_update_data, staff_relationship
+    ):
+        serializer = CompanyContactRenderSerializer(staff_relationship, data=company_contact_rel_update_data)
+        company_contact_rel_update_data['termination_date'] = date(2018, 5, 5)
+
+        data = {k: v for k, v in company_contact_rel_update_data.items() if k != 'company'}
+        instance = serializer.update(staff_company_contact, data)
+        rel = instance.relationships.first()
+
+        assert rel.termination_date == date(2018, 5, 5)
+        assert rel.active
+        assert mock_tasks.terminate_company_contact.apply_async.called
