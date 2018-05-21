@@ -921,7 +921,7 @@ class CompanyContactEndpoint(ApiEndpoint):
         'receive_job_confirmation_sms'
     )
 
-    fieldsets = (
+    _base_fieldsets = (
         {
             'type': constants.FIELD_RELATED,
             'field': 'company',
@@ -935,7 +935,17 @@ class CompanyContactEndpoint(ApiEndpoint):
             'query': {
                 'is_company_contact': '3',
             },
-        }, 'job_title', 'rating_unreliable', 'receive_job_confirmation_sms', 'pin_code'
+        },
+        'job_title', 'rating_unreliable', 'receive_job_confirmation_sms',
+    )
+
+    fieldsets_add = _base_fieldsets
+    fieldsets = _base_fieldsets + (
+        'active',
+        {
+            'type': constants.FIELD_DATE,
+            'field': 'termination_date',
+        }
     )
 
     search_fields = ('job_title', 'contact__title', 'contact__first_name', 'contact__last_name')

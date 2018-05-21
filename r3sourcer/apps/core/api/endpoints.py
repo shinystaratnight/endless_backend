@@ -21,6 +21,8 @@ class ApiEndpoint(Endpoint):
     list_editable_filter = None
     list_editable_buttons = None
 
+    fieldsets_add = None
+
     ordering = None
     ordering_mapping = None
     context_actions = None
@@ -212,3 +214,8 @@ class ApiEndpoint(Endpoint):
 
     def get_list_editable_buttons(self):
         return self.list_editable_buttons
+
+    def get_fieldsets_add(self):
+        if self.fieldsets_add is None:
+            self.fieldsets_add = self.get_fieldsets()
+        return self.fieldsets_add

@@ -36,7 +36,7 @@ class TestAbstractObjectOwnerManager:
         result = CompanyContact.objects.owned_by(contact)
         assert result.count() == 1
 
-    @mock.patch.object(AbstractObjectOwnerQuerySet, 'get_lookups', return_value=[])
+    @mock.patch.object(Address.objects, 'get_lookups', return_value=[])
     def test_owned_by_with_passable(self, mock_lookups, contact, contact_address):
         mock_passable = mock.PropertyMock(return_value=[Contact])
         type(Address.objects).passed_models = mock_passable

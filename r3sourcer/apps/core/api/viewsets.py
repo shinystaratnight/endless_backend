@@ -317,6 +317,17 @@ class CompanyContactViewset(BaseApiViewset):
     def is_approved_by_primary_contact(self, user):
         return models.CompanyRel.objects.filter(primary_contact__contact__user=user).exists()
 
+    def get_object(self):
+        obj = super().get_object()
+
+        rel = obj.relationships.first()
+
+        if rel:
+            obj.active = rel.active
+            obj.termination_date = rel.termination_date
+
+        return obj
+
     @list_route(
         methods=['post'],
         serializer=serializers.CompanyContactRegisterSerializer,
