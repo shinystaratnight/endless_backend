@@ -1395,6 +1395,15 @@ class BankAccountEndpoint(ApiEndpoint):
     search_fields = ('bank_name', 'bank_account_name')
 
 
+class UserEndpoint(ApiEndpoint):
+
+    model = models.User
+
+    serializer_fields = ['contact', 'is_staff', 'is_active', 'date_joined']
+
+    fieldsets = ('is_staff', 'is_active', 'date_joined')
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(models.Address, serializer=serializers.AddressSerializer)
@@ -1439,4 +1448,4 @@ router.register(endpoint=FileFormFieldEndpoint())
 router.register(endpoint=CheckBoxFormFieldEndpoint())
 router.register(endpoint=ContentTypeEndpoint())
 router.register(endpoint=InvoiceRuleEndpoint())
-router.register(models.User)
+router.register(endpoint=UserEndpoint())
