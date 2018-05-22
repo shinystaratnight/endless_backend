@@ -1399,9 +1399,9 @@ class UserEndpoint(ApiEndpoint):
 
     model = models.User
 
-    serializer_fields = ['contact', 'is_staff', 'is_active', 'date_joined']
+    serializer_fields = ['contact', 'is_superuser', 'is_staff', 'is_active', 'date_joined']
 
-    fieldsets = ('is_staff', 'is_active', 'date_joined')
+    fieldsets = ('is_superuser', 'is_staff', 'is_active', 'date_joined')
 
 
 router.register(endpoint=DashboardModuleEndpoint())
