@@ -927,7 +927,9 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'label': _('Job Site Contact'),
             'field': 'shift.date.job.jobsite.primary_contact',
-        }, {
+        },
+        'shift.date.job.notes',
+        {
             'label': _('Status'),
             'fields': (
                 {
