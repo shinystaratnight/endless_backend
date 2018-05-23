@@ -65,6 +65,9 @@ class SiteMasterCompanyFilterBackend(DRYPermissionFiltersBase):
 
         return queryset.owned_by(site_master_company)
 
+    def filter_candidate_queryset(self, request, queryset, view):
+        return self.filter_list_queryset(request, queryset, view)
+
 
 class SiteClosestCompanyFilterBackend(DRYPermissionFiltersBase):
     action_routing = True

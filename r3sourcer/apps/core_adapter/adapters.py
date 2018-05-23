@@ -170,6 +170,13 @@ class AngularApiAdapter(BaseAdapter):
                 'type': constants.FIELD_CHECKBOX,
                 'templateOptions': field['validation'],
             }
+        elif component_type == constants.FIELD_INFO:
+            adapted = {
+                'type': component_type,
+                'values': field.get('values', {}),
+                'key': field.get('key', 'id'),
+            }
+            return adapted
         else:
             adapted = {
                 'type': to_html_tag(component_type),
@@ -263,15 +270,16 @@ class AngularApiAdapter(BaseAdapter):
             )
             return field_info
 
-        fildset_result = self._get_metadata_fieldsets_info(
+        fieldset_result = self._get_metadata_fieldsets_info(
             fieldset['fields'], [], fields
         )
+
         if fieldset_type is None:
-            return fildset_result
+            return fieldset_result
         else:
             field_info = {
                 'type': fieldset_type,
-                'children': fildset_result,
+                'children': fieldset_result,
                 **{
                     key: fieldset[key] for key in ('name', 'collapsed', 'label')
                     if fieldset.get(key)

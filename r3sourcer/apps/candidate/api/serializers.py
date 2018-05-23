@@ -85,9 +85,11 @@ class CandidateContactSerializer(
         fields = (
             '__all__',
             {
-                'contact': ('__all__', {
-                    'address': ('__all__', ),
-                }),
+                'contact': (
+                    'id', 'first_name', 'last_name', 'email', 'phone_mobile', 'is_available', 'picture', 'gender', {
+                        'address': ('__all__', ),
+                    }
+                ),
                 'tag_rels': ('id', 'verification_evidence', {
                     'verified_by': ('id', ),
                     'tag': ('id', )
