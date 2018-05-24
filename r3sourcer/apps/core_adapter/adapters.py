@@ -341,6 +341,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         MetaDataInfo('list_editable_buttons', GETTER, []),
         MetaDataInfo('list_editable_filter', GETTER, []),
         MetaDataInfo('edit_disabled', PROPERTY, False),
+        MetaDataInfo('pagination_label', PROPERTY, None),
     ]
 
     def __init__(self, *args, **kwargs):
@@ -863,7 +864,8 @@ class AngularListApiAdapter(AngularApiAdapter):
         display_fields.update(
             list=config['list_name'],
             label=config['list_label'],
-            search_enabled=config['search_enabled']
+            search_enabled=config['search_enabled'],
+            pagination_label=config['pagination_label'] or config['list_label']
         )
         display_fields['columns'] = self.adapt_ordering(
             display_fields, ordering_fields, ordering_mapping, ordering
