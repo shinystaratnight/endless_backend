@@ -649,7 +649,7 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}'
             },
             'type': constants.FIELD_LIST,
-            'label': _('Client Address'),
+            'label': _('Client Company Address'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/companyaddresses'),
             'prefilled': {
