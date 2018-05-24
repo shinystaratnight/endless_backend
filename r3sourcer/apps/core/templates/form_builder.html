@@ -80,24 +80,24 @@
       componentForm = {
         country: {
           label: 'short_name',
-          field: 'contact__address__country',
+          field: 'country',
           value: '',
           long_name_value: '',
           long_name: 'long_name'
         },
         administrative_area_level_1: {
           label: 'long_name',
-          field: 'contact__address__state',
+          field: 'state',
           value: '',
         },
         locality: {
           label: 'long_name',
-          field: 'contact__address__city',
+          field: 'city',
           value: ''
         },
         postal_code: {
           label: 'short_name',
-          field: 'contact__address__postal_code',
+          field: 'postal_code',
           value: '',
         }
       };
@@ -107,7 +107,7 @@
       // location types.
 
       var interval = setInterval(function() {
-        var field = document.getElementById('contact__address__street_address');
+        var field = document.querySelector('[id$=street_address]');
 
         if (field) {
           clearInterval(interval);
@@ -128,8 +128,8 @@
       var place = autocomplete.getPlace();
 
       for (var component in componentForm) {
-        document.getElementById(componentForm[component].field).value = '';
-        document.getElementById(componentForm[component].field).disabled = false;
+        document.querySelector(`[id$=${componentForm[component].field}]`).value = '';
+        document.querySelector(`[id$=${componentForm[component].field}]`).disabled = false;
       }
 
       // Get each component of the address from the place details
@@ -140,19 +140,19 @@
           var val = place.address_components[i][componentForm[addressType].label];
           componentForm[addressType].value = val;
 
-          if (componentForm[addressType].field === 'contact__address__postal_code' || componentForm[addressType].field === 'contact__address__country') {
-            document.getElementById(componentForm[addressType].field).value = val;
+          if (componentForm[addressType].field === 'postal_code' || componentForm[addressType].field === 'country') {
+            document.querySelector(`[id$=${componentForm[addressType].field}]`).value = val;
 
             componentForm[addressType].long_name_value = place.address_components[i][componentForm[addressType].long_name];
           } else {
-            var field = document.getElementById(componentForm[addressType].field);
+            var field = document.querySelector(`[id$=${componentForm[addressType].field}]`);
             var options = [].slice.call(field.children);
             var query,
               option;
 
-            if (componentForm[addressType].field === 'contact__address__state') {
+            if (componentForm[addressType].field === 'state') {
               query = val + ', ' + componentForm.country.long_name_value;
-            } else if (componentForm[addressType].field === 'contact__address__city') {
+            } else if (componentForm[addressType].field === 'city') {
               query = val + ', ' + componentForm.administrative_area_level_1.value + ', ' + componentForm.country.long_name_value;
             }
 
