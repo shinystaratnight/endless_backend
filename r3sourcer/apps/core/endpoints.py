@@ -462,7 +462,8 @@ class CompanyEndpoint(ApiEndpoint):
     base_serializer = serializers.CompanyListSerializer
     filter_class = filters.CompanyFilter
 
-    list_label = _('Clients')
+    list_label = _('Client')
+    pagination_label = _('Clients')
 
     fields = (
         '__all__',
