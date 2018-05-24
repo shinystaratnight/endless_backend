@@ -23,6 +23,8 @@ class ApiEndpoint(Endpoint):
 
     fieldsets_add = None
 
+    pagination_label = None
+
     ordering = None
     ordering_mapping = None
     context_actions = None

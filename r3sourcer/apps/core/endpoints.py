@@ -211,6 +211,10 @@ class CompanyAddressEndpoint(ApiEndpoint):
     base_viewset = viewsets.CompanyAddressViewset
     base_serializer = serializers.CompanyAddressSerializer
     filter_class = filters.CompanyAddressFilter
+
+    list_label = ('Client Company Address')
+    pagination_label = ('Client Company Addresses')
+
     fields = (
         '__all__',
         {
@@ -875,6 +879,7 @@ class CompanyContactRelationEndpoint(ApiEndpoint):
     )
 
     list_label = ('Client Contact Relations')
+    pagination_label = ('Client Contacts')
 
     fieldsets = (
         {
