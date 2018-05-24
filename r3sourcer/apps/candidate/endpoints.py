@@ -419,6 +419,16 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'field': 'contact.gender',
                 'multiple': True,
             }, {
+                'type': constants.FIELD_RELATED,
+                'field': 'recruitment_agent',
+                'label': _('Recruitment agent'),
+                'endpoint': api_reverse_lazy('core/companycontacts'),
+            }, {
+                'field': 'candidate_scores.average_score',
+                'label': _('Overal score'),
+                'type': constants.FIELD_RANGE,
+                'max': 5,
+            }, {
                 'type': constants.FIELD_CHECKBOX,
                 'field': 'transportation_to_work',
                 'multiple': True,
