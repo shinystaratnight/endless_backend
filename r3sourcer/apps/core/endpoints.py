@@ -357,7 +357,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
     )
 
     fieldsets = (
-        'name', 'company', 'address', 'hq', 'termination_date',
+        'name', 'company', 'address', 'hq', 'phone_landline', 'phone_fax', 'termination_date',
         'primary_contact', 'active'
     )
 
