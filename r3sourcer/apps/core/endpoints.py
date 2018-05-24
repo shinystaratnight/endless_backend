@@ -458,6 +458,8 @@ class CompanyEndpoint(ApiEndpoint):
     base_serializer = serializers.CompanyListSerializer
     filter_class = filters.CompanyFilter
 
+    list_label = _('Clients')
+
     fields = (
         '__all__',
         {
@@ -474,7 +476,7 @@ class CompanyEndpoint(ApiEndpoint):
     list_display = (
         {
             'field': 'id',
-            'label': _('Personal Info'),
+            'label': _('Client Info'),
             'type': constants.FIELD_INFO,
             'values': {
                 'picture': 'logo.thumb',
@@ -565,7 +567,7 @@ class CompanyEndpoint(ApiEndpoint):
                         'type': constants.FIELD_RELATED,
                         'field': 'id',
                         'read_only': True,
-                        'label': _('Company'),
+                        'label': _('Client'),
                         'custom': ('name', 'website'),
                     },)
                 }, {
@@ -647,7 +649,7 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}'
             },
             'type': constants.FIELD_LIST,
-            'label': _('Company Address'),
+            'label': _('Client Address'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/companyaddresses'),
             'prefilled': {
@@ -660,9 +662,10 @@ class CompanyEndpoint(ApiEndpoint):
             },
             'type': constants.FIELD_LIST,
             'collapsed': True,
-            'label': _('Company Contacts'),
+            'label': _('Client Contacts'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('core/companycontactrelationships'),
+            'add_endpoint': api_reverse_lazy('core/companycontacts'),
             'prefilled': {
                 'company': '{id}',
             }
@@ -870,6 +873,8 @@ class CompanyContactRelationEndpoint(ApiEndpoint):
         'company_contact.contact.phone_mobile', 'company_contact.contact.email',
         'company_contact.receive_job_confirmation_sms'
     )
+
+    list_label = ('Client Contact Relations')
 
     fieldsets = (
         {
