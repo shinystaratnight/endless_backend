@@ -142,6 +142,9 @@ class AngularApiAdapter(BaseAdapter):
                 }
             }
 
+            if 'metadata_query' in field:
+                adapted['metadata_query'] = field['metadata_query']
+
             query_params = field.get('query')
             if query_params is not None:
                 adapted['query'] = query_params

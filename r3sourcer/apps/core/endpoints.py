@@ -165,6 +165,9 @@ class ContactEndpoint(ApiEndpoint):
                 'label': _('User'),
                 'field': 'user',
                 'read_only': True,
+                'metadata_query': {
+                    'fieldsets_type': 'contact',
+                },
             }, {
                 'type': constants.FIELD_RELATED,
                 'label': _('Candidate Contact'),
@@ -1411,9 +1414,34 @@ class UserEndpoint(ApiEndpoint):
 
     model = models.User
 
-    serializer_fields = ['contact', 'is_superuser', 'is_staff', 'is_active', 'date_joined']
+    serializer_fields = (
+        'id', 'is_superuser', 'is_staff', 'is_active', 'date_joined', {
+            'contact': ('id', 'email', 'phone_mobile'),
+        }
+    )
 
-    fieldsets = ('is_superuser', 'is_staff', 'is_active', 'date_joined')
+    list_display = ('contact', 'contact.email', 'contact.phone_mobile', 'is_superuser', 'is_active', 'date_joined')
+
+    _fieldset = (
+        'is_superuser', 'is_staff', 'is_active',
+        {
+            'field': 'date_joined',
+            'type': constants.FIELD_DATETIME,
+            'read_only': True,
+        },
+    )
+    fieldsets = {
+        'default': (
+            {
+                'field': 'contact',
+                'type': constants.FIELD_RELATED,
+                'read_only': True,
+            },
+        ) + _fieldset,
+        'contact': _fieldset
+    }
+
+    search_fields = ('contact__first_name', 'contact__last_name', 'contact__email', 'contact__phone_mobile')
 
 
 router.register(endpoint=DashboardModuleEndpoint())
