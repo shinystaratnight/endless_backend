@@ -1437,7 +1437,19 @@ class UserEndpoint(ApiEndpoint):
                 'type': constants.FIELD_RELATED,
                 'read_only': True,
             },
-        ) + _fieldset,
+        ) + _fieldset + (
+            {
+                'query': {
+                    'user': '{id}',
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Global Permissions'),
+                'endpoint': api_reverse_lazy('company-settings/globalpermissions'),
+                'prefilled': {
+                    'user': '{id}',
+                },
+            },
+        ),
         'contact': _fieldset
     }
 
