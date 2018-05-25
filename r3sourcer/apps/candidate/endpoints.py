@@ -563,8 +563,14 @@ class SkillRateRelEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'candidate_skill',
             'hide': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'hourly_rate',
+            'query': {
+                'candidate_skill': '{candidate_skill.id}',
+            },
         },
-        'hourly_rate', 'valid_from', 'valid_until'
+        'valid_from', 'valid_until'
     )
 
     list_filter = ('candidate_skill', )

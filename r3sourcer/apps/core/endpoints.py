@@ -1298,7 +1298,8 @@ class CountryEndpoint(ApiEndpoint):
 
     model = models.Country
     base_viewset = viewsets.CitiesLightViewSet
-    search_fields = ('name', 'alternate_names', 'code2')
+    search_fields = ('name', 'alternate_names')
+    filter_fields = ('code2',)
 
 
 class RegionEndpoint(ApiEndpoint):
