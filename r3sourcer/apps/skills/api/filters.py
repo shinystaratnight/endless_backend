@@ -20,3 +20,14 @@ class SkillFilter(FilterSet):
             price_list_rates__price_list__valid_from__lte=now,
             price_list_rates__price_list__valid_until__gte=now,
         )
+
+
+class SkillBaseRateFilter(FilterSet):
+    candidate_skill = UUIDFilter(method='filter_candidate_skill')
+
+    class Meta:
+        model = skills_models.SkillBaseRate
+        fields = ['candidate_skill']
+
+    def filter_candidate_skill(self, queryset, name, value):
+        return queryset.filter(skill__candidate_skills=value).distinct()

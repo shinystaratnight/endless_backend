@@ -419,6 +419,16 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'field': 'contact.gender',
                 'multiple': True,
             }, {
+                'type': constants.FIELD_RELATED,
+                'field': 'recruitment_agent',
+                'label': _('Recruitment agent'),
+                'endpoint': api_reverse_lazy('core/companycontacts'),
+            }, {
+                'field': 'candidate_scores.average_score',
+                'label': _('Overal score'),
+                'type': constants.FIELD_RANGE,
+                'max': 5,
+            }, {
                 'type': constants.FIELD_CHECKBOX,
                 'field': 'transportation_to_work',
                 'multiple': True,
@@ -553,8 +563,14 @@ class SkillRateRelEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'candidate_skill',
             'hide': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'hourly_rate',
+            'query': {
+                'candidate_skill': '{candidate_skill.id}',
+            },
         },
-        'hourly_rate', 'valid_from', 'valid_until'
+        'valid_from', 'valid_until'
     )
 
     list_filter = ('candidate_skill', )

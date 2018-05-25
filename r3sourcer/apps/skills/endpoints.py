@@ -83,6 +83,7 @@ class EmploymentClassificationEndpoint(ApiEndpoint):
 class SkillBaseRateEndpoint(ApiEndpoint):
     model = models.SkillBaseRate
     serializer = skill_serializer.SkillBaseRateSerializer
+    filter_class = skills_filters.SkillBaseRateFilter
 
     search_fields = ('skill__name',)
     filter_fields = ('skill', )

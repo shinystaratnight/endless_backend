@@ -51,7 +51,7 @@ class SiteContactPermissions(SitePermissions):
 
 
 class SiteMasterCompanyFilterBackend(DRYPermissionFiltersBase):
-    action_routing = True
+    action_routing = False
 
     def filter_list_queryset(self, request, queryset, view):
         if request.user.is_superuser:

@@ -488,9 +488,11 @@ class AngularListApiAdapter(AngularApiAdapter):
                     today = timezone.localtime(timezone.now()).date()
                     action_list = [{
                         'label': _('Yesterday'),
-                        'query': '%s=%s' % (from_qry, format_date(
-                            today - timedelta(days=1)
-                        ))
+                        'query': '%(from)s=%(datetime)s&%(to)s=%(datetime)s' % {
+                            'from': from_qry,
+                            'to': to_qry,
+                            'datetime': format_date(today - timedelta(days=1)),
+                        },
                     }, {
                         'label': _('Today'),
                         'query': '%(from)s=%(datetime)s&%(to)s=%(datetime)s' % {
@@ -498,12 +500,17 @@ class AngularListApiAdapter(AngularApiAdapter):
                             'to': to_qry,
                             'datetime': format_date(today),
                         }
-                    }, {
-                        'label': _('Tomorrow'),
-                        'query': '%s=%s' % (from_qry, format_date(
-                            today + timedelta(days=1)
-                        ))
                     }]
+
+                    if 'created_at' not in field_qry and 'updated_at' not in field_qry:
+                        action_list.append({
+                            'label': _('Tomorrow'),
+                            'query': '%(from)s=%(datetime)s&%(to)s=%(datetime)s' % {
+                                'from': from_qry,
+                                'to': to_qry,
+                                'datetime': format_date(today + timedelta(days=1)),
+                            },
+                        })
 
                 adapted['list'] = action_list
             elif field_type == constants.FIELD_TEXT:
