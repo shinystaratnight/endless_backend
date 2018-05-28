@@ -142,6 +142,9 @@ class AngularApiAdapter(BaseAdapter):
                 }
             }
 
+            if 'metadata_query' in field:
+                adapted['metadata_query'] = field['metadata_query']
+
             query_params = field.get('query')
             if query_params is not None:
                 adapted['query'] = query_params
@@ -667,7 +670,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
             'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query', 'showIf',
-            'color_attr', 'outline', 'inline',
+            'color_attr', 'outline', 'inline', 'redirect',
         )
 
         for display_field in display_fields:

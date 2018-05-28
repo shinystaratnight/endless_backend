@@ -430,3 +430,6 @@ MONTHLY_EXTRA_WORKER_FEE = 13
 ANNUAL_EXTRA_WORKER_FEE = 10
 
 COST_OF_SMS_SEGMENT = 0.08
+
+
+def CAN_LOGIN_AS(request, target_user): return request.user

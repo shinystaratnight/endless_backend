@@ -11,7 +11,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 64,
+    "rght": 66,
     "tree_id": 4,
     "level": 0
   }
@@ -1829,8 +1829,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 64,
-    "rght": 71,
+    "lft": 66,
+    "rght": 73,
     "tree_id": 4,
     "level": 1
   }
@@ -1846,8 +1846,8 @@
     "url": "/sms-interface/messages/",
     "endpoint": "/ecore/api/v2/sms-interface/smsmessages/",
     "access_level": "manager",
-    "lft": 65,
-    "rght": 66,
+    "lft": 67,
+    "rght": 68,
     "tree_id": 4,
     "level": 2
   }
@@ -1863,8 +1863,8 @@
     "url": "/sms-interface/relatedobjects/",
     "endpoint": "/ecore/api/v2/sms-interface/smsrelatedobjects/",
     "access_level": "manager",
-    "lft": 67,
-    "rght": 68,
+    "lft": 69,
+    "rght": 70,
     "tree_id": 4,
     "level": 2
   }
@@ -1880,8 +1880,8 @@
     "url": "/sms-interface/templates/",
     "endpoint": "/ecore/api/v2/sms-interface/smstemplates/",
     "access_level": "manager",
-    "lft": 69,
-    "rght": 70,
+    "lft": 71,
+    "rght": 72,
     "tree_id": 4,
     "level": 2
   }
@@ -1968,6 +1968,23 @@
     "lft": 10,
     "rght": 11,
     "tree_id": 3,
+    "level": 1
+  }
+},
+{
+  "model": "core.extranetnavigation",
+  "pk": 135,
+  "fields": {
+    "updated_at": "2018-05-25T11:34:28.989Z",
+    "created_at": "2018-05-25T11:34:28.989Z",
+    "parent": 1,
+    "name": "Users",
+    "url": "/core/users/",
+    "endpoint": "/ecore/api/v2/core/users/",
+    "access_level": "manager",
+    "lft": 64,
+    "rght": 65,
+    "tree_id": 4,
     "level": 1
   }
 }
