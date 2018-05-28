@@ -3,13 +3,13 @@ from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-
+from loginas.utils import login_as
 from rest_framework import viewsets, status, exceptions, permissions
 from rest_framework.decorators import list_route, detail_route
 from rest_framework.response import Response
 from rest_framework.serializers import Serializer
 
-from r3sourcer.apps.core.models import Contact
+from r3sourcer.apps.core.models import Contact, User
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 
 from ..models import TokenLogin
@@ -149,4 +149,23 @@ class AuthViewSet(BaseViewsetMixin,
         return Response({
             'status': 'success',
             'message': _('You are logged out')
+        }, status=status.HTTP_200_OK)
+
+    @detail_route(methods=['post'], serializer_class=Serializer)
+    def loginas(self, request, auth_token, *args, **kwargs):
+        if not request.user.is_authenticated:
+            raise exceptions.ValidationError(_('Please login first'))
+
+        try:
+            user = User.objects.get(id=auth_token)
+        except User.DoesNotExist:
+            raise exceptions.NotFound({'user': _('User not found')})
+
+        logout(request)
+
+        login_as(user, request, store_original_user=False)
+
+        return Response({
+            'status': 'success',
+            'message': _('You are logged in as {user}').format(user=str(user.contact))
         }, status=status.HTTP_200_OK)

@@ -1415,15 +1415,25 @@ class UserEndpoint(ApiEndpoint):
     model = models.User
 
     serializer_fields = (
-        'id', 'is_superuser', 'is_staff', 'is_active', 'date_joined', {
+        'id', 'date_joined', {
             'contact': ('id', 'email', 'phone_mobile'),
         }
     )
 
-    list_display = ('contact', 'contact.email', 'contact.phone_mobile', 'is_superuser', 'is_active', 'date_joined')
+    list_display = (
+        'contact', 'contact.email', 'contact.phone_mobile', 'date_joined',
+        {
+            'label': _('Login as'),
+            'type': constants.FIELD_BUTTON,
+            'action': constants.DEFAULT_ACTION_POST,
+            'field': 'id',
+            'text': _('Login'),
+            'redirect': '/',
+            'endpoint': format_lazy('{}{{id}}/loginas/', api_reverse_lazy('auth'))
+        }
+    )
 
     _fieldset = (
-        'is_superuser', 'is_staff', 'is_active',
         {
             'field': 'date_joined',
             'type': constants.FIELD_DATETIME,
