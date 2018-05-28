@@ -821,14 +821,17 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         today = timezone.localtime(timezone.now()).date()
         termination_date = validated_data['termination_date']
 
+        if not validated_data['active'] and not termination_date:
+            termination_date = today
+
         if termination_date and validated_data['active'] and termination_date <= today:
-            validated_data['termination_date'] = None
+            termination_date = None
 
         rel, created = core_models.CompanyContactRelationship.objects.update_or_create(
             company_contact=instance, company=company,
             defaults={
                 'active': validated_data['active'],
-                'termination_date': validated_data['termination_date']
+                'termination_date': termination_date
             }
         )
 
