@@ -335,9 +335,57 @@ class CandidateEvaluationEndpoint(ApiEndpoint):
 
     list_display = ('candidate_contact', 'supervisor', 'evaluated_at')
     list_editable = (
-        'supervisor', 'evaluated_at', 'level_of_communication', 'was_on_time', 'was_motivated', 'had_ppe_and_tickets',
-        'met_expectations', 'representation',
+        'supervisor', 'evaluated_at',
         {
+            'label': _('Parameters'),
+            'fields': (
+                {
+                    'type': constants.FIELD_SKILLS,
+                    'field': 'level_of_communication',
+                    'label': _('Level of communication'),
+                }, {
+                    'type': constants.FIELD_ICON,
+                    'label': _('Was on time'),
+                    'field': 'was_on_time',
+                    'values': {
+                        True: 'check',
+                        False: 'times',
+                    },
+                }, {
+                    'type': constants.FIELD_ICON,
+                    'label': _('Was motivated'),
+                    'field': 'was_motivated',
+                    'values': {
+                        True: 'check',
+                        False: 'times',
+                    },
+                }, {
+                    'type': constants.FIELD_ICON,
+                    'label': _('Had ppe and tickets'),
+                    'field': 'had_ppe_and_tickets',
+                    'values': {
+                        True: 'check',
+                        False: 'times',
+                    },
+                }, {
+                    'type': constants.FIELD_ICON,
+                    'label': _('Met expectations'),
+                    'field': 'met_expectations',
+                    'values': {
+                        True: 'check',
+                        False: 'times',
+                    },
+                }, {
+                    'type': constants.FIELD_ICON,
+                    'label': _('Representation'),
+                    'field': 'representation',
+                    'values': {
+                        True: 'check',
+                        False: 'times',
+                    },
+                },
+            )
+        }, {
             'type': constants.FIELD_LINK,
             'field': 'reference_timesheet',
             'endpoint': format_lazy('{}{{reference_timesheet.id}}', api_reverse_lazy('hr/timesheets')),

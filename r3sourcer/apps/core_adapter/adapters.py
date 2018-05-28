@@ -100,7 +100,7 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LIST:
                 options = (
                     'endpoint', 'prefilled', 'add_endpoint', 'delay', 'metadata_query', 'add_metadata_query', 'max',
-                    'default', 'unique', 'edit_endpoint',
+                    'default', 'unique', 'edit_endpoint', 'help',
                 )
                 adapted.update(
                     collapsed=field.get('collapsed', False),
@@ -281,7 +281,7 @@ class AngularApiAdapter(BaseAdapter):
                 'type': fieldset_type,
                 'children': fieldset_result,
                 **{
-                    key: fieldset[key] for key in ('name', 'collapsed', 'label')
+                    key: fieldset[key] for key in ('name', 'collapsed', 'label', 'main', 'width')
                     if fieldset.get(key)
                 },
             }

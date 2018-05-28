@@ -75,10 +75,12 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     'type': constants.FIELD_TEXT,
                                     'field': 'contact.email',
                                     'label': '',
+                                    'placeholder': _('E-mail'),
                                 }, {
                                     'type': constants.FIELD_TEXT,
                                     'field': 'contact.phone_mobile',
                                     'label': '',
+                                    'placeholder': _('Mobile phone'),
                                 },),
                         }, {
                             'type': constants.CONTAINER_GROUP,
@@ -99,20 +101,22 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                             'type': constants.CONTAINER_GROUP,
                             'label': _('Recruitment agent'),
                             'width': .25,
-                            'fields': ({
-                                'type': constants.FIELD_RELATED,
-                                'field': 'recruitment_agent',
-                                'endpoint': api_reverse_lazy('core/companycontacts'),
-                                'label': _('Recruitment Agent'),
-                                'custom': (
-                                    'recruitment_agent.job_title', 'recruitment_agent.contact.__str__',
-                                    'recruitment_agent.contact.phone_mobile'
-                                ),
-                                'default': 'session.contact.contact_id',
-                                'query': {
-                                    'master_company': 'current',
-                                },
-                            },)
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'recruitment_agent',
+                                    'endpoint': api_reverse_lazy('core/companycontacts'),
+                                    'default': 'session.contact.contact_id',
+                                    'label': '',
+                                    'query': {
+                                        'master_company': 'current',
+                                    },
+                                }, {
+                                    'field': 'recruitment_agent.contact.phone_mobile',
+                                    'label': '',
+                                    'type': constants.FIELD_TEXT,
+                                }
+                            )
                         }
                     )
                 }, {
@@ -187,6 +191,45 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                     'fields': (
                         {
                             'type': constants.CONTAINER_GROUP,
+                            'label': _('Residency'),
+                            'width': .25,
+                            'fields': (
+                                'residency',
+                                {
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'visa_expiry_date',
+                                    'showIf': [
+                                        {
+                                            'residency':
+                                                candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary
+                                        }
+                                    ],
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': '',
+                            'width': .25,
+                            'fields': (
+                                'nationality',
+                                {
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'vevo_checked_at',
+                                    'showIf': [
+                                        {
+                                            'residency':
+                                                candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary
+                                        }
+                                    ],
+                                },
+                            ),
+                        },
+                    )
+                }, {
+                    'type': 'row',
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
                             'label': _('Formalities'),
                             'width': .25,
                             'fields': (
@@ -214,7 +257,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 },)
             }, {
                 'type': constants.FIELD_LIST,
-                'field': 'id_',
                 'query': {
                     'candidate_contact': '{id}',
                 },
@@ -227,7 +269,6 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'help': _('Here you can see the skills which belong to the candidate'),
             }, {
                 'type': constants.FIELD_LIST,
-                'field': 'id_',
                 'query': {
                     'candidate_contact': '{id}',
                 },
@@ -278,50 +319,50 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 },
                 'label': _('Job offers'),
                 'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/joboffers')),
+                'help': _('Here you can see job offers'),
             }, {
                 'query': {
                     'candidate_contact': '{id}'
                 },
                 'type': constants.FIELD_LIST,
                 'label': _('Carrier List'),
-                'add_label': _('+ Add item'),
                 'endpoint': api_reverse_lazy('hr/carrierlists'),
                 'prefilled': {
                     'candidate_contact': '{id}',
-                }
+                },
+                'help': _('Here you can see information about carrier of candidate'),
             }, {
                 'query': {
                     'candidate_contact': '{id}'
                 },
                 'type': constants.FIELD_LIST,
                 'label': _('Black List'),
-                'add_label': _('+ Add item'),
                 'endpoint': api_reverse_lazy('hr/blacklists'),
                 'prefilled': {
                     'candidate_contact': '{id}',
-                }
+                },
             }, {
                 'query': {
                     'candidate_contact': '{id}'
                 },
                 'type': constants.FIELD_LIST,
                 'label': _('Favorite List'),
-                'add_label': _('+ Add item'),
                 'endpoint': api_reverse_lazy('hr/favouritelists'),
                 'prefilled': {
                     'candidate_contact': '{id}',
-                }
+                },
+                'help': _('Here you can see favorite companies for candidate'),
             }, {
                 'query': {
                     'candidate_contact': '{id}'
                 },
                 'type': constants.FIELD_LIST,
                 'label': _('Evaluations'),
-                'add_label': _('+ Add item'),
                 'endpoint': api_reverse_lazy('hr/candidateevaluations'),
                 'prefilled': {
                     'candidate_contact': '{id}',
-                }
+                },
+                'help': _('Here you can see evaluations for the candidate'),
             },)
         },
     )
