@@ -115,6 +115,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     'field': 'recruitment_agent.contact.phone_mobile',
                                     'label': '',
                                     'type': constants.FIELD_TEXT,
+                                    'read_only': True,
                                 }
                             )
                         }

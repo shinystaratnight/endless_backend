@@ -20,7 +20,7 @@ CUSTOM_FIELD_ATTRS = (
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
     'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
-    'color_attr', 'outline', 'inline'
+    'color_attr', 'outline', 'inline', 'placeholder'
 )
 
 
