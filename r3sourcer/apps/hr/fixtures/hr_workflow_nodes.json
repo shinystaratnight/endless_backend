@@ -724,10 +724,6 @@
             "rules": {
                 "active": [
                     95
-                ],
-                "required_states": [
-                    "and",
-                    70
                 ]
             },
             "hardlock": true
