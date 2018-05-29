@@ -15,11 +15,6 @@ from ..models import Subcontractor
 
 class CandidateContactViewset(BaseApiViewset):
 
-    http_method_names = ['post', 'put', 'get', 'options']
-    action_map = {
-        'post': 'create'
-    }
-
     @list_route(
         methods=['post'],
         serializer=serializers.CandidateContactRegisterSerializer,

@@ -573,9 +573,9 @@ class TagRel(core_models.UUIDModel):
                 default_user = get_default_user()
             if core_models.CompanyContact.objects.filter(
                     contact__user=default_user).exists():
-                self.verified_by = core_models.CompanyContact.objects.get(
+                self.verified_by = core_models.CompanyContact.objects.filter(
                     contact__user=default_user
-                )
+                ).first()
         else:
             self.verified_by = None
         super(TagRel, self).save(*args, **kwargs)

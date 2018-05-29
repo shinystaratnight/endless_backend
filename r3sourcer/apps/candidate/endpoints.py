@@ -27,297 +27,366 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
 
     fieldsets = (
         {
-            'type': constants.CONTAINER_ROW,
-            'label': _('General'),
-            'collapsed': False,
-            'fields': (
-                {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': ({
-                        'type': constants.FIELD_PICTURE,
-                        'field': 'contact.picture',
-                        'read_only': True,
-                        'label': _('Photo'),
-                        'file': False,
-                        'photo': False,
-                        'custom': [],
-                    },)
-                }, {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': ({
-                        'type': constants.FIELD_RELATED,
-                        'field': 'contact',
-                        'label': _('Contact'),
-                        'custom': (
-                            'contact.__str__', 'contact.address.__str__', 'contact.phone_mobile', 'contact.email'
-                        ),
-                        'query': {
-                            'is_candidate_contact': '3',
-                        },
-                    },)
-                }, {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': ({
-                        'type': constants.FIELD_RELATED,
-                        'field': 'recruitment_agent',
-                        'endpoint': api_reverse_lazy('core/companycontacts'),
-                        'label': _('Recruitment Agent'),
-                        'custom': (
-                            'recruitment_agent.job_title', 'recruitment_agent.contact.__str__',
-                            'recruitment_agent.contact.phone_mobile'
-                        ),
-                        'default': 'session.contact.contact_id',
-                        'query': {
-                            'master_company': 'current',
-                        },
-                    },)
-                },
-            )
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'name': _('Residency'),
-            'collapsed': True,
-            'fields': (
-                'residency', {
-                    'type': constants.FIELD_RELATED,
-                    'field': 'visa_type',
-                    'showIf': [
-                        {
-                            'residency': str(candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary),
-                        }
-                    ],
-                }, {
-                    'type': constants.FIELD_DATE,
-                    'field': 'visa_expiry_date',
-                    'showIf': [
-                        'visa_type.id',
-                    ],
-                }, {
-                    'type': constants.FIELD_DATE,
-                    'field': 'vevo_checked_at',
-                    'showIf': [
-                        'visa_type.id',
-                    ],
-                }, 'nationality',
-            ),
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'name': _('Formalities'),
-            'collapsed': True,
-            'fields': (
-                'tax_file_number', 'superannuation_fund', {
-                    'type': constants.FIELD_TEXT,
-                    'field': 'super_member_number',
-                    'showIf': [
-                        'superannuation_fund.id'
-                    ],
-                }, 'bank_account', 'emergency_contact_name', 'emergency_contact_phone', 'employment_classification',
-                'autoreceives_sms',
-            ),
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'name': _('Personal Traits'),
-            'collapsed': True,
-            'fields': (
-                {
-                    'type': constants.FIELD_TEXT,
-                    'field': 'height',
-                },
-                'weight', 'transportation_to_work', 'strength', 'language',
-            ),
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'name': _('Candidate rating'),
-            'collapsed': True,
-            'fields': (
-                {
-                    'field': 'candidate_scores.id',
-                    'type': constants.FIELD_TEXT,
-                    'send': False,
-                }, {
-                    'field': 'candidate_scores.loyalty',
-                    'type': constants.FIELD_STATIC,
-                    'read_only': True,
-                    'label': _('Loyalty Score'),
-                    'send': False,
-                }, {
-                    'field': 'candidate_scores.reliability',
-                    'type': constants.FIELD_STATIC,
-                    'read_only': True,
-                    'label': _('Reliability Score'),
-                    'send': False,
-                }, {
-                    'field': 'candidate_scores.client_feedback',
-                    'type': constants.FIELD_STATIC,
-                    'read_only': True,
-                    'label': _('Client Feedback'),
-                    'send': False,
-                }, {
-                    'field': 'candidate_scores.recruitment_score',
-                    'type': constants.FIELD_STATIC,
-                    'read_only': True,
-                    'label': _('Recruitment Score'),
-                    'send': False,
-                },
-            ),
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'name': _('Messages'),
-            'collapsed': True,
-            'fields': (
-                'message_by_sms', 'message_by_email',
-            ),
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'name': _('Other'),
-            'collapsed': True,
-            'fields': (
-                {
-                    'field': 'created_at',
-                    'type': constants.FIELD_DATE,
-                    'read_only': True,
-                    'label': _('Created at'),
-                    'send': False,
-                }, {
-                    'field': 'updated_at',
-                    'type': constants.FIELD_DATE,
-                    'read_only': True,
-                    'label': _('Updated at'),
-                    'send': False,
-                }
-            ),
-        }, {
-            'type': constants.FIELD_RELATED,
-            'delete': True,
-            'list': True,
-            'many': True,
-            'create': True,
-            'edit': True,
-            'collapsed': True,
-            'label': _('Notes'),
-            'field': 'notes',
-        }, {
-            'type': constants.FIELD_LIST,
-            'field': 'id_',
-            'query': {
-                'candidate_contact': '{id}',
-            },
-            'collapsed': True,
-            'label': _('Skills'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('candidate/skillrels'),
-            'prefilled': {
-                'candidate_contact': '{id}',
-            }
-        }, {
-            'type': constants.FIELD_RELATED,
-            'delete': True,
-            'list': True,
-            'many': True,
-            'create': True,
-            'edit': True,
-            'collapsed': True,
-            'label': _('Candidate Tags'),
-            'field': 'tag_rels',
-        }, {
-            'type': constants.FIELD_LIST,
-            'field': 'id_',
-            'query': {
-                'contact': '{contact.id}',
-            },
-            'collapsed': True,
-            'label': _('Activities'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('activity/activities'),
-            'prefilled': {
-                'contact': '{contact.id}',
-            }
-        }, {
-            'type': constants.FIELD_TIMELINE,
-            'label': _('States Timeline'),
             'field': 'id',
-            'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
-            'query': {
-                'model': 'candidate.candidatecontact',
-                'object_id': '{id}',
-            },
-        }, {
-            'type': constants.FIELD_LIST,
-            'query': {
-                'object_id': '{id}'
-            },
-            'collapsed': True,
-            'label': _('Candidate States History'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/workflowobjects'),
-            'prefilled': {
-                'object_id': '{id}',
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'contact.picture.thumb',
+                'status': {
+                    'field': 'active_states',
+                    'color': {
+                        'danger': [0, 80, 90],
+                        'color_attr': 'number',
+                    }
+                },
+                'address': 'contact.address.__str__',
+                'available': 'contact.is_available',
+                'title': 'contact.__str__',
+                'created_at': 'created_at',
+                'updated_at': 'updated_at',
             }
         }, {
-            'query': {
-                'contact': '{contact.id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Candidate Unavailabilities'),
-            'endpoint': api_reverse_lazy('core/contactunavailabilities'),
-        }, {
-            'type': constants.FIELD_LIST,
-            'query': {
-                'candidate_contact': '{id}'
-            },
-            'collapsed': True,
-            'label': _('Job Offers'),
-            'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/joboffers')),
-        }, {
-            'query': {
-                'candidate_contact': '{id}'
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Carrier List'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/carrierlists'),
-            'prefilled': {
-                'candidate_contact': '{id}',
-            }
-        }, {
-            'query': {
-                'candidate_contact': '{id}'
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Black List'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/blacklists'),
-            'prefilled': {
-                'candidate_contact': '{id}',
-            }
-        }, {
-            'query': {
-                'candidate_contact': '{id}'
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Favorite List'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/favouritelists'),
-            'prefilled': {
-                'candidate_contact': '{id}',
-            }
-        }, {
-            'query': {
-                'candidate_contact': '{id}'
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Evaluations'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/candidateevaluations'),
-            'prefilled': {
-                'candidate_contact': '{id}',
-            }
-        }
+            'type': constants.CONTAINER_TABS,
+            'fields': ({
+                'type': constants.CONTAINER_GROUP,
+                'label': _('Personal information'),
+                'name': _('Personal Info'),
+                'main': True,
+                'fields': ({
+                    'type': constants.CONTAINER_ROW,
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Contacts'),
+                            'width': .5,
+                            'fields': (
+                                {
+                                    'field': 'contact.id',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                }, {
+                                    'field': 'contact',
+                                    'type': constants.FIELD_RELATED,
+                                    'hide': True,
+                                }, {
+                                    'field': 'contact.address',
+                                    'type': constants.FIELD_RELATED,
+                                    'hide': True,
+                                    'send': False,
+                                }, {
+                                    'field': 'contact.is_available',
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'hide': True,
+                                    'send': False,
+                                }, {
+                                    'field': 'contact.first_name',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                }, {
+                                    'field': 'contact.last_name',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'contact.email',
+                                    'label': '',
+                                    'placeholder': _('E-mail'),
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'contact.phone_mobile',
+                                    'label': '',
+                                    'placeholder': _('Mobile phone'),
+                                },),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Notify'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'field': 'message_by_email',
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'label': _('E-Mail'),
+                                }, {
+                                    'field': 'message_by_sms',
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'label': _('SMS'),
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Recruitment agent'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'recruitment_agent',
+                                    'endpoint': api_reverse_lazy('core/companycontacts'),
+                                    'default': 'session.contact.contact_id',
+                                    'label': '',
+                                    'query': {
+                                        'master_company': 'current',
+                                    },
+                                }, {
+                                    'field': 'recruitment_agent.contact.phone_mobile',
+                                    'label': '',
+                                    'type': constants.FIELD_TEXT,
+                                    'read_only': True,
+                                    'send': False,
+                                }, {
+                                    'field': 'recruitment_agent.contact',
+                                    'label': '',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                    'send': False,
+                                }
+                            )
+                        }
+                    )
+                }, {
+                    'type': constants.CONTAINER_ROW,
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Additional info'),
+                            'width': .25,
+                            'fields': ('contact.gender', 'language', 'transportation_to_work'),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Phisical parameters'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'height',
+                                },
+                                'weight', 'bmi'
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Character'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'field': 'candidate_scores.id',
+                                    'type': constants.FIELD_TEXT,
+                                    'send': False,
+                                }, {
+                                    'field': 'candidate_scores.reliability',
+                                    'type': constants.FIELD_SCORE,
+                                    'read_only': True,
+                                    'label': _('Reliability'),
+                                    'send': False,
+                                }, {
+                                    'field': 'candidate_scores.loyalty',
+                                    'type': constants.FIELD_SCORE,
+                                    'read_only': True,
+                                    'label': _('Loyalty'),
+                                    'send': False,
+                                }, {
+                                    'field': 'strength',
+                                    'type': constants.FIELD_SCORE,
+                                    'label': _('Strength'),
+                                }
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Rating'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'field': 'candidate_scores.recruitment_score',
+                                    'type': constants.FIELD_SCORE,
+                                    'read_only': True,
+                                    'label': _('Recruitment Score'),
+                                    'send': False,
+                                }, {
+                                    'field': 'candidate_scores.client_feedback',
+                                    'type': constants.FIELD_SCORE,
+                                    'read_only': True,
+                                    'label': _('Client Score'),
+                                    'send': False,
+                                },
+                            ),
+                        },
+                    )
+                }, {
+                    'type': 'row',
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Residency'),
+                            'width': .25,
+                            'fields': (
+                                'residency',
+                                {
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'visa_expiry_date',
+                                    'showIf': [
+                                        {
+                                            'residency':
+                                                candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary
+                                        }
+                                    ],
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': '',
+                            'width': .25,
+                            'fields': (
+                                'nationality',
+                                {
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'vevo_checked_at',
+                                    'showIf': [
+                                        {
+                                            'residency':
+                                                candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary
+                                        }
+                                    ],
+                                },
+                            ),
+                        },
+                    )
+                }, {
+                    'type': 'row',
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Formalities'),
+                            'width': .25,
+                            'fields': (
+                                'tax_file_number', 'superannuation_fund',
+                                {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'super_member_number',
+                                    'showIf': [
+                                        'superannuation_fund.id'
+                                    ],
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': '',
+                            'width': .5,
+                            'fields': ('bank_account', 'employment_classification'),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Emergency'),
+                            'width': .25,
+                            'fields': ('emergency_contact_name', 'emergency_contact_phone',),
+                        },
+                    )
+                },)
+            }, {
+                'type': constants.FIELD_LIST,
+                'query': {
+                    'candidate_contact': '{id}',
+                },
+                'label': _('Candidate skills'),
+                'add_label': _('+ Add item'),
+                'endpoint': api_reverse_lazy('candidate/skillrels'),
+                'prefilled': {
+                    'candidate_contact': '{id}',
+                },
+                'help': _('Here you can see the skills which belong to the candidate'),
+            }, {
+                'type': constants.FIELD_LIST,
+                'query': {
+                    'candidate_contact': '{id}',
+                },
+                'label': _('Candidate tags'),
+                'add_label': _('+ Add item'),
+                'endpoint': api_reverse_lazy('candidate/tagrels'),
+                'prefilled': {
+                    'candidate_contact': '{id}',
+                },
+                'help': _('Here you can see the tags which belong to the candidate'),
+            }, {
+                'type': constants.CONTAINER_GROUP,
+                'name': _('States'),
+                'fields': (
+                    {
+                        'type': constants.FIELD_TIMELINE,
+                        'field': 'id',
+                        'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+                        'query': {
+                            'model': 'candidate.candidatecontact',
+                            'object_id': '{id}',
+                        },
+                    }, {
+                        'type': constants.FIELD_LIST,
+                        'query': {
+                            'object_id': '{id}'
+                        },
+                        'label': _('States history'),
+                        'add_label': _('+ Add item'),
+                        'endpoint': api_reverse_lazy('core/workflowobjects'),
+                        'prefilled': {
+                            'object_id': '{id}',
+                        },
+                        'help': _('Here you can see changes candidate states'),
+                    },
+                ),
+            }, {
+                'query': {
+                    'contact': '{contact.id}',
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Unavailabilities'),
+                'endpoint': api_reverse_lazy('core/contactunavailabilities'),
+            }, {
+                'type': constants.FIELD_LIST,
+                'query': {
+                    'candidate_contact': '{id}'
+                },
+                'label': _('Job offers'),
+                'endpoint': format_lazy('{}candidate/',  api_reverse_lazy('hr/joboffers')),
+                'help': _('Here you can see job offers'),
+            }, {
+                'query': {
+                    'candidate_contact': '{id}'
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Carrier List'),
+                'endpoint': api_reverse_lazy('hr/carrierlists'),
+                'prefilled': {
+                    'candidate_contact': '{id}',
+                },
+                'help': _('Here you can see information about carrier of candidate'),
+            }, {
+                'query': {
+                    'candidate_contact': '{id}'
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Black List'),
+                'endpoint': api_reverse_lazy('hr/blacklists'),
+                'prefilled': {
+                    'candidate_contact': '{id}',
+                },
+            }, {
+                'query': {
+                    'candidate_contact': '{id}'
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Favorite List'),
+                'endpoint': api_reverse_lazy('hr/favouritelists'),
+                'prefilled': {
+                    'candidate_contact': '{id}',
+                },
+                'help': _('Here you can see favorite companies for candidate'),
+            }, {
+                'query': {
+                    'candidate_contact': '{id}'
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Evaluations'),
+                'endpoint': api_reverse_lazy('hr/candidateevaluations'),
+                'prefilled': {
+                    'candidate_contact': '{id}',
+                },
+                'help': _('Here you can see evaluations for the candidate'),
+            },)
+        },
     )
 
     list_display = (
@@ -483,7 +552,6 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'fields': ('updated_at', 'updated_by')
         }, {
             'label': _('Actions'),
-            'delim': ' ',
             'fields': ({
                 **constants.BUTTON_EDIT,
                 'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('candidate/skillrels'))
@@ -496,8 +564,12 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'candidate_contact',
             'hide': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'skill',
+            'read_only': False,
         },
-        'skill', 'score', 'prior_experience',
+        'score', 'prior_experience',
         {
             'type': constants.FIELD_LIST,
             'field': 'id_',
@@ -533,8 +605,29 @@ class TagRelEndpoint(core_endpoints.ApiEndpoint):
             'field': 'verification_evidence',
             'label_upload': _('Choose a file'),
             'label_photo': _('Take a photo'),
+        }, {
+            'label': _('Actions'),
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('candidate/tagrels'))
+            }, constants.BUTTON_DELETE)
         }
     )
+
+    fieldsets = (
+        {
+            'type': constants.FIELD_RELATED,
+            'field': 'candidate_contact',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'tag',
+            'read_only': False,
+        },
+        'verification_evidence', 'verified_by',
+    )
+
+    list_filter = ('candidate_contact', )
 
 
 class SubcontractorEndpoint(core_endpoints.ApiEndpoint):

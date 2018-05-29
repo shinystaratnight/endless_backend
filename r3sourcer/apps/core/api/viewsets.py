@@ -108,9 +108,12 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
     def update(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
 
+        print('!', data)
+
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=data, partial=partial)
+        print('!!', serializer)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
@@ -147,11 +150,6 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
 
 class ContactViewset(BaseApiViewset):
-
-    http_method_names = ['post', 'put', 'get', 'options']
-    action_map = {
-        'put': 'partial_update'
-    }
 
     @list_route(methods=['get'])
     def validate(self, request, *args, **kwargs):

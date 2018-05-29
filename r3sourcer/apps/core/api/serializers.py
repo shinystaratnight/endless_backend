@@ -207,6 +207,15 @@ class ApiFullRelatedFieldsMixin():
                     for related_item in related_data
                 ]
 
+            is_related_object_data = isinstance(related_data, dict) and len(related_data.keys()) > 1
+            if related_data is not empty and is_related_object_data and 'id' in related_data:
+                try:
+                    rel_instance = rel_model.objects.get(id=related_data['id'])
+                except rel_model.DoesNotExist:
+                    rel_instance = None
+            else:
+                rel_instance = None
+
             kwargs = dict(
                 required=field.required and not is_many_relation,
                 allow_null=field.allow_null,
@@ -216,6 +225,7 @@ class ApiFullRelatedFieldsMixin():
                 data=related_data,
                 parent_name=parent_field_name or field_name,
                 partial=is_id_partial,
+                instance=rel_instance,
             )
 
             internal = self._get_internal_serializer(

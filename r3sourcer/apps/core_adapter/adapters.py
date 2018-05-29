@@ -20,7 +20,7 @@ CUSTOM_FIELD_ATTRS = (
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
     'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
-    'color_attr', 'outline', 'inline'
+    'color_attr', 'outline', 'inline', 'placeholder'
 )
 
 
@@ -100,7 +100,7 @@ class AngularApiAdapter(BaseAdapter):
             elif component_type == constants.FIELD_LIST:
                 options = (
                     'endpoint', 'prefilled', 'add_endpoint', 'delay', 'metadata_query', 'add_metadata_query', 'max',
-                    'default', 'unique', 'edit_endpoint',
+                    'default', 'unique', 'edit_endpoint', 'help',
                 )
                 adapted.update(
                     collapsed=field.get('collapsed', False),
@@ -170,6 +170,13 @@ class AngularApiAdapter(BaseAdapter):
                 'type': constants.FIELD_CHECKBOX,
                 'templateOptions': field['validation'],
             }
+        elif component_type == constants.FIELD_INFO:
+            adapted = {
+                'type': component_type,
+                'values': field.get('values', {}),
+                'key': field.get('key', 'id'),
+            }
+            return adapted
         else:
             adapted = {
                 'type': to_html_tag(component_type),
@@ -263,17 +270,18 @@ class AngularApiAdapter(BaseAdapter):
             )
             return field_info
 
-        fildset_result = self._get_metadata_fieldsets_info(
+        fieldset_result = self._get_metadata_fieldsets_info(
             fieldset['fields'], [], fields
         )
+
         if fieldset_type is None:
-            return fildset_result
+            return fieldset_result
         else:
             field_info = {
                 'type': fieldset_type,
-                'children': fildset_result,
+                'children': fieldset_result,
                 **{
-                    key: fieldset[key] for key in ('name', 'collapsed', 'label')
+                    key: fieldset[key] for key in ('name', 'collapsed', 'label', 'main', 'width')
                     if fieldset.get(key)
                 },
             }
