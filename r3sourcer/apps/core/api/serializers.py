@@ -647,7 +647,9 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
             try:
                 address = core_models.Address.objects.create(**address)
             except (ValidationError, TypeError) as e:
-                raise serializers.ValidationError(getattr(e, 'messages', _('Cannot create Contact without address')))
+                raise serializers.ValidationError({
+                    'address': getattr(e, 'messages', _('Cannot create Contact without address'))
+                })
         contact = core_models.Contact.objects.create(
             address=address, **validated_data)
         return contact
