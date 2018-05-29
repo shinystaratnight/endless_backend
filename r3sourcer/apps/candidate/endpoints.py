@@ -64,6 +64,20 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     'type': constants.FIELD_TEXT,
                                     'hide': True,
                                 }, {
+                                    'field': 'contact',
+                                    'type': constants.FIELD_RELATED,
+                                    'hide': True,
+                                }, {
+                                    'field': 'contact.address',
+                                    'type': constants.FIELD_RELATED,
+                                    'hide': True,
+                                    'send': False,
+                                }, {
+                                    'field': 'contact.is_available',
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'hide': True,
+                                    'send': False,
+                                }, {
                                     'field': 'contact.first_name',
                                     'type': constants.FIELD_TEXT,
                                     'hide': True,
@@ -116,6 +130,13 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     'label': '',
                                     'type': constants.FIELD_TEXT,
                                     'read_only': True,
+                                    'send': False,
+                                }, {
+                                    'field': 'recruitment_agent.contact',
+                                    'label': '',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                    'send': False,
                                 }
                             )
                         }
