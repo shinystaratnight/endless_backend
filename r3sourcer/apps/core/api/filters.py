@@ -214,11 +214,11 @@ class CompanyContactFilter(FilterSet):
         if value == 'current':
             company = get_site_master_company() or get_default_company()
             value = company.id
-            qry = Q(relationships__company_id=value, relationships__active=True)
-        else:
             qry = Q()
+        else:
+            qry = Q(company_accounts__master_company=value)
 
-        return queryset.filter(Q(company_accounts__master_company=value) | qry).distinct()
+        return queryset.filter(Q(relationships__company_id=value, relationships__active=True) | qry).distinct()
 
 
 class CompanyContactRelationshipFilter(FilterSet):
