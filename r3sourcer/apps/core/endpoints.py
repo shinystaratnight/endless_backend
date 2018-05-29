@@ -85,7 +85,7 @@ class ContactEndpoint(ApiEndpoint):
         }
     )
 
-    fieldsets = (
+    fieldsets_add = (
         {
             'type': constants.CONTAINER_ROW,
             'label': '{title} {first_name} {last_name}',
@@ -109,6 +109,7 @@ class ContactEndpoint(ApiEndpoint):
                             'field': 'id',
                             'read_only': True,
                             'label': '',
+                            'send': False,
                             'custom': ('address.__str__', 'phone_mobile', 'email'),
                         },
                     ),
@@ -144,7 +145,11 @@ class ContactEndpoint(ApiEndpoint):
             'collapsed': True,
             'name': _('Misc'),
             'fields': ('is_available', 'phone_mobile_verified', 'email_verified')
-        }, {
+        },
+    )
+
+    fieldsets = fieldsets_add + (
+        {
             'query': {
                 'object_id': '{id}',
             },
@@ -165,6 +170,7 @@ class ContactEndpoint(ApiEndpoint):
                 'label': _('User'),
                 'field': 'user',
                 'read_only': True,
+                'send': False,
                 'metadata_query': {
                     'fieldsets_type': 'contact',
                 },
@@ -172,21 +178,29 @@ class ContactEndpoint(ApiEndpoint):
                 'type': constants.FIELD_RELATED,
                 'label': _('Candidate Contact'),
                 'field': 'candidate_contacts',
+                'send': False,
+                'read_only': True,
             }, {
                 'type': constants.FIELD_RELATED,
                 'label': _('Recruitment Agent'),
                 'field': 'candidate_contacts.recruitment_agent',
+                'send': False,
+                'read_only': True,
             }, {
                 'type': constants.FIELD_RELATED,
                 'label': _('Company Contact'),
                 'field': 'company_contact',
+                'send': False,
+                'read_only': True,
             }, {
                 'type': constants.FIELD_RELATED,
                 'label': _('Master Company'),
                 'field': 'master_company',
                 'endpoint': api_reverse_lazy('core/companies'),
+                'send': False,
+                'read_only': True,
             },),
-        },
+        }
     )
 
     def get_list_filter(self):
