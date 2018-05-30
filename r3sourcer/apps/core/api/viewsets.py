@@ -108,13 +108,9 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
-
-        print('!', data)
-
         partial = kwargs.pop('partial', False)
         instance = self.get_object()
         serializer = self.get_serializer(instance, data=data, partial=partial)
-        print('!!', serializer)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
@@ -127,6 +123,9 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return data
 
     def prepare_related_data(self, data, is_create=False):
+        return self._prepare_internal_data(data, is_create=False)
+
+    def _prepare_internal_data(self, data, is_create=False):
         res = {}
         for key, val in data.items():
             is_empty = val == '' or val is fields.empty
@@ -136,9 +135,9 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
             if isinstance(val, dict):
                 val = {k: v for k, v in val.items() if k not in self.picture_fields}
 
-                res[key] = self.prepare_related_data(val)
+                res[key] = self._prepare_internal_data(val)
             elif isinstance(val, list):
-                res[key] = [self.prepare_related_data(item) if isinstance(item, dict) else item for item in val]
+                res[key] = [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in val]
             else:
                 res[key] = val
 
@@ -668,3 +667,7 @@ class CitiesLightViewSet(BaseApiViewset):
         qs = super().get_queryset()
 
         return qs.order_by('name')
+
+
+class AddressViewset(GoogleAddressMixin, BaseApiViewset):
+    root_address = True

@@ -78,15 +78,20 @@ class ActiveStateFilterMixin:
 class GoogleAddressMixin:
 
     raise_invalid_address = True
+    root_address = False
 
     def prepare_related_data(self, data, is_create=False):
         data = super().prepare_related_data(data, is_create)
 
-        if 'address' not in data:
+        if not self.root_address and 'address' not in data:
+            return data
+
+        address_data = data if self.root_address else data['address']
+
+        if not is_create and 'address_components' not in address_data:
             return data
 
         try:
-            address_data = data['address']
             address_parts = {item['types'][0]: item for item in address_data['address_components']}
             country = Country.objects.get(code2=address_parts['country']['short_name'])
 
