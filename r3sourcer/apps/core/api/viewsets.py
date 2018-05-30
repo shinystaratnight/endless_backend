@@ -24,6 +24,7 @@ from ..workflow import WorkflowProcess
 from . import permissions, serializers
 from .decorators import list_route, detail_route
 
+from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core_adapter import constants
 
@@ -87,7 +88,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        data = self.prepare_related_data(request.data)
+        data = self.prepare_related_data(request.data, is_create=True)
         data = self.clean_request_data(data)
 
         return self.create_from_data(data, *args, **kwargs)
@@ -125,7 +126,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
     def process_response_data(self, data, queryset=None):
         return data
 
-    def prepare_related_data(self, data):
+    def prepare_related_data(self, data, is_create=False):
         res = {}
         for key, val in data.items():
             is_empty = val == '' or val is fields.empty
@@ -149,7 +150,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         }
 
 
-class ContactViewset(BaseApiViewset):
+class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
     @list_route(methods=['get'])
     def validate(self, request, *args, **kwargs):

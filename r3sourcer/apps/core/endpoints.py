@@ -127,7 +127,7 @@ class ContactEndpoint(ApiEndpoint):
                     'fields': (
                         'email', 'phone_mobile',
                         {
-                            'type': constants.FIELD_RELATED,
+                            'type': constants.FIELD_ADDRESS,
                             'field': 'address',
                             'edit': True,
                             'delete': True,

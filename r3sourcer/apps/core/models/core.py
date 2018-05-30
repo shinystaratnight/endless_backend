@@ -541,8 +541,8 @@ class Address(UUIDModel):
 
     state = models.ForeignKey(Region, blank=True, null=True, verbose_name=_("State/District"))
 
-    latitude = models.DecimalField(max_digits=9, decimal_places=6, default=0)
-    longitude = models.DecimalField(max_digits=9, decimal_places=6, default=0)
+    latitude = models.DecimalField(max_digits=18, decimal_places=15, default=0)
+    longitude = models.DecimalField(max_digits=18, decimal_places=15, default=0)
 
     country = models.ForeignKey(Country, to_field='code2', default='AU')
 
@@ -600,6 +600,9 @@ class Address(UUIDModel):
         return address
 
     def fetch_geo_coord(self, should_save=True):
+        if self.latitude and self.longitude:
+            return False
+
         latitude, longitude = fetch_geo_coord_by_address(self.get_full_address())
         if latitude and longitude:
             self.latitude = latitude
