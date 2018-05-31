@@ -1028,11 +1028,8 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         else:
             workflow_object = None
 
-        if workflow_object is not None:
-            if workflow_object.active:
-                return ACTIVE
-            else:
-                return VISITED
+        if workflow_object is not None and workflow_object.active:
+            return ACTIVE
         else:
             if self.target.is_allowed(obj):
                 return ALLOWED
