@@ -58,8 +58,11 @@ class JobsiteEndpoint(ApiEndpoint):
                         'field': 'short_name',
                         'help': '',
                     },
-                    'regular_company', 'primary_contact', 'portfolio_manager', 'address',
+                    'regular_company', 'primary_contact', 'portfolio_manager',
                     {
+                        'type': constants.FIELD_ADDRESS,
+                        'field': 'address',
+                    }, {
                         'field': 'master_company.id',
                         'type': constants.FIELD_TEXT,
                         'hidden': True,

@@ -127,7 +127,7 @@ class ContactEndpoint(ApiEndpoint):
                     'fields': (
                         'email', 'phone_mobile',
                         {
-                            'type': constants.FIELD_RELATED,
+                            'type': constants.FIELD_ADDRESS,
                             'field': 'address',
                             'edit': True,
                             'delete': True,
@@ -374,8 +374,12 @@ class CompanyAddressEndpoint(ApiEndpoint):
     )
 
     fieldsets = (
-        'name', 'company', 'address', 'hq', 'phone_landline', 'phone_fax', 'termination_date',
-        'primary_contact', 'active'
+        'name', 'company',
+        {
+            'type': constants.FIELD_ADDRESS,
+            'field': 'address',
+        },
+        'hq', 'phone_landline', 'phone_fax', 'termination_date', 'primary_contact', 'active'
     )
 
     # FIXME: add for remaining columns and change to real labels and endpoints
@@ -1480,9 +1484,55 @@ class UserEndpoint(ApiEndpoint):
     search_fields = ('contact__first_name', 'contact__last_name', 'contact__email', 'contact__phone_mobile')
 
 
+class AddressEndpoint(ApiEndpoint):
+
+    model = models.Address
+    serializer = serializers.AddressSerializer
+    base_viewset = viewsets.AddressViewset
+
+    fieldsets = (
+        {
+            'field': 'street_address',
+            'type': constants.FIELD_TEXT,
+        }, {
+            'field': 'city',
+            'read_only': True,
+            'type': constants.FIELD_RELATED,
+        }, {
+            'field': 'postal_code',
+            'read_only': True,
+            'type': constants.FIELD_TEXT,
+        }, {
+            'field': 'state',
+            'read_only': True,
+            'type': constants.FIELD_RELATED,
+        }, {
+            'field': 'country',
+            'read_only': True,
+            'type': constants.FIELD_RELATED,
+        }, {
+            'field': 'latitude',
+            'read_only': True,
+            'type': constants.FIELD_TEXT,
+        }, {
+            'field': 'longitude',
+            'read_only': True,
+            'type': constants.FIELD_TEXT,
+        }, {
+            'field': 'created_at',
+            'read_only': True,
+            'type': constants.FIELD_DATETIME,
+        }, {
+            'field': 'updated_at',
+            'read_only': True,
+            'type': constants.FIELD_DATETIME,
+        },
+    )
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
-router.register(models.Address, serializer=serializers.AddressSerializer)
+router.register(endpoint=AddressEndpoint())
 router.register(endpoint=BankAccountEndpoint())
 router.register(endpoint=CityEndpoint())
 router.register(endpoint=CompanyEndpoint())

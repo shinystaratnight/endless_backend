@@ -42,7 +42,8 @@ def to_html_tag(component_type):
         constants.FIELD_RADIO_GROUP, constants.FIELD_CHECKBOX_GROUP, constants.FIELD_BUTTON, constants.FIELD_LINK,
         constants.FIELD_SUBMIT, constants.FIELD_RELATED, constants.FIELD_STATIC, constants.FIELD_STATIC_ICON,
         constants.FIELD_RULE, constants.FIELD_ICON, constants.FIELD_TIMELINE, constants.FIELD_LIST,
-        constants.FIELD_JOB_DATES, constants.FIELD_SKILLS, constants.FIELD_TAGS, constants.FIELD_INFO
+        constants.FIELD_JOB_DATES, constants.FIELD_SKILLS, constants.FIELD_TAGS, constants.FIELD_INFO,
+        constants.FIELD_ADDRESS
     ]
     if component_type in custom_types:
         return component_type
