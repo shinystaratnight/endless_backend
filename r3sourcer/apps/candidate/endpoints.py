@@ -105,10 +105,12 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     'field': 'message_by_email',
                                     'type': constants.FIELD_CHECKBOX,
                                     'label': _('E-Mail'),
+                                    'default': False,
                                 }, {
                                     'field': 'message_by_sms',
                                     'type': constants.FIELD_CHECKBOX,
                                     'label': _('SMS'),
+                                    'default': False,
                                 },
                             ),
                         }, {
