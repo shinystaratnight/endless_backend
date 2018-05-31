@@ -232,19 +232,6 @@ class CompanyAddressEndpoint(ApiEndpoint):
     list_label = ('Client Company Address')
     pagination_label = ('Client Company Addresses')
 
-    fields = (
-        '__all__',
-        {
-            'company': (
-                'id', 'name', 'credit_check', 'get_terms_of_payment',
-                'approved_credit_limit', 'type',
-            ),
-            'address': ('__all__', ),
-            'primary_contact': ({
-                'contact': ('__str__', 'phone_mobile')
-            },)
-        }
-    )
     list_display = (
         {
             'label': _('Company'),
@@ -367,19 +354,24 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 '{}{{primary_contact.id}}/',
                 api_reverse_lazy('core/companycontacts')
             ),
-        }, 'phone_landline', 'phone_fax', 'active', {
-            **constants.BUTTON_EDIT,
-            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/companyaddresses'))
-        }, constants.BUTTON_DELETE
+        },
+        'phone_landline', 'phone_fax', 'active',
+        {
+            'label': _('Actions'),
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/companyaddresses'))
+            }, constants.BUTTON_DELETE)
+        }
     )
 
     fieldsets = (
-        'name', 'company',
+        'name', 'company', 'address',
         {
             'type': constants.FIELD_ADDRESS,
             'field': 'address',
         },
-        'hq', 'phone_landline', 'phone_fax', 'termination_date', 'primary_contact', 'active'
+        'hq', 'phone_landline', 'phone_fax', 'primary_contact', 'active'
     )
 
     # FIXME: add for remaining columns and change to real labels and endpoints
@@ -571,6 +563,8 @@ class CompanyEndpoint(ApiEndpoint):
         },
     )
 
+    fieldsets_add = ('name', 'business_id', )
+
     fieldsets = (
         {
             'type': constants.CONTAINER_ROW,
@@ -623,6 +617,9 @@ class CompanyEndpoint(ApiEndpoint):
                             'type': constants.FIELD_RELATED,
                             'field': 'manager',
                             'endpoint': api_reverse_lazy('core/companycontacts'),
+                            'prefilled': {
+                                'company': '{id}',
+                            }
                         }, {
                             'label': _('Master company'),
                             'type': constants.FIELD_RELATED,
@@ -657,11 +654,6 @@ class CompanyEndpoint(ApiEndpoint):
                 }, {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': (
-                        {
-                            'label': _('Date of incorporation'),
-                            'type': constants.FIELD_DATE,
-                            'field': 'date_of_incorporation'
-                        },
                         'business_id', 'registered_for_gst',
                         {
                             'field': 'description',
@@ -750,10 +742,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'type': constants.FIELD_TIMELINE,
                     'label': _('States Timeline'),
                     'field': 'id',
-                    'endpoint': format_lazy(
-                        '{}timeline/',
-                        api_reverse_lazy('core/workflownodes'),
-                    ),
+                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
                     'query': {
                         'model': 'core.companyrel',
                         'object_id': '{regular_company_rel.id}',

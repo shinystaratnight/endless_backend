@@ -893,6 +893,22 @@ class CompanyAddressSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseMod
 
     class Meta:
         model = core_models.CompanyAddress
+        fields = (
+            '__all__',
+            {
+                'company': (
+                    'id', 'name', 'credit_check', 'get_terms_of_payment',
+                    'approved_credit_limit', 'type',
+                ),
+                'address': ('__all__', ),
+                'primary_contact': ({
+                    'contact': ('__str__', 'phone_mobile')
+                },)
+            }
+        )
+        extra_kwargs = {
+            'primary_contact': {'required': True},
+        }
 
     def get_company_rel(self, obj):
         company = obj.company
@@ -1159,6 +1175,7 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             'myob_settings': {'read_only': True},
             'subcontractor': {'read_only': True},
             'groups': {'read_only': True},
+            'business_id': {'required': True},
         }
 
     def get_company_rel(self, company):
@@ -1203,7 +1220,7 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         return obj.get_terms_of_payment()
 
     def get_regular_company_rel(self, obj):
-        relation = obj.regular_companies.all().last()
+        relation = self.get_company_rel(obj)
         return relation and core_field.ApiBaseRelatedField.to_read_only_data(relation)
 
     def _get_address(self, obj):
