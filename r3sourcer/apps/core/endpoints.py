@@ -913,6 +913,9 @@ class CompanyContactEndpoint(ApiEndpoint):
     serializer = serializers.CompanyContactRenderSerializer
     filter_class = filters.CompanyContactFilter
 
+    list_label = _('Client Contact')
+    pagination_label = _('Client Contacts')
+
     list_display = (
         'job_title', 'contact.title', 'contact.first_name',
         'contact.last_name',
