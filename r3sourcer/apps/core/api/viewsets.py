@@ -261,32 +261,34 @@ class CompanyViewset(BaseApiViewset):
         data = self.prepare_related_data(request.data)
         data = self.clean_request_data(data)
 
-        invoice_rule_data = data.pop('invoice_rule')
-        invoice_rule_data.pop('id')
+        invoice_rule_data = data.pop('invoice_rule', None)
+        if invoice_rule_data:
+            invoice_rule_data.pop('id')
 
-        # check Invoice Rule fields for new Company
-        invoice_rule_serializer = serializers.InvoiceRuleSerializer(data=invoice_rule_data)
-        if not invoice_rule_serializer.is_valid():
-            errors = invoice_rule_serializer.errors
-            errors.pop('company', None)
-            if errors:
-                raise exceptions.ValidationError(errors)
+            # check Invoice Rule fields for new Company
+            invoice_rule_serializer = serializers.InvoiceRuleSerializer(data=invoice_rule_data)
+            if not invoice_rule_serializer.is_valid():
+                errors = invoice_rule_serializer.errors
+                errors.pop('company', None)
+                if errors:
+                    raise exceptions.ValidationError(errors)
 
         # create Company
         kwargs['is_response'] = False
         instance_serializer = self.create_from_data(data, *args, **kwargs)
 
-        # update Invoice Rule object
-        invoice_rule_data['company'] = instance_serializer.instance.id
-        invoice_rule_instance = instance_serializer.instance.invoice_rules.first()
-        invoice_rule_serializer = serializers.InvoiceRuleSerializer(
-            instance=invoice_rule_instance, data=invoice_rule_data, partial=True
-        )
-        invoice_rule_serializer.is_valid(raise_exception=True)
-        invoice_rule_serializer.save()
+        if invoice_rule_data:
+            # update Invoice Rule object
+            invoice_rule_data['company'] = instance_serializer.instance.id
+            invoice_rule_instance = instance_serializer.instance.invoice_rules.first()
+            invoice_rule_serializer = serializers.InvoiceRuleSerializer(
+                instance=invoice_rule_instance, data=invoice_rule_data, partial=True
+            )
+            invoice_rule_serializer.is_valid(raise_exception=True)
+            invoice_rule_serializer.save()
 
-        master_company = data.get('master_company') or get_site_master_company(request=request).id
-        primary_contact = data.get('primary_contact') or request.user.contact.company_contact.first().id
+        master_company = get_site_master_company(request=request, user=request.user).id
+        primary_contact = request.user.contact.company_contact.first().id
         models.CompanyRel.objects.create(
             master_company_id=master_company,
             regular_company=instance_serializer.instance,
@@ -415,6 +417,14 @@ class CompanyAddressViewset(BaseApiViewset):
                 Q(company__in=site_companies) |
                 Q(company__regular_companies__master_company__in=site_companies)
             ).distinct()
+
+    def perform_destroy(self, instance):
+        if models.CompanyAddress.objects.filter(company=instance.company).count() == 1:
+            company_rel = instance.company.regular_companies.last()
+            if company_rel and company_rel.is_allowed(80):
+                company_rel.create_state(80, _('Company has no active address!'))
+
+        super().perform_destroy(instance)
 
 
 class AppsList(ViewSet):

@@ -231,7 +231,7 @@
             "active": true,
             "hardlock": true,
             "workflow": "715144b0-2ff8-40eb-9010-f7909ca2006e",
-            "name_after_activation": "Qualified Lead",
+            "name_after_activation": "Lead Qualified",
             "name_before_activation": "Qualify",
             "number": 30,
             "rules": {
@@ -241,7 +241,9 @@
                 ],
                 "required_functions": [
                     "and",
-                    "is_primary_contact_identified"
+                    "is_primary_contact_identified",
+                    "is_address_valid",
+                    "is_description_set"
                 ],
                 "required_states": [
                     "and",
@@ -279,8 +281,8 @@
             "active": true,
             "hardlock": false,
             "workflow": "715144b0-2ff8-40eb-9010-f7909ca2006e",
-            "name_after_activation": "",
-            "name_before_activation": "Credit Hold",
+            "name_after_activation": "On Hold/Suspended",
+            "name_before_activation": "Suspend",
             "number": 80,
             "rules": {
                 "active": [

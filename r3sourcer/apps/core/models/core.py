@@ -1140,6 +1140,16 @@ class CompanyRel(
         req_class = factory.get_instance('company_state_60')
         return req_class.check(self)
 
+    @workflow_function
+    def is_address_valid(self):
+        return self.regular_company.company_addresses.filter(active=True).exists()
+    is_address_valid.short_description = _("Active address")
+
+    @workflow_function
+    def is_description_set(self):
+        return bool(self.regular_company.description)
+    is_description_set.short_description = _("Public description")
+
     def get_master_company(self):
         return self.master_company.get_master_company()
 
