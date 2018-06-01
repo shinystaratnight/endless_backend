@@ -955,12 +955,12 @@ class CompanyContactEndpoint(ApiEndpoint):
                 'is_company_contact': '3',
             },
         },
-        'job_title', 'rating_unreliable', 'receive_job_confirmation_sms',
+        'job_title',
     )
 
     fieldsets_add = _base_fieldsets
     fieldsets = _base_fieldsets + (
-        'active',
+        'rating_unreliable', 'receive_job_confirmation_sms', 'active',
         {
             'type': constants.FIELD_DATE,
             'field': 'termination_date',

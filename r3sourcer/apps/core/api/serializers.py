@@ -790,6 +790,9 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
             'receive_job_confirmation_sms', 'company', 'active', 'termination_date',
         )
         related = RELATED_DIRECT
+        extra_kwargs = {
+            'job_title': {'required': True}
+        }
 
     def create(self, validated_data):
         contact = validated_data.get('contact', None)
