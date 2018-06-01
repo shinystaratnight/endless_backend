@@ -23,7 +23,7 @@ from django.db.models.fields.related import (
 from django.contrib.contenttypes.fields import GenericRelation
 
 from r3sourcer.apps.core import models as core_models, tasks as core_tasks
-from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED)
+from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, NOT_ALLOWED)
 from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 
 rest_settings = settings.REST_FRAMEWORK
@@ -62,6 +62,7 @@ class ApiFullRelatedFieldsMixin():
         related_obj_setting = related_obj_setting or RELATED_NONE
         internal_fields_dict = getattr(self.Meta, 'related_fields', {})
         related_setting = related_obj_setting if related_obj_setting != RELATED_DIRECT else RELATED_NONE
+        related_extra_kwargs = getattr(self.Meta, 'extra_kwargs', {})
 
         for field_name, field in self.fields.items():
             if field_name == 'id':
@@ -143,8 +144,8 @@ class ApiFullRelatedFieldsMixin():
                     )
 
                     internal = self._get_internal_serializer(
-                        field_name, field, field.Meta.model,
-                        related_setting, internal_fields_dict
+                        field_name, field, field.Meta.model, related_setting, internal_fields_dict,
+                        related_extra_kwargs
                     )
                     self.fields[field_name] = internal(**kwargs)
                 continue
@@ -229,25 +230,26 @@ class ApiFullRelatedFieldsMixin():
             )
 
             internal = self._get_internal_serializer(
-                field_name, field, rel_model,
-                related_setting, internal_fields_dict
+                field_name, field, rel_model, related_setting, internal_fields_dict, related_extra_kwargs
             )
 
             kwargs['context']['related_setting'] = internal.Meta.related
             self.fields[field_name] = internal(**kwargs)
 
-    def _get_internal_serializer(self, field_name, field, model,
-                                 related_setting, internal_fields_dict):
+    def _get_internal_serializer(
+        self, field_name, field, model, related_setting, internal_fields_dict, related_extra_kwargs=None
+    ):
         related_fields = internal_fields_dict.get(field_name, [])
         if not isinstance(related_fields, (list, tuple)) or not related_fields:
             related_fields = '__all__'
 
-        internal_meta = type('Meta', (object,), dict(
+        meta_properties = dict(
             model=model,
             fields=related_fields,
             related=related_setting
-        ))
+        )
 
+        internal_meta = type('Meta', (object,), meta_properties)
         internal = type(
             '{}InternalSerializer'.format(model.__name__),
             (ApiBaseModelSerializer,),
@@ -270,6 +272,17 @@ class ApiFullRelatedFieldsMixin():
             allow_null=field.allow_null,
             read_only=read_only,
         )
+
+    def _process_related_extra_kwargs(self, related_extra_kwargs, field_name):
+        if not related_extra_kwargs:
+            return None
+
+        related_kwargs = {
+            field[field.index('.') + 1]: kwargs for field, kwargs in related_extra_kwargs.items()
+            if '.' in field and field_name in field
+        }
+
+        return related_kwargs
 
     def create(self, validated_data):
         for field_name, field in self.fields.items():
@@ -693,6 +706,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
             'company_contact': {'read_only': True},
             'master_company': {'read_only': True},
             'user': {'read_only': True},
+            'title': {'required': True},
         }
 
 
@@ -1529,7 +1543,6 @@ class TrialSerializer(serializers.Serializer):
     def validate(self, data):
         email = data['email']
         company_name = data['company_name']
-        website = data['website']
         phone_mobile = phonenumber.to_python(data['phone_mobile'])
 
         if not phone_mobile or not phone_mobile.is_valid():

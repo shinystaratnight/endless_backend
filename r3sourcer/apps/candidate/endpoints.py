@@ -67,6 +67,9 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     'field': 'contact',
                                     'type': constants.FIELD_RELATED,
                                     'hide': True,
+                                    'query': {
+                                        'candidate': True,
+                                    },
                                 }, {
                                     'field': 'contact.address',
                                     'type': constants.FIELD_RELATED,
