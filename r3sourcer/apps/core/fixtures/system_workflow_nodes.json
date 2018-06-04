@@ -51,11 +51,15 @@
             "active": true,
             "hardlock": false,
             "workflow": "715144b0-2ff8-40eb-9010-f7909ca2006e",
-            "name_after_activation": "",
-            "name_before_activation": "Extranet Access",
+            "name_after_activation": "Active",
+            "name_before_activation": "Activate",
             "number": 70,
             "rules": {
                 "active": [
+                    10,
+                    20,
+                    30,
+                    40,
                     60,
                     70
                 ],
@@ -104,7 +108,9 @@
             "number": 40,
             "rules": {
                 "active": [
+                    10,
                     20,
+                    30,
                     40
                 ],
                 "required_states": [
@@ -194,6 +200,10 @@
             "number": 60,
             "rules": {
                 "active": [
+                    10,
+                    20,
+                    30,
+                    40,
                     60
                 ],
                 "required_functions": [
@@ -231,19 +241,14 @@
             "active": true,
             "hardlock": true,
             "workflow": "715144b0-2ff8-40eb-9010-f7909ca2006e",
-            "name_after_activation": "Lead Qualified",
-            "name_before_activation": "Qualify",
+            "name_after_activation": "",
+            "name_before_activation": "Generate Proposal",
             "number": 30,
             "rules": {
                 "active": [
+                    10,
                     20,
                     30
-                ],
-                "required_functions": [
-                    "and",
-                    "is_primary_contact_identified",
-                    "is_address_valid",
-                    "is_description_set"
                 ],
                 "required_states": [
                     "and",
@@ -259,11 +264,13 @@
             "active": true,
             "hardlock": false,
             "workflow": "715144b0-2ff8-40eb-9010-f7909ca2006e",
-            "name_after_activation": "Contract Terminated",
-            "name_before_activation": "Terminate Contract",
+            "name_after_activation": "Banned",
+            "name_before_activation": "Ban",
             "number": 90,
             "rules": {
                 "active": [
+                    10,
+                    20,
                     90
                 ],
                 "required_states": [
@@ -286,6 +293,11 @@
             "number": 80,
             "rules": {
                 "active": [
+                    10,
+                    20,
+                    30,
+                    40,
+                    60,
                     80
                 ],
                 "required_states": [
@@ -324,25 +336,23 @@
             "active": true,
             "hardlock": true,
             "workflow": "715144b0-2ff8-40eb-9010-f7909ca2006e",
-            "name_after_activation": "Analyzed",
-            "name_before_activation": "Needs Analysis",
+            "name_after_activation": "",
+            "name_before_activation": "Lead qualified",
             "number": 20,
             "rules": {
                 "active": [
+                    10,
                     20
                 ],
                 "required_functions": [
                     "and",
-                    "is_manager_assigned"
+                    "is_primary_contact_identified",
+                    "is_address_valid",
+                    "is_description_set"
                 ],
                 "required_states": [
-                    "or",
-                    10,
-                    [
-                        "or",
-                        90,
-                        0
-                    ]
+                    "and",
+                    10
                 ]
             }
         },
