@@ -1125,11 +1125,12 @@ class CompanyRel(
     @workflow_function
     def is_primary_contact_identified(self):
         return self.primary_contact is not None
-    is_primary_contact_identified.short_description = _("Identify primary contact")
+    is_primary_contact_identified.short_description = _("Identify portfolio manager")
 
     @workflow_function
     def is_manager_assigned(self):
         return self.regular_company.is_manager_assigned()
+    is_manager_assigned.short_description = _("Identify primary Contact")
 
     @workflow_function
     def is_business_id_set(self):
