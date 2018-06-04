@@ -88,6 +88,35 @@ class ContactEndpoint(ApiEndpoint):
     fieldsets_add = (
         {
             'type': constants.CONTAINER_ROW,
+            'label': _('General'),
+            'fields': (
+                {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': ('title', 'first_name', 'last_name', 'gender'),
+                }, {
+                    'type': constants.CONTAINER_COLUMN,
+                    'fields': (
+                        'email', 'phone_mobile',
+                        {
+                            'type': constants.FIELD_DATE,
+                            'field': 'birthday',
+                            'help': _('Optional for Client Contacts, must be filled for Candidate contacts'),
+                        }, {
+                            'type': constants.FIELD_ADDRESS,
+                            'field': 'address',
+                            'edit': True,
+                            'delete': True,
+                            'create': True,
+                        },
+                    ),
+                },
+            ),
+        },
+    )
+
+    fieldsets = (
+        {
+            'type': constants.CONTAINER_ROW,
             'label': '{title} {first_name} {last_name}',
             'fields': (
                 {
@@ -96,6 +125,7 @@ class ContactEndpoint(ApiEndpoint):
                         {
                             'type': constants.FIELD_PICTURE,
                             'field': 'picture',
+                            'label': _('Profile Picture'),
                             'label_upload': _('Choose a file'),
                             'label_photo': _('Take a photo'),
                             'custom': [],
@@ -115,40 +145,8 @@ class ContactEndpoint(ApiEndpoint):
                     ),
                 },
             ),
-        }, {
-            'type': constants.CONTAINER_ROW,
-            'label': _('General'),
-            'fields': (
-                {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': ('title', 'first_name', 'last_name', 'gender'),
-                }, {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': (
-                        'email', 'phone_mobile',
-                        {
-                            'type': constants.FIELD_ADDRESS,
-                            'field': 'address',
-                            'edit': True,
-                            'delete': True,
-                            'create': True,
-                        }, {
-                            'type': constants.FIELD_DATE,
-                            'field': 'birthday',
-                            'help': _('Optional for Client Contacts, must be filled for Candidate contacts'),
-                        }
-                    ),
-                },
-            ),
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Misc'),
-            'fields': ('is_available', 'phone_mobile_verified', 'email_verified')
         },
-    )
-
-    fieldsets = fieldsets_add + (
+    ) + fieldsets_add + (
         {
             'query': {
                 'object_id': '{id}',

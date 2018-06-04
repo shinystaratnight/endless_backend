@@ -1,5 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import status, exceptions
+from rest_framework import status
 from rest_framework.response import Response
 
 from r3sourcer.apps.core_adapter import constants

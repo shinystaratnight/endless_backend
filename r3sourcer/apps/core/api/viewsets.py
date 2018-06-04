@@ -205,6 +205,14 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             'message': _('Password changed successfully')
         })
 
+    def prepare_related_data(self, data, is_create=False):
+        data = super().prepare_related_data(data, is_create)
+
+        if self.request.query_params.get('candidate') and not data.get('birthday'):
+            raise exceptions.ValidationError({'birthday': _('Birthday is required')})
+
+        return data
+
 
 class CompanyViewset(BaseApiViewset):
 
