@@ -21,6 +21,7 @@ from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.decorators import detail_route, list_route
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
+from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core_adapter import constants
@@ -1145,3 +1146,7 @@ class ShiftViewset(BaseApiViewset):
 
         if not shift_date.shifts.exists():
             shift_date.delete()
+
+
+class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
+    pass

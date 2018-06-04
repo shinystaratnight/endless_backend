@@ -21,6 +21,7 @@ from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint, Ex
 
 class JobsiteEndpoint(ApiEndpoint):
     model = hr_models.Jobsite
+    base_viewset = hr_viewsets.JobsiteViewset
     filter_class = hr_filters.JobsiteFilter
     serializer = job_serializers.JobsiteSerializer
 

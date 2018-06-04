@@ -105,8 +105,9 @@ class ContactEndpoint(ApiEndpoint):
                             'type': constants.FIELD_ADDRESS,
                             'field': 'address',
                             'edit': True,
-                            'delete': True,
-                            'create': True,
+                            'delete': False,
+                            'create': False,
+                            'endpoint': api_reverse_lazy('core/addresses')
                         },
                     ),
                 },

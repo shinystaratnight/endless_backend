@@ -120,7 +120,7 @@ class AngularApiAdapter(BaseAdapter):
                 adapted['showIf'] = field['showIf']
 
             return adapted
-        elif component_type == constants.FIELD_RELATED:
+        elif component_type in (constants.FIELD_RELATED, constants.FIELD_ADDRESS):
             if 'related_endpoint' in field:
                 try:
                     endpoint = api_reverse(
