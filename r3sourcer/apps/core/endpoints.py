@@ -1481,6 +1481,8 @@ class AddressEndpoint(ApiEndpoint):
     serializer = serializers.AddressSerializer
     base_viewset = viewsets.AddressViewset
 
+    fieldsets_add = ('street_address',)
+
     fieldsets = (
         {
             'field': 'street_address',
