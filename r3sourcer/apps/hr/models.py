@@ -1143,6 +1143,14 @@ class TimeSheet(
         from r3sourcer.apps.hr.tasks import send_going_to_work_sms
         send_going_to_work_sms.apply_async(args=[self.pk], eta=going_eta)
 
+    def process_sms_reply(self, sent_sms, reply_sms, positive):
+        if self.going_to_work_confirmation is None:
+            assert isinstance(positive, bool), _('Looks like we could not decide if reply was positive')
+            if self.going_to_work_sent_sms == sent_sms:
+                self.going_to_work_reply_sms = reply_sms
+                self.going_to_work_confirmation = positive
+                self.save()
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         going_set = self.going_to_work_confirmation is not None and (
