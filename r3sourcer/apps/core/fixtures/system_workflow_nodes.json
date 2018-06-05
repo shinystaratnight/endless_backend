@@ -348,7 +348,8 @@
                     "and",
                     "is_primary_contact_identified",
                     "is_address_valid",
-                    "is_description_set"
+                    "is_description_set",
+                    "is_manager_assigned"
                 ],
                 "required_states": [
                     "and",
