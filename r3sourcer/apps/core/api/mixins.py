@@ -83,10 +83,10 @@ class GoogleAddressMixin:
     def prepare_related_data(self, data, is_create=False):
         data = super().prepare_related_data(data, is_create)
 
-        if not self.root_address and 'address' not in data:
+        if (not self.root_address and 'address' not in data) or (self.root_address and 'street_address' not in data):
             return data
 
-        address_data = data if self.root_address else data['address']
+        address_data = data['street_address'] if self.root_address else data['address']
 
         if not is_create and 'address_components' not in address_data:
             return data
@@ -136,4 +136,4 @@ class GoogleAddressMixin:
             else:
                 data['address'] = None
 
-        return data
+        return data['address'] if self.root_address else data
