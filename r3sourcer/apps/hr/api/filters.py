@@ -84,7 +84,7 @@ class JobFilter(ActiveStateFilterMixin, FilterSet):
 
     class Meta:
         model = hr_models.Job
-        fields = ['active_states']
+        fields = ['active_states', 'customer_representative']
 
 
 class ShiftFilter(FilterSet):
@@ -116,22 +116,18 @@ class JobOfferFilter(FilterSet):
 
 class JobsiteFilter(ActiveStateFilterMixin, FilterSet):
     company = UUIDFilter(method='filter_company')
-    primary_contact = UUIDFilter(method='filter_primary_contact')
     state = UUIDFilter(method='filter_state')
     active_states = NumberFilter(method='filter_active_state')
 
     class Meta:
         model = hr_models.Jobsite
-        fields = ['company', 'active_states']
+        fields = ['company', 'active_states', 'primary_contact']
 
     def filter_company(self, queryset, name, value):
         return queryset.filter(
             Q(master_company_id=value) |
             Q(regular_company_id=value)
         )
-
-    def filter_primary_contact(self, queryset, name, value):
-        return queryset.filter(primary_contact=value)
 
     def filter_state(self, queryset, name, value):
         return queryset.filter(address__state=value)
