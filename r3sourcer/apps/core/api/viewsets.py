@@ -408,7 +408,7 @@ class NavigationViewset(BaseApiViewset):
                                                 .filter(access_level=access_level)
 
 
-class CompanyAddressViewset(BaseApiViewset):
+class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
 
     def get_queryset(self):
         current_site = get_current_site(self.request)

@@ -102,8 +102,9 @@ class GoogleAddressMixin:
             ) if region_part else None
 
             city_part = address_parts.get('locality') or address_parts.get('sublocality')
+            city_search = '%s%s' % (city_part['long_name'].replace(' ', ''), country.name.replace(' ', ''))
             city = City.objects.get(
-                Q(search_names__icontains=city_part['long_name'].replace(' ', '')) | Q(name=city_part['long_name']),
+                Q(search_names__icontains=city_search) | Q(name=city_part['long_name']),
                 country=country, region=region,
             ) if city_part else None
 

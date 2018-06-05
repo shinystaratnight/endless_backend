@@ -105,8 +105,9 @@ class ContactEndpoint(ApiEndpoint):
                             'type': constants.FIELD_ADDRESS,
                             'field': 'address',
                             'edit': True,
-                            'delete': True,
-                            'create': True,
+                            'delete': False,
+                            'create': False,
+                            'endpoint': api_reverse_lazy('core/addresses')
                         },
                     ),
                 },
@@ -1479,6 +1480,8 @@ class AddressEndpoint(ApiEndpoint):
     model = models.Address
     serializer = serializers.AddressSerializer
     base_viewset = viewsets.AddressViewset
+
+    fieldsets_add = ('street_address',)
 
     fieldsets = (
         {
