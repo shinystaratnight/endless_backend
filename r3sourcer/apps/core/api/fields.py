@@ -1,7 +1,12 @@
+import base64
 import copy
+import mimetypes
+import six
+import uuid
 from datetime import timedelta
 
-from django.utils import six, timezone
+from django.core.files.base import ContentFile
+from django.utils import timezone
 from imghdr import what
 from rest_framework import serializers
 
@@ -49,11 +54,6 @@ class ApiBase64FileField(serializers.FileField):
     """
 
     def to_internal_value(self, data):
-        from django.core.files.base import ContentFile
-        import base64
-        import six
-        import uuid
-
         # Check if this is a base64 string
         if isinstance(data, six.string_types):
             if 'data:' in data and ';base64,' in data:
@@ -65,16 +65,23 @@ class ApiBase64FileField(serializers.FileField):
                 self.fail('invalid')
 
             file_name = str(uuid.uuid4())
-            file_extension = self.get_file_extension(file_name, decoded_file)
+            file_extension = self.get_file_extension(file_name, decoded_file, header.replace('data:', ''))
 
-            complete_file_name = "%s.%s" % (file_name, file_extension, )
+            complete_file_name = "%s%s" % (file_name, file_extension, )
 
             data = ContentFile(decoded_file, name=complete_file_name)
 
         return super().to_internal_value(data)
 
-    def get_file_extension(self, file_name, decoded_file):
-        return what(file_name, decoded_file)
+    def get_file_extension(self, file_name, decoded_file, mime_type):
+        file_extension = what(file_name, decoded_file)
+
+        if not file_extension:
+            file_extension = mimetypes.guess_extension(mime_type)
+        else:
+            file_extension = '.%s' % file_extension
+
+        return file_extension
 
 
 class ApiBase64ImageField(ApiBase64FileField, serializers.ImageField):
@@ -82,7 +89,8 @@ class ApiBase64ImageField(ApiBase64FileField, serializers.ImageField):
     A Django REST framework field for handling image-uploads through raw post data.
     It uses base64 for encoding and decoding the contents of the file.
     """
-    def get_file_extension(self, file_name, decoded_file):
+
+    def get_file_extension(self, file_name, decoded_file, mime_type):
         extension = super().get_file_extension(file_name, decoded_file)
         extension = "jpg" if extension == "jpeg" else extension
 
