@@ -848,9 +848,9 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         instance = super(CompanyContactSerializer, self).update(instance, validated_data)
 
         today = timezone.localtime(timezone.now()).date()
-        termination_date = validated_data['termination_date']
+        termination_date = validated_data.get('termination_date')
 
-        if not validated_data['active'] and not termination_date:
+        if not validated_data['active']:
             termination_date = today
 
         if termination_date and validated_data['active'] and termination_date <= today:
