@@ -977,7 +977,7 @@ class CompanyContactEndpoint(ApiEndpoint):
             },
         }, {
             'query': {
-                'portfolio_manager': '{id}',
+                'primary_contact': '{id}',
             },
             'type': constants.FIELD_LIST,
             'collapsed': True,
@@ -985,11 +985,11 @@ class CompanyContactEndpoint(ApiEndpoint):
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/jobsites'),
             'prefilled': {
-                'portfolio_manager': '{id}',
+                'primary_contact': '{id}',
             },
         }, {
             'query': {
-                'provider_representative': '{id}',
+                'customer_representative': '{id}',
             },
             'type': constants.FIELD_LIST,
             'collapsed': True,
@@ -997,7 +997,7 @@ class CompanyContactEndpoint(ApiEndpoint):
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/jobs'),
             'prefilled': {
-                'provider_representative': '{id}',
+                'customer_representative': '{id}',
             },
         }
     )
