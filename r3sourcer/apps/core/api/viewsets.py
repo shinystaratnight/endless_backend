@@ -336,6 +336,11 @@ class CompanyContactViewset(BaseApiViewset):
 
         return obj
 
+    def perform_destroy(self, instance):
+        instance.relationships.all().delete()
+
+        super().perform_destroy(instance)
+
     @list_route(
         methods=['post'],
         serializer=serializers.CompanyContactRegisterSerializer,
@@ -635,7 +640,7 @@ class FormStorageViewSet(BaseApiViewset):
         if not storage_helper.validate():
             return Response(storage_helper.errors, status=status.HTTP_400_BAD_REQUEST)
 
-        instance = storage_helper.create_instance()
+        storage_helper.create_instance()
 
         return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
 

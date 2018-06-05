@@ -805,22 +805,28 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         )
         related = RELATED_DIRECT
         extra_kwargs = {
-            'job_title': {'required': True}
+            'job_title': {'required': True},
+            'contact': {'required': False, 'allow_null': True}
         }
 
-    def create(self, validated_data):
-        contact = validated_data.get('contact', None)
+    def validate(self, data):
+        contact = data.get('contact', None)
         errors = {}
         if not isinstance(contact, core_models.Contact):
-            errors['contact'] = _('Contact is required')
+            errors['contact'] = _('Please select or create new contact!')
 
         try:
-            company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
-        except core_models.Company.DoesNotExist:
-            errors['company'] = _('Company is required')
+            core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        except (core_models.Company.DoesNotExist, ValueError):
+            errors['company'] = _('Please select or create new client!')
 
         if errors:
             raise exceptions.ValidationError(errors)
+
+        return super().validate(data)
+
+    def create(self, validated_data):
+        company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
 
         instance = super(CompanyContactSerializer, self).create(validated_data)
 
