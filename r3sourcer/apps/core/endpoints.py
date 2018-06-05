@@ -963,6 +963,42 @@ class CompanyContactEndpoint(ApiEndpoint):
         {
             'type': constants.FIELD_DATE,
             'field': 'termination_date',
+        }, {
+            'query': {
+                'object_id': '{id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Notes'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/notes'),
+            'prefilled': {
+                'object_id': '{id}',
+            },
+        }, {
+            'query': {
+                'portfolio_manager': '{id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Jobsites'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('hr/jobsites'),
+            'prefilled': {
+                'portfolio_manager': '{id}',
+            },
+        }, {
+            'query': {
+                'provider_representative': '{id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Jobs'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('hr/jobs'),
+            'prefilled': {
+                'provider_representative': '{id}',
+            },
         }
     )
 
@@ -1392,6 +1428,18 @@ class NoteEndpoint(ApiEndpoint):
             **constants.BUTTON_EDIT,
             'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/notes'))
         }, constants.BUTTON_DELETE,
+    )
+
+    fieldsets = (
+        'content_type',
+        {
+            'type': constants.FIELD_TEXT,
+            'field': 'object_id',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_TEXTAREA,
+            'field': 'note',
+        }
     )
 
     filter_fields = ('object_id', )

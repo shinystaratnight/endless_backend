@@ -1049,7 +1049,7 @@ class Company(
     def currency(self):
         try:
             return self.company_addresses.order_by('hq').first().address.country.currency.lower()
-        except:
+        except Exception:
             return 'aud'
 
     @property

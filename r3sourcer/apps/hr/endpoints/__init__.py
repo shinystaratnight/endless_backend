@@ -136,6 +136,8 @@ class JobsiteEndpoint(ApiEndpoint):
         '__str__', 'primary_contact', 'start_date', 'end_date', 'notes',
     )
 
+    list_editable_buttons = []
+
     def get_list_filter(self):
         states_part = partial(
             core_models.WorkflowNode.get_model_all_states, hr_models.Jobsite

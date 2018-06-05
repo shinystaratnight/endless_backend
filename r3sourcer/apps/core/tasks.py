@@ -162,5 +162,9 @@ def terminate_company_contact(company_contact_rel_id):
     except core_models.CompanyContactRelationship.DoesNotExist:
         logger.exception('Cannot find company contact relation to terminate')
     else:
-        company_contact_rel.active = False
-        company_contact_rel.save()
+        termination_date = company_contact_rel.termination_date
+        today = timezone.localtime(timezone.now()).date()
+
+        if termination_date and termination_date == today:
+            company_contact_rel.active = False
+            company_contact_rel.save()
