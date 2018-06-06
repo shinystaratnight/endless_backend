@@ -653,6 +653,18 @@ class JobEndpoint(ApiEndpoint):
         },
     }, {
         'type': constants.FIELD_LIST,
+        'query': {
+            'job': '{id}',
+        },
+        'collapsed': True,
+        'label': _('Job Tags'),
+        'add_label': _('Add'),
+        'endpoint': api_reverse_lazy('hr/jobtags'),
+        'prefilled': {
+            'job': '{id}',
+        },
+    }, {
+        'type': constants.FIELD_LIST,
         'field': 'id_',
         'query': {
             'job': '{id}',
@@ -1024,9 +1036,50 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
     ordering = ('-shift.date.shift_date', '-shift.time')
 
 
+class JobTagEndpoint(ApiEndpoint):
+
+    model = hr_models.JobTag
+
+    list_display = (
+        'job', 'tag', 'verified_by', 'verification_evidence'
+    )
+
+    list_editable = (
+        'tag', 'verified_by',
+        {
+            'type': constants.FIELD_PICTURE,
+            'field': 'verification_evidence',
+            'label_upload': _('Choose a file'),
+            'label_photo': _('Take a photo'),
+        }, {
+            'label': _('Actions'),
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('hr/jobtags'))
+            }, constants.BUTTON_DELETE)
+        }
+    )
+
+    fieldsets = (
+        {
+            'type': constants.FIELD_RELATED,
+            'field': 'job',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'tag',
+            'read_only': False,
+        },
+        'verification_evidence', 'verified_by',
+    )
+
+    list_filter = ('job', )
+
+
 router.register(endpoint=JobsiteEndpoint())
 router.register(hr_models.JobsiteUnavailability)
 router.register(endpoint=JobEndpoint())
+router.register(endpoint=JobTagEndpoint())
 router.register(endpoint=ShiftDateEndpoint())
 router.register(endpoint=ShiftEndpoint())
 router.register(endpoint=TimeSheetEndpoint())

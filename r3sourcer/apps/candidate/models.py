@@ -16,7 +16,7 @@ from r3sourcer.apps.skills import models as skill_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.activity import models as activity_models
 from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
-from r3sourcer.apps.core.utils.user import get_default_user, get_default_company
+from r3sourcer.apps.core.utils.user import get_default_user
 
 
 class VisaType(core_models.UUIDModel):

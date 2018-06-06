@@ -744,8 +744,8 @@ def send_job_confirmation_sms(self, job_id):
     try:
         job = hr_models.Job.objects.get(id=job_id)
         jobsite = job.jobsite
-        if not jobsite.primary_contact.receive_job_confirmation_sms:
-            logger.info("Company Contact %s should\'t receive job confirmation SMS", str(job.primary_contact))
+        if not job.customer_representative.receive_job_confirmation_sms:
+            logger.info("Client Representative %s should\'t receive job confirmation SMS", str(job.primary_contact))
             return
     except hr_models.Job.DoesNotExist:
         logger.warn('Job with id %s does not exists', str(job_id))
@@ -762,20 +762,20 @@ def send_job_confirmation_sms(self, job_id):
 
         sign_navigation = core_models.ExtranetNavigation.objects.get(id=110)
         extranet_login = TokenLogin.objects.create(
-            contact=jobsite.primary_contact.contact,
+            contact=job.customer_representative.contact,
             redirect_to='{}{}/change/'.format(sign_navigation.url, job_id)
         )
-        site_url = core_companies_utils.get_site_url(user=jobsite.primary_contact.contact.user)
+        site_url = core_companies_utils.get_site_url(user=job.customer_representative.contact.user)
         data_dict = dict(
             get_confirmation_string=confirmation_string,
-            supervisor=jobsite.primary_contact,
+            supervisor=job.customer_representative,
             jobsite=jobsite,
-            portfolio_manager=jobsite.portfolio_manager,
+            portfolio_manager=job.provider_representative,
             auth_url="%s%s" % (site_url, extranet_login.auth_url),
             related_obj=job,
-            related_objs=[jobsite.primary_contact, jobsite, jobsite.portfolio_manager, extranet_login],
+            related_objs=[job.customer_representative, jobsite, job.provider_representative, extranet_login],
         )
 
         sms_interface.send_tpl(
-            jobsite.primary_contact.contact.phone_mobile, 'job-confirmed', check_reply=False, **data_dict
+            job.customer_representative.contact.phone_mobile, 'job-confirmed', check_reply=False, **data_dict
         )

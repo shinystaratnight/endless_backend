@@ -1,6 +1,7 @@
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
+from crum import get_current_request
 from django.conf import settings
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
@@ -14,6 +15,7 @@ from model_utils import Choices
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.mixins import CategoryFolderMixin
+from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -2060,3 +2062,70 @@ class CandidateScore(core_models.UUIDModel):
             self.save(update_fields=['average_score'])
 
         return self.average_score
+
+
+class JobTag(core_models.UUIDModel):
+    tag = models.ForeignKey(
+        core_models.Tag,
+        related_name="job_tags",
+        on_delete=models.PROTECT,
+        verbose_name=_("Tag")
+    )
+
+    job = models.ForeignKey(
+        Job,
+        on_delete=models.PROTECT,
+        related_name="tags",
+        verbose_name=_("Job")
+    )
+
+    def verification_evidence_path(self, filename):
+        return 'job/tags/{}/{}'.format(self.id, filename)
+
+    verification_evidence = models.FileField(
+        verbose_name=_("Verification Evidence"),
+        upload_to=verification_evidence_path,
+        null=True,
+        blank=True
+    )
+
+    verified_by = models.ForeignKey(
+        core_models.CompanyContact,
+        on_delete=models.PROTECT,
+        related_name="verified_job_tags",
+        verbose_name=_("Verified By"),
+        blank=True,
+        null=True
+    )
+
+    verify = True
+
+    class Meta:
+        verbose_name = _("Job Tag")
+        verbose_name_plural = _("Job Tags")
+        unique_together = ("tag", "job")
+
+    def __str__(self):
+        return self.tag.name
+
+    def save(self, *args, **kwargs):
+        # we don't allow set verified_by if tag require evidence
+        # approval and this approval not uploaded
+        if self.tag.evidence_required_for_approval and not self.verification_evidence:
+            self.verified_by = None
+            self.verify = False
+
+        if self.verify:
+            request = get_current_request()
+
+            if request and request.user and request.user.is_authenticated():
+                default_user = request.user
+            else:
+                default_user = get_default_user()
+
+            if core_models.CompanyContact.objects.filter(contact__user=default_user).exists():
+                self.verified_by = core_models.CompanyContact.objects.filter(contact__user=default_user).first()
+        else:
+            self.verified_by = None
+
+        super().save(*args, **kwargs)
