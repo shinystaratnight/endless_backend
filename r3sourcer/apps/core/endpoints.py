@@ -617,7 +617,7 @@ class CompanyEndpoint(ApiEndpoint):
                             'field': 'manager',
                             'endpoint': api_reverse_lazy('core/companycontacts'),
                             'prefilled': {
-                                'company': '{id}',
+                                'company': '{id.id}',
                             },
                             'query': {
                                 'company': '{id}',
@@ -957,9 +957,7 @@ class CompanyContactEndpoint(ApiEndpoint):
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'contact',
-            'query': {
-                'is_company_contact': '3',
-            },
+            # 'showIf': ['company'],
         },
         'job_title',
     )
