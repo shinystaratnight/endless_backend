@@ -190,9 +190,7 @@ class CompanyContactFilter(FilterSet):
         fields = ['id', 'job_title']
 
     def filter_company(self, queryset, name, value):
-        return queryset.filter(
-            relationships__company_id=value
-        )
+        return queryset.filter(relationships__company_id=value, relationships__active=True)
 
     def filter_manager(self, queryset, name, value):
         return queryset.filter(
@@ -214,11 +212,8 @@ class CompanyContactFilter(FilterSet):
         if value == 'current':
             company = get_site_master_company() or get_default_company()
             value = company.id
-            qry = Q()
-        else:
-            qry = Q(company_accounts__master_company=value)
 
-        return queryset.filter(Q(relationships__company_id=value, relationships__active=True) | qry).distinct()
+        return queryset.filter(relationships__company_id=value, relationships__active=True).distinct()
 
 
 class CompanyContactRelationshipFilter(FilterSet):

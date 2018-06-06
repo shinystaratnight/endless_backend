@@ -618,7 +618,10 @@ class CompanyEndpoint(ApiEndpoint):
                             'endpoint': api_reverse_lazy('core/companycontacts'),
                             'prefilled': {
                                 'company': '{id}',
-                            }
+                            },
+                            'query': {
+                                'company': '{id}',
+                            },
                         }, {
                             'label': _('Master company'),
                             'type': constants.FIELD_RELATED,
@@ -641,8 +644,7 @@ class CompanyEndpoint(ApiEndpoint):
                                 {'type': 'regular'}
                             ],
                             'query': {
-                                'customer_company': '{id.id}',
-                                'master_company': '{master_company.id}',
+                                'company': '{master_company.id}',
                             },
                         }, {
                             'type': constants.FIELD_TEXT,
@@ -655,6 +657,10 @@ class CompanyEndpoint(ApiEndpoint):
                     'fields': (
                         'business_id', 'registered_for_gst',
                         {
+                            'field': 'industry',
+                            'type': constants.FIELD_RELATED,
+                            'read_only': False,
+                        }, {
                             'field': 'description',
                             'type': constants.FIELD_TEXTAREA,
                         }
@@ -693,6 +699,7 @@ class CompanyEndpoint(ApiEndpoint):
                 'company': '{id}',
             },
             'label': _('Jobsites'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/jobsites'),
         }, {
             'type': constants.CONTAINER_COLLAPSE,
