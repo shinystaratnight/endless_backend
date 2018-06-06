@@ -275,6 +275,7 @@ class IndustryEndpoint(ApiEndpoint):
 
     list_display = ('type', )
     fieldsets = ('type', )
+    search_fields = ('type', )
 
 
 router.register(endpoint=RateCoefficientEndpoint())

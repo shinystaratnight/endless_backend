@@ -823,6 +823,15 @@ class Company(
         verbose_name=_("Parent Company")
     )
 
+    industry = models.ForeignKey(
+        'pricing.Industry',
+        on_delete=models.PROTECT,
+        related_name="companies",
+        verbose_name=_("Industry"),
+        null=True,
+        blank=True,
+    )
+
     CREDIT_CHECK_CHOICES = Choices(
         (True, 'approved', _("Approved")),
         (False, 'not_approved', _("Not Approved")),
@@ -1150,6 +1159,11 @@ class CompanyRel(
     def is_description_set(self):
         return bool(self.regular_company.description)
     is_description_set.short_description = _("Public description")
+
+    @workflow_function
+    def is_industry_set(self):
+        return bool(self.regular_company.industry)
+    is_industry_set.short_description = _("Industry")
 
     def get_master_company(self):
         return self.master_company.get_master_company()
