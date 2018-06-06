@@ -924,7 +924,7 @@ class CompanyAddressSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseMod
                     'approved_credit_limit', 'type',
                 ),
                 'address': ('__all__', ),
-                'primary_contact': ({
+                'primary_contact': ('id', {
                     'contact': ('__str__', 'phone_mobile')
                 },)
             }

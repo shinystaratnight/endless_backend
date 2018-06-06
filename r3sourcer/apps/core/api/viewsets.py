@@ -236,6 +236,18 @@ class CompanyViewset(BaseApiViewset):
         return data
 
     def perform_update(self, serializer):
+        instance = self.get_object()
+
+        errors = []
+        if not instance.company_addresses.filter(active=True).exists():
+            errors.append(_('At least one address must be active'))
+
+        if instance.company_addresses.filter(active=True, primary_contact__isnull=True).exists():
+            errors.append(_('All active addresses must have primary contact'))
+
+        if errors:
+            raise exceptions.ValidationError({'non_field_errors': errors})
+
         instance = serializer.save()
 
         if instance.type == models.Company.COMPANY_TYPES.master:
@@ -430,6 +442,17 @@ class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
                 Q(company__in=site_companies) |
                 Q(company__regular_companies__master_company__in=site_companies)
             ).distinct()
+
+    def prepare_related_data(self, data, is_create=False):
+        data = super().prepare_related_data(data, is_create)
+
+        if is_create and not data.get('active'):
+            data['active'] = True
+
+        if not data.get('primary_contact'):
+            raise exceptions.ValidationError({'primary_contact': _('Primary contact must be set')})
+
+        return data
 
     def perform_destroy(self, instance):
         if models.CompanyAddress.objects.filter(company=instance.company).count() == 1:

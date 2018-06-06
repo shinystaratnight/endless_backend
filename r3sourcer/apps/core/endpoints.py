@@ -365,12 +365,23 @@ class CompanyAddressEndpoint(ApiEndpoint):
     )
 
     fieldsets = (
-        'name', 'company', 'address',
+        'name', 'company',
         {
             'type': constants.FIELD_ADDRESS,
             'field': 'address',
         },
-        'hq', 'phone_landline', 'phone_fax', 'primary_contact', 'active'
+        'hq', 'phone_landline', 'phone_fax',
+        {
+            'type': constants.FIELD_RELATED,
+            'field': 'primary_contact',
+            'prefilled': {
+                'company': '{company.id}',
+            },
+            'query': {
+                'company': '{company.id}',
+            },
+        },
+        'active'
     )
 
     # FIXME: add for remaining columns and change to real labels and endpoints
@@ -639,6 +650,7 @@ class CompanyEndpoint(ApiEndpoint):
                             'type': constants.FIELD_RELATED,
                             'field': 'primary_contact',
                             'read_only': False,
+                            'add': False,
                             'endpoint': api_reverse_lazy('core/companycontacts'),
                             'showIf': [
                                 {'type': 'regular'}
