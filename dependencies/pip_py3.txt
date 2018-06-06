@@ -39,7 +39,7 @@ honcho==0.6.6
 inflection==0.3.1
 invoke==0.13.0
 Jinja2==2.9.5
-kombu>=4.0.2,<5.0
+kombu==4.1.0
 MarkupSafe==0.23
 raven==5.27.1
 redis==2.10.5
