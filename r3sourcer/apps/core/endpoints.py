@@ -650,6 +650,7 @@ class CompanyEndpoint(ApiEndpoint):
                             'type': constants.FIELD_RELATED,
                             'field': 'primary_contact',
                             'read_only': False,
+                            'add': False,
                             'endpoint': api_reverse_lazy('core/companycontacts'),
                             'showIf': [
                                 {'type': 'regular'}
