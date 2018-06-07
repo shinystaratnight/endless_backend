@@ -259,13 +259,16 @@ class Contact(
         return None
 
     def get_closest_company(self):
+        from r3sourcer.apps.core.utils.companies import get_site_master_company
+
         if self.is_company_contact():
             master_company = self.company_contact.first().get_master_company()
-            return master_company[0] if len(master_company) > 0 else get_default_company()
+            if len(master_company) > 0:
+                return master_company[0]
         elif self.is_candidate_contact():
             return self.candidate_contacts.get_closest_company()
 
-        return get_default_company()
+        return get_site_master_company() or get_default_company()
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         if positive:
