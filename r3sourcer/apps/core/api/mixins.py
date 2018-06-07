@@ -132,7 +132,7 @@ class GoogleAddressMixin:
 
         except Exception as e:
             if self.raise_invalid_address:
-                raise exceptions.ValidationError({'address': _('Cannot parse address')})
+                raise exceptions.ValidationError({'address': _('Please enter valid address!')})
             else:
                 data['address'] = None
 
