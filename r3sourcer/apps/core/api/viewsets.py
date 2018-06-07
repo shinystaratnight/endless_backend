@@ -25,6 +25,7 @@ from . import permissions, serializers
 from .decorators import list_route, detail_route
 
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core_adapter import constants
 
@@ -205,6 +206,17 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             'message': _('Password changed successfully')
         })
 
+    @detail_route(methods=['get'])
+    def verify_email(self, request, *args, **kwargs):
+        contact = self.get_object()
+        contact.email_verified = True
+        contact.save(update_fields=['email_verified'])
+
+        return Response({
+            'status': 'success',
+            'message': _('Email verified!')
+        })
+
     def prepare_related_data(self, data, is_create=False):
         data = super().prepare_related_data(data, is_create)
 
@@ -212,6 +224,14 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             raise exceptions.ValidationError({'birthday': _('Birthday is required')})
 
         return data
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        manager_id = self.request.user.contact
+
+        send_contact_verify_sms.apply_async(args=(instance.id, manager_id.id), countdown=10)
+        send_contact_verify_email.apply_async(args=(instance.id, manager_id.id), countdown=10)
 
 
 class CompanyViewset(BaseApiViewset):
