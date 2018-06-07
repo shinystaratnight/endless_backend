@@ -969,7 +969,7 @@ class CompanyContactEndpoint(ApiEndpoint):
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'contact',
-            'showIf': ['company'],
+            'showIf': ['company.id'],
         },
         'job_title',
     )
