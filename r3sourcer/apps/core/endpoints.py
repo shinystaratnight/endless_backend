@@ -636,7 +636,7 @@ class CompanyEndpoint(ApiEndpoint):
                                 'company': '{id.id}',
                             },
                             'query': {
-                                'company': '{id}',
+                                'company': '{id.id}',
                             },
                         }, {
                             'label': _('Master company'),

@@ -58,7 +58,10 @@ def get_site_master_company(site=None, request=None, user=None):
         site = get_current_site(request)
 
     if user:
-        site = Site.objects.get_by_natural_key(cache.get('user_site_%s' % str(user.id), site.domain))
+        try:
+            site = Site.objects.get_by_natural_key(cache.get('user_site_%s' % str(user.id), site.domain))
+        except Site.DoesNotExist:
+            pass
 
     site_company = site.site_companies.filter(company__type=Company.COMPANY_TYPES.master).first()
 
