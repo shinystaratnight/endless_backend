@@ -136,6 +136,21 @@
 },
 {
   "model": "sms_interface.smstemplate",
+  "pk": "af0f7e8c-c1a7-4873-96e8-c9ce14034b75",
+  "fields": {
+    "updated_at": "2018-06-07T07:17:04.495Z",
+    "created_at": "2018-06-07T07:17:04.495Z",
+    "name": "Contact Mobile Phone Verification",
+    "slug": "contact-mobile-phone-verification",
+    "message_text_template": "Dear [[contact]], thank you for registering with Labourking. Please verify your phone by replying with YES. Best regards, [[manager]].",
+    "reply_timeout": 60,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
   "pk": "c097f225-4f7a-4e98-8a02-d55a8e476cb6",
   "fields": {
     "updated_at": "2018-06-06T08:45:07.647Z",

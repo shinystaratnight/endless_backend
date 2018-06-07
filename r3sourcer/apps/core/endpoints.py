@@ -149,6 +149,11 @@ class ContactEndpoint(ApiEndpoint):
         },
     ) + fieldsets_add + (
         {
+            'type': constants.CONTAINER_COLLAPSE,
+            'collapsed': True,
+            'name': _('Misc'),
+            'fields': ('is_available', 'phone_mobile_verified', 'email_verified')
+        }, {
             'query': {
                 'object_id': '{id}',
             },

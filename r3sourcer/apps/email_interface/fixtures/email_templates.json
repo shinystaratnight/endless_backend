@@ -35,6 +35,23 @@
 },
 {
   "model": "email_interface.emailtemplate",
+  "pk": "612f51ec-cf90-40d8-8114-12d06d0695f6",
+  "fields": {
+    "updated_at": "2018-06-07T07:44:05.463Z",
+    "created_at": "2018-06-07T07:44:05.463Z",
+    "name": "Contact E-mail Verification",
+    "slug": "contact-e-mail-verification",
+    "subject_template": "E-mail Verification",
+    "message_text_template": "Dear [[contact]], thank you for registering with Labourking. Please verify your email by clicking this [[email_verification_link]]. Best regards, [[manager]]",
+    "message_html_template": "",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
   "pk": "99980b4c-497d-4e7d-ab81-9dddda9ce144",
   "fields": {
     "updated_at": "2018-02-21T07:56:01.637Z",

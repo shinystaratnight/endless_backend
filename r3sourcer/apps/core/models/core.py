@@ -267,6 +267,11 @@ class Contact(
 
         return get_default_company()
 
+    def process_sms_reply(self, sent_sms, reply_sms, positive):
+        if positive:
+            self.phone_mobile_verified = True
+            self.save(update_fields=['phone_mobile_verified'])
+
     def save(self, *args, **kwargs):
         is_adding = self._state.adding
         if not self.email and not self.phone_mobile:

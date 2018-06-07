@@ -6,6 +6,7 @@ from celery.utils.log import get_task_logger
 
 from django.conf import settings
 from django.core.cache import cache
+from django.db import transaction
 from django.utils import timezone
 
 from r3sourcer.celeryapp import app
@@ -168,3 +169,71 @@ def terminate_company_contact(company_contact_rel_id):
         if termination_date and termination_date == today:
             company_contact_rel.active = False
             company_contact_rel.save()
+
+
+@shared_task(bind=True)
+def send_contact_verify_sms(self, contact_id, manager_id):
+    from r3sourcer.apps.sms_interface.utils import get_sms_service
+
+    try:
+        sms_interface = get_sms_service()
+    except ImportError:
+        logger.exception('Cannot load SMS service')
+        return
+
+    sms_tpl = 'contact-mobile-phone-verification'
+
+    try:
+        contact = core_models.Contact.objects.get(id=contact_id)
+    except core_models.Contact.DoesNotExist as e:
+        logger.exception(e)
+    else:
+        with transaction.atomic():
+            manager = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
+
+            data_dict = dict(
+                contact=contact,
+                manager=manager or contact.get_closest_company().manager,
+                related_obj=contact
+            )
+
+            logger.info('Sending phone verify SMS to %s.', contact)
+
+            sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_name=sms_tpl, **data_dict)
+
+
+@shared_task(bind=True)
+def send_contact_verify_email(self, contact_id, manager_id):
+    from r3sourcer.apps.email_interface.utils import get_email_service
+
+    try:
+        email_interface = get_email_service()
+    except ImportError:
+        logger.exception('Cannot load E-mail service')
+        return
+
+    email_tpl = 'contact-e-mail-verification'
+
+    try:
+        contact = core_models.Contact.objects.get(id=contact_id)
+    except core_models.Contact.DoesNotExist as e:
+        logger.exception(e)
+    else:
+        with transaction.atomic():
+            manager = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
+            extranet_login = TokenLogin.objects.create(
+                contact=contact,
+                redirect_to='{}{}/verify_email/'.format('/core/contacts/', contact_id)
+            )
+            site_url = core_companies_utils.get_site_url(user=contact.user)
+
+            data_dict = dict(
+                contact=contact,
+                manager=manager or contact.get_closest_company().manager,
+                related_obj=contact,
+                email_verification_link="%s%s" % (site_url, extranet_login.auth_url),
+            )
+
+            logger.info('Sending e-mail verify to %s.', contact)
+
+            email_interface.send_tpl(contact.email, tpl_name=email_tpl, **data_dict)
