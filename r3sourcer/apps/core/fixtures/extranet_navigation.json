@@ -504,7 +504,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 18,
+    "rght": 16,
     "tree_id": 3,
     "level": 0
   }
@@ -691,7 +691,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 74,
-    "rght": 79,
+    "rght": 81,
     "tree_id": 12,
     "level": 1
   }
@@ -702,15 +702,15 @@
   "fields": {
     "updated_at": "2018-03-23T13:34:58.845Z",
     "created_at": "2017-10-13T07:25:19.356Z",
-    "parent": 94,
+    "parent": 45,
     "name": "Price lists",
     "url": "/pricing/pricelists/",
     "endpoint": "/ecore/api/v2/pricing/pricelists/",
     "access_level": "manager",
-    "lft": 12,
-    "rght": 13,
-    "tree_id": 1,
-    "level": 1
+    "lft": 75,
+    "rght": 76,
+    "tree_id": 12,
+    "level": 2
   }
 },
 {
@@ -724,8 +724,8 @@
     "url": "/pricing/pricelistrates/",
     "endpoint": "/ecore/api/v2/pricing/pricelistrates/",
     "access_level": "manager",
-    "lft": 75,
-    "rght": 76,
+    "lft": 77,
+    "rght": 78,
     "tree_id": 12,
     "level": 2
   }
@@ -741,8 +741,8 @@
     "url": "/pricing/pricelistratecoefficients/",
     "endpoint": "/ecore/api/v2/pricing/pricelistratecoefficients/",
     "access_level": "manager",
-    "lft": 77,
-    "rght": 78,
+    "lft": 79,
+    "rght": 80,
     "tree_id": 12,
     "level": 2
   }
@@ -758,8 +758,8 @@
     "url": "/core/bankaccounts/",
     "endpoint": "/ecore/api/v2/core/bankaccounts/",
     "access_level": "manager",
-    "lft": 8,
-    "rght": 9,
+    "lft": 6,
+    "rght": 7,
     "tree_id": 3,
     "level": 1
   }
@@ -775,8 +775,8 @@
     "url": "/candidate/superannuationfunds/",
     "endpoint": "/ecore/api/v2/candidate/superannuationfunds/",
     "access_level": "manager",
-    "lft": 12,
-    "rght": 13,
+    "lft": 10,
+    "rght": 11,
     "tree_id": 3,
     "level": 1
   }
@@ -792,8 +792,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 80,
-    "rght": 83,
+    "lft": 82,
+    "rght": 85,
     "tree_id": 12,
     "level": 1
   }
@@ -809,8 +809,8 @@
     "url": "/core/invoices/",
     "endpoint": "/ecore/api/v2/core/invoices/",
     "access_level": "manager",
-    "lft": 14,
-    "rght": 15,
+    "lft": 12,
+    "rght": 13,
     "tree_id": 3,
     "level": 1
   }
@@ -826,8 +826,8 @@
     "url": "/core/invoicelines/",
     "endpoint": "/ecore/api/v2/core/invoicelines/",
     "access_level": "manager",
-    "lft": 81,
-    "rght": 82,
+    "lft": 83,
+    "rght": 84,
     "tree_id": 12,
     "level": 2
   }
@@ -843,8 +843,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 84,
-    "rght": 91,
+    "lft": 86,
+    "rght": 93,
     "tree_id": 12,
     "level": 1
   }
@@ -860,8 +860,8 @@
     "url": "/hr/payslips/",
     "endpoint": "/ecore/api/v2/hr/payslips/",
     "access_level": "manager",
-    "lft": 85,
-    "rght": 86,
+    "lft": 87,
+    "rght": 88,
     "tree_id": 12,
     "level": 2
   }
@@ -877,8 +877,8 @@
     "url": "/hr/paysliplines/",
     "endpoint": "/ecore/api/v2/hr/paysliplines/",
     "access_level": "manager",
-    "lft": 87,
-    "rght": 88,
+    "lft": 89,
+    "rght": 90,
     "tree_id": 12,
     "level": 2
   }
@@ -894,8 +894,8 @@
     "url": "/hr/paysliprules/",
     "endpoint": "/ecore/api/v2/hr/paysliprules/",
     "access_level": "manager",
-    "lft": 89,
-    "rght": 90,
+    "lft": 91,
+    "rght": 92,
     "tree_id": 12,
     "level": 2
   }
@@ -911,8 +911,8 @@
     "url": "/skills/employmentclassifications/",
     "endpoint": "/ecore/api/v2/skills/employmentclassifications/",
     "access_level": "manager",
-    "lft": 16,
-    "rght": 17,
+    "lft": 14,
+    "rght": 15,
     "tree_id": 3,
     "level": 1
   }
@@ -929,7 +929,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 22,
+    "rght": 20,
     "tree_id": 2,
     "level": 0
   }
@@ -979,8 +979,8 @@
     "url": "/core/tags/",
     "endpoint": "/ecore/api/v2/core/tags/",
     "access_level": "manager",
-    "lft": 8,
-    "rght": 9,
+    "lft": 6,
+    "rght": 7,
     "tree_id": 2,
     "level": 1
   }
@@ -996,8 +996,8 @@
     "url": "/candidate/visatypes/",
     "endpoint": "/ecore/api/v2/candidate/visatypes/",
     "access_level": "manager",
-    "lft": 12,
-    "rght": 13,
+    "lft": 10,
+    "rght": 11,
     "tree_id": 2,
     "level": 1
   }
@@ -1140,23 +1140,6 @@
 },
 {
   "model": "core.extranetnavigation",
-  "pk": 83,
-  "fields": {
-    "updated_at": "2018-03-26T08:03:59.829Z",
-    "created_at": "2017-10-13T07:43:57.394Z",
-    "parent": 66,
-    "name": "Timesheets",
-    "url": "/hr/timesheets/",
-    "endpoint": "/ecore/api/v2/hr/timesheets/",
-    "access_level": "manager",
-    "lft": 6,
-    "rght": 7,
-    "tree_id": 2,
-    "level": 1
-  }
-},
-{
-  "model": "core.extranetnavigation",
   "pk": 84,
   "fields": {
     "updated_at": "2017-10-13T07:44:17.929Z",
@@ -1200,8 +1183,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 92,
-    "rght": 95,
+    "lft": 94,
+    "rght": 97,
     "tree_id": 12,
     "level": 1
   }
@@ -1217,8 +1200,8 @@
     "url": "/skills/skills/",
     "endpoint": "/ecore/api/v2/skills/skills/",
     "access_level": "manager",
-    "lft": 10,
-    "rght": 11,
+    "lft": 8,
+    "rght": 9,
     "tree_id": 2,
     "level": 1
   }
@@ -1234,8 +1217,8 @@
     "url": "/skills/skillbaserates",
     "endpoint": "/ecore/api/v2/skills/skillbaserates",
     "access_level": "manager",
-    "lft": 93,
-    "rght": 94,
+    "lft": 95,
+    "rght": 96,
     "tree_id": 12,
     "level": 2
   }
@@ -1251,8 +1234,8 @@
     "url": "/acceptance-tests/acceptancetests",
     "endpoint": "/ecore/api/v2/acceptance-tests/acceptancetests",
     "access_level": "manager",
-    "lft": 14,
-    "rght": 15,
+    "lft": 12,
+    "rght": 13,
     "tree_id": 2,
     "level": 1
   }
@@ -1268,8 +1251,8 @@
     "url": "/hr/blacklists/",
     "endpoint": "/ecore/api/v2/hr/blacklists/",
     "access_level": "manager",
-    "lft": 16,
-    "rght": 17,
+    "lft": 14,
+    "rght": 15,
     "tree_id": 2,
     "level": 1
   }
@@ -1285,8 +1268,8 @@
     "url": "/hr/favouritelists/",
     "endpoint": "/ecore/api/v2/hr/favouritelists/",
     "access_level": "manager",
-    "lft": 18,
-    "rght": 19,
+    "lft": 16,
+    "rght": 17,
     "tree_id": 2,
     "level": 1
   }
@@ -1302,8 +1285,8 @@
     "url": "/hr/carrierlists/",
     "endpoint": "/ecore/api/v2/hr/carrierlists/",
     "access_level": "manager",
-    "lft": 20,
-    "rght": 21,
+    "lft": 18,
+    "rght": 19,
     "tree_id": 2,
     "level": 1
   }
@@ -1320,7 +1303,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 14,
+    "rght": 10,
     "tree_id": 1,
     "level": 0
   }
@@ -1480,23 +1463,6 @@
 },
 {
   "model": "core.extranetnavigation",
-  "pk": 104,
-  "fields": {
-    "updated_at": "2018-03-23T13:32:28.322Z",
-    "created_at": "2017-10-13T07:52:44.421Z",
-    "parent": 94,
-    "name": "Contacts",
-    "url": "/core/contacts/",
-    "endpoint": "/ecore/api/v2/core/contacts/",
-    "access_level": "manager",
-    "lft": 6,
-    "rght": 7,
-    "tree_id": 1,
-    "level": 1
-  }
-},
-{
-  "model": "core.extranetnavigation",
   "pk": 105,
   "fields": {
     "updated_at": "2017-10-13T07:53:06.746Z",
@@ -1591,8 +1557,8 @@
     "url": "/hr/jobs/",
     "endpoint": "/ecore/api/v2/hr/jobs/",
     "access_level": "manager",
-    "lft": 8,
-    "rght": 9,
+    "lft": 6,
+    "rght": 7,
     "tree_id": 1,
     "level": 1
   }
@@ -1659,8 +1625,8 @@
     "url": "/hr/jobsites/",
     "endpoint": "/ecore/api/v2/hr/jobsites/",
     "access_level": "manager",
-    "lft": 10,
-    "rght": 11,
+    "lft": 8,
+    "rght": 9,
     "tree_id": 1,
     "level": 1
   }
@@ -1915,7 +1881,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 96,
+    "rght": 98,
     "tree_id": 12,
     "level": 0
   }
@@ -1939,23 +1905,6 @@
 },
 {
   "model": "core.extranetnavigation",
-  "pk": 133,
-  "fields": {
-    "updated_at": "2018-03-26T08:09:23.221Z",
-    "created_at": "2018-03-26T08:09:23.221Z",
-    "parent": 30,
-    "name": "Price Lists",
-    "url": "/pricing/pricelists/",
-    "endpoint": "/ecore/api/v2/pricing/pricelists/",
-    "access_level": "manager",
-    "lft": 6,
-    "rght": 7,
-    "tree_id": 3,
-    "level": 1
-  }
-},
-{
-  "model": "core.extranetnavigation",
   "pk": 134,
   "fields": {
     "updated_at": "2018-03-26T08:10:10.789Z",
@@ -1965,8 +1914,8 @@
     "url": "/hr/timesheets/",
     "endpoint": "/ecore/api/v2/hr/timesheets/",
     "access_level": "manager",
-    "lft": 10,
-    "rght": 11,
+    "lft": 8,
+    "rght": 9,
     "tree_id": 3,
     "level": 1
   }
