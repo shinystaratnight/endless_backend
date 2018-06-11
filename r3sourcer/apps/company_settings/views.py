@@ -9,7 +9,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from r3sourcer.apps.company_settings import serializers
-from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
+from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission, CompanySettings
 from r3sourcer.apps.core.models import User
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
@@ -514,8 +514,11 @@ class MYOBAPIKeyView(APIView):
 
 class SiteCompanySettingsView(APIView):
     def get(self, *args, **kwargs):
-        company = get_site_master_company(request=self.request)
-        company_settings = company.company_settings
+        company = get_site_master_company(request=self.request, default=False)
+        if not company:
+            company_settings = CompanySettings(color_scheme='#28a3fc', font='Source Sans Pro')
+        else:
+            company_settings = company.company_settings
 
         company_settings_serializer = serializers.CompanySettingsSerializer(company_settings)
 
