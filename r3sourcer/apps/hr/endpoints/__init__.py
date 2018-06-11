@@ -954,6 +954,8 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
 
     edit_disabled = True
 
+    list_buttons = []
+
     list_display = (
         {
             'label': _('Times'),
