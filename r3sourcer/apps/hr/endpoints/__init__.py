@@ -599,8 +599,7 @@ class JobEndpoint(ApiEndpoint):
                         'field': 'provider_representative',
                         'type': constants.FIELD_RELATED,
                         'query': {
-                            'customer_company': '{customer_company.id}',
-                            'master_company': '{provider_company.id}',
+                            'company': '{provider_company.id}',
                         },
                         'default': '{customer_company.primary_contact.id}',
                         'read_only': True,

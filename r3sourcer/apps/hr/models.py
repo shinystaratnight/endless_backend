@@ -429,11 +429,20 @@ class Job(core_models.AbstractBaseOrder):
         just_added = self._state.adding
         if just_added:
             self.provider_signed_at = timezone.now()
+            existing_jobs = Job.objects.filter(
+                customer_company=self.customer_company, jobsite=self.jobsite, position=self.position
+            )
+            completed_list = core_models.WorkflowObject.objects.filter(
+                object_id__in=existing_jobs.values_list('id', flat=True), state__number=60, active=True
+            ).values_list('object_id', flat=True)
+
+            if existing_jobs.exclude(id__in=completed_list).exists():
+                raise ValidationError(_('Active Vacancy for this Client, Jobsite and Position already exist'))
 
         super().save(*args, **kwargs)
 
         if just_added and self.is_allowed(10):
-            self.create_state(10)
+                self.create_state(10)
 
     def get_distance_matrix(self, candidate_contact):
         """
