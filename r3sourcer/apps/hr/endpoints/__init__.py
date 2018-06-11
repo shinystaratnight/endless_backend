@@ -134,6 +134,13 @@ class JobsiteEndpoint(ApiEndpoint):
 
     list_editable = (
         '__str__', 'primary_contact', 'start_date', 'end_date', 'notes',
+        {
+            'label': _('Actions'),
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('hr/jobsites'))
+            }, constants.BUTTON_DELETE)
+        }
     )
 
     list_editable_buttons = []

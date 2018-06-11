@@ -909,7 +909,14 @@ class CompanyContactRelationEndpoint(ApiEndpoint):
     list_editable = (
         'company_contact.job_title', 'company_contact.contact.first_name', 'company_contact.contact.last_name',
         'company_contact.contact.phone_mobile', 'company_contact.contact.email',
-        'company_contact.receive_job_confirmation_sms'
+        'company_contact.receive_job_confirmation_sms',
+        {
+            'label': _('Actions'),
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{company_contact.id}}', api_reverse_lazy('core/companycontacts'))
+            }, constants.BUTTON_DELETE)
+        },
     )
 
     list_label = ('Client Contact Relations')
