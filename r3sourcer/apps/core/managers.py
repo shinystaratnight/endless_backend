@@ -64,7 +64,7 @@ class AbstractObjectOwnerQuerySet(LoggerQuerySet):
                 is_rel_direct = isinstance(_obj, rel.related_model)
                 qs = rel.related_model.objects
 
-                if not is_rel_direct:
+                if not is_rel_direct and hasattr(qs, 'owned_by'):
                     qs = qs.owned_by(_obj)
 
                 related_queryset_result = qs.filter(null_filter).values_list(rel.field.name, flat=True)
