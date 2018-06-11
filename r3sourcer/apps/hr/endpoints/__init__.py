@@ -45,6 +45,37 @@ class JobsiteEndpoint(ApiEndpoint):
         'end_date', 'active_states'
     )
 
+    fieldsets_add = (
+        {
+            'type': constants.CONTAINER_ROW,
+            'label': '{__str__}',
+            'fields': ({
+                'type': constants.CONTAINER_COLUMN,
+                'fields': (
+                    'industry',
+                    {
+                        'type': constants.FIELD_TEXT,
+                        'label': _('Site Name'),
+                        'field': 'short_name',
+                        'help': '',
+                    },
+                    'regular_company', 'primary_contact', 'master_company', 'portfolio_manager',
+                    {
+                        'type': constants.FIELD_ADDRESS,
+                        'field': 'address',
+                    },
+                ),
+            }, )
+        }, {
+            'type': constants.CONTAINER_ROW,
+            'label': 'Timeframe',
+            'fields': ({
+                'type': constants.CONTAINER_COLUMN,
+                'fields': ('start_date', 'end_date', 'is_available',),
+            }, ),
+        }
+    )
+
     fieldsets = (
         {
             'type': constants.CONTAINER_ROW,
