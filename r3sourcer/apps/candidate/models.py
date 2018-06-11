@@ -460,6 +460,8 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         if just_added:
             self.create_state(10)
 
+            self.contact.user.role.add(core_models.Role.objects.create(name=core_models.Role.ROLE_NAMES.candidate))
+
             if not hasattr(self, 'candidate_scores'):
                 from r3sourcer.apps.hr.models import CandidateScore
                 obj = CandidateScore.objects.create(candidate_contact=self)

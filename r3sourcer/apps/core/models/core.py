@@ -1231,6 +1231,17 @@ class CompanyContactRelationship(
     def get_master_company_lookup(cls, master_company):
         return Q(company=master_company)
 
+    def save(self, *args, **kwargs):
+        is_added = self._state.adding
+        super().save(*args, **kwargs)
+
+        if is_added:
+            role = Role.ROLE_NAMES.client
+            if self.company.type == self.company.COMPANY_TYPES.master:
+                role = Role.ROLE_NAMES.manager
+
+            self.company_contact.contact.user.role.add(Role.objects.create(name=role))
+
 
 class CompanyAddress(
         UUIDModel,
