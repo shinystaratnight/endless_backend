@@ -218,15 +218,17 @@ class CompanyContactFilter(FilterSet):
 
 class CompanyContactRelationshipFilter(FilterSet):
     company = UUIDFilter(method='filter_company')
+    contact = UUIDFilter(method='filter_contact')
 
     class Meta:
         model = models.CompanyContactRelationship
-        fields = ['company']
+        fields = ['company', 'active']
 
     def filter_company(self, queryset, name, value):
-        return queryset.filter(
-            company_id=value
-        )
+        return queryset.filter(company_id=value)
+
+    def filter_contact(self, queryset, name, value):
+        return queryset.filter(company_contact__contact_id=value)
 
 
 class FormFieldFilter(FilterSet):

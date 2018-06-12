@@ -20,7 +20,7 @@ CUSTOM_FIELD_ATTRS = (
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
     'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
-    'color_attr', 'outline', 'inline', 'placeholder'
+    'color_attr', 'outline', 'inline', 'placeholder', 'checkQuery', 'checkError', 'checkEndpoint'
 )
 
 
@@ -193,11 +193,10 @@ class AngularApiAdapter(BaseAdapter):
                 isinstance(field['default'], (str, int, float, bool, date, time))):
             adapted['default'] = field['default']
 
-        if 'showIf' in field:
-            adapted['showIf'] = field['showIf']
-
-        if 'send' in field:
-            adapted['send'] = field['send']
+        field_options = ('checkQuery', 'checkError', 'checkEndpoint', 'showIf', 'send')
+        adapted.update({
+            **{option: field[option] for option in field_options if field.get(option) is not None},
+        })
 
         field_ui = field.get('ui', {})
         ui_options = (
