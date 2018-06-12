@@ -982,13 +982,15 @@ class CompanyContactEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'contact',
             'showIf': ['company.id'],
-            'checkQuery': {
-                'company': '{company.id}',
-                'contact': '{contact.id}',
-                'active': True,
-            },
-            'checkError': _('This client contact already exists!'),
-            'checkEndpoint': api_reverse_lazy('core/companycontactrelationships')
+            'checkObject': {
+                'query': {
+                    'company': '{company.id}',
+                    'contact': '{contact.id}',
+                    'active': True,
+                },
+                'endpoint': api_reverse_lazy('core/companycontactrelationships'),
+                'error': _('This client contact already exists!'),
+            }
         },
         'job_title',
     )

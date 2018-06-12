@@ -20,7 +20,7 @@ CUSTOM_FIELD_ATTRS = (
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
     'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
-    'color_attr', 'outline', 'inline', 'placeholder', 'checkQuery', 'checkError', 'checkEndpoint'
+    'color_attr', 'outline', 'inline', 'placeholder', 'checkObject'
 )
 
 
@@ -193,7 +193,7 @@ class AngularApiAdapter(BaseAdapter):
                 isinstance(field['default'], (str, int, float, bool, date, time))):
             adapted['default'] = field['default']
 
-        field_options = ('checkQuery', 'checkError', 'checkEndpoint', 'showIf', 'send')
+        field_options = ('checkObject', 'showIf', 'send')
         adapted.update({
             **{option: field[option] for option in field_options if field.get(option) is not None},
         })
