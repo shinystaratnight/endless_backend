@@ -5,7 +5,7 @@ from functools import reduce
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max
+from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Count, FloatField
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -103,6 +103,14 @@ class JobFillinEndpoint(ApiEndpoint):
         'data': 'shifts',
         'display': '__str__',
         'unique': ('date', ),
+    }, {
+        'field': 'show_without_tags',
+        'label': _('Tags'),
+        'type': constants.FIELD_SELECT,
+        'default': 'True',
+        'choices': [
+            {'label': _('Only with job tags'), 'value': 'False'}
+        ]
     }]
 
     ordering_mapping = {
@@ -847,6 +855,8 @@ class JobViewset(BaseApiViewset):
             preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(top_contacts)])
             candidate_contacts = candidate_contacts.order_by(preserved)
 
+        job_tags = job.tags.filter(verification_evidence__isnull=False).values_list('tag_id', flat=True)
+
         candidate_contacts = candidate_contacts.annotate(
             distance_to_jobsite=Case(
                 When(contact__distance_caches__jobsite=job.jobsite,
@@ -865,8 +875,17 @@ class JobViewset(BaseApiViewset):
                      then='candidate_skills__score'),
                 default=0
             )),
-            last_timesheet_date=Max('job_offers__time_sheets__shift_started_at')
+            last_timesheet_date=Max('job_offers__time_sheets__shift_started_at'),
+            tags_count=Sum(Case(
+                When(tag_rels__tag_id__in=job_tags, job_offers__isnull=True, then=1),
+                default=0,
+                output_field=IntegerField(),
+            ))
         ).prefetch_related('tag_rels__tag')
+
+        tags_filter = request.query_params.get('show_without_tags', None) in ('True', None)
+        if not tags_filter:
+            candidate_contacts = candidate_contacts.filter(tags_count=len(job_tags))
 
         restrict_radius = int(request.GET.get('distance_to_jobsite', -1))
         if restrict_radius > -1:
@@ -984,12 +1003,12 @@ class JobViewset(BaseApiViewset):
 
     def sort_candidates(self, request, candidate_contacts):
         params = request.query_params.get(api_settings.ORDERING_PARAM)
+        fields = ['-tags_count']
+
         if params:
-            fields = [param.strip() for param in params.split(',')]
+            fields = fields.extend([param.strip() for param in params.split(',')] if params else [])
 
-            return candidate_contacts.order_by(*fields)
-
-        return candidate_contacts
+        return candidate_contacts.order_by(*fields)
 
     @detail_route(
         methods=['GET', 'PUT'],
