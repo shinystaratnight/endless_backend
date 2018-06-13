@@ -183,7 +183,14 @@ class ContactEndpoint(ApiEndpoint):
                 'label': _('Candidate Contact'),
                 'field': 'candidate_contacts',
                 'send': False,
-                'read_only': True,
+                'read_only': False,
+                'endpoint': api_reverse_lazy('candidate/candidatecontacts'),
+                'prefilled': {
+                    'contact': '{id.id}',
+                },
+                'metadata_query': {
+                    'fieldsets_type': 'contact',
+                }
             }, {
                 'type': constants.FIELD_RELATED,
                 'label': _('Recruitment Agent'),

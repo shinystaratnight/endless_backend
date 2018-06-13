@@ -394,6 +394,176 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
         },
     )
 
+    fieldsets_add = {
+        'default': fieldsets,
+        'contact': (
+            {
+                'field': 'contact',
+                'type': constants.FIELD_RELATED,
+                'read_only': False,
+            }, {
+                'type': constants.CONTAINER_TABS,
+                'fields': ({
+                    'type': constants.CONTAINER_GROUP,
+                    'label': _('Personal information'),
+                    'name': _('Personal Info'),
+                    'main': True,
+                    'fields': ({
+                        'type': constants.CONTAINER_ROW,
+                        'fields': (
+                            {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': _('Notify'),
+                                'width': .25,
+                                'fields': (
+                                    {
+                                        'field': 'message_by_email',
+                                        'type': constants.FIELD_CHECKBOX,
+                                        'label': _('E-Mail'),
+                                        'default': False,
+                                    }, {
+                                        'field': 'message_by_sms',
+                                        'type': constants.FIELD_CHECKBOX,
+                                        'label': _('SMS'),
+                                        'default': False,
+                                    },
+                                ),
+                            }, {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': _('Recruitment agent'),
+                                'width': .25,
+                                'fields': (
+                                    {
+                                        'type': constants.FIELD_RELATED,
+                                        'field': 'recruitment_agent',
+                                        'endpoint': api_reverse_lazy('core/companycontacts'),
+                                        'default': 'session.contact.contact_id',
+                                        'label': '',
+                                        'query': {
+                                            'master_company': 'current',
+                                        },
+                                    }, {
+                                        'field': 'recruitment_agent.contact.phone_mobile',
+                                        'label': '',
+                                        'type': constants.FIELD_TEXT,
+                                        'read_only': True,
+                                        'send': False,
+                                    }, {
+                                        'field': 'recruitment_agent.contact',
+                                        'label': '',
+                                        'type': constants.FIELD_TEXT,
+                                        'hide': True,
+                                        'send': False,
+                                    }
+                                )
+                            }
+                        )
+                    }, {
+                        'type': constants.CONTAINER_ROW,
+                        'fields': (
+                            {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': _('Additional info'),
+                                'width': .25,
+                                'fields': ('language', 'transportation_to_work'),
+                            }, {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': _('Phisical parameters'),
+                                'width': .25,
+                                'fields': (
+                                    {
+                                        'type': constants.FIELD_TEXT,
+                                        'field': 'height',
+                                    },
+                                    'weight', 'bmi'
+                                ),
+                            }, {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': _('Character'),
+                                'width': .25,
+                                'fields': (
+                                    {
+                                        'field': 'strength',
+                                        'type': constants.FIELD_SCORE,
+                                        'label': _('Strength'),
+                                    },
+                                ),
+                            },
+                        )
+                    }, {
+                        'type': 'row',
+                        'fields': (
+                            {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': _('Residency'),
+                                'width': .25,
+                                'fields': (
+                                    'residency',
+                                    {
+                                        'type': constants.FIELD_DATE,
+                                        'field': 'visa_expiry_date',
+                                        'showIf': [
+                                            {
+                                                'residency':
+                                                    candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary
+                                            }
+                                        ],
+                                    },
+                                ),
+                            }, {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': '',
+                                'width': .25,
+                                'fields': (
+                                    'nationality',
+                                    {
+                                        'type': constants.FIELD_DATE,
+                                        'field': 'vevo_checked_at',
+                                        'showIf': [
+                                            {
+                                                'residency':
+                                                    candidate_models.CandidateContact.RESIDENCY_STATUS_CHOICES.temporary
+                                            }
+                                        ],
+                                    },
+                                ),
+                            },
+                        )
+                    }, {
+                        'type': 'row',
+                        'fields': (
+                            {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': _('Formalities'),
+                                'width': .25,
+                                'fields': (
+                                    'tax_file_number', 'superannuation_fund',
+                                    {
+                                        'type': constants.FIELD_TEXT,
+                                        'field': 'super_member_number',
+                                        'showIf': [
+                                            'superannuation_fund.id'
+                                        ],
+                                    },
+                                ),
+                            }, {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': '',
+                                'width': .5,
+                                'fields': ('bank_account', 'employment_classification'),
+                            }, {
+                                'type': constants.CONTAINER_GROUP,
+                                'label': _('Emergency'),
+                                'width': .25,
+                                'fields': ('emergency_contact_name', 'emergency_contact_phone',),
+                            },
+                        )
+                    },)
+                },),
+            },
+        )
+    }
+
     list_display = (
         {
             'field': 'id',
