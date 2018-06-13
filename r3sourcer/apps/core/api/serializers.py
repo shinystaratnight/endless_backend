@@ -819,8 +819,9 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
             company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
         except (core_models.Company.DoesNotExist, ValueError):
             errors['company'] = _('Please select or create new client!')
+            company = None
 
-        if core_models.CompanyContactRelationship.objects.filter(
+        if company and core_models.CompanyContactRelationship.objects.filter(
             company=company, company_contact__contact=contact
         ).exists():
             errors['contact'] = _('This client contact already exists!')

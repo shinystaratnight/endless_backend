@@ -373,6 +373,12 @@ class CompanyContactViewset(BaseApiViewset):
 
         super().perform_destroy(instance)
 
+    def prepare_related_data(self, data, is_create=False):
+        if is_create and not data.get('contact'):
+            data['contact'] = fields.empty
+
+        return self._prepare_internal_data(data, is_create=is_create)
+
     @list_route(
         methods=['post'],
         serializer=serializers.CompanyContactRegisterSerializer,
