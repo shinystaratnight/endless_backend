@@ -1108,8 +1108,13 @@ class JobTagEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'tag',
             'read_only': False,
+        }, {
+            'type': constants.FIELD_PICTURE,
+            'field': 'verification_evidence',
+            'label_upload': _('Choose a file'),
+            'label_photo': _('Take a photo'),
         },
-        'verification_evidence', 'verified_by',
+        'verified_by',
     )
 
     list_filter = ('job', )
