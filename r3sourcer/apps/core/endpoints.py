@@ -188,7 +188,7 @@ class ContactEndpoint(ApiEndpoint):
                 'prefilled': {
                     'contact': '{id.id}',
                 },
-                'metadata_query': {
+                'add_metadata_query': {
                     'fieldsets_type': 'contact',
                 }
             }, {
@@ -202,7 +202,14 @@ class ContactEndpoint(ApiEndpoint):
                 'label': _('Company Contact'),
                 'field': 'company_contact',
                 'send': False,
-                'read_only': True,
+                'read_only': False,
+                'many': False,
+                'endpoint': api_reverse_lazy('core/companycontacts'),
+                'prefilled': {
+                    'contact': '{id.id}',
+                },
+                'add': True,
+                'edit': True,
             }, {
                 'type': constants.FIELD_RELATED,
                 'label': _('Master Company'),
