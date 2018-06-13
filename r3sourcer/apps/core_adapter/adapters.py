@@ -193,7 +193,7 @@ class AngularApiAdapter(BaseAdapter):
                 isinstance(field['default'], (str, int, float, bool, date, time))):
             adapted['default'] = field['default']
 
-        field_options = ('checkObject', 'showIf', 'send')
+        field_options = ('checkObject', 'showIf', 'send', 'add_metadata_query')
         adapted.update({
             **{option: field[option] for option in field_options if field.get(option) is not None},
         })
