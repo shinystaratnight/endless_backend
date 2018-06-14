@@ -130,6 +130,7 @@ class ContactEndpoint(ApiEndpoint):
                             'label_upload': _('Choose a file'),
                             'label_photo': _('Take a photo'),
                             'custom': [],
+                            'file': False,
                         },
                     ),
                 }, {
@@ -1016,7 +1017,7 @@ class CompanyContactEndpoint(ApiEndpoint):
             'values': {
                 'picture': 'contact.picture.thumb',
                 'company': 'company.__str__',
-                'available': 'contact.is_available',
+                'available': 'active',
                 'title': 'contact.__str__',
                 'job_title': 'job_title',
                 'created_at': 'created_at',
@@ -1052,6 +1053,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                                     'type': constants.FIELD_CHECKBOX,
                                     'label': _('Active'),
                                     'default': False,
+                                    'hide': True,
                                 }, {
                                     'type': constants.FIELD_DATE,
                                     'field': 'termination_date',
@@ -1068,29 +1070,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                                     'field': 'company',
                                     'hide': True,
                                     'endpoint': api_reverse_lazy('core/companies'),
-                                }, {
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'field': 'contact.is_available',
-                                    'hide': True,
-                                    'send': False,
-                                    'default': False,
-                                }, {
-                                    'field': 'contact.first_name',
-                                    'type': constants.FIELD_TEXT,
-                                    'hide': True,
-                                }, {
-                                    'field': 'contact.last_name',
-                                    'type': constants.FIELD_TEXT,
-                                    'hide': True,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'contact.email',
-                                    'hide': True,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'contact.phone_mobile',
-                                    'hide': True,
-                                }
+                                },
                             ),
                         },
                     ),

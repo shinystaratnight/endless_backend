@@ -681,7 +681,7 @@ class AngularListApiAdapter(AngularApiAdapter):
         options = (
             'endpoint', 'link', 'values', 'action', 'label', 'text', 'icon', 'repeat', 'color', 'visible', 'hidden',
             'replace_by', 'text_color', 'title', 'display', 'async', 'method', 'request_field', 'query', 'showIf',
-            'color_attr', 'outline', 'inline', 'redirect',
+            'color_attr', 'outline', 'inline', 'redirect', 'file',
         )
 
         for display_field in display_fields:
@@ -702,7 +702,7 @@ class AngularListApiAdapter(AngularApiAdapter):
                     adapted.append({
                         'type': field_type,
                         'fields': adapted_result,
-                        **{o: display_field[o] for o in options if display_field.get(o)}
+                        **{o: display_field[o] for o in options if display_field.get(o) is not None}
                     })
 
                     continue
@@ -727,7 +727,7 @@ class AngularListApiAdapter(AngularApiAdapter):
                 'field': field,
                 **{o: format_str(display_field_attrs[o], field=field) if o != 'display' else display_field_attrs[o]
                     for o in options
-                    if display_field_attrs.get(o)},
+                    if display_field_attrs.get(o) is not None},
                 **{o: format_str(adapted_field[o], field=field) if o != 'display' else display_field_attrs[o]
                     for o in options
                     if o not in display_field_attrs and adapted_field.get(o)}

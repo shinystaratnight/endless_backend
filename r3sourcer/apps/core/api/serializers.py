@@ -817,10 +817,10 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     def validate(self, data):
         contact = data.get('contact', None)
         errors = {}
-        if not isinstance(contact, core_models.Contact) and 'id' not in contact:
+        if not isinstance(contact, core_models.Contact):
             errors['contact'] = _('Please select or create new contact!')
         else:
-            contact_id = contact.get('id')
+            contact_id = contact.id
 
         try:
             company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
@@ -854,7 +854,7 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     def update(self, instance, validated_data):
         contact = validated_data.get('contact', None)
         errors = {}
-        if not isinstance(contact, core_models.Contact) and 'id' not in contact:
+        if not isinstance(contact, core_models.Contact):
             errors['contact'] = _('Contact is required')
 
         try:
