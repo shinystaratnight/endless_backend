@@ -1009,48 +1009,102 @@ class CompanyContactEndpoint(ApiEndpoint):
     )
 
     fieldsets_add = _base_fieldsets
-    fieldsets = _base_fieldsets + (
-        'rating_unreliable', 'receive_job_confirmation_sms', 'active',
+    fieldsets = (
         {
-            'type': constants.FIELD_DATE,
-            'field': 'termination_date',
+            'field': 'id',
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'contact.picture.thumb',
+                'company': 'company.__str__',
+                'available': 'contact.is_available',
+                'title': 'contact.__str__',
+                'job_title': 'job_title',
+                'created_at': 'created_at',
+                'updated_at': 'updated_at',
+            }
         }, {
-            'query': {
-                'object_id': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Notes'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/notes'),
-            'prefilled': {
-                'object_id': '{id}',
-            },
-        }, {
-            'query': {
-                'primary_contact': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Jobsites'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/jobsites'),
-            'prefilled': {
-                'primary_contact': '{id}',
-            },
-        }, {
-            'query': {
-                'customer_representative': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Jobs'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/jobs'),
-            'prefilled': {
-                'customer_representative': '{id}',
-            },
-        }
+            'type': constants.CONTAINER_TABS,
+            'fields': ({
+                'type': constants.CONTAINER_GROUP,
+                'label': _('General information'),
+                'name': _('General Info'),
+                'main': True,
+                'fields': ({
+                    'type': constants.CONTAINER_ROW,
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': '',
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'field': 'rating_unreliable',
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'label': _('Rating ureliable'),
+                                    'default': False,
+                                }, {
+                                    'field': 'receive_job_confirmation_sms',
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'label': _('Receive Job confirmation SMS'),
+                                    'default': False,
+                                }, {
+                                    'field': 'active',
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'label': _('Active'),
+                                    'default': False,
+                                }, {
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'termination_date',
+                                },
+                            ),
+                        },
+                    ),
+                },)
+            }, {
+                'query': {
+                    'primary_contact': '{id}',
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Jobsites'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('hr/jobsites'),
+                'prefilled': {
+                    'primary_contact': '{id}',
+                },
+            }, {
+                'query': {
+                    'customer_representative': '{id}',
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Jobs'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('hr/jobs'),
+                'prefilled': {
+                    'customer_representative': '{id}',
+                },
+            }, {
+                'query': {
+                    'supervisor': '{id}',
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Timesheets'),
+                'endpoint': api_reverse_lazy('hr/timesheets'),
+                'metadata_query': {
+                    'editable_type': 'supervisor',
+                }
+            }, {
+                'query': {
+                    'object_id': '{id}',
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Notes'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('core/notes'),
+                'prefilled': {
+                    'object_id': '{id}',
+                },
+            },)
+        },
     )
 
     search_fields = ('job_title', 'contact__title', 'contact__first_name', 'contact__last_name')

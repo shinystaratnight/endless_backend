@@ -18,7 +18,7 @@ class TimesheetFilter(FilterSet):
 
     class Meta:
         model = hr_models.TimeSheet
-        fields = ['shift_started_at']
+        fields = ['shift_started_at', 'supervisor']
 
     def filter_candidate(self, queryset, name, value):
         return queryset.filter(
