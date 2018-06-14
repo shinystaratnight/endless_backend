@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
 from django_filters import NumberFilter
 from rest_framework import exceptions
@@ -92,7 +93,13 @@ class GoogleAddressMixin:
             return data
 
         try:
-            address_parts = {item['types'][0]: item for item in address_data['address_components']}
+            address_parts = {}
+
+            for item in address_data['address_components']:
+                for item_type in item['types']:
+                    if item_type != 'political':
+                        address_parts[item_type] = item
+
             country = Country.objects.get(code2=address_parts['country']['short_name'])
 
             region_part = address_parts.get('administrative_area_level_1')
@@ -102,11 +109,17 @@ class GoogleAddressMixin:
             ) if region_part else None
 
             city_part = address_parts.get('locality') or address_parts.get('sublocality')
-            city_search = '%s%s' % (city_part['long_name'].replace(' ', ''), country.name.replace(' ', ''))
-            city = City.objects.get(
+            city_search = ' %s%s' % (city_part['long_name'].replace(' ', ''), country.name.replace(' ', ''))
+            city = City.objects.filter(
                 Q(search_names__icontains=city_search) | Q(name=city_part['long_name']),
                 country=country, region=region,
-            ) if city_part else None
+            )
+            if city.count() > 1:
+                city = city.filter(
+                    Q(alternate_names__contains=city_part['long_name']) | Q(slug=slugify(city_part['long_name']))
+                ).first()
+            else:
+                city = city.first()
 
             postal_code = address_parts.get('postal_code', {}).get('long_name')
             street_address = address_parts['route']['long_name']
