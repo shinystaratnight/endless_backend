@@ -609,7 +609,7 @@ class JobEndpoint(ApiEndpoint):
                             'company': '{provider_company.id}',
                         },
                         'default': '{customer_company.primary_contact.id}',
-                        'read_only': True,
+                        'read_only': False,
                         'showIf': [
                             'provider_company.id',
                         ]
