@@ -194,6 +194,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         list_display=[{
             'field': 'job_offer.candidate_contact.contact.picture',
             'type': constants.FIELD_PICTURE,
+            'file': False,
         }, {
             'label': _('Position'),
             'fields': ({
@@ -374,6 +375,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         list_display=[{
             'field': 'job_offer.candidate_contact.contact.picture',
             'type': constants.FIELD_PICTURE,
+            'file': False,
         }, {
             'label': _('Position'),
             'fields': ({

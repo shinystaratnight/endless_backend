@@ -130,6 +130,7 @@ class ContactEndpoint(ApiEndpoint):
                             'label_upload': _('Choose a file'),
                             'label_photo': _('Take a photo'),
                             'custom': [],
+                            'file': False,
                         },
                     ),
                 }, {
