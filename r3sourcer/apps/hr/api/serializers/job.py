@@ -93,7 +93,9 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
         return shift_dates
 
     def get_extend(self, obj):  # pragma: no cover
-        return obj.has_state(20) and self._get_unfilled_future_vds_queryset(obj).exists()
+        current_state = obj.get_current_state()
+
+        return current_state and current_state.number == 20
 
 
 class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
