@@ -72,7 +72,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     },
                                 }, {
                                     'field': 'contact.address',
-                                    'type': constants.FIELD_RELATED,
+                                    'type': constants.FIELD_ADDRESS,
                                     'hide': True,
                                     'send': False,
                                 }, {
