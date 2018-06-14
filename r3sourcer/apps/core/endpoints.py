@@ -1055,7 +1055,42 @@ class CompanyContactEndpoint(ApiEndpoint):
                                 }, {
                                     'type': constants.FIELD_DATE,
                                     'field': 'termination_date',
-                                },
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'job_title',
+                                    'hide': True,
+                                }, {
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'contact',
+                                    'hide': True,
+                                }, {
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'company',
+                                    'hide': True,
+                                    'endpoint': api_reverse_lazy('core/companies'),
+                                }, {
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'field': 'contact.is_available',
+                                    'hide': True,
+                                    'send': False,
+                                    'default': False,
+                                }, {
+                                    'field': 'contact.first_name',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                }, {
+                                    'field': 'contact.last_name',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'contact.email',
+                                    'hide': True,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'contact.phone_mobile',
+                                    'hide': True,
+                                }
                             ),
                         },
                     ),
