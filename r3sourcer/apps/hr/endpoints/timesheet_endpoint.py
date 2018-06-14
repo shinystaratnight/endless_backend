@@ -256,6 +256,52 @@ class TimeSheetEndpoint(ApiEndpoint):
         }
     )
 
+    list_editable = {
+        'default': list_display,
+        'supervisor': [{
+            'field': 'job_offer.candidate_contact.contact.picture',
+            'type': constants.FIELD_PICTURE,
+        }, {
+            'label': _('Position'),
+            'fields': ({
+                'type': constants.FIELD_LINK,
+                'endpoint': format_lazy(
+                    '{}{{job_offer.candidate_contact.id}}/',
+                    api_reverse_lazy('candidate/candidatecontacts')
+                ),
+                'field': 'job_offer.candidate_contact',
+            }, {
+                'type': constants.FIELD_STATIC,
+                'field': 'position',
+                'label': _('Position'),
+            }),
+        }, {
+            'label': _('Times'),
+            'fields': ({
+                'type': constants.FIELD_STATIC,
+                'text': format_lazy('{{shift_started_at__date}}'),
+                'label': _('Shift date'),
+                'field': 'shift_started_at',
+            }, {
+                'type': constants.FIELD_STATIC,
+                'text': format_lazy('{{shift_started_at__time}}'),
+                'label': _('Shift started at'),
+                'field': 'shift_started_at',
+            }, {
+                'type': constants.FIELD_STATIC,
+                'text': format_lazy(
+                    '{{break_started_at__time}} - {{break_ended_at__time}}'),
+                'label': _('Break'),
+                'field': 'break_started_at',
+            }, {
+                'type': constants.FIELD_STATIC,
+                'text': format_lazy('{{shift_ended_at__time}}'),
+                'label': _('Shift ended at'),
+                'field': 'shift_ended_at',
+            }),
+        }]
+    }
+
     def get_list_filter(self):
         return [{
             'field': 'shift_started_at',

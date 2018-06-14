@@ -800,8 +800,13 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     class Meta:
         model = core_models.CompanyContact
         fields = (
-            'id', 'job_title', 'rating_unreliable', 'contact', 'legacy_myob_card_number',
-            'receive_job_confirmation_sms', 'company', 'active', 'termination_date',
+            'id', 'job_title', 'rating_unreliable', 'legacy_myob_card_number', 'company', 'active',
+            'receive_job_confirmation_sms', 'termination_date', 'created_at', 'updated_at',
+            {
+                'contact': (
+                    'id', 'first_name', 'last_name', 'title', 'email', 'phone_mobile', 'is_available', 'picture',
+                ),
+            }
         )
         related = RELATED_DIRECT
         extra_kwargs = {
@@ -812,8 +817,10 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     def validate(self, data):
         contact = data.get('contact', None)
         errors = {}
-        if not isinstance(contact, core_models.Contact):
+        if not isinstance(contact, core_models.Contact) and 'id' not in contact:
             errors['contact'] = _('Please select or create new contact!')
+        else:
+            contact_id = contact.get('id')
 
         try:
             company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
@@ -821,10 +828,11 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
             errors['company'] = _('Please select or create new client!')
             company = None
 
-        if company and core_models.CompanyContactRelationship.objects.filter(
-            company=company, company_contact__contact=contact
+        if company and contact and core_models.CompanyContactRelationship.objects.filter(
+            company=company, company_contact__contact_id=contact_id
         ).exists():
-            errors['contact'] = _('This client contact already exists!')
+            if not self.instance or self.instance.contact.id != contact_id:
+                errors['contact'] = _('This client contact already exists!')
 
         if errors:
             raise exceptions.ValidationError(errors)
@@ -846,7 +854,7 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     def update(self, instance, validated_data):
         contact = validated_data.get('contact', None)
         errors = {}
-        if not isinstance(contact, core_models.Contact):
+        if not isinstance(contact, core_models.Contact) and 'id' not in contact:
             errors['contact'] = _('Contact is required')
 
         try:
