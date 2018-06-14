@@ -203,7 +203,6 @@ class ContactEndpoint(ApiEndpoint):
                 'field': 'company_contact',
                 'send': False,
                 'read_only': False,
-                'many': False,
                 'endpoint': api_reverse_lazy('core/companycontacts'),
                 'prefilled': {
                     'contact': '{id.id}',
