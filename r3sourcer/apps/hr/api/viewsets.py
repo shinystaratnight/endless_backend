@@ -75,7 +75,6 @@ class JobFillinEndpoint(ApiEndpoint):
         'default': 'True',
         'choices': [
             {'label': _('Partially'), 'value': 'True'},
-            {'label': _('All dates'), 'value': 'False'}
         ]
     }, {
         'field': 'overpriced',
@@ -83,8 +82,7 @@ class JobFillinEndpoint(ApiEndpoint):
         'type': constants.FIELD_SELECT,
         'default': 'False',
         'choices': [
-            {'label': _('All candidates'), 'value': 'True'},
-            {'label': _('Without overpriced'), 'value': 'False'}
+            {'label': _('Without overpriced'), 'value': 'True'}
         ]
     }, {
         'field': 'distance_to_jobsite',
@@ -772,7 +770,7 @@ class JobViewset(BaseApiViewset):
                 candidate_skills__candidate_skill_rates__hourly_rate__hourly_rate__gt=hourly_rate,
             ).values_list('id', flat=True)
 
-            if not overpriced:
+            if overpriced:
                 candidate_contacts = candidate_contacts.filter(
                     overpriced_qry,
                     candidate_skills__candidate_skill_rates__hourly_rate__hourly_rate__lte=hourly_rate,
