@@ -98,10 +98,6 @@ class JobsiteEndpoint(ApiEndpoint):
                         'type': constants.FIELD_RELATED,
                         'field': 'master_company',
                         'showIf': ['primary_contact.id', 'address'],
-                        'query': {
-                            'type': 'master',
-                            'regular_company': '{regular_company.id}',
-                        },
                         'default': '{regular_company.master_company.id}',
                         'read_only': True,
                     }, {
