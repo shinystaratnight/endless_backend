@@ -171,9 +171,13 @@ class Jobsite(
             original = Jobsite.objects.get(id=self.id)
             changed_primary_contact = \
                 original.primary_contact != self.primary_contact
+
         super().save(*args, **kwargs)
 
-        if not just_added and changed_primary_contact:
+        if just_added:
+            if self.is_allowed(10):
+                self.create_state(10)
+        elif changed_primary_contact:
             # update supervisor related future timesheets
             for job in self.jobs.all():
                 for sd in job.shift_dates.all():
@@ -450,7 +454,7 @@ class Job(core_models.AbstractBaseOrder):
         super().save(*args, **kwargs)
 
         if just_added and self.is_allowed(10):
-                self.create_state(10)
+            self.create_state(10)
 
     def get_distance_matrix(self, candidate_contact):
         """

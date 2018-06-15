@@ -48,7 +48,7 @@ class JobsiteEndpoint(ApiEndpoint):
     fieldsets_add = (
         {
             'type': constants.CONTAINER_ROW,
-            'label': '',
+            'label': '{__str__}',
             'fields': ({
                 'type': constants.CONTAINER_COLUMN,
                 'fields': (
@@ -77,9 +77,15 @@ class JobsiteEndpoint(ApiEndpoint):
                         'type': constants.FIELD_TEXT,
                         'field': 'short_name',
                         'showIf': ['primary_contact.id', 'address'],
-                        'default': '{regular_company.name} {address.city}',
+                        'default': '{regular_company.name} {address.vicinity}',
                         'label': 'Site name',
                         'help': '',
+                    }, {
+                        'type': constants.FIELD_TEXT,
+                        'field': 'regular_company.name',
+                        'default': '{regular_company.name}',
+                        'hide': True,
+                        'send': False,
                     },
                 ),
             }, {
@@ -118,70 +124,8 @@ class JobsiteEndpoint(ApiEndpoint):
         },
     )
 
-    # fieldsets_add = (
-    #     {
-    #         'type': constants.CONTAINER_ROW,
-    #         'label': '{__str__}',
-    #         'fields': ({
-    #             'type': constants.CONTAINER_COLUMN,
-    #             'fields': (
-    #                 'industry',
-    #                 {
-    #                     'type': constants.FIELD_TEXT,
-    #                     'label': _('Site Name'),
-    #                     'field': 'short_name',
-    #                     'help': '',
-    #                 },
-    #                 'regular_company', 'primary_contact', 'master_company', 'portfolio_manager',
-    #                 {
-    #                     'type': constants.FIELD_ADDRESS,
-    #                     'field': 'address',
-    #                 },
-    #             ),
-    #         }, )
-    #     }, {
-    #         'type': constants.CONTAINER_ROW,
-    #         'label': 'Timeframe',
-    #         'fields': ({
-    #             'type': constants.CONTAINER_COLUMN,
-    #             'fields': ('start_date', 'end_date', 'is_available',),
-    #         }, ),
-    #     }
-    # )
-
-    fieldsets = (
+    fieldsets = fieldsets_add + (
         {
-            'type': constants.CONTAINER_ROW,
-            'label': '{__str__}',
-            'fields': ({
-                'type': constants.CONTAINER_COLUMN,
-                'fields': (
-                    'industry',
-                    {
-                        'type': constants.FIELD_TEXT,
-                        'label': _('Site Name'),
-                        'field': 'short_name',
-                        'help': '',
-                    },
-                    'regular_company', 'primary_contact', 'portfolio_manager',
-                    {
-                        'type': constants.FIELD_ADDRESS,
-                        'field': 'address',
-                    }, {
-                        'field': 'master_company.id',
-                        'type': constants.FIELD_TEXT,
-                        'hidden': True,
-                    }
-                ),
-            }, )
-        }, {
-            'type': constants.CONTAINER_ROW,
-            'label': 'Timeframe',
-            'fields': ({
-                'type': constants.CONTAINER_COLUMN,
-                'fields': ('start_date', 'end_date', 'is_available',),
-            }, ),
-        }, {
             'type': constants.FIELD_LIST,
             'field': 'id_',
             'query': {
@@ -192,6 +136,18 @@ class JobsiteEndpoint(ApiEndpoint):
             'endpoint': api_reverse_lazy('hr/jobs'),
             'prefilled': {
                 'jobsite': '{id}',
+            },
+        }, {
+            'query': {
+                'object_id': '{id}',
+            },
+            'type': constants.FIELD_LIST,
+            'collapsed': True,
+            'label': _('Notes'),
+            'add_label': _('Add'),
+            'endpoint': api_reverse_lazy('core/notes'),
+            'prefilled': {
+                'object_id': '{id}',
             },
         }, {
             'type': constants.CONTAINER_COLLAPSE,
@@ -221,18 +177,6 @@ class JobsiteEndpoint(ApiEndpoint):
             'prefilled': {
                 'object_id': '{id}',
             }
-        }, {
-            'query': {
-                'object_id': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Notes'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/notes'),
-            'prefilled': {
-                'object_id': '{id}',
-            },
         },
     )
 
