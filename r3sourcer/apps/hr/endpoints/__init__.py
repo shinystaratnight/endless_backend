@@ -77,15 +77,9 @@ class JobsiteEndpoint(ApiEndpoint):
                         'type': constants.FIELD_TEXT,
                         'field': 'short_name',
                         'showIf': ['primary_contact.id', 'address'],
-                        'default': '{regular_company.name} {address.vicinity}',
+                        'default': '{regular_company.__str__} {address.vicinity}',
                         'label': 'Site name',
                         'help': '',
-                    }, {
-                        'type': constants.FIELD_TEXT,
-                        'field': 'regular_company.name',
-                        'default': '{regular_company.name}',
-                        'hide': True,
-                        'send': False,
                     },
                 ),
             }, {
