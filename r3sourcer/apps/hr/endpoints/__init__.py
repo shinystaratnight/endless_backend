@@ -93,6 +93,7 @@ class JobsiteEndpoint(ApiEndpoint):
                         'query': {
                             'master_company': 'current',
                         },
+                        'read_only': False,
                     }, {
                         'type': constants.FIELD_RELATED,
                         'field': 'master_company',
