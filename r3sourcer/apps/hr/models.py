@@ -399,6 +399,11 @@ class Job(core_models.AbstractBaseOrder):
     is_start_date_set.short_description = _('Work Start Date')
 
     @workflow_function
+    def is_default_rate_set(self):
+        return self.hourly_rate_default is not None
+    is_default_rate_set.short_description = _('Default hourly rate')
+
+    @workflow_function
     def is_all_sd_filled(self):
         for sd in self.shift_dates.all():
             if sd.is_fulfilled() != FULFILLED:
