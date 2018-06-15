@@ -855,7 +855,7 @@ class JobViewset(BaseApiViewset):
             preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(top_contacts)])
             candidate_contacts = candidate_contacts.order_by(preserved)
 
-        job_tags = job.tags.filter(verification_evidence__isnull=False).values_list('tag_id', flat=True)
+        job_tags = job.tags.values_list('tag_id', flat=True)
 
         candidate_contacts = candidate_contacts.annotate(
             distance_to_jobsite=Case(

@@ -1079,18 +1079,11 @@ class JobTagEndpoint(ApiEndpoint):
 
     model = hr_models.JobTag
 
-    list_display = (
-        'job', 'tag', 'verified_by', 'verification_evidence'
-    )
+    list_display = ('job', 'tag')
 
     list_editable = (
-        'tag', 'verified_by',
+        'tag',
         {
-            'type': constants.FIELD_PICTURE,
-            'field': 'verification_evidence',
-            'label_upload': _('Choose a file'),
-            'label_photo': _('Take a photo'),
-        }, {
             'label': _('Actions'),
             'fields': ({
                 **constants.BUTTON_EDIT,
@@ -1108,13 +1101,7 @@ class JobTagEndpoint(ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'tag',
             'read_only': False,
-        }, {
-            'type': constants.FIELD_PICTURE,
-            'field': 'verification_evidence',
-            'label_upload': _('Choose a file'),
-            'label_photo': _('Take a photo'),
-        },
-        'verified_by',
+        }
     )
 
     list_filter = ('job', )
