@@ -48,33 +48,106 @@ class JobsiteEndpoint(ApiEndpoint):
     fieldsets_add = (
         {
             'type': constants.CONTAINER_ROW,
-            'label': '{__str__}',
+            'label': '',
             'fields': ({
                 'type': constants.CONTAINER_COLUMN,
                 'fields': (
-                    'industry',
                     {
-                        'type': constants.FIELD_TEXT,
-                        'label': _('Site Name'),
-                        'field': 'short_name',
-                        'help': '',
-                    },
-                    'regular_company', 'primary_contact', 'master_company', 'portfolio_manager',
-                    {
+                        'type': constants.FIELD_RELATED,
+                        'field': 'regular_company',
+                        'label': _('Client'),
+                    }, {
+                        'type': constants.FIELD_RELATED,
+                        'field': 'primary_contact',
+                        'showIf': ['regular_company.id'],
+                        'query': {
+                            'company': '{regular_company.id}',
+                        },
+                    }, {
                         'type': constants.FIELD_ADDRESS,
                         'field': 'address',
+                        'showIf': ['regular_company.id'],
+                    }, {
+                        'type': constants.FIELD_RELATED,
+                        'field': 'industry',
+                        'showIf': ['primary_contact.id', 'address'],
+                        'read_only': True,
+                        'default': '{regular_company.industry.id}',
+                    }, {
+                        'type': constants.FIELD_TEXT,
+                        'field': 'short_name',
+                        'showIf': ['primary_contact.id', 'address'],
+                        'default': '{regular_company.name} {address.city}',
+                        'label': 'Site name',
+                        'help': '',
                     },
                 ),
-            }, )
-        }, {
-            'type': constants.CONTAINER_ROW,
-            'label': 'Timeframe',
-            'fields': ({
+            }, {
                 'type': constants.CONTAINER_COLUMN,
-                'fields': ('start_date', 'end_date', 'is_available',),
-            }, ),
-        }
+                'fields': (
+                    {
+                        'type': constants.FIELD_RELATED,
+                        'field': 'portfolio_manager',
+                        'showIf': ['primary_contact.id', 'address'],
+                        'default': 'session.contact.contact_id',
+                        'query': {
+                            'master_company': 'current',
+                        },
+                    }, {
+                        'type': constants.FIELD_RELATED,
+                        'field': 'master_company',
+                        'showIf': ['primary_contact.id', 'address'],
+                        'query': {
+                            'type': 'master',
+                            'regular_company': '{regular_company.id}',
+                        },
+                        'default': '{regular_company.master_company.id}',
+                        'read_only': True,
+                    }, {
+                        'type': constants.FIELD_DATE,
+                        'field': 'start_date',
+                        'showIf': ['primary_contact.id', 'address'],
+                        'default': datetime.date.today()
+                    }, {
+                        'type': constants.FIELD_DATE,
+                        'field': 'end_date',
+                        'showIf': ['primary_contact.id', 'address'],
+                    },
+                )
+            },)
+        },
     )
+
+    # fieldsets_add = (
+    #     {
+    #         'type': constants.CONTAINER_ROW,
+    #         'label': '{__str__}',
+    #         'fields': ({
+    #             'type': constants.CONTAINER_COLUMN,
+    #             'fields': (
+    #                 'industry',
+    #                 {
+    #                     'type': constants.FIELD_TEXT,
+    #                     'label': _('Site Name'),
+    #                     'field': 'short_name',
+    #                     'help': '',
+    #                 },
+    #                 'regular_company', 'primary_contact', 'master_company', 'portfolio_manager',
+    #                 {
+    #                     'type': constants.FIELD_ADDRESS,
+    #                     'field': 'address',
+    #                 },
+    #             ),
+    #         }, )
+    #     }, {
+    #         'type': constants.CONTAINER_ROW,
+    #         'label': 'Timeframe',
+    #         'fields': ({
+    #             'type': constants.CONTAINER_COLUMN,
+    #             'fields': ('start_date', 'end_date', 'is_available',),
+    #         }, ),
+    #     }
+    # )
 
     fieldsets = (
         {

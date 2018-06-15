@@ -136,6 +136,9 @@ class Jobsite(
             return self.is_available
 
     def get_site_name(self):
+        if self.short_name:
+            return self.short_name
+
         job_address = self.get_address()
         if job_address:
             return "{}, {}, {}".format(
