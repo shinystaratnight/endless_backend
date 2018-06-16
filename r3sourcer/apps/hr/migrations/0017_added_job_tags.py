@@ -22,7 +22,7 @@ class Migration(migrations.Migration):
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('verification_evidence', models.FileField(blank=True, null=True, upload_to=r3sourcer.apps.hr.models.JobTag.verification_evidence_path, verbose_name='Verification Evidence')),
+                ('verification_evidence', models.FileField(blank=True, null=True, upload_to='', verbose_name='Verification Evidence')),
                 ('job', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='tags', to='hr.Job', verbose_name='Job')),
                 ('tag', models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='job_tags', to='core.Tag', verbose_name='Tag')),
                 ('verified_by', models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='verified_job_tags', to='core.CompanyContact', verbose_name='Verified By')),
