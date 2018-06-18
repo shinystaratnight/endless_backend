@@ -641,7 +641,14 @@ class CompanyEndpoint(ApiEndpoint):
                 {
                     'type': constants.CONTAINER_COLUMN,
                     'fields': (
-                        'name', 'website', {
+                        'name',
+                        {
+                            'field': 'short_name',
+                            'type': constants.FIELD_TEXT,
+                            'default': '{name}',
+                        },
+                        'website',
+                        {
                             'label': _('Primary Contact'),
                             'type': constants.FIELD_RELATED,
                             'field': 'manager',
