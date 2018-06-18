@@ -59,8 +59,8 @@ class JobsiteEndpoint(ApiEndpoint):
                         'query': {
                             'status': '70',
                             'has_industry': '2',
-                            'fields': 'industry',
-                        }
+                        },
+                        'values': ['industry', 'short_name', '__str__'],
                     }, {
                         'type': constants.FIELD_RELATED,
                         'field': 'primary_contact',
@@ -82,12 +82,12 @@ class JobsiteEndpoint(ApiEndpoint):
                         'type': constants.FIELD_TEXT,
                         'field': 'short_name',
                         'showIf': ['primary_contact.id', 'address'],
-                        'default': '{regular_company.__str__} - {address.vicinity}',
+                        'default': '{regular_company.short_name} - {address.vicinity}',
                         'label': 'Site name',
                         'help': '',
                         'checkObject': {
                             'query': {
-                                'short_name': '{regular_company.__str__} - {address.vicinity}',
+                                'short_name': '{regular_company.short_name} - {address.vicinity}',
                             },
                             'endpoint': api_reverse_lazy('hr/jobsites'),
                             'error': _('Job site with this name already exists, please alter it!'),

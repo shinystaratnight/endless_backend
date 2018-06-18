@@ -770,6 +770,15 @@ class Company(
 
     name = models.CharField(max_length=127, verbose_name=_("Company Name"), unique=True)
 
+    short_name = models.CharField(
+        max_length=63,
+        help_text=_('Used for Jobsite naming'),
+        verbose_name=_("Short name"),
+        null=True,
+        blank=True,
+        unique=True,
+    )
+
     business_id = models.CharField(
         max_length=31,
         verbose_name=_("Business Number"),
