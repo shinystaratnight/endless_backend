@@ -56,6 +56,11 @@ class JobsiteEndpoint(ApiEndpoint):
                         'type': constants.FIELD_RELATED,
                         'field': 'regular_company',
                         'label': _('Client'),
+                        'query': {
+                            'status': '70',
+                            'has_industry': '2',
+                            'fields': 'industry',
+                        }
                     }, {
                         'type': constants.FIELD_RELATED,
                         'field': 'primary_contact',
@@ -77,9 +82,16 @@ class JobsiteEndpoint(ApiEndpoint):
                         'type': constants.FIELD_TEXT,
                         'field': 'short_name',
                         'showIf': ['primary_contact.id', 'address'],
-                        'default': '{regular_company.__str__} {address.vicinity}',
+                        'default': '{regular_company.__str__} - {address.vicinity}',
                         'label': 'Site name',
                         'help': '',
+                        'checkObject': {
+                            'query': {
+                                'short_name': '{regular_company.__str__} - {address.vicinity}',
+                            },
+                            'endpoint': api_reverse_lazy('hr/jobsites'),
+                            'error': _('Job site with this name already exists, please alter it!'),
+                        }
                     },
                 ),
             }, {
@@ -99,6 +111,10 @@ class JobsiteEndpoint(ApiEndpoint):
                         'field': 'master_company',
                         'showIf': ['primary_contact.id', 'address'],
                         'default': '{regular_company.master_company.id}',
+                        'query': {
+                            'current': '2',
+                            'type': 'master',
+                        },
                         'read_only': True,
                     }, {
                         'type': constants.FIELD_DATE,

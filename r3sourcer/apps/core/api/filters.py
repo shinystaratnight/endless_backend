@@ -19,6 +19,8 @@ class CompanyFilter(FilterSet):
     status = NumberFilter(method='filter_status')
     portfolio_manager = UUIDFilter(method='filter_portfolio_manager')
     regular_company = UUIDFilter(method='filter_regular_company')
+    current = BooleanFilter(method='filter_current')
+    has_industry = BooleanFilter(method='filter_has_industry')
 
     class Meta:
         model = models.Company
@@ -66,6 +68,17 @@ class CompanyFilter(FilterSet):
         ).distinct('object_id').values_list('object_id', flat=True)
 
         return objects
+
+    def filter_current(self, queryset, name, value):
+        if value:
+            company = get_site_master_company() or get_default_company()
+            return queryset.filter(id=company.id)
+        return queryset
+
+    def filter_has_industry(self, queryset, name, value):
+        if value:
+            return queryset.filter(industry__isnull=False)
+        return queryset
 
 
 class CompanyLocalizationFilter(FilterSet):
