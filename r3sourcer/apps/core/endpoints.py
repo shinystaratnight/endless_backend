@@ -732,6 +732,9 @@ class CompanyEndpoint(ApiEndpoint):
             'label': _('Jobsites'),
             'add_label': _('Add'),
             'endpoint': api_reverse_lazy('hr/jobsites'),
+            'prefilled': {
+                'regular_company': '{id}',
+            }
         }, {
             'type': constants.CONTAINER_COLLAPSE,
             'collapsed': True,
@@ -1085,6 +1088,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                 'endpoint': api_reverse_lazy('hr/jobsites'),
                 'prefilled': {
                     'primary_contact': '{id}',
+                    'regular_company': '{company.id}',
                 },
             }, {
                 'query': {
