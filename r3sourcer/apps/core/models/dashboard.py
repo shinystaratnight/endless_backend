@@ -25,6 +25,27 @@ class DashboardModule(UUIDModel):
         default=True
     )
 
+    endpoint = models.CharField(
+        max_length=255,
+        verbose_name=_('Endpoint'),
+        null=True,
+        blank=True
+    )
+
+    description = models.CharField(
+        max_length=255,
+        verbose_name=_('Description'),
+        null=True,
+        blank=True
+    )
+
+    add_label = models.CharField(
+        max_length=64,
+        verbose_name=_('Add button label'),
+        null=True,
+        blank=True
+    )
+
     def __str__(self):
         return str(self.content_type)
 

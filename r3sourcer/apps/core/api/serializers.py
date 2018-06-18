@@ -1142,6 +1142,9 @@ class DashboardModuleSerializer(ApiBaseModelSerializer):
             'model': obj.content_type.model,
             'name': model_cls._meta.verbose_name,
             'plural_name': model_cls._meta.verbose_name_plural,
+            'endpoint': obj.endpoint,
+            'description': obj.description,
+            'add_label': obj.add_label,
         }
 
     def validate(self, attrs):
