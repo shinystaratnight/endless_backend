@@ -27,6 +27,7 @@ from .decorators import list_route, detail_route
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
+from r3sourcer.apps.core.utils.address import parse_google_address
 from r3sourcer.apps.core_adapter import constants
 
 
@@ -743,3 +744,13 @@ class CitiesLightViewSet(BaseApiViewset):
 
 class AddressViewset(GoogleAddressMixin, BaseApiViewset):
     root_address = True
+
+    @list_route(methods=['POST'])
+    def parse(self, request, *args, **kwargs):
+        try:
+            address_data = request.data
+            data = parse_google_address(address_data)
+        except Exception as e:
+            raise exceptions.ValidationError(_('Address is invalid!'))
+
+        return Response(data)
