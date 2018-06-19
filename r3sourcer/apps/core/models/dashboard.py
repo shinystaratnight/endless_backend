@@ -46,6 +46,13 @@ class DashboardModule(UUIDModel):
         blank=True
     )
 
+    label = models.CharField(
+        max_length=64,
+        verbose_name=_('Button label'),
+        null=True,
+        blank=True
+    )
+
     def __str__(self):
         return str(self.content_type)
 
