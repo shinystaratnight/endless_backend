@@ -117,108 +117,183 @@ class ContactEndpoint(ApiEndpoint):
 
     fieldsets = (
         {
-            'type': constants.CONTAINER_ROW,
-            'label': '{title} {first_name} {last_name}',
-            'fields': (
-                {
-                    'type': constants.CONTAINER_COLUMN,
+            'field': 'id',
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'picture.thumb',
+                'available': 'is_available',
+                'title': '__str__',
+                'address': 'address.__str__',
+                'created_at': 'created_at',
+                'updated_at': 'updated_at',
+            }
+        }, {
+            'type': constants.CONTAINER_TABS,
+            'fields': ({
+                'type': constants.CONTAINER_GROUP,
+                'label': _('Personal information'),
+                'name': _('Personal Info'),
+                'main': True,
+                'fields': ({
+                    'type': constants.CONTAINER_ROW,
                     'fields': (
                         {
-                            'type': constants.FIELD_PICTURE,
-                            'field': 'picture',
-                            'label': _('Profile Picture'),
-                            'label_upload': _('Choose a file'),
-                            'label_photo': _('Take a photo'),
-                            'custom': [],
-                            'file': False,
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Contacts'),
+                            'width': .34,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'email',
+                                    'label': _('E-mail'),
+                                    'placeholder': _('E-mail'),
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'phone_mobile',
+                                    'label': _('Phone number'),
+                                    'placeholder': _('Mobile phone'),
+                                }, {
+                                    'field': 'address',
+                                    'type': constants.FIELD_ADDRESS,
+                                    'hide': True,
+                                }, {
+                                    'field': 'is_available',
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'hide': True,
+                                    'send': False,
+                                    'default': False,
+                                }, {
+                                    'field': 'first_name',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                }, {
+                                    'field': 'last_name',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                }, {
+                                    'field': 'title',
+                                    'type': constants.FIELD_TEXT,
+                                    'hide': True,
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Verification'),
+                            'width': .33,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'field': 'email_verified',
+                                    'label': _('E-mail Verified'),
+                                    'default': False,
+                                }, {
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'field': 'phone_mobile_verified',
+                                    'label': _('Phone Verified'),
+                                    'default': False,
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Additional Info'),
+                            'width': .33,
+                            'fields': (
+                                'gender',
+                                {
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'birthday',
+                                    'help': _('Optional for Client Contacts, must be filled for Candidate Contacts'),
+                                },
+                            ),
                         },
                     ),
                 }, {
-                    'type': constants.CONTAINER_COLUMN,
+                    'type': constants.CONTAINER_ROW,
                     'fields': (
                         {
-                            'type': constants.FIELD_RELATED,
-                            'field': 'id',
-                            'read_only': True,
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Relations'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_RELATED,
+                                    'label': _('User'),
+                                    'field': 'user',
+                                    'read_only': True,
+                                    'send': False,
+                                    'metadata_query': {
+                                        'fieldsets_type': 'contact',
+                                    },
+                                }, {
+                                    'type': constants.FIELD_RELATED,
+                                    'label': _('Candidate Contact'),
+                                    'field': 'candidate_contacts',
+                                    'send': False,
+                                    'read_only': False,
+                                    'endpoint': api_reverse_lazy('candidate/candidatecontacts'),
+                                    'prefilled': {
+                                        'contact': '{id.id}',
+                                    },
+                                    'add_metadata_query': {
+                                        'fieldsets_type': 'contact',
+                                    }
+                                }
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
                             'label': '',
-                            'send': False,
-                            'custom': ('address.__str__', 'phone_mobile', 'email'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_RELATED,
+                                    'label': _('Company Contact'),
+                                    'field': 'company_contact',
+                                    'send': False,
+                                    'read_only': False,
+                                    'endpoint': api_reverse_lazy('core/companycontacts'),
+                                    'prefilled': {
+                                        'contact': '{id.id}',
+                                    },
+                                    'add': True,
+                                    'edit': True,
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Additional Info'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_RELATED,
+                                    'label': _('Recruitment Agent'),
+                                    'field': 'candidate_contacts.recruitment_agent',
+                                    'send': False,
+                                    'read_only': True,
+                                }, {
+                                    'type': constants.FIELD_RELATED,
+                                    'label': _('Master Company'),
+                                    'field': 'master_company',
+                                    'endpoint': api_reverse_lazy('core/companies'),
+                                    'send': False,
+                                    'read_only': True,
+                                },
+                            ),
                         },
                     ),
+                },)
+            }, {
+                'query': {
+                    'object_id': '{id}',
                 },
-            ),
+                'type': constants.FIELD_LIST,
+                'label': _('Notes'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('core/notes'),
+                'prefilled': {
+                    'object_id': '{id}',
+                },
+            },)
         },
-    ) + fieldsets_add + (
-        {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Misc'),
-            'fields': ('is_available', 'phone_mobile_verified', 'email_verified')
-        }, {
-            'query': {
-                'object_id': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Notes'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/notes'),
-            'prefilled': {
-                'object_id': '{id}',
-            },
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Relations'),
-            'fields': ({
-                'type': constants.FIELD_RELATED,
-                'label': _('User'),
-                'field': 'user',
-                'read_only': True,
-                'send': False,
-                'metadata_query': {
-                    'fieldsets_type': 'contact',
-                },
-            }, {
-                'type': constants.FIELD_RELATED,
-                'label': _('Candidate Contact'),
-                'field': 'candidate_contacts',
-                'send': False,
-                'read_only': False,
-                'endpoint': api_reverse_lazy('candidate/candidatecontacts'),
-                'prefilled': {
-                    'contact': '{id.id}',
-                },
-                'add_metadata_query': {
-                    'fieldsets_type': 'contact',
-                }
-            }, {
-                'type': constants.FIELD_RELATED,
-                'label': _('Recruitment Agent'),
-                'field': 'candidate_contacts.recruitment_agent',
-                'send': False,
-                'read_only': True,
-            }, {
-                'type': constants.FIELD_RELATED,
-                'label': _('Company Contact'),
-                'field': 'company_contact',
-                'send': False,
-                'read_only': False,
-                'endpoint': api_reverse_lazy('core/companycontacts'),
-                'prefilled': {
-                    'contact': '{id.id}',
-                },
-                'add': True,
-                'edit': True,
-            }, {
-                'type': constants.FIELD_RELATED,
-                'label': _('Master Company'),
-                'field': 'master_company',
-                'endpoint': api_reverse_lazy('core/companies'),
-                'send': False,
-                'read_only': True,
-            },),
-        }
     )
 
     def get_list_filter(self):
