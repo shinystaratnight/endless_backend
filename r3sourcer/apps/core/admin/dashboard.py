@@ -8,7 +8,7 @@ from .base import GuardianModelAdmin
 class DashboardModuleAdmin(GuardianModelAdmin):
 
     form = forms.DashboardModuleForm
-    fields = ('content_type', 'is_active')
+    fields = ('content_type', 'is_active', 'endpoint', 'description', 'label', 'add_label')
 
     def get_form(self, request, obj=None, **kwargs):
         excluded_ids = set(models.DashboardModule.objects.values_list('content_type', flat=True))
