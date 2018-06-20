@@ -676,7 +676,6 @@ class CompanyEndpoint(ApiEndpoint):
             'type': constants.FIELD_INFO,
             'values': {
                 'picture': 'logo.thumb',
-                'available': 'registered_for_gst',
                 'link': 'website',
                 'title': '__str__',
                 'address': 'address.__str__',
@@ -766,6 +765,7 @@ class CompanyEndpoint(ApiEndpoint):
                                     'field': 'registered_for_gst',
                                     'label': _('Registered'),
                                     'default': False,
+                                    'read_only': False,
                                 }, {
                                     'label': _('Master company'),
                                     'type': constants.FIELD_RELATED,
