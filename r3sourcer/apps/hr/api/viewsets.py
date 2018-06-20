@@ -5,7 +5,7 @@ from functools import reduce
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Count, FloatField
+from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max
 from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
@@ -24,6 +24,7 @@ from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.utils.text import format_lazy
+from r3sourcer.apps.core.models import Role
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models, payment
@@ -172,14 +173,27 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets',
                    'met_expectations', 'representation')
 
+    def get_contact(self):
+        role_id = self.request.query_params.get('role')
+
+        try:
+            role = Role.objects.get(id=role_id)
+            contact = role.company_contact_rel.company_contact.contact
+        except Exception:
+            contact = self.request.user.contact
+
+        return contact
+
     def get_unapproved_queryset(self, request):
-        qs_unapproved = TimesheetFilter.get_filter_for_unapproved(request.user.contact)
+        contact = self.get_contact()
+        qs_unapproved = TimesheetFilter.get_filter_for_unapproved(contact)
         queryset = hr_models.TimeSheet.objects.filter(qs_unapproved).distinct()
         return queryset
 
     def handle_history(self, request):
         if request.user.is_authenticated:
-            qs_approved = TimesheetFilter.get_filter_for_approved(request.user.contact)
+            contact = self.get_contact()
+            qs_approved = TimesheetFilter.get_filter_for_approved(contact)
             queryset = hr_models.TimeSheet.objects.filter(qs_approved)
         else:
             queryset = hr_models.TimeSheet.objects.none()

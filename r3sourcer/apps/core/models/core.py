@@ -2771,6 +2771,15 @@ class Role(UUIDModel):
 
     name = models.CharField(max_length=255, choices=ROLE_NAMES)
 
+    company_contact_rel = models.ForeignKey(
+        CompanyContactRelationship,
+        on_delete=models.CASCADE,
+        related_name='user_roles',
+        verbose_name=_('Company Contact Relation'),
+        null=True,
+        blank=True,
+    )
+
     def __str__(self):
         return self.name
 

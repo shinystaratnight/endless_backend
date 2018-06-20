@@ -81,7 +81,15 @@ class UserRolesView(APIView):
         if self.request.user.is_anonymous:
             data = {}
         else:
-            roles = [x.name for x in self.request.user.role.all()]
+            roles = [
+                {
+                    'id': x.id,
+                    '__str__': '{} - {}'.format(
+                        x.name, x.company_contact_rel.company.short_name
+                    ) if x.company_contact_rel else x.name
+                }
+                for x in self.request.user.role.all()
+            ]
             data = {
                 'roles': roles
             }
