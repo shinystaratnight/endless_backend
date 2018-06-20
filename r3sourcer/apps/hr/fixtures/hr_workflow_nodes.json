@@ -1227,8 +1227,7 @@
                 "required_functions": [
                     "and",
                     "has_active_price_list_and_rate",
-                    "is_start_date_set",
-                    "is_default_rate_set"
+                    "is_start_date_set"
                 ]
             },
             "hardlock": true
