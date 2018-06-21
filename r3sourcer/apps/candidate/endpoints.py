@@ -153,7 +153,17 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                             'type': constants.CONTAINER_GROUP,
                             'label': _('Additional info'),
                             'width': .25,
-                            'fields': ('contact.gender', 'language', 'transportation_to_work'),
+                            'fields': (
+                                'contact.gender',
+                                {
+                                    'field': 'language',
+                                    'type': constants.FIELD_SCORE,
+                                    'label': _('Language'),
+                                    'min': 0,
+                                    'max': 5,
+                                },
+                                'transportation_to_work'
+                            ),
                         }, {
                             'type': constants.CONTAINER_GROUP,
                             'label': _('Phisical parameters'),
@@ -190,6 +200,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     'field': 'strength',
                                     'type': constants.FIELD_SCORE,
                                     'label': _('Strength'),
+                                    'min': 0,
+                                    'max': 5,
                                 }
                             ),
                         }, {
@@ -465,7 +477,16 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                 'type': constants.CONTAINER_GROUP,
                                 'label': _('Additional info'),
                                 'width': .25,
-                                'fields': ('language', 'transportation_to_work'),
+                                'fields': (
+                                    {
+                                        'field': 'language',
+                                        'type': constants.FIELD_SCORE,
+                                        'label': _('Language'),
+                                        'min': 0,
+                                        'max': 5,
+                                    },
+                                    'transportation_to_work'
+                                ),
                             }, {
                                 'type': constants.CONTAINER_GROUP,
                                 'label': _('Phisical parameters'),
@@ -486,6 +507,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                         'field': 'strength',
                                         'type': constants.FIELD_SCORE,
                                         'label': _('Strength'),
+                                        'min': 0,
+                                        'max': 5,
                                     },
                                 ),
                             },
@@ -717,8 +740,12 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_LINK,
             'field': 'skill',
             'endpoint': format_lazy('{}{{skill.id}}/', api_reverse_lazy('skills/skills')),
+        }, {
+            'field': 'hourly_rate',
+            'type': constants.FIELD_STATIC,
+            'display': '${field}/h',
         },
-        'hourly_rate', 'score', 'prior_experience',
+        'score', 'prior_experience',
         {
             'label': _('Created'),
             'fields': ('created_at', 'created_by')
@@ -743,21 +770,21 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'skill',
             'read_only': False,
-        },
-        'score', 'prior_experience',
-        {
-            'type': constants.FIELD_LIST,
-            'field': 'id_',
             'query': {
-                'candidate_skill': '{id}',
+                'exclude': '{candidate_contact.id}',
             },
-            'label': _('Rates'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('candidate/skillraterels'),
-            'add_endpoint': api_reverse_lazy('candidate/skillraterels'),
-            'prefilled': {
-                'candidate_skill': '{id}',
-            }
+            'values': ['default_rate', '__str__'],
+        }, {
+            'field': 'score',
+            'type': constants.FIELD_TEXT,
+            'min': 0,
+            'max': 5,
+        },
+        'prior_experience',
+        {
+            'field': 'hourly_rate',
+            'type': constants.FIELD_TEXT,
+            'default': '{skill.default_rate}',
         }
     )
 
@@ -823,7 +850,6 @@ class SkillRateRelEndpoint(core_endpoints.ApiEndpoint):
             'field': 'hourly_rate',
             'endpoint': format_lazy('{}{{hourly_rate.id}}/', api_reverse_lazy('skills/skillbaserates')),
         },
-        'valid_from', 'valid_until'
     )
 
     fieldsets = (

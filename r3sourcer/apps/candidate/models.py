@@ -412,7 +412,8 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     def get_bmi(self):
         if self.weight and self.height:
-            bmi = self.weight / ((self.height / 100) ** 2)
+            height = self.height if self.height < 3.0 else self.height / 100
+            bmi = self.weight / (height ** 2)
             if bmi > 25:
                 return _("Over Weight")
             elif bmi > 18.5:
@@ -617,6 +618,12 @@ class SkillRel(core_models.UUIDModel):
         verbose_name=_("Prior Experience"),
         choices=PRIOR_EXPERIENCE_CHOICES,
         default=PRIOR_EXPERIENCE_CHOICES.inexperienced
+    )
+
+    hourly_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=8,
+        verbose_name=_("Skill Rate"),
     )
 
     class Meta:

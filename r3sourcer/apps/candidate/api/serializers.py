@@ -33,16 +33,9 @@ class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
-    method_fields = ('hourly_rate', )
-
     class Meta:
         model = candidate_models.SkillRel
         fields = '__all__'
-
-    def get_hourly_rate(self, obj):
-        rate = obj.get_valid_rate()
-
-        return '${}/h'.format(rate.hourly_rate.hourly_rate) if rate else None
 
 
 class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
