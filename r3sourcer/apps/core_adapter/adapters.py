@@ -201,7 +201,7 @@ class AngularApiAdapter(BaseAdapter):
         field_ui = field.get('ui', {})
         ui_options = (
             'placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display', 'disabledIf',
-            'color_attr',
+            'color_attr', 'min', 'max'
         )
         adapted['templateOptions'].update({
             'type': component_type,

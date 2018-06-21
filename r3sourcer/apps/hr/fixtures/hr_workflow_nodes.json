@@ -684,7 +684,7 @@
                 ],
                 "required_functions": [
                     "and",
-                    "are_skill_rates_set",
+                    "is_skill_defined",
                     "are_tags_verified",
                     "is_address_set",
                     "is_email_set",
