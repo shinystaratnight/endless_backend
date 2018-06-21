@@ -441,11 +441,12 @@ class SiteViewset(BaseApiViewset):
 class NavigationViewset(BaseApiViewset):
 
     def get_queryset(self):
-        role = self.request.GET.get('role', None)
+        role_id = self.request.query_params.get('role', None)
 
-        if role:
-            access_level = self.request.GET.get('role', None)
-        else:
+        try:
+            role = models.Role.objects.get(id=role_id)
+            access_level = role.name
+        except Exception:
             access_level = self.request.user.access_level
 
         return models.ExtranetNavigation.objects.filter(parent=None) \
