@@ -297,3 +297,14 @@ class ContactFilter(FilterSet):
 
     def filter_is_candidate_contact(self, queryset, name, value):
         return queryset.filter(candidate_contacts__isnull=not value)
+
+
+class TagFilter(FilterSet):
+    exclude = UUIDFilter(method='exclude_by_candidate')
+
+    class Meta:
+        model = models.Tag
+        fields = ['exclude']
+
+    def exclude_by_candidate(self, queryset, name, value):
+        return queryset.filter(active=True).exclude(tag_rels__candidate_contact_id=value)

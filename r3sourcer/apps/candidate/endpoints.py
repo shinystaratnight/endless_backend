@@ -806,8 +806,6 @@ class TagRelEndpoint(core_endpoints.ApiEndpoint):
         {
             'type': constants.FIELD_PICTURE,
             'field': 'verification_evidence',
-            'label_upload': _('Choose a file'),
-            'label_photo': _('Take a photo'),
         }, {
             'label': _('Actions'),
             'fields': ({
@@ -826,8 +824,18 @@ class TagRelEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'tag',
             'read_only': False,
+            'query': {
+                'exclude': '{candidate_contact.id}',
+            },
+        }, {
+            'type': constants.FIELD_PICTURE,
+            'field': 'verification_evidence',
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'verified_by',
+            'default': 'session.contact.contact_id',
+            'read_only': True,
         },
-        'verification_evidence', 'verified_by',
     )
 
     list_filter = ('candidate_contact', )

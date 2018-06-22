@@ -42,6 +42,9 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:
         model = candidate_models.TagRel
         fields = '__all__'
+        extra_kwargs = {
+            'verification_evidence': {'required': True},
+        }
 
 
 class CandidateContactSerializer(
