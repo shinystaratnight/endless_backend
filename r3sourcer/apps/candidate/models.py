@@ -318,10 +318,24 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     @workflow_function
     def is_skill_defined(self):
         return self.candidate_skills.filter(
+            skill__active=True,
+        ).count() > 0
+    is_skill_defined.short_description = _("Define at least one skill")
+
+    @workflow_function
+    def is_skill_score_defined(self):
+        return self.candidate_skills.filter(
+            score__gt=0, skill__active=True,
+        ).count() > 0
+    is_skill_score_defined.short_description = _("At least one active skill score must be higher that 0")
+
+    @workflow_function
+    def is_skill_rate_defined(self):
+        return self.candidate_skills.filter(
             score__gt=0, skill__active=True,
             hourly_rate__gt=0
         ).count() > 0
-    is_skill_defined.short_description = _("Define at least one skill")
+    is_skill_rate_defined.short_description = _("At least one active skill hourly rate must be higher that 0")
 
     @workflow_function
     def is_personal_info_filled(self):
@@ -491,10 +505,6 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         if workflow_object.state.number == 11:
             workflow_object.active = True
             workflow_object.save(update_fields=['active'])
-
-    def before_state_creation(self, workflow_object):
-        if workflow_object.state.number == 11:  # Phone verify
-            workflow_object.active = False
 
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 11:  # Phone verify

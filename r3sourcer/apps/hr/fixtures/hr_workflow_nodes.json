@@ -268,15 +268,7 @@
                                         [
                                             "or",
                                             40,
-                                            [
-                                                "or",
-                                                45,
-                                                [
-                                                    "or",
-                                                    70,
-                                                    80
-                                                ]
-                                            ]
+                                            45
                                         ]
                                     ]
                                 ]
@@ -337,15 +329,7 @@
                                         [
                                             "or",
                                             40,
-                                            [
-                                                "or",
-                                                45,
-                                                [
-                                                    "or",
-                                                    70,
-                                                    80
-                                                ]
-                                            ]
+                                            45
                                         ]
                                     ]
                                 ]
@@ -642,6 +626,7 @@
         "fields": {
             "workflow": "da438699-c153-4782-9781-ba337dfdbddb",
             "number": 10,
+            "initial": true,
             "name_before_activation": "Register New Candidate",
             "name_after_activation": "New Candidate Registered",
             "active": true,
@@ -678,16 +663,6 @@
             "active": true,
             "rules": {
                 "active": [
-                    10,
-                    11,
-                    12,
-                    20,
-                    22,
-                    23,
-                    25,
-                    30,
-                    40,
-                    45,
                     70
                 ],
                 "required_functions": [
@@ -738,6 +713,7 @@
         "fields": {
             "workflow": "3be41886-8a5a-44f1-8c2a-d422b89a9b84",
             "number": 10,
+            "initial": true,
             "name_before_activation": "Announced/New",
             "name_after_activation": "",
             "active": true,
@@ -817,7 +793,9 @@
                 ],
                 "required_functions": [
                     "and",
-                    "is_skill_defined"
+                    "is_skill_defined",
+                    "is_skill_score_defined",
+                    "is_skill_rate_defined"
                 ],
                 "required_states": [
                     "or",
@@ -969,6 +947,7 @@
         "fields": {
             "workflow": "7f62e161-70f5-47ef-b5f3-b464a508d76a",
             "number": 10,
+            "initial": true,
             "name_before_activation": "New",
             "name_after_activation": "",
             "active": true,
@@ -1199,6 +1178,7 @@
         "fields": {
             "workflow": "240d7316-fb0f-4365-b661-630a347c408c",
             "number": 10,
+            "initial": true,
             "name_before_activation": "New",
             "name_after_activation": "",
             "active": true,

@@ -227,6 +227,7 @@
             "name_after_activation": "",
             "name_before_activation": "New",
             "number": 10,
+            "initial": true,
             "rules": {
                 "active": [
                     10
@@ -334,6 +335,7 @@
             "name_after_activation": "Found Lead",
             "name_before_activation": "New Lead",
             "number": 10,
+            "initial": true,
             "rules": {
                 "active": [
                     10
