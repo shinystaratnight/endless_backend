@@ -1236,7 +1236,8 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             }
 
     def get_primary_contact_phone(self, obj):
-        return self.get_primary_contact(obj)['phone_mobile']
+        primary_contact = self.get_primary_contact(obj)
+        return primary_contact and primary_contact['phone_mobile']
 
     def get_master_company(self, obj):
         if not obj:

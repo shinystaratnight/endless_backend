@@ -225,9 +225,12 @@ class PriceListEndpoint(ApiEndpoint):
         },
         'effective', 'approved_by', 'approved_at',
         {
-            **constants.BUTTON_EDIT,
-            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelists'))
-        }, constants.BUTTON_DELETE,
+            'label': _('Actions'),
+            'fields': ({
+                **constants.BUTTON_EDIT,
+                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('pricing/pricelists'))
+            }, constants.BUTTON_DELETE, )
+        }
     )
 
     _field_set = (

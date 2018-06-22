@@ -675,7 +675,7 @@ class CompanyEndpoint(ApiEndpoint):
             'field': 'id',
             'type': constants.FIELD_INFO,
             'values': {
-                'picture': 'logo.thumb',
+                'picture': 'logo',
                 'link': 'website',
                 'title': 'name',
                 'address': 'address.__str__',
@@ -753,9 +753,10 @@ class CompanyEndpoint(ApiEndpoint):
                                     'field': 'logo',
                                     'hide': True,
                                 }, {
-                                    'type': constants.FIELD_RELATED,
+                                    'type': constants.FIELD_ADDRESS,
                                     'field': 'address',
                                     'hide': True,
+                                    'endpoint': api_reverse_lazy('core/addresses'),
                                 }, {
                                     'type': constants.FIELD_TEXT,
                                     'field': 'name',
