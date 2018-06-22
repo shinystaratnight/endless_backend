@@ -735,37 +735,6 @@ class CompanyEndpoint(ApiEndpoint):
                                     'label': _('Phone number'),
                                     'read_only': True,
                                     'send': False,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'manager.contact',
-                                    'hide': True,
-                                    'send': False,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'type',
-                                    'hide': True,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'name',
-                                    'hide': True,
-                                }, {
-                                    'type': constants.FIELD_PICTURE,
-                                    'field': 'logo',
-                                    'hide': True,
-                                    'file': False,
-                                }, {
-                                    'type': constants.FIELD_ADDRESS,
-                                    'field': 'address',
-                                    'hide': True,
-                                    'endpoint': api_reverse_lazy('core/addresses'),
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'name',
-                                    'hide': True,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'website',
-                                    'hide': True,
                                 },
                             ),
                         }, {
@@ -1049,6 +1018,37 @@ class CompanyEndpoint(ApiEndpoint):
                     'object_id': '{id}',
                 },
             },)
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'manager.contact',
+            'hide': True,
+            'send': False,
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'type',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'name',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_PICTURE,
+            'field': 'logo',
+            'hide': True,
+            'file': False,
+        }, {
+            'type': constants.FIELD_ADDRESS,
+            'field': 'address',
+            'hide': True,
+            'endpoint': api_reverse_lazy('core/addresses'),
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'name',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'website',
+            'hide': True,
         },
     )
 
