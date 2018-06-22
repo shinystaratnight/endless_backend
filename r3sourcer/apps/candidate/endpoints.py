@@ -776,7 +776,7 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'values': ['default_rate', '__str__'],
         }, {
             'field': 'score',
-            'type': constants.FIELD_TEXT,
+            'type': constants.FIELD_NUMBER,
             'min': 0,
             'max': 5,
         },
@@ -785,7 +785,8 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'field': 'hourly_rate',
             'type': constants.FIELD_TEXT,
             'default': '{skill.default_rate}',
-        }
+        },
+        'active'
     )
 
     list_filter = ('candidate_contact', )
