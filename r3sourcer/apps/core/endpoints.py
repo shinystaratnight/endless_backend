@@ -748,6 +748,22 @@ class CompanyEndpoint(ApiEndpoint):
                                     'type': constants.FIELD_TEXT,
                                     'field': 'name',
                                     'hide': True,
+                                }, {
+                                    'type': constants.FIELD_PICTURE,
+                                    'field': 'logo',
+                                    'hide': True,
+                                }, {
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'address',
+                                    'hide': True,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'name',
+                                    'hide': True,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'website',
+                                    'hide': True,
                                 },
                             ),
                         }, {
@@ -763,7 +779,8 @@ class CompanyEndpoint(ApiEndpoint):
                                 }, {
                                     'type': constants.FIELD_CHECKBOX,
                                     'field': 'registered_for_gst',
-                                    'label': _('Registered'),
+                                    'text': _('Registered'),
+                                    'label': _('GST'),
                                     'default': False,
                                     'read_only': False,
                                 }, {
@@ -900,8 +917,14 @@ class CompanyEndpoint(ApiEndpoint):
                                             'type': str(models.Company.COMPANY_TYPES.master),
                                         }
                                     ]
+                                }, {
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'field': 'invoice_rule.show_candidate_name',
+                                    'label': _('Show Candidate name'),
+                                    'text': _('Show name'),
+                                    'default': False,
+                                    'read_only': False,
                                 },
-                                'invoice_rule.show_candidate_name',
                             ),
                         },
                     ),
