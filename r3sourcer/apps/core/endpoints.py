@@ -752,6 +752,7 @@ class CompanyEndpoint(ApiEndpoint):
                                     'type': constants.FIELD_PICTURE,
                                     'field': 'logo',
                                     'hide': True,
+                                    'file': False,
                                 }, {
                                     'type': constants.FIELD_ADDRESS,
                                     'field': 'address',
