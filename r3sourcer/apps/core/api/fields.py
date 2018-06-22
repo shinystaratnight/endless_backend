@@ -91,7 +91,7 @@ class ApiBase64ImageField(ApiBase64FileField, serializers.ImageField):
     """
 
     def get_file_extension(self, file_name, decoded_file, mime_type):
-        extension = super().get_file_extension(file_name, decoded_file)
+        extension = super().get_file_extension(file_name, decoded_file, mime_type)
         extension = ".jpg" if extension == ".jpeg" else extension
 
         return extension
