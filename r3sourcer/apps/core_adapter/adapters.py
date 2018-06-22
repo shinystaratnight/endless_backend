@@ -20,7 +20,7 @@ CUSTOM_FIELD_ATTRS = (
     'list', 'values', 'color', 'default', 'collapsed', 'file', 'photo', 'hide', 'prefilled', 'add_label', 'query',
     'showIf', 'title', 'send', 'text_color', 'display', 'metadata_query', 'async', 'method', 'request_field', 'max',
     'add_endpoint', 'disabledIf', 'delay', 'custom', 'add_metadata_query', 'unique', 'help', 'edit_endpoint',
-    'color_attr', 'outline', 'inline', 'placeholder', 'checkObject'
+    'color_attr', 'outline', 'inline', 'placeholder', 'checkObject', 'text'
 )
 
 
@@ -201,7 +201,7 @@ class AngularApiAdapter(BaseAdapter):
         field_ui = field.get('ui', {})
         ui_options = (
             'placeholder', 'label_upload', 'label_photo', 'color', 'file', 'photo', 'title', 'display', 'disabledIf',
-            'color_attr', 'min', 'max'
+            'color_attr', 'min', 'max', 'text'
         )
         adapted['templateOptions'].update({
             'type': component_type,

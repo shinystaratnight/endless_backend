@@ -677,7 +677,7 @@ class CompanyEndpoint(ApiEndpoint):
             'values': {
                 'picture': 'logo.thumb',
                 'link': 'website',
-                'title': '__str__',
+                'title': 'name',
                 'address': 'address.__str__',
                 'status': {
                     'field': 'active_states',
