@@ -318,7 +318,9 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     @workflow_function
     def is_skill_defined(self):
         return self.candidate_skills.filter(
-            score__gt=0, skill__active=True).count() > 0
+            score__gt=0, skill__active=True,
+            hourly_rate__gt=0
+        ).count() > 0
     is_skill_defined.short_description = _("Define at least one skill")
 
     @workflow_function
@@ -409,6 +411,16 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     def is_birthday_set(self):
         return bool(self.contact.birthday)
     is_birthday_set.short_description = _('Birthday must be set.')
+
+    @workflow_function
+    def is_email_verified(self):
+        return self.contact.email_verified
+    is_email_verified.short_description = _('Verified e-mail')
+
+    @workflow_function
+    def is_phone_verified(self):
+        return self.contact.phone_mobile_verified
+    is_phone_verified.short_description = _('Verified mobile phone')
 
     def get_bmi(self):
         if self.weight and self.height:

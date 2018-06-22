@@ -243,6 +243,10 @@
                     70,
                     80
                 ],
+                "required_functions": [
+                    "and",
+                    "is_email_verified"
+                ],
                 "required_states": [
                     "or",
                     10,
@@ -307,6 +311,10 @@
                     45,
                     70,
                     80
+                ],
+                "required_functions": [
+                    "and",
+                    "is_phone_verified"
                 ],
                 "required_states": [
                     "or",
@@ -752,18 +760,12 @@
             "active": true,
             "rules": {
                 "active": [
-                    10,
-                    11,
-                    12,
-                    20,
-                    22,
-                    23,
-                    25,
-                    30,
-                    40,
-                    45,
-                    90,
-                    95
+                    90
+                ],
+                "required_states": [
+                    "or",
+                    70,
+                    80
                 ]
             },
             "hardlock": true
@@ -783,8 +785,9 @@
                     80
                 ],
                 "required_states": [
-                    "and",
-                    50
+                    "or",
+                    50,
+                    90
                 ]
             },
             "hardlock": true
