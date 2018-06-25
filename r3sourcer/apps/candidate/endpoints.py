@@ -598,7 +598,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                 'title': 'contact.__str__',
                 'address': 'contact.address.__str__',
                 'status': {
-                    'field': 'active_states',
+                    'field': 'latest_state',
                     'color_attr': 'number',
                     'color': {
                         'danger': [0, 80, 90],
@@ -737,9 +737,8 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
     list_editable = (
         {
             'label': _('Skill'),
-            'type': constants.FIELD_LINK,
-            'field': 'skill',
-            'endpoint': format_lazy('{}{{skill.id}}/', api_reverse_lazy('skills/skills')),
+            'type': constants.FIELD_TEXT,
+            'field': 'skill.name',
         }, {
             'field': 'hourly_rate',
             'type': constants.FIELD_STATIC,
@@ -786,7 +785,6 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_TEXT,
             'default': '{skill.default_rate}',
         },
-        'active'
     )
 
     list_filter = ('candidate_contact', )

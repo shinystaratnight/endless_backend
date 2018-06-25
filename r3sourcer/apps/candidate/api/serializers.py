@@ -1,3 +1,4 @@
+from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, serializers
 
@@ -35,7 +36,12 @@ class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
 class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
     class Meta:
         model = candidate_models.SkillRel
-        fields = '__all__'
+        fields = (
+            '__all__',
+            {
+                'skill': ('id', 'name', '__str__'),
+            },
+        )
 
 
 class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
@@ -55,7 +61,7 @@ class CandidateContactSerializer(
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
 
-    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list')
+    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'latest_state')
     many_related_fields = {
         'candidate_skills': 'candidate_contact',
         'tag_rels': 'candidate_contact',
@@ -126,6 +132,18 @@ class CandidateContactSerializer(
             return
 
         return TagRelSerializer(obj.tag_rels.all(), many=True).data
+
+    def get_latest_state(self, obj):
+        state = core_models.WorkflowObject.objects.filter(
+            state__workflow__model=ContentType.objects.get_for_model(self.Meta.model), active=True,
+            object_id=obj.id
+        ).order_by('-state__number').first()
+
+        return [{
+            '__str__': state.state.name_after_activation or state.state.name_before_activation,
+            'number': state.state.number,
+            'id': state.state.id,
+        }] if state else []
 
 
 class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):
