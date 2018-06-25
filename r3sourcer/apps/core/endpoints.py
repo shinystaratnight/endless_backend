@@ -120,12 +120,15 @@ class ContactEndpoint(ApiEndpoint):
             'field': 'id',
             'type': constants.FIELD_INFO,
             'values': {
-                'picture': 'picture.thumb',
+                'picture': 'picture',
                 'available': 'is_available',
                 'title': '__str__',
                 'address': 'address.__str__',
                 'created_at': 'created_at',
                 'updated_at': 'updated_at',
+                'title_title': 'title',
+                'first_name': 'first_name',
+                'last_name': 'last_name',
             }
         }, {
             'type': constants.CONTAINER_TABS,
@@ -152,28 +155,6 @@ class ContactEndpoint(ApiEndpoint):
                                     'field': 'phone_mobile',
                                     'label': _('Phone number'),
                                     'placeholder': _('Mobile phone'),
-                                }, {
-                                    'field': 'address',
-                                    'type': constants.FIELD_ADDRESS,
-                                    'hide': True,
-                                }, {
-                                    'field': 'is_available',
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'hide': True,
-                                    'send': False,
-                                    'default': False,
-                                }, {
-                                    'field': 'first_name',
-                                    'type': constants.FIELD_TEXT,
-                                    'hide': True,
-                                }, {
-                                    'field': 'last_name',
-                                    'type': constants.FIELD_TEXT,
-                                    'hide': True,
-                                }, {
-                                    'field': 'title',
-                                    'type': constants.FIELD_TEXT,
-                                    'hide': True,
                                 },
                             ),
                         }, {
@@ -293,6 +274,37 @@ class ContactEndpoint(ApiEndpoint):
                     'object_id': '{id}',
                 },
             },)
+        }, {
+            'field': 'address',
+            'type': constants.FIELD_ADDRESS,
+            'hide': True,
+        }, {
+            'field': 'is_available',
+            'type': constants.FIELD_CHECKBOX,
+            'hide': True,
+            'send': False,
+            'default': False,
+        }, {
+            'field': 'first_name',
+            'type': constants.FIELD_TEXT,
+            'hide': True,
+        }, {
+            'field': 'last_name',
+            'type': constants.FIELD_TEXT,
+            'hide': True,
+        }, {
+            'field': 'title',
+            'type': constants.FIELD_SELECT,
+            'hide': True,
+        }, {
+            'field': 'id',
+            'type': constants.FIELD_TEXT,
+            'hide': True,
+        }, {
+            'field': 'picture',
+            'type': constants.FIELD_PICTURE,
+            'hide': True,
+            'file': False,
         },
     )
 

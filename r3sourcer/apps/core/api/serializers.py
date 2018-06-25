@@ -689,7 +689,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         fields = (
             'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'marital_status',
             'birthday', 'spouse_name', 'children', 'picture', 'address', 'phone_mobile_verified', 'email_verified',
-            'id',
+            'id', 'created_at', 'updated_at',
             # FIXME: change related fields
             {
                 'user': ('id',),
