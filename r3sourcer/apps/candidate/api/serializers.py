@@ -47,10 +47,18 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
 class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:
         model = candidate_models.TagRel
-        fields = '__all__'
-        extra_kwargs = {
-            'verification_evidence': {'required': True},
-        }
+        fields = (
+            '__all__',
+            {
+                'tag': ('id', 'name', 'evidence_required_for_approval', 'active')
+            }
+        )
+
+    def validate(self, data):
+        if data.get('tag').evidence_required_for_approval and not data.get('verification_evidence'):
+            raise serializers.ValidationError({'verification_evidence': _('Verification evidence is requred')})
+
+        return data
 
 
 class CandidateContactSerializer(

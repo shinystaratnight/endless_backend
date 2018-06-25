@@ -836,6 +836,36 @@ class TagRelEndpoint(core_endpoints.ApiEndpoint):
         },
     )
 
+    fieldsets_add = (
+        {
+            'type': constants.FIELD_RELATED,
+            'field': 'candidate_contact',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'tag',
+            'read_only': False,
+            'query': {
+                'exclude': '{candidate_contact.id}',
+            },
+            'values': ['__str__', 'evidence_required_for_approval']
+        }, {
+            'type': constants.FIELD_PICTURE,
+            'field': 'verification_evidence',
+            'showIf': [
+                'tag.id',
+                {
+                    'tag.evidence_required_for_approval': True
+                }
+            ],
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'verified_by',
+            'default': 'session.contact.contact_id',
+            'read_only': True,
+        },
+    )
+
     list_filter = ('candidate_contact', )
 
 
