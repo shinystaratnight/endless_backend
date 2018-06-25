@@ -23,7 +23,7 @@ class Subscription(models.Model):
         ('canceled', 'Canceled'),
         ('unpaid', 'Unpaid'),
     )
-    company = models.ForeignKey(Company, related_name='subscriptions')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='subscriptions')
     name = models.CharField(max_length=255)
     type = models.CharField(max_length=255, choices=SUBSCRIPTION_TYPES)
     price = models.PositiveIntegerField()

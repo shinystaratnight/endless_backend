@@ -1128,7 +1128,7 @@ class CompanyRel(
         Company,
         related_name="regular_companies",
         verbose_name=_("Regular company"),
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE
     )
 
     primary_contact = models.ForeignKey(
@@ -1265,7 +1265,7 @@ class CompanyAddress(
     company = models.ForeignKey(
         Company,
         related_name='company_addresses',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Company"),
     )
 
@@ -1489,7 +1489,7 @@ class CompanyTradeReference(UUIDModel):
     company = models.ForeignKey(
         Company,
         related_name="company_trade_references",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Company")
     )
 
@@ -1615,7 +1615,7 @@ class AbstractBaseOrder(
 
     customer_company = models.ForeignKey(  # any company
         Company,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Customer Company"),
         related_name="customer_%(class)ss",
     )
@@ -2372,7 +2372,7 @@ class InvoiceRule(AbstractPayRuleMixin, UUIDModel):
         Company,
         related_name="invoice_rules",
         verbose_name=_("Company"),
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE
     )
 
     serial_number = models.CharField(

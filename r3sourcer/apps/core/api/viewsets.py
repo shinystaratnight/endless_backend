@@ -237,7 +237,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
 class CompanyViewset(BaseApiViewset):
 
-    http_method_names = ['post', 'put', 'get', 'options']
+    http_method_names = ['post', 'put', 'get', 'delete', 'options']
     action_map = {
         'put': 'partial_update'
     }
@@ -338,6 +338,27 @@ class CompanyViewset(BaseApiViewset):
 
         headers = self.get_success_headers(instance_serializer.data)
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+    def perform_destroy(self, instance):
+        comapny_rels = instance.regular_companies.values_list('id', flat=True)
+        content_type = ContentType.objects.get_for_model(models.CompanyRel)
+        exclude_values = models.WorkflowObject.objects.filter(
+            state__number__gt=10, state__workflow__model=content_type, active=True, object_id__in=comapny_rels
+        ).values_list('object_id', flat=True)
+        states = models.WorkflowObject.objects.filter(
+            state__number__in=[10, 0], state__workflow__model=content_type, active=True, object_id__in=comapny_rels
+        ).exclude(
+            object_id__in=set(exclude_values)
+        ).distinct('object_id').values_list('object_id', flat=True)
+
+        relations_in_state = states.count() == instance.regular_companies.count()
+
+        if instance.relationships.exists() or instance.jobsites_regular.exists() or not relations_in_state:
+            raise ValidationError(_('Cannot delete'))
+
+        instance.candidate_rels.delete()
+
+        super().perform_destroy(instance)
 
 
 class CompanyContactViewset(BaseApiViewset):

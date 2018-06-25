@@ -56,6 +56,7 @@ class PhoneNumber(UUIDModel):
     )
     company = models.ForeignKey(
         Company,
+        on_delete=models.CASCADE,
         verbose_name=_("Company"),
         related_name='phone_numbers'
     )
