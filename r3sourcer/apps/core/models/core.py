@@ -519,6 +519,9 @@ class Region(UUIDModel,
         regions = cls.objects.filter(country__code2=country_code).distinct().values('id', 'name')
         return [{'label': r['name'], 'value': r['id']} for r in regions]
 
+    def __str__(self):
+        return self.name
+
 
 class City(UUIDModel,
            AbstractCity):
@@ -530,6 +533,9 @@ class City(UUIDModel,
     @classmethod
     def is_owned(cls):
         return False
+
+    def __str__(self):
+        return self.name
 
 
 class Address(UUIDModel):
