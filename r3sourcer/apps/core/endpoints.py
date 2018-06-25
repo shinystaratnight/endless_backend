@@ -1884,7 +1884,7 @@ class TagEndpoint(ApiEndpoint):
     model = models.Tag
     filter_class = filters.TagFilter
 
-    fieldsets = ('name', 'parent', 'active')
+    fieldsets = ('name', 'parent', 'active', 'evidence_required_for_approval')
 
     search_fields = ('name',)
 
