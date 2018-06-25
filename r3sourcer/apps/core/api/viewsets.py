@@ -340,15 +340,15 @@ class CompanyViewset(BaseApiViewset):
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_destroy(self, instance):
-        comapny_rels = instance.regular_companies.values_list('id', flat=True)
+        company_rels = instance.regular_companies.values_list('id', flat=True)
         content_type = ContentType.objects.get_for_model(models.CompanyRel)
-        exclude_values = models.WorkflowObject.objects.filter(
-            state__number__gt=10, state__workflow__model=content_type, active=True, object_id__in=comapny_rels
+        exclude_states = models.WorkflowObject.objects.filter(
+            state__number__gt=10, state__workflow__model=content_type, active=True, object_id__in=company_rels
         ).values_list('object_id', flat=True)
         states = models.WorkflowObject.objects.filter(
-            state__number__in=[10, 0], state__workflow__model=content_type, active=True, object_id__in=comapny_rels
+            state__number__in=[10, 0], state__workflow__model=content_type, active=True, object_id__in=company_rels
         ).exclude(
-            object_id__in=set(exclude_values)
+            object_id__in=set(exclude_states)
         ).distinct('object_id').values_list('object_id', flat=True)
 
         relations_in_state = states.count() == instance.regular_companies.count()
