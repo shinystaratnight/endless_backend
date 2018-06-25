@@ -648,8 +648,6 @@ class SkillRel(core_models.UUIDModel):
         verbose_name=_("Skill Rate"),
     )
 
-    active = models.BooleanField(default=True, verbose_name=_("Active"))
-
     class Meta:
         verbose_name = _("Candidate Skill")
         verbose_name_plural = _("Candidate Skills")
