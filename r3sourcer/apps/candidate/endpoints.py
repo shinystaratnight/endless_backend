@@ -776,7 +776,7 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'values': ['default_rate', '__str__'],
         }, {
             'field': 'score',
-            'type': constants.FIELD_TEXT,
+            'type': constants.FIELD_NUMBER,
             'min': 0,
             'max': 5,
         },
@@ -785,7 +785,8 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
             'field': 'hourly_rate',
             'type': constants.FIELD_TEXT,
             'default': '{skill.default_rate}',
-        }
+        },
+        'active'
     )
 
     list_filter = ('candidate_contact', )
@@ -805,8 +806,6 @@ class TagRelEndpoint(core_endpoints.ApiEndpoint):
         {
             'type': constants.FIELD_PICTURE,
             'field': 'verification_evidence',
-            'label_upload': _('Choose a file'),
-            'label_photo': _('Take a photo'),
         }, {
             'label': _('Actions'),
             'fields': ({
@@ -825,8 +824,18 @@ class TagRelEndpoint(core_endpoints.ApiEndpoint):
             'type': constants.FIELD_RELATED,
             'field': 'tag',
             'read_only': False,
+            'query': {
+                'exclude': '{candidate_contact.id}',
+            },
+        }, {
+            'type': constants.FIELD_PICTURE,
+            'field': 'verification_evidence',
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'verified_by',
+            'default': 'session.contact.contact_id',
+            'read_only': True,
         },
-        'verification_evidence', 'verified_by',
     )
 
     list_filter = ('candidate_contact', )

@@ -1879,6 +1879,16 @@ class AddressEndpoint(ApiEndpoint):
     )
 
 
+class TagEndpoint(ApiEndpoint):
+
+    model = models.Tag
+    filter_class = filters.TagFilter
+
+    fieldsets = ('name', 'parent', 'active')
+
+    search_fields = ('name',)
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(endpoint=AddressEndpoint())
@@ -1901,7 +1911,7 @@ router.register(endpoint=NavigationEndpoint())
 router.register(endpoint=NoteEndpoint())
 router.register(models.Order, filter_fields=('provider_company',))
 router.register(endpoint=RegionEndpoint())
-router.register(models.Tag, search_fields=('name',))
+router.register(endpoint=TagEndpoint())
 router.register(endpoint=SiteEndpoint())
 router.register(endpoint=WorkflowNodeEndpoint())
 router.register(endpoint=WorkflowEndpoint())

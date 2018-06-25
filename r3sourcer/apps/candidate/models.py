@@ -318,8 +318,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     @workflow_function
     def is_skill_defined(self):
         return self.candidate_skills.filter(
-            score__gt=0, skill__active=True,
-            hourly_rate__gt=0
+            score__gt=0, skill__active=True, active=True, hourly_rate__gt=0
         ).count() > 0
     is_skill_defined.short_description = _("Define at least one skill")
 
@@ -637,6 +636,8 @@ class SkillRel(core_models.UUIDModel):
         max_digits=8,
         verbose_name=_("Skill Rate"),
     )
+
+    active = models.BooleanField(default=True, verbose_name=_("Active"))
 
     class Meta:
         verbose_name = _("Candidate Skill")
