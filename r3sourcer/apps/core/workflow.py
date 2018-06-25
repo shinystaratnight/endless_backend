@@ -159,7 +159,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         :param new_state: WorkflowNode value of new state
         :return: True or False
         """
-        from .models import WorkflowNode
+        from .models import WorkflowNode, WorkflowObject
         if isinstance(new_state, int):
             new_state = WorkflowNode.objects.filter(
                 workflow__model=ContentType.objects.get_for_model(self),
@@ -170,7 +170,14 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
             'state__number', flat=True
         )
 
-        if new_state is None or new_state.number in active_numbers:
+        if new_state and new_state.initial:
+            is_initial_exists = WorkflowObject.objects.filter(
+                object_id=self.pk, state=new_state
+            ).exists()
+        else:
+            is_initial_exists = False
+
+        if new_state is None or new_state.number in active_numbers or is_initial_exists:
             return False
 
         result = True

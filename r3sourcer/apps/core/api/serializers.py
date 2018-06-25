@@ -1087,7 +1087,7 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
             if self.target.is_allowed(obj):
                 return ALLOWED
 
-            if not self.target._check_condition(obj.rules.get('required_states')):
+            if not self.target._check_condition(obj.rules.get('required_states')) or (workflow_object and obj.initial):
                 return NOT_ALLOWED
             return NEED_REQUIREMENTS
 

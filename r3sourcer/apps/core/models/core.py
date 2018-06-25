@@ -2067,6 +2067,11 @@ class WorkflowNode(UUIDModel):
         blank=True
     )
 
+    initial = models.BooleanField(
+        verbose_name=_("Is initial state"),
+        default=False
+    )
+
     class Meta:
         verbose_name = _("Workflow Node")
         verbose_name_plural = _("Workflow Nodes")
