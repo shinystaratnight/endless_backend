@@ -236,10 +236,12 @@ class PriceListEndpoint(ApiEndpoint):
     _field_set = (
         {
             'type': constants.FIELD_DATE,
-            'field': 'valid_from'
+            'field': 'valid_from',
+            'read_only': False,
         }, {
             'type': constants.FIELD_DATE,
-            'field': 'valid_until'
+            'field': 'valid_until',
+            'read_only': False,
         },
         'effective', 'approved_by', 'approved_at',
         {

@@ -952,7 +952,7 @@ class CompanyEndpoint(ApiEndpoint):
                     'company': '{id}'
                 },
                 'type': constants.FIELD_LIST,
-                'label': _('Contacts'),
+                'label': _('Client Contacts'),
                 'add_label': _('Add'),
                 'endpoint': api_reverse_lazy('core/companycontactrelationships'),
                 'add_endpoint': api_reverse_lazy('core/companycontacts'),
