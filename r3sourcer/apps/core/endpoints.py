@@ -120,12 +120,15 @@ class ContactEndpoint(ApiEndpoint):
             'field': 'id',
             'type': constants.FIELD_INFO,
             'values': {
-                'picture': 'picture.thumb',
+                'picture': 'picture',
                 'available': 'is_available',
                 'title': '__str__',
                 'address': 'address.__str__',
                 'created_at': 'created_at',
                 'updated_at': 'updated_at',
+                'title_title': 'title',
+                'first_name': 'first_name',
+                'last_name': 'last_name',
             }
         }, {
             'type': constants.CONTAINER_TABS,
@@ -152,28 +155,6 @@ class ContactEndpoint(ApiEndpoint):
                                     'field': 'phone_mobile',
                                     'label': _('Phone number'),
                                     'placeholder': _('Mobile phone'),
-                                }, {
-                                    'field': 'address',
-                                    'type': constants.FIELD_ADDRESS,
-                                    'hide': True,
-                                }, {
-                                    'field': 'is_available',
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'hide': True,
-                                    'send': False,
-                                    'default': False,
-                                }, {
-                                    'field': 'first_name',
-                                    'type': constants.FIELD_TEXT,
-                                    'hide': True,
-                                }, {
-                                    'field': 'last_name',
-                                    'type': constants.FIELD_TEXT,
-                                    'hide': True,
-                                }, {
-                                    'field': 'title',
-                                    'type': constants.FIELD_TEXT,
-                                    'hide': True,
                                 },
                             ),
                         }, {
@@ -293,6 +274,37 @@ class ContactEndpoint(ApiEndpoint):
                     'object_id': '{id}',
                 },
             },)
+        }, {
+            'field': 'address',
+            'type': constants.FIELD_ADDRESS,
+            'hide': True,
+        }, {
+            'field': 'is_available',
+            'type': constants.FIELD_CHECKBOX,
+            'hide': True,
+            'send': False,
+            'default': False,
+        }, {
+            'field': 'first_name',
+            'type': constants.FIELD_TEXT,
+            'hide': True,
+        }, {
+            'field': 'last_name',
+            'type': constants.FIELD_TEXT,
+            'hide': True,
+        }, {
+            'field': 'title',
+            'type': constants.FIELD_SELECT,
+            'hide': True,
+        }, {
+            'field': 'id',
+            'type': constants.FIELD_TEXT,
+            'hide': True,
+        }, {
+            'field': 'picture',
+            'type': constants.FIELD_PICTURE,
+            'hide': True,
+            'file': False,
         },
     )
 
@@ -431,7 +443,8 @@ class CompanyAddressEndpoint(ApiEndpoint):
     )
 
     list_editable = (
-        'name', {
+        'hq',
+        {
             'label': _('Address'),
             'type': constants.FIELD_LINK,
             'field': 'address',
@@ -439,7 +452,7 @@ class CompanyAddressEndpoint(ApiEndpoint):
                 '{}{{address.id}}/',
                 api_reverse_lazy('core/addresses')
             ),
-        }, 'hq', {
+        }, {
             'label': _('Primary Contact'),
             'type': constants.FIELD_LINK,
             'field': 'primary_contact',
@@ -671,294 +684,383 @@ class CompanyEndpoint(ApiEndpoint):
 
     fieldsets = (
         {
-            'type': constants.CONTAINER_ROW,
-            'label': '{name}',
-            'fields': (
-                {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': ({
-                        'type': constants.FIELD_PICTURE,
-                        'field': 'logo',
-                        'label': _('Logo'),
-                        'file': False,
-                        'label_upload': _('Choose a file'),
-                        'label_photo': _('Take a photo'),
-                        'custom': [],
-                    },)
-                }, {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': ({
-                        'type': constants.FIELD_RELATED,
-                        'field': 'id',
-                        'read_only': True,
-                        'label': _('Client'),
-                        'custom': ('name', 'website'),
-                    },)
-                }, {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': ({
-                        'type': constants.FIELD_RELATED,
-                        'field': 'id',
-                        'read_only': True,
-                        'label': _('Primary Contact'),
-                        'custom': (
-                            'manager.job_title', 'manager.contact.__str__',
-                            'manager.contact.phone_mobile', 'manager.contact.email'
-                        ),
-                    },)
+            'field': 'id',
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'logo',
+                'link': 'website',
+                'title': 'name',
+                'address': 'address.__str__',
+                'status': {
+                    'field': 'active_states',
+                    'color': {
+                        'danger': [0, 80, 90],
+                        'color_attr': 'number',
+                    }
                 },
-            ),
+                'created_at': 'created_at',
+                'updated_at': 'updated_at',
+            }
         }, {
-            'type': constants.CONTAINER_ROW,
-            'label': _('General'),
-            'collapsed': False,
-            'fields': (
-                {
-                    'type': constants.CONTAINER_COLUMN,
+            'type': constants.CONTAINER_TABS,
+            'fields': ({
+                'type': constants.CONTAINER_GROUP,
+                'label': _('General information'),
+                'name': _('General Info'),
+                'main': True,
+                'fields': ({
+                    'type': constants.CONTAINER_ROW,
                     'fields': (
-                        'name',
                         {
-                            'field': 'short_name',
-                            'type': constants.FIELD_TEXT,
-                            'default': '{name}',
-                        },
-                        'website',
-                        {
+                            'type': constants.CONTAINER_GROUP,
                             'label': _('Primary Contact'),
-                            'type': constants.FIELD_RELATED,
-                            'field': 'manager',
-                            'endpoint': api_reverse_lazy('core/companycontacts'),
-                            'prefilled': {
-                                'company': '{id.id}',
-                            },
-                            'query': {
-                                'company': '{id.id}',
-                            },
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'label': _('Name'),
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'manager',
+                                    'endpoint': api_reverse_lazy('core/companycontacts'),
+                                    'prefilled': {
+                                        'company': '{id.id}',
+                                    },
+                                    'query': {
+                                        'company': '{id.id}',
+                                    },
+                                    'values': ['contact'],
+                                    'display': '{contact.__str__}',
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'manager.job_title',
+                                    'label': _('Job Title'),
+                                    'read_only': True,
+                                    'send': False,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'manager.contact.email',
+                                    'label': _('E-mail'),
+                                    'read_only': True,
+                                    'send': False,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'manager.contact.phone_mobile',
+                                    'label': _('Phone number'),
+                                    'read_only': True,
+                                    'send': False,
+                                },
+                            ),
                         }, {
-                            'label': _('Master company'),
-                            'type': constants.FIELD_RELATED,
-                            'field': 'master_company',
-                            'endpoint': api_reverse_lazy('core/companies'),
-                            'read_only': False,
-                            'showIf': [
-                                {'type': 'regular'}
-                            ],
-                            'query': {
-                                'type': 'master',
-                            },
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Additional Info'),
+                            'width': .25,
+                            'fields': (
+                                'business_id',
+                                {
+                                    'field': 'industry',
+                                    'type': constants.FIELD_RELATED,
+                                    'read_only': False,
+                                }, {
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'field': 'registered_for_gst',
+                                    'text': _('Registered'),
+                                    'label': _('GST'),
+                                    'default': False,
+                                    'read_only': False,
+                                }, {
+                                    'label': _('Master company'),
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'master_company',
+                                    'endpoint': api_reverse_lazy('core/companies'),
+                                    'read_only': False,
+                                    'showIf': [
+                                        {'type': 'regular'}
+                                    ],
+                                    'query': {
+                                        'type': 'master',
+                                    },
+                                }
+                            ),
                         }, {
+                            'type': constants.CONTAINER_GROUP,
                             'label': _('Portfolio Manager'),
-                            'type': constants.FIELD_RELATED,
-                            'field': 'primary_contact',
-                            'read_only': False,
-                            'add': False,
-                            'endpoint': api_reverse_lazy('core/companycontacts'),
-                            'showIf': [
-                                {'type': 'regular'}
-                            ],
-                            'query': {
-                                'company': '{master_company.id}',
-                            },
-                        }, {
-                            'type': constants.FIELD_TEXT,
-                            'field': 'type',
-                            'hide': True,
-                        }
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'label': _('Name'),
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'primary_contact',
+                                    'read_only': False,
+                                    'add': False,
+                                    'endpoint': api_reverse_lazy('core/companycontacts'),
+                                    'showIf': [
+                                        {'type': 'regular'}
+                                    ],
+                                    'query': {
+                                        'company': '{master_company.id}',
+                                    },
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'primary_contact_phone',
+                                    'label': _('Phone number'),
+                                    'read_only': True,
+                                    'send': False,
+                                },
+                            ),
+                        },
                     ),
                 }, {
-                    'type': constants.CONTAINER_COLUMN,
+                    'type': constants.CONTAINER_ROW,
                     'fields': (
-                        'business_id', 'registered_for_gst',
                         {
-                            'field': 'industry',
-                            'type': constants.FIELD_RELATED,
-                            'read_only': False,
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Credit Info'),
+                            'width': .25,
+                            'fields': (
+                                'credit_check',
+                                {
+                                    'type': constants.FIELD_PICTURE,
+                                    'field': 'credit_check_proof',
+                                    'label_upload': _('Choose a file'),
+                                    'label_photo': _('Take a photo'),
+                                },
+                                {
+                                    'label': _('Approval date'),
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'credit_check_date',
+                                },
+                            ),
                         }, {
-                            'field': 'description',
-                            'type': constants.FIELD_TEXTAREA,
-                        }
+                            'type': constants.CONTAINER_GROUP,
+                            'label': '',
+                            'width': .25,
+                            'fields': (
+                                'approved_credit_limit', 'terms_of_payment', 'payment_due_date',
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Banking Detail'),
+                            'width': .25,
+                            'fields': (
+                                'billing_email',
+                                {
+                                    'field': 'invoice_rule.id',
+                                    'type': constants.FIELD_TEXT,
+                                    'hidden': True,
+                                    'read_only': True,
+                                },
+                                'invoice_rule.separation_rule',
+                                {
+                                    'field': 'invoice_rule.period',
+                                    'type': constants.FIELD_SELECT,
+                                    'label': _('Invoice Frequency'),
+                                }, {
+                                    'field': 'invoice_rule.period_zero_reference',
+                                    'type': constants.FIELD_TEXT,
+                                    'showIf': [
+                                        {
+                                            'type': str(models.Company.COMPANY_TYPES.master),
+                                        }
+                                    ]
+                                }, {
+                                    'field': 'invoice_rule.serial_number',
+                                    'type': constants.FIELD_TEXT,
+                                    'showIf': [
+                                        {
+                                            'type': str(models.Company.COMPANY_TYPES.master),
+                                        }
+                                    ]
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': '',
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'field': 'invoice_rule.starting_number',
+                                    'type': constants.FIELD_TEXT,
+                                    'showIf': [
+                                        {
+                                            'type': str(models.Company.COMPANY_TYPES.master),
+                                        }
+                                    ]
+                                }, {
+                                    'field': 'invoice_rule.notice',
+                                    'type': constants.FIELD_TEXT,
+                                    'showIf': [
+                                        {
+                                            'type': str(models.Company.COMPANY_TYPES.master),
+                                        }
+                                    ]
+                                }, {
+                                    'field': 'invoice_rule.comment',
+                                    'type': constants.FIELD_TEXT,
+                                    'showIf': [
+                                        {
+                                            'type': str(models.Company.COMPANY_TYPES.master),
+                                        }
+                                    ]
+                                }, {
+                                    'type': constants.FIELD_CHECKBOX,
+                                    'field': 'invoice_rule.show_candidate_name',
+                                    'label': _('Show Candidate name'),
+                                    'text': _('Show name'),
+                                    'default': False,
+                                    'read_only': False,
+                                },
+                            ),
+                        },
                     ),
+                }, {
+                    'type': constants.CONTAINER_ROW,
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Timesheet'),
+                            'width': .25,
+                            'fields': (
+                                'timesheet_approval_scheme',
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('About Company'),
+                            'width': .75,
+                            'fields': (
+                                {
+                                    'field': 'description',
+                                    'type': constants.FIELD_TEXTAREA,
+                                },
+                            ),
+                        },
+                    ),
+                },)
+            }, {
+                'query': {
+                    'company': '{id}'
                 },
-            ),
-        }, {
-            'query': {
-                'company': '{id}'
-            },
-            'type': constants.FIELD_LIST,
-            'label': _('Client Company Address'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/companyaddresses'),
-            'prefilled': {
-                'company': '{id}',
-            },
-            'delay': True,
-        }, {
-            'query': {
-                'company': '{id}'
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Client Contacts'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/companycontactrelationships'),
-            'add_endpoint': api_reverse_lazy('core/companycontacts'),
-            'prefilled': {
-                'company': '{id}',
-            }
-        }, {
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'query': {
-                'company': '{id}',
-            },
-            'label': _('Jobsites'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/jobsites'),
-            'prefilled': {
-                'regular_company': '{id}',
-            }
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Credit info'),
-            'fields': (
-                {
-                    'type': constants.FIELD_PICTURE,
-                    'field': 'credit_check_proof',
-                    'label_upload': _('Choose a file'),
-                    'label_photo': _('Take a photo'),
-                }, 'credit_check',
-                {
-                    'label': _('Approval date'),
-                    'type': constants.FIELD_DATE,
-                    'field': 'credit_check_date',
-                }, 'approved_credit_limit',
-                'terms_of_payment', 'payment_due_date',
-            )
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Banking details'),
-            'fields': ('billing_email', ),
-        }, {
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'query': {
-                'company': '{id}',
-            },
-            'label': _('Price list'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('pricing/pricelists'),
-            'prefilled': {
-                'company': '{id}',
-            },
-            'metadata_query': {
-                'editable_type': 'company',
-            },
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('State'),
-            'fields': (
-                {
-                    'type': constants.FIELD_TIMELINE,
-                    'label': _('States Timeline'),
-                    'field': 'id',
-                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
-                    'query': {
-                        'model': 'core.companyrel',
-                        'object_id': '{regular_company_rel.id}',
+                'type': constants.FIELD_LIST,
+                'label': _('Company Address'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('core/companyaddresses'),
+                'prefilled': {
+                    'company': '{id}',
+                },
+                'delay': True,
+                'help': _('All addresses of the company'),
+            }, {
+                'query': {
+                    'company': '{id}'
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Contacts'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('core/companycontactrelationships'),
+                'add_endpoint': api_reverse_lazy('core/companycontacts'),
+                'prefilled': {
+                    'company': '{id}',
+                },
+            }, {
+                'type': constants.FIELD_LIST,
+                'query': {
+                    'company': '{id}',
+                },
+                'label': _('Jobsites'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('hr/jobsites'),
+                'prefilled': {
+                    'regular_company': '{id}',
+                },
+                'help': _('Jobsites from the client company'),
+            }, {
+                'type': constants.FIELD_LIST,
+                'query': {
+                    'company': '{id}',
+                },
+                'label': _('Price list'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('pricing/pricelists'),
+                'prefilled': {
+                    'company': '{id}',
+                },
+                'metadata_query': {
+                    'editable_type': 'company',
+                },
+            }, {
+                'type': constants.CONTAINER_GROUP,
+                'name': _('States'),
+                'fields': (
+                    {
+                        'type': constants.FIELD_TIMELINE,
+                        'field': 'id',
+                        'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+                        'query': {
+                            'model': 'core.companyrel',
+                            'object_id': '{regular_company_rel.id}',
+                        },
+                    }, {
+                        'type': constants.FIELD_LIST,
+                        'query': {
+                            'object_id': '{regular_company_rel.id}'
+                        },
+                        'label': _('States history'),
+                        'add_label': _('+ Add item'),
+                        'endpoint': api_reverse_lazy('core/workflowobjects'),
+                        'prefilled': {
+                            'object_id': '{regular_company_rel.id}',
+                        },
+                        'help': _('Here you can see changes client company states'),
                     },
+                ),
+            }, {
+                'query': {
+                    'customer_company': '{id}',
                 },
-            )
-        }, {
-            'type': constants.FIELD_LIST,
-            'query': {
-                'object_id': '{regular_company_rel.id}'
-            },
-            'collapsed': True,
-            'label': _('States History'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/workflowobjects'),
-            'prefilled': {
-                'object_id': '{regular_company_rel.id}',
-            }
-        }, {
-            'query': {
-                'object_id': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Notes'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/notes'),
-            'prefilled': {
-                'object_id': '{id}',
-            },
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Invoice Rule'),
-            'fields': (
-                {
-                    'field': 'invoice_rule.id',
-                    'type': constants.FIELD_TEXT,
-                    'hidden': True,
-                    'read_only': True,
+                'type': constants.FIELD_LIST,
+                'label': _('Invoices'),
+                'endpoint': api_reverse_lazy('core/invoices'),
+            }, {
+                'query': {
+                    'object_id': '{id}',
                 },
-                'invoice_rule.separation_rule',
-                {
-                    'field': 'invoice_rule.period',
-                    'type': constants.FIELD_SELECT,
-                    'label': _('Invoice Frequency'),
-                }, {
-                    'field': 'invoice_rule.period_zero_reference',
-                    'type': constants.FIELD_TEXT,
-                    'showIf': [
-                        {
-                            'type': str(models.Company.COMPANY_TYPES.master),
-                        }
-                    ]
-                }, {
-                    'field': 'invoice_rule.serial_number',
-                    'type': constants.FIELD_TEXT,
-                    'showIf': [
-                        {
-                            'type': str(models.Company.COMPANY_TYPES.master),
-                        }
-                    ]
-                }, {
-                    'field': 'invoice_rule.starting_number',
-                    'type': constants.FIELD_TEXT,
-                    'showIf': [
-                        {
-                            'type': str(models.Company.COMPANY_TYPES.master),
-                        }
-                    ]
-                }, {
-                    'field': 'invoice_rule.notice',
-                    'type': constants.FIELD_TEXT,
-                    'showIf': [
-                        {
-                            'type': str(models.Company.COMPANY_TYPES.master),
-                        }
-                    ]
-                }, {
-                    'field': 'invoice_rule.comment',
-                    'type': constants.FIELD_TEXT,
-                    'showIf': [
-                        {
-                            'type': str(models.Company.COMPANY_TYPES.master),
-                        }
-                    ]
+                'type': constants.FIELD_LIST,
+                'label': _('Notes'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('core/notes'),
+                'prefilled': {
+                    'object_id': '{id}',
                 },
-                'invoice_rule.show_candidate_name',
-            )
+            },)
         }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': True,
-            'name': _('Other'),
-            'fields': ('timesheet_approval_scheme', )
+            'type': constants.FIELD_TEXT,
+            'field': 'manager.contact',
+            'hide': True,
+            'send': False,
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'type',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'name',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_PICTURE,
+            'field': 'logo',
+            'hide': True,
+            'file': False,
+        }, {
+            'type': constants.FIELD_ADDRESS,
+            'field': 'address',
+            'hide': True,
+            'endpoint': api_reverse_lazy('core/addresses'),
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'name',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'website',
+            'hide': True,
         },
     )
 
@@ -1777,6 +1879,16 @@ class AddressEndpoint(ApiEndpoint):
     )
 
 
+class TagEndpoint(ApiEndpoint):
+
+    model = models.Tag
+    filter_class = filters.TagFilter
+
+    fieldsets = ('name', 'parent', 'active')
+
+    search_fields = ('name',)
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(endpoint=AddressEndpoint())
@@ -1799,7 +1911,7 @@ router.register(endpoint=NavigationEndpoint())
 router.register(endpoint=NoteEndpoint())
 router.register(models.Order, filter_fields=('provider_company',))
 router.register(endpoint=RegionEndpoint())
-router.register(models.Tag, search_fields=('name',))
+router.register(endpoint=TagEndpoint())
 router.register(endpoint=SiteEndpoint())
 router.register(endpoint=WorkflowNodeEndpoint())
 router.register(endpoint=WorkflowEndpoint())

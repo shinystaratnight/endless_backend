@@ -689,7 +689,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         fields = (
             'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'marital_status',
             'birthday', 'spouse_name', 'children', 'picture', 'address', 'phone_mobile_verified', 'email_verified',
-            'id',
+            'id', 'created_at', 'updated_at',
             # FIXME: change related fields
             {
                 'user': ('id',),
@@ -1191,7 +1191,7 @@ class InvoiceRuleSerializer(ApiBaseModelSerializer):
 class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
     method_fields = (
         'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
-        'address',
+        'address', 'primary_contact_phone',
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
@@ -1231,8 +1231,13 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
             return {
                 'job_title': company_rel.primary_contact.job_title,
                 '__str__': str(company_rel.primary_contact.contact),
+                'phone_mobile': str(company_rel.primary_contact.contact.phone_mobile),
                 'id': company_rel.primary_contact.id
             }
+
+    def get_primary_contact_phone(self, obj):
+        primary_contact = self.get_primary_contact(obj)
+        return primary_contact and primary_contact['phone_mobile']
 
     def get_master_company(self, obj):
         if not obj:
