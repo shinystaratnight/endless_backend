@@ -656,8 +656,9 @@ class JobEndpoint(ApiEndpoint):
                         'type': constants.FIELD_RELATED,
                         'query': {
                             'company': '{customer_company.id}',
-                            'fields': 'primary_contact',
-                        }
+                            'primary_contact': '{customer_representative.id}'
+                        },
+                        'values': ['primary_contact', '__str__'],
                     }, {
                         'label': _('Position'),
                         'field': 'position',
