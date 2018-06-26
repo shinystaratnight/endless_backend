@@ -101,7 +101,7 @@ class JobsiteEndpoint(ApiEndpoint):
                         'type': constants.FIELD_RELATED,
                         'field': 'portfolio_manager',
                         'showIf': ['primary_contact.id', 'address'],
-                        'default': 'session.contact.contact_id',
+                        'default': '{regular_company.primary_contact.id}',
                         'query': {
                             'master_company': 'current',
                         },

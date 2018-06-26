@@ -403,6 +403,7 @@ class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.
                     }
                 ),
                 'master_company': ('id', ),
+                'regular_company': ('id', 'industry', 'short_name',)
             }
         )
 
