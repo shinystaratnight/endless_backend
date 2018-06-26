@@ -788,7 +788,7 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     termination_date = serializers.DateField(required=False, allow_null=True)
 
     def get_company(self, instance):
-        rel = instance.relationships.first()
+        rel = instance.relationships.filter(active=True).first()
         if rel is not None:
             return CompanyListSerializer(rel.company).data
         return None

@@ -1284,6 +1284,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                 'endpoint': api_reverse_lazy('hr/jobs'),
                 'prefilled': {
                     'customer_representative': '{id}',
+                    'customer_company': '{company.id}'
                 },
             }, {
                 'query': {
