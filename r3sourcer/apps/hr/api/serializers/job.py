@@ -3,6 +3,7 @@ from functools import partial
 
 from django.db.models import Max
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
@@ -390,6 +391,8 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
 class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiBaseModelSerializer):
 
+    method_fields = ('latest_state', )
+
     class Meta:
         model = hr_models.Jobsite
         fields = (
@@ -403,9 +406,33 @@ class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.
                     }
                 ),
                 'master_company': ('id', ),
-                'regular_company': ('id', 'industry', 'short_name',)
+                'regular_company': ('id', 'industry', 'short_name', 'logo'),
+                'portfolio_manager': (
+                    'id', 'job_title',
+                    {
+                        'contact': ('id', 'phone_mobile'),
+                    }
+                ),
+                'primary_contact': (
+                    'id', 'job_title',
+                    {
+                        'contact': ('id', 'phone_mobile', 'email'),
+                    }
+                )
             }
         )
+
+    def get_latest_state(self, obj):
+        state = core_models.WorkflowObject.objects.filter(
+            state__workflow__model=ContentType.objects.get_for_model(self.Meta.model), active=True,
+            object_id=obj.id
+        ).order_by('-state__number').first()
+
+        return [{
+            '__str__': state.state.name_after_activation or state.state.name_before_activation,
+            'number': state.state.number,
+            'id': state.state.id,
+        }] if state else []
 
 
 class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):

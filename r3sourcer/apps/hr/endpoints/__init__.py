@@ -131,59 +131,210 @@ class JobsiteEndpoint(ApiEndpoint):
         },
     )
 
-    fieldsets = fieldsets_add + (
+    fieldsets = (
         {
-            'type': constants.FIELD_LIST,
-            'field': 'id_',
-            'query': {
-                'jobsite': '{id}',
-            },
-            'label': _('Jobs'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('hr/jobs'),
-            'prefilled': {
-                'jobsite': '{id}',
-            },
-        }, {
-            'query': {
-                'object_id': '{id}',
-            },
-            'type': constants.FIELD_LIST,
-            'collapsed': True,
-            'label': _('Notes'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/notes'),
-            'prefilled': {
-                'object_id': '{id}',
-            },
-        }, {
-            'type': constants.CONTAINER_COLLAPSE,
-            'collapsed': False,
-            'name': _('State'),
-            'fields': (
-                {
-                    'type': constants.FIELD_TIMELINE,
-                    'label': _('States Timeline'),
-                    'field': 'id',
-                    'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
-                    'query': {
-                        'model': 'hr.jobsite',
-                        'object_id': '{id}',
-                    },
+            'field': 'id',
+            'type': constants.FIELD_INFO,
+            'values': {
+                'picture': 'regular_company.logo',
+                'available': 'is_available',
+                'title': 'short_name',
+                'company': 'regular_company.name',
+                'address': 'address.__str__',
+                'status': {
+                    'field': 'active_states',
+                    'color': {
+                        'danger': [0, 80, 90],
+                        'color_attr': 'number',
+                    }
                 },
-            )
-        }, {
-            'type': constants.FIELD_LIST,
-            'query': {
-                'object_id': '{id}'
-            },
-            'collapsed': True,
-            'label': _('States History'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('core/workflowobjects'),
-            'prefilled': {
-                'object_id': '{id}',
+                'created_at': 'created_at',
+                'updated_at': 'updated_at',
             }
+        }, {
+            'type': constants.CONTAINER_TABS,
+            'fields': ({
+                'type': constants.CONTAINER_GROUP,
+                'label': _('General information'),
+                'name': _('General Info'),
+                'main': True,
+                'fields': ({
+                    'type': constants.CONTAINER_ROW,
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Primary Contact'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'label': _('Name'),
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'primary_contact',
+                                    'endpoint': api_reverse_lazy('core/companycontacts'),
+                                    'prefilled': {
+                                        'company': '{regular_company.id}',
+                                    },
+                                    'query': {
+                                        'company': '{regular_company.id}',
+                                    },
+                                    'values': ['contact'],
+                                    'display': '{contact.__str__}',
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'primary_contact.job_title',
+                                    'label': _('Job Title'),
+                                    'read_only': True,
+                                    'send': False,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'primary_contact.contact.email',
+                                    'label': _('E-mail'),
+                                    'read_only': True,
+                                    'send': False,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'primary_contact.contact.phone_mobile',
+                                    'label': _('Phone number'),
+                                    'read_only': True,
+                                    'send': False,
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Additional Info'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'field': 'industry',
+                                    'type': constants.FIELD_RELATED,
+                                    'read_only': False,
+                                }, {
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'start_date',
+                                }, {
+                                    'type': constants.FIELD_DATE,
+                                    'field': 'end_date',
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Portfolio Manager'),
+                            'width': .25,
+                            'fields': (
+                                {
+                                    'label': _('Name'),
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'portfolio_manager',
+                                    'read_only': False,
+                                    'add': False,
+                                    'endpoint': api_reverse_lazy('core/companycontacts'),
+                                    'query': {
+                                        'company': '{master_company.id}',
+                                    },
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'portfolio_manager.job_title',
+                                    'label': _('Job Title'),
+                                    'read_only': True,
+                                    'send': False,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'portfolio_manager.contact.phone_mobile',
+                                    'label': _('Phone number'),
+                                    'read_only': True,
+                                    'send': False,
+                                },
+                            ),
+                        },
+                    ),
+                },)
+            }, {
+                'query': {
+                    'jobsite': '{id}',
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Jobs'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('hr/jobs'),
+                'prefilled': {
+                    'jobsite': '{id}',
+                    'customer_company': '{regular_company.id}',
+                    'customer_representative': '{primary_contact.id}',
+                },
+            }, {
+                'type': constants.CONTAINER_GROUP,
+                'name': _('State'),
+                'fields': (
+                    {
+                        'type': constants.FIELD_TIMELINE,
+                        'field': 'id',
+                        'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
+                        'query': {
+                            'model': 'hr.jobsite',
+                            'object_id': '{id}',
+                        },
+                    }, {
+                        'type': constants.FIELD_LIST,
+                        'query': {
+                            'object_id': '{id}'
+                        },
+                        'label': _('States history'),
+                        'add_label': _('+ Add item'),
+                        'endpoint': api_reverse_lazy('core/workflowobjects'),
+                        'prefilled': {
+                            'object_id': '{id}',
+                        },
+                        'help': _('Here you can see changes jobsite states'),
+                    },
+                ),
+            }, {
+                'query': {
+                    'object_id': '{id}',
+                },
+                'type': constants.FIELD_LIST,
+                'label': _('Notes'),
+                'add_label': _('Add'),
+                'endpoint': api_reverse_lazy('core/notes'),
+                'prefilled': {
+                    'object_id': '{id}',
+                },
+            },)
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'primary_contact.contact',
+            'hide': True,
+            'send': False,
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'portfolio_manager.contact',
+            'hide': True,
+            'send': False,
+        }, {
+            'type': constants.FIELD_CHECKBOX,
+            'field': 'is_available',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_PICTURE,
+            'field': 'regular_company.logo',
+            'hide': True,
+            'file': False,
+        }, {
+            'type': constants.FIELD_TEXT,
+            'field': 'short_name',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'master_company',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_RELATED,
+            'field': 'regular_company',
+            'hide': True,
+        }, {
+            'type': constants.FIELD_ADDRESS,
+            'field': 'address',
+            'hide': True,
+            'endpoint': api_reverse_lazy('core/addresses'),
         },
     )
 
