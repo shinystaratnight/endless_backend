@@ -19,7 +19,7 @@ class GlobalPermissionEndpoint(ApiEndpoint):
     list_editable_buttons = []
 
     filter_fields = ['user']
-    search_fields = ('name', 'user')
+    search_fields = ['name']
 
 
 router.register(endpoint=GlobalPermissionEndpoint())
