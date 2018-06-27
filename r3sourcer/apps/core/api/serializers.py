@@ -1188,7 +1188,9 @@ class InvoiceRuleSerializer(ApiBaseModelSerializer):
         }
 
 
-class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelSerializer):
+class CompanyListSerializer(
+    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin, ApiBaseModelSerializer
+):
     method_fields = (
         'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
         'address', 'primary_contact_phone',
@@ -1293,6 +1295,12 @@ class CompanyListSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseModelS
         else:
             msg = _('Not Approved')
         return msg
+
+    def get_latest_state(self, obj):
+        if obj:
+            obj = self.get_company_rel(obj)
+
+        return super().get_latest_state(obj)
 
 
 class FormStorageSerializer(ApiBaseModelSerializer):

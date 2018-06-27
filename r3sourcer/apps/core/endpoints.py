@@ -669,9 +669,9 @@ class CompanyEndpoint(ApiEndpoint):
                 'field': 'terms_of_pay',
             }),
         }, {
-            'label': _('Company State'),
+            'label': _('Client State'),
             'type': constants.FIELD_TAGS,
-            'field': 'active_states',
+            'field': 'latest_state',
             'color_attr': 'number',
             'outline': True,
             'color': {

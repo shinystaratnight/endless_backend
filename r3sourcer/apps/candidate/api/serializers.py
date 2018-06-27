@@ -63,13 +63,13 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
 
 class CandidateContactSerializer(
     core_serializers.ApiRelatedFieldManyMixin, core_mixins.WorkflowStatesColumnMixin,
-    core_serializers.ApiBaseModelSerializer
+    core_mixins.WorkflowLatestStateMixin, core_serializers.ApiBaseModelSerializer
 ):
 
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
 
-    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'latest_state')
+    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list')
     many_related_fields = {
         'candidate_skills': 'candidate_contact',
         'tag_rels': 'candidate_contact',
@@ -140,18 +140,6 @@ class CandidateContactSerializer(
             return
 
         return TagRelSerializer(obj.tag_rels.all(), many=True).data
-
-    def get_latest_state(self, obj):
-        state = core_models.WorkflowObject.objects.filter(
-            state__workflow__model=ContentType.objects.get_for_model(self.Meta.model), active=True,
-            object_id=obj.id
-        ).order_by('-state__number').first()
-
-        return [{
-            '__str__': state.state.name_after_activation or state.state.name_before_activation,
-            'number': state.state.number,
-            'id': state.state.id,
-        }] if state else []
 
 
 class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):

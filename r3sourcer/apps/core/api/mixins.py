@@ -100,3 +100,22 @@ class GoogleAddressMixin:
                 data['address'] = None
 
         return data['address'] if self.root_address else data
+
+
+class WorkflowLatestStateMixin:
+
+    def get_method_fields(self):
+        method_fields = list(super().get_method_fields())
+        return method_fields + ['latest_state']
+
+    def get_latest_state(self, obj):
+        if not obj:
+            return []
+
+        state = obj.get_active_states().first()
+
+        return [{
+            '__str__': state.state.name_after_activation or state.state.name_before_activation,
+            'number': state.state.number,
+            'id': state.state.id,
+        }] if state else []
