@@ -222,7 +222,7 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
 
     auth_data = models.ForeignKey(MYOBAuthData)
 
-    company = models.ForeignKey(Company, null=True, related_name='company_file_tokens')
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, related_name='company_file_tokens')
 
     cf_token = models.CharField(
         verbose_name=_(u"Company File Token"),
@@ -296,6 +296,7 @@ class MYOBSyncObject(UUIDModel, models.Model):
 
     company = models.ForeignKey(
         Company,
+        on_delete=models.CASCADE,
         verbose_name=_("Company"),
         related_name='sync_objects',
         null=True,

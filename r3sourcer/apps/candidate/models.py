@@ -743,7 +743,7 @@ class CandidateRel(core_models.UUIDModel):
 
     master_company = models.ForeignKey(
         core_models.Company,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="candidate_rels",
         verbose_name=_("Master Company")
     )

@@ -1278,7 +1278,7 @@ class BlackList(core_models.UUIDModel):
     company = models.ForeignKey(
         core_models.Company,
         related_name="blacklists",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Company")
     )
 
@@ -1665,6 +1665,7 @@ class Payslip(core_models.UUIDModel):
 
     company = models.ForeignKey(
         core_models.Company,
+        on_delete=models.SET_NULL,
         verbose_name=_("Company"),
         related_name="payslips",
         null=True,
@@ -1737,7 +1738,7 @@ class PayslipRule(core_models.AbstractPayRuleMixin, core_models.UUIDModel):
         core_models.Company,
         related_name="payslip_rules",
         verbose_name=_("Company"),
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE
     )
 
     class Meta:

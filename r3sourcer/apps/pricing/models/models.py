@@ -136,7 +136,7 @@ class PriceList(PriceListMixin, UUIDModel):
 
     company = models.ForeignKey(
         Company,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name='price_lists',
         verbose_name=_('Company'),
     )
@@ -186,7 +186,7 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
 
     price_list = models.ForeignKey(
         PriceList,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name='price_list_rates',
         verbose_name=_('Price List'),
         blank=True,
