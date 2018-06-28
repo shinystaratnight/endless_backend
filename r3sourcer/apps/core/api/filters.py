@@ -48,7 +48,7 @@ class CompanyFilter(FilterSet):
         return queryset.filter(
             Q(regular_companies__id__in=objects) |
             Q(master_companies__id__in=objects)
-        )
+        ).distinct()
 
     def filter_regular_company(self, queryset, name, value):
         return queryset.filter(master_companies__regular_company=value)
@@ -57,7 +57,7 @@ class CompanyFilter(FilterSet):
         return queryset.filter(
             Q(regular_companies__primary_contact=value) |
             Q(master_companies__primary_contact=value)
-        )
+        ).distinct()
 
     def _fetch_workflow_objects(self, value):  # pragma: no cover
         content_type = ContentType.objects.get_for_model(models.CompanyRel)
@@ -79,7 +79,7 @@ class CompanyFilter(FilterSet):
 
     def filter_has_industry(self, queryset, name, value):
         if value:
-            return queryset.filter(industry__isnull=False)
+            return queryset.filter(industry__isnull=False).distinct()
         return queryset
 
 
