@@ -61,13 +61,15 @@ class CompanyFilter(FilterSet):
 
     def _fetch_workflow_objects(self, value):  # pragma: no cover
         content_type = ContentType.objects.get_for_model(models.CompanyRel)
-        objects = models.WorkflowObject.objects.filter(
-            state__number=value,
-            state__workflow__model=content_type,
-            active=True,
-        ).distinct('object_id').values_list('object_id', flat=True)
+        exclude_values = models.WorkflowObject.objects.filter(
+            state__number__gt=value, state__workflow__model=content_type, active=True
+        ).values_list('object_id', flat=True)
 
-        return objects
+        return models.WorkflowObject.objects.filter(
+            state__number=value, state__workflow__model=content_type, active=True,
+        ).exclude(
+            object_id__in=set(exclude_values)
+        ).distinct('object_id').values_list('object_id', flat=True)
 
     def filter_current(self, queryset, name, value):
         if value:

@@ -389,9 +389,10 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         return address and address.longitude
 
 
-class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiBaseModelSerializer):
-
-    method_fields = ('latest_state', )
+class JobsiteSerializer(
+    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
+    core_serializers.ApiBaseModelSerializer
+):
 
     class Meta:
         model = hr_models.Jobsite
@@ -421,18 +422,6 @@ class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.
                 )
             }
         )
-
-    def get_latest_state(self, obj):
-        state = core_models.WorkflowObject.objects.filter(
-            state__workflow__model=ContentType.objects.get_for_model(self.Meta.model), active=True,
-            object_id=obj.id
-        ).order_by('-state__number').first()
-
-        return [{
-            '__str__': state.state.name_after_activation or state.state.name_before_activation,
-            'number': state.state.number,
-            'id': state.state.id,
-        }] if state else []
 
 
 class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
