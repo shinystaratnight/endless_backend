@@ -16,34 +16,97 @@ class SkillEndpoint(ApiEndpoint):
     serializer = skill_serializer.SkillSerializer
 
     fieldsets = (
-        'name', 'short_name',  'carrier_list_reserve', 'employment_classification', 'upper_rate_limit',
-        'lower_rate_limit', 'active',
         {
-            'type': constants.FIELD_LIST,
-            'field': 'id_',
-            'query': {
-                'skill': '{id}',
-            },
-            'collapsed': False,
-            'label': _('Skill Rate Defaults'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('skills/skillbaserates'),
-            'prefilled': {
-                'skill': '{id}',
+            'field': 'id',
+            'type': constants.FIELD_INFO,
+            'values': {
+                'carrier_reserve': 'carrier_list_reserve',
+                'available': 'active',
+                'title': 'name',
+                'created_at': 'created_at',
+                'updated_at': 'updated_at',
             }
         }, {
-            'type': constants.FIELD_LIST,
-            'field': 'id_',
-            'query': {
-                'skill': '{id}',
-            },
-            'collapsed': False,
-            'label': _('Price List Rates'),
-            'add_label': _('Add'),
-            'endpoint': api_reverse_lazy('pricing/pricelistrates'),
-            'prefilled': {
-                'skill': '{id}',
-            }
+            'type': constants.CONTAINER_TABS,
+            'fields': ({
+                'type': constants.CONTAINER_GROUP,
+                'label': _('Skill information'),
+                'name': _('Skill Info'),
+                'main': True,
+                'fields': ({
+                    'type': constants.CONTAINER_ROW,
+                    'fields': (
+                        {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Additional Info'),
+                            'width': .34,
+                            'fields': (
+                                'short_name',
+                                {
+                                    'type': constants.FIELD_RELATED,
+                                    'field': 'employment_classification',
+                                    'read_only': False,
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Skill Rate'),
+                            'width': .33,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_NUMBER,
+                                    'field': 'lower_rate_limit',
+                                    'label': _('Lower Rate Limit'),
+                                    'display': '${field}/h',
+                                }, {
+                                    'type': constants.FIELD_NUMBER,
+                                    'field': 'default_rate',
+                                    'label': _('Default Rate'),
+                                    'display': '${field}/h',
+                                    'read_only': False,
+                                }, {
+                                    'type': constants.FIELD_NUMBER,
+                                    'field': 'upper_rate_limit',
+                                    'label': _('Upper Rate Limit'),
+                                    'display': '${field}/h',
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Price List Rate'),
+                            'width': .33,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_NUMBER,
+                                    'field': 'lower_rate_limit',
+                                    'label': _('Lower Rate Limit'),
+                                    'display': '${field}/h',
+                                }, {
+                                    'type': constants.FIELD_NUMBER,
+                                    'field': 'default_rate',
+                                    'label': _('Default Rate'),
+                                    'display': '${field}/h',
+                                    'read_only': False,
+                                }, {
+                                    'type': constants.FIELD_NUMBER,
+                                    'field': 'upper_rate_limit',
+                                    'label': _('Upper Rate Limit'),
+                                    'display': '${field}/h',
+                                },
+                            ),
+                        },
+                    ),
+                },)
+            },)
+        }, {
+            'field': 'active',
+            'type': constants.FIELD_CHECKBOX,
+            'hide': True,
+            'default': False,
+        }, {
+            'field': 'name',
+            'type': constants.FIELD_TEXT,
+            'hide': True,
         },
     )
 
