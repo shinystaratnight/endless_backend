@@ -2336,7 +2336,6 @@ class AbstractPayRuleMixin(models.Model):
         ('fortnightly', _('Fortnightly')),
         ('monthly', _('Monthly')),
         ('daily', _('Daily')),
-        ('prepay', _('Prepay')),
     )
 
     period = models.CharField(
