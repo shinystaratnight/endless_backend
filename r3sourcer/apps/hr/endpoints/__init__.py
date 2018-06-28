@@ -207,7 +207,7 @@ class JobsiteEndpoint(ApiEndpoint):
                                 {
                                     'field': 'industry',
                                     'type': constants.FIELD_RELATED,
-                                    'read_only': False,
+                                    'read_only': True,
                                 }, {
                                     'type': constants.FIELD_DATE,
                                     'field': 'start_date',
@@ -313,15 +313,18 @@ class JobsiteEndpoint(ApiEndpoint):
             'type': constants.FIELD_CHECKBOX,
             'field': 'is_available',
             'hide': True,
+            'default': False,
         }, {
             'type': constants.FIELD_PICTURE,
             'field': 'regular_company.logo',
             'hide': True,
             'file': False,
+            'read_only': True,
         }, {
             'type': constants.FIELD_TEXT,
             'field': 'short_name',
             'hide': True,
+            'help': '',
         }, {
             'type': constants.FIELD_RELATED,
             'field': 'master_company',
