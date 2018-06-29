@@ -876,37 +876,6 @@ class SubcontractorEndpoint(core_endpoints.ApiEndpoint):
     serializer = candidate_serializers.SubcontractorSerializer
 
 
-class SkillRateRelEndpoint(core_endpoints.ApiEndpoint):
-
-    model = candidate_models.SkillRateRel
-
-    list_editable = (
-        {
-            'label': _('Rate'),
-            'type': constants.FIELD_LINK,
-            'field': 'hourly_rate',
-            'endpoint': format_lazy('{}{{hourly_rate.id}}/', api_reverse_lazy('skills/skillbaserates')),
-        },
-    )
-
-    fieldsets = (
-        {
-            'type': constants.FIELD_RELATED,
-            'field': 'candidate_skill',
-            'hide': True,
-        }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'hourly_rate',
-            'query': {
-                'candidate_skill': '{candidate_skill.id}',
-            },
-        },
-        'valid_from', 'valid_until'
-    )
-
-    list_filter = ('candidate_skill', )
-
-
 class SuperannuationFundEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.SuperannuationFund
@@ -922,6 +891,5 @@ router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
 router.register(endpoint=TagRelEndpoint())
 router.register(endpoint=SkillRelEndpoint())
-router.register(endpoint=SkillRateRelEndpoint())
 router.register(candidate_models.InterviewSchedule)
 router.register(candidate_models.CandidateRel)

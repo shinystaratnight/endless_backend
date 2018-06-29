@@ -1,6 +1,6 @@
 from django.utils.translation import ugettext_lazy as _
 from inflector import Inflector, English
-from rest_framework import serializers
+from rest_framework import serializers, exceptions
 
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
@@ -152,3 +152,17 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
     class Meta:
         model = pricing_models.PriceListRate
         fields = ('__all__',)
+
+    def validate(self, data):
+        skill = data.get('skill')
+
+        is_lower = skill.price_list_lower_rate_limit and data.get('hourly_rate') < skill.price_list_lower_rate_limit
+        is_upper = skill.price_list_upper_rate_limit and data.get('hourly_rate') > skill.price_list_upper_rate_limit
+        if is_lower or is_upper:
+            raise exceptions.ValidationError({
+                'hourly_rate': _('Hourly rate should be between {lower_limit} and {upper_limit}').format(
+                    lower_limit=skill.price_list_lower_rate_limit, upper_limit=skill.price_list_upper_rate_limit,
+                )
+            })
+
+        return data

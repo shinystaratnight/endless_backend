@@ -9,10 +9,9 @@ from django.utils.formats import date_format
 from django.utils.timezone import localtime, now
 from filer.models import Folder, File
 
-from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.pricing.models import RateCoefficientModifier
 from r3sourcer.apps.pricing.services import CoefficientService
-from r3sourcer.apps.candidate.models import SkillRateRel, CandidateContact
+from r3sourcer.apps.candidate.models import CandidateContact, SkillRel
 
 from .base import BasePaymentService, calc_worked_delta
 from ..models import PayslipLine, Payslip, JobOffer, TimeSheet
@@ -29,16 +28,7 @@ class PayslipService(BasePaymentService):
         if skill_rel is None:
             return 0
 
-        skill_rate = skill_rel.candidate_skill_rates.filter(
-            valid_from__lte=today,
-            valid_until__gt=today
-        ).first()
-
-        if skill_rate is None:
-            skill_rate = skill.skill_rate_defaults.first()
-            skill_rate = skill_rate.hourly_rate if skill_rate else 0
-        else:
-            skill_rate = skill_rate.hourly_rate.hourly_rate
+        skill_rate = skill_rel.hourly_rate if skill_rel.hourly_rate else skill.default_rate
 
         return skill_rate
 
@@ -137,11 +127,7 @@ class PayslipService(BasePaymentService):
         lines = self.calculate(candidate, from_date)
 
         if lines:
-            min_rate = SkillRateRel.objects.filter(
-                candidate_skill__candidate_contact=candidate
-            ).annotate(
-                min_rate=Min('hourly_rate__hourly_rate')
-            ).order_by('min_rate').first()
+            min_rate = SkillRel.objects.filter(candidate_contact=candidate).order_by('hourly_rate').first()
 
             payslip = Payslip.objects.create(
                 candidate=candidate,

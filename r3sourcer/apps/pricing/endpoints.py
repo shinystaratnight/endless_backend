@@ -129,20 +129,21 @@ class RateCoefficientEndpoint(ApiEndpoint):
 
 class PriceListRateEndpoint(ApiEndpoint):
     model = models.PriceListRate
+    serializer = serializers.PriceListRateSerializer
+
     search_fields = ('skill__name',)
     fieldsets = (
         {
-            "field": "hourly_rate",
-            "type": constants.FIELD_TEXT
-        },
-        {
-            "field": "skill",
-            "type": constants.FIELD_RELATED,
-            "hidden": True
-        },
-        {
-            "field": "price_list",
-            "type": constants.FIELD_RELATED
+            'field': 'price_list',
+            'type': constants.FIELD_RELATED
+        }, {
+            'field': 'skill',
+            'type': constants.FIELD_RELATED,
+            'values': ['default_rate', '__str__'],
+        }, {
+            'field': 'hourly_rate',
+            'type': constants.FIELD_TEXT,
+            'default': '{skill.default_rate}',
         },
     )
 
@@ -250,6 +251,7 @@ class PriceListEndpoint(ApiEndpoint):
                 'price_list': '{id}',
             },
             'label': _('Price List Rates'),
+            'add_label': _('Add'),
             'endpoint': api_reverse_lazy('pricing/pricelistrates'),
             'metadata_query': {
                 'editable_type': 'pricelist',

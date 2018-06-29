@@ -70,6 +70,27 @@ class Skill(MYOBMixin, UUIDModel):
         null=True
     )
 
+    price_list_upper_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    price_list_lower_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    price_list_default_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
     class Meta:
         verbose_name = _("Skill")
         verbose_name_plural = _("Skills")
@@ -80,7 +101,9 @@ class Skill(MYOBMixin, UUIDModel):
 
         if self.active:
             if not have_default_base_rate and not have_default_price_list_rate:
-                raise ValidationError("Skill cant be active. It doesnt have default price list rate and defalut base rate.")
+                raise ValidationError(
+                    "Skill cant be active. It doesnt have default price list rate and defalut base rate."
+                )
             elif not have_default_base_rate:
                 raise ValidationError("Skill cant be active. It doesnt have default base rate.")
             elif not have_default_price_list_rate:

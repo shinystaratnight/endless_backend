@@ -471,7 +471,7 @@ class CandidateMapper(StandardPayMapMixin, ContactMapper):
             'WageType': 'Hourly',
             'HourlyDetails': {
                 'PayRate': 'FixedHourly',
-                'FixedHourlyRate': str(skill_rate.hourly_rate.hourly_rate)
+                'FixedHourlyRate': str(skill_rate.hourly_rate)
             }
         }
 

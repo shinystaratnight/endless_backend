@@ -106,16 +106,16 @@ class TestCandidateContact:
         candidate.bank_account = None
         assert not candidate.is_formalities_filled()
 
-    def test_are_skill_rates_set_successful(self, candidate, skill_rate_rel):
+    def test_are_skill_rates_set_successful(self, candidate, skill_rel):
         assert candidate.are_skill_rates_set()
 
-    def test_are_skill_rates_set_unsuccessful(self, candidate, skill_rate_rel, price_list):
-        skill = skill_rate_rel.candidate_skill.skill
+    def test_are_skill_rates_set_unsuccessful(self, candidate, skill_rel, price_list):
+        skill = skill_rel.skill
         PriceListRate.objects.create(skill=skill, hourly_rate=1, price_list=price_list, default_rate=True)
         skill.active = True
         skill.save()
-        skill_rate_rel.valid_until = timezone.now() - datetime.timedelta(days=1)
-        skill_rate_rel.save()
+        skill_rel.hourly_rate = 0
+        skill_rel.save()
 
         assert not candidate.are_skill_rates_set()
 
@@ -169,10 +169,8 @@ class TestCandidateContact:
         assert candidate.get_email() == 'connor@test.test'
 
     @patch.object(SkillRel, 'get_valid_rate')
-    def test_get_candidate_rate_for_skill(self, mock_rate, candidate, skill,
-                                          skill_rel):
-        mock_hourly_rate = PropertyMock(return_value=1)
-        type(mock_rate.return_value).hourly_rate = mock_hourly_rate
+    def test_get_candidate_rate_for_skill(self, mock_rate, candidate, skill,skill_rel):
+        mock_rate.return_value = 1
 
         rate = candidate.get_candidate_rate_for_skill(skill)
         assert rate == 1
@@ -335,12 +333,6 @@ class TestCandidateContact:
         candidate.process_sms_reply(None, mock_sms, True)
 
         assert not mock_process.called
-
-
-@pytest.mark.django_db
-class TestSkillRateRel:
-    def test_skill_rate_rel_str(self, skill_rate_rel):
-        assert str(skill_rate_rel) == str(skill_rate_rel.hourly_rate)
 
 
 @pytest.mark.django_db

@@ -521,28 +521,6 @@ class SkillRelConfig(BaseConfig):
     lbk_model = 'crm_hr_recruiteeskill'
 
 
-class SkillRateRelConfig(BaseRateMixin, BaseConfig):
-    columns = {
-        'id', 'candidate_skill_id', 'hourly_rate_id', 'valid_from',
-        'valid_until', 'created_at', 'updated_at',
-    }
-    columns_map = {
-        'recruitee_skill_id': 'candidate_skill_id',
-    }
-    model = candidate_models.SkillRateRel
-    lbk_model = (
-        'crm_hr_recruiteeskillrate as rsr LEFT JOIN '
-        'crm_hr_skillbaserate as sbr ON rsr.hourly_rate_id=sbr.id'
-    )
-    select = 'rsr.*, sbr.skill_id as skill_id, sbr.hourly_rate as h_rate'
-
-    @classmethod
-    def prepare_data(cls, row):
-        row = cls.fetch_skill_base_rate(row, 'hourly_rate_id')
-
-        return row
-
-
 class IndustryConfig(BaseConfig):
     columns = {
         'id', 'type',
@@ -1116,7 +1094,7 @@ ALL_CONFIGS = [
     BankAccountConfig, ClientContactRelConfig, ContactNoteConfig, VisaTypeConfig,
     TagConfig, EmploymentClassificationConfig, SuperannuationFundConfig,
     CandidateContactConfig, TagRelConfig,
-    SkillConfig, SkillBaseRateConfig, SkillRelConfig, SkillRateRelConfig,
+    SkillConfig, SkillBaseRateConfig, SkillRelConfig,
     IndustryConfig, RateCoefficientGroupConfig, RateCoefficientConfig, RateCoefficientModifierCompanyConfig,
     RateCoefficientModifierCandidateConfig, PriceListConfig, PriceListRateConfig, PriceListRateCoefficientConfig,
     JobsiteConfig, JobsiteUnavailabilityConfig,

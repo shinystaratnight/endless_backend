@@ -1,8 +1,6 @@
-import datetime
 import logging
 
-from r3sourcer.apps.candidate.models import SkillRateRel
-from r3sourcer.apps.skills.models import SkillBaseRate
+from r3sourcer.apps.candidate.models import SkillRel
 from r3sourcer.apps.myob.mappers import CandidateMapper
 from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.mixins import BaseCategoryMixin, StandardPayMixin, CandidateCardFinderMixin
@@ -153,11 +151,8 @@ class CandidateSync(
         for payroll_wage_cat in payroll_details['Wage']['WageCategories']:
             wage_categories.add(payroll_wage_cat['UID'])
 
-        candidate_skill_rate = SkillBaseRate.objects.filter(
-            candidate_skill_rates__candidate_skill__candidate_contact=candidate_contact,
-            candidate_skill_rates__valid_from__lte=datetime.date.today(),
-            candidate_skill_rates__valid_until__gt=datetime.date.today()
-        ).order_by('hourly_rate').first()
+        candidate_skill_rate = candidate_contact.candidate_skills.all().order_by('-hourly_rate').first()
+
         base_hourly_rate = candidate_skill_rate and candidate_skill_rate.hourly_rate
 
         data = self.mapper.map_extra_info(
@@ -243,10 +238,7 @@ class CandidateSync(
         return self._expense_account
 
     def _find_wage_categories(self, candidate_contact):
-        candidate_skill_rates = SkillRateRel.objects.filter(
-            candidate_skill__candidate_contact=candidate_contact,
-            candidate_skill__skill__active=True
-        )
+        candidate_skill_rates = SkillRel.objects.filter(candidate_contact=candidate_contact, skill__active=True)
 
         wage_categories = set()
 

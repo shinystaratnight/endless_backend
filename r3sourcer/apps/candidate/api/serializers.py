@@ -43,6 +43,20 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
             },
         )
 
+    def validate(self, data):
+        skill = data.get('skill')
+
+        is_lower = skill.lower_rate_limit and data.get('hourly_rate') < skill.lower_rate_limit
+        is_upper = skill.upper_rate_limit and data.get('hourly_rate') > skill.upper_rate_limit
+        if is_lower or is_upper:
+            raise exceptions.ValidationError({
+                'hourly_rate': _('Hourly rate should be between {lower_limit} and {upper_limit}').format(
+                    lower_limit=skill.lower_rate_limit, upper_limit=skill.upper_rate_limit,
+                )
+            })
+
+        return data
+
 
 class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:

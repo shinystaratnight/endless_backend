@@ -6,7 +6,7 @@ from django.db.models import Q
 from django.utils.decorators import method_decorator
 from django.utils import timezone
 
-from r3sourcer.apps.candidate.models import SkillRateRel
+from r3sourcer.apps.candidate.models import SkillRel
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment import calc_worked_delta
 from r3sourcer.apps.myob.mappers import TimeSheetMapper, format_date_to_myob
@@ -337,14 +337,13 @@ class TimeSheetSync(
             base_rate = job.top_hourly_rate_default.hourly_rate
 
         if name is None:
-            candidate_skill_rate = SkillRateRel.objects.filter(
-                candidate_skill__candidate_contact=offer.candidate_contact,
-                candidate_skill__skill__active=True,
-                candidate_skill__skill=job.position,
-                valid_until__gte=timezone.localtime(timesheet.shift_started_at)
+            candidate_skill_rate = SkillRel.objects.filter(
+                candidate_contact=offer.candidate_contact,
+                skill__active=True,
+                skill=job.position,
             ).first()
             name = candidate_skill_rate and candidate_skill_rate.get_myob_name()
-            base_rate = candidate_skill_rate.hourly_rate.hourly_rate if candidate_skill_rate else 0
+            base_rate = candidate_skill_rate.hourly_rate if candidate_skill_rate else 0
         return name, base_rate
 
     def _get_base_rate_wage_category(self, name, rate=None, base_rate=None):

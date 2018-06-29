@@ -28,8 +28,6 @@ def get_available_candidate_list(job):
     candidate_contacts = candidate_models.CandidateContact.objects.filter(
         contact__is_available=True,
         candidate_skills__skill=job.position,
-        candidate_skills__candidate_skill_rates__valid_from__lte=today,
-        candidate_skills__candidate_skill_rates__valid_until__gte=today,
         candidate_skills__skill__active=True,
         candidate_skills__score__gt=0,
         id__in=objects
