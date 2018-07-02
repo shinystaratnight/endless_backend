@@ -70,11 +70,13 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
                                     'query': {
                                         'candidate': True,
                                     },
+                                    'read_only': True,
                                 }, {
                                     'field': 'contact.address',
                                     'type': constants.FIELD_ADDRESS,
                                     'hide': True,
                                     'send': False,
+                                    'read_only': True,
                                 }, {
                                     'field': 'contact.is_available',
                                     'type': constants.FIELD_CHECKBOX,

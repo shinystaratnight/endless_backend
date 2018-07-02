@@ -1223,7 +1223,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                         {
                             'type': constants.CONTAINER_GROUP,
                             'label': '',
-                            'width': .25,
+                            'width': .5,
                             'fields': (
                                 {
                                     'field': 'rating_unreliable',
@@ -1252,11 +1252,31 @@ class CompanyContactEndpoint(ApiEndpoint):
                                     'type': constants.FIELD_RELATED,
                                     'field': 'contact',
                                     'hide': True,
+                                    'read_only': True,
                                 }, {
                                     'type': constants.FIELD_RELATED,
                                     'field': 'company',
                                     'hide': True,
                                     'endpoint': api_reverse_lazy('core/companies'),
+                                },
+                            ),
+                        }, {
+                            'type': constants.CONTAINER_GROUP,
+                            'label': _('Contacts'),
+                            'width': .5,
+                            'fields': (
+                                {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'contact.email',
+                                    'label': _('E-mail'),
+                                    'read_only': True,
+                                    'send': False,
+                                }, {
+                                    'type': constants.FIELD_TEXT,
+                                    'field': 'contact.phone_mobile',
+                                    'label': _('Phone number'),
+                                    'read_only': True,
+                                    'send': False,
                                 },
                             ),
                         },
