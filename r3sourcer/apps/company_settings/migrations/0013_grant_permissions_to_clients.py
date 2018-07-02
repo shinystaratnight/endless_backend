@@ -10,9 +10,9 @@ def grant_permission_to_clients(apps, schema_editor):
     User = apps.get_model("core", "User")
     GlobalPermission = apps.get_model("company_settings", "GlobalPermission")
 
-    get_perm = GlobalPermission.objects.filter(codename='timesheet_endpoint_get').first()
-    post_perm = GlobalPermission.objects.filter(codename='timesheet_endpoint_post').first()
-    update_perm = GlobalPermission.objects.filter(codename='timesheet_endpoint_update').first()
+    get_perm = GlobalPermission.objects.filter(codename='hr/timesheets_get').first()
+    post_perm = GlobalPermission.objects.filter(codename='hr/timesheets_post').first()
+    update_perm = GlobalPermission.objects.filter(codename='hr/timesheets_update').first()
 
     client_users = User.objects.filter(role__name=Role.ROLE_NAMES.client).exclude(
         user_permissions__in=[get_perm, post_perm, update_perm]
