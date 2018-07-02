@@ -1252,6 +1252,7 @@ class CompanyContactEndpoint(ApiEndpoint):
                                     'type': constants.FIELD_RELATED,
                                     'field': 'contact',
                                     'hide': True,
+                                    'read_only': True,
                                 }, {
                                     'type': constants.FIELD_RELATED,
                                     'field': 'company',
