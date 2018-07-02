@@ -773,21 +773,19 @@ class JobViewset(BaseApiViewset):
         overpriced_candidates = []
         if job.hourly_rate_default:
             overpriced_qry = Q(
-                candidate_skills__candidate_skill_rates__valid_from__lte=today,
-                candidate_skills__candidate_skill_rates__valid_until__gte=today,
                 candidate_skills__skill=job.position,
                 candidate_skills__score__gt=0
             )
             hourly_rate = job.hourly_rate_default.hourly_rate
             overpriced_candidates = candidate_contacts.filter(
                 overpriced_qry,
-                candidate_skills__candidate_skill_rates__hourly_rate__hourly_rate__gt=hourly_rate,
+                candidate_skills__candidate_skill_rates__hourly_rate__gt=hourly_rate,
             ).values_list('id', flat=True)
 
             if overpriced:
                 candidate_contacts = candidate_contacts.filter(
                     overpriced_qry,
-                    candidate_skills__candidate_skill_rates__hourly_rate__hourly_rate__lte=hourly_rate,
+                    candidate_skills__candidate_skill_rates__hourly_rate__lte=hourly_rate,
                 )
         # end
 

@@ -160,17 +160,8 @@ def skill_rel(db, skill, candidate):
     return candidate_models.SkillRel.objects.create(
         skill=skill,
         score=4,
-        candidate_contact=candidate
-    )
-
-
-@pytest.fixture
-def skill_rate_rel(db, skill_rel, skill_base_rate):
-    return candidate_models.SkillRateRel.objects.create(
-        candidate_skill=skill_rel,
-        hourly_rate=skill_base_rate,
-        valid_from=timezone.now(),
-        valid_until=timezone.now() + datetime.timedelta(days=1)
+        candidate_contact=candidate,
+        hourly_rate=10,
     )
 
 

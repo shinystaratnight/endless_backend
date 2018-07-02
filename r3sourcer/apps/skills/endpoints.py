@@ -78,18 +78,18 @@ class SkillEndpoint(ApiEndpoint):
                             'fields': (
                                 {
                                     'type': constants.FIELD_NUMBER,
-                                    'field': 'lower_rate_limit',
+                                    'field': 'price_list_lower_rate_limit',
                                     'label': _('Lower Rate Limit'),
                                     'display': '${field}/h',
                                 }, {
                                     'type': constants.FIELD_NUMBER,
-                                    'field': 'default_rate',
+                                    'field': 'price_list_default_rate',
                                     'label': _('Default Rate'),
                                     'display': '${field}/h',
                                     'read_only': False,
                                 }, {
                                     'type': constants.FIELD_NUMBER,
-                                    'field': 'upper_rate_limit',
+                                    'field': 'price_list_upper_rate_limit',
                                     'label': _('Upper Rate Limit'),
                                     'display': '${field}/h',
                                 },

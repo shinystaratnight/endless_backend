@@ -463,7 +463,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         if candidate_skill:
             candidate_skill_rate = candidate_skill.get_valid_rate()
             if candidate_skill_rate:
-                return candidate_skill_rate.hourly_rate
+                return candidate_skill_rate
         return None
 
     def get_closest_company(self):
@@ -514,7 +514,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         if candidate_skill:
             candidate_skill_rate = candidate_skill.get_valid_rate()
             if candidate_skill_rate:
-                return candidate_skill_rate.hourly_rate
+                return candidate_skill_rate
         return None
 
     def total_evaluation_average(self):
@@ -651,41 +651,10 @@ class SkillRel(core_models.UUIDModel):
             str(self.candidate_contact), str(self.skill), str(self.score))
 
     def get_valid_rate(self):
-        today = date.today()
-        return self.candidate_skill_rates.filter(valid_from__lte=today,
-                                                 valid_until__gte=today).last()
-
-
-class SkillRateRel(MYOBMixin, core_models.UUIDModel):
-
-    candidate_skill = models.ForeignKey(
-        SkillRel,
-        related_name="candidate_skill_rates",
-        on_delete=models.CASCADE,
-        verbose_name=_("Candidate Skill")
-    )
-
-    hourly_rate = models.ForeignKey(
-        skill_models.SkillBaseRate,
-        related_name="candidate_skill_rates",
-        verbose_name=_("Hourly Rate"),
-        on_delete=models.SET_NULL,
-        blank=True,
-        null=True,
-    )
-
-    valid_from = models.DateField(verbose_name=_("Valid From"))
-    valid_until = models.DateField(verbose_name=_("Valid Until"))
-
-    class Meta:
-        verbose_name = _("Candidate Skill Rate")
-        verbose_name_plural = _("Candidate Skill Rates")
-
-    def __str__(self):
-        return str(self.hourly_rate)
+        return self.hourly_rate > 0
 
     def get_myob_name(self):
-        return '{} {}'.format(str(self.hourly_rate.skill.get_myob_name()), str(self.hourly_rate.hourly_rate))
+        return '{} {}'.format(str(self.skill.get_myob_name()), str(self.hourly_rate))
 
 
 class InterviewSchedule(core_models.UUIDModel):
