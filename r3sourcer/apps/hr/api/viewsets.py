@@ -24,7 +24,7 @@ from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.utils.text import format_lazy
-from r3sourcer.apps.core.models import Role
+from r3sourcer.apps.core.models import Role, Address
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models, payment
@@ -1180,4 +1180,31 @@ class ShiftViewset(BaseApiViewset):
 
 
 class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
-    pass
+
+    @list_route(
+        methods=['GET'],
+        serializer=job_serializers.JobsiteMapAddressSerializer
+    )
+    def jobsite_map(self, request, *args, **kwargs):
+        jobsite_data = Address.objects.filter(
+            Q(jobsites__isnull=False) | Q(company_addresses__isnull=False)
+        ).annotate(
+            name=F('jobsites__short_name'),
+            first_name=F('jobsites__primary_contact__contact__first_name'),
+            last_name=F('jobsites__primary_contact__contact__last_name'),
+            title=F('jobsites__primary_contact__contact__title'),
+            job_title=F('jobsites__primary_contact__job_title'),
+            phone_mobile=F('jobsites__primary_contact__contact__phone_mobile'),
+            jobsite_id=F('jobsites__id'),
+            client_first_name=F('company_addresses__primary_contact__contact__first_name'),
+            client_last_name=F('company_addresses__primary_contact__contact__last_name'),
+            client_title=F('company_addresses__primary_contact__contact__title'),
+            client_job_title=F('company_addresses__primary_contact__job_title'),
+            client_name=F('company_addresses__company__name'),
+            client_phone_mobile=F('company_addresses__primary_contact__contact__phone_mobile'),
+            client_hq=F('company_addresses__hq'),
+        ).prefetch_related()
+
+        serializer = job_serializers.JobsiteMapAddressSerializer(jobsite_data, many=True)
+
+        return Response(serializer.data)
