@@ -651,7 +651,7 @@ class SkillRel(core_models.UUIDModel):
             str(self.candidate_contact), str(self.skill), str(self.score))
 
     def get_valid_rate(self):
-        return self.hourly_rate > 0
+        return self.hourly_rate
 
     def get_myob_name(self):
         return '{} {}'.format(str(self.skill.get_myob_name()), str(self.hourly_rate))
