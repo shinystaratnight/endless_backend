@@ -1186,9 +1186,39 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
         serializer=job_serializers.JobsiteMapAddressSerializer
     )
     def jobsite_map(self, request, *args, **kwargs):
-        jobsite_data = Address.objects.filter(
-            Q(jobsites__isnull=False) | Q(company_addresses__isnull=False)
-        ).annotate(
+        serializer = job_serializers.JobsiteMapFilterSerializer(data=self.request.query_params)
+        serializer.is_valid()
+        if not serializer.validated_data:
+            return Response([])
+
+        filter_all = serializer.validated_data.get('show_all')
+        filter_qry = Q(jobsites__isnull=False) | Q(company_addresses__isnull=False) if filter_all else Q()
+
+        filter_by = serializer.validated_data.get('filter_by')
+        if filter_by:
+            if filter_by == 'clients':
+                filter_qry = Q(company_addresses__isnull=False)
+            elif filter_by == 'jobsites':
+                filter_qry = Q(jobsites__isnull=False)
+            elif filter_by == 'only_hqs':
+                filter_qry = Q(company_addresses__isnull=False, company_addresses__hq=True)
+
+        filter_client = serializer.validated_data.get('client')
+        if filter_client:
+            filter_qry = Q(company_addresses__company_id=filter_client)
+
+        filter_jobsite = serializer.validated_data.get('jobsite')
+        if filter_jobsite:
+            filter_qry = Q(jobsites__id=filter_jobsite)
+
+        filter_manager = serializer.validated_data.get('portfolio_manager')
+        if filter_manager:
+            filter_qry |= (
+                Q(company_addresses__primary_contact_id=filter_manager) |
+                Q(jobsites__primary_contact_id=filter_manager)
+            )
+
+        jobsite_data = Address.objects.filter(filter_qry).annotate(
             name=F('jobsites__short_name'),
             first_name=F('jobsites__primary_contact__contact__first_name'),
             last_name=F('jobsites__primary_contact__contact__last_name'),

@@ -483,3 +483,12 @@ class JobsiteMapAddressSerializer(core_serializers.ApiMethodFieldsMixin, seriali
                 active=True,
             ).exists()
             return 'jobsite_open' if open_states else 'jobsite'
+
+
+class JobsiteMapFilterSerializer(serializers.Serializer):
+
+    client = serializers.CharField(required=False)
+    jobsite = serializers.CharField(required=False)
+    portfolio_manager = serializers.UUIDField(required=False)
+    filter_by = serializers.CharField(required=False)
+    show_all = serializers.BooleanField(required=False, default=False)
