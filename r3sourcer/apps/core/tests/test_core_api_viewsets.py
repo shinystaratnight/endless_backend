@@ -5,7 +5,6 @@ import mock
 import pytest
 
 from django.test.client import MULTIPART_CONTENT, BOUNDARY, encode_multipart
-from drf_auto_endpoint.endpoints import Endpoint
 from guardian.shortcuts import assign_perm
 from rest_framework import status
 from rest_framework.exceptions import APIException, ValidationError
@@ -13,17 +12,18 @@ from rest_framework.test import force_authenticate
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import endpoints
+from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.viewsets import CompanyAddressViewset
 from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.models import Country, City, CompanyContact, DashboardModule, ExtranetNavigation
 from r3sourcer.apps.core.service import FactoryService
 
 
-class CountryEndpoint(Endpoint):
+class CountryEndpoint(ApiEndpoint):
     model = Country
 
 
-class CityEndpoint(Endpoint):
+class CityEndpoint(ApiEndpoint):
     model = City
 
 

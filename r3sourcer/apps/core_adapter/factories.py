@@ -1,116 +1,103 @@
-from django_filters import ChoiceFilter, CharFilter
-from django_filters.rest_framework import FilterSet
-from django.utils.translation import ugettext_lazy as _
+from six import string_types
 
-from . import constants
-from .filters import ValuesFilter, DateRangeFilter, DateTimeRangeFilter, RangeNumberFilter
+from django.core.exceptions import FieldDoesNotExist
+from django.db.models.fields import NOT_PROVIDED
+from django.db.models.fields.reverse_related import ManyToOneRel, OneToOneRel
 
-
-def _get_field(fields, field_name):
-    for field in fields:
-        if field['key'] == field_name:
-            return field
-    return None
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import serializers, filters
 
 
-def filter_factory(endpoint):
-    """
-    Create new or extends existing filter class using field filters set in list_filter
-    """
-    list_filters = endpoint.get_list_filter()
-    meta_fields = endpoint.get_metadata_fields()
+class NullToDefaultMixin(object):
 
-    attrs = {}
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.Meta.fields:
+            try:
+                model_field = self.Meta.model._meta.get_field(field)
+                if hasattr(model_field, 'default') and model_field.default != NOT_PROVIDED:
+                    self.fields[field].allow_null = True
+            except FieldDoesNotExist:
+                pass
 
-    if hasattr(endpoint, 'filter_class'):
-        base_class = endpoint.filter_class
-    else:
-        base_class = FilterSet
+    def validate(self, data):
+        for field in self.Meta.fields:
+            try:
+                model_field = self.Meta.model._meta.get_field(field)
+                if hasattr(model_field, 'default') and model_field.default != NOT_PROVIDED and \
+                        data.get(field, NOT_PROVIDED) is None:
+                    data.pop(field)
+            except FieldDoesNotExist:
+                pass
 
-    for list_filter in list_filters:
-        if isinstance(list_filter, str):
-            list_filter = {'field': list_filter}
+        return data
 
-        field = list_filter['field']
-        field_qry = field.replace('.', '__')
 
-        if field_qry in base_class.declared_filters:
+def serializer_factory(endpoint):
+    meta_attrs = {
+        'model': endpoint.model,
+        'fields': endpoint.get_serializer_fields()
+    }
+    meta_parents = (object, )
+    if hasattr(endpoint.base_serializer, 'Meta'):
+        meta_parents = (endpoint.base_serializer.Meta, ) + meta_parents
+
+    Meta = type('Meta', meta_parents, meta_attrs)
+
+    cls_name = '{}Serializer'.format(endpoint.model.__name__)
+    cls_attrs = {
+        'Meta': Meta,
+    }
+
+    for meta_field in meta_attrs['fields']:
+        if not isinstance(meta_field, string_types) or meta_field == '__all__':
             continue
 
-        meta_field = _get_field(meta_fields, field) or list_filter
-        field_type = list_filter.get('type', meta_field.get('type'))
-        distinct = list_filter.get('distinct', True)
+        try:
+            model_field = endpoint.model._meta.get_field(meta_field)
+            if isinstance(model_field, OneToOneRel):
+                cls_attrs[meta_field] = serializers.PrimaryKeyRelatedField(read_only=True)
+            elif isinstance(model_field, ManyToOneRel):
+                cls_attrs[meta_field] = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+        except FieldDoesNotExist:
+            cls_attrs[meta_field] = serializers.ReadOnlyField()
 
-        if field_type in [constants.FIELD_RELATED, constants.FIELD_LINK]:
-            attrs[field_qry] = CharFilter(lookup_expr='id', distinct=distinct)
-        elif field_type == constants.FIELD_SELECT:
-            if 'choices' in list_filter:
-                choices = list_filter['choices']
-            elif 'choices' in meta_field:
-                choices = meta_field['choices']
-            else:
-                continue  # pragma: no cover
+    return type(cls_name, (NullToDefaultMixin, endpoint.base_serializer, ), cls_attrs)
 
-            kwargs = {
-                'name': field_qry,
-                'empty_label': _('All'),
-                'distinct': distinct
-            }
-            if list_filter.get('is_qs', False):
-                choice_filter_class = ValuesFilter
-            else:
-                choice_filter_class = ChoiceFilter
 
-                if not callable(choices):
-                    choices = [(choice['value'], choice['label']) for choice in choices]
+def viewset_factory(endpoint):
+    base_viewset = endpoint.get_base_viewset()
 
-                kwargs['choices'] = choices
+    cls_name = '{}ViewSet'.format(endpoint.model.__name__)
+    tmp_cls_attrs = {
+        'serializer_class': endpoint.get_serializer(),
+        'queryset': endpoint.model.objects.all(),
+        'endpoint': endpoint,
+        '__doc__': base_viewset.__doc__
+    }
 
-            attrs[field_qry] = choice_filter_class(**kwargs)
+    cls_attrs = {
+        key: value for key, value in tmp_cls_attrs.items()
+        if key == '__doc__' or getattr(base_viewset, key, None) is None
+    }
 
-        elif field_type in [constants.FIELD_DATE,
-                            constants.FIELD_DATETIME]:
-            is_date = field_type == constants.FIELD_DATE
-            if is_date:
-                field_class = DateRangeFilter
-            else:
-                field_class = DateTimeRangeFilter
+    if endpoint.permission_classes is not None:
+        cls_attrs['permission_classes'] = endpoint.permission_classes
 
-            attrs[field_qry] = field_class(
-                name=field_qry,
-                distinct=distinct
-            )
-        elif field_type == constants.FIELD_CHECKBOX:
-            if 'choices' in list_filter:
-                choices = list_filter['choices']
-            else:
-                choices = [('True', 'Yes'), ('False', 'No')]
+    filter_backends = list(getattr(base_viewset, 'filter_backends', []))
 
-            kwargs = {
-                'name': field_qry,
-                'empty_label': _('All'),
-                'distinct': distinct,
-                'choices': choices,
-            }
+    for filter_type, backend in (
+        ('filter_class', DjangoFilterBackend),
+        ('search_fields', filters.SearchFilter),
+        ('ordering_fields', filters.OrderingFilter),
+    ):
+        if getattr(endpoint, filter_type, None) is not None:
+            filter_backends.append(backend)
+            cls_attrs[filter_type] = getattr(endpoint, filter_type)
 
-            attrs[field_qry] = ChoiceFilter(**kwargs)
-        elif field_type == constants.FIELD_RANGE:
-            attrs[field_qry] = RangeNumberFilter(name=field_qry, distinct=distinct)
-        else:
-            continue  # pragma: no cover
+    if len(filter_backends) > 0:
+        cls_attrs['filter_backends'] = filter_backends
 
-    if not attrs:
-        return base_class if base_class is not FilterSet else None
+    rv = type(cls_name, (base_viewset,), cls_attrs)
 
-    base_meta_fields = getattr(base_class.Meta, 'fields', []) if base_class is not FilterSet else []
-    meta_fields = set(base_meta_fields)
-    meta_fields.update(attrs.keys())
-
-    cls_name = '{}Filter'.format(endpoint.model.__name__)
-
-    attrs['Meta'] = type('Meta', (object, ), {
-        'model': endpoint.model,
-        'fields': meta_fields,
-    })
-
-    return type(cls_name, (base_class, ), attrs)
+    return rv

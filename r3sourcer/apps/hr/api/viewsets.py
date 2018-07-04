@@ -1,4 +1,5 @@
 import datetime
+import logging
 import operator
 
 from functools import reduce
@@ -6,11 +7,11 @@ from functools import reduce
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max
-from django.urls import reverse_lazy
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import exceptions, mixins
+from rest_framework import exceptions, mixins, status
+from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
@@ -18,15 +19,11 @@ from rest_framework.viewsets import GenericViewSet
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
-from r3sourcer.apps.core.api.decorators import detail_route, list_route
-from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
-from r3sourcer.apps.core.utils.text import format_lazy
 from r3sourcer.apps.core.models import Role
 from r3sourcer.apps.core_adapter import constants
-from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.hr import models as hr_models, payment
 from r3sourcer.apps.hr.api.filters import TimesheetFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
@@ -35,91 +32,7 @@ from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
 from r3sourcer.apps.myob.tasks import sync_timesheet
 
 
-class ExtranetTimesheetEndpoint(ApiEndpoint):
-
-    model = hr_models.TimeSheet
-    serializer = timesheet_serializers.TimeSheetSerializer
-
-    list_buttons = []
-
-
-class JobFillinEndpoint(ApiEndpoint):
-
-    model = candidate_models.CandidateContact
-    serializer = job_serializers.JobFillinSerialzier
-
-    list_buttons = [{
-        'label': _('Show map'),
-        'action': 'openMap'
-    }]
-
-    highlight = {
-        'field': 'color',
-        'values': {
-            1: 'lightgreen',
-            2: '#dcdcdc',
-            3: 'red',
-            4: '#ff7f00',
-            5: '#ff7f50',
-        },
-    }
-
-    search_fields = ('contact__first_name', 'contact__last_name')
-
-    list_filter = [{
-        'field': 'transportation_to_work',
-        'type': constants.FIELD_SELECT,
-    }, {
-        'field': 'available',
-        'label': _('Available'),
-        'type': constants.FIELD_SELECT,
-        'default': 'True',
-        'choices': [
-            {'label': _('Partially'), 'value': 'True'},
-        ]
-    }, {
-        'field': 'overpriced',
-        'label': _('Overpriced'),
-        'type': constants.FIELD_SELECT,
-        'default': 'False',
-        'choices': [
-            {'label': _('Without overpriced'), 'value': 'True'}
-        ]
-    }, {
-        'field': 'distance_to_jobsite',
-        'label': _('Distance'),
-        'type': constants.FIELD_TEXT,
-        'default': 50,
-        'min': 0,
-        'max': 200,
-    }, {
-        'type': constants.FIELD_SELECT_MULTIPLE,
-        'field': 'date',
-        'label': _('Shifts'),
-        'query': {
-            'shifts': '{id}',
-        },
-        'data': 'shifts',
-        'display': '__str__',
-        'unique': ('date', ),
-    }, {
-        'field': 'show_without_tags',
-        'label': _('Tags'),
-        'type': constants.FIELD_SELECT,
-        'default': 'True',
-        'choices': [
-            {'label': _('Only with job tags'), 'value': 'False'}
-        ]
-    }]
-
-    ordering_mapping = {
-        'distance_to_jobsite': 'distance_to_jobsite',
-        'time_to_jobsite': 'time_to_jobsite',
-        'candidate_scores.average_score': 'candidate_scores__average_score',
-        'skills_score': 'skills_score',
-    }
-
-    ordering = ('distance_to_jobsite')
+logger = logging.getLogger(__name__)
 
 
 class BaseTimeSheetViewsetMixin:
@@ -170,8 +83,7 @@ class BaseTimeSheetViewsetMixin:
 
 class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
-    EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets',
-                   'met_expectations', 'representation')
+    EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets', 'met_expectations', 'representation')
 
     def get_contact(self):
         role_id = self.request.query_params.get('role')
@@ -200,107 +112,18 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         return self.paginated(queryset)
 
-    @list_route(
-        methods=['GET'],
-        endpoint=ExtranetTimesheetEndpoint(),
-        list_display=[{
-            'field': 'job_offer.candidate_contact.contact.picture',
-            'type': constants.FIELD_PICTURE,
-            'file': False,
-        }, {
-            'label': _('Position'),
-            'fields': ({
-                'type': constants.FIELD_LINK,
-                'endpoint': format_lazy(
-                    '{}{{job_offer.candidate_contact.id}}/',
-                    api_reverse_lazy('candidate/candidatecontacts')
-                ),
-                'action': 'showCandidateProfile',
-                'field': 'job_offer.candidate_contact',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'position',
-                'label': _('Position'),
-            }),
-        }, {
-            'label': _('Times'),
-            'fields': ({
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__date}}'),
-                'label': _('Shift date'),
-                'field': 'shift_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
-                'label': _('Shift started at'),
-                'field': 'shift_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy(
-                    '{{break_started_at__time}} - {{break_ended_at__time}}'),
-                'label': _('Break'),
-                'field': 'break_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_ended_at__time}}'),
-                'label': _('Shift ended at'),
-                'field': 'shift_ended_at',
-            }),
-        }, {
-            'type': constants.FIELD_BUTTON,
-            'icon': 'fa-check',
-            'label': _('Approve'),
-            'text': _('Approve'),
-            'color': 'success',
-            'action': 'approveTimesheet',
-            'field': 'id',
-            'hidden': 'supervisor_approved_at',
-            'replace_by': 'supervisor',
-            'endpoint': format_lazy(
-                '{}{{id}}/approve/', api_reverse_lazy('hr/timesheets')
-            ),
-        }, {
-            'type': constants.FIELD_BUTTON,
-            'icon': 'fa-pencil',
-            'label': _('Change'),
-            'text': _('Change'),
-            'color': 'danger',
-            'action': 'changeTimesheet',
-            'field': 'id',
-            'hidden': 'supervisor_approved_at',
-            'endpoint': format_lazy(
-                '{}{{id}}/not_agree/',
-                api_reverse_lazy('hr/timesheets')
-            ),
-        }, {
-            'type': constants.FIELD_BUTTON,
-            'icon': 'fa-star',
-            'repeat': 5,
-            'label': _('Evaluate'),
-            'color': 'warning',
-            'action': 'evaluateCandidate',
-            'field': 'id',
-            'endpoint': format_lazy(
-                '{}{{id}}/evaluate/',
-                api_reverse_lazy('hr/timesheets')
-            ),
-        }]
-    )
+    @action(methods=['get'], detail=False)
     def unapproved(self, request, *args, **kwargs):  # pragma: no cover
         return self.paginated(self.get_unapproved_queryset(request))
 
     @transaction.atomic
-    @detail_route(methods=['PUT'])
+    @action(methods=['put'], detail=True)
     def approve(self, request, pk, *args, **kwargs):  # pragma: no cover
         return self.handle_request(request, pk, False, data={},
                                    *args, **kwargs)
 
     @transaction.atomic
-    @detail_route(
-        methods=['PUT'],
-        serializer=timesheet_serializers.TimeSheetSerializer,
-        fieldsets=(BaseTimeSheetViewsetMixin.TIME_FORM, )
-    )
+    @action(methods=['put'], detail=True)
     def not_agree(self, request, pk, *args, **kwargs):  # pragma: no cover
         data = dict(request.data)
         data.update(candidate_submitted_at=None)
@@ -308,20 +131,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                                    *args, **kwargs)
 
     @transaction.atomic
-    @detail_route(
-        methods=['PUT'],
-        serializer=timesheet_serializers.CandidateEvaluationSerializer,
-        fieldsets=(*[{
-            'field': field,
-            'type': constants.FIELD_ICON,
-            'values': {
-                True: 'star',
-                False: 'star-o',
-            },
-            'color': 'warning',
-            'default': True,
-        } for field in EVAL_FIELDS], 'level_of_communication')
-    )
+    @action(methods=['put'], detail=True)
     def evaluate(self, request, *args, **kwargs):
         timesheet = self.get_object()
 
@@ -339,115 +149,15 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             'message': _('Candidate evaluated')
         })
 
-    @list_route(
-        methods=['GET'],
-        endpoint=ExtranetTimesheetEndpoint(),
-        list_display=[{
-            'label': _('Times'),
-            'fields': ({
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__date}}'),
-                'label': _('Shift date'),
-                'field': 'shift_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
-                'label': _('Shift started at'),
-                'field': 'shift_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy(
-                    '{{break_started_at__time}} - {{break_ended_at__time}}'),
-                'label': _('Break'),
-                'field': 'break_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
-                'label': _('Shift ended at'),
-                'field': 'shift_ended_at',
-            }),
-        }, {
-            'label': _('Jobsite'),
-            'fields': ('jobsite', 'supervisor')
-        }, {
-            'label': _('Going to work'),
-            'field': 'going_to_work_confirmation',
-            'type': constants.FIELD_ICON,
-        }, {
-            'label': _('Signed by'),
-            'fields': ('supervisor', 'supervisor_approved_at')
-        }]
-    )
+    @action(methods=['get'], detail=False)
     def history(self, request, *args, **kwargs):  # pragma: no cover
         return self.handle_history(request)
 
-    @list_route(
-        methods=['GET'],
-        endpoint=ExtranetTimesheetEndpoint(),
-        list_display=[{
-            'field': 'job_offer.candidate_contact.contact.picture',
-            'type': constants.FIELD_PICTURE,
-            'file': False,
-        }, {
-            'label': _('Position'),
-            'fields': ({
-                'type': constants.FIELD_LINK,
-                'endpoint': format_lazy(
-                    '{}{{job_offer.candidate_contact.id}}/',
-                    api_reverse_lazy('candidate/candidatecontacts')
-                ),
-                'action': 'showCandidateProfile',
-                'field': 'job_offer.candidate_contact',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'position',
-                'label': _('Position'),
-            }),
-        }, {
-            'label': _('Times'),
-            'fields': ({
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__date}}'),
-                'label': _('Shift date'),
-                'field': 'shift_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_started_at__time}}'),
-                'label': _('Shift started at'),
-                'field': 'shift_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy(
-                    '{{break_started_at__time}} - {{break_ended_at__time}}'),
-                'label': _('Break'),
-                'field': 'break_started_at',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'text': format_lazy('{{shift_ended_at__time}}'),
-                'label': _('Shift ended at'),
-                'field': 'shift_ended_at',
-            }),
-        }, {
-            'type': constants.FIELD_BUTTON,
-            'icon': 'fa-star',
-            'repeat': 5,
-            'label': _('Evaluate'),
-            'color': 'warning',
-            'action': 'evaluateCandidate',
-            'field': 'id',
-            'hidden': 'evaluated',
-            'endpoint': format_lazy(
-                '{}{{id}}/evaluate/',
-                api_reverse_lazy('hr/timesheets')
-            ),
-        }]
-    )
+    @action(methods=['get'], detail=False)
     def approved(self, request, *args, **kwargs):  # pragma: no cover
         return self.handle_history(request)
 
-    @detail_route(
-        methods=['POST'],
-    )
+    @action(methods=['post'], detail=True)
     def confirm(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
@@ -458,9 +168,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             'status': 'success'
         })
 
-    @detail_route(
-        methods=['POST'],
-    )
+    @action(methods=['post'], detail=True)
     def resend_sms(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
@@ -471,9 +179,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             'status': 'success'
         })
 
-    @detail_route(
-        methods=['POST'],
-    )
+    @action(methods=['post'], detail=True)
     def resend_supervisor_sms(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
@@ -483,38 +189,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             'status': 'success'
         })
 
-    @detail_route(
-        methods=['GET', 'PUT'],
-        serializer=timesheet_serializers.TimeSheetManualSerializer,
-        fieldsets=(
-            'shift_started_at', 'shift_ended_at',
-            {
-                'type': constants.FIELD_CHECKBOX,
-                'label': _('No Break'),
-                'field': 'no_break',
-            }, {
-                'type': constants.FIELD_DATETIME,
-                'field': 'break_started_at',
-                'showIf': [{
-                    'no_break': False,
-                }],
-            }, {
-                'type': constants.FIELD_DATETIME,
-                'field': 'break_ended_at',
-                'showIf': [{
-                    'no_break': False,
-                }],
-            }, {
-                'type': constants.FIELD_STATIC,
-                'label': _('Total'),
-                'field': 'total_worked'
-            }, {
-                'type': constants.FIELD_CHECKBOX,
-                'label': _('Send confirmation message to supervisor'),
-                'field': 'send_supervisor_message',
-            }
-        )
-    )
+    @action(methods=['get', 'put'], detail=True)
     def candidate_fill(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
@@ -533,42 +208,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         return Response(serializer.data)
 
-    @detail_route(
-        methods=['GET', 'PUT'],
-        serializer=timesheet_serializers.TimeSheetManualSerializer,
-        fieldsets=(
-            'shift_started_at', 'shift_ended_at',
-            {
-                'type': constants.FIELD_CHECKBOX,
-                'label': _('No Break'),
-                'field': 'no_break',
-            }, {
-                'type': constants.FIELD_DATETIME,
-                'field': 'break_started_at',
-                'showIf': [{
-                    'no_break': False,
-                }],
-            }, {
-                'type': constants.FIELD_DATETIME,
-                'field': 'break_ended_at',
-                'showIf': [{
-                    'no_break': False,
-                }],
-            }, {
-                'type': constants.FIELD_STATIC,
-                'label': _('Total'),
-                'field': 'total_worked'
-            }, {
-                'type': constants.FIELD_CHECKBOX,
-                'label': _('Send confirmation message to supervisor'),
-                'field': 'send_supervisor_message',
-            }, {
-                'type': constants.FIELD_CHECKBOX,
-                'label': _('Send confirmation message to Candidate'),
-                'field': 'send_candidate_message',
-            }
-        )
-    )
+    @action(methods=['get', 'put'], detail=True)
     def supervisor_approve(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
@@ -592,7 +232,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         return Response(serializer.data)
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def sync(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
@@ -600,12 +240,71 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         return Response({'status': 'success'})
 
+    @transaction.atomic
+    @action(methods=['post'], detail=True)
+    def approve_by_pin(self, request, pk, *args, **kwargs):
+        """
+        Approval action to timesheet.
+        Would be used for approving through pin code.
+        """
+
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+
+        serializer = timesheet_serializers.PinCodeSerializer(instance=time_sheet, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        # check if already approved
+        if time_sheet.supervisor_approved_at:
+            return Response({
+                "description": _("TimeSheet already confirmed")
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        # approve timesheet
+        time_sheet.supervisor_approved_at = timezone.now()
+        time_sheet.supervisor_approved_scheme = serializer.APPROVAL_SCHEME
+        time_sheet.save()
+
+        logger.debug("TimeSheet {ts_id} approved through pin.".format(ts_id=time_sheet.id))
+
+        return Response(status=status.HTTP_200_OK)
+
+    @transaction.atomic
+    @action(methods=['post'], detail=True)
+    def approve_by_signature(self, request, pk, *args, **kwargs):
+        """
+        Approval action to timesheet.
+        Would be used for approving through signature.
+        """
+
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+
+        # check if already approved
+        if time_sheet.supervisor_approved_at:
+            return Response({
+                "description": _("TimeSheet already confirmed")
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = timesheet_serializers.TimeSheetSignatureSerializer(instance=time_sheet, data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        logger.debug("TimeSheet {ts_id} approved through signature.".format(
+            ts_id=time_sheet.id
+        ))
+
+        # approve timesheet
+        serializer.save(
+            supervisor_approved_at=timezone.now(),
+            supervisor_approved_scheme=serializer.APPROVAL_SCHEME
+        )
+
+        return Response(status=status.HTTP_200_OK)
+
 
 class InvoiceViewset(BaseApiViewset):
 
     http_method_names = ['get', 'options']
 
-    @detail_route(methods=['get'])
+    @action(methods=['get'], detail=True)
     def pdf(self, request, *args, **kwargs):
         invoice = self.get_object()
 
@@ -629,31 +328,26 @@ class InvoiceViewset(BaseApiViewset):
 
 
 class JobOfferViewset(BaseApiViewset):
-    @list_route(
-        methods=['GET'],
-        list_editable=[{
-            'label': _('Shift date and time'),
-            'fields': ('shift.date.shift_date', 'shift.time')
-        }, 'status']
-    )
+
+    @action(methods=['get'], detail=False)
     def candidate(self, request, *args, **kwargs):  # pragma: no cover
         return self.list(request, *args, **kwargs)
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def accept(self, request, *args, **kwargs):  # pragma: no cover
         obj = self.get_object()
         obj.accept()
 
         return Response({'status': 'success'})
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def cancel(self, request, *args, **kwargs):  # pragma: no cover
         obj = self.get_object()
         obj.cancel()
 
         return Response({'status': 'success'})
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def resend(self, request, *args, **kwargs):  # pragma: no cover
         obj = self.get_object()
         serializer_class = self.get_serializer_class()
@@ -670,7 +364,7 @@ class JobOfferViewset(BaseApiViewset):
 
         return Response({'status': 'success'})
 
-    @detail_route(methods=['POST'])
+    @action(methods=['post'], detail=True)
     def send(self, request, *args, **kwargs):  # pragma: no cover
         obj = self.get_object()
         serializer_class = self.get_serializer_class()
@@ -688,45 +382,7 @@ class JobOfferViewset(BaseApiViewset):
 
 class JobViewset(BaseApiViewset):
 
-    @detail_route(
-        methods=['GET', 'POST'],
-        endpoint=JobFillinEndpoint(),
-        list_display=[
-            'contact.__str__', 'recruitment_agent', 'available', 'days_from_last_timesheet',
-            {
-                'type': constants.FIELD_STATIC,
-                'field': 'distance_to_jobsite',
-                'async': True,
-                'endpoint': reverse_lazy('get_candidate_distance', kwargs={'version': 'v2'}),
-                'method': 'post',
-                'query': {
-                    'candidates': '{id}',
-                    'job': '{job.id}',
-                },
-                'request_field': 'distance',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'time_to_jobsite',
-                'async': True,
-                'endpoint': reverse_lazy('get_candidate_distance', kwargs={'version': 'v2'}),
-                'method': 'post',
-                'query': {
-                    'candidates': '{id}'
-                },
-                'request_field': 'time',
-            }, 'skills_score', 'tag_rels', 'count_timesheets',
-            'contact.gender', 'nationality', {
-                'field': 'transportation_to_work',
-                'type': constants.FIELD_SELECT,
-            },
-            'candidate_scores.reliability', 'candidate_scores.average_score', 'strength', 'language', {
-                'field': 'hourly_rate',
-                'type': constants.FIELD_STATIC,
-                'display': '${field}/h',
-            },
-            'evaluation'
-        ]
-    )
+    @action(methods=['get', 'post'], detail=True)
     def fillin(self, request, *args, **kwargs):
         job = self.get_object()
 
@@ -1022,33 +678,7 @@ class JobViewset(BaseApiViewset):
 
         return candidate_contacts.order_by(*fields)
 
-    @detail_route(
-        methods=['GET', 'PUT'],
-        serializer=job_serializers.JobExtendSerialzier,
-        fieldsets=(
-            {
-                'type': constants.FIELD_JOB_DATES,
-                'field': 'job_shift',
-                'label': _('Select Shift dates for Job extension'),
-            },
-            'autofill',
-            {
-                'type': constants.FIELD_LIST,
-                'field': 'id_',
-                'query': {
-                    'shift_date': '{latest_date}',
-                },
-                'label': _('Candidates'),
-                'endpoint': api_reverse_lazy('hr/joboffers'),
-                'metadata_query': {
-                    'editable_type': 'extend',
-                },
-                'showIf': [
-                    {'autofill': True},
-                ]
-            }
-        ),
-    )
+    @action(methods=['get', 'put'], detail=True)
     def extend(self, request, *args, **kwargs):
         job = self.get_object()
 
@@ -1129,30 +759,7 @@ class TimeSheetCandidateViewset(
         return self.paginated(self.get_candidate_queryset(request))
 
     @transaction.atomic
-    @detail_route(
-        methods=['GET', 'PUT'],
-        serializer=timesheet_serializers.TimeSheetSerializer,
-        fieldsets=({
-            'type': constants.CONTAINER_ROW,
-            'fields': ({
-                'type': constants.FIELD_STATIC,
-                'field': 'supervisor',
-                'label': _('Supervisor'),
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'company',
-                'label': _('Company'),
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'jobsite',
-                'label': _('Jobsite'),
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'position',
-                'label': _('Position'),
-            })
-        }, BaseTimeSheetViewsetMixin.TIME_FORM)
-    )
+    @action(methods=['get', 'put'], detail=True)
     def submit(self, request, pk, *args, **kwargs):  # pragma: no cover
         return self.handle_request(request, pk, *args, **kwargs)
 

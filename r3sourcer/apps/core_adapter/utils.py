@@ -14,4 +14,5 @@ def api_reverse(endpoint, methodname='list', *args, **kwargs):
     return reverse('api:{}-{}'.format(endpoint, methodname),
                    kwargs=kwargs)  # pragma: no cover
 
+
 api_reverse_lazy = lazy(api_reverse, six.text_type)

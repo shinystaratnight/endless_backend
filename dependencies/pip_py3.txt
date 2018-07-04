@@ -31,7 +31,7 @@ django-phonenumber-field==1.1.0
 django-rosetta==0.7.12
 django-redis==4.8.0
 django-loginas==0.3.1
-djangorestframework==3.7.1
+djangorestframework==3.8.2
 
 dry-rest-permissions==0.1.8
 graphviz==0.5.1
@@ -53,10 +53,10 @@ googlemaps==2.5.1
 twilio==6.10.3
 weasyprint==0.40
 stripe==1.80.0
+Inflector>=2.0.11
 
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light
 git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails
-git+ssh://git@bitbucket.org/r3sourcer_1/drf-schema-adapter.git@master#egg=drf-schema-adapter
 
 # TODO: uncomment this after redbeat support timezones
 # celery-redbeat==0.11.0

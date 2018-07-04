@@ -11,6 +11,7 @@ from django.utils.translation import ugettext_lazy as _
 from phonenumber_field import phonenumber
 from rest_framework import viewsets, exceptions, status, fields
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
@@ -22,13 +23,11 @@ from ..utils.user import get_default_company
 from ..workflow import WorkflowProcess
 
 from . import permissions, serializers
-from .decorators import list_route, detail_route
 
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.address import parse_google_address
-from r3sourcer.apps.core_adapter import constants
 
 
 class BaseViewsetMixin():
@@ -153,7 +152,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
 class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
-    @list_route(methods=['get'])
+    @action(methods=['get'], detail=False)
     def validate(self, request, *args, **kwargs):
         email = request.GET.get('email')
         phone = request.GET.get('phone')
@@ -191,11 +190,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             }
         })
 
-    @detail_route(
-        methods=['put'],
-        serializer=serializers.ContactPasswordSerializer,
-        fieldsets=('password', 'password1')
-    )
+    @action(methods=['put'], detail=True)
     def password(self, request, pk=None, *args, **kwargs):
         serializer = serializers.ContactPasswordSerializer(
             data=request.data)
@@ -207,7 +202,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             'message': _('Password changed successfully')
         })
 
-    @detail_route(methods=['get'])
+    @action(methods=['get'], detail=True)
     def verify_email(self, request, *args, **kwargs):
         contact = self.get_object()
         contact.email_verified = True
@@ -401,40 +396,7 @@ class CompanyContactViewset(BaseApiViewset):
 
         return self._prepare_internal_data(data, is_create=is_create)
 
-    @list_route(
-        methods=['post'],
-        serializer=serializers.CompanyContactRegisterSerializer,
-        fieldsets=({
-            'type': constants.CONTAINER_ROW,
-            'fields': ('title', 'first_name', 'last_name')
-        }, {
-            'type': constants.CONTAINER_ROW,
-            'fields': ('email', 'phone_mobile')
-        }, {
-            'type': constants.CONTAINER_ROW,
-            'fields': ({
-                'type': constants.FIELD_BUTTON,
-                'action': 'register_company_contact',
-                'label': _('Company')
-            }, {
-                'type': constants.FIELD_BUTTON,
-                'action': 'register_candidate_contact',
-                'label': _('Candidate')
-            })
-        }, {
-            'type': constants.CONTAINER_HIDDEN,
-            'fields': ({
-                'type': constants.CONTAINER_ROW,
-                'fields': ('address.country', 'address.state', 'address.city')
-            }, {
-                'type': constants.CONTAINER_ROW,
-                'fields': ('company.name', 'company.business_id')
-            }, {
-                'type': constants.CONTAINER_ROW,
-                'fields': ('address.street_address', 'address.postal_code')
-            })
-        })
-    )
+    @action(methods=['post'], detail=False)
     def register(self, request, *args, **kwargs):
         serializer = serializers.CompanyContactRegisterSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -451,6 +413,25 @@ class CompanyContactViewset(BaseApiViewset):
         return Response(serializer.data,
                         status=status.HTTP_201_CREATED,
                         headers=headers)
+
+    @action(methods=['post'], detail=False)
+    def sendsms(self, request, *args, **kwargs):
+        id_list = request.data
+
+        if not id_list or not isinstance(id_list, list):
+            raise exceptions.ParseError(_('You should select Company addresses'))
+
+        phone_numbers = self.model.objects.filter(
+            id__in=id_list, contact__phone_mobile__isnull=False
+        ).values_list(
+            'contact__phone_mobile', flat=True
+        ).distinct()
+
+        return Response({
+            'status': 'success',
+            'phone_number': phone_numbers,
+            'message': _('Phones numbers was selected'),
+        })
 
 
 class SiteViewset(BaseApiViewset):
@@ -510,6 +491,35 @@ class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
                 company_rel.create_state(80, _('Company has no active address!'))
 
         super().perform_destroy(instance)
+
+    @action(methods=['post'], detail=False)
+    def delete(self, request, *args, **kwargs):
+        ids = request.data
+
+        if not ids:
+            raise exceptions.ParseError(_('Objects not selected'))
+
+        return Response({
+            'status': 'success',
+            'message': _('Deleted successfully'),
+        })
+
+    @action(methods=['post'], detail=False)
+    def sendsms(self, request, *args, **kwargs):
+        id_list = request.data
+
+        if not id_list or not isinstance(id_list, list):
+            raise exceptions.ParseError(_('You should select Company addresses'))
+
+        phone_numbers = set(models.CompanyAddress.objects.filter(
+            id__in=id_list, primary_contact__contact__phone_mobile__isnull=False).values_list(
+            'primary_contact__contact__phone_mobile', flat=True))
+
+        return Response({
+            'status': 'success',
+            'phone_number': phone_numbers,
+            'message': _('Phones numbers was selected'),
+        })
 
 
 class AppsList(ViewSet):
@@ -571,10 +581,7 @@ class WorkflowNodeViewset(BaseApiViewset):
 
         return target_object
 
-    @list_route(
-        methods=['get'],
-        serializer=serializers.WorkflowTimelineSerializer,
-    )
+    @action(methods=['get'], detail=False)
     def timeline(self, request, *args, **kwargs):
         model = request.query_params.get('model')
         object_id = request.query_params.get('object_id')
@@ -663,11 +670,7 @@ class FormStorageViewSet(BaseApiViewset):
 
     serializer_class = serializers.FormStorageSerializer
 
-    @detail_route(
-        methods=['post'],
-        permission_classes=(IsAuthenticated,),
-        serializer_class=serializers.FormStorageApproveSerializer
-    )
+    @action(methods=['post'], detail=True, permission_classes=[IsAuthenticated])
     def approve(self, request, pk, *args, **kwargs):
         """
         Approve storage. Would be created instance from storage it status is `approved`.
@@ -767,7 +770,7 @@ class CitiesLightViewSet(BaseApiViewset):
 class AddressViewset(GoogleAddressMixin, BaseApiViewset):
     root_address = True
 
-    @list_route(methods=['POST'])
+    @action(methods=['post'], detail=False)
     def parse(self, request, *args, **kwargs):
         try:
             address_data = request.data

@@ -1,12 +1,11 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from django_filters import (
-    CharFilter, UUIDFilter, NumberFilter, BooleanFilter, ModelChoiceFilter,
-)
+from django_filters import CharFilter, UUIDFilter, NumberFilter, BooleanFilter, ModelChoiceFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework.filters import OrderingFilter
 
 from r3sourcer.apps.core import models
+from r3sourcer.apps.core_adapter.filters import DateRangeFilter
 from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.core.utils.companies import get_site_master_company
@@ -103,11 +102,11 @@ class CompanyLocalizationFilter(FilterSet):
 
 class CompanyAddressFilter(FilterSet):
     portfolio_manager = UUIDFilter(method='filter_portfolio_manager')
-    state = NumberFilter(method='filter_state')
+    updated_at = DateRangeFilter()
 
     class Meta:
         model = models.CompanyAddress
-        fields = ['portfolio_manager', 'company']
+        fields = ['portfolio_manager', 'company', 'primary_contact', 'updated_at']
 
     def filter_portfolio_manager(self, queryset, name, value):
         return queryset.filter(
@@ -115,38 +114,8 @@ class CompanyAddressFilter(FilterSet):
             Q(company__master_companies__primary_contact=value)
         )
 
-    def _fetch_workflow_objects(self, value):  # pragma: no cover
-        content_type = ContentType.objects.get_for_model(models.CompanyRel)
-        objects = models.WorkflowObject.objects.filter(
-            state__number=value,
-            state__workflow__model=content_type,
-            active=True,
-        ).distinct('object_id').values_list('object_id', flat=True)
-
-        return objects
-
-    def filter_state(self, queryset, name, value):
-        objects = self._fetch_workflow_objects(value)
-        return queryset.filter(
-            Q(company__regular_companies__id__in=objects) |
-            Q(company__master_companies__id__in=objects)
-        )
-
 
 class ApiOrderingFilter(OrderingFilter):
-
-    def get_default_valid_fields(self, queryset, view, context={}):
-        if hasattr(view, 'endpoint'):
-            endpoint = view.endpoint
-            fields = endpoint.get_metadata_fields(False)
-            return set([
-                (field, field)
-                for field in fields if '__str__' not in field
-            ])
-
-        return super(ApiOrderingFilter, self).get_default_valid_fields(
-            queryset, view, context
-        )
 
     def remove_invalid_fields(self, queryset, fields, view, request):
         valid_fields = [item[0] for item in self.get_valid_fields(queryset, view, {'request': request})]
@@ -162,7 +131,7 @@ class WorkflowNodeFilter(FilterSet):
 
     class Meta:
         model = models.WorkflowNode
-        fields = ['workflow', 'company', 'default']
+        fields = ['workflow', 'company', 'default', 'workflow__model']
 
     def filter_default(self, queryset, name, value):
         if value:
@@ -250,14 +219,21 @@ class FormFieldFilter(FilterSet):
 
     class Meta:
         model = models.FormField
-        fields = ('group',)
+        fields = ('group', )
 
 
 class WorkflowObjectFilter(FilterSet):
 
     class Meta:
         model = models.WorkflowObject
-        fields = ('object_id',)
+        fields = ('object_id', 'active', 'state__workflow__name')
+
+
+class CountryFilter(FilterSet):
+
+    class Meta:
+        model = models.Country
+        fields = ('code2',)
 
 
 class RegionFilter(FilterSet):
@@ -272,6 +248,13 @@ class RegionFilter(FilterSet):
         return queryset.filter(Q(country_id=value) | Q(country__code2=value))
 
 
+class CityFilter(FilterSet):
+
+    class Meta:
+        model = models.City
+        fields = ('country', 'region')
+
+
 class ContactFilter(FilterSet):
 
     state = UUIDFilter(method='filter_state')
@@ -281,7 +264,10 @@ class ContactFilter(FilterSet):
 
     class Meta:
         model = models.Contact
-        fields = ['state', 'is_company_contact', 'is_candidate_contact']
+        fields = [
+            'state', 'is_company_contact', 'is_candidate_contact', 'phone_mobile_verified', 'email_verified',
+            'is_available'
+        ]
 
     def filter_state(self, queryset, name, value):
         return queryset.filter(address__state=value)
@@ -310,3 +296,45 @@ class TagFilter(FilterSet):
 
     def exclude_by_candidate(self, queryset, name, value):
         return queryset.filter(active=True).exclude(tag_rels__candidate_contact_id=value)
+
+
+class InvoiceFilter(FilterSet):
+
+    class Meta:
+        model = models.Invoice
+        fields = ['customer_company']
+
+
+class InvoiceLineFilter(FilterSet):
+
+    class Meta:
+        model = models.InvoiceLine
+        fields = ['invoice']
+
+
+class InvoiceRuleFilter(FilterSet):
+
+    class Meta:
+        model = models.InvoiceRule
+        fields = ['company']
+
+
+class OrderFilter(FilterSet):
+
+    class Meta:
+        model = models.Order
+        fields = ['provider_company']
+
+
+class NoteFilter(FilterSet):
+
+    class Meta:
+        model = models.Note
+        fields = ['object_id']
+
+
+class ContactUnavailabilityFilter(FilterSet):
+
+    class Meta:
+        model = models.ContactUnavailability
+        fields = ['contact']

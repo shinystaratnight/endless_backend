@@ -18,7 +18,7 @@ def get_instance_admin_url(instance, text=None, as_url=False):
                 model=instance._meta.model_name),
                 args=[instance.id]
         )
-    except:
+    except Exception:
         link = 'javascript:void(0);'
     if as_url:
         return link

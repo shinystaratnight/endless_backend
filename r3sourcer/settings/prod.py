@@ -56,8 +56,6 @@ INSTALLED_APPS = [
     'django.contrib.admin',
 
     'loginas',
-    'drf_auto_endpoint',
-    'export_app',
     'django_filters',
     'cities_light',
     'easy_thumbnails',
@@ -280,7 +278,6 @@ REST_FRAMEWORK = {
         'r3sourcer.apps.core.api.filters.ApiOrderingFilter',
     ),
     'DEFAULT_PAGINATION_CLASS': 'r3sourcer.apps.core.api.pagination.ApiLimitOffsetPagination',
-    'DEFAULT_METADATA_CLASS': 'r3sourcer.apps.core.api.metadata.ApiMetadata',
     'PAGE_SIZE': 10,
     'DATETIME_INPUT_FORMATS': ['iso-8601'],
     'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
@@ -300,16 +297,12 @@ CITIES_LIGHT_APP_NAME = 'core'
 LOGINAS_REDIRECT_URL = '/admin'
 ANONYMOUS_USER_NAME = None
 
-# DRF schema adapter
-DRF_AUTO_BASE_SERIALIZER = 'r3sourcer.apps.core.api.serializers.ApiBaseModelSerializer'
-DRF_AUTO_BASE_VIEWSET = 'r3sourcer.apps.core.api.viewsets.BaseApiViewset'
-DRF_AUTO_DEFAULT_ENDPOINT_CLASS = 'r3sourcer.apps.core.api.endpoints.ApiEndpoint'
-DRF_AUTO_METADATA_ADAPTER = 'r3sourcer.apps.core.api.metadata.AngularApiAdapter'
+BASE_SERIALIZER = 'r3sourcer.apps.core.api.serializers.ApiBaseModelSerializer'
+BASE_VIEWSET = 'r3sourcer.apps.core.api.viewsets.BaseApiViewset'
+BASE_READONLY_VIEWSET = 'r3sourcer.apps.core.api.viewsets.BaseApiViewset'
+DEFAULT_ENDPOINT_CLASS = 'r3sourcer.apps.core.api.endpoints.ApiEndpoint'
 ROUTER_CLASS = 'r3sourcer.apps.core.api.router.ApiRouter'
-
-DRF_AUTO_WIDGET_MAPPING = {
-    'ApiDateTimeTzField': 'datetime',
-}
+INFLECTOR_LANGUAGE = 'inflector.English'
 
 STATICFILES_FINDERS = (
     'django.contrib.staticfiles.finders.FileSystemFinder',

@@ -7,6 +7,7 @@ from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
+from r3sourcer.apps.core.models import Invoice
 from r3sourcer.apps.hr import models as hr_models
 
 
@@ -104,8 +105,8 @@ class JobOfferFilter(FilterSet):
     shift_date = UUIDFilter(method='filter_shift_date')
 
     class Meta:
-        model = hr_models.Shift
-        fields = ['job', 'shift_date']
+        model = hr_models.JobOffer
+        fields = ['job', 'shift_date', 'candidate_contact']
 
     def filter_job(self, queryset, name, value):
         return queryset.filter(shift__date__job_id=value)
@@ -131,3 +132,45 @@ class JobsiteFilter(ActiveStateFilterMixin, FilterSet):
 
     def filter_state(self, queryset, name, value):
         return queryset.filter(address__state=value)
+
+
+class FavouriteListFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.FavouriteList
+        fields = ['company_contact', 'candidate_contact', 'company', 'jobsite', 'job']
+
+
+class CarrierListFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.CarrierList
+        fields = ['candidate_contact']
+
+
+class BlackListFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.BlackList
+        fields = ['candidate_contact']
+
+
+class CandidateEvaluationFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.CandidateEvaluation
+        fields = ['candidate_contact']
+
+
+class JobTagFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.JobTag
+        fields = ['job']
+
+
+class InvoiceFilter(FilterSet):
+
+    class Meta:
+        model = Invoice
+        fields = ['customer_company']

@@ -1,21 +1,10 @@
-from functools import partial
-
 from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
-from django.utils.functional import lazy
-from django.utils.translation import ugettext_lazy as _
-from drf_auto_endpoint.router import router
-from drf_auto_endpoint.decorators import bulk_action
-from rest_framework.response import Response
-from rest_framework.exceptions import ParseError
+from r3sourcer.apps.core.api.router import router
 
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.api import serializers, viewsets, filters
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.models.constants import CANDIDATE, CLIENT, MANAGER
-from r3sourcer.apps.core.utils.text import format_lazy
-from r3sourcer.apps.core_adapter import constants
-from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 
 
 class ContactEndpoint(ApiEndpoint):
@@ -32,1108 +21,16 @@ class ContactEndpoint(ApiEndpoint):
         'phone_mobile',
     )
 
-    list_display = (
-        {
-            'field': 'id',
-            'label': _('Personal Info'),
-            'type': constants.FIELD_INFO,
-            'values': {
-                'picture': 'picture.thumb',
-                'available': 'availability',
-                'title': '__str__',
-                'address': 'address.__str__',
-            }
-        }, {
-            'label': _('Contact'),
-            'fields': (
-                {
-                    'field': 'email',
-                    'link': 'mailto:{field}',
-                    'type': constants.FIELD_LINK,
-                    'label': _('E-mail'),
-                }, {
-                    'type': constants.FIELD_LINK,
-                    'link': 'tel:{field}',
-                    'field': 'phone_mobile',
-                }
-            ),
-        }, {
-            'label': _('Relations'),
-            'fields': (
-                {
-                    'display': _('Candidate'),
-                    'field': 'candidate_contacts',
-                    'inline': True,
-                    'type': constants.FIELD_LINK,
-                    'endpoint': format_lazy(
-                        '{}{{candidate_contacts.id}}', api_reverse_lazy('candidate/candidatecontacts')
-                    ),
-                }, {
-                    'display': _('Company Contact'),
-                    'field': 'company_contact',
-                    'inline': True,
-                    'type': constants.FIELD_LINK,
-                    'endpoint': format_lazy('{}{{company_contact.id}}', api_reverse_lazy('core/companycontacts')),
-                }, {
-                    'display': _('Master Company'),
-                    'field':  'master_company',
-                    'inline': True,
-                    'type': constants.FIELD_LINK,
-                    'endpoint': format_lazy('{}{{candidate_contacts.id}}', api_reverse_lazy('core/companies')),
-                }
-            )
-        }
-    )
-
-    fieldsets_add = (
-        {
-            'type': constants.CONTAINER_ROW,
-            'label': _('General'),
-            'fields': (
-                {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': ('title', 'first_name', 'last_name', 'gender'),
-                }, {
-                    'type': constants.CONTAINER_COLUMN,
-                    'fields': (
-                        'email', 'phone_mobile',
-                        {
-                            'type': constants.FIELD_DATE,
-                            'field': 'birthday',
-                            'help': _('Optional for Client Contacts, must be filled for Candidate contacts'),
-                        }, {
-                            'type': constants.FIELD_ADDRESS,
-                            'field': 'address',
-                            'edit': True,
-                            'delete': False,
-                            'create': False,
-                            'endpoint': api_reverse_lazy('core/addresses')
-                        },
-                    ),
-                },
-            ),
-        },
-    )
-
-    fieldsets = (
-        {
-            'field': 'id',
-            'type': constants.FIELD_INFO,
-            'values': {
-                'picture': 'picture',
-                'available': 'is_available',
-                'title': '__str__',
-                'address': 'address.__str__',
-                'created_at': 'created_at',
-                'updated_at': 'updated_at',
-                'title_title': 'title',
-                'first_name': 'first_name',
-                'last_name': 'last_name',
-            }
-        }, {
-            'type': constants.CONTAINER_TABS,
-            'fields': ({
-                'type': constants.CONTAINER_GROUP,
-                'label': _('Personal information'),
-                'name': _('Personal Info'),
-                'main': True,
-                'fields': ({
-                    'type': constants.CONTAINER_ROW,
-                    'fields': (
-                        {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Contacts'),
-                            'width': .34,
-                            'fields': (
-                                {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'email',
-                                    'label': _('E-mail'),
-                                    'placeholder': _('E-mail'),
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'phone_mobile',
-                                    'label': _('Phone number'),
-                                    'placeholder': _('Mobile phone'),
-                                },
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Verification'),
-                            'width': .33,
-                            'fields': (
-                                {
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'field': 'email_verified',
-                                    'label': _('E-mail Verified'),
-                                    'default': False,
-                                }, {
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'field': 'phone_mobile_verified',
-                                    'label': _('Phone Verified'),
-                                    'default': False,
-                                },
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Additional Info'),
-                            'width': .33,
-                            'fields': (
-                                'gender',
-                                {
-                                    'type': constants.FIELD_DATE,
-                                    'field': 'birthday',
-                                    'help': _('Optional for Client Contacts, must be filled for Candidate Contacts'),
-                                },
-                            ),
-                        },
-                    ),
-                }, {
-                    'type': constants.CONTAINER_ROW,
-                    'fields': (
-                        {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Relations'),
-                            'width': .25,
-                            'fields': (
-                                {
-                                    'type': constants.FIELD_RELATED,
-                                    'label': _('User'),
-                                    'field': 'user',
-                                    'read_only': True,
-                                    'send': False,
-                                    'metadata_query': {
-                                        'fieldsets_type': 'contact',
-                                    },
-                                }, {
-                                    'type': constants.FIELD_RELATED,
-                                    'label': _('Candidate Contact'),
-                                    'field': 'candidate_contacts',
-                                    'send': False,
-                                    'read_only': False,
-                                    'endpoint': api_reverse_lazy('candidate/candidatecontacts'),
-                                    'prefilled': {
-                                        'contact': '{id.id}',
-                                    },
-                                    'add_metadata_query': {
-                                        'fieldsets_type': 'contact',
-                                    }
-                                }
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': '',
-                            'width': .25,
-                            'fields': (
-                                {
-                                    'type': constants.FIELD_RELATED,
-                                    'label': _('Company Contact'),
-                                    'field': 'company_contact',
-                                    'send': False,
-                                    'read_only': False,
-                                    'endpoint': api_reverse_lazy('core/companycontacts'),
-                                    'prefilled': {
-                                        'contact': '{id.id}',
-                                    },
-                                    'add': True,
-                                    'edit': True,
-                                },
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Additional Info'),
-                            'width': .25,
-                            'fields': (
-                                {
-                                    'type': constants.FIELD_RELATED,
-                                    'label': _('Recruitment Agent'),
-                                    'field': 'candidate_contacts.recruitment_agent',
-                                    'send': False,
-                                    'read_only': True,
-                                }, {
-                                    'type': constants.FIELD_RELATED,
-                                    'label': _('Master Company'),
-                                    'field': 'master_company',
-                                    'endpoint': api_reverse_lazy('core/companies'),
-                                    'send': False,
-                                    'read_only': True,
-                                },
-                            ),
-                        },
-                    ),
-                },)
-            }, {
-                'query': {
-                    'object_id': '{id}',
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Notes'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('core/notes'),
-                'prefilled': {
-                    'object_id': '{id}',
-                },
-            },)
-        }, {
-            'field': 'address',
-            'type': constants.FIELD_ADDRESS,
-            'hide': True,
-        }, {
-            'field': 'is_available',
-            'type': constants.FIELD_CHECKBOX,
-            'hide': True,
-            'send': False,
-            'default': False,
-        }, {
-            'field': 'first_name',
-            'type': constants.FIELD_TEXT,
-            'hide': True,
-        }, {
-            'field': 'last_name',
-            'type': constants.FIELD_TEXT,
-            'hide': True,
-        }, {
-            'field': 'title',
-            'type': constants.FIELD_SELECT,
-            'hide': True,
-        }, {
-            'field': 'id',
-            'type': constants.FIELD_TEXT,
-            'hide': True,
-        }, {
-            'field': 'picture',
-            'type': constants.FIELD_PICTURE,
-            'hide': True,
-            'file': False,
-        },
-    )
-
-    def get_list_filter(self):
-        au_regions = partial(models.Region.get_countrys_regions, 'AU')
-        types = [{'label': t.capitalize(), 'value': t} for t in (CANDIDATE, CLIENT, MANAGER)]
-        return [
-            {
-                'type': constants.FIELD_SELECT,
-                'field': 'state',
-                'label': _('State'),
-                'choices': lazy(au_regions, list),
-            }, {
-                'type': constants.FIELD_SELECT,
-                'field': 'contact_type',
-                'label': _('Type of Contact'),
-                'choices': types,
-            },
-            'is_available', 'phone_mobile_verified', 'email_verified',
-        ]
-
-
-class CompanyAddressEndpoint(ApiEndpoint):
-
-    model = models.CompanyAddress
-    base_viewset = viewsets.CompanyAddressViewset
-    base_serializer = serializers.CompanyAddressSerializer
-    filter_class = filters.CompanyAddressFilter
-
-    list_label = ('Client Company Address')
-    pagination_label = ('Client Company Addresses')
-
-    list_display = (
-        {
-            'label': _('Company'),
-            'fields': ({
-                'type': constants.FIELD_LINK,
-                'endpoint': format_lazy(
-                    '{}{{company.id}}/',
-                    api_reverse_lazy('core/companies')
-                ),
-                'field': 'company.name',
-            }, {
-                'type': constants.FIELD_BUTTON,
-                'icon': 'fa-external-link',
-                'label': '%s:' % _('Invoices'),
-                'text': '{field}',
-                'endpoint': format_lazy(
-                    '{}?company={{company.id}}',
-                    api_reverse_lazy('core/invoices')
-                ),
-                'field': 'invoices_count',
-                'action': constants.DEFAULT_ACTION_LIST,
-            }, {
-                'type': constants.FIELD_BUTTON,
-                'icon': 'fa-external-link',
-                'label': '%s:' % _('Orders'),
-                'text': '{field}',
-                'endpoint': format_lazy(
-                    '{}?provider_company={{company.id}}',
-                    api_reverse_lazy('core/orders')
-                ),
-                'field': 'orders_count',
-                'action': constants.DEFAULT_ACTION_LIST,
-            }),
-        },
-        {
-            'label': _('Branch'),
-            'fields': ({
-                'type': constants.FIELD_LINK,
-                'endpoint': '/',
-                'fields': ({
-                    'field': 'hq',
-                    'values': {
-                        True: 'HQ:',
-                    }
-                }, 'address.__str__'),
-            }, {
-                'type': constants.FIELD_BUTTON,
-                'action': 'openMap',
-                'text': _('Open map'),
-                'icon': 'fa-globe',
-                'fields': ('address.latitude', 'address.longitude')
-            }),
-        },
-        (
-            _('Primary Contact'),
-            ({
-                'type': constants.FIELD_LINK,
-                'field': 'primary_contact.contact.__str__',
-                'endpoint': '/',
-            }, {
-                'type': constants.FIELD_LINK,
-                'link': 'tel:{field}',
-                'field': 'primary_contact.contact.phone_mobile',
-            }, {
-                'type': constants.FIELD_BUTTON,
-                'action': constants.DEFAULT_ACTION_SEND_SMS,
-                'text': _('SMS'),
-                'icon': 'fa-commenting',
-                'fields': ('primary_contact.contact.phone_mobile',)
-            })
-        ),
-        {
-            'label': _('Portfolio Manager'),
-            'field': 'portfolio_manager',
-            'type': constants.FIELD_LINK,
-            'endpoint': '/',
-        },
-        {
-            'label': _('State'),
-            'field': 'active_states',
-        },
-        {
-            'label': _('Credit'),
-            'fields': ({
-                'type': constants.FIELD_LINK,
-                'endpoint': '/',
-                'fields': (
-                    'company.credit_check', 'company.approved_credit_limit',
-                    'company.get_terms_of_payment'
-                ),
-            },),
-        },
-        {
-            'label': _('Journal'),
-            'fields': ({
-                'type': constants.FIELD_BUTTON,
-                'endpoint': api_reverse_lazy('core/companyaddresses',
-                                             'log'),
-                'text': _('Open Journal'),
-                'action': constants.DEFAULT_ACTION_LIST,
-                'field': 'id',
-            },),
-        }
-    )
-
-    list_editable = (
-        'hq',
-        {
-            'label': _('Address'),
-            'type': constants.FIELD_LINK,
-            'field': 'address',
-            'endpoint': format_lazy(
-                '{}{{address.id}}/',
-                api_reverse_lazy('core/addresses')
-            ),
-        }, {
-            'label': _('Primary Contact'),
-            'type': constants.FIELD_LINK,
-            'field': 'primary_contact',
-            'endpoint': format_lazy(
-                '{}{{primary_contact.id}}/',
-                api_reverse_lazy('core/companycontacts')
-            ),
-        },
-        'phone_landline', 'phone_fax', 'active',
-        {
-            'label': _('Actions'),
-            'fields': ({
-                **constants.BUTTON_EDIT,
-                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/companyaddresses'))
-            }, constants.BUTTON_DELETE)
-        }
-    )
-
-    fieldsets = (
-        'name', 'company',
-        {
-            'type': constants.FIELD_ADDRESS,
-            'field': 'address',
-        },
-        'hq', 'phone_landline', 'phone_fax',
-        {
-            'type': constants.FIELD_RELATED,
-            'field': 'primary_contact',
-            'prefilled': {
-                'company': '{company.id}',
-            },
-            'query': {
-                'company': '{company.id}',
-            },
-        },
-        'active'
-    )
-
-    # FIXME: add for remaining columns and change to real labels and endpoints
-    context_actions = {
-        'primary_contact': [{
-            'label': _('Send SMS'),
-            'endpoint': '/',
-        }, {
-            'label': _('Add New Company Contact'),
-            'endpoint': '/',
-        }, {
-            'label': _('Manage Branch Contacts'),
-            'endpoint': '/',
-        }, {
-            'label': _('Add Note'),
-            'endpoint': '/',
-        }, {
-            'label': _('Add Activity'),
-            'endpoint': '/',
-        }],
-
-        'portfolio_manager': [{
-            'label': _('Create Activity for PM'),
-            'endpoint': '/',
-        }, {
-            'label': _('Reassign'),
-            'endpoint': '/',
-        }],
-
-        'credit': [{
-            'label': _('Reupload evidence'),
-            'endpoint': '/',
-        }, {
-            'label': _('Fill in credit approval information'),
-            'endpoint': '/',
-        }],
-    }
-
-    highlight = {
-        'field': 'company.type',
-        'values': ('master', ),
-    }
-
-    ordering_mapping = {'company': 'company.name'}
-
-    # FIXME: change to real filters
-    def get_list_filter(self):
-        states_part = partial(
-            models.WorkflowNode.get_model_all_states, models.CompanyRel
-        )
-        list_filter = ['company', 'primary_contact.contact', {
-            'type': constants.FIELD_SELECT,
-            'field': 'active_states',
-            'choices': lazy(states_part, list),
-        }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'portfolio_manager',
-            'endpoint': api_reverse_lazy('core/companycontacts'),
-        }, {
-            'field': 'updated_at',
-            'type': constants.FIELD_DATE,
-        }]
-
-        return list_filter
-
-    # FIXME: add/change to real actions
-    @bulk_action(method='POST', text=_('Delete selected'))
-    def delete(self, request, *args, **kwargs):
-        ids = request.data
-
-        if not ids:
-            raise ParseError(_('Objects not selected'))
-
-        return Response({
-            'status': 'success',
-            'message': _('Deleted successfully'),
-        })
-
-    @bulk_action(method='POST', text=_('Send sms'), confirm=False)
-    def sendsms(self, request, *args, **kwargs):
-        id_list = request.data
-
-        if not id_list or not isinstance(id_list, list):
-            raise ParseError(_('You should select Company addresses'))
-
-        phone_numbers = set(models.CompanyAddress.objects.filter(
-            id__in=id_list, primary_contact__contact__phone_mobile__isnull=False).values_list(
-            'primary_contact__contact__phone_mobile', flat=True))
-
-        return Response({
-            'status': 'success',
-            'phone_number': phone_numbers,
-            'message': _('Phones numbers was selected'),
-        })
-
 
 class CompanyEndpoint(ApiEndpoint):
-
     model = models.Company
     base_viewset = viewsets.CompanyViewset
-    base_serializer = serializers.CompanyListSerializer
+    serializer = serializers.CompanyListSerializer
     filter_class = filters.CompanyFilter
-
-    list_label = _('Client')
-    pagination_label = _('Clients')
-
-    fields = (
-        '__all__',
-        {
-            'invoice_rule': '__all__',
-            'manager': (
-                'id', '__str__', 'job_title', {
-                    'contact': ('id', '__str__', 'email', 'phone_mobile'),
-                },
-            ),
-            'groups': ('id', '__str__')
-        }
-    )
-
-    list_display = (
-        {
-            'field': 'id',
-            'label': _('Client Info'),
-            'type': constants.FIELD_INFO,
-            'values': {
-                'picture': 'logo.thumb',
-                'available': 'available',
-                'title': 'name',
-                'address': 'address.__str__',
-                'description': 'description',
-            }
-        }, {
-            'label': _('Primary Contact'),
-            'fields': (
-                {
-                    'type': constants.FIELD_LINK,
-                    'field': 'manager.contact',
-                    'display': '{manager.job_title}',
-                    'endpoint': format_lazy('{}{{manager.id}}/', api_reverse_lazy('core/companycontacts')),
-                }, {
-                    'field': 'manager.contact.email',
-                    'link': 'mailto:{field}',
-                    'type': constants.FIELD_LINK,
-                    'label': _('E-mail'),
-                }, {
-                    'type': constants.FIELD_LINK,
-                    'link': 'tel:{field}',
-                    'field': 'manager.contact.phone_mobile',
-                }
-            ),
-        }, {
-            'label': _('Manager'),
-            'type': constants.FIELD_LINK,
-            'field': 'primary_contact',
-            'display': '{primary_contact.job_title}',
-            'endpoint': format_lazy('{}{{primary_contact.id}}/', api_reverse_lazy('core/companycontacts')),
-        }, {
-            'label': _('Credit Info'),
-            'fields': ({
-                'type': constants.FIELD_STATIC,
-                'field': 'credit_approved',
-            }, {
-                'field': 'credit_check',
-                'type': constants.FIELD_ICON,
-                'values': {
-                    True: 'circle',
-                    False: 'circle',
-                },
-                'color': {
-                    False: 'danger',
-                    True: 'success',
-                },
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'approved_credit_limit',
-            }, {
-                'type': constants.FIELD_STATIC,
-                'field': 'terms_of_pay',
-            }),
-        }, {
-            'label': _('Client State'),
-            'type': constants.FIELD_TAGS,
-            'field': 'latest_state',
-            'color_attr': 'number',
-            'outline': True,
-            'color': {
-                'danger': [0, 80, 90],
-            }
-        },
-    )
-
-    fieldsets_add = ('name', 'business_id', )
-
-    fieldsets = (
-        {
-            'field': 'id',
-            'type': constants.FIELD_INFO,
-            'values': {
-                'picture': 'logo',
-                'link': 'website',
-                'title': 'name',
-                'address': 'address.__str__',
-                'status': {
-                    'field': 'active_states',
-                    'color': {
-                        'danger': [0, 80, 90],
-                        'color_attr': 'number',
-                    }
-                },
-                'created_at': 'created_at',
-                'updated_at': 'updated_at',
-            }
-        }, {
-            'type': constants.CONTAINER_TABS,
-            'fields': ({
-                'type': constants.CONTAINER_GROUP,
-                'label': _('General information'),
-                'name': _('General Info'),
-                'main': True,
-                'fields': ({
-                    'type': constants.CONTAINER_ROW,
-                    'fields': (
-                        {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Primary Contact'),
-                            'width': .25,
-                            'fields': (
-                                {
-                                    'label': _('Name'),
-                                    'type': constants.FIELD_RELATED,
-                                    'field': 'manager',
-                                    'endpoint': api_reverse_lazy('core/companycontacts'),
-                                    'prefilled': {
-                                        'company': '{id.id}',
-                                    },
-                                    'query': {
-                                        'company': '{id.id}',
-                                    },
-                                    'values': ['contact'],
-                                    'display': '{contact.__str__}',
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'manager.job_title',
-                                    'label': _('Job Title'),
-                                    'read_only': True,
-                                    'send': False,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'manager.contact.email',
-                                    'label': _('E-mail'),
-                                    'read_only': True,
-                                    'send': False,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'manager.contact.phone_mobile',
-                                    'label': _('Phone number'),
-                                    'read_only': True,
-                                    'send': False,
-                                },
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Additional Info'),
-                            'width': .25,
-                            'fields': (
-                                'business_id',
-                                {
-                                    'field': 'industry',
-                                    'type': constants.FIELD_RELATED,
-                                    'read_only': False,
-                                }, {
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'field': 'registered_for_gst',
-                                    'text': _('Registered'),
-                                    'label': _('GST'),
-                                    'default': False,
-                                    'read_only': False,
-                                }, {
-                                    'label': _('Master company'),
-                                    'type': constants.FIELD_RELATED,
-                                    'field': 'master_company',
-                                    'endpoint': api_reverse_lazy('core/companies'),
-                                    'read_only': False,
-                                    'showIf': [
-                                        {'type': 'regular'}
-                                    ],
-                                    'query': {
-                                        'type': 'master',
-                                    },
-                                }
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Portfolio Manager'),
-                            'width': .25,
-                            'fields': (
-                                {
-                                    'label': _('Name'),
-                                    'type': constants.FIELD_RELATED,
-                                    'field': 'primary_contact',
-                                    'read_only': False,
-                                    'add': False,
-                                    'endpoint': api_reverse_lazy('core/companycontacts'),
-                                    'showIf': [
-                                        {'type': 'regular'}
-                                    ],
-                                    'query': {
-                                        'company': '{master_company.id}',
-                                    },
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'primary_contact_phone',
-                                    'label': _('Phone number'),
-                                    'read_only': True,
-                                    'send': False,
-                                },
-                            ),
-                        },
-                    ),
-                }, {
-                    'type': constants.CONTAINER_ROW,
-                    'fields': (
-                        {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Credit Info'),
-                            'width': .25,
-                            'fields': (
-                                'credit_check',
-                                {
-                                    'type': constants.FIELD_PICTURE,
-                                    'field': 'credit_check_proof',
-                                    'label_upload': _('Choose a file'),
-                                    'label_photo': _('Take a photo'),
-                                },
-                                {
-                                    'label': _('Approval date'),
-                                    'type': constants.FIELD_DATE,
-                                    'field': 'credit_check_date',
-                                },
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': '',
-                            'width': .25,
-                            'fields': (
-                                'approved_credit_limit', 'terms_of_payment', 'payment_due_date',
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Banking Detail'),
-                            'width': .25,
-                            'fields': (
-                                'billing_email',
-                                {
-                                    'field': 'invoice_rule.id',
-                                    'type': constants.FIELD_TEXT,
-                                    'hidden': True,
-                                    'read_only': True,
-                                },
-                                'invoice_rule.separation_rule',
-                                {
-                                    'field': 'invoice_rule.period',
-                                    'type': constants.FIELD_SELECT,
-                                    'label': _('Invoice Frequency'),
-                                }, {
-                                    'field': 'invoice_rule.period_zero_reference',
-                                    'type': constants.FIELD_TEXT,
-                                    'showIf': [
-                                        {
-                                            'type': str(models.Company.COMPANY_TYPES.master),
-                                        }
-                                    ]
-                                }, {
-                                    'field': 'invoice_rule.serial_number',
-                                    'type': constants.FIELD_TEXT,
-                                    'showIf': [
-                                        {
-                                            'type': str(models.Company.COMPANY_TYPES.master),
-                                        }
-                                    ]
-                                },
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': '',
-                            'width': .25,
-                            'fields': (
-                                {
-                                    'field': 'invoice_rule.starting_number',
-                                    'type': constants.FIELD_TEXT,
-                                    'showIf': [
-                                        {
-                                            'type': str(models.Company.COMPANY_TYPES.master),
-                                        }
-                                    ]
-                                }, {
-                                    'field': 'invoice_rule.notice',
-                                    'type': constants.FIELD_TEXT,
-                                    'showIf': [
-                                        {
-                                            'type': str(models.Company.COMPANY_TYPES.master),
-                                        }
-                                    ]
-                                }, {
-                                    'field': 'invoice_rule.comment',
-                                    'type': constants.FIELD_TEXT,
-                                    'showIf': [
-                                        {
-                                            'type': str(models.Company.COMPANY_TYPES.master),
-                                        }
-                                    ]
-                                }, {
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'field': 'invoice_rule.show_candidate_name',
-                                    'label': _('Show Candidate name'),
-                                    'text': _('Show name'),
-                                    'default': False,
-                                    'read_only': False,
-                                },
-                            ),
-                        },
-                    ),
-                }, {
-                    'type': constants.CONTAINER_ROW,
-                    'fields': (
-                        {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Timesheet'),
-                            'width': .25,
-                            'fields': (
-                                'timesheet_approval_scheme',
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('About Company'),
-                            'width': .75,
-                            'fields': (
-                                {
-                                    'field': 'description',
-                                    'type': constants.FIELD_TEXTAREA,
-                                },
-                            ),
-                        },
-                    ),
-                },)
-            }, {
-                'query': {
-                    'company': '{id}'
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Company Address'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('core/companyaddresses'),
-                'prefilled': {
-                    'company': '{id}',
-                },
-                'delay': True,
-                'help': _('All addresses of the company'),
-            }, {
-                'query': {
-                    'company': '{id}'
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Client Contacts'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('core/companycontactrelationships'),
-                'add_endpoint': api_reverse_lazy('core/companycontacts'),
-                'prefilled': {
-                    'company': '{id}',
-                },
-            }, {
-                'type': constants.FIELD_LIST,
-                'query': {
-                    'company': '{id}',
-                },
-                'label': _('Jobsites'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('hr/jobsites'),
-                'prefilled': {
-                    'regular_company': '{id}',
-                },
-                'help': _('Jobsites from the client company'),
-            }, {
-                'type': constants.FIELD_LIST,
-                'query': {
-                    'company': '{id}',
-                },
-                'label': _('Price list'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('pricing/pricelists'),
-                'prefilled': {
-                    'company': '{id}',
-                },
-                'metadata_query': {
-                    'editable_type': 'company',
-                },
-            }, {
-                'type': constants.CONTAINER_GROUP,
-                'name': _('States'),
-                'fields': (
-                    {
-                        'type': constants.FIELD_TIMELINE,
-                        'field': 'id',
-                        'endpoint': format_lazy('{}timeline/', api_reverse_lazy('core/workflownodes')),
-                        'query': {
-                            'model': 'core.companyrel',
-                            'object_id': '{regular_company_rel.id}',
-                        },
-                    }, {
-                        'type': constants.FIELD_LIST,
-                        'query': {
-                            'object_id': '{regular_company_rel.id}'
-                        },
-                        'label': _('States history'),
-                        'add_label': _('+ Add item'),
-                        'endpoint': api_reverse_lazy('core/workflowobjects'),
-                        'prefilled': {
-                            'object_id': '{regular_company_rel.id}',
-                        },
-                        'help': _('Here you can see changes client company states'),
-                    },
-                ),
-            }, {
-                'query': {
-                    'customer_company': '{id}',
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Invoices'),
-                'endpoint': api_reverse_lazy('core/invoices'),
-            }, {
-                'query': {
-                    'object_id': '{id}',
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Notes'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('core/notes'),
-                'prefilled': {
-                    'object_id': '{id}',
-                },
-            },)
-        }, {
-            'type': constants.FIELD_TEXT,
-            'field': 'manager.contact',
-            'hide': True,
-            'send': False,
-        }, {
-            'type': constants.FIELD_TEXT,
-            'field': 'type',
-            'hide': True,
-        }, {
-            'type': constants.FIELD_TEXT,
-            'field': 'name',
-            'hide': True,
-        }, {
-            'type': constants.FIELD_PICTURE,
-            'field': 'logo',
-            'hide': True,
-            'file': False,
-        }, {
-            'type': constants.FIELD_ADDRESS,
-            'field': 'address',
-            'hide': True,
-            'endpoint': api_reverse_lazy('core/addresses'),
-        }, {
-            'type': constants.FIELD_TEXT,
-            'field': 'name',
-            'hide': True,
-        }, {
-            'type': constants.FIELD_TEXT,
-            'field': 'website',
-            'hide': True,
-        },
-    )
 
     search_fields = (
         'name', 'company_addresses__address__street_address', 'company_addresses__address__city__search_names',
         'notes', 'description'
-    )
-
-    def get_list_filter(self):
-        au_regions = partial(models.Region.get_countrys_regions, 'AU')
-        states_part = partial(models.WorkflowNode.get_model_all_states, models.CompanyRel)
-        list_filter = [{
-            'type': constants.FIELD_SELECT,
-            'field': 'status',
-            'label': _('Status'),
-            'choices': lazy(states_part, list),
-        }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'portfolio_manager',
-            'label': _('Portfolio Manager'),
-            'endpoint': api_reverse_lazy('core/companycontacts'),
-        }, {
-            'type': constants.FIELD_SELECT,
-            'field': 'state',
-            'label': _('State'),
-            'choices': lazy(au_regions, list),
-        }, {
-            'type': constants.FIELD_SELECT,
-            'field': 'credit_check',
-            'choices': [{'label': 'Approved', 'value': 'True'},
-                        {'label': 'Unapproved', 'value': 'False'}]
-        }, {
-            'field': 'approved_credit_limit',
-            'label': _('Credit Limit'),
-            'type': constants.FIELD_RANGE,
-        }]
-
-        return list_filter
-
-
-class CompanyContactRelationEndpoint(ApiEndpoint):
-
-    model = models.CompanyContactRelationship
-    serializer = serializers.CompanyContactRelationshipSerializer
-    filter_class = filters.CompanyContactRelationshipFilter
-
-    list_editable = (
-        'company_contact.job_title', 'company_contact.contact.first_name', 'company_contact.contact.last_name',
-        'company_contact.contact.phone_mobile', 'company_contact.contact.email',
-        'company_contact.receive_job_confirmation_sms',
-        {
-            'label': _('Actions'),
-            'fields': ({
-                **constants.BUTTON_EDIT,
-                'endpoint': format_lazy('{}{{company_contact.id}}', api_reverse_lazy('core/companycontacts'))
-            }, constants.BUTTON_DELETE)
-        },
-    )
-
-    list_label = ('Client Contact Relations')
-    pagination_label = ('Client Contacts')
-
-    fieldsets = (
-        {
-            'type': constants.FIELD_TEXT,
-            'field': 'company',
-            'hide': True,
-        },
-        'company_contact', 'active',
-        {
-            'type': constants.FIELD_DATE,
-            'field': 'termination_date',
-        }
     )
 
 
@@ -1144,259 +41,27 @@ class CompanyContactEndpoint(ApiEndpoint):
     serializer = serializers.CompanyContactRenderSerializer
     filter_class = filters.CompanyContactFilter
 
-    list_label = _('Client Contact')
-    pagination_label = _('Client Contacts')
-
-    list_display = (
-        'job_title', 'contact.title', 'contact.first_name',
-        'contact.last_name',
-        {
-            'label': _('Mobile Phone'),
-            'fields': (
-                {
-                    'type': constants.FIELD_LINK,
-                    'link': 'tel:{field}',
-                    'field': 'contact.phone_mobile',
-                },
-                {
-                    'type': constants.FIELD_BUTTON,
-                    'action': constants.DEFAULT_ACTION_SEND_SMS,
-                    'text': _('SMS'),
-                    'icon': 'fa-commenting',
-                    'fields': ('contact.phone_mobile',)
-                }
-            ),
-        },
-        'contact.email',
-        'receive_job_confirmation_sms'
-    )
-
-    _base_fieldsets = (
-        {
-            'type': constants.FIELD_RELATED,
-            'field': 'company',
-            'label': _('Client'),
-            'endpoint': api_reverse_lazy('core/companies'),
-            'read_only': False,
-            'required': True,
-        }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'contact',
-            'showIf': ['company.id'],
-            'checkObject': {
-                'query': {
-                    'company': '{company.id}',
-                    'contact': '{contact.id}',
-                    'active': True,
-                },
-                'endpoint': api_reverse_lazy('core/companycontactrelationships'),
-                'error': _('This client contact already exists!'),
-            }
-        },
-        'job_title',
-    )
-
-    fieldsets_add = _base_fieldsets
-    fieldsets = (
-        {
-            'field': 'id',
-            'type': constants.FIELD_INFO,
-            'values': {
-                'picture': 'contact.picture.thumb',
-                'company': 'company.__str__',
-                'available': 'active',
-                'title': 'contact.__str__',
-                'job_title': 'job_title',
-                'created_at': 'created_at',
-                'updated_at': 'updated_at',
-            }
-        }, {
-            'type': constants.CONTAINER_TABS,
-            'fields': ({
-                'type': constants.CONTAINER_GROUP,
-                'label': _('General information'),
-                'name': _('General Info'),
-                'main': True,
-                'fields': ({
-                    'type': constants.CONTAINER_ROW,
-                    'fields': (
-                        {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': '',
-                            'width': .5,
-                            'fields': (
-                                {
-                                    'field': 'rating_unreliable',
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'label': _('Rating ureliable'),
-                                    'default': False,
-                                }, {
-                                    'field': 'receive_job_confirmation_sms',
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'label': _('Receive Job confirmation SMS'),
-                                    'default': False,
-                                }, {
-                                    'field': 'active',
-                                    'type': constants.FIELD_CHECKBOX,
-                                    'label': _('Active'),
-                                    'default': False,
-                                    'hide': True,
-                                }, {
-                                    'type': constants.FIELD_DATE,
-                                    'field': 'termination_date',
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'job_title',
-                                    'hide': True,
-                                }, {
-                                    'type': constants.FIELD_RELATED,
-                                    'field': 'contact',
-                                    'hide': True,
-                                    'read_only': True,
-                                }, {
-                                    'type': constants.FIELD_RELATED,
-                                    'field': 'company',
-                                    'hide': True,
-                                    'endpoint': api_reverse_lazy('core/companies'),
-                                },
-                            ),
-                        }, {
-                            'type': constants.CONTAINER_GROUP,
-                            'label': _('Contacts'),
-                            'width': .5,
-                            'fields': (
-                                {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'contact.email',
-                                    'label': _('E-mail'),
-                                    'read_only': True,
-                                    'send': False,
-                                }, {
-                                    'type': constants.FIELD_TEXT,
-                                    'field': 'contact.phone_mobile',
-                                    'label': _('Phone number'),
-                                    'read_only': True,
-                                    'send': False,
-                                },
-                            ),
-                        },
-                    ),
-                },)
-            }, {
-                'query': {
-                    'primary_contact': '{id}',
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Jobsites'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('hr/jobsites'),
-                'prefilled': {
-                    'primary_contact': '{id}',
-                    'regular_company': '{company.id}',
-                },
-            }, {
-                'query': {
-                    'customer_representative': '{id}',
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Jobs'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('hr/jobs'),
-                'prefilled': {
-                    'customer_representative': '{id}',
-                    'customer_company': '{company.id}'
-                },
-            }, {
-                'query': {
-                    'supervisor': '{id}',
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Timesheets'),
-                'endpoint': api_reverse_lazy('hr/timesheets'),
-                'metadata_query': {
-                    'editable_type': 'supervisor',
-                }
-            }, {
-                'query': {
-                    'object_id': '{id}',
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Notes'),
-                'add_label': _('Add'),
-                'endpoint': api_reverse_lazy('core/notes'),
-                'prefilled': {
-                    'object_id': '{id}',
-                },
-            },)
-        },
-    )
-
     search_fields = ('job_title', 'contact__title', 'contact__first_name', 'contact__last_name')
 
-    def _get_all_job_titles(self):
-        return [
-            {'label': jt, 'value': jt}
-            for jt in models.CompanyContact.objects.all().values_list(
-                'job_title', flat=True).distinct()
-        ]
 
-    def get_list_filter(self):
-        return [{
-            'type': constants.FIELD_SELECT,
-            'field': 'job_title',
-            'choices': self._get_all_job_titles,
-            'is_qs': True,
-        }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'company',
-            'endpoint': api_reverse_lazy('core/companies'),
-        }, {
-            'type': constants.FIELD_RELATED,
-            'field': 'manager',
-            'endpoint': format_lazy(
-                '{}?is_manager=3',
-                api_reverse_lazy('core/companycontacts')
-            ),
-        }]
+class CompanyAddressEndpoint(ApiEndpoint):
 
-    @bulk_action(method='POST', text=_('Send sms'), confirm=False)
-    def sendsms(self, request, *args, **kwargs):
-        id_list = request.data
+    model = models.CompanyAddress
+    base_viewset = viewsets.CompanyAddressViewset
+    base_serializer = serializers.CompanyAddressSerializer
+    filter_class = filters.CompanyAddressFilter
 
-        if not id_list or not isinstance(id_list, list):
-            raise ParseError(_('You should select Company addresses'))
 
-        phone_numbers = set(self.model.objects.filter(
-            id__in=id_list, contact__phone_mobile__isnull=False).values_list(
-            'contact__phone_mobile', flat=True))
+class CompanyContactRelationEndpoint(ApiEndpoint):
 
-        return Response({
-            'status': 'success',
-            'phone_number': phone_numbers,
-            'message': _('Phones numbers was selected'),
-        })
+    model = models.CompanyContactRelationship
+    serializer = serializers.CompanyContactRelationshipSerializer
+    filter_class = filters.CompanyContactRelationshipFilter
 
 
 class CompanyRelEndpoint(ApiEndpoint):
 
     model = models.CompanyRel
-    list_display = ('master_company', 'regular_company', 'primary_contact', )
-    fieldsets = (
-        'master_company', 'regular_company', 'primary_contact',
-        {
-            'type': constants.FIELD_TIMELINE,
-            'label': _('States Timeline'),
-            'field': 'id',
-            'endpoint': format_lazy(
-                '{}timeline/',
-                api_reverse_lazy('core/workflownodes'),
-            ),
-            'query': {
-                'model': 'core.companyrel',
-                'object_id': '{id}',
-            },
-        }
-    )
 
 
 class CompanyLocalizationEndpoint(ApiEndpoint):
@@ -1422,9 +87,6 @@ class WorkflowEndpoint(ApiEndpoint):
 
     model = models.Workflow
     search_fields = ('name', 'model__app_label', 'model__model', )
-    fieldsets = ('name', 'model', )
-
-    list_display = ('name', 'model', )
 
 
 class WorkflowNodeEndpoint(ApiEndpoint):
@@ -1434,51 +96,12 @@ class WorkflowNodeEndpoint(ApiEndpoint):
     serializer = serializers.WorkflowNodeSerializer
     filter_class = filters.WorkflowNodeFilter
 
-    search_fields = (
-        'workflow__name', 'company__name', 'number', 'name_before_activation', 'name_after_activation'
-    )
-    list_filter = ('workflow.model', )
-
-    fieldsets = (
-        'workflow', 'number', 'name_before_activation',
-        'name_after_activation', {
-            'type': constants.FIELD_RULE,
-            'field': 'rules',
-        }, 'company', 'active', 'hardlock',
-    )
-    list_display = (
-        'workflow', 'company', 'number', 'name_before_activation', 'name_after_activation', 'active', 'hardlock',
-    )
-
 
 class WorkflowObjectEndpoint(ApiEndpoint):
 
     model = models.WorkflowObject
     serializer = serializers.WorkflowObjectSerializer
     filter_class = filters.WorkflowObjectFilter
-
-    fieldsets = ({
-        'type': constants.FIELD_TEXT,
-        'field': 'object_id',
-        'hide': True,
-    }, 'state', {
-        'type': constants.FIELD_TEXTAREA,
-        'field': 'comment'
-    }, 'active')
-
-    list_filter = ('object_id', 'active', 'state.workflow.name')
-
-    list_display = ('state_name', 'comment', 'active')
-    list_editable = (
-        'state_name', 'comment', 'active',
-        {
-            'label': _('Created'),
-            'fields': ('created_at', 'created_by')
-        }, {
-            'label': _('Updated'),
-            'fields': ('updated_at', 'updated_by')
-        }
-    )
 
 
 class DashboardModuleEndpoint(ApiEndpoint):
@@ -1502,49 +125,10 @@ class FormStorageEndpoint(ApiEndpoint):
     base_viewset = viewsets.FormStorageViewSet
     serializer = serializers.FormStorageSerializer
 
-    fieldsets = (
-        {
-            'type': constants.CONTAINER_COLLAPSE,
-            'name': _('General'),
-            'collapsed': False,
-            'fields': (
-                    'company', 'status',
-                    {'field': 'data', 'read_only': True, 'label': _("Data"), 'type': constants.FIELD_STATIC}
-                )
-        },
-    )
-
-    list_display = (
-        {
-            'label': _("Form"),
-            'field': 'form',
-            'type': constants.FIELD_LINK,
-            'endpoint': format_lazy(
-                '{}{{form.id}}/',
-                api_reverse_lazy('core/forms')
-            ),
-        },
-        {
-            'label': _('Company'),
-            'type': constants.FIELD_LINK,
-            'endpoint': format_lazy(
-                '{}{{company.id}}/',
-                api_reverse_lazy('core/companies')
-            ),
-            'field': 'company',
-        },
-        'status',
-        'created_at'
-    )
-
-    list_buttons = []
-
 
 class BaseFormFieldEndpoint(ApiEndpoint):
 
     filter_class = filters.FormFieldFilter
-    list_display = ('id', 'group', 'name', 'label', 'placeholder', 'class_name', 'required', 'position', 'help_text',
-                    'field_type')
 
     def get_fieldsets(self):
         return self.model.get_serializer_fields()
@@ -1566,27 +150,23 @@ class RadioButtonsFormFieldEndpoint(BaseFormFieldEndpoint):
 
     model = models.RadioButtonsFormField
     serializer = serializers.RadioButtonsFormFieldSerializer
-    list_display = BaseFormFieldEndpoint.list_display + ('choices',)
 
 
 class TextAreaFormFieldEndpoint(BaseFormFieldEndpoint):
 
     model = models.TextAreaFormField
     serializer = serializers.TextAreaFormFieldSerializer
-    list_display = BaseFormFieldEndpoint.list_display + ('max_length', 'rows')
 
 
 class TextFormFieldEndpoint(BaseFormFieldEndpoint):
 
     model = models.TextFormField
     serializer = serializers.TextFormFieldSerializer
-    list_display = BaseFormFieldEndpoint.list_display + ('max_length', 'subtype')
 
 
 class SelectFormFieldEndpoint(BaseFormFieldEndpoint):
 
     model = models.SelectFormField
-    list_display = BaseFormFieldEndpoint.list_display + ('is_multiple', 'choices')
     serializer = serializers.SelectFormFieldSerializer
 
 
@@ -1600,7 +180,6 @@ class NumberFormFieldEndpoint(BaseFormFieldEndpoint):
 
     model = models.NumberFormField
     serializer = serializers.NumberFormFieldSerializer
-    list_display = BaseFormFieldEndpoint.list_display + ('min_value', 'max_value', 'step')
 
 
 class ModelFormFieldEndpoint(BaseFormFieldEndpoint):
@@ -1620,42 +199,10 @@ class FormFieldGroupEndpoint(ApiEndpoint):
     model = models.FormFieldGroup
     base_serializer = serializers.FormFieldGroupSerializer
 
-    fieldsets = (
-        'id', 'form', 'name', 'position',
-        {
-            'field': 'field_list',
-            'type': constants.FIELD_RELATED,
-            'endpoint': api_reverse_lazy('core/formfields'),
-            'many': True
-        }
-    )
-
-    list_display = (
-        'form', 'name', 'position'
-    )
-
 
 class FormEndpoint(ApiEndpoint):
     model = models.Form
     base_viewset = viewsets.FormViewSet
-
-    fieldsets = (
-        'id', 'title', {
-            'type': constants.FIELD_RELATED,
-            'field': 'company',
-        },
-        'builder', 'is_active', 'short_description', 'save_button_text', 'submit_message',
-        {
-            'field': 'groups',
-            'type': constants.FIELD_RELATED,
-            'endpoint': api_reverse_lazy('core/formfieldgroups'),
-            'many': True
-        }
-    )
-
-    list_display = (
-        'id', 'title', 'company', 'builder', 'is_active'
-    )
 
 
 class FormBuilderEndpoint(ApiEndpoint):
@@ -1675,8 +222,8 @@ class CountryEndpoint(ApiEndpoint):
 
     model = models.Country
     base_viewset = viewsets.CitiesLightViewSet
+    filter_class = filters.CountryFilter
     search_fields = ('name', 'alternate_names')
-    filter_fields = ('code2',)
 
 
 class RegionEndpoint(ApiEndpoint):
@@ -1685,170 +232,69 @@ class RegionEndpoint(ApiEndpoint):
     base_viewset = viewsets.CitiesLightViewSet
     filter_class = filters.RegionFilter
     search_fields = ('name', 'alternate_names')
-    filter_fields = ('country',)
 
 
 class CityEndpoint(ApiEndpoint):
 
     model = models.City
     base_viewset = viewsets.CitiesLightViewSet
+    filter_class = filters.CityFilter
     search_fields = ('name', 'alternate_names')
-    filter_fields = ('country', 'region')
+
+
+class InvoiceEndpoint(ApiEndpoint):
+
+    model = models.Invoice
+    filter_class = filters.InvoiceFilter
 
 
 class InvoiceLineEndpoint(ApiEndpoint):
 
     model = models.InvoiceLine
     serializer = serializers.InvoiceLineSerializer
-
-    fieldsets = ('invoice', 'date', 'units', 'notes', 'unit_price', 'amount', 'unit_type', 'vat')
-
-    list_editable = (
-        'date', 'units', 'notes', 'timesheet.job_offer.candidate_contact', 'unit_price', 'amount', {
-            'type': constants.FIELD_TEXT,
-            'field': 'vat.name',
-            'label': _('Code'),
-        }, {
-            'type': constants.FIELD_LINK,
-            'label': _('Timesheets'),
-            'field': 'timesheet',
-            'text': _('Timesheet'),
-            'endpoint': format_lazy('{}{{timesheet.id}}', api_reverse_lazy('hr/timesheets'))
-        }, {
-            'label': _('Actions'),
-            'delim': ' ',
-            'fields': ({
-                **constants.BUTTON_EDIT,
-                'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/invoicelines'))
-            }, constants.BUTTON_DELETE)
-        },
-    )
-
-    filter_fields = ('invoice', )
+    filter_class = filters.InvoiceLineFilter
 
 
 class InvoiceRuleEndpoint(ApiEndpoint):
 
     model = models.InvoiceRule
     serializer = serializers.InvoiceRuleSerializer
+    filter_class = filters.InvoiceRuleFilter
 
-    list_editable = (
-        'separation_rule', 'show_candidate_name', 'notice', 'serial_number', 'period', 'period_zero_reference',
-        'starting_number', 'comment',
-    )
 
-    list_filter = ('company', )
+class OrderEndpoint(ApiEndpoint):
+
+    model = models.Order
+    filter_class = filters.OrderFilter
 
 
 class NoteEndpoint(ApiEndpoint):
 
     model = models.Note
     serializer = serializers.NoteSerializer
-
-    list_editable = (
-        'note',
-        {
-            'label': _('Created'),
-            'fields': ('created_at', 'created_by')
-        }, {
-            'label': _('Updated'),
-            'fields': ('updated_at', 'updated_by')
-        }, {
-            **constants.BUTTON_EDIT,
-            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/notes'))
-        }, constants.BUTTON_DELETE,
-    )
-
-    fieldsets = (
-        'content_type',
-        {
-            'type': constants.FIELD_TEXT,
-            'field': 'object_id',
-            'hide': True,
-        }, {
-            'type': constants.FIELD_TEXTAREA,
-            'field': 'note',
-        }
-    )
-
-    filter_fields = ('object_id', )
+    filter_class = filters.NoteFilter
 
 
 class ContactUnavailabilityEndpoint(ApiEndpoint):
 
     model = models.ContactUnavailability
-
-    list_editable = (
-        'unavailable_from', 'unavailable_until', 'notes', 'created_at', 'updated_at', {
-            **constants.BUTTON_EDIT,
-            'endpoint': format_lazy('{}{{id}}', api_reverse_lazy('core/contactunavailabilities'))
-        }, constants.BUTTON_DELETE,
-    )
-
-    list_filter = ('contact', )
+    filter_class = filters.ContactUnavailabilityFilter
 
 
 class BankAccountEndpoint(ApiEndpoint):
 
     model = models.BankAccount
-
-    fieldsets = ('bank_name', 'bank_account_name', 'bsb', 'account_number')
     search_fields = ('bank_name', 'bank_account_name')
 
 
 class UserEndpoint(ApiEndpoint):
 
     model = models.User
-
     serializer_fields = (
         'id', 'date_joined', {
             'contact': ('id', 'email', 'phone_mobile'),
         }
     )
-
-    list_display = (
-        'contact', 'contact.email', 'contact.phone_mobile', 'date_joined',
-        {
-            'label': _('Login as'),
-            'type': constants.FIELD_BUTTON,
-            'action': constants.DEFAULT_ACTION_POST,
-            'field': 'id',
-            'text': _('Login'),
-            'redirect': '/',
-            'endpoint': format_lazy('{}{{id}}/loginas/', api_reverse_lazy('auth'))
-        }
-    )
-
-    _fieldset = (
-        {
-            'field': 'date_joined',
-            'type': constants.FIELD_DATETIME,
-            'read_only': True,
-        },
-    )
-    fieldsets = {
-        'default': (
-            {
-                'field': 'contact',
-                'type': constants.FIELD_RELATED,
-                'read_only': True,
-            },
-        ) + _fieldset + (
-            {
-                'query': {
-                    'user': '{id}',
-                },
-                'type': constants.FIELD_LIST,
-                'label': _('Global Permissions'),
-                'endpoint': api_reverse_lazy('company-settings/globalpermissions'),
-                'prefilled': {
-                    'user': '{id}',
-                },
-            },
-        ),
-        'contact': _fieldset
-    }
-
     search_fields = ('contact__first_name', 'contact__last_name', 'contact__email', 'contact__phone_mobile')
 
 
@@ -1858,56 +304,13 @@ class AddressEndpoint(ApiEndpoint):
     serializer = serializers.AddressSerializer
     base_viewset = viewsets.AddressViewset
 
-    fieldsets_add = ('street_address',)
-
-    fieldsets = (
-        {
-            'field': 'street_address',
-            'type': constants.FIELD_TEXT,
-        }, {
-            'field': 'city',
-            'read_only': True,
-            'type': constants.FIELD_RELATED,
-        }, {
-            'field': 'postal_code',
-            'read_only': True,
-            'type': constants.FIELD_TEXT,
-        }, {
-            'field': 'state',
-            'read_only': True,
-            'type': constants.FIELD_RELATED,
-        }, {
-            'field': 'country',
-            'read_only': True,
-            'type': constants.FIELD_RELATED,
-        }, {
-            'field': 'latitude',
-            'read_only': True,
-            'type': constants.FIELD_TEXT,
-        }, {
-            'field': 'longitude',
-            'read_only': True,
-            'type': constants.FIELD_TEXT,
-        }, {
-            'field': 'created_at',
-            'read_only': True,
-            'type': constants.FIELD_DATETIME,
-        }, {
-            'field': 'updated_at',
-            'read_only': True,
-            'type': constants.FIELD_DATETIME,
-        },
-    )
-
 
 class TagEndpoint(ApiEndpoint):
 
     model = models.Tag
     filter_class = filters.TagFilter
-
-    fieldsets = ('name', 'parent', 'active', 'evidence_required_for_approval')
-
-    search_fields = ('name',)
+    search_fields = ('name', )
+    serializer_fields = ('name', 'parent', 'active', 'evidence_required_for_approval')
 
 
 router.register(endpoint=DashboardModuleEndpoint())
@@ -1926,11 +329,11 @@ router.register(endpoint=ContactEndpoint())
 router.register(endpoint=ContactUnavailabilityEndpoint())
 router.register(endpoint=CountryEndpoint())
 router.register(models.FileStorage)
-router.register(models.Invoice, filter_fields=['customer_company'])
+router.register(endpoint=InvoiceEndpoint())
 router.register(endpoint=InvoiceLineEndpoint())
 router.register(endpoint=NavigationEndpoint())
 router.register(endpoint=NoteEndpoint())
-router.register(models.Order, filter_fields=('provider_company',))
+router.register(endpoint=OrderEndpoint())
 router.register(endpoint=RegionEndpoint())
 router.register(endpoint=TagEndpoint())
 router.register(endpoint=SiteEndpoint())
