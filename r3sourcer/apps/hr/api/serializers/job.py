@@ -124,13 +124,13 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             return None
 
         if obj.shift.hourly_rate:
-            candidate_rate = obj.shift.hourly_rate
+            candidate_rate = obj.shift.hourly_rate.hourly_rate
         elif obj.shift.date.hourly_rate:
-            candidate_rate = obj.shift.date.hourly_rate
+            candidate_rate = obj.shift.date.hourly_rate.hourly_rate
         else:
             candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.job.position)
 
-        return candidate_rate.hourly_rate if candidate_rate else None
+        return candidate_rate
 
     def get_client_rate(self, obj):
         if not obj:
@@ -288,7 +288,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         hourly_rate = obj.get_rate_for_skill(
             self.context['job'].position, score__gt=0, skill__active=True
         )
-        return hourly_rate.hourly_rate if hourly_rate else 0
+        return hourly_rate
 
     def get_evaluation(self, obj):
         return '{} ({})'.format(obj.total_evaluation_average(), obj.candidate_evaluations.count())
