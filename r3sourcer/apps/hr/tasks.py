@@ -259,12 +259,13 @@ def generate_invoice(timesheet_id=None):
 
 
 @app.task(queue='sms')
+@one_sms_task_at_the_same_time
 def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
     """
     Send time sheet log sms notification.
 
     :param time_sheet_id: UUID TimeSheet instance
-    :param event: str [SHIFT_ENDING, RECRUITEE_SUBMITTED, SUPERVISOR_DECLINED]
+    :param event: str [SHIFT_ENDING, SUPERVISOR_DECLINED]
     :return:
     """
     events_dict = {
