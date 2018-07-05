@@ -789,10 +789,7 @@ class ShiftViewset(BaseApiViewset):
 
 class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
 
-    @list_route(
-        methods=['GET'],
-        serializer=job_serializers.JobsiteMapAddressSerializer
-    )
+    @action(methods=['get'], detail=False)
     def jobsite_map(self, request, *args, **kwargs):
         serializer = job_serializers.JobsiteMapFilterSerializer(data=self.request.query_params)
         serializer.is_valid()
