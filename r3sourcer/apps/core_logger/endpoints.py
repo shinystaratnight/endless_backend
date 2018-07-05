@@ -21,23 +21,6 @@ class LoggerEndpoint(ApiEndpoint):
     model = LoggerModel
     base_viewset = LoggerViewset
     base_serializer = ApiBaseSerializer
-
-    list_display = ({
-        'field': 'at',
-        'type': FIELD_DATETIME,
-    }, 'by', 'transaction_type', 'object_id', {
-        'label': _('Diff'),
-        'fields': [{
-            'type': 'button',
-            'text': _('Diff'),
-            'endpoint': format_lazy(
-                '{}{{model}}/{{object_id}}/?limit=-1&timestamp={{timestamp}}',
-                api_reverse_lazy('log')
-            ),
-            'field': 'model',
-            'action': 'openDiff',
-        }]
-    })
     ordering_fields = []
 
 
@@ -45,8 +28,6 @@ class LoggerDiffEndpoint(ApiEndpoint):
     model = LoggerDiffModel
     base_viewset = LoggerDiffViewset
     base_serializer = ApiBaseSerializer
-
-    list_display = ('field', 'old_value', 'new_value')
     ordering_fields = []
 
 

@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoiceFilter
 from django_filters.rest_framework import FilterSet
 
-from r3sourcer.apps.candidate.models import CandidateContact
+from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, TagRel
 from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Tag, WorkflowObject
 from r3sourcer.apps.skills.models import Skill
@@ -44,3 +44,17 @@ class CandidateContactFilter(ActiveStateFilterMixin, FilterSet):
         ).exclude(
             object_id__in=set(exclude_values)
         ).distinct('object_id').values_list('object_id', flat=True)
+
+
+class SkillRelFilter(FilterSet):
+
+    class Meta:
+        model = SkillRel
+        fields = ['candidate_contact']
+
+
+class TagRelFilter(FilterSet):
+
+    class Meta:
+        model = TagRel
+        fields = ['candidate_contact']

@@ -23,12 +23,14 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.SkillRel
     serializer = candidate_serializers.SkillRelSerializer
+    filter_class = candidate_filters.SkillRelFilter
 
 
 class TagRelEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.TagRel
     serializer = candidate_serializers.TagRelSerializer
+    filter_class = candidate_filters.TagRelFilter
 
 
 class SubcontractorEndpoint(core_endpoints.ApiEndpoint):

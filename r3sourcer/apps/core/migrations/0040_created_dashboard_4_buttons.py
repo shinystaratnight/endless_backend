@@ -14,27 +14,31 @@ def migrate_dashboard(apps, schema_editor):
     UserDashboardModule = apps.get_model("core", "UserDashboardModule")
     ContentType = apps.get_model("contenttypes", "ContentType")
 
+    candidate_ct, _ = ContentType.objects.get_or_create(app_label='candidate', model='candidatecontact')
+    job_ct, _ = ContentType.objects.get_or_create(app_label='hr', model='job')
+    company_ct, _ = ContentType.objects.get_or_create(app_label='core', model='company')
+    companycontact_ct, _ = ContentType.objects.get_or_create(app_label='core', model='companycontact')
     modules = [
         DashboardModule.objects.get_or_create(
-            content_type=ContentType.objects.get(app_label='candidate', model='candidatecontact'),
+            content_type=candidate_ct,
             endpoint=api_reverse_lazy('candidate/candidatecontacts'),
             description='Open full list with candidates',
             add_label='+ Add new candidate',
         ),
         DashboardModule.objects.get_or_create(
-            content_type=ContentType.objects.get(app_label='core', model='company'),
+            content_type=company_ct,
             endpoint=api_reverse_lazy('core/companies'),
             description='Open full list with clients',
             add_label='+ Add new client',
         ),
         DashboardModule.objects.get_or_create(
-            content_type=ContentType.objects.get(app_label='core', model='companycontact'),
+            content_type=companycontact_ct,
             endpoint=api_reverse_lazy('core/companycontacts'),
             description='Open full list with client contacts',
             add_label='+ Add new client contact',
         ),
         DashboardModule.objects.get_or_create(
-            content_type=ContentType.objects.get(app_label='hr', model='job'),
+            content_type=job_ct,
             endpoint=api_reverse_lazy('hr/jobs'),
             description='Open full list with jobs',
             add_label='+ Add new job',
@@ -61,8 +65,10 @@ def migrate_dashboard(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('contenttypes', '0001_initial'),
         ('core', '0039_dashboard_add_fields'),
+        ('candidate', '0005_update_candidaterel'),
+        ('hr', '0012_renamed_vacancy'),
+        ('contenttypes', '0002_remove_content_type_name'),
     ]
 
     operations = [
