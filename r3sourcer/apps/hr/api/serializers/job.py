@@ -3,7 +3,6 @@ from functools import partial
 
 from django.db.models import Max
 from django.conf import settings
-from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
@@ -445,3 +444,51 @@ class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
             return obj.shift_dates.filter(cancelled=False, shifts__isnull=False).latest('shift_date').id
         except hr_models.ShiftDate.DoesNotExist:
             return None
+
+
+class JobsiteMapAddressSerializer(core_serializers.ApiMethodFieldsMixin, serializers.ModelSerializer):
+
+    method_fields = ('contact', 'name', 'type')
+
+    class Meta:
+        model = core_models.Address
+        fields = ('latitude', 'longitude')
+
+    def get_name(self, obj):
+        prefix = 'client_' if obj.client_name else ''
+        return getattr(obj, '%s%s' % (prefix, 'name'))
+
+    def get_contact(self, obj):
+        prefix = 'client_' if obj.client_name else ''
+
+        name = '{} {} {}'.format(
+            getattr(obj, '%s%s' % (prefix, 'title')),
+            getattr(obj, '%s%s' % (prefix, 'first_name')),
+            getattr(obj, '%s%s' % (prefix, 'last_name'))
+        )
+        job_title = getattr(obj, '%s%s' % (prefix, 'job_title'))
+        return {
+            'name': '%s %s' % (job_title, name) if job_title else name,
+            'phone_mobile': getattr(obj, '%s%s' % (prefix, 'phone_mobile')),
+        }
+
+    def get_type(self, obj):
+        if obj.client_name:
+            return 'client_hq' if obj.client_hq else 'client'
+        else:
+            # TODO: it takes a lot of time to check open state! do we need this?
+            open_states = core_models.WorkflowObject.objects.filter(
+                state__number=50,
+                object_id=obj.jobsite_id,
+                active=True,
+            ).exists()
+            return 'jobsite_open' if open_states else 'jobsite'
+
+
+class JobsiteMapFilterSerializer(serializers.Serializer):
+
+    client = serializers.CharField(required=False)
+    jobsite = serializers.CharField(required=False)
+    portfolio_manager = serializers.UUIDField(required=False)
+    filter_by = serializers.CharField(required=False)
+    show_all = serializers.BooleanField(required=False, default=False)
