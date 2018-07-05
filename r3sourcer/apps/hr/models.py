@@ -1166,6 +1166,10 @@ class TimeSheet(
         from r3sourcer.apps.hr.tasks import send_going_to_work_sms
         send_going_to_work_sms.apply_async(args=[self.pk], eta=going_eta)
 
+    def _send_submit_sms(self, going_eta):
+        from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
+        process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
+
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         if self.going_to_work_confirmation is None:
             assert isinstance(positive, bool), _('Looks like we could not decide if reply was positive')
@@ -1201,6 +1205,7 @@ class TimeSheet(
 
         if going_set and self.going_to_work_confirmation and self.is_allowed(20):
             self.create_state(20)
+            self._send_submit_sms(self.shift_ended_at)
 
         if not just_added:
             if self.candidate_submitted_at is not None and self.is_allowed(30):
