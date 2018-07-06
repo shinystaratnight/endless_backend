@@ -796,8 +796,10 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
         if not serializer.validated_data:
             return Response([])
 
-        filter_all = serializer.validated_data.get('show_all')
-        filter_qry = Q(jobsites__isnull=False) | Q(company_addresses__isnull=False) if filter_all else Q()
+        qry = Address.objects.filter(
+            Q(jobsites__isnull=False) | Q(company_addresses__isnull=False)
+        ) if serializer.validated_data.get('show_all') else Address.objects.none()
+        filter_qry = Q()
 
         filter_by = serializer.validated_data.get('filter_by')
         if filter_by:
@@ -823,7 +825,7 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
                 Q(jobsites__primary_contact_id=filter_manager)
             )
 
-        jobsite_data = Address.objects.filter(filter_qry).annotate(
+        jobsite_data = qry.filter(filter_qry).annotate(
             name=F('jobsites__short_name'),
             first_name=F('jobsites__primary_contact__contact__first_name'),
             last_name=F('jobsites__primary_contact__contact__last_name'),
