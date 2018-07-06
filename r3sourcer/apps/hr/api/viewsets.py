@@ -1,3 +1,4 @@
+import decimal
 import datetime
 import logging
 import operator
@@ -825,7 +826,10 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
                 Q(jobsites__primary_contact_id=filter_manager)
             )
 
-        jobsite_data = qry.filter(filter_qry).annotate(
+        jobsite_data = qry.filter(filter_qry).exclude(
+            latitude=decimal.Decimal('0.0'),
+            longitude=decimal.Decimal('0.0'),
+        ).annotate(
             name=F('jobsites__short_name'),
             first_name=F('jobsites__primary_contact__contact__first_name'),
             last_name=F('jobsites__primary_contact__contact__last_name'),
