@@ -461,11 +461,17 @@ class JobsiteMapAddressSerializer(core_serializers.ApiMethodFieldsMixin, seriali
     def get_contact(self, obj):
         prefix = 'client_' if obj.client_name else ''
 
-        name = '{} {} {}'.format(
-            getattr(obj, '%s%s' % (prefix, 'title')),
-            getattr(obj, '%s%s' % (prefix, 'first_name')),
-            getattr(obj, '%s%s' % (prefix, 'last_name'))
-        )
+        first_name = getattr(obj, '%s%s' % (prefix, 'first_name'))
+        last_name = getattr(obj, '%s%s' % (prefix, 'last_name'))
+        title = getattr(obj, '%s%s' % (prefix, 'title'))
+
+        if not first_name and not last_name:
+            name = None
+        else:
+            name = '{} {}'.format(first_name, last_name)
+            if title:
+                name = '{} {}'.format(title, name)
+
         job_title = getattr(obj, '%s%s' % (prefix, 'job_title'))
         return {
             'name': '%s %s' % (job_title, name) if job_title else name,
