@@ -1,4 +1,4 @@
-from drf_auto_endpoint.router import router
+from r3sourcer.apps.core.api.router import router
 
 from . import models
 

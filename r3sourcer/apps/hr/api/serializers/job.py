@@ -452,7 +452,7 @@ class JobsiteMapAddressSerializer(core_serializers.ApiMethodFieldsMixin, seriali
 
     class Meta:
         model = core_models.Address
-        fields = ('latitude', 'longitude')
+        fields = ('latitude', 'longitude', '__str__')
 
     def get_name(self, obj):
         prefix = 'client_' if obj.client_name else ''

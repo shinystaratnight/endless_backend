@@ -5,9 +5,8 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from loginas.utils import login_as
 from rest_framework import viewsets, status, exceptions, permissions
-from rest_framework.decorators import list_route, detail_route
+from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework.serializers import Serializer
 
 from r3sourcer.apps.core.models import Contact, User
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
@@ -15,9 +14,7 @@ from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from ..models import TokenLogin
 from ..tasks import send_login_message
 
-from .serializers import (
-    LoginSerializer, TokenLoginSerializer, ContactLoginSerializer
-)
+from .serializers import LoginSerializer, ContactLoginSerializer
 
 
 class AuthViewSet(BaseViewsetMixin,
@@ -45,7 +42,7 @@ class AuthViewSet(BaseViewsetMixin,
     def list(self, request, *args, **kwargs):
         self.http_method_not_allowed(request, *args, **kwargs)
 
-    @list_route(methods=['post'], serializer_class=LoginSerializer)
+    @action(methods=['post'], detail=False)
     def login(self, request, *args, **kwargs):
         if request.user.is_authenticated:
             raise exceptions.PermissionDenied(self.errors['logged_in'])
@@ -104,7 +101,7 @@ class AuthViewSet(BaseViewsetMixin,
             }
         }, status=status.HTTP_200_OK)
 
-    @detail_route(methods=['get'], serializer_class=TokenLoginSerializer)
+    @action(methods=['get'], detail=True)
     def login_by_token(self, request, *args, **kwargs):
         instance = self.get_object()
         serializer = self.get_serializer(instance)
@@ -128,7 +125,7 @@ class AuthViewSet(BaseViewsetMixin,
 
         return Response({'status': 'success', 'data': serializer.data})
 
-    @list_route(methods=['get'], serializer_class=Serializer)
+    @action(methods=['get'], detail=False)
     def restore_session(self, request, *args, **kwargs):
         if not request.user.is_authenticated():
             raise exceptions.AuthenticationFailed()
@@ -142,7 +139,7 @@ class AuthViewSet(BaseViewsetMixin,
             }
         }, status=status.HTTP_200_OK)
 
-    @list_route(methods=['post'], serializer_class=Serializer)
+    @action(methods=['post'], detail=False)
     def logout(self, request, *args, **kwargs):
         logout(request)
 
@@ -151,7 +148,7 @@ class AuthViewSet(BaseViewsetMixin,
             'message': _('You are logged out')
         }, status=status.HTTP_200_OK)
 
-    @detail_route(methods=['post'], serializer_class=Serializer)
+    @action(methods=['post'], detail=True)
     def loginas(self, request, auth_token, *args, **kwargs):
         if not request.user.is_authenticated:
             raise exceptions.ValidationError(_('Please login first'))

@@ -1,13 +1,13 @@
 from django.utils.translation import ugettext_lazy as _
-from drf_auto_endpoint.router import router
+from r3sourcer.apps.core.api.router import router
 
+from rest_framework.decorators import action
 from rest_framework.exceptions import NotFound
 from rest_framework.response import Response
 
 from r3sourcer.apps.core_logger.models import LoggerModel, LoggerDiffModel
 from r3sourcer.apps.core_logger.viewsets import LoggerViewset, LoggerDiffViewset
 
-from r3sourcer.apps.core.api.decorators import list_route
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.serializers import ApiBaseSerializer
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
@@ -21,23 +21,6 @@ class LoggerEndpoint(ApiEndpoint):
     model = LoggerModel
     base_viewset = LoggerViewset
     base_serializer = ApiBaseSerializer
-
-    list_display = ({
-        'field': 'at',
-        'type': FIELD_DATETIME,
-    }, 'by', 'transaction_type', 'object_id', {
-        'label': _('Diff'),
-        'fields': [{
-            'type': 'button',
-            'text': _('Diff'),
-            'endpoint': format_lazy(
-                '{}{{model}}/{{object_id}}/?limit=-1&timestamp={{timestamp}}',
-                api_reverse_lazy('log')
-            ),
-            'field': 'model',
-            'action': 'openDiff',
-        }]
-    })
     ordering_fields = []
 
 
@@ -45,12 +28,10 @@ class LoggerDiffEndpoint(ApiEndpoint):
     model = LoggerDiffModel
     base_viewset = LoggerDiffViewset
     base_serializer = ApiBaseSerializer
-
-    list_display = ('field', 'old_value', 'new_value')
     ordering_fields = []
 
 
-@list_route(endpoint=LoggerEndpoint())
+@action(methods=['get'], detail=False)
 def log(self, request, *args, **kwargs):
     serializer_class = self.get_serializer_class()
     model = serializer_class.Meta.model

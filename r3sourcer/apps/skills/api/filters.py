@@ -33,7 +33,7 @@ class SkillBaseRateFilter(FilterSet):
 
     class Meta:
         model = skills_models.SkillBaseRate
-        fields = ['candidate_skill']
+        fields = ['candidate_skill', 'skill']
 
     def filter_candidate_skill(self, queryset, name, value):
         return queryset.filter(skill__candidate_skills=value).distinct()

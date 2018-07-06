@@ -1,15 +1,10 @@
 from collections import OrderedDict
 
-from rest_framework.pagination import LimitOffsetPagination, _positive_int, _get_count
+from rest_framework.pagination import LimitOffsetPagination, _positive_int
 from rest_framework.response import Response
 
 
 class ApiLimitOffsetPagination(LimitOffsetPagination):
-
-    def paginate_queryset(self, queryset, request, view=None):
-        self.count = _get_count(queryset)
-
-        return super(ApiLimitOffsetPagination, self).paginate_queryset(queryset, request, view)
 
     def get_limit(self, request):
         if self.limit_query_param:
@@ -40,8 +35,6 @@ class ApiLimitOffsetPagination(LimitOffsetPagination):
             results = data.get('results')
         return Response(OrderedDict([
             ('count', self.count),
-            ('next', self.get_next_link()),
-            ('previous', self.get_previous_link()),
             ('message', message),
             ('results', results)
         ]))

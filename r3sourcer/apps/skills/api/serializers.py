@@ -12,4 +12,4 @@ class SkillSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = Skill
-        fields = ('__all__',)
+        fields = ('__all__', )

@@ -2,7 +2,7 @@ from django.conf import settings
 from django.conf.urls import url, include
 from django.conf.urls.static import static
 from django.contrib import admin
-from drf_auto_endpoint.router import router
+from r3sourcer.apps.core.api.router import router
 
 from r3sourcer.apps.logger.admin import admin_logger
 from r3sourcer.apps.logger.api.viewsets import journal_list, journal_detail

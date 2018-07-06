@@ -531,9 +531,9 @@ class MetaFields(serializers.SerializerMetaclass):
 
 @six.add_metaclass(MetaFields)
 class ApiBaseModelSerializer(
+        ApiFieldsMixin,
         ApiMethodFieldsMixin,
         ApiFullRelatedFieldsMixin,
-        ApiFieldsMixin,
         serializers.ModelSerializer):
 
     pass
@@ -634,8 +634,6 @@ class NoteSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
 
 
 class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
-    company_contact = CompanyContactSerializer(many=True, read_only=True)
-
     image_fields = ('picture', )
     many_related_fields = {
         'company_contact': 'contact',
@@ -687,10 +685,8 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         model = core_models.Contact
         read_only = ('is_available', 'address', 'company_contact', 'object_history', 'notes')
         fields = (
-            'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'marital_status',
-            'birthday', 'spouse_name', 'children', 'picture', 'address', 'phone_mobile_verified', 'email_verified',
-            'id', 'created_at', 'updated_at',
-            # FIXME: change related fields
+            'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'birthday',
+            'picture', 'address', 'phone_mobile_verified', 'email_verified', 'id', 'created_at', 'updated_at',
             {
                 'user': ('id',),
                 'notes': ('id', 'note'),
@@ -783,14 +779,13 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
 
     method_fields = ('company', 'manager')
 
-    company = CompanySerializer(write_only=True, required=True)
     active = serializers.BooleanField(required=False)
     termination_date = serializers.DateField(required=False, allow_null=True)
 
     def get_company(self, instance):
         rel = instance.relationships.filter(active=True).first()
         if rel is not None:
-            return CompanyListSerializer(rel.company).data
+            return CompanyListSerializer(rel.company, fields=('id', '__str__', 'manager')).data
         return None
 
     def get_manager(self, instance):
@@ -800,7 +795,7 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     class Meta:
         model = core_models.CompanyContact
         fields = (
-            'id', 'job_title', 'rating_unreliable', 'legacy_myob_card_number', 'company', 'active',
+            'id', 'job_title', 'rating_unreliable', 'legacy_myob_card_number', 'active',
             'receive_job_confirmation_sms', 'termination_date', 'created_at', 'updated_at',
             {
                 'contact': (
@@ -1206,6 +1201,9 @@ class CompanyListSerializer(
                 'invoice_rule': '__all__',
                 'manager': (
                     'id', '__str__',
+                    {
+                        'contact': ('id', 'email', 'phone_mobile')
+                    }
                 ),
                 'groups': ('id', '__str__')
             }
