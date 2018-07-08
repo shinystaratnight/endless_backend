@@ -1194,6 +1194,30 @@ class CompanyRel(
     def get_closest_company(self):
         return self.master_company
 
+    def after_state_created(self, workflow_object):
+        if workflow_object.state.number == 70 and workflow_object.active:
+            jobs = self._get_jobs_with_states(40)
+
+            for job in jobs:
+                if job.is_allowed(20):
+                    job.create_state(20)
+        elif workflow_object.state.number == 80 and workflow_object.active:
+            jobs = self._get_jobs_with_states(20)
+
+            for job in jobs:
+                if job.is_allowed(40):
+                    job.create_state(40)
+
+    def _get_jobs_with_states(self, state):
+        from r3sourcer.apps.hr.models import Job
+
+        content_type = ContentType.objects.get_for_model(Job)
+        filter_values = WorkflowObject.objects.filter(
+            state__number=state, state__workflow__model=content_type, active=True
+        ).values_list('object_id', flat=True).distinct()
+
+        return self.regular_company.customer_jobs.filter(id__in=filter_values)
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         super().save(*args, **kwargs)
