@@ -292,7 +292,7 @@ class TagFilter(FilterSet):
 
     class Meta:
         model = models.Tag
-        fields = ['exclude']
+        fields = ['exclude', 'confidential']
 
     def exclude_by_candidate(self, queryset, name, value):
         return queryset.filter(active=True).exclude(tag_rels__candidate_contact_id=value)

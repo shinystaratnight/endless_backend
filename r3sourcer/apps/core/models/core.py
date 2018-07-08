@@ -1584,23 +1584,16 @@ class Tag(MPTTModel, UUIDModel):
         default=False,
         verbose_name=_('Evidence required for approval')
     )
-    # __original_active = None
+    confidential = models.BooleanField(
+        default=False,
+        verbose_name=_('Confidential'),
+    )
 
     objects = TagManager()
 
     class Meta:
         verbose_name = _("Tag")
         verbose_name_plural = _("Tags")
-
-    # def __init__(self, *args, **kwargs):
-    #     super(Tag, self).__init__(*args, **kwargs)
-    #     self.__original_active = self.active
-    #
-    # def save(self, *args, **kwargs):
-    #     if self.__original_active != self.active:
-    #         self.candidate_tags.update(verified_by=None)
-    #     super(Tag, self).save(*args, **kwargs)
-    #     self.__original_active = self.active
 
     def __str__(self):
         return self.name

@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
-from r3sourcer.apps.core.models import UUIDModel
+from r3sourcer.apps.core.models import UUIDModel, Tag
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
 
@@ -89,6 +89,12 @@ class Skill(MYOBMixin, UUIDModel):
         max_digits=16,
         blank=True,
         null=True
+    )
+
+    tags = models.ManyToManyField(
+        Tag,
+        related_name='skills',
+        through='SkillTag'
     )
 
     class Meta:
@@ -183,3 +189,27 @@ class SkillBaseRate(UUIDModel):
 
 
 post_save.connect(SkillBaseRate.set_default_rate, sender=SkillBaseRate)
+
+
+class SkillTag(UUIDModel):
+    tag = models.ForeignKey(
+        Tag,
+        related_name="skill_tags",
+        on_delete=models.PROTECT,
+        verbose_name=_("Tag")
+    )
+
+    skill = models.ForeignKey(
+        Skill,
+        on_delete=models.PROTECT,
+        related_name="skill_tags",
+        verbose_name=_("Skill")
+    )
+
+    class Meta:
+        verbose_name = _("Skill Tag")
+        verbose_name_plural = _("Skill Tags")
+        unique_together = ("tag", "skill")
+
+    def __str__(self):
+        return self.tag.name

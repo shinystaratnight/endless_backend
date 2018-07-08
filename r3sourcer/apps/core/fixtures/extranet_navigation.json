@@ -1184,7 +1184,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 94,
-    "rght": 97,
+    "rght": 99,
     "tree_id": 12,
     "level": 1
   }
@@ -1881,7 +1881,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 98,
+    "rght": 100,
     "tree_id": 12,
     "level": 0
   }
@@ -1935,6 +1935,23 @@
     "rght": 65,
     "tree_id": 4,
     "level": 1
+  }
+},
+{
+  "model": "core.extranetnavigation",
+  "pk": 136,
+  "fields": {
+    "updated_at": "2018-07-08T18:36:25.683Z",
+    "created_at": "2018-07-08T18:36:25.683Z",
+    "parent": 86,
+    "name": "Skill Tags",
+    "url": "/skill/skilltags/",
+    "endpoint": "/ecore/api/v2/skills/skilltags/",
+    "access_level": "manager",
+    "lft": 97,
+    "rght": 98,
+    "tree_id": 12,
+    "level": 2
   }
 }
 ]

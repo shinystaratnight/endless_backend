@@ -166,7 +166,7 @@ class JobTagFilter(FilterSet):
 
     class Meta:
         model = hr_models.JobTag
-        fields = ['job']
+        fields = ['job', 'tag__confidential']
 
 
 class InvoiceFilter(FilterSet):
