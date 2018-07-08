@@ -1204,8 +1204,9 @@
                     20
                 ],
                 "required_states": [
-                    "and",
-                    10
+                    "or",
+                    10,
+                    40
                 ],
                 "required_functions": [
                     "and",
