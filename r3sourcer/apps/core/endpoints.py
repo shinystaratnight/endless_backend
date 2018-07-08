@@ -311,7 +311,7 @@ class TagEndpoint(ApiEndpoint):
     model = models.Tag
     filter_class = filters.TagFilter
     search_fields = ('name', )
-    serializer_fields = ('name', 'parent', 'active', 'evidence_required_for_approval')
+    serializer_fields = ('id', 'name', 'parent', 'active', 'evidence_required_for_approval', 'confidential')
 
 
 router.register(endpoint=DashboardModuleEndpoint())

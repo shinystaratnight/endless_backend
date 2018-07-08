@@ -1,6 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
-from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoiceFilter
+from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoiceFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, TagRel
@@ -57,4 +57,4 @@ class TagRelFilter(FilterSet):
 
     class Meta:
         model = TagRel
-        fields = ['candidate_contact']
+        fields = ['candidate_contact', 'tag__confidential']
