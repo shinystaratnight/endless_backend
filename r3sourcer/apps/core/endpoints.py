@@ -57,6 +57,7 @@ class CompanyContactRelationEndpoint(ApiEndpoint):
     model = models.CompanyContactRelationship
     serializer = serializers.CompanyContactRelationshipSerializer
     filter_class = filters.CompanyContactRelationshipFilter
+    base_viewset = viewsets.CompanyContactRelationshipViewset
 
 
 class CompanyRelEndpoint(ApiEndpoint):

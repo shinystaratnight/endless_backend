@@ -386,6 +386,14 @@ class CompanyContactViewset(BaseApiViewset):
         return obj
 
     def perform_destroy(self, instance):
+        has_jobsites = instance.managed_jobsites.exists() or instance.jobsites.exists()
+        has_jobs = (
+            instance.provider_representative_jobs.exists() or instance.customer_representative_jobs.exists()
+        )
+
+        if has_jobs or has_jobsites or instance.supervised_time_sheets.exists():
+            raise ValidationError({'non_field_errors': _('Cannot delete')})
+
         instance.relationships.all().delete()
 
         super().perform_destroy(instance)
@@ -779,3 +787,21 @@ class AddressViewset(GoogleAddressMixin, BaseApiViewset):
             raise exceptions.ValidationError(_('Address is invalid!'))
 
         return Response(data)
+
+
+class CompanyContactRelationshipViewset(BaseApiViewset):
+
+    def perform_destroy(self, instance):
+        company_contact = instance.company_contact
+        has_jobsites = company_contact.managed_jobsites.exists() or company_contact.jobsites.exists()
+        has_jobs = (
+            company_contact.provider_representative_jobs.exists() or
+            company_contact.customer_representative_jobs.exists()
+        )
+
+        if has_jobs or has_jobsites or company_contact.supervised_time_sheets.exists():
+            raise ValidationError({'non_field_errors': _('Cannot delete')})
+
+        super().perform_destroy(instance)
+
+        company_contact.delete()
