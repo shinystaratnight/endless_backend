@@ -818,7 +818,7 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
 
         filter_manager = serializer.validated_data.get('portfolio_manager')
         if filter_manager:
-            filter_qry |= (
+            filter_qry = (
                 Q(company_addresses__primary_contact_id=filter_manager) |
                 Q(jobsites__primary_contact_id=filter_manager)
             )
