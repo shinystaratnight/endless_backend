@@ -1279,7 +1279,7 @@ class CompanyContactRelationship(
             if self.company.type == self.company.COMPANY_TYPES.master:
                 role = Role.ROLE_NAMES.manager
 
-            self.company_contact.contact.user.role.add(Role.objects.create(name=role))
+            self.company_contact.contact.user.role.add(Role.objects.create(name=role, company_contact_rel=self))
 
 
 class CompanyAddress(

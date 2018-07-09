@@ -394,7 +394,9 @@ class CompanyContactViewset(BaseApiViewset):
         if has_jobs or has_jobsites or instance.supervised_time_sheets.exists():
             raise ValidationError({'non_field_errors': _('Cannot delete')})
 
-        instance.relationships.all().delete()
+        rels = instance.relationships.all()
+        models.Role.objects.filter(company_contact_rel__in=rels).delete()
+        rels.delete()
 
         super().perform_destroy(instance)
 
@@ -809,6 +811,8 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
 
         if has_jobs or has_jobsites or company_contact.supervised_time_sheets.exists():
             raise ValidationError({'non_field_errors': _('Cannot delete')})
+
+        models.Role.objects.filter(company_contact_rel=instance).delete()
 
         super().perform_destroy(instance)
 
