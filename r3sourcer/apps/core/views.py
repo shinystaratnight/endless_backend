@@ -85,10 +85,10 @@ class UserRolesView(APIView):
                 {
                     'id': x.id,
                     '__str__': '{} - {}'.format(
-                        x.name, x.company_contact_rel.company.short_name
+                        x.name, x.company_contact_rel.company.short_name or x.company_contact_rel.company.name
                     ) if x.company_contact_rel else x.name
                 }
-                for x in self.request.user.role.all()
+                for x in self.request.user.role.all().order_by('name')
             ]
             data = {
                 'roles': roles
