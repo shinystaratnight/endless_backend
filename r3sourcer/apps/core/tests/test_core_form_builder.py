@@ -442,12 +442,8 @@ class TestFormFields:
             'placeholder',
             'description',
             'label',
-            'required',
-            'values'
+            'required'
         }
-
-        assert str(folder.id) in [item.get('value')
-                                  for item in model_field.get_ui_config()['templateOptions']['values']]
 
         form_field = model_field.get_form_field()
 

@@ -9,7 +9,7 @@ from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
 from django.db import models, transaction
-from django.urls import reverse
+from django.urls import reverse, exceptions as url_exceptions
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
 from django.utils.translation import ugettext_lazy as _
@@ -597,13 +597,17 @@ class ModelFormField(FormField):
             if isinstance(form_field, (forms.ModelChoiceField, forms.ModelMultipleChoiceField)):
                 inflector = Inflector(import_string(settings.INFLECTOR_LANGUAGE))
                 model = form_field.queryset.model
-                ui_all_config.update({
-                    'type': 'related',
-                    'endpoint': api_reverse('{}/{}'.format(
-                        model._meta.app_label.lower(), inflector.pluralize(model.__name__.lower())
-                    )),
-                })
-                ui_config['type'] = 'related'
+                try:
+                    ui_all_config.update({
+                        'type': 'related',
+                        'endpoint': api_reverse('{}/{}'.format(
+                            model._meta.app_label.lower(), inflector.pluralize(model.__name__.lower())
+                        )),
+                    })
+                    ui_config['type'] = 'related'
+                except url_exceptions.NoReverseMatch:
+                    ui_all_config['type'] = 'select'
+                    ui_config['type'] = 'select'
             else:
                 ui_all_config['type'] = 'select'
                 ui_config.update({
