@@ -1390,6 +1390,20 @@ class FormSerializer(ApiBaseModelSerializer):
         return obj.get_company_links(self.context['request'].user.contact)
 
 
+class FormRenderSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('ui_config', )
+
+    class Meta:
+        model = core_models.Form
+        fields = (
+            'id', 'title', 'company', 'builder', 'is_active', 'short_description', 'save_button_text', 'submit_message'
+        )
+
+    def get_ui_config(self, obj):
+        return obj.get_ui_config()
+
+
 class FormFieldGroupSerializer(ApiBaseModelSerializer):
 
     method_fields = ('field_list', )

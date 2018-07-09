@@ -766,6 +766,14 @@ class FormViewSet(BaseApiViewset):
 
         return self.create_from_data(data, *args, **kwargs)
 
+    @action(methods=['get'], detail=True)
+    def render(self, request, pk, *args, **kwargs):
+        fields = self.get_list_fields(request)
+        instance = self.get_object()
+        serializer = serializers.FormRenderSerializer(instance, fields=fields)
+
+        return Response(serializer.data)
+
 
 class CitiesLightViewSet(BaseApiViewset):
 
