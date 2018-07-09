@@ -882,7 +882,7 @@ class Company(
     TERMS_PAYMENT_CHOICES = Choices(
         ('prepaid', _('Prepaid')),
         ('on_delivery', _('Cash on delivery')),
-        ('days', _('Days')),
+        ('days', _('NET Days')),
         ('day_of_month', _('Day of the month')),
         ('days_eom', _('Days after EOM')),
         ('day_of_month_eom', _('Day of month after EOM')),
