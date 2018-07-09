@@ -74,13 +74,13 @@ class TestFormFields:
             class_name='input-field'
         )
 
-        ui_config = model_field.get_ui_config()
+        ui_all_config = model_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
-        assert set(ui_config.keys()) == {'type', 'description', 'placeholder', 'label', 'className', 'required', 'name'}
+        assert set(ui_config.keys()) == {'type', 'description', 'placeholder', 'label', 'required'}
         assert ui_config['required'] is True
-        assert ui_config['name'] == model_field.name
+        assert ui_all_config['key'] == model_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert ui_config['className'] == 'input-field'
 
         form_field = model_field.get_form_field()
 
@@ -102,26 +102,24 @@ class TestFormFields:
             max_value=10,
         )
 
-        ui_config = number_field.get_ui_config()
+        ui_all_config = number_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
             'placeholder',
             'label',
-            'className',
             'required',
-            'name',
-            'minValue',
-            'maxValue',
+            'min',
+            'max',
             'description',
             'step'
         }
         assert ui_config['required'] is True
-        assert ui_config['name'] == number_field.name
+        assert ui_all_config['key'] == number_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert ui_config['className'] == 'input-field'
-        assert ui_config['minValue'] == 0
-        assert ui_config['maxValue'] == 10
+        assert ui_config['min'] == 0
+        assert ui_config['max'] == 10
 
         form_field = number_field.get_form_field()
 
@@ -144,23 +142,20 @@ class TestFormFields:
             subtype=models.TextFormField.SUBTYPE_CHOICES.EMAIL
         )
 
-        ui_config = email_field.get_ui_config()
+        ui_all_config = email_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
             'placeholder',
             'label',
             'description',
-            'className',
             'required',
-            'name',
-            'subtype'
         }
         assert ui_config['required'] is True
-        assert ui_config['name'] == email_field.name
+        assert ui_all_config['key'] == email_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert ui_config['className'] == 'input-field'
-        assert ui_config['subtype'] == models.TextFormField.SUBTYPE_CHOICES.EMAIL
+        assert ui_config['type'] == models.TextFormField.SUBTYPE_CHOICES.EMAIL
 
         form_field = email_field.get_form_field()
 
@@ -180,21 +175,19 @@ class TestFormFields:
             class_name='input-field'
         )
 
-        ui_config = date_field.get_ui_config()
+        ui_all_config = date_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
             'placeholder',
             'label',
-            'className',
             'required',
             'description',
-            'name',
         }
         assert ui_config['required'] is True
-        assert ui_config['name'] == date_field.name
+        assert ui_all_config['key'] == date_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert ui_config['className'] == 'input-field'
 
         form_field = date_field.get_form_field()
 
@@ -214,21 +207,19 @@ class TestFormFields:
             class_name='input-field'
         )
 
-        ui_config = checkbox_field.get_ui_config()
+        ui_all_config = checkbox_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
             'placeholder',
             'description',
             'label',
-            'className',
             'required',
-            'name',
         }
+        assert ui_all_config['key'] == checkbox_field.name
         assert ui_config['required'] is True
-        assert ui_config['name'] == checkbox_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert ui_config['className'] == 'input-field'
 
         form_field = checkbox_field.get_form_field()
 
@@ -255,7 +246,8 @@ class TestFormFields:
             choices=choices
         )
 
-        ui_config = choice_field.get_ui_config()
+        ui_all_config = choice_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
@@ -263,14 +255,12 @@ class TestFormFields:
             'description',
             'multiple',
             'label',
-            'className',
             'required',
-            'name',
             'values'
         }
         assert ui_config['required'] is True
-        assert ui_config['multiple'] == False
-        assert ui_config['name'] == choice_field.name
+        assert ui_config['multiple'] is False
+        assert ui_all_config['key'] == choice_field.name
         assert ui_config['placeholder'] == 'test field name'
         assert len(ui_config['values']) == 3
         assert set([i['value'] for i in ui_config['values']]) == {'1', '2', '3'}
@@ -304,7 +294,8 @@ class TestFormFields:
             is_multiple=True
         )
 
-        ui_config = choice_field.get_ui_config()
+        ui_all_config = choice_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
@@ -312,14 +303,12 @@ class TestFormFields:
             'description',
             'multiple',
             'label',
-            'className',
             'required',
-            'name',
             'values'
         }
         assert ui_config['required'] is True
         assert ui_config['multiple'] is True
-        assert ui_config['name'] == choice_field.name
+        assert ui_all_config['key'] == choice_field.name
         assert ui_config['placeholder'] == 'test field name'
         assert len(ui_config['values']) == 3
         assert set([i['value'] for i in ui_config['values']]) == {'1', '2', '3'}
@@ -345,21 +334,19 @@ class TestFormFields:
             class_name='input-field'
         )
 
-        ui_config = file_field.get_ui_config()
+        ui_all_config = file_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
             'placeholder',
             'description',
             'label',
-            'className',
             'required',
-            'name'
         }
         assert ui_config['required'] is True
-        assert ui_config['name'] == file_field.name
+        assert ui_all_config['key'] == file_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert ui_config['className'] == 'input-field'
 
         form_field = file_field.get_form_field()
 
@@ -379,21 +366,19 @@ class TestFormFields:
             class_name='input-field'
         )
 
-        ui_config = file_field.get_ui_config()
+        ui_all_config = file_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
             'placeholder',
             'description',
             'label',
-            'className',
             'required',
-            'name'
         }
+        assert ui_all_config['key'] == file_field.name
         assert ui_config['required'] is True
-        assert ui_config['name'] == file_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert ui_config['className'] == 'input-field'
 
         form_field = file_field.get_form_field()
 
@@ -415,23 +400,20 @@ class TestFormFields:
             max_length=20
         )
 
-        ui_config = text_field.get_ui_config()
+        ui_all_config = text_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
             'type',
             'placeholder',
             'description',
             'label',
-            'className',
             'maxLength',
             'required',
-            'subtype',
-            'name'
         }
+        assert ui_all_config['key'] == text_field.name
         assert ui_config['required'] is True
-        assert ui_config['name'] == text_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert ui_config['className'] == 'input-field'
         assert ui_config['maxLength'] == text_field.max_length
 
         form_field = text_field.get_form_field()
@@ -446,25 +428,26 @@ class TestFormFields:
 
     def test_form_class(self, form, form_field_group, form_fields):
         form_cls = form.get_form_class()
-        form_instance = form_cls(data={'phone_mobile': '+77777777777', 'email': 'test@example.com', 'first_name': 'Test'})
+        form_instance = form_cls(data={
+            'phone_mobile': '+77777777777', 'email': 'test@example.com', 'first_name': 'Test'
+        })
 
         assert {'phone_mobile', 'email', 'first_name'} == set(form_instance.base_fields.keys())
 
     def test_model_foreignkey_field(self, form_field_group, addresses, folder):
         model_field = models.ModelFormField.objects.create(group=form_field_group, name='files', required=True)
 
-        assert set(model_field.get_ui_config().keys()) == {
+        assert set(model_field.get_ui_config()['templateOptions'].keys()) == {
             'type',
             'placeholder',
             'description',
             'label',
-            'className',
             'required',
-            'values',
-            'name'
+            'values'
         }
 
-        assert str(folder.id) in [item.get('value') for item in model_field.get_ui_config()['values']]
+        assert str(folder.id) in [item.get('value')
+                                  for item in model_field.get_ui_config()['templateOptions']['values']]
 
         form_field = model_field.get_form_field()
 
@@ -485,22 +468,15 @@ class TestFormFields:
             required=True
         )
 
-        ui_config = radio_field.get_ui_config()
+        ui_all_config = radio_field.get_ui_config()
+        ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
-            'type',
-            'placeholder',
-            'description',
-            'label',
-            'className',
-            'required',
-            'values',
-            'name'
+            'placeholder', 'description', 'required', 'label', 'type', 'values'
         }
+        assert ui_all_config['key'] == radio_field.name
         assert ui_config['required'] is True
-        assert ui_config['name'] == radio_field.name
         assert ui_config['placeholder'] == ''
-        assert ui_config['className'] == ''
 
         form_field = radio_field.get_form_field()
 

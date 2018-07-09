@@ -1,25 +1,28 @@
-import json
 import uuid
 from collections import OrderedDict
 
+from django import forms
+from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
 from django.db import models, transaction
-from django import forms
 from django.urls import reverse
 from django.utils.functional import cached_property
+from django.utils.module_loading import import_string
 from django.utils.translation import ugettext_lazy as _
 
+from inflector import Inflector
 from model_utils import Choices
 from polymorphic.models import PolymorphicModel
 
+from r3sourcer.apps.core.models import UUIDModel
 from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
-from .core import UUIDModel
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.user import get_default_company
+from r3sourcer.apps.core_adapter.utils import api_reverse
 
 
 __all__ = [
@@ -207,7 +210,7 @@ class Form(UUIDModel):
             fields.append(group.get_ui_config())
             for field in group.fields.all():
                 fields.append(field.get_ui_config())
-        return json.dumps(fields)
+        return fields
 
     def get_form_class(self) -> type:
         """
@@ -452,13 +455,15 @@ class FormField(PolymorphicModel):
 
     def get_ui_config(self):
         return {
-            'name': self.name,
-            'label': self.label,
-            'required': self.required,
-            'placeholder': self.placeholder,
-            'className': self.class_name,
-            'description': self.help_text,
-            'type': self.input_type
+            'key': self.name,
+            'type': 'input',
+            'templateOptions': {
+                'placeholder': self.placeholder,
+                'description': self.help_text,
+                'required': self.required,
+                'label': self.label,
+                'type': self.input_type,
+            }
         }
 
     def get_form_field(self):
@@ -551,7 +556,8 @@ class ModelFormField(FormField):
 
         :return: dict
         """
-        ui_config = super(ModelFormField, self).get_ui_config()
+        ui_all_config = super(ModelFormField, self).get_ui_config()
+        ui_config = ui_all_config.get('templateOptions', {})
         form_field = self.get_form_field()
 
         if not ui_config['description']:
@@ -565,37 +571,51 @@ class ModelFormField(FormField):
                 form_field.widget.attrs.get('placeholder', ''))
 
         if isinstance(form_field, forms.CharField):
-            if form_field.widget and isinstance(form_field,
-                                                forms.PasswordInput):
+            if form_field.widget and isinstance(form_field, forms.PasswordInput):
                 ui_config['type'] = 'password'
             else:
                 ui_config['type'] = 'text'
-        if isinstance(form_field, (
-                forms.FloatField, forms.IntegerField, forms.DecimalField)):
+
+            if isinstance(form_field.widget, forms.Textarea):
+                ui_all_config['type'] = 'textarea'
+        if isinstance(form_field, (forms.FloatField, forms.IntegerField, forms.DecimalField)):
             ui_config['type'] = 'number'
         elif isinstance(form_field, (forms.FileField, forms.ImageField)):
-            ui_config['type'] = 'file'
-        elif isinstance(form_field, (forms.DateField, forms.DateTimeField)):
+            ui_config['type'] = 'picture'
+            ui_config['file'] = isinstance(form_field, forms.FileField)
+        elif isinstance(form_field, forms.DateField):
+            ui_all_config['type'] = 'datepicker'
             ui_config['type'] = 'date'
+        elif isinstance(form_field, forms.DateTimeField):
+            ui_all_config['type'] = 'datepicker'
+            ui_config['type'] = 'datetime'
         elif isinstance(form_field, (forms.BooleanField, forms.NullBooleanField)):
-            ui_config['type'] = 'select'
-            ui_config['values'] = [{'label': str(_("Yes")), 'value': True}, {'label': str(_("No")), 'value': False}]
-            if isinstance(form_field, forms.NullBooleanField):
-                ui_config['values'].insert(0, {'label': str(_("Undefined")), 'value': None})
+            ui_all_config['type'] = 'checkbox'
         elif isinstance(form_field, (
-                forms.ModelChoiceField, forms.ModelMultipleChoiceField,
-                forms.ChoiceField,
-                forms.MultipleChoiceField)):
-            ui_config.update({
-                'type': 'select',
-                'values': [{'value': str(value), 'label': str(label)} for
-                           value, label in form_field.choices]
-            })
-            if isinstance(form_field, (
-                    forms.ModelMultipleChoiceField,
-                    forms.MultipleChoiceField)):
+            forms.ModelChoiceField, forms.ModelMultipleChoiceField, forms.ChoiceField, forms.MultipleChoiceField
+        )):
+            if isinstance(form_field, (forms.ModelChoiceField, forms.ModelMultipleChoiceField)):
+                inflector = Inflector(import_string(settings.INFLECTOR_LANGUAGE))
+                model = form_field.queryset.model
+                ui_all_config.update({
+                    'type': 'related',
+                    'endpoint': api_reverse('{}/{}'.format(
+                        model._meta.app_label.lower(), inflector.pluralize(model.__name__.lower())
+                    )),
+                })
+                ui_config['type'] = 'related'
+            else:
+                ui_all_config['type'] = 'select'
+                ui_config.update({
+                    'type': 'select',
+                    'values': [{'value': str(value), 'label': str(label)} for value, label in form_field.choices]
+                })
+            if isinstance(form_field, (forms.ModelMultipleChoiceField, forms.MultipleChoiceField)):
                 ui_config['multiple'] = True
-        return ui_config
+
+        ui_all_config['templateOptions'] = ui_config
+        ui_all_config['key'] = ui_all_config['key'].replace('__', '.')
+        return ui_all_config
 
     def clean(self):
         """
@@ -629,7 +649,7 @@ class SelectFormField(FormField):
 
     def get_ui_config(self):
         ui_config = super(SelectFormField, self).get_ui_config()
-        ui_config.update(**{
+        ui_config['templateOptions'].update(**{
             'multiple': self.is_multiple,
             'values': self.choices
         })
@@ -687,7 +707,7 @@ class RadioButtonsFormField(FormField):
 
     def get_ui_config(self):
         ui_config = super(RadioButtonsFormField, self).get_ui_config()
-        ui_config.update(**{
+        ui_config['templateOptions'].update(**{
             'values': self.choices
         })
         return ui_config
@@ -753,9 +773,9 @@ class NumberFormField(FormField):
 
     def get_ui_config(self):
         ui_config = super(NumberFormField, self).get_ui_config()
-        ui_config.update(**{
-            'minValue': self.min_value,
-            'maxValue': self.max_value,
+        ui_config['templateOptions'].update(**{
+            'min': self.min_value,
+            'max': self.max_value,
             'step': self.step
         })
         return ui_config
@@ -799,8 +819,8 @@ class TextFormField(FormField):
     def get_ui_config(self):
         ui_config = super(TextFormField, self).get_ui_config()
         if self.max_length:
-            ui_config.setdefault('maxLength', self.max_length)
-        ui_config.setdefault('subtype', self.subtype)
+            ui_config['templateOptions'].setdefault('maxLength', self.max_length)
+        ui_config['templateOptions']['type'] = self.subtype
         return ui_config
 
     def get_form_field(self):
@@ -811,8 +831,7 @@ class TextFormField(FormField):
         if self.subtype == self.SUBTYPE_CHOICES.PHONE:
             field = forms.CharField(**form_kwargs)
         elif self.subtype == self.SUBTYPE_CHOICES.PASSWORD:
-            field = forms.CharField(widget=forms.PasswordInput(),
-                                    **form_kwargs)
+            field = forms.CharField(widget=forms.PasswordInput(), **form_kwargs)
         elif self.subtype == self.SUBTYPE_CHOICES.EMAIL:
             field = forms.EmailField(**form_kwargs)
         else:
@@ -838,7 +857,7 @@ class TextAreaFormField(FormField):
 
     def get_ui_config(self):
         ui_config = super(TextAreaFormField, self).get_ui_config()
-        ui_config.update(**{
+        ui_config['templateOptions'].update(**{
             'maxLength': self.max_length,
             'rows': self.rows
         })
