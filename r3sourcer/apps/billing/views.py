@@ -6,8 +6,8 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from r3sourcer.apps.billing.models import Subscription
-from r3sourcer.apps.billing.serializers import SubscriptionSerializer
+from r3sourcer.apps.billing.models import Subscription, Payment
+from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 
 
@@ -22,15 +22,15 @@ class SubscriptionCreateView(APIView):
             data = {'error': 'User didnt provide payment information.'}
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
-        plan_type = self.request.POST['type']
-        worker_count = self.request.POST['worker_count']
+        plan_type = self.request.data.get('type', None)
+        worker_count = self.request.data.get('worker_count', None)
         plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
         plan = stripe.Plan.create(
             product=settings.STRIPE_PRODUCT_ID,
             nickname=plan_name,
             interval=STRIPE_INTERVALS[plan_type],
             currency=company.currency,
-            amount=int(self.request.POST['price']) * 100,
+            amount=int(self.request.data.get('price', None)) * 100,
         )
 
         subscription = stripe.Subscription.create(
@@ -41,7 +41,7 @@ class SubscriptionCreateView(APIView):
                                     name=plan_name,
                                     type=plan_type,
                                     worker_count=worker_count,
-                                    price=self.request.POST['price'],
+                                    price=self.request.data.get('price', None),
                                     plan_id=plan.id,
                                     subscription_id=subscription.id)
         return Response(status=status.HTTP_201_CREATED)
@@ -83,3 +83,20 @@ class SubscriptionStatusView(APIView):
             'status': status
         }
         return Response(data)
+
+
+class PaymentListView(APIView):
+    def get(self, *args, **kwargs):
+        payments = Payment.objects.filter(company=self.request.user.company)
+        serializer = PaymentSerializer(payments, many=True)
+        data = {
+            "payments": serializer.data,
+        }
+        return Response(data)
+
+
+class CheckPaymentInformationView(APIView):
+    def get(self, *args, **kwargs):
+        return Response({
+            "payment_information_submited": bool(self.request.user.company.stripe_customer)
+        })

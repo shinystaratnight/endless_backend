@@ -8,6 +8,7 @@ from r3sourcer.apps.core.models import User, Company, CompanyContact, CompanyCon
 from r3sourcer.apps.hr.models import Shift, ShiftDate, Job, Jobsite
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models import Industry
+from r3sourcer.apps.billing.models import Payment
 
 
 @pytest.fixture
@@ -142,4 +143,15 @@ def shift(db, shift_date):
     return Shift.objects.create(
         date=shift_date,
         time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def payment(db, company):
+    return Payment.objects.create(
+        company=company,
+        type=Payment.PAYMENT_TYPES.sms,
+        amount=100,
+        status='done',
+        stripe_id='stripeid'
     )

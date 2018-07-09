@@ -87,3 +87,31 @@ class TestStripeCustomerCreateView:
 
         assert not company.stripe_customer
         assert Company.objects.get(id=company.id).stripe_customer
+
+
+class TestPaymentListView:
+    def test_get(self, client, user, company, relationship, payment):
+        url = reverse('billing:payment_list')
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert len(response['payments']) == 1
+        assert response['payments'][0]['amount'] == 100
+
+
+class TestCheckPaymentInformationView:
+    def test_get_success(self, client, user, company, relationship, payment):
+        company.stripe_customer = 'randomstripeid'
+        company.save()
+        url = reverse('billing:check_payment_information')
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert response['payment_information_submited']
+
+    def test_get_fail(self, client, user, company, relationship, payment):
+        url = reverse('billing:check_payment_information')
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert not response['payment_information_submited']

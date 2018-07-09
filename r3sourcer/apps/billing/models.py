@@ -83,6 +83,7 @@ class Payment(models.Model):
         ('sms', 'SMS'),
         ('extra_workers', 'Extra Workers')
     )
+    company = models.ForeignKey(Company)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = models.DateTimeField(auto_now_add=True)
     amount = models.IntegerField()
