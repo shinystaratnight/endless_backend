@@ -1301,19 +1301,6 @@ class CompanyListSerializer(
         return super().get_latest_state(obj)
 
 
-class FormStorageSerializer(ApiBaseModelSerializer):
-
-    class Meta:
-        fields = (
-            'id', 'form', 'data', 'company', 'created_at', 'status'
-        )
-        model = core_models.FormStorage
-        extra_kwargs = {
-            'company': {'required': True},
-            'status': {'read_only': True}
-        }
-
-
 class FormFieldSerializer(ApiBaseModelSerializer):
 
     def to_representation(self, instance):
@@ -1379,7 +1366,8 @@ class FormSerializer(ApiBaseModelSerializer):
     def get_model_fields(self, obj):
         if obj.builder:
             return core_models.ModelFormField.get_model_fields(
-                obj.builder.content_type.model_class()
+                obj.builder.content_type.model_class(),
+                builder=obj.builder
             )
         return []
 
@@ -1559,13 +1547,6 @@ class FormBuilderSerializer(ApiBaseModelSerializer):
         fields = (
             'id', 'content_type'
         )
-
-
-class FormStorageApproveSerializer(ApiBaseModelSerializer):
-
-    class Meta:
-        model = core_models.FormStorage
-        fields = ('status',)
 
 
 class InvoiceLineSerializer(ApiBaseModelSerializer):

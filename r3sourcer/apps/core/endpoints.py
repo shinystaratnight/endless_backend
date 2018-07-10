@@ -120,13 +120,6 @@ class UserDashboardModuleEndpoint(ApiEndpoint):
     serializer = serializers.UserDashboardModuleSerializer
 
 
-class FormStorageEndpoint(ApiEndpoint):
-
-    model = models.FormStorage
-    base_viewset = viewsets.FormStorageViewSet
-    serializer = serializers.FormStorageSerializer
-
-
 class BaseFormFieldEndpoint(ApiEndpoint):
 
     filter_class = filters.FormFieldFilter
@@ -345,7 +338,6 @@ router.register(endpoint=FormBuilderEndpoint())
 router.register(models.FormField, serializer=serializers.FormFieldSerializer)
 router.register(endpoint=FormFieldGroupEndpoint())
 router.register(endpoint=FormEndpoint())
-router.register(endpoint=FormStorageEndpoint())
 router.register(endpoint=ImageFormFieldEndpoint())
 router.register(endpoint=TextAreaFormFieldEndpoint())
 router.register(endpoint=RadioButtonsFormFieldEndpoint())

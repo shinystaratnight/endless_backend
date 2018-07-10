@@ -4,7 +4,7 @@ from collections import OrderedDict
 from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.fields import JSONField, ArrayField
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
@@ -28,7 +28,6 @@ from r3sourcer.apps.core_adapter.utils import api_reverse
 __all__ = [
     'FormBuilder',
     'Form',
-    'FormStorage',
     'FormField',
     'FormFieldGroup',
 
@@ -57,6 +56,13 @@ class FormBuilder(UUIDModel):
     content_type = models.OneToOneField(
         'contenttypes.ContentType',
         verbose_name=_("Content type for form")
+    )
+
+    fields = ArrayField(
+        models.CharField(max_length=255),
+        default=list,
+        verbose_name=_('Available fields'),
+        blank=True
     )
 
     def __str__(self):
@@ -232,73 +238,14 @@ class Form(UUIDModel):
     def content_type(self) -> ContentType:
         return self.builder.content_type
 
-
-class FormStorage(UUIDModel):
-    """
-    Base storage for saving form cleaned_data.
-    """
-
-    CONTENT_STORAGE_PATH = 'form_storage'
-
-    STATUS_CHOICES = Choices(
-        (None, 'WAIT', _("Wait")),
-        (False, 'CANCELLED', _("Cancelled")),
-        (True, 'APPROVED', _("Approved")),
-    )
-
-    form = models.ForeignKey(
-        'Form',
-        verbose_name=_("Form")
-    )
-
-    data = JSONField(
-        verbose_name=_("Form data"),
-        default={}
-    )
-
-    object_id = models.CharField(
-        verbose_name=_("Object id"),
-        max_length=128,
-        default='',
-        blank=True,
-        editable=False
-    )
-
-    status = models.NullBooleanField(
-        verbose_name=_("Status"),
-        default=STATUS_CHOICES.WAIT,
-        choices=STATUS_CHOICES
-    )
-
-    company = models.ForeignKey(
-        'core.Company',
-        verbose_name=_("Company"),
-        related_name='form_storages',
-        blank=True,
-        null=True
-    )
-
-    def get_instance(self):
-        """
-        Return instance from object_id and form content_type data.
-
-        :return: models.Model instance
-        """
-        if self.object_id:
-            try:
-                return self.form.content_type.model_class().objects.get(id=self.object_id)
-            except models.ObjectDoesNotExist:
-                pass
-        return None
-
     @classmethod
-    def parse_data_to_storage(cls, form: Form, data: dict):
+    def parse_data_to_storage(cls, data):
         """
-        Parse and return FormStorage instance with passed data.
+        Parse and return data.
 
         :param form: Form instance
         :param data: dict Cleaned data from django.forms.Form.
-        :return: FormStorage
+        :return: dict
         """
         parsed_data = {}
         for (key, value) in data.items():
@@ -314,44 +261,43 @@ class FormStorage(UUIDModel):
                 default_storage.save(full_file_name, value)
                 value = full_file_name
             else:
-                value = str(value)
+                value = value if isinstance(value, bool) or value is None else str(value)
             parsed_data.setdefault(key, value)
-        return cls(
-            data=parsed_data,
-            form=form
-        )
+        return parsed_data
 
-    def get_data(self):
+    def get_data(self, data):
         """
         Would be used for cleaning string values from dict.
 
         :return: dict Validated data from self.data field.
         """
-        form_cls = self.form.get_form_class()   # type: forms.Form
+        form_cls = self.get_form_class()   # type: forms.Form
         data_storage = {}
-        for name, data in self.data.items():
-            if name not in form_cls.base_fields:
-                data_storage.setdefault(name, data)
-            elif isinstance(form_cls.base_fields[name], forms.FileField):
-                data_storage.setdefault(name, data)
+        errors = {}
+        for name, data in data.items():
+            try:
+                if name not in form_cls.base_fields:
+                    data_storage.setdefault(name, data)
+                elif isinstance(form_cls.base_fields[name], forms.FileField):
+                    data_storage.setdefault(name, data)
+                else:
+                    data_storage.setdefault(name, form_cls.base_fields[name].clean(data))
+            except ValidationError as e:
+                errors[name] = e.messages
+
+        return data_storage, errors
+
+    @classmethod
+    def parse_api_data(cls, data, parent=None):
+        parsed_data = {}
+        for field, value in data.items():
+            field_name = '%s__%s' % (parent, field) if parent else field
+            if isinstance(value, dict):
+                parsed_data.update(cls.parse_api_data(value, parent=field_name))
             else:
-                data_storage.setdefault(name, form_cls.base_fields[name].clean(data))
-        return data_storage
+                parsed_data[field_name] = value
 
-    @transaction.atomic
-    def create_object_from_data(self):
-        assert not self.object_id, "Object already created"
-        storage_helper = StorageHelper(self.form.content_type.model_class(), self.get_data())
-        storage_helper.process_fields()
-        storage_helper.validate()
-        instance = storage_helper.create_instance()
-        self.object_id = str(instance.pk)
-        self.save(update_fields=['object_id'])
-        return instance
-
-    class Meta:
-        verbose_name = _("Form storage")
-        verbose_name_plural = _("Forms storage")
+        return parsed_data
 
 
 class FormFieldGroup(UUIDModel):
@@ -492,7 +438,7 @@ class ModelFormField(FormField):
     MAX_RELATED_LEVEL = 2
 
     @classmethod
-    def get_model_fields(cls, model, lookup='', level=0):
+    def get_model_fields(cls, model, lookup='', level=0, builder=None):
         """
         Return list of model fields.
 
@@ -517,7 +463,8 @@ class ModelFormField(FormField):
                 fields = list(cls.get_model_fields(
                     field.related_model,
                     lookup=field_name,
-                    level=level+1
+                    level=level+1,
+                    builder=builder
                 ))
                 if len(fields) > 0:
                     yield {
@@ -531,12 +478,13 @@ class ModelFormField(FormField):
                 field_name = field.name
                 if lookup:
                     field_name = StorageHelper.join_lookup_names(lookup, field.name)
-                yield {
-                    'name': field_name,
-                    'required': not field.blank,
-                    'help_text': field.help_text,
-                    'label': field.verbose_name
-                }
+                if field_name in builder.fields or lookup in builder.fields:
+                    yield {
+                        'name': field_name,
+                        'required': not field.blank,
+                        'help_text': field.help_text,
+                        'label': field.verbose_name
+                    }
 
     def get_form_field(self) -> forms.Field:
         """

@@ -11,7 +11,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 66,
+    "rght": 64,
     "tree_id": 4,
     "level": 0
   }
@@ -300,7 +300,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 40,
-    "rght": 51,
+    "rght": 49,
     "tree_id": 4,
     "level": 1
   }
@@ -334,7 +334,7 @@
     "endpoint": "/ecore/api/v2/core/formbuilders/",
     "access_level": "manager",
     "lft": 43,
-    "rght": 50,
+    "rght": 48,
     "tree_id": 4,
     "level": 2
   }
@@ -375,23 +375,6 @@
 },
 {
   "model": "core.extranetnavigation",
-  "pk": 23,
-  "fields": {
-    "updated_at": "2017-10-13T07:06:55.889Z",
-    "created_at": "2017-10-13T07:06:55.889Z",
-    "parent": 20,
-    "name": "Form storage",
-    "url": "/core/formstorages/",
-    "endpoint": "/ecore/api/v2/core/formstorages/",
-    "access_level": "manager",
-    "lft": 48,
-    "rght": 49,
-    "tree_id": 4,
-    "level": 3
-  }
-},
-{
-  "model": "core.extranetnavigation",
   "pk": 24,
   "fields": {
     "updated_at": "2017-10-13T07:07:14.239Z",
@@ -401,8 +384,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 52,
-    "rght": 61,
+    "lft": 50,
+    "rght": 59,
     "tree_id": 4,
     "level": 1
   }
@@ -418,8 +401,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 53,
-    "rght": 60,
+    "lft": 51,
+    "rght": 58,
     "tree_id": 4,
     "level": 2
   }
@@ -435,8 +418,8 @@
     "url": "/acceptance-tests/acceptancetestquestions/",
     "endpoint": "/ecore/api/v2/acceptance-tests/acceptancetestquestions/",
     "access_level": "manager",
-    "lft": 54,
-    "rght": 55,
+    "lft": 52,
+    "rght": 53,
     "tree_id": 4,
     "level": 3
   }
@@ -452,8 +435,8 @@
     "url": "/acceptance-tests/acceptancetestanswers/",
     "endpoint": "/ecore/api/v2/acceptance-tests/acceptancetestanswers/",
     "access_level": "manager",
-    "lft": 56,
-    "rght": 57,
+    "lft": 54,
+    "rght": 55,
     "tree_id": 4,
     "level": 3
   }
@@ -469,8 +452,8 @@
     "url": "/acceptance-tests/acceptancetestskills/",
     "endpoint": "/ecore/api/v2/acceptance-tests/acceptancetestskills/",
     "access_level": "manager",
-    "lft": 58,
-    "rght": 59,
+    "lft": 56,
+    "rght": 57,
     "tree_id": 4,
     "level": 3
   }
@@ -486,8 +469,8 @@
     "url": "/candidate/interviewschedules/",
     "endpoint": "/ecore/api/v2/candidate/interviewschedules/",
     "access_level": "manager",
-    "lft": 62,
-    "rght": 63,
+    "lft": 60,
+    "rght": 61,
     "tree_id": 4,
     "level": 1
   }
@@ -1184,7 +1167,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 94,
-    "rght": 99,
+    "rght": 97,
     "tree_id": 12,
     "level": 1
   }
@@ -1795,8 +1778,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 66,
-    "rght": 73,
+    "lft": 64,
+    "rght": 71,
     "tree_id": 4,
     "level": 1
   }
@@ -1812,8 +1795,8 @@
     "url": "/sms-interface/messages/",
     "endpoint": "/ecore/api/v2/sms-interface/smsmessages/",
     "access_level": "manager",
-    "lft": 67,
-    "rght": 68,
+    "lft": 65,
+    "rght": 66,
     "tree_id": 4,
     "level": 2
   }
@@ -1829,8 +1812,8 @@
     "url": "/sms-interface/relatedobjects/",
     "endpoint": "/ecore/api/v2/sms-interface/smsrelatedobjects/",
     "access_level": "manager",
-    "lft": 69,
-    "rght": 70,
+    "lft": 67,
+    "rght": 68,
     "tree_id": 4,
     "level": 2
   }
@@ -1846,8 +1829,8 @@
     "url": "/sms-interface/templates/",
     "endpoint": "/ecore/api/v2/sms-interface/smstemplates/",
     "access_level": "manager",
-    "lft": 71,
-    "rght": 72,
+    "lft": 69,
+    "rght": 70,
     "tree_id": 4,
     "level": 2
   }
@@ -1881,7 +1864,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 100,
+    "rght": 98,
     "tree_id": 12,
     "level": 0
   }
@@ -1931,27 +1914,10 @@
     "url": "/core/users/",
     "endpoint": "/ecore/api/v2/core/users/",
     "access_level": "manager",
-    "lft": 64,
-    "rght": 65,
+    "lft": 62,
+    "rght": 63,
     "tree_id": 4,
     "level": 1
-  }
-},
-{
-  "model": "core.extranetnavigation",
-  "pk": 136,
-  "fields": {
-    "updated_at": "2018-07-08T18:36:25.683Z",
-    "created_at": "2018-07-08T18:36:25.683Z",
-    "parent": 86,
-    "name": "Skill Tags",
-    "url": "/skill/skilltags/",
-    "endpoint": "/ecore/api/v2/skills/skilltags/",
-    "access_level": "manager",
-    "lft": 97,
-    "rght": 98,
-    "tree_id": 12,
-    "level": 2
   }
 }
 ]

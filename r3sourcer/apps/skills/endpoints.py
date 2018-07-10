@@ -18,7 +18,7 @@ class EmploymentClassificationEndpoint(ApiEndpoint):
 
     model = models.EmploymentClassification
     search_fields = ('name', )
-    serializer_fields = ('name', )
+    serializer_fields = ('id', 'name', )
 
 
 class SkillBaseRateEndpoint(ApiEndpoint):
