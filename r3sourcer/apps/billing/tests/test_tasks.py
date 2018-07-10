@@ -1,6 +1,8 @@
 import datetime
 import mock
 
+import stripe
+
 from django.utils import timezone
 
 from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms
@@ -12,7 +14,6 @@ from r3sourcer.apps.hr.models import JobOffer, TimeSheet
 
 class TestActiveWorkers:
     def test_active_workers_zero(self, client, user, company, relationship):
-        # import pdb; pdb.set_trace()
         assert company.active_workers() == 0
 
     def test_active_workers(self, client, user, company, relationship, contact, shift):
@@ -39,7 +40,6 @@ class TestActiveWorkers:
             job_offer=job_offer2,
             shift_started_at=timezone.now()
         )
-        # import pdb; pdb.set_trace()
         assert company.active_workers() == 2
 
 
@@ -99,12 +99,15 @@ class TestChargeForExtraWorkers:
 
 
 class TestChargeForSMS:
-    def test_charge(self, client, user, company, relationship):
+    @mock.patch.object(stripe.Charge, 'create')
+    @mock.patch.object(Subscription, 'deactivate')
+    def test_charge(self, mocked_deactivate, mocked_charge, client, user, company, relationship):
+        mocked_value = mock.Mock()
+        mocked_value.status = 'status'
+        mocked_value.id = 'stripe_id'
+        mocked_charge.return_value = mocked_value
         initial_payment_count = Payment.objects.count()
-        sms_balance = SMSBalance.objects.create(
-            company=company,
-            balance=100
-        )
+        sms_balance = SMSBalance.objects.create(company=company, balance=100)
         charge_for_sms(company.id, 100, sms_balance.id)
 
-        assert initial_payment_count == Payment.objects.count() + 1
+        assert initial_payment_count + 1 == Payment.objects.count()

@@ -37,6 +37,7 @@ class SubscriptionCreateView(APIView):
             customer=company.stripe_customer,
             items=[{"plan": plan.id}]
         )
+
         Subscription.objects.create(company=company,
                                     name=plan_name,
                                     type=plan_type,
