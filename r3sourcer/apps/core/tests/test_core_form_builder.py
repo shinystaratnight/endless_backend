@@ -572,39 +572,11 @@ class TestFormFields:
         models.ModelFormField.objects.create(group=form_field_group, name='children', required=True),
         models.ModelFormField.objects.create(group=form_field_group, name='birthday', required=True)
 
-        form_storage = models.FormStorage(data=data, form=form)  # type: models.FormStorage
-        cleaned_data = form_storage.get_data()
+        cleaned_data, errors = form.get_data(data)
 
         assert isinstance(cleaned_data['birthday'], datetime.date)
         assert cleaned_data['birthday'] == datetime.datetime.strptime(data['birthday'], '%Y-%m-%d').date()
         assert cleaned_data['children'] == int(data['children'])
-
-    def test_create_instance(self, form, form_field_group):
-
-        models.ModelFormField.objects.create(group=form_field_group, name='first_name', required=True),
-        models.ModelFormField.objects.create(group=form_field_group, name='last_name', required=True),
-        models.ModelFormField.objects.create(group=form_field_group, name='email', required=True)
-        models.ModelFormField.objects.create(group=form_field_group, name='phone_mobile', required=True)
-
-        data = {
-            'first_name': 'first name',
-            'last_name': 'last name',
-            'email': 'test@example.com',
-            'phone_mobile': '+79998887766'
-        }
-        storage = models.FormStorage.objects.create(data=data, form=form)
-
-        instance = storage.create_object_from_data()
-
-        assert str(instance.id) == storage.object_id
-
-        with pytest.raises(AssertionError):
-            storage.create_object_from_data()
-
-        assert instance.first_name == data['first_name']
-        assert instance.last_name == data['last_name']
-        assert instance.email == data['email']
-        assert str(instance.phone_mobile) == data['phone_mobile']
 
     def test_get_url_for_company(self, form, company):
         url = form.get_url_for_company(company)

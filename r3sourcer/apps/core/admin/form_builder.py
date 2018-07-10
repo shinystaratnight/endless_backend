@@ -94,4 +94,3 @@ class FormFieldGroupAdmin(PolymorphicInlineSupportMixin, admin.ModelAdmin):
 admin.site.register(models.FormBuilder, FormBuilderAdmin)
 admin.site.register(models.FormFieldGroup, FormFieldGroupAdmin)
 admin.site.register(models.Form, FormAdmin)
-admin.site.register(models.FormStorage)

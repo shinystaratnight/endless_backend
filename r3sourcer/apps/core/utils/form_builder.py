@@ -4,6 +4,8 @@ from django.db import models
 from django.db import transaction
 from django.forms import ModelForm, ValidationError
 
+from rest_framework import exceptions
+
 
 __all__ = [
     'StorageHelper', 'SimpleFieldHelper', 'RelatedFieldHelper'
@@ -13,7 +15,7 @@ __all__ = [
 class StorageHelper(object):
     """
     Helper class for form builder.
-    Would be use for creating new objects from FormStorage.
+    Would be use for creating new objects from Form Builder.
     """
 
     __slots__ = ['_model', '_fields', '_source_fields', '_done', '_instance', '_validated_fields', '_errors', '_form']
@@ -54,22 +56,19 @@ class StorageHelper(object):
         """
         fields_to_validate = {}
         self._errors = {}
+        related_fields = {}
         for name, field in self._fields.items():
             try:
                 if isinstance(field, RelatedFieldHelper):
                     field.save_related(name)
+                    related_fields[name] = field
                     value = field.value.id
                 else:
                     value = field.value
 
                 fields_to_validate.setdefault(name, value)
-            except ValidationError as e:
-                if hasattr(e, 'error_dict'):
-                    self._errors.update(e.error_dict)
-                elif hasattr(e, 'message'):
-                    self._errors[name] = [e.message]
-                else:
-                    self._errors[name] = e.error_list
+            except exceptions.ValidationError as e:
+                self._errors.update(e.detail)
 
         meta_class = type('Meta', (object, ), {
             'model': self._model,
@@ -86,8 +85,11 @@ class StorageHelper(object):
         if not is_valid:
             self._errors.update(self._form.errors)
 
+            for name, field in related_fields.items():
+                field.value.delete()
+
             if raise_errors:
-                raise ValidationError(self._errors)
+                raise exceptions.ValidationError(self._errors)
 
         return is_valid and not self._errors
 
@@ -245,10 +247,10 @@ class RelatedFieldHelper(object):
 
         if not model_form.is_valid():
             errors.update({
-                '{}__{}'.format(parent_name, field_name) if field_name != '__all__' else field_name: errors
+                '{}__{}'.format(parent_name, field_name) if field_name != '__all__' else 'non_field_errors': errors
                 for field_name, errors in model_form.errors.items()
             })
-            raise ValidationError(errors)
+            raise exceptions.ValidationError(errors)
 
         self.value = model_form.save()
 

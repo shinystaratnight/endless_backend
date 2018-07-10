@@ -366,15 +366,7 @@ def site_regular_company(db, site, company_regular):
 def dashboard_modules(db):
     return models.DashboardModule.objects.bulk_create([
         models.DashboardModule(
-            content_type=ContentType.objects.get_for_model(models.CompanyContact),
-            is_active=True
-        ),
-        models.DashboardModule(
             content_type=ContentType.objects.get_for_model(models.CompanyAddress),
-            is_active=True
-        ),
-        models.DashboardModule(
-            content_type=ContentType.objects.get_for_model(models.Company),
             is_active=True
         ),
         models.DashboardModule(
