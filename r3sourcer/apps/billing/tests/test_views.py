@@ -1,3 +1,5 @@
+import mock
+
 from django.core.urlresolvers import reverse
 
 from r3sourcer.apps.billing.models import Subscription
@@ -115,3 +117,14 @@ class TestCheckPaymentInformationView:
         response = client.get(url).json()
 
         assert not response['payment_information_submited']
+
+
+class TestSubscriptionCancelView:
+    @mock.patch.object(Subscription, 'deactivate')
+    def test_get(self, mocked_method, client, user, company, relationship, subscription):
+        url = reverse('billing:subscription_cancel')
+        client.force_login(user)
+        client.get(url)
+
+        assert mocked_method.called
+        assert not Subscription.objects.get(id=subscription.id).active

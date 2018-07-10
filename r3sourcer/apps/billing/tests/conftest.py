@@ -8,7 +8,7 @@ from r3sourcer.apps.core.models import User, Company, CompanyContact, CompanyCon
 from r3sourcer.apps.hr.models import Shift, ShiftDate, Job, Jobsite
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models import Industry
-from r3sourcer.apps.billing.models import Payment
+from r3sourcer.apps.billing.models import Payment, Subscription
 
 
 @pytest.fixture
@@ -154,4 +154,16 @@ def payment(db, company):
         amount=100,
         status='done',
         stripe_id='stripeid'
+    )
+
+
+@pytest.fixture
+def subscription(db, company):
+    return Subscription.objects.create(
+        company=company,
+        name='Subscription',
+        type='monthly',
+        price=100,
+        worker_count=10,
+        status='active',
     )

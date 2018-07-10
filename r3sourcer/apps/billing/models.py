@@ -51,9 +51,17 @@ class Subscription(models.Model):
         super(Subscription, self).save(*args, **kwargs)
 
         if self.active:
-            Subscription.objects.filter(company=self.company) \
-                        .exclude(id=self.id) \
-                        .update(active=False)
+            subscriptions = Subscription.objects.filter(company=self.company) \
+                                                .exclude(id=self.id)
+
+            for subscription in subscriptions:
+                subscription.deactivate()
+                subscription.active = False
+                subscription.save()
+
+    def deactivate(self):
+        sub = stripe.Subscription.retrieve(self.subscription_id)
+        sub.delete(at_period_end=True)
 
 
 class SMSBalance(models.Model):

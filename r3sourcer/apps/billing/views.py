@@ -100,3 +100,12 @@ class CheckPaymentInformationView(APIView):
         return Response({
             "payment_information_submited": bool(self.request.user.company.stripe_customer)
         })
+
+
+class SubscriptionCancelView(APIView):
+    def get(self, *args, **kwargs):
+        subscription = Subscription.objects.get(company=self.request.user.company, active=True)
+        subscription.deactivate()
+        subscription.active = False
+        subscription.save()
+        return Response()
