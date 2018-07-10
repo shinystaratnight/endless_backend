@@ -4,7 +4,7 @@ from collections import OrderedDict
 from django import forms
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.contrib.postgres.fields import JSONField
+from django.contrib.postgres.fields import JSONField, ArrayField
 from django.core.exceptions import ValidationError
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
@@ -56,6 +56,13 @@ class FormBuilder(UUIDModel):
     content_type = models.OneToOneField(
         'contenttypes.ContentType',
         verbose_name=_("Content type for form")
+    )
+
+    fields = ArrayField(
+        models.CharField(max_length=255),
+        default=list,
+        verbose_name=_('Available fields'),
+        blank=True
     )
 
     def __str__(self):
@@ -431,7 +438,7 @@ class ModelFormField(FormField):
     MAX_RELATED_LEVEL = 2
 
     @classmethod
-    def get_model_fields(cls, model, lookup='', level=0):
+    def get_model_fields(cls, model, lookup='', level=0, builder=None):
         """
         Return list of model fields.
 
@@ -456,7 +463,8 @@ class ModelFormField(FormField):
                 fields = list(cls.get_model_fields(
                     field.related_model,
                     lookup=field_name,
-                    level=level+1
+                    level=level+1,
+                    builder=builder
                 ))
                 if len(fields) > 0:
                     yield {
@@ -470,12 +478,13 @@ class ModelFormField(FormField):
                 field_name = field.name
                 if lookup:
                     field_name = StorageHelper.join_lookup_names(lookup, field.name)
-                yield {
-                    'name': field_name,
-                    'required': not field.blank,
-                    'help_text': field.help_text,
-                    'label': field.verbose_name
-                }
+                if field_name in builder.fields or lookup in builder.fields:
+                    yield {
+                        'name': field_name,
+                        'required': not field.blank,
+                        'help_text': field.help_text,
+                        'label': field.verbose_name
+                    }
 
     def get_form_field(self) -> forms.Field:
         """

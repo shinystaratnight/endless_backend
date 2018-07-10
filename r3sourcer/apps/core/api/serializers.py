@@ -1366,7 +1366,8 @@ class FormSerializer(ApiBaseModelSerializer):
     def get_model_fields(self, obj):
         if obj.builder:
             return core_models.ModelFormField.get_model_fields(
-                obj.builder.content_type.model_class()
+                obj.builder.content_type.model_class(),
+                builder=obj.builder
             )
         return []
 
