@@ -65,7 +65,7 @@ class Subscription(models.Model):
 
 
 class SMSBalance(models.Model):
-    company = models.ForeignKey(Company)
+    company = models.OneToOneField('core.Company', blank=True, null=True, related_name='sms_balance')
     balance = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
