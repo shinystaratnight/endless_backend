@@ -1,5 +1,7 @@
 import stripe
 
+from datetime import datetime
+
 from django.conf import settings
 from rest_framework import status
 from rest_framework.generics import ListAPIView
@@ -37,14 +39,17 @@ class SubscriptionCreateView(APIView):
             customer=company.stripe_customer,
             items=[{"plan": plan.id}]
         )
-
+        current_period_start = datetime.fromtimestamp(subscription.current_period_start)
+        current_period_end = datetime.fromtimestamp(subscription.current_period_end)
         sub = Subscription.objects.create(company=company,
                                           name=plan_name,
                                           type=plan_type,
                                           worker_count=worker_count,
                                           price=self.request.data.get('price', None),
                                           plan_id=plan.id,
-                                          subscription_id=subscription.id)
+                                          subscription_id=subscription.id,
+                                          current_period_start=current_period_start,
+                                          current_period_end=current_period_end)
 
         serializer = SubscriptionSerializer(sub)
         data = {
