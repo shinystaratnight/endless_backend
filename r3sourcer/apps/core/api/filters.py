@@ -135,9 +135,7 @@ class WorkflowNodeFilter(FilterSet):
 
     def filter_default(self, queryset, name, value):
         if value:
-            return queryset.filter(
-                company=get_default_company()
-            )
+            return queryset.filter(company=get_default_company())
         return queryset
 
     def filter_company(self, queryset, name, value):

@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import UUIDModel, Tag, WorkflowNode
+from r3sourcer.apps.core.models import UUIDModel, Tag, WorkflowNode, CompanyWorkflowNode
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models import Industry
 
@@ -152,8 +152,8 @@ class AcceptanceTestWorkflowNode(UUIDModel):
         verbose_name=_("Acceptance Test")
     )
 
-    workflow_node = models.ForeignKey(
-        WorkflowNode,
+    company_workflow_node = models.ForeignKey(
+        CompanyWorkflowNode,
         on_delete=models.CASCADE,
         related_name='acceptance_tests_workflow_nodes',
         verbose_name=_("Workflow Node")
@@ -164,7 +164,7 @@ class AcceptanceTestWorkflowNode(UUIDModel):
         verbose_name_plural = _("Acceptance Tests and Workflow Nodes")
 
     def __str__(self):
-        return '{}, {}'.format(str(self.acceptance_test), str(self.workflow_node))
+        return '{}, {}'.format(str(self.acceptance_test), str(self.company_workflow_node))
 
     def get_all_questions(self):
         return self.acceptance_test.acceptance_test_questions.all()

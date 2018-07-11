@@ -12,6 +12,7 @@ __all__ = [
     'Workflow',
     'WorkflowNode',
     'WorkflowObject',
+    'CompanyWorkflowNode',
 ]
 
 
@@ -36,6 +37,15 @@ class Workflow(UUIDModel):
     @classmethod
     def is_owned(cls):
         return False
+
+
+class WorkflowNodeManager(models.Manager):
+
+    def ordered(self):
+        return self.get_queryset().order_by('order')
+
+    def company(self, company):
+        return self.get_queryset().filter(company=company)
 
 
 class WorkflowNode(UUIDModel):
@@ -79,13 +89,6 @@ class WorkflowNode(UUIDModel):
         blank=True
     )
 
-    company = models.ForeignKey(
-        Company,
-        related_name='company_wf_nodes',
-        on_delete=models.PROTECT,
-        verbose_name=_('Company')
-    )
-
     hardlock = models.BooleanField(
         verbose_name=_('Hardlock'),
         default=False
@@ -111,63 +114,50 @@ class WorkflowNode(UUIDModel):
         related_name='children'
     )
 
+    order = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name=_('Position')
+    )
+
+    objects = WorkflowNodeManager()
+
     class Meta:
         verbose_name = _('Workflow Node')
         verbose_name_plural = _('Workflow Nodes')
-        unique_together = ('company', 'number', 'workflow')
+        unique_together = ('number', 'workflow')
 
     def __str__(self):
-        return '{} {}, {}, {}'.format(self.full_path, self.workflow, self.name_before_activation, self.company)
+        return '{} {}, {}'.format(self.full_path, self.workflow, self.name_before_activation)
 
     def save(self, *args, **kwargs):
-        if not self.company:
-            self.company = get_site_master_company()
-
         self.full_path = self.get_full_number()
         super().save(*args, **kwargs)
 
-    def clean(self):
-        self.validate_node(
-            self.number, self.workflow, self.company, self.active, self.rules,
-            self._state.adding, self.id or None
-        )
-
     @classmethod
-    def validate_node(cls, number, workflow, company, active,
-                      rules, just_added, _id=None):
-        system_company = get_site_master_company()
-        system_node = None
-        if company != system_company:
-            system_node = WorkflowNode.objects.filter(
-                company=system_company,
-                workflow=workflow,
-                number=number
-            ).first()
+    def validate_node(cls, number, workflow, company, active, rules, just_added, _id=None):
+        system_node = WorkflowNode.objects.filter(
+            workflow=workflow,
+            number=number,
+            hardlock=True
+        ).first()
 
-            if system_node and system_node.hardlock:
-                if active != system_node.active:
-                    raise ValidationError(
-                        _('Active for system node cannot be changed.')
-                    )
-                elif rules != system_node.rules:
-                    raise ValidationError(
-                        _('Rules for system node cannot be changed.')
-                    )
+        if system_node:
+            if active != system_node.active:
+                raise ValidationError(_('Active for system node cannot be changed.'))
+            elif rules != system_node.rules:
+                raise ValidationError(_('Rules for system node cannot be changed.'))
 
         if not just_added:
             origin = WorkflowNode.objects.get(id=_id)
             number_changed = origin.number != number
 
-            if company != system_company and system_node \
-                    and system_node.hardlock and number_changed:
+            if system_node and number_changed:
                 raise ValidationError(
                     _('Number for system node cannot be changed.')
                 )
 
             if number_changed:
-                nodes = WorkflowNode.objects.filter(
-                    company=company, workflow=workflow
-                )
+                nodes = WorkflowNode.objects.filter(workflow=workflow, company_workflow_nodes__company=company)
                 is_used = [
                     node.rules and str(origin.number) in node.get_rule_states()
                     for node in nodes
@@ -195,30 +185,18 @@ class WorkflowNode(UUIDModel):
 
     @classmethod
     def get_company_nodes(cls, company, workflow=None, nodes=None):
-        default_company = get_site_master_company()
-
         queryset = nodes or cls.objects
 
-        qry = models.Q(company=company, active=True)
-        default_qry = models.Q(company=default_company, active=True)
-        if workflow is not None:
-            qry &= models.Q(workflow=workflow)
-            default_qry &= models.Q(workflow=workflow)
+        qry = models.Q(company_workflow_nodes__company=company, active=True)
+        worflow_qry = models.Q(workflow=workflow) if workflow is not None else models.Q()
 
-        if default_company != company:
-            company_numbers = list(
-                queryset.filter(qry).values_list('number', flat=True)
-            )
-        else:
-            company_numbers = []
+        if not queryset.filter(qry & worflow_qry).exists():
+            company = get_site_master_company()
+            return queryset.filter(
+                worflow_qry, company_workflow_nodes__company=company, active=True
+            ).distinct()
 
-        company_nodes = queryset.filter(
-            qry | default_qry
-        ).exclude(
-            models.Q(number__in=company_numbers) & default_qry
-        ).order_by('number')
-
-        return company_nodes
+        return queryset.filter(qry & worflow_qry).distinct()
 
     @classmethod
     def get_model_all_states(cls, model):
@@ -292,7 +270,7 @@ class WorkflowObject(UUIDModel):
         try:
             result = model.objects.get(id=object_id)
         except Exception:
-            pass
+            raise
         return result
 
     def save(self, *args, **kwargs):
@@ -321,15 +299,12 @@ class WorkflowObject(UUIDModel):
 
     @classmethod
     def validate_object(cls, state, object_id, just_added):
-        model = state.workflow.model.model_class()
         try:
-            model.objects.get(id=object_id)
+            model_object = cls.get_model_object(state, object_id)
         except Exception as e:
             raise ValidationError(e)
 
-        model_object = cls.get_model_object(state, object_id)
-        if state.company != model_object.get_closest_company() \
-                and state.company != get_site_master_company():
+        if state.company_workflow_nodes.filter(company=model_object.get_closest_company()).exists():
             raise ValidationError(
                 _('This state is not available for current object.')
             )
@@ -339,3 +314,25 @@ class WorkflowObject(UUIDModel):
                 _('State creation is not allowed.'),
                 model_object.get_required_message(state))
             )
+
+
+class CompanyWorkflowNode(UUIDModel):
+    company = models.ForeignKey(
+        Company,
+        verbose_name=_('Company'),
+        related_name='company_workflow_nodes'
+    )
+
+    workflow_node = models.ForeignKey(
+        WorkflowNode,
+        verbose_name=_('Workflow Node'),
+        related_name='company_workflow_nodes'
+    )
+
+    class Meta:
+        verbose_name = _('Company Workflow Node')
+        verbose_name_plural = _('Company Workflow Nodes')
+        unique_together = ('company', 'workflow_node')
+
+    def __str__(self):
+        return '{} {}'.format(self.company, self.workflow_node)
