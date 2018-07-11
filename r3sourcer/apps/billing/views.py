@@ -38,14 +38,19 @@ class SubscriptionCreateView(APIView):
             items=[{"plan": plan.id}]
         )
 
-        Subscription.objects.create(company=company,
-                                    name=plan_name,
-                                    type=plan_type,
-                                    worker_count=worker_count,
-                                    price=self.request.data.get('price', None),
-                                    plan_id=plan.id,
-                                    subscription_id=subscription.id)
-        return Response(status=status.HTTP_201_CREATED)
+        sub = Subscription.objects.create(company=company,
+                                          name=plan_name,
+                                          type=plan_type,
+                                          worker_count=worker_count,
+                                          price=self.request.data.get('price', None),
+                                          plan_id=plan.id,
+                                          subscription_id=subscription.id)
+
+        serializer = SubscriptionSerializer(sub)
+        data = {
+            "subscription": serializer.data
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
 
 
 class SubscriptionListView(ListAPIView):
