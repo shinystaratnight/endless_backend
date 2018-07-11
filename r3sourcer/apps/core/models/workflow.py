@@ -184,16 +184,16 @@ class WorkflowNode(UUIDModel):
         return [self._get_state_from_rule(rule) for rule in rules]
 
     @classmethod
-    def get_company_nodes(cls, company, workflow=None, nodes=None):
+    def get_company_nodes(cls, company=None, workflow=None, nodes=None, system=False):
         queryset = nodes or cls.objects
 
-        qry = models.Q(company_workflow_nodes__company=company, active=True)
+        qry = models.Q(company_workflow_nodes__company=company, active=True) if company else models.Q()
         worflow_qry = models.Q(workflow=workflow) if workflow is not None else models.Q()
 
-        if not queryset.filter(qry & worflow_qry).exists():
-            company = get_site_master_company()
+        if system:
+            site_company = get_site_master_company()
             return queryset.filter(
-                worflow_qry, company_workflow_nodes__company=company, active=True
+                worflow_qry & (qry | models.Q(company_workflow_nodes__company=site_company, active=True))
             ).distinct()
 
         return queryset.filter(qry & worflow_qry).distinct()

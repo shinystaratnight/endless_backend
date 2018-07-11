@@ -124,14 +124,12 @@ class ApiOrderingFilter(OrderingFilter):
 
 class WorkflowNodeFilter(FilterSet):
     default = BooleanFilter(method='filter_default')
-    company = ModelChoiceFilter(
-        queryset=models.Company.objects,
-        method='filter_company'
-    )
+    company = ModelChoiceFilter(queryset=models.Company.objects, method='filter_company')
+    system = BooleanFilter(method='filter_system')
 
     class Meta:
         model = models.WorkflowNode
-        fields = ['workflow', 'company', 'default', 'workflow__model']
+        fields = ['workflow', 'company', 'default', 'workflow__model', 'parent']
 
     def filter_default(self, queryset, name, value):
         if value:
@@ -142,11 +140,13 @@ class WorkflowNodeFilter(FilterSet):
         if not value:
             return queryset
 
-        company_nodes = models.WorkflowNode.get_company_nodes(
-            value, nodes=queryset
-        )
+        return models.WorkflowNode.get_company_nodes(value, nodes=queryset)
 
-        return company_nodes
+    def filter_system(self, queryset, name, value):
+        if not value:
+            return queryset
+
+        return models.WorkflowNode.get_company_nodes(nodes=queryset, system=value)
 
 
 class DashboardModuleFilter(FilterSet):
