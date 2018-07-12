@@ -620,7 +620,7 @@ class WorkflowNodeViewset(BaseApiViewset):
         if workflow is None:
             raise exceptions.NotFound(_('Workflow not found for model'))
 
-        nodes = models.WorkflowNode.get_company_nodes(company, workflow, system=True)
+        nodes = models.WorkflowNode.get_company_nodes(company, workflow)
 
         serializer = serializers.WorkflowTimelineSerializer(
             nodes, target=target_object, many=True
