@@ -134,25 +134,22 @@ class WorkflowNode(UUIDModel):
 
     @classmethod
     def validate_node(cls, number, workflow, company, active, rules, just_added, _id=None):
-        system_node = WorkflowNode.objects.filter(
-            workflow=workflow,
-            number=number,
-            hardlock=True
-        ).first()
+        system_state_qry = models.Q(workflow=workflow, number=number, hardlock=True)
+        state_number_exist = WorkflowNode.objects.filter(
+            system_state_qry |
+            models.Q(workflow=workflow, number=number, company_workflow_nodes__company=company)
+        )
+
+        if state_number_exist.exists():
+            raise ValidationError(_('State with number {number} already exist on company').format(number=number))
+
+        system_node = WorkflowNode.objects.filter(system_state_qry).first()
 
         if system_node:
             if active != system_node.active:
                 raise ValidationError(_('Active for system node cannot be changed.'))
             elif rules != system_node.rules:
                 raise ValidationError(_('Rules for system node cannot be changed.'))
-
-        state_number_exist = WorkflowNode.objects.filter(
-            models.Q(workflow=workflow, number=number, hardlock=True) |
-            models.Q(workflow=workflow, number=number, company_workflow_nodes__company=company)
-        )
-
-        if state_number_exist.exists():
-            raise ValidationError(_('State with number {number} already exist on company').format(number=number))
 
         if not just_added:
             origin = WorkflowNode.objects.get(id=_id)
