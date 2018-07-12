@@ -578,6 +578,8 @@ class FunctionsList(ViewSet):
 
 class WorkflowNodeViewset(BaseApiViewset):
 
+    pagination_class = None
+
     def _get_target(self, model_name, object_id):
         try:
             model_class = apps.get_model(model_name)
@@ -628,6 +630,8 @@ class WorkflowNodeViewset(BaseApiViewset):
 
 
 class CompanyWorkflowNodeViewset(BaseApiViewset):
+
+    pagination_class = None
 
     def perform_create(self, serializer):
         company_node = models.CompanyWorkflowNode.objects.filter(

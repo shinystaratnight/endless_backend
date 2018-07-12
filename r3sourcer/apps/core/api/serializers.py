@@ -1027,6 +1027,16 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
         return data
 
 
+class CompanyWorkflowNodeSerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.CompanyWorkflowNode
+        fields = (
+            '__all__', {
+                'workflow_node': ('id', '__str__', 'number', 'name_before_activation', 'name_after_activation')
+            }
+        )
+
+
 class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
     method_fields = ('state_name', )
 

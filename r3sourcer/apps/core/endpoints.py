@@ -103,7 +103,7 @@ class CompanyWorkflowNodeEndpoint(ApiEndpoint):
     model = models.CompanyWorkflowNode
     base_viewset = viewsets.CompanyWorkflowNodeViewset
     filter_class = filters.CompanyWorkflowNodeFilter
-    serializer_fields = ('id', 'company', 'workflow_node')
+    serializer = serializers.CompanyWorkflowNodeSerializer
 
 
 class WorkflowObjectEndpoint(ApiEndpoint):
