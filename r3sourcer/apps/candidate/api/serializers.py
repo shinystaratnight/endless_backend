@@ -1,3 +1,4 @@
+from django.db.models import Avg
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, serializers
@@ -83,7 +84,7 @@ class CandidateContactSerializer(
     candidate_skills = SkillRelSerializer(many=True)
     tag_rels = TagRelSerializer(many=True)
 
-    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list')
+    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score')
     many_related_fields = {
         'candidate_skills': 'candidate_contact',
         'tag_rels': 'candidate_contact',
@@ -154,6 +155,9 @@ class CandidateContactSerializer(
             return
 
         return TagRelSerializer(obj.tag_rels.all(), many=True).data
+
+    def get_workflow_score(self, obj):
+        return obj.get_active_states().aggregate(score=Avg('score'))['score']
 
 
 class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):
