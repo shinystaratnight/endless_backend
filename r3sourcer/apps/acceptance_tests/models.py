@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import UUIDModel, Tag, WorkflowNode, CompanyWorkflowNode
+from r3sourcer.apps.core.models import UUIDModel, Tag, CompanyWorkflowNode
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models import Industry
 
