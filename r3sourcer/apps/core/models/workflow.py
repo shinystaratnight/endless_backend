@@ -339,6 +339,11 @@ class CompanyWorkflowNode(UUIDModel):
         related_name='company_workflow_nodes'
     )
 
+    active = models.BooleanField(
+        default=True,
+        verbose_name=_('Active')
+    )
+
     class Meta:
         verbose_name = _('Company Workflow Node')
         verbose_name_plural = _('Company Workflow Nodes')

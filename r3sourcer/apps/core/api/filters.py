@@ -123,20 +123,21 @@ class ApiOrderingFilter(OrderingFilter):
 
 
 class WorkflowNodeFilter(FilterSet):
-    default = BooleanFilter(method='filter_default')
     company = ModelChoiceFilter(queryset=models.Company.objects, method='filter_company')
     system = BooleanFilter(method='filter_system')
+    workflow = UUIDFilter(method='filter_workflow')
 
     _company = None
+    _workflow = None
 
     class Meta:
         model = models.WorkflowNode
-        fields = ['workflow', 'default', 'workflow__model', 'parent']
+        fields = ['workflow', 'workflow__model', 'parent']
 
-    def filter_default(self, queryset, name, value):
-        if value:
-            return queryset.filter(company=get_default_company())
-        return queryset
+    def filter_workflow(self, queryset, name, value):
+        self._workflow = value
+
+        return queryset.filter(workflow=value)
 
     def filter_company(self, queryset, name, value):
         if not value:
@@ -144,23 +145,29 @@ class WorkflowNodeFilter(FilterSet):
 
         self._company = value
 
-        return queryset.filter(company_workflow_nodes__company=value, active=True).distinct()
+        return queryset.filter(
+            company_workflow_nodes__company=value, active=True, company_workflow_nodes__active=True
+        ).distinct()
 
     def filter_system(self, queryset, name, value):
         if not value:
             return queryset
 
-        workflow_list = queryset.values_list('workflow_id', flat=True).distinct()
+        workflow_qry = Q(workflow=self._workflow) if self._workflow else Q()
         site_company = get_site_master_company()
         system_nodes = models.WorkflowNode.objects.filter(
-            company_workflow_nodes__company=site_company, active=True, workflow__in=workflow_list
+            workflow_qry, company_workflow_nodes__company=site_company, active=True
         ).distinct()
 
         if self._company:
+            system_nodes_exclude = system_nodes.filter(
+                company_workflow_nodes__company=self._company,
+                company_workflow_nodes__active=True
+            ).values_list('id', flat=True)
             system_nodes = models.WorkflowNode.objects.filter(
                 Q(id__in=queryset.values_list('id', flat=True)) |
                 Q(id__in=system_nodes.values_list('id', flat=True))
-            ).distinct()
+            ).exclude(id__in=system_nodes_exclude).distinct()
 
         return system_nodes
 

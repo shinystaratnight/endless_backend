@@ -1019,8 +1019,9 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
         )
 
     def validate(self, data):
+        company = self.initial_data.get('company')
         core_models.WorkflowNode.validate_node(
-            data["number"], data["workflow"], data["company"], data["active"], data.get("rules"),
+            data["number"], data["workflow"], company, data["active"], data.get("rules"),
             self.instance is None, self.instance and self.instance.id
         )
         return data

@@ -101,6 +101,7 @@ class WorkflowNodeEndpoint(ApiEndpoint):
 class CompanyWorkflowNodeEndpoint(ApiEndpoint):
 
     model = models.CompanyWorkflowNode
+    base_viewset = viewsets.CompanyWorkflowNodeViewset
     serializer_fields = ('id', 'company', 'workflow_node')
 
 

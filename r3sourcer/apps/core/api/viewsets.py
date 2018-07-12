@@ -627,6 +627,25 @@ class WorkflowNodeViewset(BaseApiViewset):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 
+class CompanyWorkflowNodeViewset(BaseApiViewset):
+
+    def perform_create(self, serializer):
+        company_node = models.CompanyWorkflowNode.objects.filter(
+            company=serializer.validated_data['company'],
+            workflow_node=serializer.validated_data['workflow_node']
+        ).first()
+
+        if company_node is not None:
+            company_node.active = True
+            company_node.save()
+        else:
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.active = False
+        instance.save()
+
+
 class UserDashboardModuleViewSet(BaseApiViewset):
 
     CAN_NOT_CREATE_MODULE_ERROR = _("You should be CompanyContact to creating module")
