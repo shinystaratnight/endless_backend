@@ -172,6 +172,13 @@ class WorkflowNodeFilter(FilterSet):
         return system_nodes
 
 
+class CompanyWorkflowNodeFilter(FilterSet):
+
+    class Meta:
+        model = models.CompanyWorkflowNode
+        fields = ['company', 'active']
+
+
 class DashboardModuleFilter(FilterSet):
 
     model = CharFilter(name='content_type', lookup_expr='model__icontains')
