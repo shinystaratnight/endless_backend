@@ -124,7 +124,6 @@ class WorkflowNode(UUIDModel):
     class Meta:
         verbose_name = _('Workflow Node')
         verbose_name_plural = _('Workflow Nodes')
-        unique_together = ('number', 'workflow')
 
     def __str__(self):
         return '{} {}, {}'.format(self.full_path, self.workflow, self.name_before_activation)
@@ -146,6 +145,14 @@ class WorkflowNode(UUIDModel):
                 raise ValidationError(_('Active for system node cannot be changed.'))
             elif rules != system_node.rules:
                 raise ValidationError(_('Rules for system node cannot be changed.'))
+
+        state_number_exist = WorkflowNode.objects.filter(
+            models.Q(workflow=workflow, number=number, hardlock=True) |
+            models.Q(workflow=workflow, number=number, company_workflow_nodes__company=company)
+        )
+
+        if state_number_exist.exists():
+            raise ValidationError(_('State with number {number} already exist on company').format(number=number))
 
         if not just_added:
             origin = WorkflowNode.objects.get(id=_id)
@@ -187,13 +194,16 @@ class WorkflowNode(UUIDModel):
     def get_company_nodes(cls, company=None, workflow=None, nodes=None, system=False):
         queryset = nodes or cls.objects
 
-        qry = models.Q(company_workflow_nodes__company=company, active=True) if company else models.Q()
-        worflow_qry = models.Q(workflow=workflow) if workflow is not None else models.Q()
+        qry = models.Q(company_workflow_nodes__company=company, active=True) if company is not None else models.Q()
+        if workflow is not None and not isinstance(workflow, list):
+            workflow = [workflow]
+
+        worflow_qry = models.Q(workflow__in=workflow) if workflow is not None else models.Q()
 
         if system:
             site_company = get_site_master_company()
             return queryset.filter(
-                worflow_qry & (qry | models.Q(company_workflow_nodes__company=site_company, active=True))
+                worflow_qry & models.Q(qry | models.Q(company_workflow_nodes__company=site_company, active=True))
             ).distinct()
 
         return queryset.filter(qry & worflow_qry).distinct()
@@ -215,11 +225,11 @@ class WorkflowNode(UUIDModel):
         return False
 
     def get_full_number(self):
-        if self.full_path is not None:
+        if self.full_path:
             return self.full_path
 
         if self.parent is None:
-            return self.number
+            return str(self.number)
 
         return '{}.{}'.format(self.parent.full_path, self.number)
 

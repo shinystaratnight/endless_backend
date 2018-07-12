@@ -101,7 +101,6 @@ class WorkflowNodeEndpoint(ApiEndpoint):
 class CompanyWorkflowNodeEndpoint(ApiEndpoint):
 
     model = models.CompanyWorkflowNode
-    serializer = serializers.WorkflowObjectSerializer
     serializer_fields = ('id', 'company', 'workflow_node')
 
 

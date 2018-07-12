@@ -129,7 +129,7 @@ class WorkflowNodeFilter(FilterSet):
 
     class Meta:
         model = models.WorkflowNode
-        fields = ['workflow', 'company', 'default', 'workflow__model', 'parent']
+        fields = ['workflow', 'default', 'workflow__model', 'parent']
 
     def filter_default(self, queryset, name, value):
         if value:
@@ -146,7 +146,16 @@ class WorkflowNodeFilter(FilterSet):
         if not value:
             return queryset
 
-        return models.WorkflowNode.get_company_nodes(nodes=queryset, system=value)
+        workflow_list = queryset.values_list('workflow_id', flat=True).distinct()
+        site_company = get_site_master_company()
+        system_nodes = models.WorkflowNode.objects.filter(
+            company_workflow_nodes__company=site_company, active=True, workflow__in=workflow_list
+        ).distinct()
+
+        return models.WorkflowNode.objects.filter(
+            Q(id__in=queryset.values_list('id', flat=True)) |
+            Q(id__in=system_nodes.values_list('id', flat=True))
+        ).distinct()
 
 
 class DashboardModuleFilter(FilterSet):
