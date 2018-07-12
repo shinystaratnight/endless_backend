@@ -176,7 +176,7 @@ class CompanyWorkflowNodeFilter(FilterSet):
 
     class Meta:
         model = models.CompanyWorkflowNode
-        fields = ['company', 'active', 'workflow_node__workflow']
+        fields = ['company', 'active', 'workflow_node__workflow', 'workflow_node__parent']
 
 
 class DashboardModuleFilter(FilterSet):
