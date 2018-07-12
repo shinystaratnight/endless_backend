@@ -127,6 +127,8 @@ class WorkflowNodeFilter(FilterSet):
     company = ModelChoiceFilter(queryset=models.Company.objects, method='filter_company')
     system = BooleanFilter(method='filter_system')
 
+    _company = None
+
     class Meta:
         model = models.WorkflowNode
         fields = ['workflow', 'default', 'workflow__model', 'parent']
@@ -140,7 +142,9 @@ class WorkflowNodeFilter(FilterSet):
         if not value:
             return queryset
 
-        return models.WorkflowNode.get_company_nodes(value, nodes=queryset)
+        self._company = value
+
+        return queryset.filter(company_workflow_nodes__company=value, active=True).distinct()
 
     def filter_system(self, queryset, name, value):
         if not value:
@@ -152,10 +156,13 @@ class WorkflowNodeFilter(FilterSet):
             company_workflow_nodes__company=site_company, active=True, workflow__in=workflow_list
         ).distinct()
 
-        return models.WorkflowNode.objects.filter(
-            Q(id__in=queryset.values_list('id', flat=True)) |
-            Q(id__in=system_nodes.values_list('id', flat=True))
-        ).distinct()
+        if self._company:
+            system_nodes = models.WorkflowNode.objects.filter(
+                Q(id__in=queryset.values_list('id', flat=True)) |
+                Q(id__in=system_nodes.values_list('id', flat=True))
+            ).distinct()
+
+        return system_nodes
 
 
 class DashboardModuleFilter(FilterSet):
