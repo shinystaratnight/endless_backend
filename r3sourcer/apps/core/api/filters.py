@@ -146,7 +146,8 @@ class WorkflowNodeFilter(FilterSet):
         self._company = value
 
         return queryset.filter(
-            company_workflow_nodes__company=value, active=True, company_workflow_nodes__active=True
+            company_workflow_nodes__company=value, active=True, company_workflow_nodes__active=True,
+            parent__isnull=True
         ).distinct()
 
     def filter_system(self, queryset, name, value):
@@ -160,12 +161,12 @@ class WorkflowNodeFilter(FilterSet):
         ).distinct()
 
         if self._company:
-            system_nodes_exclude = system_nodes.filter(
+            system_nodes_exclude = models.WorkflowNode.objects.filter(
                 company_workflow_nodes__company=self._company,
                 company_workflow_nodes__active=True
             ).values_list('id', flat=True)
             system_nodes = models.WorkflowNode.objects.filter(
-                Q(id__in=queryset.values_list('id', flat=True)) |
+                Q(company_workflow_nodes__company=self._company, active=True) |
                 Q(id__in=system_nodes.values_list('id', flat=True))
             ).exclude(id__in=system_nodes_exclude).distinct()
 

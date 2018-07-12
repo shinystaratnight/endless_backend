@@ -335,7 +335,6 @@ class CompanyWorkflowNode(UUIDModel):
     class Meta:
         verbose_name = _('Company Workflow Node')
         verbose_name_plural = _('Company Workflow Nodes')
-        unique_together = ('company', 'workflow_node')
 
     def __str__(self):
         return '{} {}'.format(self.company, self.workflow_node)

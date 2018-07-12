@@ -642,6 +642,7 @@ class CompanyWorkflowNodeViewset(BaseApiViewset):
             serializer.save()
 
     def perform_destroy(self, instance):
+        print('!!!')
         instance.active = False
         instance.save()
 
