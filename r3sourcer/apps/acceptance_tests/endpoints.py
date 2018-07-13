@@ -9,7 +9,17 @@ class AcceptanceTestEndpoint(ApiEndpoint):
 
     model = models.AcceptanceTest
     filter_class = filters.AcceptanceTestFilter
-    serializer_fields = ('__all__',)
+    serializer_fields = (
+        '__all__',
+        {
+            'acceptance_test_questions': (
+                'id', 'question', 'details', 'order', 'type',
+                {
+                    'acceptance_test_answers': ('id',  'answer', 'order', 'score', ),
+                },
+            ),
+        }
+    )
 
 
 class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
