@@ -167,7 +167,8 @@ class WorkflowNodeFilter(FilterSet):
             ).values_list('id', flat=True)
             system_nodes = models.WorkflowNode.objects.filter(
                 Q(company_workflow_nodes__company=self._company, active=True) |
-                Q(id__in=system_nodes.values_list('id', flat=True))
+                Q(id__in=system_nodes.values_list('id', flat=True)),
+                workflow_qry
             ).exclude(id__in=system_nodes_exclude).distinct()
 
         return system_nodes
