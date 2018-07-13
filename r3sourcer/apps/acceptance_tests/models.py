@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import UUIDModel, Tag, CompanyWorkflowNode
+from r3sourcer.apps.core.models import UUIDModel, Tag, CompanyWorkflowNode, WorkflowObject
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models import Industry
 
@@ -263,3 +263,43 @@ class AcceptanceTestAnswer(UUIDModel):
 
     def __str__(self):
         return '{}: {}'.format(self.acceptance_test_question, self.answer)
+
+
+class WorkflowObjectAnswer(UUIDModel):
+
+    acceptance_test_question = models.ForeignKey(
+        AcceptanceTestQuestion,
+        on_delete=models.CASCADE,
+        related_name='workflow_object_answers',
+        verbose_name=_("Acceptance Test Question")
+    )
+
+    workflow_object = models.ForeignKey(
+        CompanyWorkflowNode,
+        on_delete=models.CASCADE,
+        related_name='workflow_object_answers',
+        verbose_name=_("Workflow Object")
+    )
+
+    answer = models.ForeignKey(
+        AcceptanceTestAnswer,
+        on_delete=models.CASCADE,
+        related_name='workflow_object_answers',
+        verbose_name=_("Acceptance Test Answer")
+    )
+
+    answer_text = models.TextField(
+        verbose_name=_("Text Answer")
+    )
+
+    score = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name=_("Answer Score")
+    )
+
+    class Meta:
+        verbose_name = _("Workflow Object Answer")
+        verbose_name_plural = _("Workflow Object Answers")
+
+    def __str__(self):
+        return '{}, {}'.format(str(self.acceptance_test_question), str(self.workflow_object))
