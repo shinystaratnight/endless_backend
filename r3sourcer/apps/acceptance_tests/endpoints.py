@@ -8,13 +8,14 @@ from . import models
 class AcceptanceTestEndpoint(ApiEndpoint):
 
     model = models.AcceptanceTest
+    filter_class = filters.AcceptanceTestFilter
     serializer_fields = ('__all__',)
 
 
 class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
 
     model = models.AcceptanceTestWorkflowNode
-    filter_calss = filters.AcceptanceTestWorkflowNodeFilter
+    filter_class = filters.AcceptanceTestWorkflowNodeFilter
     serializer_fields = ('id', 'acceptance_test', 'company_workflow_node')
 
 
