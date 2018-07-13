@@ -175,9 +175,14 @@ class WorkflowNodeFilter(FilterSet):
 
 class CompanyWorkflowNodeFilter(FilterSet):
 
+    only_parent = BooleanFilter(method='filter_only_parent')
+
     class Meta:
         model = models.CompanyWorkflowNode
         fields = ['company', 'active', 'workflow_node__workflow', 'workflow_node__parent']
+
+    def filter_only_parent(self, queryset, name, value):
+        return queryset.filter(workflow_node__parent__isnull=value)
 
 
 class DashboardModuleFilter(FilterSet):

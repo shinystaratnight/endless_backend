@@ -1019,11 +1019,12 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
         )
 
     def validate(self, data):
-        company = self.initial_data.get('company')
-        core_models.WorkflowNode.validate_node(
-            data["number"], data["workflow"], company, data["active"], data.get("rules"),
-            self.instance is None, self.instance and self.instance.id
-        )
+        if 'number' in data:
+            company = self.initial_data.get('company')
+            core_models.WorkflowNode.validate_node(
+                data["number"], data.get("workflow"), company, data.get("active"), data.get("rules"),
+                self.instance is None, self.instance and self.instance.id
+            )
         return data
 
 
@@ -1032,7 +1033,9 @@ class CompanyWorkflowNodeSerializer(ApiBaseModelSerializer):
         model = core_models.CompanyWorkflowNode
         fields = (
             '__all__', {
-                'workflow_node': ('id', '__str__', 'number', 'name_before_activation', 'name_after_activation')
+                'workflow_node': (
+                    'id', '__str__', 'number', 'name_before_activation', 'name_after_activation', 'parent',
+                )
             }
         )
 
