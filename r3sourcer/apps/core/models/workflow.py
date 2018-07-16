@@ -313,6 +313,16 @@ class WorkflowObject(UUIDModel):
                 model_object.get_required_message(state))
             )
 
+    def get_score(self):
+        score = self.workflow_object_answers.all().aggregate(score_num=models.Avg('score'))['score_num']
+        if score > 0:
+            self.score = score
+            self.save()
+        else:
+            score = self.score
+
+        return score
+
 
 class CompanyWorkflowNode(UUIDModel):
     company = models.ForeignKey(
