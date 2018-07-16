@@ -314,7 +314,9 @@ class WorkflowObject(UUIDModel):
             )
 
     def get_score(self):
-        score = self.workflow_object_answers.all().aggregate(score_num=models.Avg('score'))['score_num']
+        score = self.workflow_object_answers.filter(
+            exclude=False
+        ).aggregate(score_num=models.Avg('score'))['score_num']
         if score > 0:
             self.score = score
             self.save()

@@ -302,6 +302,11 @@ class WorkflowObjectAnswer(UUIDModel):
         verbose_name=_("Answer Score")
     )
 
+    exclude = models.BooleanField(
+        default=False,
+        verbose_name=_("Exclude from score")
+    )
+
     class Meta:
         verbose_name = _("Workflow Object Answer")
         verbose_name_plural = _("Workflow Object Answers")
