@@ -31,8 +31,8 @@ class Subscription(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
     status = models.CharField(max_length=255, choices=SUBSCRIPTION_STATUSES)
-    current_period_start = models.DateField(blank=True, null=True)
-    current_period_end = models.DateField(blank=True, null=True)
+    current_period_start = models.DateTimeField(blank=True, null=True)
+    current_period_end = models.DateTimeField(blank=True, null=True)
 
     # stripe ids
     plan_id = models.CharField(max_length=255)
@@ -89,7 +89,8 @@ class SMSBalance(models.Model):
 class Payment(models.Model):
     PAYMENT_TYPES = Choices(
         ('sms', 'SMS'),
-        ('extra_workers', 'Extra Workers')
+        ('extra_workers', 'Extra Workers'),
+        ('subscription', 'Subscription')
     )
     company = models.ForeignKey(Company)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)

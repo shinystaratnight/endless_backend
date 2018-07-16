@@ -72,3 +72,25 @@ def sync_subscriptions():
         subscription.sync_status()
         subscription.sync_periods()
         subscription.save()
+
+
+@shared_task()
+def fetch_payments():
+    companies = Company.objects.all()
+
+    for company in companies:
+        if not company.stripe_customer:
+            continue
+
+        customer = company.stripe_customer
+        charges = stripe.Charge.list(customer=customer)['data']
+
+        for charge in charges:
+            if not Payment.objects.filter(stripe_id=charge['id']).exists():
+                Payment.objects.create(
+                    company=company,
+                    type=Payment.PAYMENT_TYPES.subscription,
+                    amount=charge['amount'],
+                    status=charge['status'],
+                    stripe_id=charge['id']
+                )
