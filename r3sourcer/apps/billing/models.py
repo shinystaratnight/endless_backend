@@ -31,8 +31,8 @@ class Subscription(models.Model):
     created = models.DateTimeField(auto_now_add=True)
     active = models.BooleanField(default=True)
     status = models.CharField(max_length=255, choices=SUBSCRIPTION_STATUSES)
-    current_period_start = models.DateField(blank=True, null=True)
-    current_period_end = models.DateField(blank=True, null=True)
+    current_period_start = models.DateTimeField(blank=True, null=True)
+    current_period_end = models.DateTimeField(blank=True, null=True)
 
     # stripe ids
     plan_id = models.CharField(max_length=255)
@@ -51,13 +51,21 @@ class Subscription(models.Model):
         super(Subscription, self).save(*args, **kwargs)
 
         if self.active:
-            Subscription.objects.filter(company=self.company) \
-                        .exclude(id=self.id) \
-                        .update(active=False)
+            subscriptions = Subscription.objects.filter(company=self.company) \
+                                                .exclude(id=self.id)
+
+            for subscription in subscriptions:
+                subscription.deactivate()
+                subscription.active = False
+                subscription.save()
+
+    def deactivate(self):
+        sub = stripe.Subscription.retrieve(self.subscription_id)
+        sub.delete(at_period_end=True)
 
 
 class SMSBalance(models.Model):
-    company = models.ForeignKey(Company)
+    company = models.OneToOneField('core.Company', blank=True, null=True, related_name='sms_balance')
     balance = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
@@ -81,8 +89,10 @@ class SMSBalance(models.Model):
 class Payment(models.Model):
     PAYMENT_TYPES = Choices(
         ('sms', 'SMS'),
-        ('extra_workers', 'Extra Workers')
+        ('extra_workers', 'Extra Workers'),
+        ('subscription', 'Subscription')
     )
+    company = models.ForeignKey(Company)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = models.DateTimeField(auto_now_add=True)
     amount = models.IntegerField()
