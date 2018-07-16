@@ -216,10 +216,11 @@ def prefill_workflow():
 
     counter = 0
     for rule in data:
-        models.WorkflowNode.objects.get_or_create(number=counter * 10,
-                                                  name_before_activation="State " + str(counter * 10),
-                                                  workflow=workflow, company=company,
-                                                  rules=rule, hardlock=True)
+        obj, _ = models.WorkflowNode.objects.get_or_create(
+            number=counter * 10, name_before_activation="State " + str(counter * 10), workflow=workflow,
+            rules=rule, hardlock=True
+        )
+        models.CompanyWorkflowNode.objects.get_or_create(company=company, workflow_node=obj)
         counter += 1
 
 

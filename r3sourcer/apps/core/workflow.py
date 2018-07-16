@@ -4,6 +4,7 @@ from django.db import models
 
 from .mixins import CompanyLookupMixin
 from .service import factory
+from .utils.companies import get_site_master_company
 
 NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED = range(5)
 
@@ -27,7 +28,6 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         :param comment: str comment to state
         """
         from .models import WorkflowObject, WorkflowNode
-        from .utils.companies import get_site_master_company
         kwargs = {
             'number': number,
             'workflow__model': self.content_type,
@@ -222,7 +222,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
             return str(func)
 
     def _get_state_name(self, state_number):
-        from .models.core import WorkflowNode
+        from .models.workflow import WorkflowNode
 
         if WorkflowNode.objects.filter(
                 workflow__model=self.content_type, number=state_number).exists():
@@ -301,8 +301,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         available_states = []
         self.active_states = self.get_active_states()
 
-        from .models.core import WorkflowNode
-        from .utils.companies import get_site_master_company
+        from .models.workflow import WorkflowNode
 
         self_nodes = self._get_companies_nodes(self.get_closest_company())
         default_nodes = self._get_companies_nodes(get_site_master_company())
@@ -317,7 +316,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
 
     def _get_companies_nodes(self, company):
 
-        from .models.core import WorkflowNode
+        from .models.workflow import WorkflowNode
         nodes = {}
         for node in WorkflowNode.objects.filter(
             workflow__model=self.content_type,

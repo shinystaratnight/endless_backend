@@ -4,8 +4,6 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 
-from r3sourcer.apps.core.models import Company
-
 
 def get_closest_companies(request):
     """
@@ -49,6 +47,8 @@ def get_site_url(request=None, user=None):
 
 
 def get_site_master_company(site=None, request=None, user=None, default=True):
+    from r3sourcer.apps.core.models import Company
+
     if isinstance(site, str):
         site = Site.objects.get_by_natural_key(site)
     elif request:
