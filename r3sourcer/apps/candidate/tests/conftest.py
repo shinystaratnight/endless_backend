@@ -143,7 +143,9 @@ def skill(db):
         name="Driver",
         carrier_list_reserve=2,
         short_name="Drv",
-        active=False
+        active=False,
+        default_rate=10,
+        price_list_default_rate=20
     )
 
 

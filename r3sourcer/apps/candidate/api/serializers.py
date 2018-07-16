@@ -200,6 +200,7 @@ class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSeriali
             candidate_models.SkillRel.objects.create(
                 candidate_contact=candidate_contact,
                 skill=skill,
+                hourly_rate=0
             )
 
         return candidate_contact

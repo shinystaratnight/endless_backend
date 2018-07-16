@@ -102,8 +102,8 @@ class Skill(MYOBMixin, UUIDModel):
         verbose_name_plural = _("Skills")
 
     def clean(self, *args, **kwargs):
-        have_default_base_rate = self.skill_rate_defaults.filter(default_rate=True).count()
-        have_default_price_list_rate = self.price_list_rates.filter(default_rate=True).count()
+        have_default_base_rate = self.default_rate
+        have_default_price_list_rate = self.price_list_default_rate
 
         if self.active:
             if not have_default_base_rate and not have_default_price_list_rate:

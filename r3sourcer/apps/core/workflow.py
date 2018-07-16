@@ -4,7 +4,6 @@ from django.db import models
 
 from .mixins import CompanyLookupMixin
 from .service import factory
-from .utils.user import get_default_company
 
 NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED = range(5)
 
@@ -28,20 +27,19 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         :param comment: str comment to state
         """
         from .models import WorkflowObject, WorkflowNode
+        from .utils.companies import get_site_master_company
         kwargs = {
             'number': number,
             'workflow__model': self.content_type,
-            'company': self.get_closest_company()
+            'company_workflow_nodes__company': self.get_closest_company(),
         }
         if not WorkflowNode.objects.filter(**kwargs).exists():
-            kwargs['company'] = get_default_company()
+            kwargs['company_workflow_nodes__company'] = get_site_master_company()
 
         state = WorkflowNode.objects.filter(**kwargs).first()
 
         if state:
-            workflow_object = WorkflowObject(
-                object_id=self.id, state=state, comment=comment, active=active
-            )
+            workflow_object = WorkflowObject(object_id=self.id, state=state, comment=comment, active=active)
             workflow_object.save()
 
     def get_active_states(self):
@@ -304,9 +302,10 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         self.active_states = self.get_active_states()
 
         from .models.core import WorkflowNode
+        from .utils.companies import get_site_master_company
 
         self_nodes = self._get_companies_nodes(self.get_closest_company())
-        default_nodes = self._get_companies_nodes(get_default_company())
+        default_nodes = self._get_companies_nodes(get_site_master_company())
 
         all_nodes = list(self_nodes.values())
         all_nodes.extend(value for key, value in default_nodes.items() if key not in self_nodes.keys())
@@ -322,7 +321,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         nodes = {}
         for node in WorkflowNode.objects.filter(
             workflow__model=self.content_type,
-            company=company
+            company_workflow_nodes__company=company
         ).order_by('number'):
             nodes[node.number] = node.id
         return nodes

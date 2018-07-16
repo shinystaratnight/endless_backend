@@ -32,7 +32,8 @@ def acceptance_test(db):
 def question(db, acceptance_test):
     return AcceptanceTestQuestion.objects.create(
         acceptance_test=acceptance_test,
-        question='question'
+        question='question',
+        order=1
     )
 
 

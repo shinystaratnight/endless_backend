@@ -43,6 +43,7 @@ class TestCompanyContactResource(ResourceMixin):
     @pytest.fixture
     def candidate_contact_data(self, country, skill, tag):
         candidate_contact_data = {
+            'title': 'Mr.',
             'first_name': 'Test',
             'last_name': 'Tester',
             'email': 'tester@test.tt',
@@ -59,8 +60,7 @@ class TestCompanyContactResource(ResourceMixin):
 
     @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
                 return_value=(42, 42))
-    def test_can_register_candidate_contact(self, mock_geo, rf, user,
-                                            candidate_contact_data):
+    def test_can_register_candidate_contact(self, mock_geo, rf, user, candidate_contact_data):
         req = rf.post('/api/v2/candidate_contacts/register/',
                       data=json.dumps(candidate_contact_data),
                       content_type='application/json')
@@ -113,8 +113,7 @@ class TestSubcontractorResource(ResourceMixin):
 
     @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
                 return_value=(42, 42))
-    def test_can_register_subcontractor(self, mock_geo, rf, user,
-                                        candidate_contact_data):
+    def test_can_register_subcontractor(self, mock_geo, rf, user, candidate_contact_data):
         req = rf.post('/api/v2/candidate_contacts/register/',
                       data=json.dumps(candidate_contact_data),
                       content_type='application/json')
@@ -128,8 +127,7 @@ class TestSubcontractorResource(ResourceMixin):
 
     @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
                 return_value=(42, 42))
-    def test_can_register_subcontractor_do_not_agree(
-            self, mock_geo, rf, user, candidate_contact_data):
+    def test_can_register_subcontractor_do_not_agree(self, mock_geo, rf, user, candidate_contact_data):
         candidate_contact_data['agree'] = False
         req = rf.post('/api/v2/candidate_contacts/register/',
                       data=json.dumps(candidate_contact_data),
