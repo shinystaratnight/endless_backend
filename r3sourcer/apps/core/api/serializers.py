@@ -1066,7 +1066,7 @@ class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSe
 
 class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('state', 'requirements', 'wf_object_id')
+    method_fields = ('state', 'requirements', 'wf_object_id', 'acceptance_tests')
 
     class Meta:
         model = core_models.WorkflowNode
@@ -1119,6 +1119,14 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         ).first()
 
         return workflow_object and workflow_object.id
+
+    def get_acceptance_tests(self, obj):
+        from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
+        from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestWorkflowNodeSerializer
+
+        tests = AcceptanceTestWorkflowNode.objects.filter(company_workflow_node__workflow_node=obj)
+
+        return tests and AcceptanceTestWorkflowNodeSerializer(tests, many=True).data
 
 
 class NavigationSerializer(ApiBaseModelSerializer):

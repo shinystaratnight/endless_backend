@@ -159,6 +159,11 @@ class AcceptanceTestWorkflowNode(UUIDModel):
         verbose_name=_("Workflow Node")
     )
 
+    score = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name=_("Score")
+    )
+
     class Meta:
         verbose_name = _("Acceptance Test Workflow Node")
         verbose_name_plural = _("Acceptance Tests and Workflow Nodes")
@@ -275,7 +280,7 @@ class WorkflowObjectAnswer(UUIDModel):
     )
 
     workflow_object = models.ForeignKey(
-        CompanyWorkflowNode,
+        WorkflowObject,
         on_delete=models.CASCADE,
         related_name='workflow_object_answers',
         verbose_name=_("Workflow Object")

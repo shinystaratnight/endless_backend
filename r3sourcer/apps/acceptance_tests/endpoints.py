@@ -1,4 +1,4 @@
-from r3sourcer.apps.acceptance_tests.api import filters
+from r3sourcer.apps.acceptance_tests.api import filters, serializers
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 
@@ -26,7 +26,7 @@ class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
 
     model = models.AcceptanceTestWorkflowNode
     filter_class = filters.AcceptanceTestWorkflowNodeFilter
-    serializer_fields = ('id', 'acceptance_test', 'company_workflow_node')
+    serializer = serializers.AcceptanceTestWorkflowNode
 
 
 router.register(endpoint=AcceptanceTestEndpoint())
