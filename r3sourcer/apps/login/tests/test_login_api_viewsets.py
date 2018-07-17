@@ -17,6 +17,7 @@ class TestLoginResource:
     def test_restore_session_contact_type(self, get_active_states, mock_company, client, user, token_login, company):
         mocked_value = mock.Mock()
         mocked_value.score = 1
+        mocked_value.get_score = mock.Mock(return_value=1)
         get_active_states.return_value = [mocked_value]
         mock_company.return_value = company
 
@@ -154,8 +155,7 @@ class TestLoginResource:
         assert auth_user == contact.user
         assert auth_user.is_authenticated
 
-    def test_token_login_logged_in_another_user(self, client, contact,
-                                                superuser, token_login):
+    def test_token_login_logged_in_another_user(self, client, contact, superuser, token_login):
         contact_another = superuser.contact
         token_login_another = TokenLogin.objects.create(contact=contact_another)
 

@@ -223,7 +223,8 @@ def acceptance_test_rel(db, candidate, acceptance_test):
 def acceptance_question(db, acceptance_test):
     return acceptance_test_models.AcceptanceTestQuestion.objects.create(
         acceptance_test=acceptance_test,
-        question='question'
+        question='question',
+        order=0
     )
 
 
@@ -280,9 +281,12 @@ def candidate_activity(db, candidate, contact, activity_template):
 def workflow_state(db, candidate, company):
     content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
     workflow, created = core_models.Workflow.objects.get_or_create(name="test_workflow", model=content_type)
-    return core_models.WorkflowNode.objects.create(
-        number=11, name_before_activation="State 11", workflow=workflow, company=company, rules={}
+    wf_node = core_models.WorkflowNode.objects.create(
+        number=11, name_before_activation="State 11", workflow=workflow, rules={}
     )
+    core_models.CompanyWorkflowNode.objects.get_or_create(company=company, workflow_node=wf_node)
+
+    return wf_node
 
 
 @pytest.fixture

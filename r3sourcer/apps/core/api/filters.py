@@ -146,8 +146,8 @@ class WorkflowNodeFilter(FilterSet):
         self._company = value
 
         return queryset.filter(
-            company_workflow_nodes__company=value, active=True, company_workflow_nodes__active=True,
-            parent__isnull=True
+            company_workflow_nodes__company=value, company_workflow_nodes__active=True,
+            active=True, parent__isnull=True
         ).distinct()
 
     def filter_system(self, queryset, name, value):

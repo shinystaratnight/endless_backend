@@ -14,7 +14,7 @@ from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from ..models import TokenLogin
 from ..tasks import send_login_message
 
-from .serializers import LoginSerializer, ContactLoginSerializer
+from .serializers import LoginSerializer, ContactLoginSerializer, TokenLoginSerializer
 
 
 class AuthViewSet(BaseViewsetMixin,
@@ -104,7 +104,7 @@ class AuthViewSet(BaseViewsetMixin,
     @action(methods=['get'], detail=True)
     def login_by_token(self, request, *args, **kwargs):
         instance = self.get_object()
-        serializer = self.get_serializer(instance)
+        serializer = TokenLoginSerializer(instance)
 
         user = instance.contact.user
         if user is None:

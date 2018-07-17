@@ -58,6 +58,8 @@ class ApiBase64FileField(serializers.FileField):
         if isinstance(data, six.string_types):
             if 'data:' in data and ';base64,' in data:
                 header, data = data.split(';base64,')
+            else:
+                header = 'image/jpeg'
 
             try:
                 decoded_file = base64.b64decode(data.encode('ascii'))
@@ -73,10 +75,10 @@ class ApiBase64FileField(serializers.FileField):
 
         return super().to_internal_value(data)
 
-    def get_file_extension(self, file_name, decoded_file, mime_type):
+    def get_file_extension(self, file_name, decoded_file, mime_type=None):
         file_extension = what(file_name, decoded_file)
 
-        if not file_extension:
+        if not file_extension and mime_type:
             file_extension = mimetypes.guess_extension(mime_type)
         else:
             file_extension = '.%s' % file_extension
@@ -90,7 +92,7 @@ class ApiBase64ImageField(ApiBase64FileField, serializers.ImageField):
     It uses base64 for encoding and decoding the contents of the file.
     """
 
-    def get_file_extension(self, file_name, decoded_file, mime_type):
+    def get_file_extension(self, file_name, decoded_file, mime_type=None):
         extension = super().get_file_extension(file_name, decoded_file, mime_type)
         extension = ".jpg" if extension == ".jpeg" else extension
 

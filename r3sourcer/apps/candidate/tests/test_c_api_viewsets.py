@@ -97,6 +97,7 @@ class TestSubcontractorResource(ResourceMixin):
     @pytest.fixture
     def candidate_contact_data(self, country, skill, tag):
         candidate_contact_data = {
+            'title': 'Mr.',
             'first_name': 'Test',
             'last_name': 'Tester',
             'email': 'tester@test.tt',

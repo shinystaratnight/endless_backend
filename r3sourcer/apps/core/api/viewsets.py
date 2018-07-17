@@ -461,8 +461,7 @@ class NavigationViewset(BaseApiViewset):
         except Exception:
             access_level = self.request.user.access_level
 
-        return models.ExtranetNavigation.objects.filter(parent=None) \
-                                                .filter(access_level=access_level)
+        return models.ExtranetNavigation.objects.filter(parent=None, access_level=access_level)
 
 
 class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):

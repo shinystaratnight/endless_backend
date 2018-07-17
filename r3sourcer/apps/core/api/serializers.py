@@ -676,7 +676,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         return contact
 
     def validate(self, data):
-        if not data['email'] and not data['phone_mobile']:
+        if not data.get('email') and not data.get('phone_mobile'):
             raise serializers.ValidationError(
                 _('Please specify E-mail and/or Mobile Phone'))
         return data
@@ -835,7 +835,17 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         return super().validate(data)
 
     def create(self, validated_data):
-        company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        try:
+            company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        except core_models.Company.DoesNotExist:
+            raise exceptions.ValidationError({
+                'company': _('Company not found'),
+            })
+
+        if not validated_data.get('contact'):
+            raise exceptions.ValidationError({
+                'contact': _('Contact is required'),
+            })
 
         instance = super(CompanyContactSerializer, self).create(validated_data)
 
@@ -1020,7 +1030,7 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
 
     def validate(self, data):
         if 'number' in data:
-            company = self.initial_data.get('company')
+            company = self.data.get('company')
             core_models.WorkflowNode.validate_node(
                 data["number"], data.get("workflow"), company, data.get("active"), data.get("rules"),
                 self.instance is None, self.instance and self.instance.id

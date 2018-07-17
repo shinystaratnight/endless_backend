@@ -109,21 +109,19 @@ class TestApiBase64ImageField:
 
     @mock.patch('r3sourcer.apps.core.api.fields.what', return_value='jpeg')
     def test_get_file_extension_jpg(self, mock_what, obj):
-        assert obj.get_file_extension('', '') == 'jpg'
+        assert obj.get_file_extension('', '') == '.jpg'
 
     @mock.patch('r3sourcer.apps.core.api.fields.what', return_value='png')
     def test_get_file_extension_not_jpg(self, mock_what, obj):
-        assert obj.get_file_extension('', '') == 'png'
+        assert obj.get_file_extension('', '') == '.png'
 
-    @mock.patch.object(ApiBase64ImageField, 'get_file_extension',
-                       return_value='jpg')
+    @mock.patch.object(ApiBase64ImageField, 'get_file_extension', return_value='.jpg')
     def test_to_internal_value(self, mock_ext, base64_data, obj, picture):
         res = obj.to_internal_value(base64_data.decode('utf-8'))
 
         assert res.read() == picture.read()
 
-    @mock.patch.object(ApiBase64ImageField, 'get_file_extension',
-                       return_value='jpg')
+    @mock.patch.object(ApiBase64ImageField, 'get_file_extension', return_value='.jpg')
     def test_to_internal_value_with_type(self, mock_ext, base64_data, obj,
                                          picture):
         res = obj.to_internal_value(

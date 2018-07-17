@@ -192,6 +192,7 @@ class TestCompanyContactResource(ResourceMixin):
     @pytest.fixture
     def company_contact_data(self, country):
         company_contact_data = {
+            'title': 'Mr.',
             'first_name': 'Test',
             'last_name': 'Tester',
             'email': 'tester@test.tt',
@@ -297,7 +298,7 @@ class TestContactResource(ResourceMixin):
 
     @pytest.fixture
     def contact_picture_data(self, picture):
-        return dict(picture=copy.deepcopy(picture))
+        return dict(picture=copy.deepcopy(picture), email='test_email@testemail.com')
 
     def test_can_update_contact(self, rf, contact, staff_user, contact_update_data):
         req = rf.put('/api/v2/contacts/',
@@ -642,40 +643,38 @@ class TestNavigationViewset(ResourceMixin):
         assert response.data['count'] == 1
         assert response.data['results'][0]['url'] == candidate_url
 
-    def test_navigation_retrieve_with_role_parameter(self, user, rf):
+    def test_navigation_retrieve_with_role_parameter(self, user, roles, rf):
         client_url = 'client_url'
         manager_url = 'manager_url'
         candidate_url = 'candidate_url'
         url = '/core/extranetnavigations/?role=%s'
 
-        ExtranetNavigation.objects.create(url=client_url,
-                                          access_level=ExtranetNavigation.CLIENT)
-        ExtranetNavigation.objects.create(url=manager_url,
-                                          access_level=ExtranetNavigation.MANAGER)
-        ExtranetNavigation.objects.create(url=candidate_url,
-                                          access_level=ExtranetNavigation.CANDIDATE)
+        ExtranetNavigation.objects.create(url=client_url, access_level=ExtranetNavigation.CLIENT)
+        ExtranetNavigation.objects.create(url=manager_url, access_level=ExtranetNavigation.MANAGER)
+        ExtranetNavigation.objects.create(url=candidate_url, access_level=ExtranetNavigation.CANDIDATE)
 
         CompanyContact.objects.create(contact=user.contact, role=CompanyContact.MANAGER)
-        request = rf.get(url % 'manager')
+
+        request = rf.get(url % roles[1].id)
         force_authenticate(request, user=user)
         response = self.get_response_as_view(request, actions={'get': 'list'})
 
         assert response.data['count'] == 1
         assert response.data['results'][0]['url'] == manager_url
 
-        request = rf.get(url % 'client')
+        request = rf.get(url % roles[2].id)
         force_authenticate(request, user=user)
         response = self.get_response_as_view(request, actions={'get': 'list'})
 
         assert response.data['count'] == 1
-        assert response.data['results'][1]['url'] == client_url
+        assert response.data['results'][0]['url'] == client_url
 
-        request = rf.get(url % 'candidate')
+        request = rf.get(url % roles[0].id)
         force_authenticate(request, user=user)
         response = self.get_response_as_view(request, actions={'get': 'list'})
 
         assert response.data['count'] == 1
-        assert response.data['results'][2]['url'] == candidate_url
+        assert response.data['results'][0]['url'] == candidate_url
 
     def test_navigation_retrieve_unknown_role(self, rf, another_user):
         url = '/core/extranetnavigations/'

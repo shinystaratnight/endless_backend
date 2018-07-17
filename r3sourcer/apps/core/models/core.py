@@ -1,7 +1,7 @@
 import math
 import os
 import uuid
-from datetime import date, datetime, timedelta
+from datetime import date, datetime, timedelta, time
 
 import collections
 import re
@@ -1091,7 +1091,7 @@ class Company(
         from r3sourcer.apps.candidate.models import CandidateContact
 
         if not start_date:
-            start_date = datetime.today() - timedelta(days=31)
+            start_date = timezone.make_aware(datetime.combine(date.today(), time(0, 0))) - timedelta(days=31)
 
         return CandidateContact.objects.filter(job_offers__time_sheets__shift_started_at__gt=start_date).count()
 

@@ -8,9 +8,7 @@ from r3sourcer.apps.core.api.filters import (
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
-from r3sourcer.apps.core.models import (
-    City, CompanyAddress, WorkflowNode
-)
+from r3sourcer.apps.core.models import City, WorkflowNode
 
 from django_mock_queries.query import create_model, MockSet, MockModel
 
@@ -20,9 +18,9 @@ comp = ModelCompany(pk=1)
 custom_comp = ModelCompany(pk=2)
 
 workflownode_qs = MockSet(
-    MockModel(company=comp, number=1, active=True),
-    MockModel(company=comp, number=2, active=True),
-    MockModel(company=custom_comp, number=2, active=True),
+    MockModel(number=1, active=True, parent=None, company_workflow_nodes=MockModel(company=comp, active=True)),
+    MockModel(number=2, active=True, parent=None, company_workflow_nodes=MockModel(company=comp, active=True)),
+    MockModel(number=2, active=True, parent=None, company_workflow_nodes=MockModel(company=custom_comp, active=True)),
 )
 
 
@@ -158,15 +156,6 @@ class TestCompanyAddressFilters:
 
         assert qs.count() == 0
 
-    @mock.patch.object(CompanyAddressFilter, '_fetch_workflow_objects')
-    def test_filter_state(self, mock_fetch, company_address, company_rel):
-        mock_fetch.return_value = [company_rel.id]
-        filter_obj = CompanyAddressFilter()
-
-        res = filter_obj.filter_state(CompanyAddress.objects.all(), 'state', 1)
-
-        assert len(res) == 1
-
 
 @pytest.mark.django_db
 class TestApiOrderingFilter:
@@ -193,10 +182,10 @@ class TestApiOrderingFilter:
         endpoint = CityEndpoint()
         fields = order_filter.get_default_valid_fields(
             City.objects,
-            endpoint.get_viewset()
+            endpoint.get_viewset()()
         )
 
-        assert dict(fields).keys() == {'name', 'country', 'country.name'}
+        assert dict(fields).keys() == {'name', 'country', '__str__'}
 
     def test_get_default_valid_fields_without_endpoint(self):
         class CitySerializer(ApiBaseModelSerializer):
@@ -230,8 +219,9 @@ class TestApiOrderingFilter:
         view = CityEndpoint().get_viewset()
         request = rf.get('/', {'ordering': 'country.code2'})
         response = self.get_response_as_view({'get': 'list'}, request, viewset=view)
-        assert response.data['results'][0]['name'] == 'Sydney'
-        assert response.data['results'][1]['name'] == 'Kiev'
+        assert len(response.data['results']) == 2
+        assert response.data['results'][1]['name'] == 'Sydney'
+        assert response.data['results'][0]['name'] == 'Kiev'
 
 
 @pytest.mark.django_db
@@ -255,11 +245,9 @@ class TestWorkflowNodeFilter:
 
         assert len(res) == 2
 
-    @mock.patch('r3sourcer.apps.core.api.filters.get_default_company',
-                return_value=comp)
+    @mock.patch('r3sourcer.apps.core.api.filters.get_default_company', return_value=comp)
     @mock.patch.object(WorkflowNode, 'get_company_nodes')
-    def test_filter_company_not_default_company(self, mock_nodes,
-                                                mock_default):
+    def test_filter_company_not_default_company(self, mock_nodes, mock_default):
         mock_nodes.return_value = [10, 20]
         filter_obj = WorkflowNodeFilter()
 
@@ -267,4 +255,4 @@ class TestWorkflowNodeFilter:
             workflownode_qs, 'default', custom_comp
         )
 
-        assert len(res) == 2
+        assert len(res) == 1
