@@ -668,14 +668,14 @@ class TestNavigationViewset(ResourceMixin):
         response = self.get_response_as_view(request, actions={'get': 'list'})
 
         assert response.data['count'] == 1
-        assert response.data['results'][0]['url'] == client_url
+        assert response.data['results'][1]['url'] == client_url
 
         request = rf.get(url % 'candidate')
         force_authenticate(request, user=user)
         response = self.get_response_as_view(request, actions={'get': 'list'})
 
         assert response.data['count'] == 1
-        assert response.data['results'][0]['url'] == candidate_url
+        assert response.data['results'][2]['url'] == candidate_url
 
     def test_navigation_retrieve_unknown_role(self, rf, another_user):
         url = '/core/extranetnavigations/'

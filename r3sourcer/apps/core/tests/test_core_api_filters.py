@@ -237,29 +237,6 @@ class TestApiOrderingFilter:
 @pytest.mark.django_db
 class TestWorkflowNodeFilter:
 
-    @mock.patch('r3sourcer.apps.core.api.filters.get_default_company',
-                return_value=comp)
-    def test_filter_default(self, mock_company):
-        filter_obj = WorkflowNodeFilter()
-
-        res = filter_obj.filter_default(workflownode_qs, 'default', 1)
-
-        assert len(res) == 2
-
-    def test_filter_default_empty_value(self):
-        filter_obj = WorkflowNodeFilter()
-
-        res = filter_obj.filter_default(workflownode_qs, 'default', '')
-
-        assert len(res) == 3
-
-    def test_filter_default_none_value(self):
-        filter_obj = WorkflowNodeFilter()
-
-        res = filter_obj.filter_default(workflownode_qs, 'default', None)
-
-        assert len(res) == 3
-
     def test_filter_company_none_value(self):
         filter_obj = WorkflowNodeFilter()
 
