@@ -139,3 +139,13 @@ class TestSubscriptionCancelView:
 
         assert mocked_method.called
         assert not Subscription.objects.get(id=subscription.id).active
+
+
+class TestCompanyListView:
+    def test_get(self, client, user, company, subscription, payment):
+        url = reverse('billing:company_list')
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert bool(response['companies'][0]['subscription']['last_time_billed'])
+        assert response['companies'][0]['sms_balance'] == 100

@@ -9,8 +9,9 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from r3sourcer.apps.billing.models import Subscription, Payment
-from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer
+from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer
 from r3sourcer.apps.billing import STRIPE_INTERVALS
+from r3sourcer.apps.core.models.core import Company
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -39,8 +40,13 @@ class SubscriptionCreateView(APIView):
             customer=company.stripe_customer,
             items=[{"plan": plan.id}]
         )
-        current_period_start = datetime.fromtimestamp(subscription.current_period_start)
-        current_period_end = datetime.fromtimestamp(subscription.current_period_end)
+        current_period_start = None
+        current_period_end = None
+
+        if isinstance(subscription.current_period_start, float):
+            current_period_start = datetime.fromtimestamp(subscription.current_period_start)
+            current_period_end = datetime.fromtimestamp(subscription.current_period_end)
+
         sub = Subscription.objects.create(company=company,
                                           name=plan_name,
                                           type=plan_type,
@@ -72,9 +78,17 @@ class StripeCustomerCreateView(APIView):
     def post(self, *args, **kwargs):
         company = self.request.user.company
         description = 'Customer for {} company'.format(company.name)
+        email = ''
+
+        if company.billing_email:
+            email = company.billing_email
+        elif company.manager:
+            email = company.manager.contact.email
+
         customer = stripe.Customer.create(
             description=description,
             source=self.request.data.get('source'),
+            email=email
         )
         company.stripe_customer = customer.id
         company.save()
@@ -120,3 +134,13 @@ class SubscriptionCancelView(APIView):
         subscription.active = False
         subscription.save()
         return Response()
+
+
+class CompanyListView(APIView):
+    def get(self, *args, **kwargs):
+        companies = Company.objects.filter(subscriptions__isnull=False)
+        serializer = CompanySerializer(companies, many=True)
+        data = {
+            "companies": serializer.data,
+        }
+        return Response(data)

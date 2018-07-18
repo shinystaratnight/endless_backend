@@ -47,6 +47,17 @@ class Subscription(models.Model):
         self.current_period_start = datetime.datetime.fromtimestamp(subscription.current_period_start)
         self.current_period_end = datetime.datetime.fromtimestamp(subscription.current_period_end)
 
+    def deactivate(self):
+        sub = stripe.Subscription.retrieve(self.subscription_id)
+        sub.delete(at_period_end=True)
+
+    @property
+    def last_time_billed(self):
+        last_payment = self.company.payment_set.order_by('-created').first()
+
+        if last_payment:
+            return last_payment.created
+
     def save(self, *args, **kwargs):
         super(Subscription, self).save(*args, **kwargs)
 
@@ -58,10 +69,6 @@ class Subscription(models.Model):
                 subscription.deactivate()
                 subscription.active = False
                 subscription.save()
-
-    def deactivate(self):
-        sub = stripe.Subscription.retrieve(self.subscription_id)
-        sub.delete(at_period_end=True)
 
 
 class SMSBalance(models.Model):
@@ -92,9 +99,15 @@ class Payment(models.Model):
         ('extra_workers', 'Extra Workers'),
         ('subscription', 'Subscription')
     )
+    PAYMENT_STATUSES = Choices(
+        ('paid', 'Paid'),
+        ('not_paid', 'Not paid')
+    )
     company = models.ForeignKey(Company)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = models.DateTimeField(auto_now_add=True)
     amount = models.IntegerField()
-    status = models.CharField(max_length=255)
+    status = models.CharField(max_length=255, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES.not_paid)
     stripe_id = models.CharField(max_length=255)
+    invoice_url = models.CharField(max_length=255, blank=True, null=True)
+

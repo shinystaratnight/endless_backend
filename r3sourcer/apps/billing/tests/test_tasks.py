@@ -99,15 +99,13 @@ class TestChargeForExtraWorkers:
 
 
 class TestChargeForSMS:
-    @mock.patch.object(stripe.Charge, 'create')
+    @mock.patch.object(stripe.InvoiceItem, 'create')
+    @mock.patch.object(stripe.Invoice, 'create')
     @mock.patch.object(Subscription, 'deactivate')
-    def test_charge(self, mocked_deactivate, mocked_charge, client, user, company, relationship):
-        mocked_value = mock.Mock()
-        mocked_value.status = 'status'
-        mocked_value.id = 'stripe_id'
-        mocked_charge.return_value = mocked_value
+    def test_charge(self, mocked_invoice_item, mocked_invoice, mocked_subscription, client, user, company, relationship):
+        mocked_value = {'id': 'stripe_id'}
+        mocked_invoice.return_value = mocked_value
         initial_payment_count = Payment.objects.count()
-        sms_balance = SMSBalance.objects.create(company=company, balance=100)
-        charge_for_sms(company.id, 100, sms_balance.id)
+        charge_for_sms(company.id, 100, 1)
 
         assert initial_payment_count + 1 == Payment.objects.count()

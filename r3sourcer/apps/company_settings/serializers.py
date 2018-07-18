@@ -14,7 +14,7 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = CompanySettings
-        fields = ('id', 'logo', 'color_scheme', 'font', 'forwarding_number')
+        fields = ('id', 'logo', 'color_scheme', 'font', 'forwarding_number', 'billing_email')
         read_only_fields = ('company',)
 
 
