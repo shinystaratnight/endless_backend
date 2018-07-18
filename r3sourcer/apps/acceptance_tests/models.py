@@ -290,11 +290,15 @@ class WorkflowObjectAnswer(UUIDModel):
         AcceptanceTestAnswer,
         on_delete=models.CASCADE,
         related_name='workflow_object_answers',
-        verbose_name=_("Acceptance Test Answer")
+        verbose_name=_("Acceptance Test Answer"),
+        null=True,
+        blank=True
     )
 
     answer_text = models.TextField(
-        verbose_name=_("Text Answer")
+        verbose_name=_("Text Answer"),
+        null=True,
+        blank=True
     )
 
     score = models.PositiveSmallIntegerField(
@@ -313,3 +317,9 @@ class WorkflowObjectAnswer(UUIDModel):
 
     def __str__(self):
         return '{}, {}'.format(str(self.acceptance_test_question), str(self.workflow_object))
+
+    def save(self, *args, **kwargs):
+        if self.answer and self.answer.score != self.score:
+            self.score = self.answer.score
+
+        super().save(*args, **kwargs)

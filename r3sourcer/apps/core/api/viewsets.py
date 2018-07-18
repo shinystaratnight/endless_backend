@@ -97,7 +97,9 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
     def create_from_data(self, data, *args, **kwargs):
         is_response = kwargs.pop('is_response', True)
 
-        serializer = self.get_serializer(data=data)
+        many = isinstance(data, list)
+
+        serializer = self.get_serializer(data=data, many=many)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
@@ -128,6 +130,10 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     def _prepare_internal_data(self, data, is_create=False):
         res = {}
+
+        if isinstance(data, list):
+            return [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in data]
+
         for key, val in data.items():
             is_empty = val == '' or val is fields.empty
             if key in self._exclude_data or (self.exclude_empty and is_empty and (key != 'id' or len(data) > 1)):
@@ -138,13 +144,18 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
                 res[key] = self._prepare_internal_data(val)
             elif isinstance(val, list):
-                res[key] = [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in val]
+                res[key] = self._prepare_internal_data(val)
+
+                # res[key] = [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in val]
             else:
                 res[key] = val
 
         return res['id'] if len(res) == 1 and 'id' in res else res
 
     def clean_request_data(self, data):
+        if isinstance(data, list):
+            return [self.clean_request_data(item) for item in data]
+
         return {
             k: v for k, v in data.items() if v is not None
         }
