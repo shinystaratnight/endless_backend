@@ -217,13 +217,22 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
 
     def save(self, *args, **kwargs):
         if not self.hourly_rate:
-            self.hourly_rate = self.skill.default_rate
+            self.hourly_rate = self.skill.price_list_default_rate
+
+        if self.skill.price_list_lower_rate_limit and self.hourly_rate < self.skill.price_list_lower_rate_limit:
+            raise ValidationError(_('Hourly rate cannot be lower than {limit}').format(
+                limit=self.skill.price_list_lower_rate_limit
+            ))
+
+        if self.skill.price_list_upper_rate_limit and self.hourly_rate > self.skill.price_list_upper_rate_limit:
+            raise ValidationError(_('Hourly rate cannot be upper than {limit}').format(
+                limit=self.skill.price_list_upper_rate_limit
+            ))
 
         super(PriceListRate, self).save(*args, **kwargs)
 
         if self.default_rate:
-            default_rates = self.skill.price_list_rates.filter(default_rate=True) \
-                                                       .exclude(pk=self.pk)
+            default_rates = self.skill.price_list_rates.filter(default_rate=True).exclude(pk=self.pk)
             if default_rates:
                 default_rates.update(default_rate=False)
 

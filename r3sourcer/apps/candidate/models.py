@@ -499,6 +499,10 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
             workflow_object.active = True
             workflow_object.save(update_fields=['active'])
 
+    def before_state_creation(self, workflow_object):
+        if workflow_object.state.number == 11:  # Phone verify
+            workflow_object.active = False
+
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 11:  # Phone verify
             from r3sourcer.apps.candidate.tasks import send_verify_sms

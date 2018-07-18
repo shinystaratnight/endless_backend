@@ -98,6 +98,14 @@ class WorkflowNodeEndpoint(ApiEndpoint):
     filter_class = filters.WorkflowNodeFilter
 
 
+class CompanyWorkflowNodeEndpoint(ApiEndpoint):
+
+    model = models.CompanyWorkflowNode
+    base_viewset = viewsets.CompanyWorkflowNodeViewset
+    filter_class = filters.CompanyWorkflowNodeFilter
+    serializer = serializers.CompanyWorkflowNodeSerializer
+
+
 class WorkflowObjectEndpoint(ApiEndpoint):
 
     model = models.WorkflowObject
@@ -331,8 +339,9 @@ router.register(endpoint=OrderEndpoint())
 router.register(endpoint=RegionEndpoint())
 router.register(endpoint=TagEndpoint())
 router.register(endpoint=SiteEndpoint())
-router.register(endpoint=WorkflowNodeEndpoint())
 router.register(endpoint=WorkflowEndpoint())
+router.register(endpoint=WorkflowNodeEndpoint())
+router.register(endpoint=CompanyWorkflowNodeEndpoint())
 router.register(endpoint=WorkflowObjectEndpoint())
 router.register(endpoint=FormBuilderEndpoint())
 router.register(models.FormField, serializer=serializers.FormFieldSerializer)

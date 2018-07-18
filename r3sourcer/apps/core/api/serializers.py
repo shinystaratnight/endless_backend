@@ -676,7 +676,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         return contact
 
     def validate(self, data):
-        if not data['email'] and not data['phone_mobile']:
+        if not data.get('email') and not data.get('phone_mobile'):
             raise serializers.ValidationError(
                 _('Please specify E-mail and/or Mobile Phone'))
         return data
@@ -835,7 +835,17 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         return super().validate(data)
 
     def create(self, validated_data):
-        company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        try:
+            company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        except core_models.Company.DoesNotExist:
+            raise exceptions.ValidationError({
+                'company': _('Company not found'),
+            })
+
+        if not validated_data.get('contact'):
+            raise exceptions.ValidationError({
+                'contact': _('Contact is required'),
+            })
 
         instance = super(CompanyContactSerializer, self).create(validated_data)
 
@@ -1019,12 +1029,25 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
         )
 
     def validate(self, data):
-        core_models.WorkflowNode.validate_node(
-            data["number"], data["workflow"], data["company"], data["active"],
-            data.get("rules"), self.instance is None,
-            self.instance and self.instance.id
-        )
+        if 'number' in data:
+            company = data.get('company')
+            core_models.WorkflowNode.validate_node(
+                data["number"], data.get("workflow"), company, data.get("active"), data.get("rules"),
+                self.instance is None, self.instance and self.instance.id
+            )
         return data
+
+
+class CompanyWorkflowNodeSerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.CompanyWorkflowNode
+        fields = (
+            '__all__', {
+                'workflow_node': (
+                    'id', '__str__', 'number', 'name_before_activation', 'name_after_activation', 'parent',
+                )
+            }
+        )
 
 
 class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
@@ -1053,11 +1076,11 @@ class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSe
 
 class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('state', 'requirements', 'wf_object_id')
+    method_fields = ('state', 'requirements', 'wf_object_id', 'acceptance_tests', 'substates')
 
     class Meta:
         model = core_models.WorkflowNode
-        fields = ('id', 'name_before_activation', 'name_after_activation', 'endpoint')
+        fields = ('id', 'name_before_activation', 'name_after_activation', 'endpoint',)
 
     def __init__(self, *args, **kwargs):
         self.target = kwargs.pop('target', None)
@@ -1106,6 +1129,20 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         ).first()
 
         return workflow_object and workflow_object.id
+
+    def get_acceptance_tests(self, obj):
+        from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
+        from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestWorkflowNodeSerializer
+
+        tests = AcceptanceTestWorkflowNode.objects.filter(company_workflow_node__workflow_node=obj)
+
+        return tests and AcceptanceTestWorkflowNodeSerializer(tests, many=True).data
+
+    def get_substates(self, obj):
+        if obj.children.exists():
+            return WorkflowTimelineSerializer(obj.children.all(), target=self.target, many=True).data
+
+        return []
 
 
 class NavigationSerializer(ApiBaseModelSerializer):

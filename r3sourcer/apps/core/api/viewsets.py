@@ -461,8 +461,7 @@ class NavigationViewset(BaseApiViewset):
         except Exception:
             access_level = self.request.user.access_level
 
-        return models.ExtranetNavigation.objects.filter(parent=None) \
-                                                .filter(access_level=access_level)
+        return models.ExtranetNavigation.objects.filter(parent=None, access_level=access_level)
 
 
 class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
@@ -618,13 +617,32 @@ class WorkflowNodeViewset(BaseApiViewset):
         if workflow is None:
             raise exceptions.NotFound(_('Workflow not found for model'))
 
-        nodes = models.WorkflowNode.get_company_nodes(company, workflow)
+        nodes = models.WorkflowNode.get_company_nodes(company, workflow).filter(parent__isnull=True)
 
         serializer = serializers.WorkflowTimelineSerializer(
             nodes, target=target_object, many=True
         )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CompanyWorkflowNodeViewset(BaseApiViewset):
+
+    def perform_create(self, serializer):
+        company_node = models.CompanyWorkflowNode.objects.filter(
+            company=serializer.validated_data['company'],
+            workflow_node=serializer.validated_data['workflow_node']
+        ).first()
+
+        if company_node is not None:
+            company_node.active = True
+            company_node.save()
+        else:
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.active = False
+        instance.save()
 
 
 class UserDashboardModuleViewSet(BaseApiViewset):

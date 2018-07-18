@@ -8,6 +8,7 @@ from django.core.management.base import BaseCommand, CommandError
 from django.utils import timezone
 
 from r3sourcer.apps.core.utils.user import get_default_company
+from r3sourcer.apps.core.models.workflow import CompanyWorkflowNode
 
 
 class Command(BaseCommand):
@@ -20,13 +21,14 @@ class Command(BaseCommand):
     def _load_fixtures(self, file_name, company_id):
         fixture_file = tempfile.NamedTemporaryFile(suffix='.json')
 
+        pk_list = []
         try:
             with open(file_name, "r") as json_file:
                 data = json.load(json_file)
 
             for el in data:
                 if "workflownode" in el["model"]:
-                    el["fields"]["company"] = company_id
+                    pk_list.append(el["pk"])
                 elif "workflow" in el["model"]:
                     model_parts = el["fields"]["model"].split('.')
                     ct_model = ContentType.objects.get_by_natural_key(
@@ -46,6 +48,9 @@ class Command(BaseCommand):
         call_command('loaddata', fixture_file.name)
 
         fixture_file.close()
+
+        for pk in pk_list:
+            CompanyWorkflowNode.objects.get_or_create(company_id=company_id, workflow_node_id=pk)
 
     def handle(self, *args, **options):
         company_id = options['company_id']

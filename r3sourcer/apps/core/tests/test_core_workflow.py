@@ -362,7 +362,7 @@ class TestWorkflowProcess:
     @mock.patch.object(WorkflowObject, 'model_object', new_callable=mock.PropertyMock)
     @mock.patch.object(WorkflowObject, 'validate_object', return_value=None)
     @mock.patch.object(WorkflowProcess, 'content_type', new_callable=mock.PropertyMock)
-    @mock.patch('r3sourcer.apps.core.workflow.get_default_company')
+    @mock.patch('r3sourcer.apps.core.workflow.get_site_master_company')
     def test_create_state_no_closest_company(self, mock_default_company,
                                              mock_content_type, mock_validate,
                                              mock_model_obj, workflow_ct,
@@ -386,7 +386,7 @@ class TestWorkflowProcess:
     @mock.patch.object(WorkflowObject, 'model_object', new_callable=mock.PropertyMock)
     @mock.patch.object(WorkflowObject, 'validate_object', return_value=None)
     @mock.patch.object(WorkflowProcess, 'content_type', new_callable=mock.PropertyMock)
-    @mock.patch('r3sourcer.apps.core.workflow.get_default_company')
+    @mock.patch('r3sourcer.apps.core.workflow.get_site_master_company')
     def test_create_state_no_state(self, mock_default_company,
                                    mock_content_type, mock_validate,
                                    mock_model_obj, workflow_ct,

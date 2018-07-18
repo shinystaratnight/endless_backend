@@ -1,4 +1,5 @@
 import pytest
+import mock
 from django.contrib.sites.models import Site
 
 from django.test.client import RequestFactory
@@ -127,7 +128,9 @@ class TestSiteMasterCompanyFilterBackend:
         queryset = Site.objects.all()
         assert queryset == self.backend_filter.filter_list_queryset(get_request, queryset, None)
 
-    def test_filter_list_queryset_empty(self, user, get_request, staff_relationship):
+    @mock.patch('r3sourcer.apps.core.api.permissions.get_site_master_company')
+    def test_filter_list_queryset_empty(self, mock_site_company, user, get_request, staff_relationship, company_other):
+        mock_site_company.return_value = company_other
         get_request.user = user
         queryset = CompanyContactRelationship.objects.all()
         filtered = self.backend_filter.filter_list_queryset(get_request, queryset, None)
