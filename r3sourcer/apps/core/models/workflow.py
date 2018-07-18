@@ -301,7 +301,7 @@ class WorkflowObject(UUIDModel):
         except Exception as e:
             raise ValidationError(e)
 
-        if state.company_workflow_nodes.filter(company=model_object.get_closest_company()).exists():
+        if not state.company_workflow_nodes.filter(company=model_object.get_closest_company()).exists():
             raise ValidationError(
                 _('This state is not available for current object.')
             )
