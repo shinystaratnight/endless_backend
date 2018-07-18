@@ -5,7 +5,6 @@ from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.models.core import UUIDModel, Company
-from r3sourcer.apps.core.utils.companies import get_site_master_company
 
 
 __all__ = [
@@ -342,6 +341,11 @@ class CompanyWorkflowNode(UUIDModel):
     active = models.BooleanField(
         default=True,
         verbose_name=_('Active')
+    )
+
+    order = models.PositiveSmallIntegerField(
+        default=0,
+        verbose_name=_('Order')
     )
 
     class Meta:

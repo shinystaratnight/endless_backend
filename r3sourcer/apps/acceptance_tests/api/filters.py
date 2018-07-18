@@ -39,7 +39,7 @@ class AcceptanceTestFilter(FilterSet):
                 acceptance_tests_tags__isnull=True,
                 acceptance_tests_industries__isnull=True,
             )
-        return queryset.filter(qry)
+        return queryset.filter(qry).distinct()
 
 
 class AcceptanceTestWorkflowNodeFilter(FilterSet):

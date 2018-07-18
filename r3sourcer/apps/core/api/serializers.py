@@ -1076,11 +1076,11 @@ class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSe
 
 class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('state', 'requirements', 'wf_object_id', 'acceptance_tests')
+    method_fields = ('state', 'requirements', 'wf_object_id', 'acceptance_tests', 'substates')
 
     class Meta:
         model = core_models.WorkflowNode
-        fields = ('id', 'name_before_activation', 'name_after_activation', 'endpoint')
+        fields = ('id', 'name_before_activation', 'name_after_activation', 'endpoint',)
 
     def __init__(self, *args, **kwargs):
         self.target = kwargs.pop('target', None)
@@ -1137,6 +1137,12 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         tests = AcceptanceTestWorkflowNode.objects.filter(company_workflow_node__workflow_node=obj)
 
         return tests and AcceptanceTestWorkflowNodeSerializer(tests, many=True).data
+
+    def get_substates(self, obj):
+        if obj.children.exists():
+            return WorkflowTimelineSerializer(obj.children.all(), target=self.target, many=True).data
+
+        return []
 
 
 class NavigationSerializer(ApiBaseModelSerializer):
