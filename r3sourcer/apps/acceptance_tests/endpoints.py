@@ -16,7 +16,7 @@ class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
 
     model = models.AcceptanceTestWorkflowNode
     filter_class = filters.AcceptanceTestWorkflowNodeFilter
-    serializer = serializers.AcceptanceTestWorkflowNode
+    serializer = serializers.AcceptanceTestWorkflowNodeSerializer
 
 
 router.register(endpoint=AcceptanceTestEndpoint())
