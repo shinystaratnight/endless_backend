@@ -19,6 +19,13 @@ class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
     serializer = serializers.AcceptanceTestWorkflowNodeSerializer
 
 
+class WorkflowObjectAnswerEndpoint(ApiEndpoint):
+
+    model = models.WorkflowObjectAnswer
+    # base_viewset =
+    serializer = serializers.WorkflowObjectAnswerSerializer
+
+
 router.register(endpoint=AcceptanceTestEndpoint())
 router.register(models.AcceptanceTestQuestion)
 router.register(models.AcceptanceTestAnswer)
@@ -26,4 +33,4 @@ router.register(models.AcceptanceTestSkill)
 router.register(models.AcceptanceTestIndustry)
 router.register(models.AcceptanceTestTag)
 router.register(endpoint=AcceptanceTestWorkflowNodeEndpoint())
-router.register(models.WorkflowObjectAnswer)
+router.register(endpoint=WorkflowObjectAnswerEndpoint())

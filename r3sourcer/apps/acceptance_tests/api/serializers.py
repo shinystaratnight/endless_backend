@@ -27,3 +27,10 @@ class AcceptanceTestWorkflowNodeSerializer(ApiBaseModelSerializer):
     class Meta:
         model = models.AcceptanceTestWorkflowNode
         fields = ('id', 'acceptance_test', 'company_workflow_node', 'score')
+
+
+class WorkflowObjectAnswerSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = models.WorkflowObjectAnswer
+        fields = ('id', 'acceptance_test_question', 'workflow_object', 'answer', 'answer_text', 'score', 'exclude')
