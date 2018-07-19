@@ -1134,7 +1134,25 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
         from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestWorkflowNodeSerializer
 
-        tests = AcceptanceTestWorkflowNode.objects.filter(company_workflow_node__workflow_node=obj)
+        qry = models.Q(
+            acceptance_test__acceptance_tests_skills__isnull=True,
+            acceptance_test__acceptance_tests_tags__isnull=True,
+            acceptance_test__acceptance_tests_industries__isnull=True,
+        )
+
+        closest_company = self.target.get_closest_company()
+        if closest_company.industry is not None:
+            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry=closest_company.industry)
+
+        if hasattr(self.target, 'candidate_skills'):
+            skill_ids = self.target.candidate_skills.values_list('skill', flat=True)
+            qry |= models.Q(acceptance_test__acceptance_tests_skills__skill_id__in=skill_ids)
+
+        if hasattr(self.target, 'tag_rels'):
+            tag_ids = self.target.tag_rels.values_list('tag', flat=True)
+            qry |= models.Q(acceptance_test__acceptance_tests_tags__tag_id__in=tag_ids)
+
+        tests = AcceptanceTestWorkflowNode.objects.filter(qry, company_workflow_node__workflow_node=obj)
         wf_object_id = self.get_wf_object_id(obj)
 
         return tests and AcceptanceTestWorkflowNodeSerializer(tests, many=True, workflow_object_id=wf_object_id).data
