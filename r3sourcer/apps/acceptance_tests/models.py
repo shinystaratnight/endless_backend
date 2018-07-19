@@ -159,11 +159,6 @@ class AcceptanceTestWorkflowNode(UUIDModel):
         verbose_name=_("Workflow Node")
     )
 
-    score = models.PositiveSmallIntegerField(
-        default=0,
-        verbose_name=_("Score")
-    )
-
     class Meta:
         verbose_name = _("Acceptance Test Workflow Node")
         verbose_name_plural = _("Acceptance Tests and Workflow Nodes")
@@ -173,6 +168,14 @@ class AcceptanceTestWorkflowNode(UUIDModel):
 
     def get_all_questions(self):
         return self.acceptance_test.acceptance_test_questions.all()
+
+    def get_score(self, workflow_object_id):
+        if workflow_object_id is None:
+            return 0
+
+        return self.get_all_questions().filter(
+            workflow_object_answers__workflow_object_id=workflow_object_id
+        ).aggregate(score_avg=models.Avg('workflow_object_answers__score'))['score_avg']
 
 
 class AcceptanceTestQuestion(UUIDModel):

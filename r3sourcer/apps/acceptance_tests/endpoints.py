@@ -22,7 +22,6 @@ class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
 class WorkflowObjectAnswerEndpoint(ApiEndpoint):
 
     model = models.WorkflowObjectAnswer
-    # base_viewset =
     serializer = serializers.WorkflowObjectAnswerSerializer
 
 

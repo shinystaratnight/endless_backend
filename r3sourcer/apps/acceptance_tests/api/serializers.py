@@ -24,9 +24,19 @@ class AcceptanceTestSerializer(ApiBaseModelSerializer):
 
 class AcceptanceTestWorkflowNodeSerializer(ApiBaseModelSerializer):
 
+    method_fields = ('score', )
+
     class Meta:
         model = models.AcceptanceTestWorkflowNode
-        fields = ('id', 'acceptance_test', 'company_workflow_node', 'score')
+        fields = ('id', 'acceptance_test', 'company_workflow_node')
+
+    def __init__(self, *args, **kwargs):
+        self.workflow_object_id = kwargs.pop('workflow_object_id', None)
+
+        super().__init__(*args, **kwargs)
+
+    def get_score(self, obj):
+        return obj.get_score(self.workflow_object_id)
 
 
 class WorkflowObjectAnswerSerializer(ApiBaseModelSerializer):

@@ -1,10 +1,8 @@
 import datetime
 import pytest
 
-from r3sourcer.apps.acceptance_tests.models import (
-    AcceptanceTest, AcceptanceTestAnswer, AcceptanceTestQuestion,
-    AcceptanceTestSkill
-)
+from r3sourcer.apps.acceptance_tests import models
+from r3sourcer.apps.core.models import WorkflowNode
 from r3sourcer.apps.hr.models import Skill
 
 
@@ -20,7 +18,7 @@ def skill(db):
 
 @pytest.fixture
 def acceptance_test(db):
-    return AcceptanceTest.objects.create(
+    return models.AcceptanceTest.objects.create(
         test_name='test',
         valid_from=datetime.date(2017, 1, 1),
         valid_until=datetime.date(2018, 1, 1),
@@ -30,7 +28,7 @@ def acceptance_test(db):
 
 @pytest.fixture
 def question(db, acceptance_test):
-    return AcceptanceTestQuestion.objects.create(
+    return models.AcceptanceTestQuestion.objects.create(
         acceptance_test=acceptance_test,
         question='question',
         order=1
@@ -39,7 +37,7 @@ def question(db, acceptance_test):
 
 @pytest.fixture
 def answer(db, question):
-    return AcceptanceTestAnswer.objects.create(
+    return models.AcceptanceTestAnswer.objects.create(
         acceptance_test_question=question,
         answer='answer',
         order=0,
@@ -49,7 +47,7 @@ def answer(db, question):
 
 @pytest.fixture
 def answer_wrong(db, question):
-    return AcceptanceTestAnswer.objects.create(
+    return models.AcceptanceTestAnswer.objects.create(
         acceptance_test_question=question,
         answer='answer wrong',
         order=0,
@@ -59,7 +57,7 @@ def answer_wrong(db, question):
 
 @pytest.fixture
 def acceptance_test_skill(db, acceptance_test, skill):
-    return AcceptanceTestSkill.objects.create(
+    return models.AcceptanceTestSkill.objects.create(
         acceptance_test=acceptance_test,
         skill=skill
     )

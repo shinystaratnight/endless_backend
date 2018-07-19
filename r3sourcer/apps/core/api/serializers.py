@@ -1135,8 +1135,9 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestWorkflowNodeSerializer
 
         tests = AcceptanceTestWorkflowNode.objects.filter(company_workflow_node__workflow_node=obj)
+        wf_object_id = self.get_wf_object_id(obj)
 
-        return tests and AcceptanceTestWorkflowNodeSerializer(tests, many=True).data
+        return tests and AcceptanceTestWorkflowNodeSerializer(tests, many=True, workflow_object_id=wf_object_id).data
 
     def get_substates(self, obj):
         if obj.children.exists():
