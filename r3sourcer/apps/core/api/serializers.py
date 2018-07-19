@@ -1076,7 +1076,7 @@ class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSe
 
 class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('state', 'requirements', 'wf_object_id', 'acceptance_tests', 'substates')
+    method_fields = ('state', 'requirements', 'wf_object_id', 'acceptance_tests', 'substates', 'total_score')
 
     class Meta:
         model = core_models.WorkflowNode
@@ -1120,13 +1120,16 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
         return None
 
-    def get_wf_object_id(self, obj):
+    def _get_wf_object(self, obj):
         if not obj:
             return None
 
-        workflow_object = core_models.WorkflowObject.objects.filter(
+        return core_models.WorkflowObject.objects.filter(
             state=obj, object_id=self.target.id
         ).first()
+
+    def get_wf_object_id(self, obj):
+        workflow_object = self._get_wf_object(obj)
 
         return workflow_object and workflow_object.id
 
@@ -1162,6 +1165,13 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
             return WorkflowTimelineSerializer(obj.children.all(), target=self.target, many=True).data
 
         return []
+
+    def get_total_score(self, obj):
+        workflow_object = self._get_wf_object(obj)
+        if workflow_object and workflow_object.score > 0:
+            return workflow_object.score
+
+        return sum([a_test.score for a_test in self.get_acceptance_tests(obj)])
 
 
 class NavigationSerializer(ApiBaseModelSerializer):
