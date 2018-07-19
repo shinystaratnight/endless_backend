@@ -1171,7 +1171,8 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         if workflow_object and workflow_object.score > 0:
             return workflow_object.score
 
-        return sum([a_test.score for a_test in self.get_acceptance_tests(obj)])
+        a_tests = [a_test.get('score', 0) for a_test in self.get_acceptance_tests(obj)]
+        return sum(a_tests) / len(a_tests) if len(a_tests) != 0 else 0
 
 
 class NavigationSerializer(ApiBaseModelSerializer):
