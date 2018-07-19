@@ -11,6 +11,8 @@ class AcceptanceTestEndpoint(ApiEndpoint):
     filter_class = filters.AcceptanceTestFilter
     serializer = serializers.AcceptanceTestSerializer
 
+    search_fields = ('test_name', )
+
 
 class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
 
