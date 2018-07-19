@@ -18,6 +18,7 @@ class AcceptanceTestSerializer(ApiBaseModelSerializer):
                 'acceptance_tests_skills': ('id', 'skill'),
                 'acceptance_tests_tags': ('id', 'tag'),
                 'acceptance_tests_industries': ('id', 'industry'),
+                'acceptance_tests_workflow_nodes': ('id', 'company_workflow_node'),
             }
         )
 

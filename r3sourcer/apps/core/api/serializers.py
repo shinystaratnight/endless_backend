@@ -1167,6 +1167,16 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         return []
 
     def get_total_score(self, obj):
+        children_cnt = obj.children.count()
+
+        if children_cnt > 0:
+            score_sum = 0
+            for substate in obj.children.all():
+                score_sum += self.get_total_score(substate)
+
+            if score_sum > 0 and obj.children.count() > 0:
+                return score_sum / obj.children.count()
+
         workflow_object = self._get_wf_object(obj)
         if workflow_object and workflow_object.score > 0:
             return workflow_object.score

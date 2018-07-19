@@ -105,6 +105,8 @@ class CompanyWorkflowNodeEndpoint(ApiEndpoint):
     filter_class = filters.CompanyWorkflowNodeFilter
     serializer = serializers.CompanyWorkflowNodeSerializer
 
+    search_fields = ('workflow_node__name_before_activation', )
+
 
 class WorkflowObjectEndpoint(ApiEndpoint):
 
