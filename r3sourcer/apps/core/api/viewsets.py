@@ -647,6 +647,7 @@ class CompanyWorkflowNodeViewset(BaseApiViewset):
 
         if company_node is not None:
             company_node.active = True
+            company_node.order = serializer.data.get('order')
             company_node.save()
         else:
             serializer.save()
