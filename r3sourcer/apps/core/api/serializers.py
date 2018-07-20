@@ -1167,22 +1167,28 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         return []
 
     def get_total_score(self, obj):
-        children_cnt = obj.children.count()
+        children_cnt = 0
+        sub_score = 0
 
-        if children_cnt > 0:
+        if obj.children.count() > 0:
             score_sum = 0
             for substate in obj.children.all():
-                score_sum += self.get_total_score(substate)
+                child_score = self.get_total_score(substate)
+                if child_score > 0:
+                    score_sum += child_score
+                    children_cnt += 1
 
-            if score_sum > 0 and obj.children.count() > 0:
-                return score_sum / obj.children.count()
+            if score_sum > 0 and children_cnt > 0:
+                sub_score = score_sum / children_cnt
 
         workflow_object = self._get_wf_object(obj)
         if workflow_object and workflow_object.score > 0:
-            return workflow_object.score
+            return (workflow_object.score + sub_score) / 2 if sub_score > 0 else workflow_object.score
 
         a_tests = [a_test.get('score', 0) for a_test in self.get_acceptance_tests(obj)]
-        return sum(a_tests) / len(a_tests) if len(a_tests) != 0 else 0
+        if sub_score > 0:
+            a_tests.append(sub_score)
+        return sum(a_tests) / len(a_tests) if len(a_tests) > 0 else 0
 
 
 class NavigationSerializer(ApiBaseModelSerializer):
