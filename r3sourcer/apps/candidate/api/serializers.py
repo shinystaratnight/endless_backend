@@ -1,11 +1,10 @@
 from django.db.models import Avg
-from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, serializers
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
+from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_fields
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.skills import models as skill_models
 
@@ -220,3 +219,25 @@ class SubcontractorSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:
         fields = '__all__'
         model = candidate_models.Subcontractor
+
+
+class CandidatePoolSerializer(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = ('average_score', 'owned_by')
+
+    class Meta:
+        model = candidate_models.CandidateContactAnonymous
+        fields = ('profile_price', 'id')
+
+    def get_average_score(self, obj):
+        return obj.candidate_scores.get_average_score()
+
+    def get_owned_by(self, obj):
+        return core_fields.ApiBaseRelatedField.to_read_only_data(obj.candidate_rels.get(owner=True).master_company)
+
+
+class CandidateRelSerializer(core_serializers.ApiBaseModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = candidate_models.CandidateRel

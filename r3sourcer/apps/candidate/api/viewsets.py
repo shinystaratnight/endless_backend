@@ -8,7 +8,7 @@ from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models import Company, InvoiceRule
 
 from . import serializers
-from ..models import Subcontractor
+from ..models import Subcontractor, CandidateContactAnonymous, CandidateRel
 
 
 class CandidateContactViewset(BaseApiViewset):
@@ -47,6 +47,35 @@ class CandidateContactViewset(BaseApiViewset):
             'phone_number': phone_numbers,
             'message': _('Phones numbers was selected'),
         })
+
+    @action(methods=['get'], detail=False)
+    def pool(self, request, *args, **kwargs):
+        if not request.user.is_authenticated():
+            queryset = CandidateContactAnonymous.objects.none()
+        else:
+            company = request.user.contact.get_closest_company()
+            queryset = CandidateContactAnonymous.objects.exclude(
+                candidate_rels__master_company=company
+            ).distinct()
+        return self._paginate(request, serializers.CandidatePoolSerializer, self.filter_queryset(queryset))
+
+    @action(methods=['post'], detail=True)
+    def buy(self, request, pk, *args, **kwargs):
+        candidate_contact = self.get_object()
+        company = request.data.get('company')
+
+        if company is None:
+            raise exceptions.ValidationError({'company': _('Company cannot be null')})
+
+        existing_rel = CandidateRel.objects.filter(
+            master_company_id=company, candidate_contact=candidate_contact
+        ).first()
+        if existing_rel:
+            raise exceptions.ValidationError({'company': _('Company already has this Candidate Contact')})
+
+        rel = CandidateRel.objects.create(master_company_id=company, candidate_contact=candidate_contact, owner=False)
+
+        return Response(serializers.CandidateRelSerializer(rel).data)
 
 
 class SubcontractorViewset(BaseApiViewset):
