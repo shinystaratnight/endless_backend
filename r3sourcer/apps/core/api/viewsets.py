@@ -120,7 +120,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
 
-        return Response(serializer.data)
+        return Response(self.get_serializer(self.get_object()).data)
 
     def process_response_data(self, data, queryset=None):
         return data
