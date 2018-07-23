@@ -11,11 +11,19 @@ from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models import Company, InvoiceRule
 
 from . import serializers
-from ..models import Subcontractor, CandidateContactAnonymous, CandidateRel
+from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
 from ..tasks import buy_candidate
 
 
 class CandidateContactViewset(BaseApiViewset):
+
+    def list(self, request, *args, **kwargs):
+        company = request.user.contact.get_closest_company()
+        queryset = CandidateContact.objects.filter(
+            candidate_rels__master_company=company,
+            candidate_rels__active=True
+        ).distinct()
+        return self._paginate(request, self.get_serializer_class(), self.filter_queryset(queryset))
 
     @action(methods=['post'], detail=False)
     def register(self, request, *args, **kwargs):
