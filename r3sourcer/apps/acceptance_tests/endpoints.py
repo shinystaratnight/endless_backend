@@ -11,6 +11,8 @@ class AcceptanceTestEndpoint(ApiEndpoint):
     filter_class = filters.AcceptanceTestFilter
     serializer = serializers.AcceptanceTestSerializer
 
+    search_fields = ('test_name', )
+
 
 class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
 
@@ -22,7 +24,6 @@ class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
 class WorkflowObjectAnswerEndpoint(ApiEndpoint):
 
     model = models.WorkflowObjectAnswer
-    # base_viewset =
     serializer = serializers.WorkflowObjectAnswerSerializer
 
 

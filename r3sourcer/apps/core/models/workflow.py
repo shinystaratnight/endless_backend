@@ -193,7 +193,7 @@ class WorkflowNode(UUIDModel):
         return queryset.filter(
             company_workflow_nodes__company=company, active=True, company_workflow_nodes__active=True,
             workflow=workflow
-        ).order_by('order', 'number').distinct()
+        ).order_by('company_workflow_nodes__order', 'number').distinct()
 
     @classmethod
     def get_model_all_states(cls, model):

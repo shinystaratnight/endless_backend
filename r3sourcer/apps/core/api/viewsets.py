@@ -120,7 +120,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
 
-        return Response(serializer.data)
+        return Response(self.get_serializer(self.get_object()).data)
 
     def process_response_data(self, data, queryset=None):
         return data
@@ -647,6 +647,7 @@ class CompanyWorkflowNodeViewset(BaseApiViewset):
 
         if company_node is not None:
             company_node.active = True
+            company_node.order = serializer.data.get('order')
             company_node.save()
         else:
             serializer.save()
