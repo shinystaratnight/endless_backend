@@ -90,7 +90,8 @@ class Payment(models.Model):
     PAYMENT_TYPES = Choices(
         ('sms', 'SMS'),
         ('extra_workers', 'Extra Workers'),
-        ('subscription', 'Subscription')
+        ('subscription', 'Subscription'),
+        ('candidate', 'Candidate Profile'),
     )
     company = models.ForeignKey(Company)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)

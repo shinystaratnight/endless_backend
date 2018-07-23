@@ -473,7 +473,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     def get_closest_company(self):
         try:
-            candidate_rel = self.candidate_rels.filter(owned=True).latest('created_at')
+            candidate_rel = self.candidate_rels.filter(owner=True, active=True).latest('created_at')
             return candidate_rel.master_company
         except CandidateRel.DoesNotExist:
             return get_site_master_company()
@@ -738,6 +738,11 @@ class CandidateRel(core_models.UUIDModel):
     owner = models.BooleanField(
         default=False,
         verbose_name=_("Is woner")
+    )
+
+    active = models.BooleanField(
+        default=True,
+        verbose_name=_("Active")
     )
 
     class Meta:

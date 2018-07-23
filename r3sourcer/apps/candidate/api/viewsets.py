@@ -1,14 +1,18 @@
 from django.utils.translation import ugettext_lazy as _
 
+import stripe
+
 from rest_framework import status, exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from r3sourcer.apps.billing.models import Payment
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models import Company, InvoiceRule
 
 from . import serializers
 from ..models import Subcontractor, CandidateContactAnonymous, CandidateRel
+from ..tasks import buy_candidate
 
 
 class CandidateContactViewset(BaseApiViewset):
@@ -64,18 +68,28 @@ class CandidateContactViewset(BaseApiViewset):
         candidate_contact = self.get_object()
         company = request.data.get('company')
 
-        if company is None:
-            raise exceptions.ValidationError({'company': _('Company cannot be null')})
+        try:
+            company = Company.objects.get(pk=company)
+        except Company.DoesNotExist:
+            raise exceptions.ValidationError({'company': _('Cannot find company')})
 
         existing_rel = CandidateRel.objects.filter(
-            master_company_id=company, candidate_contact=candidate_contact
+            master_company=company, candidate_contact=candidate_contact
         ).first()
         if existing_rel:
             raise exceptions.ValidationError({'company': _('Company already has this Candidate Contact')})
 
-        rel = CandidateRel.objects.create(master_company_id=company, candidate_contact=candidate_contact, owner=False)
+        if not company.stripe_customer:
+            raise exceptions.ValidationError({'company': _('Company has no billing information')})
 
-        return Response(serializers.CandidateRelSerializer(rel).data)
+        if candidate_contact.profile_price:
+            rel = CandidateRel.objects.create(
+                master_company=company, candidate_contact=candidate_contact, owner=False, active=False
+            )
+
+            buy_candidate.apply_async([rel.id], countdown=10)
+
+        return Response({'status': 'success', 'message': _('Please wait for payment to complete')})
 
 
 class SubcontractorViewset(BaseApiViewset):
