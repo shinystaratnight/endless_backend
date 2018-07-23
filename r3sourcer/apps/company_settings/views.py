@@ -1,3 +1,5 @@
+import stripe
+
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
@@ -15,6 +17,9 @@ from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
 from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
 from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
+
+
+stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
 
 class GlobalPermissionListView(ListAPIView):
@@ -245,6 +250,12 @@ class CompanySettingsView(APIView):
                                                                partial=True)
             serializer.is_valid(raise_exception=True)
             serializer.save()
+
+            if 'billing_email' in self.request.data['company_settings'].keys():
+                email = self.request.data['company_settings']['billing_email']
+                customer = stripe.Customer.retrieve(company.stripe_customer)
+                customer.email = email
+                customer.save()
 
         if 'invoice_rule' in self.request.data:
             serializer = serializers.InvoiceRuleSerializer(company.invoice_rules.first(),

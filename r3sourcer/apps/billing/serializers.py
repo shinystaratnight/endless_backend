@@ -14,7 +14,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
-        fields = ('type', 'created', 'amount', 'status')
+        fields = ('type', 'created', 'amount', 'status', 'invoice_url')
 
 
 class CompanySerializer(serializers.ModelSerializer):

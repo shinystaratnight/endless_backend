@@ -6,7 +6,7 @@ from celery import shared_task
 from django.conf import settings
 
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance
+from r3sourcer.apps.billing.models import Subscription, Payment
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
