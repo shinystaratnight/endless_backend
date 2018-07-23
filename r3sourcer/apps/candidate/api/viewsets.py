@@ -73,8 +73,17 @@ class CandidateContactViewset(BaseApiViewset):
 
     @action(methods=['post'], detail=True)
     def buy(self, request, pk, *args, **kwargs):
+        master_company = request.user.contact.get_closest_company()
         candidate_contact = self.get_object()
         company = request.data.get('company')
+
+        is_owner = CandidateRel.objects.filter(
+            master_company=master_company, candidate_contact=candidate_contact, owner=True
+        ).exists()
+        if not is_owner:
+            raise exceptions.ValidationError({
+                'company': _('{company} cannot sell this candidate.').format(company=master_company)
+            })
 
         try:
             company = Company.objects.get(pk=company)
