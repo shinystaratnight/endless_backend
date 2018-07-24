@@ -514,6 +514,8 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
             send_verify_sms.apply_async(args=(self.id, workflow_object.id), countdown=10)
 
+        self.candidate_scores.recalc_scores()
+
     def get_rate_for_skill(self, skill, **skill_kwargs):
         """
         :param skill: pepro.crm_hr.models.Skill
