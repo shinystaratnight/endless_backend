@@ -312,10 +312,41 @@ class WorkflowObject(UUIDModel):
                 model_object.get_required_message(state))
             )
 
-    def get_score(self):
-        score = self.workflow_object_answers.filter(
-            exclude=False
-        ).aggregate(score_num=models.Avg('score'))['score_num']
+    def get_score(self, related_obj, company):
+        from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
+
+        children = self.state.children.filter(company_workflow_nodes__company=company).distinct()
+        children_cnt = 0
+        sub_score = 0
+
+        if children.count() > 0:
+            score_sum = 0
+
+            for substate in children.all():
+                child_wf_object = WorkflowObject.objects.filter(state=substate, object_id=related_obj.id).first()
+
+                if not child_wf_object:
+                    children_cnt += 1
+                    continue
+
+                child_score = child_wf_object.get_score(related_obj, company)
+                if child_score > 0:
+                    score_sum += child_score
+                    children_cnt += 1
+
+            if score_sum > 0 and children_cnt > 0:
+                sub_score = score_sum / children_cnt
+
+        if self.score > 0:
+            return (self.score + sub_score) / 2 if sub_score > 0 else self.score
+
+        tests = AcceptanceTestWorkflowNode.objects.filter(company_workflow_node__workflow_node=self.state).distinct()
+        a_tests = [a_test.get_score(self) for a_test in tests]
+        if sub_score > 0:
+            a_tests.append(sub_score)
+
+        score = sum(a_tests) / len(a_tests) if len(a_tests) > 0 else 0
+
         if score > 0:
             self.score = score
             self.save()
