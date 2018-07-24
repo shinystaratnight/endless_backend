@@ -1,21 +1,21 @@
 from django.utils.translation import ugettext_lazy as _
-
-import stripe
+from django.db.models import Q
 
 from rest_framework import status, exceptions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from r3sourcer.apps.billing.models import Payment
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.models import Company, InvoiceRule
 
-from . import serializers
+from . import serializers, permissions
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
 from ..tasks import buy_candidate
 
 
 class CandidateContactViewset(BaseApiViewset):
+
+    permission_classes = (permissions.CandidateContactPermissions,)
 
     def list(self, request, *args, **kwargs):
         company = request.user.contact.get_closest_company()
@@ -67,11 +67,11 @@ class CandidateContactViewset(BaseApiViewset):
         else:
             company = request.user.contact.get_closest_company()
             queryset = CandidateContactAnonymous.objects.exclude(
-                candidate_rels__master_company=company
+                Q(candidate_rels__master_company=company) | Q(profile_price__lte=0)
             ).distinct()
         return self._paginate(request, serializers.CandidatePoolSerializer, self.filter_queryset(queryset))
 
-    @action(methods=['post'], detail=True)
+    @action(methods=['post'], detail=True, permission_classes=[])
     def buy(self, request, pk, *args, **kwargs):
         master_company = request.user.contact.get_closest_company()
         candidate_contact = self.get_object()
