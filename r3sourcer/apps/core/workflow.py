@@ -55,8 +55,9 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         return WorkflowObject.objects.filter(
             object_id=self.id,
             state__workflow__model=self.content_type,
+            state__company_workflow_nodes__company=self.get_closest_company(),
             active=True
-        ).order_by('-state__number')
+        ).order_by('-state__number').distinct()
 
     def has_state(self, state, is_active=True):
         """

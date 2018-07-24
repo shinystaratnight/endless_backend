@@ -473,7 +473,14 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     def get_closest_company(self):
         try:
-            candidate_rel = self.candidate_rels.filter(owner=True, active=True).latest('created_at')
+            current_user = get_current_request().user
+            if current_user.contact.is_company_contact():
+                current_company = current_user.contact.get_closest_company()
+                company_qry = models.Q(master_company=current_company)
+            else:
+                company_qry = models.Q()
+
+            candidate_rel = self.candidate_rels.get(company_qry, owner=True, active=True)
             return candidate_rel.master_company
         except CandidateRel.DoesNotExist:
             return get_site_master_company()
