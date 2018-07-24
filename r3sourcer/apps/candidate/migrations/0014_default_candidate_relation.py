@@ -13,16 +13,18 @@ def migrate_candidate_default_rel(apps, schema_editor):
     CandidateRel = apps.get_model('candidate', 'CandidateRel')
     Site = apps.get_model('sites', 'Site')
 
-    site = Site.objects.get(id=settings.SITE_ID)
-    site_company = site.site_companies.filter(company__type=Company.COMPANY_TYPES.master).first()
-    company = site_company and site_company.company
+    site = Site.objects.filter(id=settings.SITE_ID).first()
 
-    for candidate in CandidateContact.objects.filter(candidate_rels__isnull=True):
-        CandidateRel.objects.get_or_create(
-            candidate_contact=candidate,
-            master_company=company,
-            defaults={'owner': True},
-        )
+    if site:
+        site_company = site.site_companies.filter(company__type=Company.COMPANY_TYPES.master).first()
+        company = site_company and site_company.company
+
+        for candidate in CandidateContact.objects.filter(candidate_rels__isnull=True):
+            CandidateRel.objects.get_or_create(
+                candidate_contact=candidate,
+                master_company=company,
+                defaults={'owner': True},
+            )
 
 
 class Migration(migrations.Migration):

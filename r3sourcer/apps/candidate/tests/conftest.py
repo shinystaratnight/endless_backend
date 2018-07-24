@@ -243,7 +243,9 @@ def candidate_rel(db, candidate, company, company_contact):
     return candidate_models.CandidateRel.objects.create(
         candidate_contact=candidate,
         master_company=company,
-        company_contact=company_contact
+        company_contact=company_contact,
+        owner=True,
+        active=True
     )
 
 
