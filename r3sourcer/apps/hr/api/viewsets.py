@@ -415,6 +415,16 @@ class JobViewset(BaseApiViewset):
             candidate_contacts = candidate_models.CandidateContact.objects.none()
         else:
             candidate_contacts = job_utils.get_available_candidate_list(job)
+            is_pool = request.query_params.get('pool', False)
+
+            if is_pool:
+                candidate_contacts = candidate_contacts.exclude(
+                    candidate_rels__master_company=job.customer_company
+                ).distinct()
+            else:
+                candidate_contacts = candidate_contacts.filter(
+                    candidate_rels__master_company=job.customer_company, candidate_rels__active=True
+                ).distinct()
 
             transportation = request.GET.get('transportation_to_work', None)
             if transportation:

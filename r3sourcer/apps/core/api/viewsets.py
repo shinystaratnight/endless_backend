@@ -67,19 +67,23 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     picture_fields = {'picture', 'logo'}
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+    def _paginate(self, request, serializer_class, queryset=None):
+        queryset = self.filter_queryset(self.get_queryset()) if queryset is None else queryset
         fields = self.get_list_fields(request)
 
         page = self.paginate_queryset(queryset)
+        serializer_context = self.get_serializer_context()
         if page is not None:
-            serializer = self.get_serializer(page, many=True, fields=fields)
+            serializer = serializer_class(page, many=True, fields=fields, context=serializer_context)
             data = self.process_response_data(serializer.data, page)
             return self.get_paginated_response(data)
 
-        serializer = self.get_serializer(queryset, many=True, fields=fields)
+        serializer = serializer_class(queryset, many=True, fields=fields, context=serializer_context)
         data = self.process_response_data(serializer.data, queryset)
         return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        return self._paginate(request, self.get_serializer_class())
 
     def retrieve(self, request, *args, **kwargs):
         fields = self.get_list_fields(request)

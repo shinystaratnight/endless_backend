@@ -1,4 +1,4 @@
-from datetime import timedelta, date
+from datetime import timedelta
 
 from django.core.cache import cache
 from django.db import models
@@ -9,7 +9,6 @@ from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.core.mixins import MYOBMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.skills import models as skill_models
@@ -291,7 +290,13 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         blank=True,
         null=True
     )
-    # objects = SelectRelatedContactManager()
+
+    profile_price = models.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        verbose_name=_("Profile Price"),
+        default=0
+    )
 
     class Meta:
         verbose_name = _("Candidate Contact")
@@ -468,7 +473,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     def get_closest_company(self):
         try:
-            candidate_rel = self.candidate_rels.latest('created_at')
+            candidate_rel = self.candidate_rels.filter(owner=True, active=True).latest('created_at')
             return candidate_rel.master_company
         except CandidateRel.DoesNotExist:
             return get_site_master_company()
@@ -730,6 +735,16 @@ class CandidateRel(core_models.UUIDModel):
         null=True
     )
 
+    owner = models.BooleanField(
+        default=False,
+        verbose_name=_("Is woner")
+    )
+
+    active = models.BooleanField(
+        default=True,
+        verbose_name=_("Active")
+    )
+
     class Meta:
         verbose_name = _("Candidate Relationship")
         verbose_name_plural = _("Candidate Relationships")
@@ -860,3 +875,12 @@ class Subcontractor(core_models.UUIDModel):
                 self.SUBCONTRACTOR_TYPE_CHOICES.sole_trader):
             return str(self.primary_contact)
         return str(self.company)
+
+
+class CandidateContactAnonymous(CandidateContact):
+
+    class Meta:
+        proxy = True
+
+    def __str__(self):
+        return 'Anonymous Candidate'
