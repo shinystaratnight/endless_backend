@@ -883,10 +883,28 @@ class Subcontractor(core_models.UUIDModel):
         verbose_name_plural = _("Subcontactors")
 
     def __str__(self):
-        if (self.subcontractor_type ==
-                self.SUBCONTRACTOR_TYPE_CHOICES.sole_trader):
+        if (self.subcontractor_type == self.SUBCONTRACTOR_TYPE_CHOICES.sole_trader):
             return str(self.primary_contact)
         return str(self.company)
+
+
+class SubcontractorCandidateRelation(core_models.UUIDModel):
+
+    subcontractor = models.ForeignKey(
+        Subcontractor,
+        related_name='subcontractor_candidates',
+        verbose_name=_('Subcontractor')
+    )
+
+    candidate_contact = models.ForeignKey(
+        CandidateContact,
+        related_name='subcontractor_candidates',
+        verbose_name=_('Candidate Contact')
+    )
+
+    class Meta:
+        verbose_name = _("Subcontractor Candidate Relation")
+        verbose_name_plural = _("Subcontractor Candidate Relations")
 
 
 class CandidateContactAnonymous(CandidateContact):
