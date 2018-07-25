@@ -671,14 +671,13 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
                 raise serializers.ValidationError({
                     'address': getattr(e, 'messages', _('Cannot create Contact without address'))
                 })
-        contact = core_models.Contact.objects.create(
-            address=address, **validated_data)
+        contact = core_models.Contact.objects.create(address=address, **validated_data)
         return contact
 
     def validate(self, data):
         if not data.get('email') and not data.get('phone_mobile'):
-            raise serializers.ValidationError(
-                _('Please specify E-mail and/or Mobile Phone'))
+            raise serializers.ValidationError(_('Please specify E-mail and/or Mobile Phone'))
+
         return data
 
     class Meta:
