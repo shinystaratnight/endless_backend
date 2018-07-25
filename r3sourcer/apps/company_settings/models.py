@@ -12,6 +12,7 @@ class CompanySettings(UUIDModel):
     color_scheme = models.CharField(null=True, blank=True, max_length=32)
     font = models.CharField(null=True, blank=True, max_length=32)
     forwarding_number = models.CharField(null=True, blank=True, max_length=32)
+    billing_email = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         verbose_name = "Company settings"

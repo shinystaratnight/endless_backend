@@ -1095,6 +1095,14 @@ class Company(
 
         return CandidateContact.objects.filter(job_offers__time_sheets__shift_started_at__gt=start_date).count()
 
+    def get_active_discounts(self, payment_type=None):
+        discounts = self.discounts.filter(active=True)
+
+        if payment_type:
+            discounts = discounts.filter(payment_type=payment_type)
+
+        return discounts
+
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
         from r3sourcer.apps.hr.models import PayslipRule

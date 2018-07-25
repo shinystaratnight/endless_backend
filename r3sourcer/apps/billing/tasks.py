@@ -6,7 +6,7 @@ from celery import shared_task
 from django.conf import settings
 
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance
+from r3sourcer.apps.billing.models import Subscription, Payment
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -34,35 +34,42 @@ def charge_for_extra_workers():
             else:
                 extra_worker_fee = settings.MONTHLY_EXTRA_WORKER_FEE
 
-            amount = (active_workers - paid_workers) * extra_worker_fee
-            charge = stripe.Charge.create(
-                amount=amount * 100,
-                currency=company.currency,
-                customer=company.stripe_customer
-            )
+            extra_workers = active_workers - paid_workers
+            amount = (extra_workers) * extra_worker_fee
+
+            for discount in company.get_active_discounts('extra_workers'):
+                amount = discount.apply_discount(amount)
+
+            stripe.InvoiceItem.create(customer=company.stripe_customer,
+                                      amount=amount * 100,
+                                      currency=company.currency,
+                                      description='%s extra workers fee' % extra_workers)
+            invoice = stripe.Invoice.create(customer=company.stripe_customer)
             Payment.objects.create(
                 company=company,
                 type=Payment.PAYMENT_TYPES.extra_workers,
                 amount=amount,
-                status=charge.status,
-                stripe_id=charge.id
+                stripe_id=invoice['id']
             )
 
 
 @shared_task
 def charge_for_sms(company_id, amount, sms_balance_id):
     company = Company.objects.get(id=company_id)
-    charge = stripe.Charge.create(
-        amount=amount * 100,
-        currency='aud',
-        customer=company.stripe_customer,
-    )
+
+    for discount in company.get_active_discounts('sms'):
+        amount = discount.apply_discount(amount)
+
+    stripe.InvoiceItem.create(customer=company.stripe_customer,
+                              amount=amount * 100,
+                              currency=company.currency,
+                              description='Topping up sms balance')
+    invoice = stripe.Invoice.create(customer=company.stripe_customer)
     Payment.objects.create(
         company=company,
-        type=Payment.PAYMENT_TYPES.sms,
+        type=Payment.PAYMENT_TYPES.extra_workers,
         amount=amount,
-        status=charge.status,
-        stripe_id=charge.id
+        stripe_id=invoice['id']
     )
 
 
@@ -83,14 +90,29 @@ def fetch_payments():
             continue
 
         customer = company.stripe_customer
-        charges = stripe.Charge.list(customer=customer)['data']
+        invoices = stripe.Invoice.list(customer=customer)['data']
+        payments = Payment.objects.filter(invoice_url__isnull=True)
+        not_paid_payments = Payment.objects.filter(status=Payment.PAYMENT_STATUSES.not_paid)
 
-        for charge in charges:
-            if not Payment.objects.filter(stripe_id=charge['id']).exists():
+        for invoice in invoices:
+            if not Payment.objects.filter(stripe_id=invoice['id']).exists():
                 Payment.objects.create(
                     company=company,
                     type=Payment.PAYMENT_TYPES.subscription,
-                    amount=charge['amount'],
-                    status=charge['status'],
-                    stripe_id=charge['id']
+                    amount=invoice['total'] / 100,
+                    stripe_id=invoice['id']
                 )
+
+        for payment in payments:
+            invoice = stripe.Invoice.retrieve(payment.stripe_id)
+
+            if invoice['invoice_pdf']:
+                payment.invoice_url = invoice['invoice_pdf']
+                payment.save()
+
+        for payment in not_paid_payments:
+            invoice = stripe.Invoice.retrieve(payment.stripe_id)
+
+            if invoice['paid']:
+                payment.status = Payment.PAYMENT_STATUSES.paid
+                payment.save()
