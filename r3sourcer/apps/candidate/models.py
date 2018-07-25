@@ -473,12 +473,14 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     def get_closest_company(self):
         try:
-            current_user = get_current_request().user
-            if current_user.contact.is_company_contact():
-                current_company = current_user.contact.get_closest_company()
-                company_qry = models.Q(master_company=current_company)
-            else:
-                company_qry = models.Q()
+            current_request = get_current_request()
+            company_qry = models.Q()
+
+            if current_request:
+                current_user = current_request.user
+                if current_user.contact.is_company_contact():
+                    current_company = current_user.contact.get_closest_company()
+                    company_qry = models.Q(master_company=current_company)
 
             candidate_rel = self.candidate_rels.get(company_qry, owner=True, active=True)
             return candidate_rel.master_company

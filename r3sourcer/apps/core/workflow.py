@@ -75,7 +75,9 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         else:
             qry &= models.Q(state=state)
 
-        result = WorkflowObject.objects.filter(qry).first()
+        result = WorkflowObject.objects.filter(
+            qry, state__company_workflow_nodes__company=self.get_closest_company()
+        ).first()
         return result is not None
 
     def get_current_state(self):
@@ -85,10 +87,10 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         """
         from .models import WorkflowObject
         try:
-            result = WorkflowObject.objects\
-                .filter(object_id=self.id,
-                        state__workflow__model=self.content_type)\
-                .latest('created_at').state
+            result = WorkflowObject.objects.filter(
+                object_id=self.id, state__workflow__model=self.content_type,
+                state__company_workflow_nodes__company=self.get_closest_company()
+            ).latest('created_at').state
         except (AttributeError, WorkflowObject.DoesNotExist):
             result = None
         return result
@@ -171,7 +173,8 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
 
         if new_state and new_state.initial:
             is_initial_exists = WorkflowObject.objects.filter(
-                object_id=self.pk, state=new_state
+                object_id=self.pk, state=new_state,
+                state__company_workflow_nodes__company=self.get_closest_company()
             ).exists()
         else:
             is_initial_exists = False
