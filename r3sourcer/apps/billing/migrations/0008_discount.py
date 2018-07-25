@@ -10,7 +10,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('core', '0053_formbuilder_fields'),
-        ('billing', '0006_auto_20180717_2041'),
+        ('billing', '0007_auto_20180723_1838'),
     ]
 
     operations = [

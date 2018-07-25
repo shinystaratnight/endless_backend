@@ -8,7 +8,7 @@ from django.db import migrations
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0008_discount_created'),
+        ('billing', '0009_discount_created'),
     ]
 
     operations = [

@@ -9,7 +9,7 @@ import django.utils.timezone
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('billing', '0007_discount'),
+        ('billing', '0008_discount'),
     ]
 
     operations = [
