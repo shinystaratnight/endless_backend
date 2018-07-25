@@ -8,7 +8,7 @@ RUN ssh-keyscan -T 60 bitbucket.org >> /root/.ssh/known_hosts
 WORKDIR /app/
 ADD dependencies ./dependencies
 ADD helpers ./helpers
-ADD ["docker-entrypoint.sh", "Procfile", "README.md", "setup.py", "pytest.ini", "./"]
+ADD ["docker-entrypoint.sh", "Procfile", "README.md", "setup.py", "pytest.ini", ".coveragerc", "./"]
 RUN apt-get update && apt-get install -y nodejs-legacy npm
 RUN npm i -g bower
 RUN mkdir -p r3sourcer var/log var/run var/www var/tmp

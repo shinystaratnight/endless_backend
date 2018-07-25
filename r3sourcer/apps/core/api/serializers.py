@@ -676,7 +676,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
         return contact
 
     def validate(self, data):
-        if not data['email'] and not data['phone_mobile']:
+        if not data.get('email') and not data.get('phone_mobile'):
             raise serializers.ValidationError(
                 _('Please specify E-mail and/or Mobile Phone'))
         return data
@@ -835,7 +835,17 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
         return super().validate(data)
 
     def create(self, validated_data):
-        company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        try:
+            company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+        except core_models.Company.DoesNotExist:
+            raise exceptions.ValidationError({
+                'company': _('Company not found'),
+            })
+
+        if not validated_data.get('contact'):
+            raise exceptions.ValidationError({
+                'contact': _('Contact is required'),
+            })
 
         instance = super(CompanyContactSerializer, self).create(validated_data)
 
@@ -1019,12 +1029,25 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
         )
 
     def validate(self, data):
-        core_models.WorkflowNode.validate_node(
-            data["number"], data["workflow"], data["company"], data["active"],
-            data.get("rules"), self.instance is None,
-            self.instance and self.instance.id
-        )
+        if 'number' in data:
+            company = data.get('company')
+            core_models.WorkflowNode.validate_node(
+                data["number"], data.get("workflow"), company, data.get("active"), data.get("rules"),
+                self.instance is None, self.instance and self.instance.id
+            )
         return data
+
+
+class CompanyWorkflowNodeSerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.CompanyWorkflowNode
+        fields = (
+            '__all__', {
+                'workflow_node': (
+                    'id', '__str__', 'number', 'name_before_activation', 'name_after_activation', 'parent',
+                )
+            }
+        )
 
 
 class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
@@ -1053,11 +1076,11 @@ class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSe
 
 class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('state', 'requirements', 'wf_object_id')
+    method_fields = ('state', 'requirements', 'wf_object_id', 'acceptance_tests', 'substates', 'total_score')
 
     class Meta:
         model = core_models.WorkflowNode
-        fields = ('id', 'name_before_activation', 'name_after_activation', 'endpoint')
+        fields = ('id', 'name_before_activation', 'name_after_activation', 'endpoint',)
 
     def __init__(self, *args, **kwargs):
         self.target = kwargs.pop('target', None)
@@ -1097,15 +1120,75 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
         return None
 
-    def get_wf_object_id(self, obj):
+    def _get_wf_object(self, obj):
         if not obj:
             return None
 
-        workflow_object = core_models.WorkflowObject.objects.filter(
+        return core_models.WorkflowObject.objects.filter(
             state=obj, object_id=self.target.id
         ).first()
 
+    def get_wf_object_id(self, obj):
+        workflow_object = self._get_wf_object(obj)
+
         return workflow_object and workflow_object.id
+
+    def get_acceptance_tests(self, obj):
+        from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
+        from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestWorkflowNodeSerializer
+
+        qry = models.Q(
+            acceptance_test__acceptance_tests_skills__isnull=True,
+            acceptance_test__acceptance_tests_tags__isnull=True,
+            acceptance_test__acceptance_tests_industries__isnull=True,
+        )
+
+        closest_company = self.target.get_closest_company()
+        if closest_company.industry is not None:
+            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry=closest_company.industry)
+
+        if hasattr(self.target, 'candidate_skills'):
+            skill_ids = self.target.candidate_skills.values_list('skill', flat=True)
+            qry |= models.Q(acceptance_test__acceptance_tests_skills__skill_id__in=skill_ids)
+
+        if hasattr(self.target, 'tag_rels'):
+            tag_ids = self.target.tag_rels.values_list('tag', flat=True)
+            qry |= models.Q(acceptance_test__acceptance_tests_tags__tag_id__in=tag_ids)
+
+        tests = AcceptanceTestWorkflowNode.objects.filter(qry, company_workflow_node__workflow_node=obj).distinct()
+        wf_object_id = self.get_wf_object_id(obj)
+
+        return tests and AcceptanceTestWorkflowNodeSerializer(tests, many=True, workflow_object_id=wf_object_id).data
+
+    def get_substates(self, obj):
+        if obj.children.exists():
+            return WorkflowTimelineSerializer(obj.children.all(), target=self.target, many=True).data
+
+        return []
+
+    def get_total_score(self, obj):
+        children_cnt = 0
+        sub_score = 0
+
+        if obj.children.count() > 0:
+            score_sum = 0
+            for substate in obj.children.all():
+                child_score = self.get_total_score(substate)
+                if child_score > 0:
+                    score_sum += child_score
+                    children_cnt += 1
+
+            if score_sum > 0 and children_cnt > 0:
+                sub_score = score_sum / children_cnt
+
+        workflow_object = self._get_wf_object(obj)
+        if workflow_object and workflow_object.score > 0:
+            return (workflow_object.score + sub_score) / 2 if sub_score > 0 else workflow_object.score
+
+        a_tests = [a_test.get('score', 0) for a_test in self.get_acceptance_tests(obj)]
+        if sub_score > 0:
+            a_tests.append(sub_score)
+        return sum(a_tests) / len(a_tests) if len(a_tests) > 0 else 0
 
 
 class NavigationSerializer(ApiBaseModelSerializer):

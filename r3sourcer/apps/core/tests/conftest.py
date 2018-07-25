@@ -123,7 +123,7 @@ def staff_company_contact(db, staff_user):
 @pytest.fixture
 def company_other(db, manager, addresses):
     comp = models.Company.objects.create(
-        name='Company',
+        name='Company other',
         business_id='111',
         registered_for_gst=True,
         manager=manager,
@@ -216,10 +216,11 @@ def prefill_workflow():
 
     counter = 0
     for rule in data:
-        models.WorkflowNode.objects.get_or_create(number=counter * 10,
-                                                  name_before_activation="State " + str(counter * 10),
-                                                  workflow=workflow, company=company,
-                                                  rules=rule, hardlock=True)
+        obj, _ = models.WorkflowNode.objects.get_or_create(
+            number=counter * 10, name_before_activation="State " + str(counter * 10), workflow=workflow,
+            rules=rule, hardlock=True
+        )
+        models.CompanyWorkflowNode.objects.get_or_create(company=company, workflow_node=obj)
         counter += 1
 
 
@@ -364,7 +365,7 @@ def site_regular_company(db, site, company_regular):
 
 @pytest.fixture
 def dashboard_modules(db):
-    return models.DashboardModule.objects.bulk_create([
+    models.DashboardModule.objects.bulk_create([
         models.DashboardModule(
             content_type=ContentType.objects.get_for_model(models.CompanyAddress),
             is_active=True
@@ -374,6 +375,8 @@ def dashboard_modules(db):
             is_active=False
         ),
     ])
+
+    return models.DashboardModule.objects.all()
 
 
 @pytest.fixture

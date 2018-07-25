@@ -6,7 +6,7 @@ import pytest
 
 from django.test.client import MULTIPART_CONTENT, BOUNDARY, encode_multipart
 from guardian.shortcuts import assign_perm
-from rest_framework import status
+from rest_framework import status, fields
 from rest_framework.exceptions import APIException, ValidationError
 from rest_framework.test import force_authenticate
 
@@ -41,6 +41,10 @@ class TestApiViewset:
     @pytest.fixture
     def actions_obj(self):
         return {'get': 'retrieve', 'put': 'update'}
+
+    @pytest.fixture
+    def viewset(self):
+        return CityViewset()
 
     def get_response_as_view(self, actions, request, pk=None, viewset=None):
         kwargs = {'request': request}
@@ -160,6 +164,83 @@ class TestApiViewset:
 
             assert 'options' in viewset.http_method_names
 
+    def test_clean_request_data_dict(self, viewset):
+        data = {
+            'id': 'id',
+            'test': None,
+        }
+        res = viewset.clean_request_data(data)
+
+        assert res.keys() == {'id'}
+
+    def test_clean_request_data_list(self, viewset):
+        data = [{
+            'id': 'id',
+            'test': None,
+        }]
+        res = viewset.clean_request_data(data)
+
+        assert len(res) == 1
+        assert res[0].keys() == {'id'}
+
+    def test_prepare_internal_data_dict(self, viewset):
+        data = {
+            'id': 'id',
+            'test': None,
+            '__str__': 'str',
+        }
+        res = viewset._prepare_internal_data(data)
+
+        assert res.keys() == {'id', 'test'}
+
+    def test_prepare_internal_data_dict_with_empty(self, viewset):
+        data = {
+            'id': 'id',
+            'test': fields.empty,
+        }
+        res = viewset._prepare_internal_data(data)
+
+        assert res.keys() == {'id', 'test'}
+
+    def test_prepare_internal_data_dict_with_empty_exclude(self, viewset):
+        data = {
+            'id': 'id',
+            'test1': 'test',
+            'test': fields.empty,
+        }
+        viewset.exclude_empty = True
+        res = viewset._prepare_internal_data(data)
+        viewset.exclude_empty = False
+
+        assert res.keys() == {'id', 'test1'}
+
+    def test_prepare_internal_data_dict_with_list(self, viewset):
+        data = {
+            'id': 'id',
+            'test': [],
+        }
+        res = viewset._prepare_internal_data(data)
+
+        assert res.keys() == {'id', 'test'}
+
+    def test_prepare_internal_data_dict_only_id(self, viewset):
+        data = {
+            'id': 'id',
+        }
+        res = viewset._prepare_internal_data(data)
+
+        assert res == 'id'
+
+    def test_prepare_internal_data_list(self, viewset):
+        data = [{
+            'id': 'id',
+            'test': 'test',
+        }]
+        res = viewset._prepare_internal_data(data)
+
+        assert len(res) == 1
+        assert res[0].keys() == {'id', 'test'}
+
 
 class ResourceMixin:
     endpoint_class = None
@@ -192,6 +273,7 @@ class TestCompanyContactResource(ResourceMixin):
     @pytest.fixture
     def company_contact_data(self, country):
         company_contact_data = {
+            'title': 'Mr.',
             'first_name': 'Test',
             'last_name': 'Tester',
             'email': 'tester@test.tt',
@@ -297,7 +379,7 @@ class TestContactResource(ResourceMixin):
 
     @pytest.fixture
     def contact_picture_data(self, picture):
-        return dict(picture=copy.deepcopy(picture))
+        return dict(picture=copy.deepcopy(picture), email='test_email@testemail.com')
 
     def test_can_update_contact(self, rf, contact, staff_user, contact_update_data):
         req = rf.put('/api/v2/contacts/',
@@ -642,35 +724,33 @@ class TestNavigationViewset(ResourceMixin):
         assert response.data['count'] == 1
         assert response.data['results'][0]['url'] == candidate_url
 
-    def test_navigation_retrieve_with_role_parameter(self, user, rf):
+    def test_navigation_retrieve_with_role_parameter(self, user, roles, rf):
         client_url = 'client_url'
         manager_url = 'manager_url'
         candidate_url = 'candidate_url'
         url = '/core/extranetnavigations/?role=%s'
 
-        ExtranetNavigation.objects.create(url=client_url,
-                                          access_level=ExtranetNavigation.CLIENT)
-        ExtranetNavigation.objects.create(url=manager_url,
-                                          access_level=ExtranetNavigation.MANAGER)
-        ExtranetNavigation.objects.create(url=candidate_url,
-                                          access_level=ExtranetNavigation.CANDIDATE)
+        ExtranetNavigation.objects.create(url=client_url, access_level=ExtranetNavigation.CLIENT)
+        ExtranetNavigation.objects.create(url=manager_url, access_level=ExtranetNavigation.MANAGER)
+        ExtranetNavigation.objects.create(url=candidate_url, access_level=ExtranetNavigation.CANDIDATE)
 
         CompanyContact.objects.create(contact=user.contact, role=CompanyContact.MANAGER)
-        request = rf.get(url % 'manager')
+
+        request = rf.get(url % roles[1].id)
         force_authenticate(request, user=user)
         response = self.get_response_as_view(request, actions={'get': 'list'})
 
         assert response.data['count'] == 1
         assert response.data['results'][0]['url'] == manager_url
 
-        request = rf.get(url % 'client')
+        request = rf.get(url % roles[2].id)
         force_authenticate(request, user=user)
         response = self.get_response_as_view(request, actions={'get': 'list'})
 
         assert response.data['count'] == 1
         assert response.data['results'][0]['url'] == client_url
 
-        request = rf.get(url % 'candidate')
+        request = rf.get(url % roles[0].id)
         force_authenticate(request, user=user)
         response = self.get_response_as_view(request, actions={'get': 'list'})
 

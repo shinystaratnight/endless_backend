@@ -2055,8 +2055,9 @@ class CandidateScore(core_models.UUIDModel):
 
     def recalc_recruitment_score(self):
         states = self.candidate_contact.get_active_states()
+        company = self.candidate_contact.get_closest_company()
 
-        score_sum = sum([s.score for s in states])
+        score_sum = sum([s.get_score(self.candidate_contact, company) for s in states])
 
         if len(states) > 0:
             self.recruitment_score = score_sum / len(states)

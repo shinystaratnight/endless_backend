@@ -96,7 +96,8 @@ class Payment(models.Model):
     PAYMENT_TYPES = Choices(
         ('sms', 'SMS'),
         ('extra_workers', 'Extra Workers'),
-        ('subscription', 'Subscription')
+        ('subscription', 'Subscription'),
+        ('candidate', 'Candidate Profile'),
     )
     PAYMENT_STATUSES = Choices(
         ('paid', 'Paid'),

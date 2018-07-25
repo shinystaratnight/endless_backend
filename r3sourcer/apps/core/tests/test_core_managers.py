@@ -42,7 +42,7 @@ class TestAbstractObjectOwnerManager:
         type(Address.objects).passed_models = mock_passable
 
         result = Address.objects.owned_by(contact)
-        assert result.count() == 0
+        assert result.count() == 1
 
     def test_get_lookups(self, contact, address):
         lookups = Contact.objects.get_lookups(address)

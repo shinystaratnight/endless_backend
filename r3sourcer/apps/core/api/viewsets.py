@@ -67,19 +67,23 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     picture_fields = {'picture', 'logo'}
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.filter_queryset(self.get_queryset())
+    def _paginate(self, request, serializer_class, queryset=None):
+        queryset = self.filter_queryset(self.get_queryset()) if queryset is None else queryset
         fields = self.get_list_fields(request)
 
         page = self.paginate_queryset(queryset)
+        serializer_context = self.get_serializer_context()
         if page is not None:
-            serializer = self.get_serializer(page, many=True, fields=fields)
+            serializer = serializer_class(page, many=True, fields=fields, context=serializer_context)
             data = self.process_response_data(serializer.data, page)
             return self.get_paginated_response(data)
 
-        serializer = self.get_serializer(queryset, many=True, fields=fields)
+        serializer = serializer_class(queryset, many=True, fields=fields, context=serializer_context)
         data = self.process_response_data(serializer.data, queryset)
         return Response(data)
+
+    def list(self, request, *args, **kwargs):
+        return self._paginate(request, self.get_serializer_class())
 
     def retrieve(self, request, *args, **kwargs):
         fields = self.get_list_fields(request)
@@ -97,7 +101,9 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
     def create_from_data(self, data, *args, **kwargs):
         is_response = kwargs.pop('is_response', True)
 
-        serializer = self.get_serializer(data=data)
+        many = isinstance(data, list)
+
+        serializer = self.get_serializer(data=data, many=many)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
 
@@ -118,7 +124,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         if getattr(instance, '_prefetched_objects_cache', None):
             instance._prefetched_objects_cache = {}
 
-        return Response(serializer.data)
+        return Response(self.get_serializer(self.get_object()).data)
 
     def process_response_data(self, data, queryset=None):
         return data
@@ -128,6 +134,10 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
     def _prepare_internal_data(self, data, is_create=False):
         res = {}
+
+        if isinstance(data, list):
+            return [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in data]
+
         for key, val in data.items():
             is_empty = val == '' or val is fields.empty
             if key in self._exclude_data or (self.exclude_empty and is_empty and (key != 'id' or len(data) > 1)):
@@ -138,13 +148,18 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
                 res[key] = self._prepare_internal_data(val)
             elif isinstance(val, list):
-                res[key] = [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in val]
+                res[key] = self._prepare_internal_data(val)
+
+                # res[key] = [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in val]
             else:
                 res[key] = val
 
         return res['id'] if len(res) == 1 and 'id' in res else res
 
     def clean_request_data(self, data):
+        if isinstance(data, list):
+            return [self.clean_request_data(item) for item in data]
+
         return {
             k: v for k, v in data.items() if v is not None
         }
@@ -461,8 +476,7 @@ class NavigationViewset(BaseApiViewset):
         except Exception:
             access_level = self.request.user.access_level
 
-        return models.ExtranetNavigation.objects.filter(parent=None) \
-                                                .filter(access_level=access_level)
+        return models.ExtranetNavigation.objects.filter(parent=None, access_level=access_level)
 
 
 class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
@@ -618,13 +632,33 @@ class WorkflowNodeViewset(BaseApiViewset):
         if workflow is None:
             raise exceptions.NotFound(_('Workflow not found for model'))
 
-        nodes = models.WorkflowNode.get_company_nodes(company, workflow)
+        nodes = models.WorkflowNode.get_company_nodes(company, workflow).filter(parent__isnull=True)
 
         serializer = serializers.WorkflowTimelineSerializer(
             nodes, target=target_object, many=True
         )
 
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+class CompanyWorkflowNodeViewset(BaseApiViewset):
+
+    def perform_create(self, serializer):
+        company_node = models.CompanyWorkflowNode.objects.filter(
+            company=serializer.validated_data['company'],
+            workflow_node=serializer.validated_data['workflow_node']
+        ).first()
+
+        if company_node is not None:
+            company_node.active = True
+            company_node.order = serializer.data.get('order')
+            company_node.save()
+        else:
+            serializer.save()
+
+    def perform_destroy(self, instance):
+        instance.active = False
+        instance.save()
 
 
 class UserDashboardModuleViewSet(BaseApiViewset):

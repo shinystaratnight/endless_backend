@@ -29,9 +29,11 @@ class TestUserRolesView:
         client.force_login(user)
         response = client.get(url).json()
 
-        assert 'manager' in response['roles']
-        assert 'candidate' in response['roles']
-        assert 'client' in response['roles']
+        roles = [k['__str__'] for k in response['roles']]
+
+        assert 'manager' in roles
+        assert 'candidate' in roles
+        assert 'client' in roles
 
 
 class TestSetRolesView:

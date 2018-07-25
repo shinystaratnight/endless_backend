@@ -11,6 +11,7 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.request import Request
+from rest_framework.test import force_authenticate
 from freezegun import freeze_time
 
 from r3sourcer.apps.core.models import CompanyContact
@@ -29,9 +30,9 @@ TimeSheetViewsets = TimeSheetEndpointTest().get_viewset()
 @pytest.mark.django_db
 class TestApiViewset:
 
-    def get_response_as_view(self, actions, request, pk=None):
+    def get_response_as_view(self, actions, request, pk=None, viewset=None):
         kwargs = {'request': request, 'pk': pk}
-        viewset = TimeSheetViewsets
+        viewset = viewset or TimeSheetViewsets
         view = viewset.as_view(actions)
         response = view(**kwargs)
         response.render()
@@ -174,12 +175,12 @@ class TestApiViewset:
         mock_paginated.return_value = Response({'results': [timesheet]})
 
         req = rf.get('/history/')
-        req.user = user
+        force_authenticate(req, user=user)
 
         viewset = TimeSheetViewset()
-        viewset.request = req
+        viewset.request = Request(req)
 
-        response = viewset.handle_history(req)
+        response = viewset.handle_history(viewset.request)
 
         assert len(response.data['results']) == 1
 
@@ -189,12 +190,12 @@ class TestApiViewset:
         mock_paginated.return_value = Response({'results': [timesheet]})
 
         req = rf.get('/history/')
-        req.user = user_another
+        force_authenticate(req, user=user_another)
 
         viewset = TimeSheetViewset()
-        viewset.request = req
+        viewset.request = Request(req)
 
-        response = viewset.handle_history(req)
+        response = viewset.handle_history(viewset.request)
 
         assert len(response.data['results']) == 1
 
@@ -243,7 +244,8 @@ class TestApiViewset:
         viewset = TimeSheetViewset()
 
         req = rf.get('/')
-        req.user = user
+        force_authenticate(req, user=user)
+        viewset.request = Request(req)
 
         response = viewset.get_unapproved_queryset(req)
 
@@ -253,7 +255,8 @@ class TestApiViewset:
         viewset = TimeSheetViewset()
 
         req = rf.get('/')
-        req.user = user
+        force_authenticate(req, user=user)
+        viewset.request = Request(req)
 
         response = viewset.get_unapproved_queryset(req)
 

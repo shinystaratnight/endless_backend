@@ -4,7 +4,7 @@ from django.db import models
 
 from .mixins import CompanyLookupMixin
 from .service import factory
-from .utils.user import get_default_company
+from .utils.companies import get_site_master_company
 
 NEED_REQUIREMENTS, ALLOWED, ACTIVE, VISITED, NOT_ALLOWED = range(5)
 
@@ -31,17 +31,15 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         kwargs = {
             'number': number,
             'workflow__model': self.content_type,
-            'company': self.get_closest_company()
+            'company_workflow_nodes__company': self.get_closest_company(),
         }
         if not WorkflowNode.objects.filter(**kwargs).exists():
-            kwargs['company'] = get_default_company()
+            kwargs['company_workflow_nodes__company'] = get_site_master_company()
 
         state = WorkflowNode.objects.filter(**kwargs).first()
 
         if state:
-            workflow_object = WorkflowObject(
-                object_id=self.id, state=state, comment=comment, active=active
-            )
+            workflow_object = WorkflowObject(object_id=self.id, state=state, comment=comment, active=active)
             workflow_object.save()
 
     def get_active_states(self):
@@ -57,8 +55,9 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         return WorkflowObject.objects.filter(
             object_id=self.id,
             state__workflow__model=self.content_type,
+            state__company_workflow_nodes__company=self.get_closest_company(),
             active=True
-        ).order_by('-state__number')
+        ).order_by('-state__number').distinct()
 
     def has_state(self, state, is_active=True):
         """
@@ -224,7 +223,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
             return str(func)
 
     def _get_state_name(self, state_number):
-        from .models.core import WorkflowNode
+        from .models.workflow import WorkflowNode
 
         if WorkflowNode.objects.filter(
                 workflow__model=self.content_type, number=state_number).exists():
@@ -303,10 +302,10 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         available_states = []
         self.active_states = self.get_active_states()
 
-        from .models.core import WorkflowNode
+        from .models.workflow import WorkflowNode
 
         self_nodes = self._get_companies_nodes(self.get_closest_company())
-        default_nodes = self._get_companies_nodes(get_default_company())
+        default_nodes = self._get_companies_nodes(get_site_master_company())
 
         all_nodes = list(self_nodes.values())
         all_nodes.extend(value for key, value in default_nodes.items() if key not in self_nodes.keys())
@@ -318,11 +317,11 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
 
     def _get_companies_nodes(self, company):
 
-        from .models.core import WorkflowNode
+        from .models.workflow import WorkflowNode
         nodes = {}
         for node in WorkflowNode.objects.filter(
             workflow__model=self.content_type,
-            company=company
+            company_workflow_nodes__company=company
         ).order_by('number'):
             nodes[node.number] = node.id
         return nodes

@@ -64,7 +64,7 @@ def test(app):
     if app:
         app = os.path.join('apps', app)
 
-    run('bin/pytest --cov={app} --cov-report=term-missing {app}'.format(
+    run('bin/pytest --cov={app} --cov-report=term-missing --cov-config .coveragerc {app}'.format(
         app=os.path.join('r3sourcer', app)), warn=True, pty=True)
 
 

@@ -45,9 +45,10 @@ class TestSkillBaseRate:
 
 class TestSkill:
     def test_validation_success(self, price_list):
-        skill = Skill.objects.create(name="Driver", carrier_list_reserve=2, short_name="Drv", active=False)
-        SkillBaseRate.objects.create(skill=skill, hourly_rate=20, default_rate=True)
-        PriceListRate.objects.create(skill=skill, price_list=price_list, hourly_rate=10, default_rate=True)
+        skill = Skill.objects.create(
+            name="Driver", carrier_list_reserve=2, short_name="Drv", active=False, default_rate=10,
+            price_list_default_rate=10
+        )
         skill.active = True
         skill.save()
 
@@ -60,4 +61,5 @@ class TestSkill:
         with pytest.raises(Exception) as excinfo:
             skill.save()
 
-        assert excinfo.value.messages[0] == 'Skill cant be active. It doesnt have default price list rate.'
+        error = 'Skill cant be active. It doesnt have default price list rate and defalut base rate.'
+        assert excinfo.value.messages[0] == error

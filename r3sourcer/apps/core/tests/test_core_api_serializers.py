@@ -651,11 +651,11 @@ class TestContactSerializer(SerializerMixin):
         serializer = self.serializer_class(instance=contact)
         data = serializer.data
         expected_keys = {
-            'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available', 'marital_status',
-            'birthday', 'spouse_name', 'children', 'picture', 'id', 'address', 'company_contact', 'availability',
+            'title', 'first_name', 'last_name', 'email', 'phone_mobile', 'gender', 'is_available',
+            'birthday', 'picture', 'id', 'address', 'company_contact', 'availability',
             'phone_mobile_verified', 'email_verified', 'notes', '__str__', 'is_available',
             'notes', 'is_candidate_contact', 'is_company_contact', 'job_title', 'user', 'master_company',
-            'candidate_contacts'
+            'candidate_contacts', 'created_at', 'updated_at'
         }
         assert expected_keys == set(data.keys())
         assert data['id'] == contact.id
@@ -796,6 +796,7 @@ class TestFlatCompanyContactSerializer(SerializerMixin):
     @pytest.fixture
     def company_contact_data(self, country, company, city):
         company_contact_data = {
+            'title': 'Mr.',
             'first_name': 'Test',
             'last_name': 'Tester',
             'email': 'tester@test.tt',
@@ -1324,7 +1325,7 @@ class TestCompanyContactRenderSerializer:
 
             assert 'contact' in e.detail
 
-    def test_create_no_company(self, company_contact_rel_data):
+    def test_create_no_company(self, company_contact_rel_data, company):
         company_contact_rel_data['company'] = None
         serializer = CompanyContactRenderSerializer(data=company_contact_rel_data)
 
