@@ -37,6 +37,9 @@ def charge_for_extra_workers():
             extra_workers = active_workers - paid_workers
             amount = (extra_workers) * extra_worker_fee
 
+            for discount in company.get_active_discounts('extra_workers'):
+                amount = discount.apply_discount(amount)
+
             stripe.InvoiceItem.create(customer=company.stripe_customer,
                                       amount=amount * 100,
                                       currency=company.currency,
@@ -53,6 +56,10 @@ def charge_for_extra_workers():
 @shared_task
 def charge_for_sms(company_id, amount, sms_balance_id):
     company = Company.objects.get(id=company_id)
+
+    for discount in company.get_active_discounts('sms'):
+        amount = discount.apply_discount(amount)
+
     stripe.InvoiceItem.create(customer=company.stripe_customer,
                               amount=amount * 100,
                               currency=company.currency,

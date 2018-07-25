@@ -167,3 +167,11 @@ def subscription(db, company):
         worker_count=10,
         status='active',
     )
+
+
+@pytest.fixture
+def company_contact_rel(db, manager, company):
+    return CompanyContactRelationship.objects.create(
+        company_contact=manager,
+        company=company
+    )

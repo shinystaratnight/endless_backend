@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance
+from r3sourcer.apps.billing.models import Subscription, Payment, Discount
 from r3sourcer.apps.core.models.core import Company
 
 
@@ -29,3 +29,9 @@ class CompanySerializer(serializers.ModelSerializer):
         subscription = company.subscriptions.filter(active=True).first()
         serializer = SubscriptionSerializer(instance=subscription)
         return serializer.data
+
+
+class DiscountSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Discount
+        fields = ('company', 'payment_type', 'percent_off', 'amount_off', 'active', 'duration', 'duration_in_months')

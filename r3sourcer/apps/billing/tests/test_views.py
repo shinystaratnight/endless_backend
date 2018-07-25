@@ -4,7 +4,7 @@ import stripe
 
 from django.core.urlresolvers import reverse
 
-from r3sourcer.apps.billing.models import Subscription
+from r3sourcer.apps.billing.models import Subscription, Discount
 from r3sourcer.apps.core.models import Company
 
 
@@ -149,3 +149,41 @@ class TestCompanyListView:
 
         assert bool(response['companies'][0]['subscription']['last_time_billed'])
         assert response['companies'][0]['sms_balance'] == 100
+
+
+class TestDiscountView:
+    def test_get(self, client, user, company, contact, manager, company_contact_rel):
+        Discount.objects.create(
+            company=company,
+            payment_type='sms',
+            percent_off=25,
+            duration='once',
+        )
+        Discount.objects.create(
+            company=company,
+            payment_type='sms',
+            percent_off=25,
+            duration='once',
+        )
+        url = reverse('billing:discounts')
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert len(response['discounts']) == 2
+
+    def test_post(self, client, user, company):
+        initial_discount_number = Discount.objects.count()
+        data = {
+            "company": company.id,
+            "payment_type": "sms",
+            "percent_off": 25,
+            "amount_off": "",
+            "duration": "once",
+            "duration_in_months": "",
+        }
+        url = reverse('billing:discounts')
+        client.force_login(user)
+        client.post(url, data=data)
+
+        assert initial_discount_number + 1 == Discount.objects.count()
+        assert Discount.objects.first().percent_off == data['percent_off']

@@ -8,8 +8,8 @@ from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from r3sourcer.apps.billing.models import Subscription, Payment
-from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer
+from r3sourcer.apps.billing.models import Subscription, Payment, Discount
+from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer, DiscountSerializer
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company
 
@@ -144,3 +144,20 @@ class CompanyListView(APIView):
             "companies": serializer.data,
         }
         return Response(data)
+
+
+class DiscountView(APIView):
+    def get(self, *args, **kwargs):
+        company = self.request.user.company
+        qs = Discount.objects.filter(company=company)
+        serializer = DiscountSerializer(qs, many=True)
+        data = {
+            'discounts': serializer.data
+        }
+        return Response(data)
+
+    def post(self, *args, **kwargs):
+        serializer = DiscountSerializer(data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response()

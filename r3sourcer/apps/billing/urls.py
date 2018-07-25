@@ -15,4 +15,5 @@ urlpatterns = [
 
     # subscription management page
     url(r'^companies/$', views.CompanyListView.as_view(), name='company_list'),
+    url(r'^discounts/$', views.DiscountView.as_view(), name='discounts'),
 ]

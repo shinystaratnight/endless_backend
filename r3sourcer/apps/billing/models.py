@@ -76,10 +76,9 @@ class SMSBalance(models.Model):
     balance = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
-    discount = models.IntegerField(default=0)
 
     def substract_sms_cost(self, number_of_segments):
-        amount = number_of_segments * settings.COST_OF_SMS_SEGMENT * (1.0 - (float(self.discount) / 100))
+        amount = number_of_segments * settings.COST_OF_SMS_SEGMENT
         self.balance = self.balance - amount
         self.save()
 
@@ -111,3 +110,71 @@ class Payment(models.Model):
     stripe_id = models.CharField(max_length=255)
     invoice_url = models.CharField(max_length=255, blank=True, null=True)
 
+
+class Discount(models.Model):
+    DURATIONS = Choices(
+        ('forever', 'Forever'),
+        ('once', 'Once'),
+        ('repeating', 'Repeating')
+    )
+    PAYMENT_TYPES = Choices(
+        ('sms', 'SMS'),
+        ('extra_workers', 'Extra Workers'),
+        ('subscription', 'Subscription')
+    )
+    company = models.ForeignKey(Company, related_name='discounts')
+    payment_type = models.CharField(max_length=255, choices=PAYMENT_TYPES, blank=True, null=True)
+    percent_off = models.IntegerField(blank=True, null=True)
+    amount_off = models.IntegerField(blank=True, null=True)
+    active = models.BooleanField(default=True)
+    duration = models.CharField(max_length=255, choices=DURATIONS)
+    duration_in_months = models.IntegerField(blank=True, null=True)
+    created = models.DateTimeField(auto_now_add=True)
+
+    def apply_discount(self, original_amount):
+        if self.percent_off:
+            discounted_value = original_amount * (1.0 - (float(self.percent_off) / 100))
+        else:
+            discounted_value = original_amount - self.amount_off
+
+        if self.duration == self.DURATIONS.once:
+            self.active = False
+            self.save()
+
+        if self.duration == self.DURATIONS.repeating and self.duration_in_months:
+            duration_in_days = 30 * self.duration_in_months
+
+            if self.created + datetime.timedelta(days=duration_in_days) < datetime.datetime.now():
+                self.active = False
+                self.save()
+
+        return discounted_value
+
+    def save(self, *args, **kwargs):
+        if not self.id and self.payment_type == 'subscription':
+            subscription = Subscription.objects.get(company=self.company, active=True)
+
+            coupon_data = {
+                'duration': self.duration,
+            }
+
+            if self.percent_off:
+                coupon_data.update({
+                    'percent_off': self.percent_off,
+                })
+            else:
+                coupon_data.update({
+                    'amount_off': self.amount_off,
+                    'currency': self.company.currency
+                })
+
+            if self.duration_in_months:
+                coupon_data.update({
+                    'duration_in_months': self.duration_in_months
+                })
+
+            coupon = stripe.Coupon.create(**coupon_data)
+            subscription = stripe.Subscription.retrieve(subscription.subscription_id)
+            subscription.coupon = coupon.id
+            subscription.save()
+        super(Discount, self).save(*args, **kwargs)
