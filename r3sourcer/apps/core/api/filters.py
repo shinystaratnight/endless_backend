@@ -324,6 +324,7 @@ class ContactFilter(FilterSet):
 
 class TagFilter(FilterSet):
     exclude = UUIDFilter(method='exclude_by_candidate')
+    skill = UUIDFilter(method='filter_skill')
 
     class Meta:
         model = models.Tag
@@ -331,6 +332,9 @@ class TagFilter(FilterSet):
 
     def exclude_by_candidate(self, queryset, name, value):
         return queryset.filter(active=True).exclude(tag_rels__candidate_contact_id=value)
+
+    def filter_skill(self, queryset, name, value):
+        return queryset.filter(skills=value).distinct()
 
 
 class InvoiceFilter(FilterSet):
