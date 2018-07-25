@@ -148,8 +148,7 @@ class CompanyListView(APIView):
 
 class DiscountView(APIView):
     def get(self, *args, **kwargs):
-        company = self.request.user.company
-        qs = Discount.objects.filter(company=company)
+        qs = Discount.objects.all()
         serializer = DiscountSerializer(qs, many=True)
         data = {
             'discounts': serializer.data
