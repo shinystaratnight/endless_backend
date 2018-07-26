@@ -234,6 +234,10 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         if self.request.query_params.get('candidate') and not data.get('birthday'):
             raise exceptions.ValidationError({'birthday': _('Birthday is required')})
 
+        phone_mobile = data.get('phone_mobile')
+        if phone_mobile and phone_mobile.startswith('0'):
+            data['phone_mobile'] = '+61{}'.format(phone_mobile[1:])
+
         return data
 
     def perform_create(self, serializer):
