@@ -5,7 +5,7 @@ from django_filters.rest_framework import FilterSet
 from rest_framework.filters import OrderingFilter
 
 from r3sourcer.apps.core import models
-from r3sourcer.apps.core_adapter.filters import DateRangeFilter
+from r3sourcer.apps.core_adapter.filters import DateRangeFilter, RangeNumberFilter
 from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.core.utils.companies import get_site_master_company
@@ -20,10 +20,11 @@ class CompanyFilter(FilterSet):
     regular_company = UUIDFilter(method='filter_regular_company')
     current = BooleanFilter(method='filter_current')
     has_industry = BooleanFilter(method='filter_has_industry')
+    approved_credit_limit = RangeNumberFilter()
 
     class Meta:
         model = models.Company
-        fields = ['name', 'business_id', 'country', 'type', 'id', 'approved_credit_limit']
+        fields = ['name', 'business_id', 'country', 'type', 'id', 'approved_credit_limit', 'credit_check']
 
     def filter_name(self, queryset, name, value):
         return queryset.filter(
