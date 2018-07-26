@@ -88,7 +88,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         from .models import WorkflowObject
         try:
             result = WorkflowObject.objects.filter(
-                object_id=self.id, state__workflow__model=self.content_type,
+                object_id=self.id, state__workflow__model=self.content_type, active=True,
                 state__company_workflow_nodes__company=self.get_closest_company()
             ).latest('created_at').state
         except (AttributeError, WorkflowObject.DoesNotExist):
