@@ -1,3 +1,4 @@
+from crum import get_current_request
 from django.db.models import Avg
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, serializers
@@ -104,7 +105,24 @@ class CandidateContactSerializer(
         if not contact.birthday:
             raise exceptions.ValidationError({'contact': _('Contact should have birthday.')})
 
+        request = self.context.get('request')
+        access_levels = (core_models.constants.MANAGER, core_models.constants.CLIENT)
+
+        if request and (not request.user.is_authenticated or request.user.access_level not in access_levels):
+            raise exceptions.PermissionDenied()
+
         instance = super().create(validated_data)
+
+        if request:
+            current_company = request.user.contact.get_closest_company()
+            candidate_models.CandidateRel.objects.create(
+                master_company=current_company,
+                candidate_contact=instance,
+                company_contact=request.user.contact.company_contact.filter(relationships__active=True).first(),
+                owner=True,
+                active=True,
+            )
+
         return instance
 
     class Meta:
