@@ -11,8 +11,12 @@ from django.utils.translation import ugettext_lazy as _
 
 
 states = MockSet(
-    MockModel(object_id=1, state=MockModel(number=10, workflow=MockModel(model=1)), active=True, created_at=1),
-    MockModel(object_id=1, state=MockModel(number=20, workflow=MockModel(model=1)), active=True, created_at=2)
+    MockModel(object_id=1, state=MockModel(
+        number=10, workflow=MockModel(model=1), company_workflow_nodes=MockModel(company=1)
+    ), active=True, created_at=1),
+    MockModel(object_id=1, state=MockModel(
+        number=20, workflow=MockModel(model=1), company_workflow_nodes=MockModel(company=1)
+    ), active=True, created_at=2)
 )
 
 
@@ -126,7 +130,8 @@ class TestWorkflowProcess:
     def test_get_active_states(self, mock_objects, workflow_proc):
         mock_objects.return_value = states
 
-        wp_active_states = workflow_proc.get_active_states()
+        with mock.patch.object(WorkflowProcess, 'get_closest_company', return_value=1):
+            wp_active_states = workflow_proc.get_active_states()
 
         assert wp_active_states.count() == 2
         assert wp_active_states.first().state.number == 20
@@ -150,7 +155,8 @@ class TestWorkflowProcess:
     def test_get_current_state(self, mock_objects, workflow_proc):
         mock_objects.return_value = states
 
-        current_state = workflow_proc.get_current_state()
+        with mock.patch.object(WorkflowProcess, 'get_closest_company', return_value=1):
+            current_state = workflow_proc.get_current_state()
 
         assert current_state.number == 20
 
