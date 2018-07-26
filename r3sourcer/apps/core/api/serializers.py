@@ -1296,6 +1296,7 @@ class CompanyListSerializer(
             'subcontractor': {'read_only': True},
             'groups': {'read_only': True},
             'business_id': {'required': True},
+            'sms_balance': {'required': False},
         }
 
     def get_company_rel(self, company):
