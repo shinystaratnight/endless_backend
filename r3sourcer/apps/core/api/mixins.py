@@ -119,3 +119,16 @@ class WorkflowLatestStateMixin:
             'number': state.state.number,
             'id': state.state.id,
         }] if state else []
+
+
+class ApiContentTypeFieldMixin:
+
+    def get_method_fields(self):
+        method_fields = list(super().get_method_fields())
+        return method_fields + ['model_content_type']
+
+    def get_model_content_type(self, obj):
+        if not obj:
+            return None
+
+        return ContentType.objects.get_for_model(self.Meta.model).pk

@@ -40,24 +40,6 @@ class TestCompanyContactResource(ResourceMixin):
         'post': 'create',
     }
 
-    @pytest.fixture
-    def candidate_contact_data(self, country, skill, tag):
-        candidate_contact_data = {
-            'title': 'Mr.',
-            'first_name': 'Test',
-            'last_name': 'Tester',
-            'email': 'tester@test.tt',
-            'phone_mobile': '+12345678940',
-            'address': {
-                'street_address': 'test str',
-                'country': str(country.id),
-            },
-            'skills': [str(skill.id)],
-            'tags': [str(tag.id)],
-            'agree': True,
-        }
-        return candidate_contact_data
-
     @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
                 return_value=(42, 42))
     def test_can_register_candidate_contact(self, mock_geo, rf, user, candidate_contact_data):
@@ -93,24 +75,6 @@ class TestSubcontractorResource(ResourceMixin):
     actions = {
         'post': 'create',
     }
-
-    @pytest.fixture
-    def candidate_contact_data(self, country, skill, tag):
-        candidate_contact_data = {
-            'title': 'Mr.',
-            'first_name': 'Test',
-            'last_name': 'Tester',
-            'email': 'tester@test.tt',
-            'phone_mobile': '+12345678940',
-            'address': {
-                'street_address': 'test str',
-                'country': str(country.id),
-            },
-            'skills': [str(skill.id)],
-            'tags': [str(tag.id)],
-            'agree': True,
-        }
-        return candidate_contact_data
 
     @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
                 return_value=(42, 42))
