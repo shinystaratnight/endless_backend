@@ -308,12 +308,7 @@ class ContactFilter(FilterSet):
         return queryset.filter(address__state=value)
 
     def filter_contact_type(self, queryset, name, value):
-        if value == CANDIDATE:
-            return queryset.filter(candidate_contacts__isnull=False)
-        elif value:
-            return queryset.filter(company_contact__role=value)
-
-        return queryset
+        return queryset.filter(user__role__name=value).distinct()
 
     def filter_is_company_contact(self, queryset, name, value):
         return queryset.filter(company_contact__isnull=not value)

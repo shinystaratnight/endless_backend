@@ -30,14 +30,15 @@ def contact_data():
         first_name='John',
         last_name='Connor',
         email='connor@test.test',
-        phone_mobile='+41789272696'
+        phone_mobile='+41789272696',
+        birthday=datetime.date(1991, 1, 1),
     )
 
 
 @pytest.fixture
 def contact(db, user, contact_data):
     contact = user.contact
-    keys = ('title first_name last_name email phone_mobile').split()
+    keys = ('title first_name last_name email phone_mobile birthday').split()
     for key in keys:
         setattr(contact, key, contact_data[key])
     return contact
@@ -301,3 +302,23 @@ def price_list(db, company):
     return PriceList.objects.create(
         company=company,
     )
+
+
+@pytest.fixture
+def candidate_contact_data(country, skill, tag):
+    candidate_contact_data = {
+        'title': 'Mr.',
+        'first_name': 'Test',
+        'last_name': 'Tester',
+        'email': 'tester@test.tt',
+        'phone_mobile': '+12345678940',
+        'address': {
+            'street_address': 'test str',
+            'country': str(country.id),
+        },
+        'birthday': '1991-02-02',
+        'skills': [str(skill.id)],
+        'tags': [str(tag.id)],
+        'agree': True,
+    }
+    return candidate_contact_data

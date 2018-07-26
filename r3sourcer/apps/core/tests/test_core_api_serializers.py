@@ -655,7 +655,7 @@ class TestContactSerializer(SerializerMixin):
             'birthday', 'picture', 'id', 'address', 'company_contact', 'availability',
             'phone_mobile_verified', 'email_verified', 'notes', '__str__', 'is_available',
             'notes', 'is_candidate_contact', 'is_company_contact', 'job_title', 'user', 'master_company',
-            'candidate_contacts', 'created_at', 'updated_at'
+            'candidate_contacts', 'created_at', 'updated_at', 'model_content_type'
         }
         assert expected_keys == set(data.keys())
         assert data['id'] == contact.id

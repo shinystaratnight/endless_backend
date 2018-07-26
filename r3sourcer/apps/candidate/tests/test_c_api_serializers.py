@@ -135,6 +135,7 @@ class TestCandidateContactRegisterSerializer:
                 'street_address': 'test str',
                 'country': country,
             },
+            'birthday': '1991-02-02',
             'skills': [skill],
             'tags': [tag],
             'agree': True,

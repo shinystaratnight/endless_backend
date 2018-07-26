@@ -93,13 +93,16 @@ class CandidateContactSerializer(
         contact = validated_data.get('contact', None)
         if not isinstance(contact, core_models.Contact):
             raise exceptions.ValidationError(
-                _('Contact is required')
+                _('Contact is required.')
             )
 
         if candidate_models.CandidateContact.objects.filter(contact=contact).exists():
             raise exceptions.ValidationError(
                 _('Candidate Contact with this Contact already exists.')
             )
+
+        if not contact.birthday:
+            raise exceptions.ValidationError({'contact': _('Contact should have birthday.')})
 
         instance = super().create(validated_data)
         return instance
