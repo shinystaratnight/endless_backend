@@ -258,9 +258,9 @@ def generate_invoice(timesheet_id=None):
     service.generate_invoice(date_from, date_to, company=company, invoice=invoice)
 
 
-@app.task(queue='sms')
+@app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
-def process_time_sheet_log_and_send_notifications(time_sheet_id, event):
+def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
     """
     Send time sheet log sms notification.
 
