@@ -1679,3 +1679,17 @@ class TrialSerializer(serializers.Serializer):
             pass
 
         return data
+
+
+class TagSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.Tag
+        fields = (
+            'id', 'name', 'parent', 'active', 'evidence_required_for_approval', 'confidential',
+            'skills', 'children'
+        )
+        extra_kwargs = {
+            'skills': {'read_only': True},
+            'children': {'read_only': True},
+        }
