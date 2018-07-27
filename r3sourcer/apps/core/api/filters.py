@@ -134,7 +134,7 @@ class WorkflowNodeFilter(FilterSet):
 
     class Meta:
         model = models.WorkflowNode
-        fields = ['workflow', 'workflow__model', 'parent']
+        fields = ['workflow', 'workflow__model', 'parent', 'number']
 
     def filter_workflow(self, queryset, name, value):
         self._workflow = value
