@@ -1690,7 +1690,7 @@ class TagSerializer(ApiBaseModelSerializer):
         fields = ('id', 'name', 'parent', 'active', 'evidence_required_for_approval', 'confidential')
 
     def get_skills(self, obj):
-        return [core_field.ApiBaseRelatedField.to_read_only_data(skill) for skill in obj.skills.all()]
+        return [{'id': skill.id, '__str__': str(skill.skill)} for skill in obj.skill_tags.all()]
 
     def get_children(self, obj):
         return [core_field.ApiBaseRelatedField.to_read_only_data(child) for child in obj.children.all()]
