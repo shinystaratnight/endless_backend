@@ -856,10 +856,17 @@ class Subcontractor(core_models.UUIDModel):
         default=SUBCONTRACTOR_TYPE_CHOICES.sole_trader
     )
 
+    business_id = models.CharField(
+        max_length=31,
+        verbose_name=_("Business Number")
+    )
+
     company = models.OneToOneField(
         core_models.Company,
         on_delete=models.CASCADE,
-        parent_link=True
+        parent_link=True,
+        null=True,
+        blank=True
     )
 
     primary_contact = models.ForeignKey(
