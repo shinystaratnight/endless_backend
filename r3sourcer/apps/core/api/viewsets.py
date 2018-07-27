@@ -450,7 +450,7 @@ class CompanyContactViewset(BaseApiViewset):
         if not id_list or not isinstance(id_list, list):
             raise exceptions.ParseError(_('You should select Company addresses'))
 
-        phone_numbers = self.model.objects.filter(
+        phone_numbers = models.CompanyContact.objects.filter(
             id__in=id_list, contact__phone_mobile__isnull=False
         ).values_list(
             'contact__phone_mobile', flat=True

@@ -286,14 +286,14 @@ class CountryFilter(FilterSet):
 
 class RegionFilter(FilterSet):
 
-    country = UUIDFilter(method='filter_country')
+    country = CharFilter(method='filter_country')
 
     class Meta:
         model = models.Region
         fields = ('country',)
 
     def filter_country(self, queryset, name, value):
-        return queryset.filter(Q(country_id=value) | Q(country__code2=value))
+        return queryset.filter(Q(country__code2=value) if len(value) == 2 else Q(country_id=value))
 
 
 class CityFilter(FilterSet):
