@@ -619,6 +619,10 @@ class TagRel(core_models.UUIDModel):
             self.verified_by = None
         super(TagRel, self).save(*args, **kwargs)
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class SkillRel(core_models.UUIDModel):
 
@@ -676,6 +680,10 @@ class SkillRel(core_models.UUIDModel):
 
     def get_myob_name(self):
         return '{} {}'.format(str(self.skill.get_myob_name()), str(self.hourly_rate))
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
 
 class InterviewSchedule(core_models.UUIDModel):

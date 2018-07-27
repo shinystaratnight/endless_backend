@@ -140,6 +140,10 @@ class Skill(MYOBMixin, UUIDModel):
 
         return name[:6]
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class SkillBaseRate(UUIDModel):
 
