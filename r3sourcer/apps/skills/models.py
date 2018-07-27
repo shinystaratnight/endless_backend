@@ -212,4 +212,4 @@ class SkillTag(UUIDModel):
         unique_together = ("tag", "skill")
 
     def __str__(self):
-        return self.tag.name
+        return self.skill.name

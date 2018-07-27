@@ -315,6 +315,7 @@ class TagEndpoint(ApiEndpoint):
 
     model = models.Tag
     filter_class = filters.TagFilter
+    serializer = serializers.TagSerializer
     search_fields = ('name', )
     serializer_fields = ('id', 'name', 'parent', 'active', 'evidence_required_for_approval', 'confidential')
 

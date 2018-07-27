@@ -1679,3 +1679,18 @@ class TrialSerializer(serializers.Serializer):
             pass
 
         return data
+
+
+class TagSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('skills', 'children')
+
+    class Meta:
+        model = core_models.Tag
+        fields = ('id', 'name', 'parent', 'active', 'evidence_required_for_approval', 'confidential')
+
+    def get_skills(self, obj):
+        return [{'id': skill.id, '__str__': str(skill.skill)} for skill in obj.skill_tags.all()]
+
+    def get_children(self, obj):
+        return [core_field.ApiBaseRelatedField.to_read_only_data(child) for child in obj.children.all()]
