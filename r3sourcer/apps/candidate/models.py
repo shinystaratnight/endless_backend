@@ -856,10 +856,17 @@ class Subcontractor(core_models.UUIDModel):
         default=SUBCONTRACTOR_TYPE_CHOICES.sole_trader
     )
 
+    business_id = models.CharField(
+        max_length=31,
+        verbose_name=_("Business Number")
+    )
+
     company = models.OneToOneField(
         core_models.Company,
         on_delete=models.CASCADE,
-        parent_link=True
+        parent_link=True,
+        null=True,
+        blank=True
     )
 
     primary_contact = models.ForeignKey(
@@ -883,10 +890,28 @@ class Subcontractor(core_models.UUIDModel):
         verbose_name_plural = _("Subcontactors")
 
     def __str__(self):
-        if (self.subcontractor_type ==
-                self.SUBCONTRACTOR_TYPE_CHOICES.sole_trader):
+        if (self.subcontractor_type == self.SUBCONTRACTOR_TYPE_CHOICES.sole_trader):
             return str(self.primary_contact)
         return str(self.company)
+
+
+class SubcontractorCandidateRelation(core_models.UUIDModel):
+
+    subcontractor = models.ForeignKey(
+        Subcontractor,
+        related_name='subcontractor_candidates',
+        verbose_name=_('Subcontractor')
+    )
+
+    candidate_contact = models.ForeignKey(
+        CandidateContact,
+        related_name='subcontractor_candidates',
+        verbose_name=_('Candidate Contact')
+    )
+
+    class Meta:
+        verbose_name = _("Subcontractor Candidate Relation")
+        verbose_name_plural = _("Subcontractor Candidate Relations")
 
 
 class CandidateContactAnonymous(CandidateContact):
