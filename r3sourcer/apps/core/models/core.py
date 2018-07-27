@@ -1028,6 +1028,11 @@ class Company(
                 master_companies.extend(company_rel.master_company.get_master_company())
             return master_companies
 
+    def get_closest_master_company(self):
+        master_companies = self.get_master_company()
+
+        return master_companies[0] if len(master_companies) > 0 else None
+
     @classmethod
     def get_master_company_lookup(cls, master_company):
         return Q(id=master_company.id)
