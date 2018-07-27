@@ -1282,7 +1282,7 @@ class CompanyListSerializer(
             {
                 'invoice_rule': '__all__',
                 'manager': (
-                    'id', '__str__',
+                    'id', '__str__', 'job_title',
                     {
                         'contact': ('id', 'email', 'phone_mobile')
                     }

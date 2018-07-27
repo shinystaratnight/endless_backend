@@ -127,6 +127,7 @@ class WorkflowNodeFilter(FilterSet):
     company = ModelChoiceFilter(queryset=models.Company.objects, method='filter_company')
     system = BooleanFilter(method='filter_system')
     workflow = UUIDFilter(method='filter_workflow')
+    content_type = CharFilter(method='filter_content_type')
 
     _company = None
     _workflow = None
@@ -173,6 +174,17 @@ class WorkflowNodeFilter(FilterSet):
             ).exclude(id__in=system_nodes_exclude).distinct()
 
         return system_nodes
+
+    def filter_content_type(self, queryset, name, value):
+        try:
+            app_label, model = value.split('.')
+            content_type = ContentType.objects.get_by_natural_key(app_label, model.lower())
+
+            self._workflow = models.Workflow.objects.get(model=content_type)
+        except Exception:
+            return queryset.none()
+
+        return queryset.filter(workflow=self._workflow)
 
 
 class CompanyWorkflowNodeFilter(FilterSet):
