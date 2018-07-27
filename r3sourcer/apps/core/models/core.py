@@ -1615,6 +1615,10 @@ class Tag(MPTTModel, UUIDModel):
     def __str__(self):
         return self.name
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class VAT(UUIDModel):
     country = models.ForeignKey(Country, to_field='code2', default='AU')
