@@ -419,11 +419,11 @@ class JobViewset(BaseApiViewset):
 
             if is_pool:
                 candidate_contacts = candidate_contacts.exclude(
-                    candidate_rels__master_company=job.customer_company
+                    candidate_rels__master_company=job.provider_company
                 ).distinct()
             else:
                 candidate_contacts = candidate_contacts.filter(
-                    candidate_rels__master_company=job.customer_company, candidate_rels__active=True
+                    candidate_rels__master_company=job.provider_company, candidate_rels__active=True
                 ).distinct()
 
             transportation = request.GET.get('transportation_to_work', None)

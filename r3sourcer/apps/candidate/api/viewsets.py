@@ -19,8 +19,9 @@ class CandidateContactViewset(BaseApiViewset):
 
     def list(self, request, *args, **kwargs):
         company = request.user.contact.get_closest_company()
+        master_company = company.get_closest_master_company()
         queryset = CandidateContact.objects.filter(
-            candidate_rels__master_company=company,
+            candidate_rels__master_company=master_company,
             candidate_rels__active=True
         ).distinct()
         return self._paginate(request, self.get_serializer_class(), self.filter_queryset(queryset))
@@ -66,14 +67,15 @@ class CandidateContactViewset(BaseApiViewset):
             queryset = CandidateContactAnonymous.objects.none()
         else:
             company = request.user.contact.get_closest_company()
+            master_company = company.get_closest_master_company()
             queryset = CandidateContactAnonymous.objects.exclude(
-                Q(candidate_rels__master_company=company) | Q(profile_price__lte=0)
+                Q(candidate_rels__master_company=master_company) | Q(profile_price__lte=0)
             ).distinct()
         return self._paginate(request, serializers.CandidatePoolSerializer, self.filter_queryset(queryset))
 
     @action(methods=['post'], detail=True, permission_classes=[])
     def buy(self, request, pk, *args, **kwargs):
-        master_company = request.user.contact.get_closest_company()
+        master_company = request.user.contact.get_closest_company().get_closest_master_company()
         candidate_contact = self.get_object()
         company = request.data.get('company')
 
@@ -89,6 +91,9 @@ class CandidateContactViewset(BaseApiViewset):
             company = Company.objects.get(pk=company)
         except Company.DoesNotExist:
             raise exceptions.ValidationError({'company': _('Cannot find company')})
+
+        if company.type != Company.COMPANY_TYPES.master:
+            raise exceptions.ValidationError({'company': _("Only Master company can buy candidate's profile")})
 
         existing_rel = CandidateRel.objects.filter(
             master_company=company, candidate_contact=candidate_contact

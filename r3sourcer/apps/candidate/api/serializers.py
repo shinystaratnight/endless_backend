@@ -115,8 +115,9 @@ class CandidateContactSerializer(
 
         if request:
             current_company = request.user.contact.get_closest_company()
+            master_company = company.get_closest_master_company()
             candidate_models.CandidateRel.objects.create(
-                master_company=current_company,
+                master_company=master_company,
                 candidate_contact=instance,
                 company_contact=request.user.contact.company_contact.filter(relationships__active=True).first(),
                 owner=True,
