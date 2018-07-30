@@ -37,6 +37,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.logger.main import endless_logger
+from .dashboard import UserDashboardModule, DashboardModule
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..managers import (
@@ -749,6 +750,32 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     @classmethod
     def get_master_company_lookup(cls, master_company):
         return Q(relationships__company=master_company)
+
+    def save(self, *args, **kwargs):
+        if not self.id:
+            super(CompanyContact, self).save(*args, **kwargs)
+
+            if self.role == MANAGER:
+                UserDashboardModule.objects.create(
+                    company_contact=self,
+                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact')
+                )
+                UserDashboardModule.objects.create(
+                    company_contact=self,
+                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new client')
+                )
+                UserDashboardModule.objects.create(
+                    company_contact=self,
+                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact')
+                )
+                UserDashboardModule.objects.create(
+                    company_contact=self,
+                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new job')
+                )
+
+            return
+
+        super(CompanyContact, self).save(*args, **kwargs)
 
 
 class BankAccount(UUIDModel):
