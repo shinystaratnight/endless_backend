@@ -77,8 +77,8 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class CandidateContactSerializer(
-    core_serializers.ApiRelatedFieldManyMixin, core_mixins.WorkflowStatesColumnMixin,
-    core_mixins.WorkflowLatestStateMixin, core_serializers.ApiBaseModelSerializer
+    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
+    core_serializers.ApiBaseModelSerializer
 ):
 
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score')
