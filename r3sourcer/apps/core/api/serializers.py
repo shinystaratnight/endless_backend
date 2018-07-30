@@ -678,6 +678,9 @@ class ContactSerializer(ApiContactImageFieldsMixin, core_mixins.ApiContentTypeFi
         if not data.get('email') and not data.get('phone_mobile'):
             raise serializers.ValidationError(_('Please specify E-mail and/or Mobile Phone'))
 
+        if self.instance and getattr(self.instance, 'candidate_contacts', None) and not data.get('birthday'):
+            raise serializers.ValidationError({'birthday': [_('Birthday is required')]})
+
         return data
 
     class Meta:
