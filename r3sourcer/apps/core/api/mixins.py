@@ -40,8 +40,19 @@ class CreatedUpdatedByMixin:
         method_fields = list(super().get_method_fields())
         return method_fields + ['created_by', 'updated_by']
 
+    def get_field_to_check_create(self, obj):
+        return 'id'
+
+    def get_field_to_check_update(self, obj):
+        return 'updated_at'
+
     def _get_log_updated_by(self, obj, log_type=None):
-        log_entry = endless_logger.get_recent_field_change(self.Meta.model, obj.id, 'id', log_type)
+        if log_type and log_type == 'create':
+            field = self.get_field_to_check_create(obj)
+        else:
+            field = self.get_field_to_check_update(obj)
+
+        log_entry = endless_logger.get_recent_field_change(self.Meta.model, obj.id, field, log_type)
         if 'updated_by' in log_entry:
             user = User.objects.get(id=log_entry['updated_by'])
             email = user.email if hasattr(user, 'contact') else None
