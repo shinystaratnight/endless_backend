@@ -476,7 +476,7 @@ class User(UUIDModel,
     def company(self):
         try:
             if self.is_client() or self.is_manager():
-                contacts = self.contact.company_contact
+                contacts = self.contact.company_contact.all()
                 company = Company.objects.filter(relationships__company_contact__in=contacts) \
                                          .filter(type='master').first()
                 if company:
