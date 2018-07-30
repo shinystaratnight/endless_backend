@@ -18,7 +18,7 @@ class CandidateContactFilter(ActiveStateFilterMixin, FilterSet):
 
     class Meta:
         model = CandidateContact
-        fields = ['skill', 'tag']
+        fields = ['skill', 'tag', 'contact']
 
     def filter_skill(self, queryset, name, value):
         if not value:
