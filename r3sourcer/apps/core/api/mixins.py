@@ -1,12 +1,16 @@
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from django_filters import NumberFilter
+
+from crum import get_current_request
 from rest_framework import exceptions
 
 from r3sourcer.apps.logger.main import endless_logger
-from r3sourcer.apps.core.models import User, WorkflowObject
+from r3sourcer.apps.core.models import User, WorkflowObject, WorkflowNode
 from r3sourcer.apps.core.utils.address import parse_google_address
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 
 
 class WorkflowStatesColumnMixin():
@@ -60,18 +64,43 @@ class ActiveStateFilterMixin:
 
     active_states = NumberFilter(method='filter_active_state')
 
+    def _get_closest_company(self):
+        current_request = get_current_request()
+
+        if current_request:
+            current_user = current_request.user
+            if current_user.contact.is_company_contact():
+                current_company = current_user.contact.get_closest_company()
+                return current_company
+
+        return get_site_master_company(request=current_request)
+
     def _fetch_workflow_objects(self, value):  # pragma: no cover
         content_type = ContentType.objects.get_for_model(self.Meta.model)
+        wf_node_order = WorkflowNode.objects.get(number=value, workflow__model=content_type, active=True).order
+
         objects = WorkflowObject.objects.filter(
-            state__number=value,
-            state__workflow__model=content_type,
-            active=True,
+            Q(
+                Q(state__number__gt=value) | Q(state__order__gt=wf_node_order),
+                state__workflow__model=content_type,
+                state__company_workflow_nodes__company=self._get_closest_company(),
+                active=True
+            ) |
+            Q(state__workflow__isnull=True)
         ).distinct('object_id').values_list('object_id', flat=True)
 
-        return objects
+        print('!', objects)
+
+        return WorkflowObject.objects.exclude(object_id__in=objects).filter(
+            state__number=value,
+            state__workflow__model=content_type,
+            state__company_workflow_nodes__company=self._get_closest_company(),
+            active=True
+        ).distinct('object_id').values_list('object_id', flat=True)
 
     def filter_active_state(self, queryset, name, value):
         objects = self._fetch_workflow_objects(value)
+        print('!!', objects)
         return queryset.filter(id__in=objects)
 
 
