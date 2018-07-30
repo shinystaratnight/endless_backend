@@ -476,7 +476,13 @@ class User(UUIDModel,
     def company(self):
         try:
             if self.is_client() or self.is_manager():
-                return self.contact.company_contact.first().relationships.first().company
+                contacts = self.contact.company_contact.all()
+                company = Company.objects.filter(relationships__company_contact__in=contacts) \
+                                         .filter(type='master').first()
+                if company:
+                    return company
+                else:
+                    return self.contact.company_contact.first().relationships.first().company
             elif self.is_candidate():
                 return self.contact.candidate_contacts.candidate_rels.first().master_company
             else:
