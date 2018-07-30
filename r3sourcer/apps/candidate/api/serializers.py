@@ -65,7 +65,7 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
         fields = (
             '__all__',
             {
-                'tag': ('id', 'name', 'evidence_required_for_approval', 'active')
+                'tag': ('id', 'name', 'evidence_required_for_approval', 'active', 'confidential')
             }
         )
 
