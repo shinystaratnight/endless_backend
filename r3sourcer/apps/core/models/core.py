@@ -1127,6 +1127,9 @@ class Company(
         from r3sourcer.apps.hr.models import PayslipRule
         from r3sourcer.apps.billing.models import SMSBalance
 
+        if self._state.adding and not self.short_name:
+            self.short_name = self.name
+
         super(Company, self).save(*args, **kwargs)
 
         if not hasattr(self, 'company_settings'):
