@@ -675,7 +675,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, core_mixins.ApiContentTypeFi
         return contact
 
     def validate(self, data):
-        if not data.get('email') and not data.get('phone_mobile'):
+        if not self.partial and not data.get('email') and not data.get('phone_mobile'):
             raise serializers.ValidationError(_('Please specify E-mail and/or Mobile Phone'))
 
         if self.instance and getattr(self.instance, 'candidate_contacts', None) and not data.get('birthday'):
