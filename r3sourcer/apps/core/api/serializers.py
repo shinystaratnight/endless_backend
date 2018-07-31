@@ -5,6 +5,7 @@ from collections import OrderedDict
 from django.conf import settings
 from django.core.cache import cache
 from django.contrib.auth import get_user_model
+from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.sites.shortcuts import get_current_site
@@ -14,7 +15,7 @@ from django.utils import six, timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from phonenumber_field import phonenumber
-from rest_framework import serializers, exceptions
+from rest_framework import serializers, exceptions, validators
 from rest_framework.fields import empty
 
 from django.db.models.fields.related import (
@@ -156,6 +157,7 @@ class ApiFullRelatedFieldsMixin():
                 continue
 
             is_many_to_one_relation = isinstance(related_field, ManyToOneRel)
+            is_many_to_many_relation = isinstance(related_field, (ManyToManyRel, ManyToManyField))
             is_one_to_one_relation = isinstance(related_field, OneToOneRel)
             if not isinstance(related_field, RelatedField) and not is_many_to_one_relation:
                 if getattr(related_field, 'blank', False) and not getattr(related_field, 'null', False):
@@ -173,11 +175,12 @@ class ApiFullRelatedFieldsMixin():
                 rel_model = related_field.rel.model
 
             if data is not empty or (request is not None and request.method in ('POST', 'PUT', 'PATCH')):
-                if is_pk_data or (data is empty and related_obj_setting == RELATED_NONE and not is_many_relation):
+                if is_pk_data or (data is empty and related_obj_setting == RELATED_NONE and not is_many_relation and
+                                  not is_many_to_many_relation):
+
                     kwargs = {'field': field}
                     if is_pk_data:
-                        kwargs.update(read_only=False,
-                                      queryset=rel_model.objects)
+                        kwargs.update(read_only=False, queryset=rel_model.objects)
 
                     self.fields[field_name] = self._get_id_related_field(
                         **kwargs
@@ -1268,6 +1271,13 @@ class InvoiceRuleSerializer(ApiBaseModelSerializer):
         }
 
 
+class GroupSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = Group
+        fields = ('__all__', )
+
+
 class CompanyListSerializer(
     core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin, ApiBaseModelSerializer
 ):
@@ -1277,6 +1287,7 @@ class CompanyListSerializer(
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
+    groups = GroupSerializer(required=False, many=True, read_only=True)
 
     class Meta:
         model = core_models.Company
@@ -1290,15 +1301,20 @@ class CompanyListSerializer(
                         'contact': ('id', 'email', 'phone_mobile')
                     }
                 ),
-                'groups': ('id', '__str__')
             }
         )
         extra_kwargs = {
             'company_settings': {'read_only': True},
             'myob_settings': {'read_only': True},
             'subcontractor': {'read_only': True},
-            'groups': {'read_only': True},
-            'business_id': {'required': True},
+            'business_id': {
+                'required': True,
+                'validators': [
+                    validators.UniqueValidator(
+                        queryset=core_models.Company.objects.all(), message=_('This Business Number already exists')
+                    )
+                ]
+            },
             'sms_balance': {'required': False},
         }
 
