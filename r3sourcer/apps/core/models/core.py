@@ -69,6 +69,10 @@ class UUIDModel(models.Model):
     def is_owned(cls):
         return True
 
+    @classmethod
+    def owner_lookups(cls, owner):
+        return []
+
     @property
     def object_history(self):
         return endless_logger.get_object_history(self.__class__, self.pk)
@@ -284,6 +288,10 @@ class Contact(
             self.user = user
 
         super().save(*args, **kwargs)
+
+    @classmethod
+    def owner_lookups(cls, owner):
+        return [Q(candidate_contacts__isnull=True), Q(company_contact__isnull=True)]
 
 
 class ContactUnavailability(UUIDModel):

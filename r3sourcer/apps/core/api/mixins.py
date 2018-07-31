@@ -100,8 +100,6 @@ class ActiveStateFilterMixin:
             Q(state__workflow__isnull=True)
         ).distinct('object_id').values_list('object_id', flat=True)
 
-        print('!', objects)
-
         return WorkflowObject.objects.exclude(object_id__in=objects).filter(
             state__number=value,
             state__workflow__model=content_type,
@@ -111,7 +109,6 @@ class ActiveStateFilterMixin:
 
     def filter_active_state(self, queryset, name, value):
         objects = self._fetch_workflow_objects(value)
-        print('!!', objects)
         return queryset.filter(id__in=objects)
 
 

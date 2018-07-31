@@ -25,6 +25,8 @@ class AbstractObjectOwnerQuerySet(LoggerQuerySet):
         if not lookups:
             lookups = self._get_obj_related_lookups(_obj)
 
+        lookups.extend(self.model.owner_lookups(_obj))
+
         if lookups:
             from operator import __or__ as OR
             return self.filter(reduce(OR, lookups)).distinct()
