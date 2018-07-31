@@ -8,6 +8,7 @@ from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Invoice
+from r3sourcer.apps.core_adapter.filters import DateRangeFilter
 from r3sourcer.apps.hr import models as hr_models
 
 
@@ -82,6 +83,7 @@ class TimesheetFilter(FilterSet):
 class JobFilter(ActiveStateFilterMixin, FilterSet):
 
     active_states = NumberFilter(method='filter_active_state')
+    shift_dates__shift_date = DateRangeFilter(distinct=True)
 
     class Meta:
         model = hr_models.Job
