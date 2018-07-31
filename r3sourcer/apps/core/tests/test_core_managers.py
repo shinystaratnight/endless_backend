@@ -25,7 +25,7 @@ class TestAbstractObjectOwnerManager:
     def test_contact_owned_by_company(self, staff_company_contact,
                                       staff_relationship, company):
         result = Contact.objects.owned_by(company)
-        assert result.count() == 1
+        assert result.count() == 2
         assert result.filter(id=staff_company_contact.contact.id).exists()
 
     def test_address_owned_by_contact(self, contact, contact_address):
