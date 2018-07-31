@@ -44,13 +44,13 @@ class SuperannuationFundEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.SuperannuationFund
     search_fields = ['name']
-    serializer_fields = ('name', 'membership_number', 'phone', 'website')
+    serializer_fields = ('id', 'name', 'membership_number', 'phone', 'website')
 
 
 class VisaTypeEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.VisaType
-    serializer_fields = ('subclass', 'name', 'general_type', 'work_hours_allowed', 'is_available')
+    serializer_fields = ('id', 'subclass', 'name', 'general_type', 'work_hours_allowed', 'is_available')
 
 
 router.register(endpoint=VisaTypeEndpoint())
