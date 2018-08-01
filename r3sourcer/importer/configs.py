@@ -410,7 +410,7 @@ class CandidateContactConfig(BaseConfig):
 
     columns = {
         'id', 'contact_id', 'residency', 'nationality', 'visa_type_id', 'visa_expiry_date', 'vevo_checked_at',
-        'referral', 'tax_file_number', 'super_annual_fund_name', 'super_member_number', 'weight', 'height',
+        'referral', 'tax_file_number', 'weight', 'height',
         'strength', 'language', 'transportation_to_work', 'emergency_contact_name', 'emergency_contact_phone',
         'autoreceives_sms', 'bank_account_id', 'updated_at', 'employment_classification_id', 'superannuation_fund',
         'created_at',

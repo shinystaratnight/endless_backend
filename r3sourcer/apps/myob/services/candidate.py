@@ -191,7 +191,7 @@ class CandidateSync(
 
     def _get_superannuation_fund(self, candidate_contact):
         super_fund = candidate_contact.superannuation_fund
-        fund_name = super_fund.name if super_fund else candidate_contact.super_annual_fund_name
+        fund_name = super_fund.name if super_fund else ''
 
         if not fund_name:
             return
