@@ -1287,7 +1287,6 @@ class CompanyListSerializer(
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
-    groups = GroupSerializer(required=False, many=True, read_only=True)
 
     class Meta:
         model = core_models.Company
@@ -1301,12 +1300,14 @@ class CompanyListSerializer(
                         'contact': ('id', 'email', 'phone_mobile')
                     }
                 ),
+                'groups': ('id', '__str__'),
             }
         )
         extra_kwargs = {
             'company_settings': {'read_only': True},
             'myob_settings': {'read_only': True},
             'subcontractor': {'read_only': True},
+            'groups': {'read_only': True},
             'business_id': {
                 'required': True,
                 'validators': [

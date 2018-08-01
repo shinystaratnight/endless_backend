@@ -1383,6 +1383,10 @@ class CompanyAddress(
     def get_master_company_lookup(cls, master_company):
         return Q(company=master_company)
 
+    @classmethod
+    def owner_lookups(cls, owner):
+        return [Q(company__regular_companies__master_company=owner)]
+
 
 class CompanyContactAddress(
         UUIDModel,

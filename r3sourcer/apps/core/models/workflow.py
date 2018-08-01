@@ -355,6 +355,10 @@ class WorkflowObject(UUIDModel):
 
         return score
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class CompanyWorkflowNode(UUIDModel):
     company = models.ForeignKey(

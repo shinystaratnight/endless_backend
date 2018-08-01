@@ -521,7 +521,8 @@ class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
     def perform_destroy(self, instance):
         if models.CompanyAddress.objects.filter(company=instance.company).count() == 1:
             company_rel = instance.company.regular_companies.last()
-            if company_rel and company_rel.is_allowed(80):
+            is_active_state = company_rel.get_active_states().filter(state__number=70).exists()
+            if company_rel and company_rel.is_allowed(80) and is_active_state:
                 company_rel.create_state(80, _('Company has no active address!'))
 
         super().perform_destroy(instance)
