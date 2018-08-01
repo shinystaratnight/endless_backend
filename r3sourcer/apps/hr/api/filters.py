@@ -17,6 +17,7 @@ class TimesheetFilter(FilterSet):
     approved = BooleanFilter(method='filter_approved')
     company = UUIDFilter('job_offer__shift__date__job__customer_company_id')
     jobsite = UUIDFilter('job_offer__shift__date__job__jobsite_id')
+    shift_started_at = DateRangeFilter(distinct=True)
 
     class Meta:
         model = hr_models.TimeSheet

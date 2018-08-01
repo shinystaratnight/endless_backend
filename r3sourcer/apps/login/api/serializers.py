@@ -60,7 +60,7 @@ class LoginSerializer(serializers.Serializer):
 class TokenLoginSerializer(ApiBaseModelSerializer):
     class Meta:
         model = models.TokenLogin
-        fields = ('contact', 'redirect_to')
+        fields = ('contact', 'redirect_to', 'role')
 
 
 class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):

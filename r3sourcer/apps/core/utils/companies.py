@@ -45,7 +45,7 @@ def get_site_url(request=None, user=None):
 
     url_parts = urlparse(domain)
 
-    return '{}://{}'.format(url_parts.scheme or 'https', url_parts.netloc or url_parts.path)
+    return '{}://{}'.format(url_parts.scheme or 'http', url_parts.netloc or url_parts.path)
 
 
 def get_site_master_company(site=None, request=None, user=None, default=True):
