@@ -347,9 +347,11 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 recipient = time_sheet.candidate_contact
 
                 sign_navigation = core_models.ExtranetNavigation.objects.get(id=124)
+                role = recipient.contact.user.role.get(name=core_models.Role.ROLE_NAMES.candidate)
                 extranet_login = TokenLogin.objects.create(
                     contact=recipient.contact,
-                    redirect_to='{}{}/submit/'.format(sign_navigation.url, time_sheet_id)
+                    redirect_to='{}{}/submit/'.format(sign_navigation.url, time_sheet_id),
+                    role=role
                 )
 
                 site_url = core_companies_utils.get_site_url(user=recipient.contact.user)
@@ -410,9 +412,14 @@ def send_supervisor_timesheet_message(
 
     with transaction.atomic():
         sign_navigation = core_models.ExtranetNavigation.objects.get(id=119)
+        role = supervisor.contact.user.role.filter(name=core_models.Role.ROLE_NAMES.client).first()
+        if not role:
+            role = supervisor.contact.user.role.filter(name=core_models.Role.ROLE_NAMES.manager).first()
+
         extranet_login = TokenLogin.objects.create(
             contact=supervisor.contact,
-            redirect_to=sign_navigation.url
+            redirect_to=sign_navigation.url,
+            role=role
         )
 
         company_rel = supervisor.relationships.all().first()
@@ -762,9 +769,16 @@ def send_job_confirmation_sms(self, job_id):
         confirmation_string = get_confirmation_string(job)
 
         sign_navigation = core_models.ExtranetNavigation.objects.get(id=110)
+        role = job.customer_representative.contact.user.role.filter(name=core_models.Role.ROLE_NAMES.client).first()
+        if not role:
+            role = job.customer_representative.contact.user.role.filter(
+                name=core_models.Role.ROLE_NAMES.manager
+            ).first()
+
         extranet_login = TokenLogin.objects.create(
             contact=job.customer_representative.contact,
-            redirect_to='{}{}/change/'.format(sign_navigation.url, job_id)
+            redirect_to='{}{}/change/'.format(sign_navigation.url, job_id),
+            role=role
         )
         site_url = core_companies_utils.get_site_url(user=job.customer_representative.contact.user)
         data_dict = dict(
