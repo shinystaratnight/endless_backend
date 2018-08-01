@@ -454,7 +454,7 @@ class CandidateMapper(StandardPayMapMixin, ContactMapper):
                 'UID': superannuation_category['UID'],
             }]
 
-        super_member_number = candidate_contact.super_member_number
+        super_member_number = candidate_contact.superannuation_fund.membership_number
         if superannuation_fund and super_member_number:
             data['Superannuation'].update({
                 'EmployeeMembershipNumber': super_member_number

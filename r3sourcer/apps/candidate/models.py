@@ -193,18 +193,6 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         blank=True
     )
 
-    super_annual_fund_name = models.CharField(
-        max_length=63,
-        blank=True,
-        verbose_name=_("Super annual Fund Name")
-    )
-
-    super_member_number = models.CharField(
-        max_length=63,
-        verbose_name=_("Super Member Number"),
-        blank=True
-    )
-
     weight = models.DecimalField(
         max_digits=8,
         decimal_places=2,
@@ -362,7 +350,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     def is_formalities_filled(self):
         return bool(self.tax_file_number and
                     self.superannuation_fund and
-                    self.super_member_number and
+                    self.superannuation_fund.membership_number and
                     self.bank_account and
                     self.emergency_contact_name and
                     self.emergency_contact_phone and

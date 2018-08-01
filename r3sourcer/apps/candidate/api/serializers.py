@@ -132,7 +132,8 @@ class CandidateContactSerializer(
                 'candidate_scores': ('id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score'),
                 'recruitment_agent': ('id', 'job_title', {
                     'contact': ('id', 'phone_mobile')
-                })
+                }),
+                'superannuation_fund': ('id', 'name', 'membership_number')
             }
         )
         read_only_fields = ('candidate_scores',)

@@ -71,8 +71,6 @@ def candidate_data(employment_classification, bank_account, superannuation_fund)
         strength=1,
         language=5,
         tax_file_number="123456",
-        super_annual_fund_name="fund name",
-        super_member_number="some number",
         bank_account=bank_account,
         emergency_contact_name="emergency name",
         emergency_contact_phone="+41789232323",
@@ -93,7 +91,7 @@ def candidate(db, contact, candidate_data):
 
     keys = [
         'height', 'weight', 'transportation_to_work', 'strength', 'language', 'tax_file_number', 'superannuation_fund',
-        'super_member_number', 'bank_account', 'emergency_contact_name', 'emergency_contact_phone',
+        'bank_account', 'emergency_contact_name', 'emergency_contact_phone',
         'employment_classification'
     ]
     for key in keys:
