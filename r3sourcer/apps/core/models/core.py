@@ -758,19 +758,23 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
             if self.role == MANAGER:
                 UserDashboardModule.objects.create(
                     company_contact=self,
-                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact')
+                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
+                    position=1
                 )
                 UserDashboardModule.objects.create(
                     company_contact=self,
-                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new client')
+                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new client'),
+                    position=2
                 )
                 UserDashboardModule.objects.create(
                     company_contact=self,
-                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact')
+                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact'),
+                    position=3
                 )
                 UserDashboardModule.objects.create(
                     company_contact=self,
-                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new job')
+                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new job'),
+                    position=4
                 )
 
             return
