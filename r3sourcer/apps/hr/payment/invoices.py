@@ -107,16 +107,17 @@ class InvoiceService(BasePaymentService):
                 'amount': '{0:.2f}'.format(invoice.total)
             }
 
-        domain = Site.objects.get_current().domain
+        domain = 'http://%s' % Site.objects.get_current().domain
 
         context = Context({
-            'lines': invoice.invoice_lines.all(),
+            'lines': invoice.invoice_lines.all()[:1],
             'invoice': invoice,
             'company': invoice.customer_company,
             'code_data': code_data,
             'master_company': invoice.provider_company,
             'show_candidate': show_candidate,
-            'STATIC_URL': 'https://%s/static' % domain
+            'STATIC_URL': '%s/ecore/static' % domain,
+            'DOMAIN': domain
         })
 
         pdf_file = cls._get_file_from_str(str(template.render(context)))
