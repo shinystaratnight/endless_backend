@@ -784,6 +784,10 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
                 position=4
             )
 
+    @classmethod
+    def owner_lookups(cls, owner):
+        return [Q(relationships__company=owner)]
+
 
 class BankAccount(UUIDModel):
     bank_name = models.CharField(max_length=63, verbose_name=_("Bank Name"))
