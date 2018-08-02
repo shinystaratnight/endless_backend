@@ -65,7 +65,7 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
         fields = (
             '__all__',
             {
-                'tag': ('id', 'name', 'evidence_required_for_approval', 'active')
+                'tag': ('id', 'name', 'evidence_required_for_approval', 'active', 'confidential')
             }
         )
 
@@ -77,18 +77,11 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class CandidateContactSerializer(
-    core_serializers.ApiRelatedFieldManyMixin, core_mixins.WorkflowStatesColumnMixin,
-    core_mixins.WorkflowLatestStateMixin, core_serializers.ApiBaseModelSerializer
+    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
+    core_serializers.ApiBaseModelSerializer
 ):
 
-    candidate_skills = SkillRelSerializer(many=True)
-    tag_rels = TagRelSerializer(many=True)
-
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score')
-    many_related_fields = {
-        'candidate_skills': 'candidate_contact',
-        'tag_rels': 'candidate_contact',
-    }
 
     def create(self, validated_data):
         contact = validated_data.get('contact', None)
@@ -115,7 +108,7 @@ class CandidateContactSerializer(
 
         if request:
             current_company = request.user.contact.get_closest_company()
-            master_company = company.get_closest_master_company()
+            master_company = current_company.get_closest_master_company()
             candidate_models.CandidateRel.objects.create(
                 master_company=master_company,
                 candidate_contact=instance,
@@ -136,13 +129,6 @@ class CandidateContactSerializer(
                         'address': ('__all__', ),
                     }
                 ),
-                'tag_rels': ('id', 'verification_evidence', {
-                    'verified_by': ('id', ),
-                    'tag': ('id', )
-                }),
-                'candidate_skills': ('id', 'score', 'prior_experience', {
-                    'skill': ('id', )
-                }),
                 'candidate_scores': ('id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score'),
                 'recruitment_agent': ('id', 'job_title', {
                     'contact': ('id', 'phone_mobile')
@@ -169,13 +155,13 @@ class CandidateContactSerializer(
         if not obj:
             return
 
-        return SkillRelSerializer(obj.candidate_skills.all(), many=True).data
+        return SkillRelSerializer(obj.candidate_skills.all(), many=True, fields=['score', 'skill', 'id']).data
 
     def get_tag_list(self, obj):
         if not obj:
             return
 
-        return TagRelSerializer(obj.tag_rels.all(), many=True).data
+        return TagRelSerializer(obj.tag_rels.all(), many=True, fields=['id', 'tag']).data
 
     def get_workflow_score(self, obj):
         return obj.get_active_states().aggregate(score=Avg('score'))['score']

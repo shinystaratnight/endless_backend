@@ -4,6 +4,8 @@ from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 
+from crum import get_current_request
+
 
 def get_closest_companies(request):
     """
@@ -58,7 +60,7 @@ def get_site_master_company(site=None, request=None, user=None, default=True):
         if not default:
             return None
 
-        site = get_current_site(request)
+        site = get_current_site(get_current_request())
 
     if user:
         try:

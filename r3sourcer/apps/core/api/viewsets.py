@@ -66,6 +66,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
     exclude_empty = False
 
     picture_fields = {'picture', 'logo'}
+    phone_fields = []
 
     def _paginate(self, request, serializer_class, queryset=None):
         queryset = self.filter_queryset(self.get_queryset()) if queryset is None else queryset
@@ -130,7 +131,14 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return data
 
     def prepare_related_data(self, data, is_create=False):
-        return self._prepare_internal_data(data, is_create=False)
+        data = self._prepare_internal_data(data, is_create=False)
+
+        for phone_field in self.phone_fields:
+            phone = data.get(phone_field)
+            if phone and phone.startswith('0'):
+                data[phone_field] = '+61{}'.format(phone[1:])
+
+        return data
 
     def _prepare_internal_data(self, data, is_create=False):
         res = {}
@@ -166,6 +174,8 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
 
 class ContactViewset(GoogleAddressMixin, BaseApiViewset):
+
+    phone_fields = ['phone_mobile']
 
     @action(methods=['get'], detail=False)
     def validate(self, request, *args, **kwargs):
@@ -234,10 +244,6 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         if self.request.query_params.get('candidate') and not data.get('birthday'):
             raise exceptions.ValidationError({'birthday': _('Birthday is required')})
 
-        phone_mobile = data.get('phone_mobile')
-        if phone_mobile and phone_mobile.startswith('0'):
-            data['phone_mobile'] = '+61{}'.format(phone_mobile[1:])
-
         return data
 
     def perform_create(self, serializer):
@@ -274,8 +280,6 @@ class CompanyViewset(BaseApiViewset):
         instance = self.get_object()
 
         errors = []
-        if not instance.company_addresses.filter(active=True).exists():
-            errors.append(_('At least one address must be active'))
 
         if instance.company_addresses.filter(active=True, primary_contact__isnull=True).exists():
             errors.append(_('All active addresses must have primary contact'))
@@ -485,6 +489,8 @@ class NavigationViewset(BaseApiViewset):
 
 class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
 
+    phone_fields = ['phone_landline', 'phone_fax']
+
     def get_queryset(self):
         current_site = get_current_site(self.request)
         master_type = models.Company.COMPANY_TYPES.master
@@ -515,7 +521,8 @@ class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
     def perform_destroy(self, instance):
         if models.CompanyAddress.objects.filter(company=instance.company).count() == 1:
             company_rel = instance.company.regular_companies.last()
-            if company_rel and company_rel.is_allowed(80):
+            is_active_state = company_rel.get_active_states().filter(state__number=70).exists()
+            if company_rel and company_rel.is_allowed(80) and is_active_state:
                 company_rel.create_state(80, _('Company has no active address!'))
 
         super().perform_destroy(instance)
