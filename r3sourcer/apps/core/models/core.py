@@ -758,6 +758,32 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     def get_master_company_lookup(cls, master_company):
         return Q(relationships__company=master_company)
 
+    def save(self, *args, **kwargs):
+        from .dashboard import UserDashboardModule, DashboardModule
+        super(CompanyContact, self).save(*args, **kwargs)
+
+        if self.role == MANAGER and not self.dashboard_modules.exists():
+            UserDashboardModule.objects.create(
+                company_contact=self,
+                dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
+                position=1
+            )
+            UserDashboardModule.objects.create(
+                company_contact=self,
+                dashboard_module=DashboardModule.objects.get(add_label='+ Add new client'),
+                position=2
+            )
+            UserDashboardModule.objects.create(
+                company_contact=self,
+                dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact'),
+                position=3
+            )
+            UserDashboardModule.objects.create(
+                company_contact=self,
+                dashboard_module=DashboardModule.objects.get(add_label='+ Add new job'),
+                position=4
+            )
+
 
 class BankAccount(UUIDModel):
     bank_name = models.CharField(max_length=63, verbose_name=_("Bank Name"))
