@@ -1,4 +1,3 @@
-from crum import get_current_request
 from django.db.models import Avg
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, serializers
@@ -228,6 +227,12 @@ class SubcontractorSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:
         fields = '__all__'
         model = candidate_models.Subcontractor
+
+
+class SubcontractorCandidateRelationSerializer(core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        fields = ('id', 'subcontractor', 'candidate_contact')
+        model = candidate_models.SubcontractorCandidateRelation
 
 
 class CandidatePoolSerializer(core_serializers.ApiBaseModelSerializer):

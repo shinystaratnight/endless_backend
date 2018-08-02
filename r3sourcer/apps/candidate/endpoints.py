@@ -40,6 +40,12 @@ class SubcontractorEndpoint(core_endpoints.ApiEndpoint):
     serializer = candidate_serializers.SubcontractorSerializer
 
 
+class SubcontractorCandidateRelationEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.SubcontractorCandidateRelation
+    serializer = candidate_serializers.SubcontractorCandidateRelationSerializer
+
+
 class SuperannuationFundEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.SuperannuationFund
@@ -61,4 +67,4 @@ router.register(endpoint=TagRelEndpoint())
 router.register(endpoint=SkillRelEndpoint())
 router.register(candidate_models.InterviewSchedule)
 router.register(candidate_models.CandidateRel)
-router.register(candidate_models.SubcontractorCandidateRelation)
+router.register(endpoint=SubcontractorCandidateRelationEndpoint())
