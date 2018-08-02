@@ -37,7 +37,6 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.logger.main import endless_logger
-from .dashboard import UserDashboardModule, DashboardModule
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..managers import (
@@ -760,34 +759,31 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
         return Q(relationships__company=master_company)
 
     def save(self, *args, **kwargs):
-        if not self.id:
-            super(CompanyContact, self).save(*args, **kwargs)
-
-            if self.role == MANAGER:
-                UserDashboardModule.objects.create(
-                    company_contact=self,
-                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
-                    position=1
-                )
-                UserDashboardModule.objects.create(
-                    company_contact=self,
-                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new client'),
-                    position=2
-                )
-                UserDashboardModule.objects.create(
-                    company_contact=self,
-                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact'),
-                    position=3
-                )
-                UserDashboardModule.objects.create(
-                    company_contact=self,
-                    dashboard_module=DashboardModule.objects.get(add_label='+ Add new job'),
-                    position=4
-                )
-
-            return
-
+        from .dashboard import UserDashboardModule, DashboardModule
         super(CompanyContact, self).save(*args, **kwargs)
+        no_modules = not bool(self.dashboard_modules.all())
+
+        if self.role == MANAGER and no_modules:
+            UserDashboardModule.objects.create(
+                company_contact=self,
+                dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
+                position=1
+            )
+            UserDashboardModule.objects.create(
+                company_contact=self,
+                dashboard_module=DashboardModule.objects.get(add_label='+ Add new client'),
+                position=2
+            )
+            UserDashboardModule.objects.create(
+                company_contact=self,
+                dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact'),
+                position=3
+            )
+            UserDashboardModule.objects.create(
+                company_contact=self,
+                dashboard_module=DashboardModule.objects.get(add_label='+ Add new job'),
+                position=4
+            )
 
 
 class BankAccount(UUIDModel):
