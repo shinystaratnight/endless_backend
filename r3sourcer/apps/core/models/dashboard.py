@@ -53,6 +53,10 @@ class DashboardModule(UUIDModel):
         blank=True
     )
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
     def __str__(self):
         return str(self.content_type)
 
@@ -94,6 +98,10 @@ class UserDashboardModule(UUIDModel):
             company_contact=self.company_contact,
             module=self.dashboard_module,
         )
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
     def is_available(self):
         return self.dashboard_module.is_active
