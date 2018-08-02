@@ -761,9 +761,8 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     def save(self, *args, **kwargs):
         from .dashboard import UserDashboardModule, DashboardModule
         super(CompanyContact, self).save(*args, **kwargs)
-        no_modules = not bool(self.dashboard_modules.all())
 
-        if self.role == MANAGER and no_modules:
+        if self.role == MANAGER and not self.dashboard_modules.exists():
             UserDashboardModule.objects.create(
                 company_contact=self,
                 dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
