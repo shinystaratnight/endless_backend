@@ -1,12 +1,13 @@
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Q
+from django.db.models.fields.related import ForeignObjectRel, OneToOneRel
 from django_filters import CharFilter, UUIDFilter, NumberFilter, BooleanFilter, ModelChoiceFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework.filters import OrderingFilter
 
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core_adapter.filters import DateRangeFilter, RangeNumberFilter
-from r3sourcer.apps.core.models.constants import CANDIDATE
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 
@@ -118,9 +119,27 @@ class CompanyAddressFilter(FilterSet):
 
 class ApiOrderingFilter(OrderingFilter):
 
+    def is_valid_field(self, model, field):
+        components = field.split('.', 1)
+        try:
+            field = model._meta.get_field(components[0])
+
+            if isinstance(field, OneToOneRel):
+                return self.is_valid_field(field.related_model, components[1])
+
+            if isinstance(field, ForeignObjectRel):
+                return self.is_valid_field(field.model, components[1])
+
+            if field.remote_field and len(components) == 2:
+                return self.is_valid_field(field.related_model, components[1])
+
+            return True
+        except FieldDoesNotExist:
+            return False
+
     def remove_invalid_fields(self, queryset, fields, view, request):
-        valid_fields = [item[0] for item in self.get_valid_fields(queryset, view, {'request': request})]
-        return [term.replace('.', '__') for term in fields if term.lstrip('-') in valid_fields]
+        res = [term.replace('.', '__') for term in fields if self.is_valid_field(queryset.model, term.lstrip('-'))]
+        return res
 
 
 class WorkflowNodeFilter(FilterSet):
