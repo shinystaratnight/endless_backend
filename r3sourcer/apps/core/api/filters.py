@@ -150,7 +150,7 @@ class WorkflowNodeFilter(FilterSet):
         return queryset.filter(
             company_workflow_nodes__company=value, company_workflow_nodes__active=True,
             active=True, parent__isnull=True
-        ).distinct()
+        ).distinct('id')
 
     def filter_system(self, queryset, name, value):
         if not value:
