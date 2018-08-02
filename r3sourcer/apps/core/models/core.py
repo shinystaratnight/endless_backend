@@ -256,6 +256,13 @@ class Contact(
 
     def get_role_id(self):
         if self.is_company_contact():
+            from r3sourcer.apps.core.utils.companies import get_site_master_company
+
+            company_contact = self.company_contact.filter(relationships__company=get_site_master_company()).first()
+
+            if company_contact:
+                return company_contact.id
+
             return self.company_contact.first().id
         elif self.is_candidate_contact():
             return self.candidate_contacts.id
