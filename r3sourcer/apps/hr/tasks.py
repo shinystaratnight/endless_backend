@@ -459,7 +459,7 @@ def send_supervisor_timesheet_message(
 
 @app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
-def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
+def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=False):
     try:
         supervisor = core_models.CompanyContact.objects.get(id=supervisor_id)
     except core_models.CompanyContact.DoesNotExist:
@@ -476,16 +476,22 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
     try:
         now = timezone.localtime(timezone.now())
         today = now.date()
+        sms_tpl = 'supervisor-timesheet-sign'
+        email_tpl = 'supervisor-timesheet-sign'
+
+        if force:
+            send_supervisor_timesheet_message(
+                supervisor, True, True, sms_tpl, email_tpl, related_timesheets=[timesheet]
+            )
+            return
 
         should_send_sms = False
-        sms_tpl = 'supervisor-timesheet-sign'
         if supervisor.message_by_sms:
             if not SMSMessage.objects.filter(to_number=supervisor.contact.phone_mobile,
                                              template__slug=sms_tpl, sent_at__date=today).exists():
                 should_send_sms = True
 
         should_send_email = False
-        email_tpl = 'supervisor-timesheet-sign'
         if supervisor.message_by_email:
             if not EmailMessage.objects.filter(to_addresses=supervisor.contact.email,
                                                template__slug=email_tpl, sent_at__date=today).exists():
