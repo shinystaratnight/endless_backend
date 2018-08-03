@@ -1279,7 +1279,8 @@ class GroupSerializer(ApiBaseModelSerializer):
 
 
 class CompanyListSerializer(
-    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin, ApiBaseModelSerializer
+    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin, core_mixins.ApiContentTypeFieldMixin,
+    ApiBaseModelSerializer
 ):
     method_fields = (
         'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
