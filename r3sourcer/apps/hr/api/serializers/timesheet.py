@@ -1,3 +1,5 @@
+from datetime import date
+
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -70,8 +72,8 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     method_fields = (
         'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
-        'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor',
-        'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button',
+        'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
+        'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms'
     )
 
     class Meta:
@@ -176,6 +178,27 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
     def get_show_sync_button(self, obj):
         is_synced = MYOBSyncObject.objects.filter(record=obj.id, synced_at__gte=obj.updated_at).exists()
         return bool(not is_synced and obj.supervisor_approved_at and obj.candidate_submitted_at)
+
+    def _get_related_sms(self, obj, template):
+        ct = ContentType.objects.get_for_model(TimeSheet)
+        timesheet_date = timezone.localtime(obj.shift_started_at).date()
+        sms = sms_models.SMSMessage.objects.filter(
+            related_objects__content_type=ct, related_objects__object_id=obj.id,
+            template__slug='supervisor-timesheet-sign', sent_at__date=timesheet_date
+        ).first()
+
+        if not sms:
+            sms = sms_models.SMSMessage.objects.filter(
+                template__slug='supervisor-timesheet-sign', sent_at__date=timesheet_date
+            ).first()
+
+        return sms and sms_serializers.SMSMessageSerializer(sms, fields=['id', '__str__']).data
+
+    def get_supervisor_sms(self, obj):
+        return self._get_related_sms(obj, 'supervisor-timesheet-sign')
+
+    def get_candidate_sms(self, obj):
+        return self._get_related_sms(obj, 'candidate-timesheet-agree')
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):

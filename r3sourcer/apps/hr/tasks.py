@@ -406,7 +406,7 @@ def autoconfirm_rejected_timesheet(self, time_sheet_id):
 
 
 def send_supervisor_timesheet_message(
-    supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl=None, **kwargs
+    supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl=None, related_timesheets=None, **kwargs
 ):
     email_tpl = email_tpl or sms_tpl
 
@@ -435,6 +435,7 @@ def send_supervisor_timesheet_message(
             related_obj=supervisor,
             related_objs=[extranet_login],
         )
+        data_dict['related_objs'].extend(related_timesheets or [])
         data_dict.update(kwargs)
 
         if should_send_sms and supervisor.contact.phone_mobile:
@@ -458,7 +459,7 @@ def send_supervisor_timesheet_message(
 
 @app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
-def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
+def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=False):
     try:
         supervisor = core_models.CompanyContact.objects.get(id=supervisor_id)
     except core_models.CompanyContact.DoesNotExist:
@@ -475,16 +476,22 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
     try:
         now = timezone.localtime(timezone.now())
         today = now.date()
+        sms_tpl = 'supervisor-timesheet-sign'
+        email_tpl = 'supervisor-timesheet-sign'
+
+        if force:
+            send_supervisor_timesheet_message(
+                supervisor, True, True, sms_tpl, email_tpl, related_timesheets=[timesheet]
+            )
+            return
 
         should_send_sms = False
-        sms_tpl = 'supervisor-timesheet-sign'
         if supervisor.message_by_sms:
             if not SMSMessage.objects.filter(to_number=supervisor.contact.phone_mobile,
                                              template__slug=sms_tpl, sent_at__date=today).exists():
                 should_send_sms = True
 
         should_send_email = False
-        email_tpl = 'supervisor-timesheet-sign'
         if supervisor.message_by_email:
             if not EmailMessage.objects.filter(to_addresses=supervisor.contact.email,
                                                template__slug=email_tpl, sent_at__date=today).exists():
@@ -517,21 +524,25 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id):
             if not_signed_timesheets.exists():
                 return
 
-            signed_timesheets_started = timesheets.filter(
-                candidate_submitted_at__isnull=False,
-                supervisor=supervisor
-            ).order_by('shift_started_at').values_list(
+            signed_timesheets = timesheets.filter(candidate_submitted_at__isnull=False, supervisor=supervisor)
+
+            signed_timesheets_started = signed_timesheets.order_by('shift_started_at').values_list(
                 'shift_started_at', flat=True
             ).distinct()
             signed_timesheets_started = list(signed_timesheets_started)
+            related_timesheets = list(signed_timesheets)
 
             if timesheet.shift_started_at not in signed_timesheets_started:
                 signed_timesheets_started.append(timesheet.shift_started_at)
+                related_timesheets.append(timesheet)
 
             if len(signed_timesheets_started) == 0:
                 return
 
-            send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl)
+            send_supervisor_timesheet_message(
+                supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl,
+                related_timesheets=related_timesheets
+            )
 
             eta = now + timedelta(hours=4)
             is_today_reminder = True
@@ -572,7 +583,8 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
 
     if timesheets.exists():
         send_supervisor_timesheet_message(
-            supervisor, supervisor.message_by_sms, supervisor.message_by_email, 'supervisor-timesheet-sign-reminder'
+            supervisor, supervisor.message_by_sms, supervisor.message_by_email, 'supervisor-timesheet-sign-reminder',
+            related_timesheets=timesheets
         )
 
 

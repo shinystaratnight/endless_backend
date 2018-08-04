@@ -185,7 +185,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     def resend_supervisor_sms(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
-        hr_utils.send_supervisor_timesheet_approve(obj)
+        hr_utils.send_supervisor_timesheet_approve(obj, True)
 
         return Response({
             'status': 'success'
@@ -200,11 +200,12 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             data['candidate_submitted_at'] = timezone.now()
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
-            time_sheet = serializer.save()
-            time_sheet.candidate_submitted_at = timezone.now()
 
             if serializer.validated_data.get('send_supervisor_message'):
-                hr_utils.send_supervisor_timesheet_approve(obj)
+                hr_utils.send_supervisor_timesheet_approve(obj, True)
+
+            time_sheet = serializer.save()
+            time_sheet.candidate_submitted_at = timezone.now()
         else:
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
 
@@ -219,14 +220,15 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             data['supervisor_approved_at'] = timezone.now()
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
-            serializer.save()
 
             if serializer.validated_data.get('send_supervisor_message'):
-                hr_utils.send_supervisor_timesheet_approve(obj)
+                hr_utils.send_supervisor_timesheet_approve(obj, True)
 
             if serializer.validated_data.get('send_candidate_message'):
                 from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SUPERVISOR_DECLINED
                 process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
+
+            serializer.save()
         else:
             if not obj.break_started_at or not obj.break_ended_at:
                 obj.no_break = True

@@ -250,9 +250,9 @@ def get_invoice(company, date_from, date_to, timesheet):
     return invoice
 
 
-def send_supervisor_timesheet_approve(timesheet):
+def send_supervisor_timesheet_approve(timesheet, force=False):
     from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
-    send_supervisor_timesheet_sign.delay(timesheet.supervisor.id, timesheet.id)
+    send_supervisor_timesheet_sign.delay(timesheet.supervisor.id, timesheet.id, force)
 
 
 def send_job_confirmation_sms(job):
