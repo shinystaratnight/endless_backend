@@ -21,8 +21,9 @@
       </div>
     </div>
     <div class="right">
-      <img src="{{ DOMAIN }}{{ master_company.logo.url }}" alt="Logo" width="100"><br>
-      <img src="{{ STATIC_URL }}/certified.jpg" alt="cert" width="100">
+      <img src="{% if master_company_logo %}{{ DOMAIN }}{{ master_company_logo }}{% else %}{{ DOMAIN }}/assets/img/logo.svg{% endif %}"
+           alt="Logo" width="100" style="width: 100px"><br>
+      <img src="{{ STATIC_URL }}/certified.jpg" alt="cert" width="100" style="width: 100px">
     </div>
   </div>
   <h3 align="center">Tax Invoices</h3>
@@ -63,7 +64,7 @@
         {% if show_candidate %}
             <td>{{ line.timesheet.job_offer.job.position.short_name }} - {{ line.timesheet.job_offer.candidate_contact }}</td>
         {% else %}
-            <td>${{ line.notes }}</td>
+            <td>{{ line.notes }}</td>
         {% endif %}
         <td>${{ line.unit_price }}</td>
         <td>${{ line.amount }}</td>

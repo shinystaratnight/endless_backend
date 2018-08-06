@@ -12,6 +12,7 @@ from django.utils.timezone import localtime
 from filer.models import Folder, File
 
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
+from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.pricing.services import PriceListCoefficientService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 
@@ -110,11 +111,12 @@ class InvoiceService(BasePaymentService):
         domain = 'http://%s' % Site.objects.get_current().domain
 
         context = Context({
-            'lines': invoice.invoice_lines.all()[:1],
+            'lines': invoice.invoice_lines.all(),
             'invoice': invoice,
             'company': invoice.customer_company,
             'code_data': code_data,
             'master_company': invoice.provider_company,
+            'master_company_logo': get_thumbnail_picture(invoice.provider_company.logo, 'large'),
             'show_candidate': show_candidate,
             'STATIC_URL': '%s/ecore/static' % domain,
             'DOMAIN': domain

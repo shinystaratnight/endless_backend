@@ -229,6 +229,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
 
             serializer.save()
+
+            generate_invoice.apply_async([obj.id], countdown=10)
         else:
             if not obj.break_started_at or not obj.break_ended_at:
                 obj.no_break = True
