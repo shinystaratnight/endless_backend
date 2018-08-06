@@ -178,6 +178,12 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         null=True,
         blank=True
     )
+    company = models.ForeignKey(
+        'core.Company',
+        verbose_name=_('Company'),
+        null=True,
+        blank=True
+    )
 
     # check message status
     check_delivered = models.BooleanField(

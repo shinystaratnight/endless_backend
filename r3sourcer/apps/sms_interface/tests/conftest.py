@@ -2,7 +2,7 @@ import pytest
 
 from r3sourcer.apps.core.models import User, Company, CompanyContact
 from r3sourcer.apps.sms_interface.models import SMSMessage, SMSTemplate
-
+from r3sourcer.apps.twilio.models import TwilioAccount, TwilioCredential, TwilioPhoneNumber
 
 
 @pytest.fixture
@@ -50,4 +50,31 @@ def sms_template():
         name='SMS Template',
         type=SMSTemplate.SMS,
         message_text_template='template'
+    )
+
+
+@pytest.fixture
+def twilio_credentials(db, company):
+    return TwilioCredential.objects.create(
+        company=company,
+        sid='sid',
+        auth_token='auth_token',
+    )
+
+
+@pytest.fixture
+def twilio_account(db, twilio_credentials, phone_number):
+    return TwilioAccount.objects.create(
+        credential=twilio_credentials,
+        sid='sid2',
+        phone_numbers=[phone_number]
+    )
+
+
+@pytest.fixture
+def phone_number(db, company):
+    return TwilioPhoneNumber.objects.create(
+        sid='sid',
+        phone_number='+123456789',
+        company=company
     )

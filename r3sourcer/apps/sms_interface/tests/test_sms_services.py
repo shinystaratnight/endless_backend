@@ -67,6 +67,7 @@ class TestSMSServices:
         return ac
 
     def test_get_default_fake_sms_service(self):
+        import pdb; pdb.set_trace()
         service = get_sms_service()
 
         assert isinstance(service, FakeSMSService)
@@ -132,10 +133,10 @@ class TestSMSServices:
     @mock.patch.object(factory, 'get_instance')
     @mock.patch('r3sourcer.apps.sms_interface.utils.get_sms_service',
                 return_value=FakeSMSService)
-    def test_fake_sms_service_send(self, mock_get_service, mock_factory):
+    def test_fake_sms_service_send(self, mock_get_service, mock_factory, twilio_account, phone_number):
         service = FakeSMSService()
         service.send(
-            from_number='+12345678901',
+            from_number=phone_number.phone_number,
             to_number='+12345678901',
             text='test message'
         )
@@ -145,11 +146,11 @@ class TestSMSServices:
 
     @mock.patch.object(factory, 'get_instance')
     @mock.patch.object(SMSTestService, 'process_sms_send')
-    def test_send_sms_text(self, mock_sms_send, mock_factory, contact):
+    def test_send_sms_text(self, mock_sms_send, mock_factory, contact, twilio_account, phone_number):
         mock_sms_send.return_value = None
 
         service = SMSTestService()
-        service.send(from_number='+12345678901',
+        service.send(from_number=phone_number.phone_number,
                      to_number=contact.phone_mobile,
                      text='test message')
 
@@ -158,12 +159,12 @@ class TestSMSServices:
 
     @mock.patch.object(factory, 'get_instance')
     @mock.patch.object(SMSTestService, 'process_sms_send')
-    def test_send_sms_text_service_exception(self, mock_sms_send, mock_factory, contact):
+    def test_send_sms_text_service_exception(self, mock_sms_send, mock_factory, contact, twilio_account, phone_number):
         mock_sms_send.side_effect = SMSServiceError
 
         service = SMSTestService()
         service.send(
-            from_number='+12345678901',
+            from_number=phone_number.phone_number,
             to_number=contact.phone_mobile,
             text='test message',
             delivery_timeout=1,
