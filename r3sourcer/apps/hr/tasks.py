@@ -9,7 +9,7 @@ from r3sourcer.celeryapp import app
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
-from django.db import transaction
+from django.db import transaction, models
 from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
 import pytz
@@ -806,3 +806,36 @@ def send_job_confirmation_sms(self, job_id):
         sms_interface.send_tpl(
             job.customer_representative.contact.phone_mobile, 'job-confirmed', check_reply=False, **data_dict
         )
+
+
+@app.task(bind=True, queue='hr')
+def close_not_active_jobsites(self):
+    not_active_delta = timedelta(seconds=settings.JOBSITE_NOT_ACTIVE_TIMEOUT)
+    timeout_datetime = timezone.localtime(timezone.now()) - not_active_delta
+
+    jobsites = hr_models.Jobsite.objects.annotate(
+        active_ts_sum=models.Sum(models.Case(
+            models.When(
+                models.Q(jobs__shift_dates__shift_date=timeout_datetime.date(),
+                         jobs__shift_dates__shifts__time__gte=timeout_datetime.timetz()) |
+                models.Q(jobs__shift_dates__shift_date__gt=timeout_datetime.date()),
+                then=1
+            ),
+            default=0,
+            output_field=models.IntegerField()
+        ))
+    ).filter(
+        active_ts_sum=0, is_available=True
+    ).distinct()
+
+    for jobsite in jobsites:
+        core_models.Note.objects.create(
+            content_type=ContentType.objects.get_for_model(hr_models.Jobsite),
+            object_id=jobsite.id,
+            note="Jobsite is not active for more than {} days".format(
+                not_active_delta.days
+            )
+        )
+
+        jobsite.is_available = False
+        jobsite.save(update_fields=['is_available'])
