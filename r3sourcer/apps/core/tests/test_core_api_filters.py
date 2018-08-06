@@ -241,8 +241,6 @@ class TestWorkflowNodeFilter:
         mock_nodes.return_value = [10, 20]
         filter_obj = WorkflowNodeFilter()
 
-        print('!!!', workflownode_qs.filter(company_workflow_nodes__company=comp).count())
-
         res = filter_obj.filter_company(workflownode_qs, 'default', comp)
 
         assert len(res) == 2
