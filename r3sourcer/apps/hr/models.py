@@ -161,8 +161,7 @@ class Jobsite(
     @workflow_function
     def is_supervisor_set(self):
         return self.primary_contact and self.primary_contact.contact.email
-    is_supervisor_set.short_description = \
-        _("Supervisor with valid email is required.")
+    is_supervisor_set.short_description = _("Supervisor with valid email is required.")
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding

@@ -5,7 +5,7 @@ from django.db.models import Max
 from django.conf import settings
 from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import serializers
+from rest_framework import serializers, exceptions
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
@@ -421,6 +421,24 @@ class JobsiteSerializer(
                 )
             }
         )
+
+    def validate(self, validated_data):
+        is_available = validated_data.get('is_available')
+        primary_contact = validated_data.get('primary_contact')
+        address = validated_data.get('address')
+
+        if is_available:
+            if not primary_contact or not primary_contact.contact.email:
+                raise exceptions.ValidationError({
+                    'is_available': _('Supervisor with valid email is required.')
+                })
+
+            if not address:
+                raise exceptions.ValidationError({
+                    'is_available': _('Address is required.')
+                })
+
+        return validated_data
 
 
 class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
