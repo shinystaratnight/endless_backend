@@ -23,8 +23,6 @@ class ApiLimitOffsetPagination(LimitOffsetPagination):
         return self.default_limit
 
     def get_offset(self, request):
-        if self.limit >= self.count:
-            return 0
         return super(ApiLimitOffsetPagination, self).get_offset(request)
 
     def get_paginated_response(self, data):

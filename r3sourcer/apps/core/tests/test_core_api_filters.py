@@ -18,9 +18,10 @@ comp = ModelCompany(pk=1)
 custom_comp = ModelCompany(pk=2)
 
 workflownode_qs = MockSet(
-    MockModel(number=1, active=True, parent=None, company_workflow_nodes=MockModel(company=comp, active=True)),
-    MockModel(number=2, active=True, parent=None, company_workflow_nodes=MockModel(company=comp, active=True)),
-    MockModel(number=2, active=True, parent=None, company_workflow_nodes=MockModel(company=custom_comp, active=True)),
+    MockModel(id=1, number=1, active=True, parent=None, company_workflow_nodes=MockModel(company=comp, active=True)),
+    MockModel(id=2, number=2, active=True, parent=None, company_workflow_nodes=MockModel(company=comp, active=True)),
+    MockModel(id=3, number=2, active=True, parent=None,
+              company_workflow_nodes=MockModel(company=custom_comp, active=True)),
 )
 
 
@@ -217,7 +218,7 @@ class TestApiOrderingFilter:
             )
 
         view = CityEndpoint().get_viewset()
-        request = rf.get('/', {'ordering': 'country.code2'})
+        request = rf.get('/', {'ordering': '-country.code2'})
         response = self.get_response_as_view({'get': 'list'}, request, viewset=view)
         assert len(response.data['results']) == 2
         assert response.data['results'][1]['name'] == 'Sydney'
@@ -234,8 +235,7 @@ class TestWorkflowNodeFilter:
 
         assert len(res) == 3
 
-    @mock.patch('r3sourcer.apps.core.api.filters.get_default_company',
-                return_value=comp)
+    @mock.patch('r3sourcer.apps.core.api.filters.get_default_company', return_value=comp)
     @mock.patch.object(WorkflowNode, 'get_company_nodes')
     def test_filter_company_default_company(self, mock_nodes, mock_default):
         mock_nodes.return_value = [10, 20]

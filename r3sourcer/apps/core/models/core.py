@@ -793,7 +793,10 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
 
     @classmethod
     def owner_lookups(cls, owner):
-        return [Q(relationships__company=owner)]
+        if isinstance(owner, Company):
+            return [Q(relationships__company=owner)]
+
+        return []
 
 
 class BankAccount(UUIDModel):
