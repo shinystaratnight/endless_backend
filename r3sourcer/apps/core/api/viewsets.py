@@ -25,6 +25,7 @@ from ..workflow import WorkflowProcess
 from . import permissions, serializers
 
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.address import parse_google_address
@@ -710,13 +711,12 @@ class DashboardModuleViewSet(BaseApiViewset):
         return super(DashboardModuleViewSet, self).destroy(request, *args, **kwargs)
 
     def get_queryset(self):
-        queryset = super(DashboardModuleViewSet, self).get_queryset().prefetch_related('content_type')
-        result = [
-            obj.id
-            for obj in queryset
-            if self.request.user.has_perm('can_use_module', obj)
-        ]
-        return queryset.filter(id__in=result)
+        if self.request.user.is_manager():
+            queryset = super(DashboardModuleViewSet, self).get_queryset().prefetch_related('content_type')
+        else:
+            queryset = DashboardModule.objects.none()
+
+        return queryset
 
 
 class FormBuilderViewSet(BaseApiViewset):
