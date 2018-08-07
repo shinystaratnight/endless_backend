@@ -27,6 +27,7 @@ django-rosetta==0.7.12
 django-redis==4.8.0
 django-loginas==0.3.1
 djangorestframework==3.8.2
+django-cors-headers==2.4.0
 
 dry-rest-permissions==0.1.8
 graphviz==0.5.1

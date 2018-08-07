@@ -68,6 +68,7 @@ INSTALLED_APPS = [
     'guardian',
     'easy_select2',
     'polymorphic',
+    'corsheaders',
 
     'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',
@@ -106,6 +107,7 @@ if 'r3sourcer.apps.logger' in INSTALLED_APPS:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -425,3 +427,8 @@ COST_OF_SMS_SEGMENT = 0.08
 
 
 def CAN_LOGIN_AS(request, target_user): return request.user
+
+
+CORS_ORIGIN_WHITELIST = (
+    'r3sourcersoft.com',
+)
