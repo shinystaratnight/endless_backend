@@ -180,13 +180,13 @@ def get_invoice_dates(invoice_rule, timesheet=None):
     today = date.today()
 
     if timesheet:
-        today = timesheet.shift_started_at.date()
+        today = timezone.localtime(timesheet.shift_started_at).date()
 
     if invoice_rule.period == InvoiceRule.PERIOD_CHOICES.daily:
         date_from = today
         date_to = date_from + timedelta(days=1)
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.weekly:
-        date_from = today - timedelta(datetime.now().date().weekday())
+        date_from = today - timedelta(today.weekday())
         date_to = date_from + timedelta(days=7)
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.fortnightly:
         if invoice_rule.last_invoice_created:
@@ -234,8 +234,8 @@ def get_invoice(company, date_from, date_to, timesheet):
 
     try:
         if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
-            invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to)
-
+            invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
+                                          approved=False)
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
             jobsite = timesheet.job_offer.shift.date.job.jobsite
             invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
