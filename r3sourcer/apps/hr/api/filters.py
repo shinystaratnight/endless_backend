@@ -88,7 +88,7 @@ class JobFilter(ActiveStateFilterMixin, FilterSet):
 
     class Meta:
         model = hr_models.Job
-        fields = ['active_states', 'customer_representative', 'customer_company', 'jobsite']
+        fields = ['active_states', 'customer_representative', 'customer_company', 'jobsite', 'position']
 
 
 class ShiftFilter(FilterSet):
