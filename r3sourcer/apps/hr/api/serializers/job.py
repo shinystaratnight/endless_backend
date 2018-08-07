@@ -26,7 +26,6 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
         fields = (
             '__all__',
             {
-                'hourly_rate_default': ['id', 'hourly_rate'],
                 'jobsite': ['id', {
                     'primary_contact': ['id', {
                         'contact': ['id', 'phone_mobile']

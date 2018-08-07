@@ -288,13 +288,11 @@ class Job(core_models.AbstractBaseOrder):
         blank=True
     )
 
-    hourly_rate_default = models.ForeignKey(
-        SkillBaseRate,
-        related_name="jobs",
-        on_delete=models.SET_NULL,
-        verbose_name=_("Hourly rate default"),
-        null=True,
-        blank=True
+    hourly_rate_default = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
     )
 
     class Meta:
@@ -406,7 +404,7 @@ class Job(core_models.AbstractBaseOrder):
 
     @workflow_function
     def is_default_rate_set(self):
-        return self.hourly_rate_default is not None
+        return self.hourly_rate_default is not None or self.hourly_rate_default <= 0
     is_default_rate_set.short_description = _('Default hourly rate')
 
     @workflow_function
@@ -430,7 +428,7 @@ class Job(core_models.AbstractBaseOrder):
         if workflow_object.state.number == 20:
             sd, _ = ShiftDate.objects.get_or_create(
                 job=self, shift_date=self.work_start_date,
-                workers=self.workers, hourly_rate=self.hourly_rate_default
+                workers=self.workers
             )
             Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
 
