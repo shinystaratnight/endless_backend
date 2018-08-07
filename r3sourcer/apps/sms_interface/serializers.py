@@ -1,7 +1,7 @@
 import json
 
 from django.contrib.contenttypes.models import ContentType
-from .models import SMSTemplate
+from .models import SMSTemplate, SMSMessage
 from rest_framework import serializers
 
 
@@ -31,3 +31,11 @@ class TemplateSerializer(serializers.ModelSerializer):
     class Meta:
         model = SMSTemplate
         fields = '__all__'
+
+
+class SMSMessageSerializer(serializers.ModelSerializer):
+    company = serializers.CharField(source='company.name')
+
+    class Meta:
+        model = SMSMessage
+        fields = ('company', 'segments', 'sent_at')

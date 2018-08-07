@@ -67,7 +67,6 @@ class TestSMSServices:
         return ac
 
     def test_get_default_fake_sms_service(self):
-        import pdb; pdb.set_trace()
         service = get_sms_service()
 
         assert isinstance(service, FakeSMSService)
