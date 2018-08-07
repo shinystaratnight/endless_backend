@@ -109,6 +109,12 @@ class InvoiceService(BasePaymentService):
             }
 
         domain = 'http://%s' % Site.objects.get_current().domain
+        master_company = invoice.provider_company
+
+        if hasattr(master_company, 'company_settings') and master_company.company_settings.logo:
+            master_logo = master_company.company_settings.logo.url
+        else:
+            master_logo = get_thumbnail_picture(invoice.provider_company.logo, 'large')
 
         context = Context({
             'lines': invoice.invoice_lines.all(),
@@ -116,7 +122,7 @@ class InvoiceService(BasePaymentService):
             'company': invoice.customer_company,
             'code_data': code_data,
             'master_company': invoice.provider_company,
-            'master_company_logo': get_thumbnail_picture(invoice.provider_company.logo, 'large'),
+            'master_company_logo': master_logo,
             'show_candidate': show_candidate,
             'STATIC_URL': '%s/ecore/static' % domain,
             'DOMAIN': domain
