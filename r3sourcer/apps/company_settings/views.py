@@ -526,6 +526,9 @@ class MYOBAPIKeyView(APIView):
 class SiteCompanySettingsView(APIView):
     def get(self, *args, **kwargs):
         company = get_site_master_company(request=self.request, default=False)
+        if not company and self.request.user.is_authenticated:
+            company = self.request.user.company.get_closest_master_company()
+
         if not company:
             company_settings = CompanySettings(color_scheme='#28a3fc', font='Source Sans Pro')
         else:

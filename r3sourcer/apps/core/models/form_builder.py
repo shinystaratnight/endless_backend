@@ -560,7 +560,7 @@ class ModelFormField(FormField):
                 ui_all_config['type'] = 'select'
                 ui_config.update({
                     'type': 'select',
-                    'values': [{'value': str(value), 'label': str(label)} for value, label in form_field.choices]
+                    'options': [{'value': str(value), 'label': str(label)} for value, label in form_field.choices]
                 })
             if isinstance(form_field, (forms.ModelMultipleChoiceField, forms.MultipleChoiceField)):
                 ui_config['multiple'] = True
@@ -603,7 +603,7 @@ class SelectFormField(FormField):
         ui_config = super(SelectFormField, self).get_ui_config()
         ui_config['templateOptions'].update(**{
             'multiple': self.is_multiple,
-            'values': self.choices
+            'options': self.choices
         })
         return ui_config
 
@@ -660,7 +660,7 @@ class RadioButtonsFormField(FormField):
     def get_ui_config(self):
         ui_config = super(RadioButtonsFormField, self).get_ui_config()
         ui_config['templateOptions'].update(**{
-            'values': self.choices
+            'options': self.choices
         })
         return ui_config
 
