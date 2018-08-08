@@ -37,7 +37,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
             validators.UniqueTogetherValidator(
                 queryset=hr_models.Job.objects.all(),
                 fields=('work_start_date', 'position', 'jobsite'),
-                message=_('Job with same Work Start Date, Position and Jobsite already exist')
+                message=_('Job with same Client, Position and Jobsite already exist')
             )
         ]
 
