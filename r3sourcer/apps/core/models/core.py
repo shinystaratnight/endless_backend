@@ -1036,6 +1036,8 @@ class Company(
 
     stripe_customer = models.CharField(max_length=255, blank=True, null=True)
 
+    sms_enabled = models.BooleanField(default=True)
+
     class Meta:
         verbose_name = _("Company")
         verbose_name_plural = _("Companies")
