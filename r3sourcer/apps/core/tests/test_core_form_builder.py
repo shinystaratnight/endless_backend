@@ -256,15 +256,15 @@ class TestFormFields:
             'multiple',
             'label',
             'required',
-            'values'
+            'options'
         }
         assert ui_config['required'] is True
         assert ui_config['multiple'] is False
         assert ui_all_config['key'] == choice_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert len(ui_config['values']) == 3
-        assert set([i['value'] for i in ui_config['values']]) == {'1', '2', '3'}
-        assert set([i['label'] for i in ui_config['values']]) == {'test1', 'test2', 'test3'}
+        assert len(ui_config['options']) == 3
+        assert set([i['value'] for i in ui_config['options']]) == {'1', '2', '3'}
+        assert set([i['label'] for i in ui_config['options']]) == {'test1', 'test2', 'test3'}
 
         form_field = choice_field.get_form_field()
 
@@ -304,15 +304,15 @@ class TestFormFields:
             'multiple',
             'label',
             'required',
-            'values'
+            'options'
         }
         assert ui_config['required'] is True
         assert ui_config['multiple'] is True
         assert ui_all_config['key'] == choice_field.name
         assert ui_config['placeholder'] == 'test field name'
-        assert len(ui_config['values']) == 3
-        assert set([i['value'] for i in ui_config['values']]) == {'1', '2', '3'}
-        assert set([i['label'] for i in ui_config['values']]) == {'test1', 'test2', 'test3'}
+        assert len(ui_config['options']) == 3
+        assert set([i['value'] for i in ui_config['options']]) == {'1', '2', '3'}
+        assert set([i['label'] for i in ui_config['options']]) == {'test1', 'test2', 'test3'}
 
         form_field = choice_field.get_form_field()
 
@@ -468,7 +468,7 @@ class TestFormFields:
         ui_config = ui_all_config['templateOptions']
 
         assert set(ui_config.keys()) == {
-            'placeholder', 'description', 'required', 'label', 'type', 'values'
+            'placeholder', 'description', 'required', 'label', 'type', 'options'
         }
         assert ui_all_config['key'] == radio_field.name
         assert ui_config['required'] is True
