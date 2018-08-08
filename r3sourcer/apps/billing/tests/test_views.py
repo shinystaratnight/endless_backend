@@ -147,8 +147,9 @@ class TestCompanyListView:
         client.force_login(user)
         response = client.get(url).json()
 
-        assert bool(response['companies'][0]['subscription']['last_time_billed'])
-        assert response['companies'][0]['sms_balance'] == 100
+        assert response['count'] == 1
+        assert bool(response['results'][0]['subscription']['last_time_billed'])
+        assert response['results'][0]['sms_balance'] == 100
 
 
 class TestDiscountView:
@@ -169,7 +170,7 @@ class TestDiscountView:
         client.force_login(user)
         response = client.get(url).json()
 
-        assert len(response['discounts']) == 2
+        assert response['count'] == 2
 
     def test_post(self, client, user, company):
         initial_discount_number = Discount.objects.count()
