@@ -43,7 +43,7 @@ class SubscriptionCreateView(APIView):
         current_period_start = None
         current_period_end = None
 
-        if isinstance(subscription.current_period_start, float):
+        if isinstance(subscription.current_period_start, int):
             current_period_start = datetime.fromtimestamp(subscription.current_period_start)
             current_period_end = datetime.fromtimestamp(subscription.current_period_end)
 

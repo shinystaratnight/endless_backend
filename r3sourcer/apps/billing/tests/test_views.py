@@ -27,7 +27,7 @@ class TestSubscriptionCreateView:
             "price": 500
         }
         subscription_count = Subscription.objects.all().count()
-        url = reverse('billing:subscription_create')
+        url = reverse('billing:subscription_create', kwargs={'version': 'v2'})
         client.force_login(user)
         client.post(url, data=data)
         subscription = Subscription.objects.all().first()
@@ -56,7 +56,7 @@ class TestSubscriptionListView:
             worker_count=200,
         )
 
-        url = reverse('billing:subscription_list')
+        url = reverse('billing:subscription_list', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
@@ -78,14 +78,14 @@ class TestSubscriptionStatusView:
             status='active'
         )
 
-        url = reverse('billing:subscription_status')
+        url = reverse('billing:subscription_status', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
         assert response['status'] == subscription.status
 
     def test_subscription_status_fail(self, client, user, company, relationship):
-        url = reverse('billing:subscription_status')
+        url = reverse('billing:subscription_status', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
@@ -94,7 +94,7 @@ class TestSubscriptionStatusView:
 
 class TestStripeCustomerCreateView:
     def test_get(self, client, user, company, relationship):
-        url = reverse('billing:stripe_customer_create')
+        url = reverse('billing:stripe_customer_create', kwargs={'version': 'v2'})
         client.force_login(user)
         client.post(url)
 
@@ -104,7 +104,7 @@ class TestStripeCustomerCreateView:
 
 class TestPaymentListView:
     def test_get(self, client, user, company, relationship, payment):
-        url = reverse('billing:payment_list')
+        url = reverse('billing:payment_list', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
@@ -116,14 +116,14 @@ class TestCheckPaymentInformationView:
     def test_get_success(self, client, user, company, relationship, payment):
         company.stripe_customer = 'randomstripeid'
         company.save()
-        url = reverse('billing:check_payment_information')
+        url = reverse('billing:check_payment_information', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
         assert response['payment_information_submited']
 
     def test_get_fail(self, client, user, company, relationship, payment):
-        url = reverse('billing:check_payment_information')
+        url = reverse('billing:check_payment_information', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
@@ -133,7 +133,7 @@ class TestCheckPaymentInformationView:
 class TestSubscriptionCancelView:
     @mock.patch.object(Subscription, 'deactivate')
     def test_get(self, mocked_method, client, user, company, relationship, subscription):
-        url = reverse('billing:subscription_cancel')
+        url = reverse('billing:subscription_cancel', kwargs={'version': 'v2'})
         client.force_login(user)
         client.get(url)
 
@@ -143,7 +143,7 @@ class TestSubscriptionCancelView:
 
 class TestCompanyListView:
     def test_get(self, client, user, company, subscription, payment):
-        url = reverse('billing:company_list')
+        url = reverse('billing:company_list', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
@@ -165,7 +165,7 @@ class TestDiscountView:
             percent_off=25,
             duration='once',
         )
-        url = reverse('billing:discounts')
+        url = reverse('billing:discounts', kwargs={'version': 'v2'})
         client.force_login(user)
         response = client.get(url).json()
 
@@ -181,7 +181,7 @@ class TestDiscountView:
             "duration": "once",
             "duration_in_months": "",
         }
-        url = reverse('billing:discounts')
+        url = reverse('billing:discounts', kwargs={'version': 'v2'})
         client.force_login(user)
         client.post(url, data=data)
 
