@@ -5,7 +5,7 @@ from django.db.models import Max
 from django.conf import settings
 from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import serializers, exceptions
+from rest_framework import serializers, exceptions, validators
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
@@ -33,6 +33,13 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
                 }],
             }
         )
+        validators = [
+            validators.UniqueTogetherValidator(
+                queryset=hr_models.Job.objects.all(),
+                fields=('work_start_date', 'position', 'jobsite'),
+                message=_('Job with same Work Start Date, Position and Jobsite already exist')
+            )
+        ]
 
     def get_is_fulfilled_today(self, obj):
         return obj and obj.is_fulfilled_today()  # pragma: no cover
