@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.conf import settings
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -43,7 +43,7 @@ class SubscriptionCreateView(APIView):
         current_period_start = None
         current_period_end = None
 
-        if isinstance(subscription.current_period_start, float):
+        if isinstance(subscription.current_period_start, int):
             current_period_start = datetime.fromtimestamp(subscription.current_period_start)
             current_period_end = datetime.fromtimestamp(subscription.current_period_end)
 
@@ -136,27 +136,11 @@ class SubscriptionCancelView(APIView):
         return Response()
 
 
-class CompanyListView(APIView):
-    def get(self, *args, **kwargs):
-        companies = Company.objects.filter(subscriptions__isnull=False)
-        serializer = CompanySerializer(companies, many=True)
-        data = {
-            "companies": serializer.data,
-        }
-        return Response(data)
+class CompanyListView(ListAPIView):
+    queryset = Company.objects.filter(subscriptions__isnull=False)
+    serializer_class = CompanySerializer
 
 
-class DiscountView(APIView):
-    def get(self, *args, **kwargs):
-        qs = Discount.objects.all()
-        serializer = DiscountSerializer(qs, many=True)
-        data = {
-            'discounts': serializer.data
-        }
-        return Response(data)
-
-    def post(self, *args, **kwargs):
-        serializer = DiscountSerializer(data=self.request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-        return Response()
+class DiscountView(ListCreateAPIView):
+    queryset = Discount.objects.all()
+    serializer_class = DiscountSerializer
