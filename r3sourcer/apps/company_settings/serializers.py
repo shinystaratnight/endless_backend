@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from r3sourcer.apps.company_settings.models import CompanySettings, MYOBAccount, MYOBSettings, MYOBCompanyFile
 from r3sourcer.apps.core.api.fields import ApiBase64ImageField
-from r3sourcer.apps.core.models import InvoiceRule
+from r3sourcer.apps.core.models import InvoiceRule, Form
 from r3sourcer.apps.hr.models import PayslipRule
 from r3sourcer.apps.core.models import User
 from r3sourcer.apps.company_settings.models import GlobalPermission
@@ -11,11 +11,27 @@ from r3sourcer.apps.company_settings.models import GlobalPermission
 
 class CompanySettingsSerializer(serializers.ModelSerializer):
     logo = ApiBase64ImageField()
+    register_form_id = serializers.SerializerMethodField()
+    company_name = serializers.SerializerMethodField()
 
     class Meta:
         model = CompanySettings
-        fields = ('id', 'logo', 'color_scheme', 'font', 'forwarding_number', 'company', 'billing_email')
+        fields = (
+            'id', 'logo', 'color_scheme', 'font', 'forwarding_number', 'company', 'billing_email', 'register_form_id',
+            'company_name',
+        )
         read_only_fields = ('company',)
+
+    def get_register_form_id(self, obj):
+        form = Form.objects.filter(company=obj.company, is_active=True).first()
+        if not form:
+            form = Form.objects.filter(company=None, is_active=True).first()
+
+        return form and form.id
+
+    def get_company_name(self, obj):
+        if obj.company:
+            return obj.company.short_name or obj.company.name
 
 
 class PayslipRuleSerializer(serializers.ModelSerializer):
