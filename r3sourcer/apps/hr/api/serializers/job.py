@@ -33,13 +33,6 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
                 }],
             }
         )
-        validators = [
-            validators.UniqueTogetherValidator(
-                queryset=hr_models.Job.objects.all(),
-                fields=('work_start_date', 'position', 'jobsite'),
-                message=_('Job with same Client, Position and Jobsite already exist')
-            )
-        ]
 
     def get_is_fulfilled_today(self, obj):
         return obj and obj.is_fulfilled_today()  # pragma: no cover
