@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from crum import get_current_request
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.db import models, IntegrityError, transaction
@@ -422,6 +423,16 @@ class Job(core_models.AbstractBaseOrder):
             supervisor_approved_at__isnull=True
         ).exists()
     is_all_timesheets_approved.short_description = _('All Time Sheets approvment')
+
+    @workflow_function
+    def is_client_active(self):
+        content_type = ContentType.objects.get_for_model(core_models.CompanyRel)
+        company_rel = self.customer_company.regular_companies.filter(master_company=self.provider_company).first()
+        res = core_models.WorkflowObject.objects.filter(
+            state__number=70, state__workflow__model=content_type, active=True, object_id=company_rel.id
+        ).exists()
+        return res
+    is_client_active.short_description = _('Active Client')
 
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
