@@ -448,7 +448,7 @@ class JobViewset(BaseApiViewset):
                 candidate_skills__skill=job.position,
                 candidate_skills__score__gt=0
             )
-            hourly_rate = job.hourly_rate_default.hourly_rate
+            hourly_rate = job.hourly_rate_default
             overpriced_candidates = candidate_contacts.filter(
                 overpriced_qry,
                 candidate_skills__candidate_skill_rates__hourly_rate__gt=hourly_rate,

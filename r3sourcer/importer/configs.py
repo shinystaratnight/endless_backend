@@ -785,12 +785,10 @@ class JobConfig(BaseRateMixin, BaseConfig):
         'id', 'created_at', 'updated_at', 'jobsite_id', 'position_id',
         'published', 'publish_on', 'expires_on', 'work_start_date',
         'workers', 'default_shift_starting_time', 'notes',
-        'transportation_to_work', 'hourly_rate_default_id',
-        'customer_company_id', 'provider_company_id', 'provider_signed_at',
+        'transportation_to_work', 'customer_company_id', 'provider_company_id', 'provider_signed_at',
         'customer_representative_id', 'provider_representative_id',
     }
     columns_map = {
-        'top_hourly_rate_default_id': 'hourly_rate_default_id',
         'client_id': 'customer_company_id',
         'client_representative_id': 'customer_representative_id',
         'account_representative_id': 'provider_representative_id',
@@ -815,8 +813,6 @@ class JobConfig(BaseRateMixin, BaseConfig):
         row['provider_company_id'] = (
             companies[0].id if len(companies) > 0 else row['client_id']
         )
-
-        row = cls.fetch_skill_base_rate(row, 'hourly_rate_default_id')
 
         return row
 
