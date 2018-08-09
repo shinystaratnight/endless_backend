@@ -456,7 +456,7 @@ class Job(core_models.AbstractBaseOrder):
             ).values_list('object_id', flat=True)
 
             if existing_jobs.exclude(id__in=completed_list).exists():
-                raise ValidationError(_('Active Vacancy for Jobsite and Position already exist'))
+                raise ValidationError(_('Active Job for Jobsite and Position already exist'))
 
         super().save(*args, **kwargs)
 
