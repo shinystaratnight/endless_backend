@@ -127,6 +127,8 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
                     'hourly_rate_default': _('Hourly rate should be {error_part}').format(error_part=error_part)
                 })
 
+        return validated_data
+
 
 class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 

@@ -298,7 +298,6 @@ class Job(core_models.AbstractBaseOrder):
     class Meta:
         verbose_name = _("Job")
         verbose_name_plural = _("Jobs")
-        unique_together = ('work_start_date', 'position', 'jobsite')
 
     def __str__(self):
         return self.get_title()
@@ -439,14 +438,14 @@ class Job(core_models.AbstractBaseOrder):
         if just_added:
             self.provider_signed_at = timezone.now()
             existing_jobs = Job.objects.filter(
-                customer_company=self.customer_company, jobsite=self.jobsite, position=self.position
+                jobsite=self.jobsite, position=self.position
             )
             completed_list = core_models.WorkflowObject.objects.filter(
                 object_id__in=existing_jobs.values_list('id', flat=True), state__number=60, active=True
             ).values_list('object_id', flat=True)
 
             if existing_jobs.exclude(id__in=completed_list).exists():
-                raise ValidationError(_('Active Vacancy for this Client, Jobsite and Position already exist'))
+                raise ValidationError(_('Active Vacancy for Jobsite and Position already exist'))
 
         super().save(*args, **kwargs)
 
