@@ -1267,7 +1267,7 @@ class CompanyRel(
     def get_closest_company(self):
         return self.master_company
 
-    def after_state_created(self, workflow_object):
+    def after_state_activated(self, workflow_object):
         if workflow_object.state.number == 70 and workflow_object.active:
             jobs = self._get_jobs_with_states(40)
 
@@ -1289,6 +1289,9 @@ class CompanyRel(
         filter_values = WorkflowObject.objects.filter(
             state__number=state, state__workflow__model=content_type, active=True
         ).values_list('object_id', flat=True).distinct()
+
+        print('!', self.regular_company.customer_jobs.all())
+        print('!!', filter_values)
 
         return self.regular_company.customer_jobs.filter(id__in=filter_values)
 
