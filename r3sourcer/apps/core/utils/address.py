@@ -4,13 +4,29 @@ from django.utils.text import slugify
 from r3sourcer.apps.core.models import Country, Region, City
 
 
-def parse_google_address(address_data):
+def get_address_parts(address_data):
     address_parts = {}
 
     for item in address_data['address_components']:
         for item_type in item['types']:
             if item_type != 'political':
                 address_parts[item_type] = item
+
+    return address_parts
+
+
+def get_street_address(address_parts):
+    street_address = address_parts['route']['long_name']
+
+    street_number = address_parts.get('street_number', {}).get('long_name')
+    if street_number:
+        street_address = ' '.join([street_number, street_address])
+
+    return street_address
+
+
+def parse_google_address(address_data):
+    address_parts = get_address_parts(address_data)
 
     country = Country.objects.get(code2=address_parts['country']['short_name'])
 
@@ -34,18 +50,12 @@ def parse_google_address(address_data):
         city = city.first()
 
     postal_code = address_parts.get('postal_code', {}).get('long_name')
-    street_address = address_parts['route']['long_name']
-
-    street_number = address_parts.get('street_number', {}).get('long_name')
-    if street_number:
-        street_address = ' '.join([street_number, street_address])
-
     address = {
         'country': str(country.id),
         'state': str(region.id),
         'city': str(city.id),
         'postal_code': postal_code,
-        'street_address': street_address,
+        'street_address': get_street_address(address_parts),
     }
 
     location = address_data.get('geometry', {}).get('location')

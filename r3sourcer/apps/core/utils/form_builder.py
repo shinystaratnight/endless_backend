@@ -68,7 +68,7 @@ class StorageHelper(object):
 
                 fields_to_validate.setdefault(name, value)
             except exceptions.ValidationError as e:
-                self._errors.update(e.detail)
+                self._errors.update({k.replace('__', '.'): v for k, v in e.detail.items()})
 
         meta_class = type('Meta', (object, ), {
             'model': self._model,
@@ -83,7 +83,7 @@ class StorageHelper(object):
 
         is_valid = self._form.is_valid()
         if not is_valid:
-            self._errors.update(self._form.errors)
+            self._errors.update({k.replace('__', '.'): v for k, v in self._form.errors.items()})
 
             for name, field in related_fields.items():
                 field.value.delete()
@@ -194,7 +194,8 @@ class RelatedFieldHelper(object):
             related_field = RelatedFieldHelper(self._model, self._lookup_name, value)
             self.related_fields.setdefault(related_field.name, related_field)
         else:
-            self.simple_fields.setdefault(self._lookup_name, SimpleFieldHelper(self._lookup_name, value))
+            if '_id' not in self._lookup_name:
+                self.simple_fields.setdefault(self._lookup_name, SimpleFieldHelper(self._lookup_name, value))
         self._done = True
 
     @classmethod
@@ -211,7 +212,7 @@ class RelatedFieldHelper(object):
             if field_name in field1.related_fields:
                 cls.merge(field1.related_fields[field_name], field2.related_fields[field_name])
             else:
-                field1.related_fields[field_name].setdefault(field_name, field2.related_fields[field_name])
+                field1.related_fields.setdefault(field_name, field2.related_fields[field_name])
 
         for field_name, value in field2.simple_fields.items():
             field1.simple_fields.setdefault(field_name, value)

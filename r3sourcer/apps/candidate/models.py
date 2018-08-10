@@ -473,7 +473,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
             current_request = get_current_request()
             company_qry = models.Q()
 
-            if current_request:
+            if current_request and current_request.user.is_authenticated:
                 current_user = current_request.user
                 if current_user.contact.is_company_contact():
                     current_company = current_user.contact.get_closest_company()
