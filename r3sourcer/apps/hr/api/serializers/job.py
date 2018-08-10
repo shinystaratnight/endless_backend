@@ -31,6 +31,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
                         'contact': ['id', 'phone_mobile']
                     }],
                 }],
+                'position': ['id', 'name', 'upper_rate_limit', 'lower_rate_limit', 'default_rate'],
             }
         )
 
