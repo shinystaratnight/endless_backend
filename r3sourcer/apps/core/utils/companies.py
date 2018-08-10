@@ -51,6 +51,9 @@ def get_site_url(request=None, user=None):
 def get_site_master_company(site=None, request=None, user=None, default=True):
     from r3sourcer.apps.core.models import Company
 
+    if request is None:
+        request = get_current_request()
+
     if isinstance(site, str):
         site = Site.objects.get_by_natural_key(site)
     elif request:
@@ -60,7 +63,7 @@ def get_site_master_company(site=None, request=None, user=None, default=True):
         if not default:
             return None
 
-        site = get_current_site(get_current_request())
+        site = get_current_site(request)
 
     if user:
         try:

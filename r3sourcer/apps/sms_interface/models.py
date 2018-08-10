@@ -13,6 +13,7 @@ from model_utils import Choices
 
 from r3sourcer.apps.core.models import UUIDModel, Company, Contact, TemplateMessage
 from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
+from r3sourcer.apps.sms_interface.managers import SMSMessageObjectOwnerManager
 
 
 logger = logging.getLogger(__name__)
@@ -256,6 +257,8 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         _("Fake sms"),
         default=False,
     )
+
+    objects = SMSMessageObjectOwnerManager()
 
     def is_late_reply(self):
         sent_message = self.get_sent_by_reply(check_reply=False)

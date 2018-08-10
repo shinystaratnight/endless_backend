@@ -22,6 +22,10 @@ class EmploymentClassification(UUIDModel):
     def __str__(self):
         return self.name
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class Skill(MYOBMixin, UUIDModel):
 
