@@ -2,15 +2,18 @@ from django.conf import settings
 from django.conf.urls import url, include
 from django.conf.urls.static import static
 from django.contrib import admin
+
+from rest_framework_simplejwt.views import TokenRefreshView
+
 from r3sourcer.apps.core.api.router import router
-
-from r3sourcer.apps.logger.admin import admin_logger
-from r3sourcer.apps.logger.api.viewsets import journal_list, journal_detail
-from r3sourcer.apps.logger.main import autodiscover
-
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
 from r3sourcer.apps.core.views import FormView, RegisterFormView
 from r3sourcer.apps.core.forms import CoreAdminAuthenticationForm
+from r3sourcer.apps.logger.admin import admin_logger
+from r3sourcer.apps.logger.api.viewsets import journal_list, journal_detail
+from r3sourcer.apps.logger.main import autodiscover
+from r3sourcer.apps.login.api.views import JwtTokenPairView
+
 
 autodiscover()
 
@@ -32,6 +35,8 @@ _urlpatterns = [
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),
     url(r'^myob/', include('r3sourcer.apps.myob.urls', namespace='myob')),
     url(r'^admin/', admin_logger.urls),
+    url(r'^api/{}/token/$'.format(api_versions), JwtTokenPairView.as_view(), name='token_obtain_pair'),
+    url(r'^api/{}/token/refresh/$'.format(api_versions), TokenRefreshView.as_view(), name='token_refresh'),
     url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/'.format(api_versions), journal_detail),
     url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/'.format(api_versions), journal_list),
     url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.billing.urls', namespace='billing')),
