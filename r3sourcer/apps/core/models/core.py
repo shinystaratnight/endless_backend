@@ -1322,9 +1322,6 @@ class CompanyRel(
             state__number=state, state__workflow__model=content_type, active=True
         ).values_list('object_id', flat=True).distinct()
 
-        print('!', self.regular_company.customer_jobs.all())
-        print('!!', filter_values)
-
         return self.regular_company.customer_jobs.filter(id__in=filter_values)
 
     def save(self, *args, **kwargs):
