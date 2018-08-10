@@ -70,6 +70,10 @@ class VisaType(core_models.UUIDModel):
             self.subclass, self.name, self.general_type
         )
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class SuperannuationFund(core_models.UUIDModel):
 
@@ -104,6 +108,11 @@ class SuperannuationFund(core_models.UUIDModel):
 
     def __str__(self):
         return self.name
+
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, core_models.Company):
+            return [models.Q(candidates__candidate_rels__master_company=owner)]
 
 
 class CandidateContact(core_models.UUIDModel, WorkflowProcess):

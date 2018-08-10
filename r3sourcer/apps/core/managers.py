@@ -20,7 +20,10 @@ class AbstractObjectOwnerQuerySet(LoggerQuerySet):
         if not self.model.is_owned():
             return self
 
-        lookups = self.get_lookups(_obj)
+        lookups = self.model.owned_by_lookups(_obj)
+
+        if lookups is None:
+            lookups = self.get_lookups(_obj)
 
         if not lookups:
             lookups = self._get_obj_related_lookups(_obj)

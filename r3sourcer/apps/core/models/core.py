@@ -73,6 +73,10 @@ class UUIDModel(models.Model):
     def owner_lookups(cls, owner):
         return []
 
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        return None
+
     @property
     def object_history(self):
         return endless_logger.get_object_history(self.__class__, self.pk)
@@ -220,7 +224,7 @@ class Contact(
     get_availability.boolean = True
 
     def is_company_contact(self):
-        return self.company_contact.exists()
+        return self.company_contact.filter(relationships__active=True).exists()
     is_company_contact.boolean = True
 
     def is_candidate_contact(self):
@@ -272,7 +276,7 @@ class Contact(
         from r3sourcer.apps.core.utils.companies import get_site_master_company
 
         if self.is_company_contact():
-            master_company = self.company_contact.first().get_master_company()
+            master_company = self.company_contact.filter(relationships__active=True).first().get_master_company()
             if len(master_company) > 0:
                 return master_company[0]
         elif self.is_candidate_contact():
@@ -297,8 +301,12 @@ class Contact(
         super().save(*args, **kwargs)
 
     @classmethod
-    def owner_lookups(cls, owner):
-        return [Q(candidate_contacts__isnull=True), Q(company_contact__isnull=True)]
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(candidate_contacts__candidate_rels__master_company=owner),
+                Q(company_contact__relationships__company=owner),
+            ]
 
 
 class ContactUnavailability(UUIDModel):
@@ -336,7 +344,7 @@ class ContactUnavailability(UUIDModel):
         return '{} {} - {}'.format(str(self.contact), self.unavailable_from, self.unavailable_until)
 
 
-class UserManager(BaseUserManager):
+class UserManager(AbstractObjectOwnerManager, BaseUserManager):
 
     use_in_migrations = True
 
@@ -509,6 +517,14 @@ class User(UUIDModel,
     def company_files(self):
         company_file_tokens = self.company.company_file_tokens.all()
         return [x.company_file for x in company_file_tokens]
+
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(contact__candidate_contacts__candidate_rels__master_company=owner),
+                Q(contact__company_contact__relationships__company=owner),
+            ]
 
 
 class Country(UUIDModel, AbstractCountry):
@@ -792,11 +808,12 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
             )
 
     @classmethod
-    def owner_lookups(cls, owner):
+    def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
-            return [Q(relationships__company=owner)]
-
-        return []
+            return [
+                Q(relationships__company=owner),
+                Q(relationships__company__regular_companies__master_company=owner)
+            ]
 
 
 class BankAccount(UUIDModel):
@@ -818,6 +835,16 @@ class BankAccount(UUIDModel):
 
     def __str__(self):
         return '{}: {}'.format(self.bank_name, self.bank_account_name)
+
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(contact__candidate_contacts__candidate_rels__master_company=owner),
+                Q(contact__company_contact__relationships__company=owner),
+                Q(companies__regular_companies__master_company=owner),
+                Q(companies__id=owner.id),
+            ]
 
 
 class Company(
@@ -1187,6 +1214,11 @@ class Company(
         if not self.invoice_rules.all():
             InvoiceRule.objects.create(company=self)
 
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [Q(regular_companies__master_company=owner), Q(id=owner.id)]
+
 
 class CompanyRel(
         UUIDModel,
@@ -1289,9 +1321,6 @@ class CompanyRel(
         filter_values = WorkflowObject.objects.filter(
             state__number=state, state__workflow__model=content_type, active=True
         ).values_list('object_id', flat=True).distinct()
-
-        print('!', self.regular_company.customer_jobs.all())
-        print('!!', filter_values)
 
         return self.regular_company.customer_jobs.filter(id__in=filter_values)
 
