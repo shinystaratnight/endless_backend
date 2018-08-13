@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 
 import os
 
+from datetime import timedelta
+
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -283,6 +285,11 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DATETIME_INPUT_FORMATS': ['iso-8601'],
     'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
 }
 
 GOOGLE_GEO_CODING_API_KEY = env('GOOGLE_GEO_CODING_API_KEY', '')
@@ -432,3 +439,8 @@ def CAN_LOGIN_AS(request, target_user): return request.user
 CORS_ORIGIN_WHITELIST = (
     'r3sourcersoft.com',
 )
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=3),
+}
