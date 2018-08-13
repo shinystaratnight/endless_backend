@@ -45,7 +45,7 @@ class AuthViewSet(BaseViewsetMixin,
     @action(methods=['post'], detail=False)
     def login(self, request, *args, **kwargs):
         if request.user.is_authenticated:
-            raise exceptions.PermissionDenied(self.errors['logged_in'])
+            logout(request)
 
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)

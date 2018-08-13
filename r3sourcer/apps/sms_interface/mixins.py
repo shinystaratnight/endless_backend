@@ -37,7 +37,8 @@ class DeadlineCheckingMixin(models.Model):
 
 class SuperUserRequiredMixin(object):
     def dispatch(self, request, *args, **kwargs):
-        if not request.user.is_superuser:
+        user = request.user
+        if not user.is_authenticated or not user.contact.is_company_contact():
             raise PermissionDenied
         return super(SuperUserRequiredMixin, self).dispatch(request, *args, **kwargs)
 
