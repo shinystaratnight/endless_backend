@@ -2,6 +2,7 @@ import datetime
 
 import stripe
 
+from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from model_utils import Choices
@@ -76,6 +77,7 @@ class SMSBalance(models.Model):
     balance = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
+    last_payment = models.ForeignKey('Payment', blank=True, null=True)
 
     def substract_sms_cost(self, number_of_segments):
         amount = number_of_segments * settings.COST_OF_SMS_SEGMENT
@@ -87,7 +89,14 @@ class SMSBalance(models.Model):
 
         if self.balance <= self.top_up_limit:
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
-            self.balance += self.top_up_amount
+
+        if Decimal(self.balance) - Decimal(settings.COST_OF_SMS_SEGMENT) < 0:
+            self.company.sms_enabled = False
+            self.company.save()
+
+        if not self.company.sms_enabled and Decimal(self.balance) - Decimal(settings.COST_OF_SMS_SEGMENT) > 0:
+            self.company.sms_enabled = True
+            self.company.save()
 
         super(SMSBalance, self).save(*args, **kwargs)
 

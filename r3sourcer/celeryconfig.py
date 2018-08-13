@@ -62,6 +62,18 @@ beat_schedule = {
         'task': 'r3sourcer.apps.hr.tasks.close_not_active_jobsites',
         'schedule': crontab(minute=4, hour=0)
     },
+    'fetch_payments': {
+        'task': 'r3sourcer.apps.billing.tasks.fetch_payments',
+        'schedule': crontab(minute=30)
+    },
+    'sync_subscriptions': {
+        'task': 'r3sourcer.apps.billing.tasks.sync_subscriptions',
+        'schedule': crontab(hour=3)
+    },
+    'charge_for_extra_workers': {
+        'task': 'r3sourcer.apps.billing.tasks.charge_for_extra_workers',
+        'schedule': crontab(hour=3)
+    },
 }
 
 task_ignore_result = True

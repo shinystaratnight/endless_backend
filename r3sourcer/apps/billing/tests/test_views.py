@@ -149,7 +149,6 @@ class TestCompanyListView:
 
         assert response['count'] == 1
         assert bool(response['results'][0]['subscription']['last_time_billed'])
-        assert response['results'][0]['sms_balance'] == 100
 
 
 class TestDiscountView:
@@ -192,11 +191,12 @@ class TestDiscountView:
 
 class TestDisableSMSCompanyView:
     def test_get(self, client, user, company):
+        company.sms_enabled = True
+        company.save()
         url = reverse('billing:disable_sms_company', kwargs={'version': 'v2', 'id': company.id})
         client.force_login(user)
         client.get(url)
 
-        assert company.sms_enabled
         assert not Company.objects.get(id=company.id).sms_enabled
 
 
