@@ -187,3 +187,11 @@ class TestDiscountView:
 
         assert initial_discount_number + 1 == Discount.objects.count()
         assert Discount.objects.first().percent_off == data['percent_off']
+
+
+class TestDisableSMSFeatureView:
+    def test_get(self, client, user, company):
+        import pdb; pdb.set_trace()
+        url = reverse('billing:disable_sms', kwargs={'version': 'v2', 'id': company.id})
+        client.force_login(user)
+        response = client.get(url).json()

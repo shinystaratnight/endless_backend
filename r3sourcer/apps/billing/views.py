@@ -4,7 +4,7 @@ from datetime import datetime
 
 from django.conf import settings
 from rest_framework import status
-from rest_framework.generics import ListAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -146,17 +146,12 @@ class CompanyListView(APIView):
         return Response(data)
 
 
-class DiscountView(APIView):
-    def get(self, *args, **kwargs):
-        qs = Discount.objects.all()
-        serializer = DiscountSerializer(qs, many=True)
-        data = {
-            'discounts': serializer.data
-        }
-        return Response(data)
+class DiscountView(ListCreateAPIView):
+    queryset = Discount.objects.all()
+    serializer_class = DiscountSerializer
 
-    def post(self, *args, **kwargs):
-        serializer = DiscountSerializer(data=self.request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
+
+class DisableSMSFeatureView(APIView):
+    def get(self, *args, **kwargs):
+        import pdb; pdb.set_trace()
         return Response()
