@@ -146,8 +146,8 @@ class TestContact:
     def test_contact_today_out_of_unavailability_range(self, contact, unavalability):
         assert contact.get_availability()
 
-    def test_is_company_contact_successfully(self, contact, manager):
-        assert contact.is_company_contact()
+    def test_is_company_contact_successfully(self, staff_user, staff_relationship):
+        assert staff_user.contact.is_company_contact()
 
     def test_is_company_contact_unsuccessfully(self, contact):
         assert not contact.is_company_contact()

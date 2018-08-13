@@ -229,6 +229,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
 
             serializer.save()
+
+            generate_invoice.apply_async([obj.id], countdown=10)
         else:
             if not obj.break_started_at or not obj.break_ended_at:
                 obj.no_break = True
@@ -446,7 +448,7 @@ class JobViewset(BaseApiViewset):
                 candidate_skills__skill=job.position,
                 candidate_skills__score__gt=0
             )
-            hourly_rate = job.hourly_rate_default.hourly_rate
+            hourly_rate = job.hourly_rate_default
             overpriced_candidates = candidate_contacts.filter(
                 overpriced_qry,
                 candidate_skills__candidate_skill_rates__hourly_rate__gt=hourly_rate,

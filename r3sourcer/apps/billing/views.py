@@ -43,7 +43,7 @@ class SubscriptionCreateView(APIView):
         current_period_start = None
         current_period_end = None
 
-        if isinstance(subscription.current_period_start, float):
+        if isinstance(subscription.current_period_start, int):
             current_period_start = datetime.fromtimestamp(subscription.current_period_start)
             current_period_end = datetime.fromtimestamp(subscription.current_period_end)
 
@@ -136,14 +136,9 @@ class SubscriptionCancelView(APIView):
         return Response()
 
 
-class CompanyListView(APIView):
-    def get(self, *args, **kwargs):
-        companies = Company.objects.filter(subscriptions__isnull=False)
-        serializer = CompanySerializer(companies, many=True)
-        data = {
-            "companies": serializer.data,
-        }
-        return Response(data)
+class CompanyListView(ListAPIView):
+    queryset = Company.objects.filter(subscriptions__isnull=False)
+    serializer_class = CompanySerializer
 
 
 class DiscountView(ListCreateAPIView):

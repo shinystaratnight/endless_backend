@@ -3,6 +3,7 @@ from decimal import Decimal
 
 from crum import get_current_request
 from django.conf import settings
+from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.db import models, IntegrityError, transaction
@@ -161,8 +162,7 @@ class Jobsite(
     @workflow_function
     def is_supervisor_set(self):
         return self.primary_contact and self.primary_contact.contact.email
-    is_supervisor_set.short_description = \
-        _("Supervisor with valid email is required.")
+    is_supervisor_set.short_description = _("Supervisor with valid email is required.")
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
@@ -289,19 +289,16 @@ class Job(core_models.AbstractBaseOrder):
         blank=True
     )
 
-    hourly_rate_default = models.ForeignKey(
-        SkillBaseRate,
-        related_name="jobs",
-        on_delete=models.SET_NULL,
-        verbose_name=_("Hourly rate default"),
-        null=True,
-        blank=True
+    hourly_rate_default = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
     )
 
     class Meta:
         verbose_name = _("Job")
         verbose_name_plural = _("Jobs")
-        unique_together = ('work_start_date', 'position', 'jobsite')
 
     def __str__(self):
         return self.get_title()
@@ -407,7 +404,7 @@ class Job(core_models.AbstractBaseOrder):
 
     @workflow_function
     def is_default_rate_set(self):
-        return self.hourly_rate_default is not None
+        return self.hourly_rate_default is not None or self.hourly_rate_default <= 0
     is_default_rate_set.short_description = _('Default hourly rate')
 
     @workflow_function
@@ -427,11 +424,21 @@ class Job(core_models.AbstractBaseOrder):
         ).exists()
     is_all_timesheets_approved.short_description = _('All Time Sheets approvment')
 
+    @workflow_function
+    def is_client_active(self):
+        content_type = ContentType.objects.get_for_model(core_models.CompanyRel)
+        company_rel = self.customer_company.regular_companies.filter(master_company=self.provider_company).first()
+        res = core_models.WorkflowObject.objects.filter(
+            state__number=70, state__workflow__model=content_type, active=True, object_id=company_rel.id
+        ).exists()
+        return res
+    is_client_active.short_description = _('Active Client')
+
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
             sd, _ = ShiftDate.objects.get_or_create(
                 job=self, shift_date=self.work_start_date,
-                workers=self.workers, hourly_rate=self.hourly_rate_default
+                workers=self.workers
             )
             Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
 
@@ -442,14 +449,14 @@ class Job(core_models.AbstractBaseOrder):
         if just_added:
             self.provider_signed_at = timezone.now()
             existing_jobs = Job.objects.filter(
-                customer_company=self.customer_company, jobsite=self.jobsite, position=self.position
+                jobsite=self.jobsite, position=self.position
             )
             completed_list = core_models.WorkflowObject.objects.filter(
                 object_id__in=existing_jobs.values_list('id', flat=True), state__number=60, active=True
             ).values_list('object_id', flat=True)
 
             if existing_jobs.exclude(id__in=completed_list).exists():
-                raise ValidationError(_('Active Vacancy for this Client, Jobsite and Position already exist'))
+                raise ValidationError(_('Active Job for Jobsite and Position already exist'))
 
         super().save(*args, **kwargs)
 

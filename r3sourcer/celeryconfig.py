@@ -58,6 +58,10 @@ beat_schedule = {
         'task': 'r3sourcer.apps.hr.tasks.update_all_distances',
         'schedule': crontab(minute=0, hour=22, day_of_week='fri,sat')
     },
+    'close_not_active_jobsites': {
+        'task': 'r3sourcer.apps.hr.tasks.close_not_active_jobsites',
+        'schedule': crontab(minute=4, hour=0)
+    },
 }
 
 task_ignore_result = True

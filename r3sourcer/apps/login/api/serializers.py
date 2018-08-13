@@ -5,6 +5,7 @@ from django.core.validators import validate_email
 from django.utils.translation import ugettext_lazy as _
 
 from phonenumber_field import phonenumber
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer, ApiContactImageFieldsMixin
 from r3sourcer.apps.core.models import Contact
@@ -80,3 +81,7 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
 
     def get_company(self, obj):
         return obj.get_closest_company().name
+
+
+class JwtTokenObtainPairSerializer(TokenObtainPairSerializer):
+    username_field = 'username'

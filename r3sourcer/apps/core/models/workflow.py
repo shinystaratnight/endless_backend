@@ -291,6 +291,9 @@ class WorkflowObject(UUIDModel):
             if lifecycle_enabled:
                 self.model_object.after_state_created(self)
 
+        if lifecycle_enabled and self.active:
+            self.model_object.after_state_activated(self)
+
     def clean(self):
         self.validate_object(self.state, self.object_id, self._state.adding)
 

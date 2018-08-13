@@ -18,7 +18,8 @@ from inflector import Inflector
 from model_utils import Choices
 from polymorphic.models import PolymorphicModel
 
-from r3sourcer.apps.core.models import UUIDModel
+from r3sourcer.apps.core.models import UUIDModel, Country
+from r3sourcer.apps.core.utils.address import get_address_parts, get_street_address
 from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.user import get_default_company
@@ -283,7 +284,7 @@ class Form(UUIDModel):
                 else:
                     data_storage.setdefault(name, form_cls.base_fields[name].clean(data))
             except ValidationError as e:
-                errors[name] = e.messages
+                errors[name.replace('__', '.')] = e.messages
 
         return data_storage, errors
 
@@ -292,6 +293,14 @@ class Form(UUIDModel):
         parsed_data = {}
         for field, value in data.items():
             field_name = '%s__%s' % (parent, field) if parent else field
+
+            if field == 'street_address':
+                address_parts = get_address_parts(value)
+                value = get_street_address(address_parts)
+            elif field == 'country':
+                country = Country.objects.filter(models.Q(id=value) | models.Q(code2=value)).first()
+                value = country and country.code2
+
             if isinstance(value, dict):
                 parsed_data.update(cls.parse_api_data(value, parent=field_name))
             else:
@@ -530,7 +539,7 @@ class ModelFormField(FormField):
             ui_config['type'] = 'number'
         elif isinstance(form_field, (forms.FileField, forms.ImageField)):
             ui_config['type'] = 'picture'
-            ui_config['file'] = isinstance(form_field, forms.FileField)
+            ui_config['file'] = not isinstance(form_field, forms.ImageField)
         elif isinstance(form_field, forms.DateField):
             ui_all_config['type'] = 'datepicker'
             ui_config['type'] = 'date'
@@ -560,7 +569,7 @@ class ModelFormField(FormField):
                 ui_all_config['type'] = 'select'
                 ui_config.update({
                     'type': 'select',
-                    'values': [{'value': str(value), 'label': str(label)} for value, label in form_field.choices]
+                    'options': [{'value': str(value), 'label': str(label)} for value, label in form_field.choices]
                 })
             if isinstance(form_field, (forms.ModelMultipleChoiceField, forms.MultipleChoiceField)):
                 ui_config['multiple'] = True
@@ -603,7 +612,7 @@ class SelectFormField(FormField):
         ui_config = super(SelectFormField, self).get_ui_config()
         ui_config['templateOptions'].update(**{
             'multiple': self.is_multiple,
-            'values': self.choices
+            'options': self.choices
         })
         return ui_config
 
@@ -660,7 +669,7 @@ class RadioButtonsFormField(FormField):
     def get_ui_config(self):
         ui_config = super(RadioButtonsFormField, self).get_ui_config()
         ui_config['templateOptions'].update(**{
-            'values': self.choices
+            'options': self.choices
         })
         return ui_config
 

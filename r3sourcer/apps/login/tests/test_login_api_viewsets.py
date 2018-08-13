@@ -6,7 +6,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.core.models import Contact, CompanyContact
+from r3sourcer.apps.core.models import Contact, CompanyContact, CompanyContactRelationship
 from r3sourcer.apps.login.models import TokenLogin
 
 
@@ -25,11 +25,15 @@ class TestLoginResource:
         company_contact = CompanyContact.objects.create(
             contact=user.contact, role=CompanyContact.ROLE_CHOICES[CompanyContact.MANAGER]
         )
+        company_contact_rel = CompanyContactRelationship.objects.create(
+            company=company, company_contact=company_contact
+        )
         url = reverse('api:auth-restore-session', kwargs={'version': 'v2'})
         response1 = client.get(url)
         company_contact.role = CompanyContact.ROLE_CHOICES[CompanyContact.CLIENT]
         company_contact.save()
         response2 = client.get(url)
+        company_contact_rel.delete()
         company_contact.delete()
         CandidateContact.objects.create(contact=user.contact)
         response3 = client.get(url)

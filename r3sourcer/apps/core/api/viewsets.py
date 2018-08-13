@@ -10,7 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from phonenumber_field import phonenumber
 from rest_framework import viewsets, exceptions, status, fields
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
@@ -25,6 +25,7 @@ from ..workflow import WorkflowProcess
 from . import permissions, serializers
 
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.address import parse_google_address
@@ -710,13 +711,12 @@ class DashboardModuleViewSet(BaseApiViewset):
         return super(DashboardModuleViewSet, self).destroy(request, *args, **kwargs)
 
     def get_queryset(self):
-        queryset = super(DashboardModuleViewSet, self).get_queryset().prefetch_related('content_type')
-        result = [
-            obj.id
-            for obj in queryset
-            if self.request.user.has_perm('can_use_module', obj)
-        ]
-        return queryset.filter(id__in=result)
+        if self.request.user.is_manager():
+            queryset = super(DashboardModuleViewSet, self).get_queryset().prefetch_related('content_type')
+        else:
+            queryset = DashboardModule.objects.none()
+
+        return queryset
 
 
 class FormBuilderViewSet(BaseApiViewset):
@@ -738,10 +738,10 @@ class FormViewSet(BaseApiViewset):
     def get_queryset(self):
         if self.request.user.is_superuser:
             return models.Form.objects.all()
-        companies = get_master_companies_by_contact(self.request.user.contact)
+        company = get_site_master_company(request=self.request)
         return models.Form.objects.filter(
             Q(company__isnull=True) |
-            Q(company__in=companies)
+            Q(company=company)
         )
 
     def create(self, request, *args, **kwargs):
@@ -757,7 +757,7 @@ class FormViewSet(BaseApiViewset):
 
         return self.create_from_data(data, *args, **kwargs)
 
-    @action(methods=['get'], detail=True)
+    @action(methods=['get'], detail=True, permission_classes=(AllowAny,))
     def render(self, request, pk, *args, **kwargs):
         fields = self.get_list_fields(request)
         instance = self.get_object()
@@ -765,14 +765,14 @@ class FormViewSet(BaseApiViewset):
 
         return Response(serializer.data)
 
-    @action(methods=['post'], detail=True)
+    @action(methods=['post'], detail=True, permission_classes=(AllowAny,))
     def submit(self, request, pk, *args, **kwargs):
         form_obj = self.get_object()
         data = models.Form.parse_api_data(request.data)
         form = form_obj.get_form_class()(data=data, files=request.data)
 
         if not form.is_valid():
-            raise exceptions.ValidationError(form.errors)
+            raise exceptions.ValidationError({k.replace('__', '.'): v for k, v in form.errors.items()})
 
         form_storage_data = models.Form.parse_data_to_storage(form.cleaned_data)
         form_storage_data, errors = form_obj.get_data(form_storage_data)
@@ -793,6 +793,8 @@ class FormViewSet(BaseApiViewset):
 
 class CitiesLightViewSet(BaseApiViewset):
 
+    permission_classes = (AllowAny,)
+
     def get_queryset(self):
         qs = super().get_queryset()
 
@@ -802,7 +804,7 @@ class CitiesLightViewSet(BaseApiViewset):
 class AddressViewset(GoogleAddressMixin, BaseApiViewset):
     root_address = True
 
-    @action(methods=['post'], detail=False)
+    @action(methods=['post'], detail=False, permission_classes=(AllowAny,))
     def parse(self, request, *args, **kwargs):
         try:
             address_data = request.data

@@ -345,6 +345,14 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         """
         pass
 
+    def after_state_activated(self, workflow_object):
+        """
+        Lifecycle callback: after some state activated
+
+        :param state: WorkflowObject instance
+        """
+        pass
+
 
 class CompanyRelState60:
     def check(self, obj):

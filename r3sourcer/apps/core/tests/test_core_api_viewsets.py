@@ -604,8 +604,9 @@ class TestDashboardModules(ResourceMixin):
             assign_perm('can_use_module', primary_company_contact.contact.user, m)
         return dashboard_modules, primary_company_contact
 
-    def test_get_all_modules(self, rf, dashboard_modules):
+    def test_get_all_modules(self, user, rf, dashboard_modules):
         req = rf.get('/api/v2/core/dashboardmodules/')
+        force_authenticate(req, user=user)
         resp_data = self.get_response_as_view(req)
 
         assert status.HTTP_200_OK == resp_data.status_code

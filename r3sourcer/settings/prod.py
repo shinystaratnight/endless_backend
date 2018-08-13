@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 
 import os
 
+from datetime import timedelta
+
 from django.utils.translation import ugettext_lazy as _
 
 
@@ -68,6 +70,7 @@ INSTALLED_APPS = [
     'guardian',
     'easy_select2',
     'polymorphic',
+    'corsheaders',
 
     'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',
@@ -106,6 +109,7 @@ if 'r3sourcer.apps.logger' in INSTALLED_APPS:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -281,6 +285,11 @@ REST_FRAMEWORK = {
     'PAGE_SIZE': 10,
     'DATETIME_INPUT_FORMATS': ['iso-8601'],
     'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
 }
 
 GOOGLE_GEO_CODING_API_KEY = env('GOOGLE_GEO_CODING_API_KEY', '')
@@ -407,6 +416,7 @@ CITIES_LIGHT_INCLUDE_CITY_TYPES = [
 
 
 SUPERVISOR_DECLINE_TIMEOUT = 4 * 60 * 60
+JOBSITE_NOT_ACTIVE_TIMEOUT = 60 * 60 * 24 * 180
 
 
 QUERYSET_CLASS = env('QUERYSET_CLASS', 'r3sourcer.apps.core.managers.AbstractObjectOwnerQuerySet')
@@ -425,3 +435,13 @@ SMS_SEGMENT_SIZE = 160
 
 
 def CAN_LOGIN_AS(request, target_user): return request.user
+
+
+CORS_ORIGIN_WHITELIST = (
+    'r3sourcersoft.com',
+)
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=3),
+}

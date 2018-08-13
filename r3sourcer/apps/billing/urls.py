@@ -15,6 +15,6 @@ urlpatterns = [
     url(r'^billing/disable_sms/(?P<id>[\w\-]+)$', views.DisableSMSFeatureView.as_view(), name='disable_sms'),
 
     # subscription management page
-    url(r'^companies/$', views.CompanyListView.as_view(), name='company_list'),
-    url(r'^discounts/$', views.DiscountView.as_view(), name='discounts'),
+    url(r'^billing/companies/$', views.CompanyListView.as_view(), name='company_list'),
+    url(r'^billing/discounts/$', views.DiscountView.as_view(), name='discounts'),
 ]

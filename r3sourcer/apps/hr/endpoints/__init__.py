@@ -12,7 +12,9 @@ class JobsiteEndpoint(ApiEndpoint):
     base_viewset = hr_viewsets.JobsiteViewset
     filter_class = hr_filters.JobsiteFilter
     serializer = job_serializers.JobsiteSerializer
-    search_fields = ('address__city__search_names', 'address__street_address', 'master_company__name')
+    search_fields = (
+        'address__city__search_names', 'address__street_address', 'master_company__name', 'regular_company__name',
+    )
 
 
 class JobEndpoint(ApiEndpoint):

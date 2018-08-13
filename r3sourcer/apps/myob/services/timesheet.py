@@ -331,10 +331,10 @@ class TimeSheetSync(
         job = timesheet.job_offer.job
         if job.hourly_rate_default:
             name = '{} {}'.format(
-                str(job.hourly_rate_default.skill.get_myob_name()),
-                str(job.hourly_rate_default.hourly_rate)
+                str(job.position.get_myob_name()),
+                str(job.hourly_rate_default)
             )
-            base_rate = job.top_hourly_rate_default.hourly_rate
+            base_rate = job.top_hourly_rate_default
 
         if name is None:
             candidate_skill_rate = SkillRel.objects.filter(
