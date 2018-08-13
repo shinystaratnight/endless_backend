@@ -772,7 +772,7 @@ class FormViewSet(BaseApiViewset):
         form = form_obj.get_form_class()(data=data, files=request.data)
 
         if not form.is_valid():
-            raise exceptions.ValidationError(form.errors)
+            raise exceptions.ValidationError({k.replace('__', '.'): v for k, v in form.errors.items()})
 
         form_storage_data = models.Form.parse_data_to_storage(form.cleaned_data)
         form_storage_data, errors = form_obj.get_data(form_storage_data)
