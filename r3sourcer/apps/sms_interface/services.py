@@ -46,8 +46,12 @@ class BaseSMSService(metaclass=ABCMeta):
             from_number = from_number.as_e164
 
         company = Company.objects.get(twilio_credentials__accounts_list__phone_numbers__phone_number=from_number)
+        contact = Contact.objects.filter(phone_mobile=to_number).first()
 
         if not company.sms_enabled:
+            return
+
+        if contact and not contact.sms_enabled:
             return
 
         sms_message = get_sms(from_number=from_number, to_number=to_number, text=text, company=company, **kwargs)
