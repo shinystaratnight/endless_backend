@@ -31,7 +31,23 @@ class CompanySerializer(serializers.ModelSerializer):
         return serializer.data
 
 
+class DiscountCompanySerializer(serializers.ModelSerializer):
+    id = serializers.CharField()
+
+    class Meta:
+        model = Company
+        fields = ('id', '__str__')
+
+
 class DiscountSerializer(serializers.ModelSerializer):
+    company = DiscountCompanySerializer()
+
     class Meta:
         model = Discount
         fields = ('company', 'payment_type', 'percent_off', 'amount_off', 'active', 'duration', 'duration_in_months')
+
+    def create(self, validated_data):
+        company_data = validated_data.pop('company')
+        company = Company.objects.get(id=company_data['id'])
+        validated_data.update({'company': company})
+        return super(DiscountSerializer, self).create(validated_data)
