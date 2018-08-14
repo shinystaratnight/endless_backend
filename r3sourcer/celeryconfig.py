@@ -74,6 +74,10 @@ beat_schedule = {
         'task': 'r3sourcer.apps.billing.tasks.charge_for_extra_workers',
         'schedule': crontab(hour=3)
     },
+    'send_sms_payment_reminder': {
+        'task': 'r3sourcer.apps.billing.tasks.send_sms_payment_reminder',
+        'schedule': crontab(minute=45)
+    },
 }
 
 task_ignore_result = True
