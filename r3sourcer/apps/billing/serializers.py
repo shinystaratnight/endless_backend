@@ -44,7 +44,7 @@ class DiscountSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Discount
-        fields = ('company', 'payment_type', 'percent_off', 'amount_off', 'active', 'duration', 'duration_in_months')
+        fields = ('id', 'company', 'payment_type', 'percent_off', 'amount_off', 'active', 'duration', 'duration_in_months')
 
     def create(self, validated_data):
         company_data = validated_data.pop('company')
