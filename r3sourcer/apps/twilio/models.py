@@ -275,8 +275,23 @@ class TwilioSMSMessage(sms_models.SMSMessage):
             'error_message': remote_message.error_message,
         }
 
-        sms_message, created = cls.objects.select_for_update().update_or_create(sid=remote_message.sid,
-                                                                                defaults=values_message)
+        sms_messages = cls.objects.select_for_update().filter(sid=remote_message.sid)
+        if sms_messages.count() > 1:
+            sms_message = sms_messages.filter(
+                models.Q(template__isnull=False) | models.Q(related_object__isnull=False)
+            ).first()
+        else:
+            sms_message = None
+
+        sms_message = sms_message or sms_messages.first()
+
+        if sms_message is not None:
+            for key, value in values_message.items():
+                setattr(sms_message, key, value)
+            sms_message.save()
+        else:
+            sms_message = cls.objects.create(**values_message)
+
         return sms_message
 
     class Meta:
