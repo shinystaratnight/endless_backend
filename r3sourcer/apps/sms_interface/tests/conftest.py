@@ -1,8 +1,10 @@
 import pytest
 
+from django.utils import timezone
+
 from r3sourcer.apps.core.models import User, Company, CompanyContact
 from r3sourcer.apps.sms_interface.models import SMSMessage, SMSTemplate
-
+from r3sourcer.apps.twilio.models import TwilioAccount, TwilioCredential, TwilioPhoneNumber
 
 
 @pytest.fixture
@@ -50,4 +52,56 @@ def sms_template():
         name='SMS Template',
         type=SMSTemplate.SMS,
         message_text_template='template'
+    )
+
+
+@pytest.fixture
+def twilio_credentials(db, company):
+    return TwilioCredential.objects.create(
+        company=company,
+        sid='sid',
+        auth_token='auth_token',
+    )
+
+
+@pytest.fixture
+def twilio_account(db, twilio_credentials, phone_number):
+    return TwilioAccount.objects.create(
+        credential=twilio_credentials,
+        sid='sid2',
+        phone_numbers=[phone_number]
+    )
+
+
+@pytest.fixture
+def phone_number(db, company):
+    return TwilioPhoneNumber.objects.create(
+        sid='sid',
+        phone_number='+123456789',
+        company=company
+    )
+
+
+@pytest.fixture
+def admin(db):
+    user = User.objects.create_user(
+        email='test2@test.tt', phone_mobile='+12345679999',
+        password='test1234', is_staff=True
+    )
+    user.is_staff = True
+    user.save()
+    return user
+
+
+@pytest.fixture
+def sms_message(db, company):
+    return SMSMessage.objects.create(
+        text='sms text',
+        from_number='+123456789',
+        to_number='+123456789',
+        check_delivered=True,
+        sent_at=timezone.now(),
+        type=SMSMessage.TYPE_CHOICES.SENT,
+        company=company,
+        segments=1
     )

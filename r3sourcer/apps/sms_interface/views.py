@@ -1,5 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
-
+from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework import permissions
 from rest_framework.response import Response
@@ -7,7 +7,9 @@ from rest_framework.views import APIView
 
 from .models import SMSTemplate
 from .mixins import MessageViewBase
-from .serializers import TemplateBodySerializer, ContentTypeSerializer, TemplateSerializer
+from .serializers import TemplateBodySerializer, ContentTypeSerializer, TemplateSerializer, SMSMessageSerializer
+from r3sourcer.apps.core.models.core import Company
+from r3sourcer.apps.sms_interface.models import SMSMessage
 
 
 class TemplateCompileView(MessageViewBase, APIView):
@@ -50,3 +52,18 @@ class TemplateSMSMessageListView(generics.ListAPIView):
     pagination_class = None
     queryset = SMSTemplate.objects.filter(type=SMSTemplate.SMS)
     serializer_class = TemplateSerializer
+
+
+class SMSMessageListView(generics.ListAPIView):
+    permission_classes = (permissions.IsAdminUser,)
+    serializer_class = SMSMessageSerializer
+
+    def get_queryset(self):
+        queryset = SMSMessage.objects.filter(type='SENT')
+        company_id = self.request.GET.get('company_id', None)
+
+        if company_id:
+            company = get_object_or_404(Company, id=company_id)
+            queryset = queryset.filter(company=company)
+
+        return queryset

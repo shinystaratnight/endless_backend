@@ -21,7 +21,7 @@ def fill_form_builder_fields(apps, schema_editor):
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0061_companyworkflownode_order'),
+        ('core', '0062_company_sms_enabled'),
     ]
 
     operations = [

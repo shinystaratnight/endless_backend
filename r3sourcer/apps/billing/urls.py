@@ -12,6 +12,8 @@ urlpatterns = [
     url(r'^billing/stripe_customer/$', views.StripeCustomerCreateView.as_view(), name='stripe_customer_create'),
     url(r'^billing/payments/$', views.PaymentListView.as_view(), name='payment_list'),
     url(r'^billing/check_payment_information/$', views.CheckPaymentInformationView.as_view(), name='check_payment_information'),
+    url(r'^billing/disable_sms/company/(?P<id>[\w\-]+)$', views.DisableSMSCompanyView.as_view(), name='disable_sms_company'),
+    url(r'^billing/disable_sms/contact/(?P<id>[\w\-]+)$', views.DisableSMSContactView.as_view(), name='disable_sms_contact'),
 
     # subscription management page
     url(r'^billing/companies/$', views.CompanyListView.as_view(), name='company_list'),

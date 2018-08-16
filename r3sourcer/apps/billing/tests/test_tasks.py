@@ -5,10 +5,10 @@ import stripe
 
 from django.utils import timezone
 
-from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms
+from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms, fetch_payments
 from r3sourcer.apps.billing.models import SMSBalance, Payment, Subscription
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.core.models import User
+from r3sourcer.apps.core.models import User, Company
 from r3sourcer.apps.hr.models import JobOffer, TimeSheet
 
 
@@ -106,6 +106,33 @@ class TestChargeForSMS:
         mocked_value = {'id': 'stripe_id'}
         mocked_invoice.return_value = mocked_value
         initial_payment_count = Payment.objects.count()
-        charge_for_sms(company.id, 100, 1)
+        charge_for_sms(company.id, 100, company.sms_balance.id)
 
         assert initial_payment_count + 1 == Payment.objects.count()
+
+
+class TestFetchPayments:
+    @mock.patch.object(stripe.Invoice, 'retrieve')
+    @mock.patch.object(stripe.Invoice, 'list')
+    def test_fetch_payments(self, mocked_invoice_retrieve, mocked_invoice_list, client, user, company):
+        initial_balance = company.sms_balance.balance
+        mocked_invoice_retrieve.return_value = {'data': list()}
+        mocked_invoice_list.return_value = {'paid': True}
+        payment = Payment.objects.create(
+            company=company,
+            type=Payment.PAYMENT_TYPES.sms,
+            amount=100,
+            status=Payment.PAYMENT_STATUSES.not_paid,
+            stripe_id='stripeid',
+            invoice_url='invoice_url'
+        )
+        company.stripe_customer = 'stripe_customer'
+        company.sms_enabled = False
+        company.sms_balance.last_payment = payment
+        company.sms_balance.save()
+        company.save()
+        fetch_payments()
+
+        assert Payment.objects.get(id=payment.id).status == 'paid'
+        assert SMSBalance.objects.get(id=company.sms_balance.id).balance == initial_balance + payment.amount
+        assert Company.objects.get(id=company.id).sms_enabled

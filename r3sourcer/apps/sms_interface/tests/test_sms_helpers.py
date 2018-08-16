@@ -6,9 +6,9 @@ from r3sourcer.apps.sms_interface.models import PhoneNumber
 
 class TestHelpers:
 
-    def test_get_sms(self, contact):
+    def test_get_sms(self, contact, twilio_account, phone_number):
         sms_message = get_sms(
-            from_number='+12345678901',
+            from_number=phone_number.phone_number,
             to_number=contact.phone_mobile,
             text='test message',
         )
@@ -31,9 +31,9 @@ class TestHelpers:
                 text=None,
             )
 
-    def test_sms_text_reply_timeout(self, contact):
+    def test_sms_text_reply_timeout(self, contact, twilio_account, phone_number):
         sms_message = get_sms(
-            from_number='+12345678901',
+            from_number=phone_number.phone_number,
             to_number=contact.phone_mobile,
             text='test message',
             reply_timeout=1,
@@ -41,9 +41,9 @@ class TestHelpers:
 
         assert sms_message.reply_timeout == 1
 
-    def test_sms_text_delivery_timeout(self, contact):
+    def test_sms_text_delivery_timeout(self, contact, twilio_account, phone_number):
         sms_message = get_sms(
-            from_number='+12345678901',
+            from_number=phone_number.phone_number,
             to_number=contact.phone_mobile,
             text='test message',
             delivery_timeout=1,

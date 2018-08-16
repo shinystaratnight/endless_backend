@@ -8,7 +8,7 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.phonenumber import PhoneNumber
 
-from r3sourcer.apps.core.models import Contact
+from r3sourcer.apps.core.models import Contact, Company
 from r3sourcer.apps.core.service import factory
 
 from .exceptions import SMSServiceError
@@ -45,7 +45,17 @@ class BaseSMSService(metaclass=ABCMeta):
         if isinstance(from_number, PhoneNumber):
             from_number = from_number.as_e164
 
-        sms_message = get_sms(from_number=from_number, to_number=to_number, text=text, **kwargs)
+        company = Company.objects.get(twilio_credentials__accounts_list__phone_numbers__phone_number=from_number)
+        contact = Contact.objects.filter(phone_mobile=to_number).first()
+
+        if not company.sms_enabled:
+            return
+
+        if contact and not contact.sms_enabled:
+            return
+
+        sms_message = get_sms(from_number=from_number, to_number=to_number, text=text, company=company, **kwargs)
+
         try:
 
             sms_message.related_object = related_obj

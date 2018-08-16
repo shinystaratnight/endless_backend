@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 from r3sourcer.apps.billing.models import Subscription, Payment, Discount
 from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer, DiscountSerializer
 from r3sourcer.apps.billing import STRIPE_INTERVALS
-from r3sourcer.apps.core.models.core import Company
+from r3sourcer.apps.core.models.core import Company, Contact
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -144,3 +144,19 @@ class CompanyListView(ListAPIView):
 class DiscountView(ListCreateAPIView):
     queryset = Discount.objects.all()
     serializer_class = DiscountSerializer
+
+
+class DisableSMSCompanyView(APIView):
+    def get(self, *args, **kwargs):
+        company = Company.objects.get(id=kwargs['id'])
+        company.sms_enabled = False
+        company.save()
+        return Response()
+
+
+class DisableSMSContactView(APIView):
+    def get(self, *args, **kwargs):
+        contact = Contact.objects.get(id=kwargs['id'])
+        contact.sms_enabled = False
+        contact.save()
+        return Response()

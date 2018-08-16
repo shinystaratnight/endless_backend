@@ -16,15 +16,6 @@ class TestSMSBalance:
 
         assert sms_balance.balance == 99.76
 
-    def test_top_up_limit(self, client, user, company, relationship):
-        initial_balance = 20
-        sms_balance = company.sms_balance
-        sms_balance.balance = 20
-        sms_balance.top_up_limit = 20
-        sms_balance.save()
-
-        assert sms_balance.balance == initial_balance + sms_balance.top_up_amount
-
 
 class TestDiscount:
 
@@ -61,7 +52,7 @@ class TestDiscount:
 
         mocked_value = {'id': 'stripe_id'}
         mocked_invoice.return_value = mocked_value
-        charge_for_sms(company.id, 100, 1)
+        charge_for_sms(company.id, 100, company.sms_balance.id)
 
         assert Payment.objects.first().amount == 75
 

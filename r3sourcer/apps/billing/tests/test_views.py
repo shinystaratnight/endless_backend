@@ -6,7 +6,7 @@ import stripe
 from django.core.urlresolvers import reverse
 
 from r3sourcer.apps.billing.models import Subscription, Discount
-from r3sourcer.apps.core.models import Company
+from r3sourcer.apps.core.models import Company, Contact
 
 
 class TestSubscriptionCreateView:
@@ -150,7 +150,6 @@ class TestCompanyListView:
 
         assert response['count'] == 1
         assert bool(response['results'][0]['subscription']['last_time_billed'])
-        assert response['results'][0]['sms_balance'] == 100
 
 
 class TestDiscountView:
@@ -189,3 +188,24 @@ class TestDiscountView:
 
         assert initial_discount_number + 1 == Discount.objects.count()
         assert Discount.objects.first().percent_off == data['percent_off']
+
+
+class TestDisableSMSCompanyView:
+    def test_get(self, client, user, company):
+        company.sms_enabled = True
+        company.save()
+        url = reverse('billing:disable_sms_company', kwargs={'version': 'v2', 'id': company.id})
+        client.force_login(user)
+        client.get(url)
+
+        assert not Company.objects.get(id=company.id).sms_enabled
+
+
+class TestDisableSMSContactView:
+    def test_get(self, client, user, company, contact):
+        url = reverse('billing:disable_sms_contact', kwargs={'version': 'v2', 'id': contact.id})
+        client.force_login(user)
+        client.get(url)
+
+        assert contact.sms_enabled
+        assert not Contact.objects.get(id=contact.id).sms_enabled

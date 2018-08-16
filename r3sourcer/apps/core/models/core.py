@@ -195,6 +195,8 @@ class Contact(
         blank=True,
     )
 
+    sms_enabled = models.BooleanField(default=True)
+
     class Meta:
         verbose_name = _("Contact")
         verbose_name_plural = _("Contacts")
@@ -1065,6 +1067,8 @@ class Company(
     groups = models.ManyToManyField(Group, related_name='companies')
 
     stripe_customer = models.CharField(max_length=255, blank=True, null=True)
+
+    sms_enabled = models.BooleanField(default=True)
 
     class Meta:
         verbose_name = _("Company")

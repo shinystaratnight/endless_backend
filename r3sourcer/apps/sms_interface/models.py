@@ -179,6 +179,17 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         null=True,
         blank=True
     )
+    company = models.ForeignKey(
+        'core.Company',
+        verbose_name=_('Company'),
+        null=True,
+        blank=True
+    )
+    segments = models.IntegerField(
+        verbose_name=_('Number of segments'),
+        null=True,
+        blank=True
+    )
 
     # check message status
     check_delivered = models.BooleanField(
@@ -345,6 +356,10 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         self.check_reply = False
         self.save(update_fields=['check_reply'])
         logger.info("Message {} ({}) will not check reply".format(self.id, self))
+
+    @classmethod
+    def is_owned(cls):
+        return False
 
     def __str__(self):
         return '{} -> {}'.format(self.from_number, self.to_number)

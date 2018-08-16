@@ -5,8 +5,9 @@ import stripe
 from celery import shared_task
 from django.conf import settings
 
+from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.billing.models import Subscription, Payment
+from r3sourcer.apps.email_interface.utils import get_email_service
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -56,6 +57,7 @@ def charge_for_extra_workers():
 @shared_task
 def charge_for_sms(company_id, amount, sms_balance_id):
     company = Company.objects.get(id=company_id)
+    sms_balance = SMSBalance.objects.get(id=sms_balance_id)
 
     for discount in company.get_active_discounts('sms'):
         amount = discount.apply_discount(amount)
@@ -65,12 +67,14 @@ def charge_for_sms(company_id, amount, sms_balance_id):
                               currency=company.currency,
                               description='Topping up sms balance')
     invoice = stripe.Invoice.create(customer=company.stripe_customer)
-    Payment.objects.create(
+    payment = Payment.objects.create(
         company=company,
         type=Payment.PAYMENT_TYPES.extra_workers,
         amount=amount,
         stripe_id=invoice['id']
     )
+    sms_balance.last_payment = payment
+    sms_balance.save()
 
 
 @shared_task
@@ -116,3 +120,24 @@ def fetch_payments():
             if invoice['paid']:
                 payment.status = Payment.PAYMENT_STATUSES.paid
                 payment.save()
+                sms_balance = SMSBalance.objects.filter(last_payment=payment).first()
+
+                if sms_balance:
+                    sms_balance.balance += payment.amount
+                    sms_balance.save()
+
+
+@shared_task
+def send_sms_payment_reminder():
+    now = datetime.datetime.now()
+    balance_objects = SMSBalance.objects.filter(last_payment__status='not_paid')
+    one_day_objects = balance_objects.filter(last_payment__created__gte=now-datetime.timedelta(days=1))
+    two_days_objects = balance_objects.filter(last_payment__created__gte=now-datetime.timedelta(days=2)) \
+                                      .filter(last_payment__created__lt=now-datetime.timedelta(days=1))
+    email_interface = get_email_service()
+
+    for sms_balance in one_day_objects:
+        email_interface.send_tpl(sms_balance.company.manager.contact.email, tpl_name='sms_payment_reminder_24')
+
+    for sms_balance in two_days_objects:
+        email_interface.send_tpl(sms_balance.company.manager.contact.email, tpl_name='sms_payment_reminder_48')
