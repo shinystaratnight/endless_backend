@@ -1715,3 +1715,16 @@ class TagSerializer(ApiBaseModelSerializer):
 
     def get_children(self, obj):
         return [core_field.ApiBaseRelatedField.to_read_only_data(child) for child in obj.children.all()]
+
+
+class ContactForgotPasswordSerializer(serializers.Serializer):
+
+    email = serializers.EmailField()
+
+    def validate_email(self, email):
+        if not core_models.Contact.objects.filter(email=email).exists():
+            raise exceptions.ValidationError({
+                'email': _("User with this email doesn't exist"),
+            })
+
+        return email

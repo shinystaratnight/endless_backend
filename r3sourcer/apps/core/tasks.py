@@ -133,7 +133,7 @@ def send_trial_email(self, contact_id, auto_password):
         try:
             email_interface = get_email_service()
         except ImportError:
-            logger.exception('Cannot load SMS service')
+            logger.exception('Cannot load Email service')
             return
 
         site_url = core_companies_utils.get_site_url(user=contact.user)
@@ -237,3 +237,31 @@ def send_contact_verify_email(self, contact_id, manager_id):
             logger.info('Sending e-mail verify to %s.', contact)
 
             email_interface.send_tpl(contact.email, tpl_name=email_tpl, **data_dict)
+
+
+@shared_task()
+def send_generated_password_email(email):
+    try:
+        contact = core_models.Contact.objects.get(email=email)
+    except core_models.Contact.DoesNotExist as e:
+        logger.error(e)
+
+    try:
+        email_interface = get_email_service()
+    except ImportError:
+        logger.exception('Cannot load Email service')
+        return
+
+    site_url = core_companies_utils.get_site_url(user=contact.user)
+    new_password = core_models.User.objects.make_random_password(20)
+    data_dict = {
+        'contact': contact,
+        'email': email,
+        'password': new_password,
+        'site_url': site_url,
+    }
+
+    email_interface.send_tpl(email, tpl_name='forgot-password', **data_dict)
+
+    contact.user.set_password(new_password)
+    contact.user.save()

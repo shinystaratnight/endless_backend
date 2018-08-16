@@ -24,9 +24,9 @@ from ..workflow import WorkflowProcess
 
 from . import permissions, serializers
 
+from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.models.dashboard import DashboardModule
-from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.address import parse_google_address
 
@@ -218,8 +218,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
     @action(methods=['put'], detail=True)
     def password(self, request, pk=None, *args, **kwargs):
-        serializer = serializers.ContactPasswordSerializer(
-            data=request.data)
+        serializer = serializers.ContactPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
@@ -239,6 +238,18 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             'message': _('Email verified!')
         })
 
+    @action(methods=['post'], detail=False, permission_classes=[AllowAny])
+    def forgot_password(self, request, *args, **kwargs):
+        serializer = serializers.ContactForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        tasks.send_generated_password_email.delay(serializer.data['email'])
+
+        return Response({
+            'status': 'success',
+            'message': _('Password reset instructions were sent to this email address'),
+        })
+
     def prepare_related_data(self, data, is_create=False):
         data = super().prepare_related_data(data, is_create)
 
@@ -252,8 +263,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
         manager_id = self.request.user.contact
 
-        send_contact_verify_sms.apply_async(args=(instance.id, manager_id.id), countdown=10)
-        send_contact_verify_email.apply_async(args=(instance.id, manager_id.id), countdown=10)
+        tasks.send_contact_verify_sms.apply_async(args=(instance.id, manager_id.id), countdown=10)
+        tasks.send_contact_verify_email.apply_async(args=(instance.id, manager_id.id), countdown=10)
 
 
 class CompanyViewset(BaseApiViewset):
@@ -833,3 +844,13 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
         super().perform_destroy(instance)
 
         company_contact.delete()
+
+
+class UserViewset(BaseApiViewset):
+
+    @action(methods=['post'], detail=False, permission_classes=[AllowAny])
+    def forgot_password(self, request, *args, **kwargs):
+        return Response({
+            'status': 'success',
+            'message': _('Password reset instructions were sent to this email address'),
+        })
