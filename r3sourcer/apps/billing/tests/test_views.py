@@ -1,3 +1,4 @@
+import json
 import mock
 
 import stripe
@@ -175,16 +176,16 @@ class TestDiscountView:
     def test_post(self, client, user, company):
         initial_discount_number = Discount.objects.count()
         data = {
-            "company": company.id,
+            "company": {'id': str(company.id)},
             "payment_type": "sms",
             "percent_off": 25,
-            "amount_off": "",
+            "amount_off": None,
             "duration": "once",
-            "duration_in_months": "",
+            "duration_in_months": None,
         }
         url = reverse('billing:discounts', kwargs={'version': 'v2'})
         client.force_login(user)
-        client.post(url, data=data)
+        client.post(url, data=json.dumps(data), content_type='application/json')
 
         assert initial_discount_number + 1 == Discount.objects.count()
         assert Discount.objects.first().percent_off == data['percent_off']
