@@ -247,6 +247,27 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def change_password(self, request, *args, **kwargs):
         return self._update_password(serializers.ContactChangePasswordSerializer)
 
+    @action(methods=['post'], detail=True)
+    def send_password(self, request, *args, **kwargs):
+        instance = self.get_object()
+        is_sms = request.data.get('sms', False)
+        is_email = request.data.get('email', False)
+        new_password = models.User.objects.make_random_password(20)
+        message = ''
+
+        if is_email:
+            tasks.send_generated_password_email.delay(instance.email, new_password)
+            message = 'email'
+
+        if is_sms:
+            tasks.send_generated_password_sms.delay(instance.id, new_password)
+            message = '{} and sms'.format(message) if is_email else 'sms'
+
+        return Response({
+            'status': 'success',
+            'message': _('New password was sent by {type}').format(type=message),
+        })
+
     def _update_password(self, serializer_class):
         instance = self.get_object()
         serializer = serializer_class(instance.user, data=self.request.data)
