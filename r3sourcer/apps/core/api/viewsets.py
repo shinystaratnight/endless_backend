@@ -217,15 +217,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         })
 
     @action(methods=['put'], detail=True)
-    def password(self, request, pk=None, *args, **kwargs):
-        serializer = serializers.ContactPasswordSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response({
-            'status': 'success',
-            'message': _('Password changed successfully')
-        })
+    def password(self, request, *args, **kwargs):
+        return self._update_password(serializers.ContactPasswordSerializer)
 
     @action(methods=['get'], detail=True)
     def verify_email(self, request, *args, **kwargs):
@@ -248,6 +241,21 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         return Response({
             'status': 'success',
             'message': _('Password reset instructions were sent to this email address'),
+        })
+
+    @action(methods=['put'], detail=True)
+    def change_password(self, request, *args, **kwargs):
+        return self._update_password(serializers.ContactChangePasswordSerializer)
+
+    def _update_password(self, serializer_class):
+        instance = self.get_object()
+        serializer = serializer_class(instance.user, data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            'status': 'success',
+            'message': _('Password changed successfully')
         })
 
     def prepare_related_data(self, data, is_create=False):
