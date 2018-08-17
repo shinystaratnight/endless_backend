@@ -20,7 +20,6 @@ def get_sms(from_number, to_number, text, reply_timeout=None,
     assert text, "Message text is required"
 
     number_of_segments = math.ceil(len(text) / settings.SMS_SEGMENT_SIZE)
-    company.sms_balance.substract_sms_cost(number_of_segments)
     params = dict(text=text, from_number=from_number,
                   to_number=to_number, check_delivered=True,
                   sent_at=timezone.now(), check_reply=check_reply,
