@@ -1,6 +1,21 @@
 [
 {
   "model": "sms_interface.smstemplate",
+  "pk": "066aacfc-9ed9-4f6e-984b-50f482802985",
+  "fields": {
+    "updated_at": "2018-08-16T13:01:03.527Z",
+    "created_at": "2018-08-16T13:01:03.527Z",
+    "name": "Generated password",
+    "slug": "generated-password",
+    "message_text_template": "Dear [[contact]],\r\n\r\nYou have requested a password change! Your newly generated password is:\r\n\r\n[[password]]\r\n\r\nWe recommend you to change this password on your next login.\r\n\r\nKind regards, R3sourcer team",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "sms"
+  }
+},
+{
+  "model": "sms_interface.smstemplate",
   "pk": "187c0b76-15e5-4711-a324-270665b26517",
   "fields": {
     "updated_at": "2018-03-21T08:22:31.290Z",
@@ -168,11 +183,11 @@
   "model": "sms_interface.smstemplate",
   "pk": "c3397e10-b6f9-43b7-9ded-ddf647516cd2",
   "fields": {
-    "updated_at": "2018-02-21T07:54:53.633Z",
+    "updated_at": "2018-08-03T07:08:30.299Z",
     "created_at": "2018-02-14T12:38:58.505Z",
     "name": "Candidate TimeSheet Hours",
     "slug": "candidate-timesheet-hours",
-    "message_text_template": "[[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked today. If you are unable to open the link, please submit your hours on a computer: [[site_url]] -> Customer Access. Thank you.",
+    "message_text_template": "[[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked today. If you are unable to open the link, please submit your hours on a computer: [[site_url]] . Thank you.",
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
