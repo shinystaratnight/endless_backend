@@ -69,6 +69,23 @@
 },
 {
   "model": "email_interface.emailtemplate",
+  "pk": "9cb6fc1e-b491-4993-8620-b7cfa84a9e1d",
+  "fields": {
+    "updated_at": "2018-08-16T09:37:00.272Z",
+    "created_at": "2018-08-16T09:31:17.779Z",
+    "name": "Forgot password",
+    "slug": "forgot-password",
+    "subject_template": "Forgot password",
+    "message_text_template": "Dear [[contact]],\r\n\r\nYou have requested a password change! Your newly generated password is:\r\n\r\n[[password]]\r\n\r\nWe recommend you to change this password on your next login.\r\nYou can use the following login details to access it:\r\nAddress: [[site_url]]\r\nUsername: [[email]]\r\n\r\nIf there's anything we can do to help about login related issues or if you have any questions about R3sourcer, please let us know. We are happy to help.\r\n\r\nKind regards, R3sourcer team",
+    "message_html_template": "",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
   "pk": "cfbda311-a000-4c38-9cff-df4120852877",
   "fields": {
     "updated_at": "2018-02-15T14:10:59.413Z",

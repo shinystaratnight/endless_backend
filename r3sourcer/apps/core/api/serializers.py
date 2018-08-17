@@ -577,11 +577,17 @@ class AddressSerializer(ApiBaseModelSerializer):
 class UserSerializer(ApiBaseModelSerializer):
 
     def create(self, validated_data):
-        password = validated_data.pop('password')
         user = self.Meta.model()
-        user.set_password(password)
-        user.save()
+        self._set_password(user, validated_data.pop('password'))
         return user
+
+    def update(self, instance, validated_data):
+        self._set_password(instance, validated_data.pop('password'))
+        return instance
+
+    def _set_password(self, instance, password):
+        instance.set_password(password)
+        instance.save()
 
     class Meta:
         model = get_user_model()
@@ -712,22 +718,42 @@ class ContactSerializer(ApiContactImageFieldsMixin, core_mixins.ApiContentTypeFi
 
 
 class ContactPasswordSerializer(UserSerializer):
-    password1 = serializers.CharField(required=True)
+    confirm_password = serializers.CharField(required=True, write_only=True)
 
     def validate(self, data):
         password = data['password']
-        password1 = data['password1']
+        confirm_password = data['confirm_password']
 
-        if password != password1:
-            raise exceptions.ValidationError(_('Passwords does not match'))
+        if password != confirm_password:
+            raise exceptions.ValidationError({
+                'confirm_password': _('Passwords does not match'),
+            })
 
-        validate_password(password, None)
+        validate_password(password, self.instance)
 
         return data
 
     class Meta:
         model = get_user_model()
-        fields = ('password', 'password1')
+        fields = ('password', 'confirm_password')
+
+
+class ContactChangePasswordSerializer(ContactPasswordSerializer):
+    old_password = serializers.CharField(required=True, write_only=True)
+
+    def validate(self, data):
+        old_password = data['old_password']
+
+        if not self.instance.check_password(old_password):
+            raise exceptions.ValidationError({
+                'old_password': _('Password invalid')
+            })
+
+        return super().validate(data)
+
+    class Meta:
+        model = get_user_model()
+        fields = ('password', 'confirm_password', 'old_password')
 
 
 class ContactRegisterSerializer(ContactSerializer):
@@ -1715,3 +1741,16 @@ class TagSerializer(ApiBaseModelSerializer):
 
     def get_children(self, obj):
         return [core_field.ApiBaseRelatedField.to_read_only_data(child) for child in obj.children.all()]
+
+
+class ContactForgotPasswordSerializer(serializers.Serializer):
+
+    email = serializers.EmailField()
+
+    def validate_email(self, email):
+        if not core_models.Contact.objects.filter(email=email).exists():
+            raise exceptions.ValidationError({
+                'email': _("User with this email doesn't exist"),
+            })
+
+        return email

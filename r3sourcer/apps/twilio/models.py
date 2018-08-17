@@ -278,7 +278,7 @@ class TwilioSMSMessage(sms_models.SMSMessage):
         sms_messages = cls.objects.select_for_update().filter(sid=remote_message.sid)
         if sms_messages.count() > 1:
             sms_message = sms_messages.filter(
-                models.Q(template__isnull=False) | models.Q(related_object__isnull=False)
+                models.Q(template__isnull=False) | models.Q(related_object_id__isnull=False)
             ).first()
         else:
             sms_message = None

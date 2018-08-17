@@ -24,9 +24,9 @@ from ..workflow import WorkflowProcess
 
 from . import permissions, serializers
 
+from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.models.dashboard import DashboardModule
-from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.address import parse_google_address
 
@@ -217,16 +217,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         })
 
     @action(methods=['put'], detail=True)
-    def password(self, request, pk=None, *args, **kwargs):
-        serializer = serializers.ContactPasswordSerializer(
-            data=request.data)
-        serializer.is_valid(raise_exception=True)
-        serializer.save()
-
-        return Response({
-            'status': 'success',
-            'message': _('Password changed successfully')
-        })
+    def password(self, request, *args, **kwargs):
+        return self._update_password(serializers.ContactPasswordSerializer)
 
     @action(methods=['get'], detail=True)
     def verify_email(self, request, *args, **kwargs):
@@ -237,6 +229,54 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         return Response({
             'status': 'success',
             'message': _('Email verified!')
+        })
+
+    @action(methods=['post'], detail=False, permission_classes=[AllowAny])
+    def forgot_password(self, request, *args, **kwargs):
+        serializer = serializers.ContactForgotPasswordSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        tasks.send_generated_password_email.delay(serializer.data['email'])
+
+        return Response({
+            'status': 'success',
+            'message': _('Password reset instructions were sent to this email address'),
+        })
+
+    @action(methods=['put'], detail=True)
+    def change_password(self, request, *args, **kwargs):
+        return self._update_password(serializers.ContactChangePasswordSerializer)
+
+    @action(methods=['post'], detail=True)
+    def send_password(self, request, *args, **kwargs):
+        instance = self.get_object()
+        is_sms = request.data.get('sms', False)
+        is_email = request.data.get('email', False)
+        new_password = models.User.objects.make_random_password(20)
+        message = ''
+
+        if is_email:
+            tasks.send_generated_password_email.delay(instance.email, new_password)
+            message = 'email'
+
+        if is_sms:
+            tasks.send_generated_password_sms.delay(instance.id, new_password)
+            message = '{} and sms'.format(message) if is_email else 'sms'
+
+        return Response({
+            'status': 'success',
+            'message': _('New password was sent by {type}').format(type=message),
+        })
+
+    def _update_password(self, serializer_class):
+        instance = self.get_object()
+        serializer = serializer_class(instance.user, data=self.request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            'status': 'success',
+            'message': _('Password changed successfully')
         })
 
     def prepare_related_data(self, data, is_create=False):
@@ -252,8 +292,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
         manager_id = self.request.user.contact
 
-        send_contact_verify_sms.apply_async(args=(instance.id, manager_id.id), countdown=10)
-        send_contact_verify_email.apply_async(args=(instance.id, manager_id.id), countdown=10)
+        tasks.send_contact_verify_sms.apply_async(args=(instance.id, manager_id.id), countdown=10)
+        tasks.send_contact_verify_email.apply_async(args=(instance.id, manager_id.id), countdown=10)
 
 
 class CompanyViewset(BaseApiViewset):
@@ -833,3 +873,13 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
         super().perform_destroy(instance)
 
         company_contact.delete()
+
+
+class UserViewset(BaseApiViewset):
+
+    @action(methods=['post'], detail=False, permission_classes=[AllowAny])
+    def forgot_password(self, request, *args, **kwargs):
+        return Response({
+            'status': 'success',
+            'message': _('Password reset instructions were sent to this email address'),
+        })

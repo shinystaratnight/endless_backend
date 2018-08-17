@@ -133,7 +133,7 @@ def send_trial_email(self, contact_id, auto_password):
         try:
             email_interface = get_email_service()
         except ImportError:
-            logger.exception('Cannot load SMS service')
+            logger.exception('Cannot load Email service')
             return
 
         site_url = core_companies_utils.get_site_url(user=contact.user)
@@ -237,3 +237,59 @@ def send_contact_verify_email(self, contact_id, manager_id):
             logger.info('Sending e-mail verify to %s.', contact)
 
             email_interface.send_tpl(contact.email, tpl_name=email_tpl, **data_dict)
+
+
+@shared_task()
+def send_generated_password_email(email, new_password=None):
+    try:
+        contact = core_models.Contact.objects.get(email=email)
+    except core_models.Contact.DoesNotExist as e:
+        logger.error(e)
+    else:
+        try:
+            email_interface = get_email_service()
+        except ImportError:
+            logger.exception('Cannot load Email service')
+            return
+
+        site_url = core_companies_utils.get_site_url(user=contact.user)
+        new_password = new_password or core_models.User.objects.make_random_password(20)
+        data_dict = {
+            'contact': contact,
+            'email': contact.email,
+            'password': new_password,
+            'site_url': site_url,
+        }
+
+        email_interface.send_tpl(contact.email, tpl_name='forgot-password', **data_dict)
+
+        contact.user.set_password(new_password)
+        contact.user.save()
+
+
+@shared_task()
+def send_generated_password_sms(contact_id, new_password=None):
+    from r3sourcer.apps.sms_interface.utils import get_sms_service
+
+    try:
+        contact = core_models.Contact.objects.get(id=contact_id)
+    except core_models.Contact.DoesNotExist as e:
+        logger.error(e)
+        return
+
+    try:
+        sms_interface = get_sms_service()
+    except ImportError:
+        logger.exception('Cannot load SMS service')
+        return
+
+    new_password = new_password or core_models.User.objects.make_random_password(20)
+    data_dict = {
+        'contact': contact,
+        'password': new_password,
+    }
+
+    sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_name='generated-password', **data_dict)
+
+    contact.user.set_password(new_password)
+    contact.user.save()
