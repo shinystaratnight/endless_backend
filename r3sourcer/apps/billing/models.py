@@ -81,7 +81,7 @@ class SMSBalance(models.Model):
 
     def substract_sms_cost(self, number_of_segments):
         amount = number_of_segments * settings.COST_OF_SMS_SEGMENT
-        self.balance = self.balance - amount
+        self.balance = Decimal(self.balance) - Decimal(amount)
         self.save()
 
     def save(self, *args, **kwargs):

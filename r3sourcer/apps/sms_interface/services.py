@@ -10,6 +10,7 @@ from phonenumber_field.phonenumber import PhoneNumber
 
 from r3sourcer.apps.core.models import Contact, Company
 from r3sourcer.apps.core.service import factory
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 
 from .exceptions import SMSServiceError
 from .helpers import get_sms, get_phone_number
@@ -45,16 +46,15 @@ class BaseSMSService(metaclass=ABCMeta):
         if isinstance(from_number, PhoneNumber):
             from_number = from_number.as_e164
 
-        company = Company.objects.get(twilio_credentials__accounts_list__phone_numbers__phone_number=from_number)
-        contact = Contact.objects.filter(phone_mobile=to_number).first()
+        from_number = self.get_from_number(from_number)
+        company = self.can_send_sms(from_number, to_number)
 
-        if not company.sms_enabled:
-            return
-
-        if contact and not contact.sms_enabled:
+        if not company:
             return
 
         sms_message = get_sms(from_number=from_number, to_number=to_number, text=text, company=company, **kwargs)
+
+        self.substract_sms_cost(company, sms_message)
 
         try:
 
@@ -284,6 +284,26 @@ class BaseSMSService(metaclass=ABCMeta):
         """
         return []
 
+    def can_send_sms(self, from_number, to_number):
+        company = Company.objects.filter(
+            twilio_credentials__accounts_list__phone_numbers__phone_number=from_number
+        ).first()
+        contact = Contact.objects.filter(phone_mobile=to_number).first()
+
+        if not company or not company.sms_enabled:
+            return
+
+        if contact and not contact.sms_enabled:
+            return
+
+        return company
+
+    def get_from_number(self, from_number):
+        return from_number
+
+    def substract_sms_cost(self, company, sms_message):
+        company.sms_balance.substract_sms_cost(sms_message.segments)
+
 
 class FakeSMSService(BaseSMSService):
 
@@ -300,3 +320,9 @@ class FakeSMSService(BaseSMSService):
             sms.save(update_fields=['sid', 'is_fake'])
             res.append(sms)
         return res
+
+    def substract_sms_cost(self, company, sms_message):
+        pass
+
+    def can_send_sms(self, from_number, to_number):
+        return get_site_master_company()

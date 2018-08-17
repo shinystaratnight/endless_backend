@@ -1,6 +1,5 @@
 import logging
 
-from django.db.models import Q
 from django.contrib.sites.shortcuts import get_current_site
 from django.utils import timezone
 
@@ -96,3 +95,26 @@ class TwilioSMSService(BaseSMSService):
     def get_sender_phones(cls, contact):
         companies = get_master_companies_by_contact(contact)
         return models.TwilioPhoneNumber.objects.filter(company__in=companies)
+
+    def get_from_number(self, from_number):
+        try:
+            twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=from_number)
+        except models.TwilioAccount.DoesNotExist:
+            current_site = get_current_site(None)
+            master_type = Company.COMPANY_TYPES.master
+            site_companies = SiteCompany.objects.filter(
+                site=current_site, company__type=master_type,
+            ).values_list('company_id', flat=True)
+
+            twilio_account = models.TwilioAccount.objects.filter(credential__company__in=site_companies).last()
+
+            if not twilio_account:
+                logger.warn('Cannot find Twilio number')
+                return
+
+            from_number = twilio_account.phone_numbers.filter(is_default=True, sms_enabled=True).first()
+            if from_number:
+                from_number = from_number.phone_number
+
+        print('!!!', from_number)
+        return from_number
