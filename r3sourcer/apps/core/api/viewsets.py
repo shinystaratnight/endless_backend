@@ -34,8 +34,6 @@ from r3sourcer.apps.core.utils.address import parse_google_address
 class BaseViewsetMixin():
     related_setting = None
 
-    permission_classes = ()
-
     list_fields = None
 
     def __init__(self, *args, **kwargs):
