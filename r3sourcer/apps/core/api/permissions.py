@@ -1,7 +1,8 @@
 from dry_rest_permissions.generics import DRYPermissions, DRYPermissionFiltersBase
 from rest_framework import permissions
 
-from ..service import factory
+from r3sourcer.apps.core.models import SiteCompany
+
 from ..utils.companies import get_master_companies, get_closest_companies, get_site_master_company
 
 
@@ -30,24 +31,22 @@ class SitePermissions(DRYPermissions):
 
 class SiteContactPermissions(SitePermissions):
     def has_permission(self, request, view):
-        if not self.object_permissions:
+        if not self.global_permissions:
             return True
 
-        if request.method in permissions.SAFE_METHODS:
-            return request.user and request.user.is_authenticated()
-        return request.user and request.user.is_staff and request.user.contact.is_master_related()
+        return request.user and request.user.is_authenticated() and self.is_master_related(request.user, request)
 
     def has_object_permission(self, request, view, obj):
         if not self.object_permissions:
             return True
 
-        if request.method in permissions.SAFE_METHODS:
-            return request.user and request.user.is_authenticated()
-        return request.user and request.user.is_staff and self.is_master_related(request.user, obj)
+        return request.user and request.user.is_authenticated() and self.is_master_related(request.user, request)
 
-    def is_master_related(self, user, obj):
-        master_getter = factory.get_instance('MasterCompanyGetter')
-        return user.contact.get_company_contact_by_company(master_getter.get_master_company_for_obj(obj)) is not None
+    def is_master_related(self, user, request):
+        closest_company = user.contact.get_closest_company()
+        host = request.get_host()
+
+        return user.is_superuser or SiteCompany.objects.filter(company=closest_company, site__domain=host).exists()
 
 
 class SiteMasterCompanyFilterBackend(DRYPermissionFiltersBase):

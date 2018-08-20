@@ -1,11 +1,12 @@
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Q
 
-from rest_framework import status, exceptions
+from rest_framework import status, exceptions, permissions as drf_permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
+from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.models import Company, InvoiceRule
 
 from . import serializers, permissions
@@ -15,7 +16,7 @@ from ..tasks import buy_candidate
 
 class CandidateContactViewset(BaseApiViewset):
 
-    permission_classes = (permissions.CandidateContactPermissions,)
+    permission_classes = (permissions.CandidateContactPermissions, SiteContactPermissions)
 
     def list(self, request, *args, **kwargs):
         company = request.user.contact.get_closest_company()
@@ -26,7 +27,7 @@ class CandidateContactViewset(BaseApiViewset):
         ).distinct()
         return self._paginate(request, self.get_serializer_class(), self.filter_queryset(queryset))
 
-    @action(methods=['post'], detail=False)
+    @action(methods=['post'], detail=False, permission_classes=[drf_permissions.AllowAny])
     def register(self, request, *args, **kwargs):
         serializer = serializers.CandidateContactRegisterSerializer(
             data=request.data
@@ -73,7 +74,7 @@ class CandidateContactViewset(BaseApiViewset):
             ).distinct()
         return self._paginate(request, serializers.CandidatePoolSerializer, self.filter_queryset(queryset))
 
-    @action(methods=['post'], detail=True, permission_classes=[])
+    @action(methods=['post'], detail=True, permission_classes=[SiteContactPermissions])
     def buy(self, request, pk, *args, **kwargs):
         master_company = request.user.contact.get_closest_company().get_closest_master_company()
         candidate_contact = self.get_object()

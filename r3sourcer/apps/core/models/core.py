@@ -286,6 +286,18 @@ class Contact(
 
         return get_site_master_company() or get_default_company()
 
+    def get_master_companies(self):
+        from r3sourcer.apps.core.utils.companies import get_site_master_company
+
+        if self.is_company_contact():
+            master_company = self.company_contact.filter(relationships__active=True).first().get_master_company()
+            if len(master_company) > 0:
+                return [master_company[0].pk]
+        elif self.is_candidate_contact():
+            return self.candidate_contacts.candidate_rels.filter(active=True).values_list('master_company', flat=True)
+
+        return get_site_master_company() or get_default_company()
+
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         if positive:
             self.phone_mobile_verified = True

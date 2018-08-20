@@ -358,8 +358,20 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         logger.info("Message {} ({}) will not check reply".format(self.id, self))
 
     @classmethod
-    def is_owned(cls):
-        return False
+    def owned_by_lookups(cls, owner):
+        res = [models.Q(company=owner)]
+
+        if isinstance(owner, Company):
+            phone_numbers = owner.twilio_credentials.values_list(
+                'accounts_list__phone_numbers__phone_number', flat=True
+            )
+            contact_phone_numbers = Contact.objects.owned_by(owner).values_list('phone_mobile', flat=True)
+            res.extend([
+                models.Q(from_number__in=phone_numbers), models.Q(to_number__in=phone_numbers),
+                models.Q(from_number__in=contact_phone_numbers), models.Q(to_number__in=contact_phone_numbers),
+            ])
+
+        return res
 
     def __str__(self):
         return '{} -> {}'.format(self.from_number, self.to_number)

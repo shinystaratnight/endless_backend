@@ -11,6 +11,11 @@ from r3sourcer.apps.candidate.endpoints import (
 from r3sourcer.apps.candidate.models import CandidateContact, Subcontractor
 
 
+class CandidateContactEndpointTest(CandidateContactEndpoint):
+
+    permission_classes = []
+
+
 class ResourceMixin:
     endpoint_class = None
     actions = {
@@ -35,23 +40,25 @@ class ResourceMixin:
 
 @pytest.mark.django_db
 class TestCompanyContactResource(ResourceMixin):
-    endpoint_class = CandidateContactEndpoint
+    endpoint_class = CandidateContactEndpointTest
     actions = {
         'post': 'create',
     }
 
-    @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
-                return_value=(42, 42))
-    def test_can_register_candidate_contact(self, mock_geo, rf, user, candidate_contact_data):
-        req = rf.post('/api/v2/candidate_contacts/register/',
-                      data=json.dumps(candidate_contact_data),
-                      content_type='application/json')
+    @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(42, 42))
+    def test_can_register_candidate_contact(
+        self, mock_geo, rf, user, staff_relationship, candidate_contact_data, site_company
+    ):
+        req = rf.post(
+            '/api/v2/candidate_contacts/register/', data=json.dumps(candidate_contact_data),
+            content_type='application/json'
+        )
         force_authenticate(req, user=user)
 
         response = self.get_response_as_view(req, actions={'post': 'register'})
 
-        assert 'id' in response.data
         assert 201 == response.status_code
+        assert 'id' in response.data
         assert CandidateContact.objects.filter(id=response.data['id']).exists()
 
     @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',

@@ -14,6 +14,25 @@ DATABASES = {
     },
 }
 
+REST_FRAMEWORK = {
+    'DEFAULT_VERSIONING_CLASS': 'rest_framework.versioning.URLPathVersioning',
+    'DEFAULT_FILTER_BACKENDS': (
+        'r3sourcer.apps.core.api.permissions.SiteMasterCompanyFilterBackend',
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+        'r3sourcer.apps.core.api.filters.ApiOrderingFilter',
+    ),
+    'DEFAULT_PAGINATION_CLASS': 'r3sourcer.apps.core.api.pagination.ApiLimitOffsetPagination',
+    'PAGE_SIZE': 10,
+    'DATETIME_INPUT_FORMATS': ['iso-8601'],
+    'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
+    ),
+}
+
 LOGGER_DB = 'testing'
 LOGGER_ENABLED = False
 

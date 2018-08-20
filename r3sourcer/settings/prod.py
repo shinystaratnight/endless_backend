@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 
 from datetime import timedelta
+from decimal import Decimal
 
 from django.utils.translation import ugettext_lazy as _
 
@@ -290,6 +291,10 @@ REST_FRAMEWORK = {
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+        'r3sourcer.apps.core.api.permissions.SiteContactPermissions',
+    )
 }
 
 GOOGLE_GEO_CODING_API_KEY = env('GOOGLE_GEO_CODING_API_KEY', '')
@@ -430,7 +435,7 @@ STRIPE_PRODUCT_ID = env('STRIPE_PRODUCT_ID', 'prod_Cm3krNJrQwQSnu')
 MONTHLY_EXTRA_WORKER_FEE = 13
 ANNUAL_EXTRA_WORKER_FEE = 10
 
-COST_OF_SMS_SEGMENT = 0.08
+COST_OF_SMS_SEGMENT = Decimal('0.08')
 SMS_SEGMENT_SIZE = 160
 
 

@@ -1,4 +1,5 @@
 from django.contrib.auth import authenticate, login, logout
+from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
@@ -8,7 +9,7 @@ from rest_framework import viewsets, status, exceptions, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from r3sourcer.apps.core.models import Contact, User
+from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 
 from ..models import TokenLogin
@@ -30,6 +31,7 @@ class AuthViewSet(BaseViewsetMixin,
         'logged_in': _('Please log out first.'),
         'email_not_found': _('Email or Password is not valid'),
         'phone_not_found': _('Phone number or Password is not valid'),
+        'wrong_domain': _("You don't have access to current site"),
     }
 
     def get_object(self):
@@ -41,6 +43,29 @@ class AuthViewSet(BaseViewsetMixin,
 
     def list(self, request, *args, **kwargs):
         self.http_method_not_allowed(request, *args, **kwargs)
+
+    def is_login_allowed(self, request, user):
+        closest_company = user.contact.get_closest_company()
+        host = request.get_host()
+        redirect_host = None
+
+        try:
+            redirect_site = SiteCompany.objects.get(company=closest_company).site
+        except SiteCompany.DoesNotExist:
+            raise exceptions.PermissionDenied(self.errors['wrong_domain'])
+
+        if not user.is_superuser and redirect_site.domain != host:
+            if host != 'r3sourcer.com':
+                raise exceptions.PermissionDenied(self.errors['wrong_domain'])
+            else:
+                redirect_host = 'http://{}'.format(redirect_site.domain)
+                cache.set('user_site_%s' % str(user.id), redirect_site.domain)
+                return True, redirect_host
+        else:
+            cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
+            return True, None
+
+        return False, None
 
     @action(methods=['post'], detail=False)
     def login(self, request, *args, **kwargs):
@@ -88,18 +113,25 @@ class AuthViewSet(BaseViewsetMixin,
 
             raise exceptions.ValidationError(message)
 
-        login(request, user)
-        cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
+        is_login, redirect_host = self.is_login_allowed(request, user)
+
+        if is_login:
+            login(request, user)
 
         if not serializer.data['remember_me']:
             request.session.set_expiry(0)
 
-        return Response({
+        response_data = {
             'status': 'success',
             'data': {
                 'contact': ContactLoginSerializer(contact).data
             }
-        }, status=status.HTTP_200_OK)
+        }
+
+        if redirect_host is not None:
+            response_data['data']['redirect'] = redirect_host
+
+        return Response(response_data, status=status.HTTP_200_OK)
 
     @action(methods=['get'], detail=True)
     def login_by_token(self, request, *args, **kwargs):
