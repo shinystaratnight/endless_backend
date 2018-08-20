@@ -44,6 +44,29 @@ class AuthViewSet(BaseViewsetMixin,
     def list(self, request, *args, **kwargs):
         self.http_method_not_allowed(request, *args, **kwargs)
 
+    def is_login_allowed(self, request, user):
+        closest_company = user.contact.get_closest_company()
+        host = request.get_host()
+        redirect_host = None
+
+        try:
+            redirect_site = SiteCompany.objects.get(company=closest_company).site
+        except SiteCompany.DoesNotExist:
+            raise exceptions.PermissionDenied(self.errors['wrong_domain'])
+
+        if not user.is_superuser and redirect_site.domain != host:
+            if host != 'r3sourcer.loc':
+                raise exceptions.PermissionDenied(self.errors['wrong_domain'])
+            else:
+                redirect_host = 'http://{}'.format(redirect_site.domain)
+                cache.set('user_site_%s' % str(user.id), redirect_site.domain)
+                return True, redirect_host
+        else:
+            cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
+            return True, None
+
+        return False, None
+
     @action(methods=['post'], detail=False)
     def login(self, request, *args, **kwargs):
         if request.user.is_authenticated:
@@ -90,25 +113,10 @@ class AuthViewSet(BaseViewsetMixin,
 
             raise exceptions.ValidationError(message)
 
-        closest_company = user.contact.get_closest_company()
-        host = request.get_host()
-        redirect_host = None
+        is_login, redirect_host = self.is_login_allowed(request, user)
 
-        try:
-            redirect_site = SiteCompany.objects.get(company=closest_company).site
-        except SiteCompany.DoesNotExist:
-            raise exceptions.PermissionDenied(self.errors['wrong_domain'])
-
-        if not user.is_superuser and redirect_site.domain != host:
-            if host != 'r3sourcer.loc':
-                raise exceptions.PermissionDenied(self.errors['wrong_domain'])
-            else:
-                redirect_host = 'http://{}'.format(redirect_site.domain)
-                login(request, user)
-                cache.set('user_site_%s' % str(user.id), redirect_site.domain)
-        else:
+        if is_login:
             login(request, user)
-            cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
 
         if not serializer.data['remember_me']:
             request.session.set_expiry(0)

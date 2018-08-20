@@ -50,8 +50,8 @@ class TestCompanyContactResource(ResourceMixin):
 
         response = self.get_response_as_view(req, actions={'post': 'register'})
 
-        assert 'id' in response.data
         assert 201 == response.status_code
+        assert 'id' in response.data
         assert CandidateContact.objects.filter(id=response.data['id']).exists()
 
     @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',

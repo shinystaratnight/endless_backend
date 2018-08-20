@@ -130,9 +130,13 @@ class TestSMSServices:
         assert not service._process_sms.called
 
     @mock.patch.object(factory, 'get_instance')
-    @mock.patch('r3sourcer.apps.sms_interface.utils.get_sms_service',
-                return_value=FakeSMSService)
-    def test_fake_sms_service_send(self, mock_get_service, mock_factory, twilio_account, phone_number):
+    @mock.patch.object(FakeSMSService, 'can_send_sms')
+    @mock.patch('r3sourcer.apps.sms_interface.utils.get_sms_service', return_value=FakeSMSService)
+    def test_fake_sms_service_send(
+        self, mock_get_service, mock_can_send, mock_factory, twilio_account, phone_number, company
+    ):
+        mock_can_send.return_value = company
+
         service = FakeSMSService()
         service.send(
             from_number=phone_number.phone_number,
@@ -144,9 +148,13 @@ class TestSMSServices:
         assert sms_message.sid.startswith('FAKE')
 
     @mock.patch.object(factory, 'get_instance')
+    @mock.patch.object(SMSTestService, 'can_send_sms')
     @mock.patch.object(SMSTestService, 'process_sms_send')
-    def test_send_sms_text(self, mock_sms_send, mock_factory, contact, twilio_account, phone_number):
+    def test_send_sms_text(
+        self, mock_sms_send, mock_can_send, mock_factory, contact, twilio_account, phone_number, company
+    ):
         mock_sms_send.return_value = None
+        mock_can_send.return_value = company
 
         service = SMSTestService()
         service.send(from_number=phone_number.phone_number,
@@ -157,9 +165,13 @@ class TestSMSServices:
         assert mock_sms_send.called
 
     @mock.patch.object(factory, 'get_instance')
+    @mock.patch.object(SMSTestService, 'can_send_sms')
     @mock.patch.object(SMSTestService, 'process_sms_send')
-    def test_send_sms_text_service_exception(self, mock_sms_send, mock_factory, contact, twilio_account, phone_number):
+    def test_send_sms_text_service_exception(
+        self, mock_sms_send, mock_can_send, mock_factory, contact, twilio_account, phone_number, company
+    ):
         mock_sms_send.side_effect = SMSServiceError
+        mock_can_send.return_value = company
 
         service = SMSTestService()
         service.send(

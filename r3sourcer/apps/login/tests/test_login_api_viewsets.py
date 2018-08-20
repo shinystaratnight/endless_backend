@@ -8,6 +8,7 @@ from rest_framework import status
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import Contact, CompanyContact, CompanyContactRelationship
 from r3sourcer.apps.login.models import TokenLogin
+from r3sourcer.apps.login.api.viewsets import AuthViewSet
 
 
 @pytest.mark.django_db
@@ -54,7 +55,8 @@ class TestLoginResource:
         response = client.delete(reverse('api:auth-login', kwargs={'version': 'v2'}))
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
-    def test_user_email_login_success(self, client, user):
+    @mock.patch.object(AuthViewSet, 'is_login_allowed', return_value=(True, None))
+    def test_user_email_login_success(self, mock_login_allowed, client, user):
         response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
                                data={'username': user.email, 'password': 'test1234'})
 
@@ -65,7 +67,8 @@ class TestLoginResource:
         assert auth_user == user
         assert auth_user.is_authenticated
 
-    def test_user_mobile_phone_login_success(self, client, user):
+    @mock.patch.object(AuthViewSet, 'is_login_allowed', return_value=(True, None))
+    def test_user_mobile_phone_login_success(self, mock_login_allowed, client, user):
         response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
                                data={'username': user.phone_mobile, 'password': 'test1234'})
 
@@ -88,17 +91,20 @@ class TestLoginResource:
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
-    def test_user_already_logged_in(self, client, user, superuser):
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
-                               data={'username': user.phone_mobile, 'password': 'test1234'})
+    @mock.patch.object(AuthViewSet, 'is_login_allowed', return_value=(True, None))
+    def test_user_already_logged_in(self, mock_login_allowed, client, user, superuser):
+        client.post(
+            reverse('api:auth-login', kwargs={'version': 'v2'}),
+            data={'username': user.phone_mobile, 'password': 'test1234'}
+        )
 
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
-                               data={'username': superuser.email, 'password': 'test4242'})
-
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        client.post(
+            reverse('api:auth-login', kwargs={'version': 'v2'}),
+            data={'username': superuser.email, 'password': 'test4242'}
+        )
 
         auth_user = auth.get_user(client)
-        assert auth_user == user
+        assert auth_user == superuser
         assert auth_user.is_authenticated
 
     def test_token_login_success(self, client, user, token_login):
@@ -138,7 +144,7 @@ class TestLoginResource:
             kwargs={'version': 'v2', 'auth_token': token_login.auth_token}
         ))
 
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_token_login_logged_in_user(self, client, contact, token_login):
         token_login_another = TokenLogin.objects.create(contact=contact)

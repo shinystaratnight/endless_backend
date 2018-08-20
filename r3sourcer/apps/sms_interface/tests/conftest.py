@@ -86,9 +86,10 @@ def phone_number(db, company):
 def admin(db):
     user = User.objects.create_user(
         email='test2@test.tt', phone_mobile='+12345679999',
-        password='test1234', is_staff=True
+        password='test1234', is_staff=True, is_superuser=True
     )
     user.is_staff = True
+    user.is_superuser = True
     user.save()
     return user
 

@@ -3,7 +3,6 @@ from rest_framework import permissions
 
 from r3sourcer.apps.core.models import SiteCompany
 
-from ..service import factory
 from ..utils.companies import get_master_companies, get_closest_companies, get_site_master_company
 
 
@@ -41,9 +40,7 @@ class SiteContactPermissions(SitePermissions):
         if not self.object_permissions:
             return True
 
-        if request.method in permissions.SAFE_METHODS:
-            return request.user and request.user.is_authenticated()
-        return request.user and request.user.is_staff and self.is_master_related(request.user, request)
+        return request.user and request.user.is_authenticated() and self.is_master_related(request.user, request)
 
     def is_master_related(self, user, request):
         closest_company = user.contact.get_closest_company()

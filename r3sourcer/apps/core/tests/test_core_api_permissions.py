@@ -82,36 +82,40 @@ class TestSiteContactPermissions:
     def test_has_permission_not_authenticate_user(self, get_request):
         assert not self.scp.has_permission(get_request, None)
 
-    def test_has_permission_authenticate_user_get(self, user, get_request):
-        get_request.user = user
-        assert self.scp.has_permission(get_request, None)
+    def test_has_permission_authenticate_user_get(self, staff_user, get_request, staff_relationship, site_company):
+        with mock.patch.object(get_request, 'get_host', return_value='test.tt'):
+            get_request.user = staff_user
+            assert self.scp.has_permission(get_request, None)
 
     def test_has_permission_authenticate_user_post(self, user, post_request):
         post_request.user = user
         assert not self.scp.has_permission(post_request, None)
 
-    def test_is_master_related_successfully(self, staff_user, staff_relationship, site_company):
-        assert self.scp.is_master_related(staff_user, site_company)
+    def test_is_master_related_successfully(self, staff_user, staff_relationship, site_company, get_request):
+        with mock.patch.object(get_request, 'get_host', return_value='test.tt'):
+            assert self.scp.is_master_related(staff_user, get_request)
 
-    def test_is_master_related_unsuccessfully(self, staff_user, site_company):
-        assert not self.scp.is_master_related(staff_user, site_company)
+    def test_is_master_related_unsuccessfully(self, staff_user, site_company, get_request):
+        with mock.patch.object(get_request, 'get_host', return_value='test.tt'):
+            assert not self.scp.is_master_related(staff_user, get_request)
 
-    def test_has_object_permission(self, user, get_request, site_company):
-        get_request.user = user
-        assert self.scp.has_object_permission(get_request, None, site_company)
+    def test_has_object_permission(self, staff_user, staff_relationship, get_request, site_company):
+        with mock.patch.object(get_request, 'get_host', return_value='test.tt'):
+            get_request.user = staff_user
+            assert self.scp.has_object_permission(get_request, None, site_company)
 
     def test_has_object_permission_unsuccessfully(self, user, post_request, site_company):
         post_request.user = user
         assert not self.scp.has_object_permission(post_request, None, site_company)
 
     def test_has_object_permission_successfully(self, staff_user, staff_relationship, post_request, site_company):
-        staff_user.is_staff = True
+        staff_user.is_superuser = True
         staff_user.save()
         post_request.user = staff_user
         assert self.scp.has_object_permission(post_request, None, site_company)
 
     def test_has_permission_with_not_object_permission(self, get_request):
-        self.scp.object_permissions = False
+        self.scp.global_permissions = False
         assert self.scp.has_permission(get_request, None)
 
     def test_object_permissions_with_not_object_permission(self, get_request, site_company):

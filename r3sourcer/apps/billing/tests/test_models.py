@@ -1,5 +1,6 @@
 import datetime
 import mock
+from decimal import Decimal
 
 import stripe
 
@@ -14,7 +15,7 @@ class TestSMSBalance:
         sms_balance.save()
         sms_balance.substract_sms_cost(3)
 
-        assert sms_balance.balance == 99.76
+        assert sms_balance.balance == Decimal('99.76')
 
 
 class TestDiscount:

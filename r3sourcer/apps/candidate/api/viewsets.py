@@ -1,7 +1,7 @@
 from django.utils.translation import ugettext_lazy as _
 from django.db.models import Q
 
-from rest_framework import status, exceptions
+from rest_framework import status, exceptions, permissions as drf_permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -27,7 +27,7 @@ class CandidateContactViewset(BaseApiViewset):
         ).distinct()
         return self._paginate(request, self.get_serializer_class(), self.filter_queryset(queryset))
 
-    @action(methods=['post'], detail=False)
+    @action(methods=['post'], detail=False, permission_classes=[drf_permissions.AllowAny])
     def register(self, request, *args, **kwargs):
         serializer = serializers.CandidateContactRegisterSerializer(
             data=request.data
