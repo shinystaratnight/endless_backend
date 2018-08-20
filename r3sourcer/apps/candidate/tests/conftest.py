@@ -5,6 +5,7 @@ import pytest
 from unittest.mock import patch
 
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.utils import timezone
 
 from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
@@ -197,6 +198,30 @@ def company(db):
         business_id='123',
         registered_for_gst=True,
         type=core_models.Company.COMPANY_TYPES.master,
+    )
+
+
+@pytest.fixture
+def staff_relationship(db, company_contact, company):
+    return core_models.CompanyContactRelationship.objects.create(
+        company_contact=company_contact,
+        company=company,
+    )
+
+
+@pytest.fixture
+def site(db):
+    return Site.objects.create(
+        domain='test.tt',
+        name='Test'
+    )
+
+
+@pytest.fixture
+def site_company(db, site, company):
+    return core_models.SiteCompany.objects.create(
+        company=company,
+        site=site
     )
 
 

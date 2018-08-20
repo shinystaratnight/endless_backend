@@ -365,7 +365,11 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
             phone_numbers = owner.twilio_credentials.values_list(
                 'accounts_list__phone_numbers__phone_number', flat=True
             )
-            res.extend([models.Q(from_number__in=phone_numbers), models.Q(to_number__in=phone_numbers)])
+            contact_phone_numbers = Contact.objects.owned_by(owner).values_list('phone_mobile', flat=True)
+            res.extend([
+                models.Q(from_number__in=phone_numbers), models.Q(to_number__in=phone_numbers),
+                models.Q(from_number__in=contact_phone_numbers), models.Q(to_number__in=contact_phone_numbers),
+            ])
 
         return res
 
