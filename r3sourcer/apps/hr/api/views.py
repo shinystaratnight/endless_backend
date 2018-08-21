@@ -44,7 +44,7 @@ class AvailableCandidatesDateView(APIView):
                 candidate_contacts, job_shifts
             )
             result = [
-                partial for partial, dates in partially_available.items()
-                if len(dates) == job_shifts.count()
+                partial for partial, data in partially_available.items()
+                if len(data['shifts']) == job_shifts.count()
             ]
         return Response({'result': result})

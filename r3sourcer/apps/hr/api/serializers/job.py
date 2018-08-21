@@ -1,7 +1,7 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from functools import partial
 
-from django.db.models import Max
+from django.db.models import Max, Q
 from django.conf import settings
 from django.utils import timezone, formats
 from django.utils.translation import ugettext_lazy as _
@@ -13,7 +13,7 @@ from r3sourcer.apps.core.utils.user import get_default_user
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.utils import utils as hr_utils
+from r3sourcer.apps.hr.utils import utils as hr_utils, job as hr_job_utils
 from r3sourcer.apps.logger.main import endless_logger
 
 
@@ -260,7 +260,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'skills_score',
-        'count_timesheets', 'hourly_rate', 'evaluation', 'color', 'overpriced', 'favourite'
+        'count_timesheets', 'hourly_rate', 'evaluation', 'color', 'overpriced', 'favourite', 'tags',
     )
 
     jos = serializers.IntegerField(read_only=True)
@@ -278,13 +278,112 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
             }
         )
 
+    def _get_jo_messages(self, obj, date):
+        from_date = date - timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
+        to_date = date + timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
+        job_offers = obj.job_offers.filter(
+            Q(shift__date__shift_date=from_date.date(),
+                shift__time__gte=from_date.timetz()) |
+            Q(shift__date__shift_date__gt=from_date.date()),
+            Q(shift__date__shift_date=to_date.date(),
+                shift__time__lte=to_date.timetz()) |
+            Q(shift__date__shift_date__lt=to_date.date())
+        )
+
+        accepted_messages = []
+        not_accepted_messages = []
+
+        for jo in job_offers.all():
+            message = {
+                'message': str(jo.shift.date.job.jobsite),
+                'job': jo.shift.date.job.id,
+            }
+            if jo.status == hr_models.JobOffer.STATUS_CHOICES.accepted:
+                message['status'] = _('Accepted')
+                accepted_messages.append(message)
+            elif jo.status == hr_models.JobOffer.STATUS_CHOICES.cancelled:
+                message['status'] = _('Rejected')
+                not_accepted_messages.append(message)
+            else:
+                message['status'] = _('Pending')
+                not_accepted_messages.append(message)
+
+        return accepted_messages, not_accepted_messages
+
     def get_available(self, obj):
-        partially_available_candidates = self.context['partially_available_candidates']
+        shifts_data = self.context['partially_available_candidates'].get(obj.id, {})
+        init_shifts = self.context['init_shifts']
 
-        dates = partially_available_candidates.get(obj.id, [])
+        response_data = []
+        text = _('All shifts')
 
-        date_format = partial(formats.date_format, format=settings.DATETIME_FORMAT)
-        return map(date_format, dates)
+        if len(shifts_data) > 0:
+            dates = []
+
+            for shift in shifts_data['shifts']:
+                data = {
+                    'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
+                }
+
+                accepted_messages, not_accepted_messages = self._get_jo_messages(obj, data['datetime'])
+
+                if hr_job_utils.HAS_JOBOFFER in shifts_data['reasons'] and len(accepted_messages) > 0:
+                    data['messages'] = accepted_messages
+                elif hr_job_utils.UNAVAILABLE in shifts_data['reasons']:
+                    data['messages'] = [{
+                        'status': _('Unavailable'),
+                        'message': None,
+                        'job': None,
+                    }]
+                else:
+                    continue
+
+                dates.append(data)
+
+            if len(dates) > 0:
+                response_data.append({
+                    'text': _('Unavailable shifts'),
+                    'shifts': dates,
+                })
+
+        dates = []
+        unknown_dates = []
+
+        for shift in init_shifts:
+            data = {
+                'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
+            }
+
+            accepted_messages, not_accepted_messages = self._get_jo_messages(obj, data['datetime'])
+
+            if len(not_accepted_messages) > 0:
+                data['messages'] = not_accepted_messages
+                dates.append(data)
+            elif len(accepted_messages) == 0:
+                data['messages'] = [{
+                    'status': _('Unknown'),
+                    'message': None,
+                    'job': None,
+                }]
+                unknown_dates.append(data)
+
+        if len(dates) > 0 and len(unknown_dates) < len(init_shifts):
+            response_data.append({
+                'text': _('Available shifts'),
+                'shifts': dates,
+            })
+            if len(unknown_dates) > 0:
+                response_data.append({
+                    'text': _('Unknown shifts'),
+                    'shifts': unknown_dates,
+                })
+        else:
+            response_data = [{
+                'text': text,
+                'shifts': [],
+            }]
+
+        return response_data
 
     def get_days_from_last_timesheet(self, obj):
         last_timesheet = obj.last_timesheet_date
@@ -337,6 +436,22 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 return 2
             return 1
         return 0
+
+    def get_tags(self, obj):
+        job_tags = self.context['job'].tags
+        job_tags_ids = job_tags.values_list('tag_id', flat=True)
+
+        existing = obj.tag_rels.exclude(tag_id__in=job_tags_ids).values_list('tag__name', flat=True)
+        required = obj.tag_rels.filter(tag_id__in=job_tags_ids).values_list('tag__name', flat=True)
+        missing = job_tags.exclude(
+            tag_id__in=obj.tag_rels.values_list('tag_id', flat=True)
+        ).values_list('tag__name', flat=True)
+
+        return {
+            'required': required,
+            'missing': missing,
+            'existing': existing,
+        }
 
 
 class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):

@@ -1,9 +1,13 @@
-from datetime import timedelta, datetime, date
+from datetime import timedelta, datetime
+from collections import defaultdict
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from django.utils import timezone, formats
+from django.utils import timezone
+
+
+HAS_JOBOFFER, HAS_TIMESHEET, HAS_CARRIERLIST_JOBOFFER, UNAVAILABLE = range(4)
 
 
 def get_available_candidate_list(job):
@@ -15,8 +19,6 @@ def get_available_candidate_list(job):
     from r3sourcer.apps.candidate import models as candidate_models
     from r3sourcer.apps.core import models as core_models
     from r3sourcer.apps.hr import models as hr_models
-
-    today = date.today()
 
     content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
     objects = core_models.WorkflowObject.objects.filter(
@@ -60,32 +62,41 @@ def get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date,
 
     from_date = shift_start_time - timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
     to_date = shift_start_time + timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
-    candidate_ids = list(candidate_contacts.filter(
+    candidate_ids = defaultdict(set)
+
+    candidate_ids = update_unavailable_reason(candidate_ids, candidate_contacts.filter(
         Q(job_offers__shift__date__shift_date=from_date.date(),
           job_offers__shift__time__gte=from_date.timetz()) |
         Q(job_offers__shift__date__shift_date__gt=from_date.date()),
         Q(job_offers__shift__date__shift_date=to_date.date(),
           job_offers__shift__time__lte=to_date.timetz()) |
-        Q(job_offers__shift__date__shift_date__lt=to_date.date())
-    ).values_list('id', flat=True))
+        Q(job_offers__shift__date__shift_date__lt=to_date.date()),
+        job_offers__status=JobOffer.STATUS_CHOICES.accepted
+    ).values_list('id', flat=True), HAS_JOBOFFER)
 
-    candidate_ids.extend(candidate_contacts.filter(
-        job_offers__time_sheets__shift_started_at__range=[from_date, to_date]
-    ).values_list('id', flat=True))
+    candidate_ids = update_unavailable_reason(
+        candidate_ids, candidate_contacts.filter(
+            job_offers__time_sheets__shift_started_at__range=[from_date, to_date]
+        ).values_list('id', flat=True), HAS_TIMESHEET
+    )
 
-    candidate_ids.extend(candidate_contacts.filter(
-        contact__contact_unavailabilities__unavailable_from__lte=shift_start_time,
-        contact__contact_unavailabilities__unavailable_until__gte=shift_start_time,
-    ).values_list('id', flat=True))
+    candidate_ids = update_unavailable_reason(
+        candidate_ids, candidate_contacts.filter(
+            contact__contact_unavailabilities__unavailable_from__lte=shift_start_time,
+            contact__contact_unavailabilities__unavailable_until__gte=shift_start_time,
+        ).values_list('id', flat=True), UNAVAILABLE
+    )
 
-    candidate_ids.extend(candidate_contacts.filter(
-        carrier_lists__job_offer__isnull=False,
-        carrier_lists__target_date=shift_date,
-    ).exclude(
-        carrier_lists__job_offer__status=JobOffer.STATUS_CHOICES.cancelled,
-    ).values_list('id', flat=True))
+    candidate_ids = update_unavailable_reason(
+        candidate_ids, candidate_contacts.filter(
+            carrier_lists__job_offer__isnull=False,
+            carrier_lists__target_date=shift_date,
+        ).exclude(
+            carrier_lists__job_offer__status=JobOffer.STATUS_CHOICES.cancelled,
+        ).values_list('id', flat=True), HAS_CARRIERLIST_JOBOFFER
+    )
 
-    return set(candidate_ids)
+    return candidate_ids
 
 
 def get_partially_available_candidate_ids(candidate_contacts, job_shifts):
@@ -93,9 +104,20 @@ def get_partially_available_candidate_ids(candidate_contacts, job_shifts):
 
     for job_shift in job_shifts:
         vs_id, shift_time, shift_date = job_shift.id, job_shift.time, job_shift.date.shift_date
-        for candidate_id in get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date, shift_time):
+        partially_available = get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date, shift_time)
+        for candidate_id, reasons in partially_available.items():
             if candidate_id not in partial:
-                partial[candidate_id] = []
-            partial[candidate_id].append(vs_id)
+                partial[candidate_id] = {
+                    'reasons': reasons,
+                    'shifts': []
+                }
+            partial[candidate_id]['shifts'].append(vs_id)
 
     return partial
+
+
+def update_unavailable_reason(candidate_ids, updates, reason):
+    for candidate_id in updates:
+        candidate_ids[candidate_id].add(reason)
+
+    return candidate_ids

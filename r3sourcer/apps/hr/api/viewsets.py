@@ -471,8 +471,8 @@ class JobViewset(BaseApiViewset):
             )
 
             unavailable_all = [
-                partial for partial, shifts in partially_available_candidates.items()
-                if len(shifts) == len(init_shifts)
+                partial for partial, data in partially_available_candidates.items()
+                if len(data['shifts']) == len(init_shifts)
             ]
 
             candidate_contacts = candidate_contacts.exclude(
@@ -487,18 +487,8 @@ class JobViewset(BaseApiViewset):
                     id__in=partially_available_candidates.keys()
                 )
             else:
-                cache_dates = {}
-
-                def map_dates(vs):
-                    if vs.id not in cache_dates:
-                        vs_datetime = timezone.make_aware(datetime.datetime.combine(vs.date.shift_date, vs.time))
-                        cache_dates[vs.id] = vs_datetime
-                    return cache_dates[vs.id]
-
-                for r_id, shifts in partially_available_candidates.items():
-                    partially_available_candidates[r_id] = map(
-                        map_dates, [shift for shift in init_shifts if shift.id not in shifts]
-                    )
+                for r_id, data in partially_available_candidates.items():
+                    data['shifts'] = [shift for shift in init_shifts if shift.id in data['shifts']]
         # end
 
         when_list = self._get_undefined_jo_lookups(init_shifts)
@@ -593,6 +583,7 @@ class JobViewset(BaseApiViewset):
             'favourite_list': favourite_list,
             'booked_before_list': booked_before_list,
             'carrier_list': carrier_list,
+            'init_shifts': init_shifts,
         }
 
         jobsite_address = job.jobsite.get_address()
