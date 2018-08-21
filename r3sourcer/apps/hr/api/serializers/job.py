@@ -260,7 +260,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'skills_score',
-        'count_timesheets', 'hourly_rate', 'evaluation', 'color', 'overpriced',
+        'count_timesheets', 'hourly_rate', 'evaluation', 'color', 'overpriced', 'favourite'
     )
 
     jos = serializers.IntegerField(read_only=True)
@@ -273,7 +273,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 'contact': ['gender', 'first_name', 'last_name', {
                     'address': ('longitude', 'latitude'),
                 }],
-                'candidate_scores': ['reliability', 'average_score'],
+                'candidate_scores': ['reliability', 'average_score', 'loyalty', 'recruitment_score'],
                 'tag_rels': ['tag'],
             }
         )
@@ -318,7 +318,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
     def get_evaluation(self, obj):
         return '{} ({})'.format(obj.total_evaluation_average(), obj.candidate_evaluations.count())
 
-    def get_is_favourite(self, obj):
+    def get_favourite(self, obj):
         return obj.id in self.context['favourite_list']
 
     def get_overpriced(self, obj):

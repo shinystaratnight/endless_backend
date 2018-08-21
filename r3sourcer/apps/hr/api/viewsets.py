@@ -536,8 +536,13 @@ class JobViewset(BaseApiViewset):
 
         top_contacts = set(favourite_list + booked_before_list + carrier_list)
         if len(top_contacts) > 0:
-            preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(top_contacts)])
-            candidate_contacts = candidate_contacts.order_by(preserved)
+            candidate_contacts = candidate_contacts.annotate(
+                top_order=Case(
+                    *[When(pk=pk, then=0) for pos, pk in enumerate(top_contacts)],
+                    default=1,
+                    output_field=IntegerField()
+                )
+            )
 
         job_tags = job.tags.values_list('tag_id', flat=True)
 
@@ -575,7 +580,11 @@ class JobViewset(BaseApiViewset):
         if restrict_radius > -1:
             candidate_contacts = candidate_contacts.filter(distance_to_jobsite__lte=restrict_radius * 1000)
 
-        candidate_contacts = self.sort_candidates(request, candidate_contacts)
+        sort_fields = []
+        if len(top_contacts) > 0:
+            sort_fields.append('top_order')
+
+        candidate_contacts = self.sort_candidates(request, candidate_contacts, *sort_fields)
 
         context = {
             'partially_available_candidates': partially_available_candidates,
@@ -591,6 +600,9 @@ class JobViewset(BaseApiViewset):
         job_ctx = {
             'id': job.id,
             '__str__': str(job),
+            'jobsite': str(job.jobsite),
+            'position': str(job.position),
+            'workers': str(job.workers),
         }
         if jobsite_address:
             job_ctx.update({
@@ -685,9 +697,10 @@ class JobViewset(BaseApiViewset):
             candidate_contacts = candidate_contacts.filter(reduce(operator.or_, or_queries))
         return candidate_contacts
 
-    def sort_candidates(self, request, candidate_contacts):
+    def sort_candidates(self, request, candidate_contacts, *fields):
         params = request.query_params.get(api_settings.ORDERING_PARAM)
-        fields = ['-tags_count']
+        fields = list(fields)
+        fields.append('-tags_count')
 
         if params:
             fields = fields.extend([param.strip() for param in params.split(',')] if params else [])
