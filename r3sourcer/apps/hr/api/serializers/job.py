@@ -19,7 +19,7 @@ from r3sourcer.apps.logger.main import endless_logger
 
 class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'title', 'extend')
+    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'title', 'extend', 'tags')
 
     class Meta:
         model = hr_models.Job
@@ -122,6 +122,10 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
                 })
 
         return validated_data
+
+    def get_tags(self, obj):
+        tags = core_models.Tag.objects.filter(job_tags__job=obj).distinct()
+        return core_serializers.TagSerializer(tags, many=True, read_only=True, fields=['id', 'name']).data
 
 
 class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
