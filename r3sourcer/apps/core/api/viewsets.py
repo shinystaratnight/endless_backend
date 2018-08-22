@@ -530,22 +530,6 @@ class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):
 
     phone_fields = ['phone_landline', 'phone_fax']
 
-    def get_queryset(self):
-        current_site = get_current_site(self.request)
-        master_type = models.Company.COMPANY_TYPES.master
-
-        site_companies = models.SiteCompany.objects.filter(
-            site=current_site,
-            company__type=master_type,
-        ).values_list('company_id', flat=True)
-        if not site_companies.exists():
-            return models.CompanyAddress.objects.none()
-        else:
-            return models.CompanyAddress.objects.filter(
-                Q(company__in=site_companies) |
-                Q(company__regular_companies__master_company__in=site_companies)
-            ).distinct()
-
     def prepare_related_data(self, data, is_create=False):
         data = super().prepare_related_data(data, is_create)
 

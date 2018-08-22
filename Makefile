@@ -521,6 +521,7 @@ restart_web:
 	make web_logs
 
 rebuild_web:
-	docker-compose rm -sf web
+	docker-compose stop web
+	docker-compose rm -f web
 	docker-compose up --build -d web
 	make web_logs

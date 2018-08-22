@@ -1355,6 +1355,14 @@ class BlackList(core_models.UUIDModel):
             raise ValidationError(_('Another BlackList item with such parameters already exists'))
         super().clean()
 
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(company=owner),
+                Q(company__regular_companies__master_company=owner)
+            ]
+
 
 class FavouriteList(core_models.UUIDModel):
 
@@ -1430,6 +1438,14 @@ class FavouriteList(core_models.UUIDModel):
         ).exists() and not (self.company and self.jobsite and self.job):
             raise ValidationError(_('Another FavoritList item with such parameters already exists'))
         super().clean()
+
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(company=owner),
+                Q(company__regular_companies__master_company=owner)
+            ]
 
 
 class CarrierList(core_models.UUIDModel):

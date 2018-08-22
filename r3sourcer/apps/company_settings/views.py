@@ -4,8 +4,7 @@ from django.conf import settings
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
 from django.utils import timezone
-from rest_framework import exceptions
-from rest_framework import status
+from rest_framework import exceptions, status, permissions
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -524,13 +523,15 @@ class MYOBAPIKeyView(APIView):
 
 
 class SiteCompanySettingsView(APIView):
+    permission_classes = [permissions.AllowAny]
+
     def get(self, *args, **kwargs):
         company = get_site_master_company(request=self.request, default=False)
         if not company and self.request.user.is_authenticated:
             company = self.request.user.company.get_closest_master_company()
 
         if not company:
-            company_settings = CompanySettings(color_scheme='#28a3fc', font='Source Sans Pro')
+            raise exceptions.NotFound()
         else:
             company_settings = company.company_settings
 

@@ -687,6 +687,16 @@ class Address(UUIDModel):
                 raise ValidationError(self.default_errors['fetch_error'])
         super(Address, self).save(*args, **kwargs)
 
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(company_addresses__company=owner),
+                Q(company_addresses__company__regular_companies__master_company=owner),
+                Q(jobsites__master_company=owner),
+                Q(jobsites__regular_company__regular_companies__master_company=owner),
+            ]
+
 
 class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     MANAGER = 'manager'
@@ -1392,6 +1402,14 @@ class CompanyContactRelationship(
     def get_master_company_lookup(cls, master_company):
         return Q(company=master_company)
 
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(company=owner),
+                Q(company__regular_companies__master_company=owner)
+            ]
+
     def save(self, *args, **kwargs):
         is_added = self._state.adding
         super().save(*args, **kwargs)
@@ -1472,8 +1490,14 @@ class CompanyAddress(
         return Q(company=master_company)
 
     @classmethod
-    def owner_lookups(cls, owner):
-        return [Q(company__regular_companies__master_company=owner)]
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(company=owner),
+                Q(company__regular_companies__master_company=owner),
+                Q(primary_contact__relationships__company=owner),
+                Q(primary_contact__relationships__company__regular_companies__master_company=owner),
+            ]
 
 
 class CompanyContactAddress(

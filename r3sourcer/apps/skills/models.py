@@ -221,3 +221,7 @@ class SkillTag(UUIDModel):
 
     def __str__(self):
         return self.skill.name
+
+    @classmethod
+    def is_owned(cls):
+        return False
