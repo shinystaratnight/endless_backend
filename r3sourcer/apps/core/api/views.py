@@ -3,6 +3,7 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
+from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext_lazy as _
@@ -78,6 +79,19 @@ class TrialUserView(APIView):
         domain = serializer.validated_data['website']
         site, created = Site.objects.get_or_create(domain=domain, defaults={'name': domain})
         models.SiteCompany.objects.get_or_create(company=company, site=site)
+
+        models.Form.objects.get_or_create(
+            company=company,
+            builder=models.FormBuilder.objects.get(
+                content_type=ContentType.objects.get_by_natural_key('candidate', 'candidatecontact')
+            ),
+            defaults=dict(
+                title='Application Form',
+                is_active=True,
+                short_description='New application form',
+                submit_message="You've been registered!"
+            )
+        )
 
         send_trial_email.apply_async([contact.id, new_password], countdown=10)
         cancel_trial.apply_async([new_user.id], eta=timezone.now() + datetime.timedelta(days=30))
