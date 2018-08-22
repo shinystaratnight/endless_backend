@@ -74,7 +74,7 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
 
     class Meta:
         model = Contact
-        fields = ('id', 'name', 'contact_type', 'contact_id', 'picture')
+        fields = ('id', 'name', 'contact_type', 'contact_id', 'picture', 'email')
 
     def get_name(self, obj):
         return str(obj)
