@@ -751,6 +751,18 @@ class JobViewset(BaseApiViewset):
                     candidate_contact=shift.candidate_contact,
                 )
 
+    def perform_update(self, serializer):
+        instance = serializer.save()
+
+        tag_ids = self.request.data['tags']
+        instance.tags.exclude(id__in=tag_ids).delete()
+
+        for tag_id in tag_ids:
+            hr_models.JobTag.objects.get_or_create(job=instance, tag_id=tag_id)
+
+    def perform_create(self, serializer):
+        self.perform_update(serializer)
+
 
 class TimeSheetCandidateViewset(
     BaseTimeSheetViewsetMixin,

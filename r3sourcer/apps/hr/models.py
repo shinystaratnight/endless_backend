@@ -1357,10 +1357,10 @@ class BlackList(core_models.UUIDModel):
 
     @classmethod
     def owned_by_lookups(cls, owner):
-        if isinstance(owner, Company):
+        if isinstance(owner, core_models.Company):
             return [
-                Q(company=owner),
-                Q(company__regular_companies__master_company=owner)
+                models.Q(company=owner),
+                models.Q(company__regular_companies__master_company=owner)
             ]
 
 
@@ -1441,10 +1441,10 @@ class FavouriteList(core_models.UUIDModel):
 
     @classmethod
     def owned_by_lookups(cls, owner):
-        if isinstance(owner, Company):
+        if isinstance(owner, core_models.Company):
             return [
-                Q(company=owner),
-                Q(company__regular_companies__master_company=owner)
+                models.Q(company=owner),
+                models.Q(company__regular_companies__master_company=owner)
             ]
 
 
