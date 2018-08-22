@@ -443,12 +443,12 @@ class JobViewset(BaseApiViewset):
         # filter overpriced candidates
         overpriced = request.GET.get('overpriced', 'False') == 'True'
         overpriced_candidates = []
-        if job.hourly_rate_default:
+        if job.position.default_rate:
             overpriced_qry = Q(
                 candidate_skills__skill=job.position,
                 candidate_skills__score__gt=0
             )
-            hourly_rate = job.hourly_rate_default
+            hourly_rate = job.position.default_rate
             overpriced_candidates = candidate_contacts.filter(
                 overpriced_qry,
                 candidate_skills__hourly_rate__gt=hourly_rate,
@@ -593,7 +593,6 @@ class JobViewset(BaseApiViewset):
             '__str__': str(job),
             'jobsite': str(job.jobsite),
             'position': str(job.position),
-            'workers': str(job.workers),
         }
         if jobsite_address:
             job_ctx.update({

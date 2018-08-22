@@ -7,7 +7,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 
-HAS_JOBOFFER, HAS_TIMESHEET, HAS_CARRIERLIST_JOBOFFER, UNAVAILABLE = range(4)
+HAS_JOBOFFER, HAS_TIMESHEET, UNAVAILABLE = range(3)
 
 
 def get_available_candidate_list(job):
@@ -85,15 +85,6 @@ def get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date,
             contact__contact_unavailabilities__unavailable_from__lte=shift_start_time,
             contact__contact_unavailabilities__unavailable_until__gte=shift_start_time,
         ).values_list('id', flat=True), UNAVAILABLE
-    )
-
-    candidate_ids = update_unavailable_reason(
-        candidate_ids, candidate_contacts.filter(
-            carrier_lists__job_offer__isnull=False,
-            carrier_lists__target_date=shift_date,
-        ).exclude(
-            carrier_lists__job_offer__status=JobOffer.STATUS_CHOICES.cancelled,
-        ).values_list('id', flat=True), HAS_CARRIERLIST_JOBOFFER
     )
 
     return candidate_ids
