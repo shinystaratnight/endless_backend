@@ -70,7 +70,7 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
     contact_id = serializers.UUIDField(source='get_role_id', read_only=True)
 
     image_fields = ('picture', )
-    method_fields = ('company', )
+    method_fields = ('company', 'candidate_contact')
 
     class Meta:
         model = Contact
@@ -81,6 +81,11 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
 
     def get_company(self, obj):
         return obj.get_closest_company().name
+
+    def get_candidate_contact(self, obj):
+        print('!', obj.is_candidate_contact())
+        if obj.is_candidate_contact():
+            return obj.candidate_contacts.pk
 
 
 class JwtTokenObtainPairSerializer(TokenObtainPairSerializer):
