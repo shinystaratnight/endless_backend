@@ -128,7 +128,10 @@ class JobsiteFilter(ActiveStateFilterMixin, FilterSet):
 
     class Meta:
         model = hr_models.Jobsite
-        fields = ['company', 'active_states', 'primary_contact', 'short_name']
+        fields = [
+            'company', 'active_states', 'primary_contact', 'short_name', 'industry', 'regular_company',
+            'portfolio_manager'
+        ]
 
     def filter_company(self, queryset, name, value):
         return queryset.filter(

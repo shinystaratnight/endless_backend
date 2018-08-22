@@ -63,6 +63,10 @@ class Industry(UUIDModel):
     def __str__(self):
         return self.type
 
+    @classmethod
+    def is_owned(cls):
+        return False
+
 
 class RateCoefficientGroup(UUIDModel):
 
