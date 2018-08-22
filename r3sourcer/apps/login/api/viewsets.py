@@ -55,7 +55,7 @@ class AuthViewSet(BaseViewsetMixin,
             raise exceptions.PermissionDenied(self.errors['wrong_domain'])
 
         if not user.is_superuser and redirect_site.domain != host:
-            if host != 'r3sourcer.loc':
+            if host != 'r3sourcer.com':
                 raise exceptions.PermissionDenied(self.errors['wrong_domain'])
             else:
                 host_url = 'http://{}'.format(redirect_site.domain)

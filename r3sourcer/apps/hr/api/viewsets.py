@@ -23,7 +23,7 @@ from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
-from r3sourcer.apps.core.utils.text import format_lazy
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.models import Role, Address
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.hr import models as hr_models, payment
@@ -840,7 +840,9 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
                 Q(jobsites__primary_contact_id=filter_manager)
             )
 
-        jobsite_data = Address.objects.filter(filter_qry).exclude(
+        site_master_company = get_site_master_company(request=request)
+
+        jobsite_data = Address.objects.owned_by(site_master_company).filter(filter_qry).exclude(
             latitude=decimal.Decimal('0.0'),
             longitude=decimal.Decimal('0.0'),
         ).annotate(

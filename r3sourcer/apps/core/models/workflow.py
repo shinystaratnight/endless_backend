@@ -392,3 +392,11 @@ class CompanyWorkflowNode(UUIDModel):
 
     def __str__(self):
         return '{} {}'.format(self.company, self.workflow_node)
+
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(company=owner),
+                Q(company__regular_companies__master_company=owner)
+            ]
