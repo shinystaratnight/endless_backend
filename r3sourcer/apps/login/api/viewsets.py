@@ -55,12 +55,17 @@ class AuthViewSet(BaseViewsetMixin,
             raise exceptions.PermissionDenied(self.errors['wrong_domain'])
 
         if not user.is_superuser and redirect_site.domain != host:
-            if host != 'r3sourcer.com':
+            if host != 'r3sourcer.loc':
                 raise exceptions.PermissionDenied(self.errors['wrong_domain'])
             else:
-                redirect_host = 'http://{}'.format(redirect_site.domain)
+                host_url = 'http://{}'.format(redirect_site.domain)
+                token_login = TokenLogin.objects.create(
+                    contact=user.contact,
+                    redirect_to=host_url
+                )
+                redirect_host = '{}{}'.format(host_url, token_login.auth_url)
                 cache.set('user_site_%s' % str(user.id), redirect_site.domain)
-                return True, redirect_host
+                return False, redirect_host
         else:
             cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
             return True, None
