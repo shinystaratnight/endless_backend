@@ -1,11 +1,10 @@
 from datetime import date, datetime, timedelta
-from functools import partial
 
 from django.db.models import Max, Q
 from django.conf import settings
-from django.utils import timezone, formats
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import serializers, exceptions, validators
+from rest_framework import serializers, exceptions
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
