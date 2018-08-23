@@ -92,27 +92,35 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         try:
             role = Role.objects.get(id=role_id)
-            contact = role.company_contact_rel.company_contact.contact
+            company_contact_rel = role.company_contact_rel
+            contact = company_contact_rel.company_contact.contact, company_contact_rel
         except Exception:
-            contact = self.request.user.contact
+            contact = self.request.user.contact, None
 
         return contact
 
     def get_unapproved_queryset(self, request):
-        contact = self.get_contact()
+        contact, company_contact_rel = self.get_contact()
         qs_unapproved = TimesheetFilter.get_filter_for_unapproved(contact)
-        queryset = hr_models.TimeSheet.objects.filter(qs_unapproved).distinct()
-        return queryset
+        queryset = hr_models.TimeSheet.objects.filter(qs_unapproved)
+
+        if company_contact_rel:
+            queryset = queryset.filter(job_offer__shift__date__job__customer_company=company_contact_rel.company)
+
+        return queryset.distinct()
 
     def handle_history(self, request):
         if request.user.is_authenticated:
-            contact = self.get_contact()
+            contact, company_contact_rel = self.get_contact()
             qs_approved = TimesheetFilter.get_filter_for_approved(contact)
             queryset = hr_models.TimeSheet.objects.filter(qs_approved)
+
+            if company_contact_rel:
+                queryset = queryset.filter(job_offer__shift__date__job__customer_company=company_contact_rel.company)
         else:
             queryset = hr_models.TimeSheet.objects.none()
 
-        return self.paginated(queryset)
+        return self.paginated(queryset.distinct())
 
     @action(methods=['get'], detail=False)
     def unapproved(self, request, *args, **kwargs):  # pragma: no cover
