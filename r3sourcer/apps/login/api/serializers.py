@@ -83,7 +83,6 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
         return obj.get_closest_company().name
 
     def get_candidate_contact(self, obj):
-        print('!', obj.is_candidate_contact())
         if obj.is_candidate_contact():
             return obj.candidate_contacts.pk
 

@@ -2,6 +2,7 @@ from cities_light.loading import get_model
 from django.apps import apps
 from django.conf import settings
 from django.db.models import Q
+from django.contrib.auth import logout
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -272,10 +273,16 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        return Response({
+        data = {
             'status': 'success',
             'message': _('Password changed successfully')
-        })
+        }
+
+        if self.request.user.id == instance.user.id:
+            logout(self.request)
+            data['logout'] = True
+
+        return Response(data)
 
     def prepare_related_data(self, data, is_create=False):
         data = super().prepare_related_data(data, is_create)
