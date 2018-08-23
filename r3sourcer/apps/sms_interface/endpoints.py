@@ -11,6 +11,8 @@ class SMSMessageApiEndpoint(ApiEndpoint):
     serializer = sms_serializers.SMSMessageSerializer
     filter_class = filters.SMSMessageFilter
 
+    search_fields = ('from_number', 'to_number')
+
 
 class SMSRelatedObjectEndpoint(ApiEndpoint):
 
