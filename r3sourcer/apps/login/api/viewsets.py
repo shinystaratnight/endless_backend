@@ -9,8 +9,9 @@ from rest_framework import viewsets, status, exceptions, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from r3sourcer.apps.core.models import Contact, User, SiteCompany
+from r3sourcer.apps.core.models import Contact, User, SiteCompany, Company
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 
 from ..models import TokenLogin
 from ..tasks import send_login_message
@@ -45,7 +46,23 @@ class AuthViewSet(BaseViewsetMixin,
         self.http_method_not_allowed(request, *args, **kwargs)
 
     def is_login_allowed(self, request, user):
-        closest_company = user.contact.get_closest_company()
+        contact = user.contact
+        closest_company = None
+
+        if contact.is_company_contact():
+            site_master_company = get_site_master_company(request)
+            company_contacts = contact.company_contact.filter(
+                Q(relationships__company=site_master_company) |
+                Q(relationships__company__regular_companies__master_company=site_master_company),
+                relationships__active=True
+            )
+
+            if company_contacts.exists():
+                closest_company = site_master_company
+
+        if not closest_company:
+            closest_company = user.contact.get_closest_company()
+
         host = request.get_host()
         redirect_host = None
 

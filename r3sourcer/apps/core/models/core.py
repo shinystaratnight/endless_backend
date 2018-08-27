@@ -807,32 +807,6 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     def get_master_company_lookup(cls, master_company):
         return Q(relationships__company=master_company)
 
-    def save(self, *args, **kwargs):
-        from .dashboard import UserDashboardModule, DashboardModule
-        super(CompanyContact, self).save(*args, **kwargs)
-
-        if self.role == MANAGER and not self.dashboard_modules.exists():
-            UserDashboardModule.objects.create(
-                company_contact=self,
-                dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
-                position=1
-            )
-            UserDashboardModule.objects.create(
-                company_contact=self,
-                dashboard_module=DashboardModule.objects.get(add_label='+ Add new client'),
-                position=2
-            )
-            UserDashboardModule.objects.create(
-                company_contact=self,
-                dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact'),
-                position=3
-            )
-            UserDashboardModule.objects.create(
-                company_contact=self,
-                dashboard_module=DashboardModule.objects.get(add_label='+ Add new job'),
-                position=4
-            )
-
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
@@ -1413,6 +1387,8 @@ class CompanyContactRelationship(
             ]
 
     def save(self, *args, **kwargs):
+        from .dashboard import UserDashboardModule, DashboardModule
+
         is_added = self._state.adding
         super().save(*args, **kwargs)
 
@@ -1420,6 +1396,28 @@ class CompanyContactRelationship(
             role = Role.ROLE_NAMES.client
             if self.company.type == self.company.COMPANY_TYPES.master:
                 role = Role.ROLE_NAMES.manager
+
+                if not self.company_contact.contact.company_contact.filter(dashboard_modules__isnull=False).exists():
+                    UserDashboardModule.objects.create(
+                        company_contact=self,
+                        dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
+                        position=1
+                    )
+                    UserDashboardModule.objects.create(
+                        company_contact=self,
+                        dashboard_module=DashboardModule.objects.get(add_label='+ Add new client'),
+                        position=2
+                    )
+                    UserDashboardModule.objects.create(
+                        company_contact=self,
+                        dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact'),
+                        position=3
+                    )
+                    UserDashboardModule.objects.create(
+                        company_contact=self,
+                        dashboard_module=DashboardModule.objects.get(add_label='+ Add new job'),
+                        position=4
+                    )
 
             self.company_contact.contact.user.role.add(Role.objects.create(name=role, company_contact_rel=self))
 
