@@ -320,6 +320,7 @@ class Contact(
             return [
                 Q(candidate_contacts__candidate_rels__master_company=owner),
                 Q(company_contact__relationships__company=owner),
+                Q(company_contact__relationships__company__regular_companies__master_company=owner),
             ]
 
 
@@ -538,6 +539,7 @@ class User(UUIDModel,
             return [
                 Q(contact__candidate_contacts__candidate_rels__master_company=owner),
                 Q(contact__company_contact__relationships__company=owner),
+                Q(contact__company_contact__relationships__company__regular_companies__master_company=owner),
             ]
 
 

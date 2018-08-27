@@ -55,7 +55,17 @@ class AbstractObjectOwnerQuerySet(LoggerQuerySet):
             if related_field.related_model == _obj._meta.model:
                 path_list.append(Q(**{cur_path: _obj}))
             elif (related_field.related_model and hasattr(related_field.related_model.objects, 'get_lookups')):
-                path_list.extend(related_field.related_model.objects.get_lookups(_obj, cur_path))
+                owned_by_lookups = related_field.related_model.owned_by_lookups(_obj)
+
+                if not owned_by_lookups:
+                    owned_by_lookups = related_field.related_model.objects.get_lookups(_obj, cur_path)
+                else:
+                    owned_dicts = [dict(name.children) for name in owned_by_lookups]
+                    owned_by_lookups = []
+                    for owned_dict in owned_dicts:
+                        owned_by_lookups.append(Q(**{'%s__%s' % (cur_path, k): v for k, v in owned_dict.items()}))
+
+                path_list.extend(owned_by_lookups)
 
         return path_list
 
