@@ -501,13 +501,11 @@ class ShiftDate(core_models.UUIDModel):
         validators=[MinValueValidator(1)]
     )
 
-    hourly_rate = models.ForeignKey(
-        SkillBaseRate,
-        related_name="shift_dates",
-        on_delete=models.SET_NULL,
-        verbose_name=_("Hourly rate"),
-        null=True,
-        blank=True
+    hourly_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
     )
 
     cancelled = models.BooleanField(
@@ -558,13 +556,11 @@ class Shift(core_models.UUIDModel):
         validators=[MinValueValidator(1)]
     )
 
-    hourly_rate = models.ForeignKey(
-        SkillBaseRate,
-        related_name="job_shifts",
-        on_delete=models.SET_NULL,
-        verbose_name=_("Top hourly rate"),
-        null=True,
-        blank=True
+    hourly_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
     )
 
     class Meta:
@@ -1042,13 +1038,11 @@ class TimeSheet(
         editable=False
     )
 
-    candidate_rate = models.ForeignKey(
-        SkillBaseRate,
-        related_name="timesheets",
-        on_delete=models.SET_NULL,
-        null=True,
+    candidate_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
         blank=True,
-        verbose_name=_("Candidate Rate Override")
+        null=True
     )
 
     rate_overrides_approved_by = models.ForeignKey(

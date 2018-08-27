@@ -535,41 +535,45 @@ class TestCompanyResource(ResourceMixin):
 @pytest.mark.django_db
 class TestCompanyAddressViewset:
 
+    @pytest.fixture
+    def company_address_vs(self):
+        return endpoints.CompanyAddressEndpoint().get_viewset()
+
     @mock.patch('r3sourcer.apps.core.api.viewsets.get_current_site')
-    def test_get_queryset_no_site_company(self, mock_get_site, rf, site):
+    def test_get_queryset_no_site_company(self, mock_get_site, rf, site, company_address_vs):
         mock_get_site.return_value = site
 
         req = rf.get('/')
-        viewset = CompanyAddressViewset()
-        viewset.request = req
+        viewset = company_address_vs()
+        company_address_vs.request = req
 
-        qs = viewset.get_queryset()
+        qs = company_address_vs.get_queryset()
 
         assert not qs.exists()
 
     @mock.patch('r3sourcer.apps.core.api.viewsets.get_current_site')
     def test_get_queryset_no_master_site_company(self, mock_get_site, site,
-                                                 site_regular_company, rf):
+                                                 site_regular_company, rf, company_address_vs):
         mock_get_site.return_value = site
 
         req = rf.get('/')
-        viewset = CompanyAddressViewset()
-        viewset.request = req
+        viewset = company_address_vs()
+        company_address_vs.request = req
 
-        qs = viewset.get_queryset()
+        qs = company_address_vs.get_queryset()
 
         assert not qs.exists()
 
     @mock.patch('r3sourcer.apps.core.api.viewsets.get_current_site')
     def test_get_queryset_master_company(self, mock_get_site, site, rf,
-                                         site_company, company_address):
+                                         site_company, company_address, company_address_vs):
         mock_get_site.return_value = site
 
         req = rf.get('/')
-        viewset = CompanyAddressViewset()
-        viewset.request = req
+        viewset = company_address_vs()
+        company_address_vs.request = req
 
-        qs = viewset.get_queryset()
+        qs = company_address_vs.get_queryset()
 
         assert qs.count() == 1
         assert qs.first() == company_address
@@ -577,14 +581,14 @@ class TestCompanyAddressViewset:
     @mock.patch('r3sourcer.apps.core.api.viewsets.get_current_site')
     def test_get_queryset_regular_company(self, mock_get_site, site, rf,
                                           site_company, company_address_regular,
-                                          company_rel):
+                                          company_rel, company_address_vs):
         mock_get_site.return_value = site
 
         req = rf.get('/')
-        viewset = CompanyAddressViewset()
-        viewset.request = req
+        viewset = company_address_vs()
+        company_address_vs.request = req
 
-        qs = viewset.get_queryset()
+        qs = company_address_vs.get_queryset()
 
         assert qs.count() == 1
         assert qs.first() == company_address_regular

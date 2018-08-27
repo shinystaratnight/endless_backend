@@ -139,8 +139,8 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         fields = [
             '__all__',
             {
-                'offer_sent_by_sms': ['id'],
-                'reply_received_by_sms': ['id'],
+                'offer_sent_by_sms': ['id', 'text', 'status', 'sent_at'],
+                'reply_received_by_sms': ['id', 'text', 'status', 'sent_at'],
                 'shift': ['id', 'time', {
                     'date': ['shift_date'],
                 }],
@@ -152,9 +152,9 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             return None
 
         if obj.shift.hourly_rate:
-            candidate_rate = obj.shift.hourly_rate.hourly_rate
+            candidate_rate = obj.shift.hourly_rate
         elif obj.shift.date.hourly_rate:
-            candidate_rate = obj.shift.date.hourly_rate.hourly_rate
+            candidate_rate = obj.shift.date.hourly_rate
         else:
             candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.job.position)
 
@@ -244,19 +244,29 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
 class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('is_fulfilled',)
+    method_fields = ('is_fulfilled', 'workers_details')
 
     class Meta:
         model = hr_models.Shift
         fields = (
             '__all__', {
-                'hourly_rate': ('id', 'hourly_rate'),
-                'date': ('__all__', )
+                'date': ('__all__', ),
             }
         )
 
     def get_is_fulfilled(self, obj):  # pragma: no cover
         return obj and obj.is_fulfilled()
+
+    def get_workers_details(self, obj):
+        accepted = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.accepted).distinct()
+        cancelled = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.cancelled).distinct()
+        undefined = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.undefined).distinct()
+
+        return {
+            'accepted': [str(jo.candidate_contact) for jo in accepted],
+            'cancelled': [str(jo.candidate_contact) for jo in cancelled],
+            'undefined': [str(jo.candidate_contact) for jo in undefined],
+        }
 
 
 class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
