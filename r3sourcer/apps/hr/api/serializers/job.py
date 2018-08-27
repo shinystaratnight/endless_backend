@@ -587,13 +587,19 @@ class JobsiteSerializer(
 
 class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('job_shift', 'latest_date')
+    method_fields = ('job_shift', 'latest_date', 'last_fullfilled')
 
     autofill = serializers.BooleanField(required=False)
 
     class Meta:
         model = hr_models.Job
         fields = ('id', 'autofill')
+
+    def _get_latest_shift_date(self, obj):
+        try:
+            return obj.shift_dates.filter(cancelled=False, shifts__isnull=False).latest('shift_date')
+        except hr_models.ShiftDate.DoesNotExist:
+            return None
 
     def get_job_shift(self, obj):
         return [
@@ -602,10 +608,31 @@ class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
         ]
 
     def get_latest_date(self, obj):
-        try:
-            return obj.shift_dates.filter(cancelled=False, shifts__isnull=False).latest('shift_date').id
-        except hr_models.ShiftDate.DoesNotExist:
-            return None
+        latest_shift_date = self._get_latest_shift_date(obj)
+
+        return latest_shift_date and latest_shift_date.pk
+
+    def get_last_fullfilled(self, obj):
+        latest_shift_date = self._get_latest_shift_date(obj)
+
+        if latest_shift_date:
+            latest_fullfilled_shift = latest_shift_date.shifts.exclude(
+                job_offers__status=hr_models.JobOffer.STATUS_CHOICES.cancelled
+            ).order_by('-time').first()
+
+            if not latest_fullfilled_shift:
+                latest_fullfilled_shift = latest_shift_date.shifts.latest('time')
+
+            return {
+                'shift_datetime': timezone.make_aware(
+                    datetime.combine(latest_shift_date.shift_date, latest_fullfilled_shift.time)
+                ),
+                'candidates': [
+                    str(jo.candidate_contact) for jo in latest_fullfilled_shift.job_offers.exclude(
+                        status=hr_models.JobOffer.STATUS_CHOICES.cancelled
+                    )
+                ]
+            }
 
 
 class JobsiteMapAddressSerializer(core_serializers.ApiMethodFieldsMixin, serializers.ModelSerializer):
