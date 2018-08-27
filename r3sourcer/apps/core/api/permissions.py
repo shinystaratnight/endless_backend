@@ -1,3 +1,5 @@
+from django.db.models import Q
+
 from dry_rest_permissions.generics import DRYPermissions, DRYPermissionFiltersBase
 from rest_framework import permissions
 
@@ -43,7 +45,23 @@ class SiteContactPermissions(SitePermissions):
         return request.user and request.user.is_authenticated() and self.is_master_related(request.user, request)
 
     def is_master_related(self, user, request):
-        closest_company = user.contact.get_closest_company()
+        contact = user.contact
+        closest_company = None
+
+        if contact.is_company_contact():
+            site_master_company = get_site_master_company(request)
+            company_contacts = contact.company_contact.filter(
+                Q(relationships__company=site_master_company) |
+                Q(relationships__company__regular_companies__master_company=site_master_company),
+                relationships__active=True
+            )
+
+            if company_contacts.exists():
+                closest_company = site_master_company
+
+        if not closest_company:
+            closest_company = user.contact.get_closest_company()
+
         host = request.get_host()
 
         return user.is_superuser or SiteCompany.objects.filter(company=closest_company, site__domain=host).exists()

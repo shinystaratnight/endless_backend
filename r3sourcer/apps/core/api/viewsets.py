@@ -714,7 +714,9 @@ class UserDashboardModuleViewSet(BaseApiViewset):
 
     def get_queryset(self):
         if self.request.user.is_authenticated():
-            return models.UserDashboardModule.objects.filter(
+            site_master_company = get_site_master_company(request=self.request)
+
+            return models.UserDashboardModule.objects.owned_by(site_master_company).filter(
                 company_contact__contact__user_id=self.request.user.id
             )
         return models.DashboardModule.objects.none()
