@@ -9,7 +9,7 @@ from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
 
-from rest_framework import status, authentication
+from rest_framework import status, permissions
 from rest_framework.response import Response
 from rest_framework.views import exception_handler, APIView
 
@@ -42,7 +42,8 @@ def core_exception_handler(exc, context):
 
 
 class TrialUserView(APIView):
-    authentication_classes = (authentication.TokenAuthentication, )
+
+    permission_classes = [permissions.AllowAny]
 
     @method_decorator(csrf_exempt)
     def post(self, request, **kwargs):
