@@ -152,9 +152,9 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             return None
 
         if obj.shift.hourly_rate:
-            candidate_rate = obj.shift.hourly_rate.hourly_rate
+            candidate_rate = obj.shift.hourly_rate
         elif obj.shift.date.hourly_rate:
-            candidate_rate = obj.shift.date.hourly_rate.hourly_rate
+            candidate_rate = obj.shift.date.hourly_rate
         else:
             candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.job.position)
 
@@ -250,8 +250,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         model = hr_models.Shift
         fields = (
             '__all__', {
-                'hourly_rate': ('id', 'hourly_rate'),
-                'date': ('__all__', )
+                'date': ('__all__', ),
             }
         )
 
