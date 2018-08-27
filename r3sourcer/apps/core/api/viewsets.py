@@ -262,10 +262,16 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             tasks.send_generated_password_sms.delay(instance.id, new_password)
             message = '{} and sms'.format(message) if is_email else 'sms'
 
-        return Response({
+        data = {
             'status': 'success',
             'message': _('New password was sent by {type}').format(type=message),
-        })
+        }
+
+        if (is_email or is_sms) and request.user.id == instance.user.id:
+            logout(request)
+            data['logout'] = True
+
+        return Response(data)
 
     def _update_password(self, serializer_class):
         instance = self.get_object()
