@@ -8,7 +8,7 @@ from functools import reduce
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max
-from django.utils import timezone
+from django.utils import timezone, dateparse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, mixins, status
@@ -758,6 +758,36 @@ class JobViewset(BaseApiViewset):
                     shift=new_shift_obj,
                     candidate_contact=shift.candidate_contact,
                 )
+
+    @action(methods=['get'], detail=True)
+    def extend_fillin(self, request, *args, **kwargs):
+        job = self.get_object()
+        shift_datetime = request.query_params.get('shift')
+
+        if not shift_datetime:
+            candidate_contacts = candidate_models.CandidateContact.objects.none()
+        else:
+            shift_datetime = timezone.make_naive(dateparse.parse_datetime(shift_datetime))
+
+            candidate_contacts = job_utils.get_available_candidate_list(job)
+            candidate_contacts = candidate_contacts.filter(
+                candidate_rels__master_company=job.provider_company, candidate_rels__active=True
+            ).distinct()
+
+            partially_available_candidates = job_utils.get_partially_available_candidate_ids_for_vs(
+                candidate_contacts, shift_datetime.date(), shift_datetime.time()
+            )
+
+            candidate_contacts = candidate_contacts.exclude(
+                id__in=partially_available_candidates.keys()
+            )
+
+            distances_to_update = candidate_contacts.exclude(contact__distance_caches__jobsite=job.jobsite)
+
+            hr_utils.calculate_distances_for_jobsite([c.contact for c in distances_to_update], job.jobsite)
+
+        serializer = job_serializers.JobExtendFillinSerialzier(candidate_contacts, many=True, context={'job': job})
+        return Response(serializer.data)
 
     def perform_update(self, serializer):
         instance = serializer.save()

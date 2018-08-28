@@ -467,6 +467,25 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         }
 
 
+class JobExtendFillinSerialzier(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = ['distance']
+
+    class Meta:
+        model = candidate_models.CandidateContact
+        fields = (
+            'id', {
+                'contact': ['id'],
+                'candidate_scores': ['average_score'],
+            }
+        )
+
+    def get_distance(self, obj):
+        distance_cache = obj.contact.distance_caches.filter(jobsite=self.context['job'].jobsite).first()
+        distance = distance_cache and distance_cache.distance
+        return hr_utils.meters_to_km(distance) if distance and distance > -1 else -1
+
+
 class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     jobsite_address = core_serializers.AddressSerializer(read_only=True)
