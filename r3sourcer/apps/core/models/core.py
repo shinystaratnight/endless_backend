@@ -911,7 +911,7 @@ class Company(
 
     manager = models.ForeignKey(
         CompanyContact,
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         related_name="companies",
         verbose_name=_("Manager"),
         null=True, blank=True,
@@ -1248,7 +1248,7 @@ class CompanyRel(
         CompanyContact,
         related_name="company_accounts",
         verbose_name=_("Primary Contact"),
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
@@ -1456,6 +1456,7 @@ class CompanyAddress(
 
     primary_contact = models.ForeignKey(
         CompanyContact,
+        on_delete=models.SET_NULL,
         related_name='company_primary_addresses',
         verbose_name=_("Primary contact"),
         null=True,
@@ -1515,7 +1516,7 @@ class CompanyContactAddress(
         CompanyContact,
         related_name="company_addresses",
         verbose_name=_("Company Contact"),
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )

@@ -1,6 +1,7 @@
 from cities_light.loading import get_model
 from django.apps import apps
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth import logout
 from django.contrib.sites.shortcuts import get_current_site
@@ -461,19 +462,20 @@ class CompanyContactViewset(BaseApiViewset):
         return obj
 
     def perform_destroy(self, instance):
-        has_jobsites = instance.managed_jobsites.exists() or instance.jobsites.exists()
-        has_jobs = (
-            instance.provider_representative_jobs.exists() or instance.customer_representative_jobs.exists()
-        )
+        with transaction.atomic():
+            has_jobsites = instance.managed_jobsites.exists() or instance.jobsites.exists()
+            has_jobs = (
+                instance.provider_representative_jobs.exists() or instance.customer_representative_jobs.exists()
+            )
 
-        if has_jobs or has_jobsites or instance.supervised_time_sheets.exists():
-            raise ValidationError({'non_field_errors': _('Cannot delete')})
+            if has_jobs or has_jobsites or instance.supervised_time_sheets.exists():
+                raise ValidationError({'non_field_errors': _('Cannot delete')})
 
-        rels = instance.relationships.all()
-        models.Role.objects.filter(company_contact_rel__in=rels).delete()
-        rels.delete()
+            rels = instance.relationships.all()
+            models.Role.objects.filter(company_contact_rel__in=rels).delete()
+            rels.delete()
 
-        super().perform_destroy(instance)
+            super().perform_destroy(instance)
 
     def prepare_related_data(self, data, is_create=False):
         if is_create and not data.get('contact'):
@@ -855,21 +857,22 @@ class AddressViewset(GoogleAddressMixin, BaseApiViewset):
 class CompanyContactRelationshipViewset(BaseApiViewset):
 
     def perform_destroy(self, instance):
-        company_contact = instance.company_contact
-        has_jobsites = company_contact.managed_jobsites.exists() or company_contact.jobsites.exists()
-        has_jobs = (
-            company_contact.provider_representative_jobs.exists() or
-            company_contact.customer_representative_jobs.exists()
-        )
+        with transaction.atomic():
+            company_contact = instance.company_contact
+            has_jobsites = company_contact.managed_jobsites.exists() or company_contact.jobsites.exists()
+            has_jobs = (
+                company_contact.provider_representative_jobs.exists() or
+                company_contact.customer_representative_jobs.exists()
+            )
 
-        if has_jobs or has_jobsites or company_contact.supervised_time_sheets.exists():
-            raise ValidationError({'non_field_errors': _('Cannot delete')})
+            if has_jobs or has_jobsites or company_contact.supervised_time_sheets.exists():
+                raise ValidationError({'non_field_errors': _('Cannot delete')})
 
-        models.Role.objects.filter(company_contact_rel=instance).delete()
+            models.Role.objects.filter(company_contact_rel=instance).delete()
 
-        super().perform_destroy(instance)
+            super().perform_destroy(instance)
 
-        company_contact.delete()
+            company_contact.delete()
 
 
 class UserViewset(BaseApiViewset):
