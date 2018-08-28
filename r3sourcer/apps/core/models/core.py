@@ -1399,22 +1399,22 @@ class CompanyContactRelationship(
 
                 if not self.company_contact.contact.company_contact.filter(dashboard_modules__isnull=False).exists():
                     UserDashboardModule.objects.create(
-                        company_contact=self,
+                        company_contact=self.company_contact,
                         dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
                         position=1
                     )
                     UserDashboardModule.objects.create(
-                        company_contact=self,
+                        company_contact=self.company_contact,
                         dashboard_module=DashboardModule.objects.get(add_label='+ Add new client'),
                         position=2
                     )
                     UserDashboardModule.objects.create(
-                        company_contact=self,
+                        company_contact=self.company_contact,
                         dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact'),
                         position=3
                     )
                     UserDashboardModule.objects.create(
-                        company_contact=self,
+                        company_contact=self.company_contact,
                         dashboard_module=DashboardModule.objects.get(add_label='+ Add new job'),
                         position=4
                     )
