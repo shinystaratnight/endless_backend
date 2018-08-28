@@ -84,7 +84,7 @@ class UserAdmin(BaseUserAdmin):
     list_display = ('get_full_name', 'email', 'phone_mobile')
     list_display_links = list_display
     ordering = ('date_joined',)
-    search_fields = ('contact__email', 'contact__phone_mobile', 'contact__first_name', 'contact__last_nam')
+    search_fields = ('contact__email', 'contact__phone_mobile', 'contact__first_name', 'contact__last_name')
 
     inlines = [ContactInlineAdmin]
 
