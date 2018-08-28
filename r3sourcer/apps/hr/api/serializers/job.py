@@ -467,6 +467,25 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         }
 
 
+class JobExtendFillinSerialzier(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = ['distance']
+
+    class Meta:
+        model = candidate_models.CandidateContact
+        fields = (
+            'id', {
+                'contact': ['id'],
+                'candidate_scores': ['average_score'],
+            }
+        )
+
+    def get_distance(self, obj):
+        distance_cache = obj.contact.distance_caches.filter(jobsite=self.context['job'].jobsite).first()
+        distance = distance_cache and distance_cache.distance
+        return hr_utils.meters_to_km(distance) if distance and distance > -1 else -1
+
+
 class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     jobsite_address = core_serializers.AddressSerializer(read_only=True)
@@ -606,10 +625,11 @@ class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
         fields = ('id', 'autofill')
 
     def _get_latest_shift_date(self, obj):
+        latest_date = obj.shift_dates.filter(cancelled=False, shifts__isnull=False)
         try:
-            return obj.shift_dates.filter(cancelled=False, shifts__isnull=False).latest('shift_date')
+            return latest_date.filter(shifts__job_offers__isnull=False).latest('shift_date')
         except hr_models.ShiftDate.DoesNotExist:
-            return None
+            return latest_date.order_by('-shift_date').first()
 
     def get_job_shift(self, obj):
         return [
@@ -626,23 +646,21 @@ class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
         latest_shift_date = self._get_latest_shift_date(obj)
 
         if latest_shift_date:
-            latest_fullfilled_shift = latest_shift_date.shifts.exclude(
+            latest_fullfilled_shifts = latest_shift_date.shifts.exclude(
                 job_offers__status=hr_models.JobOffer.STATUS_CHOICES.cancelled
-            ).order_by('-time').first()
+            ).order_by('-time')
 
-            if not latest_fullfilled_shift:
-                latest_fullfilled_shift = latest_shift_date.shifts.latest('time')
+            if not latest_fullfilled_shifts.exists():
+                latest_fullfilled_shifts = latest_shift_date.shifts
 
-            return {
-                'shift_datetime': timezone.make_aware(
-                    datetime.combine(latest_shift_date.shift_date, latest_fullfilled_shift.time)
-                ),
-                'candidates': [
-                    str(jo.candidate_contact) for jo in latest_fullfilled_shift.job_offers.exclude(
+            return [{
+                'shift_datetime': timezone.make_aware(datetime.combine(latest_shift_date.shift_date, shift.time)),
+                'candidates': JobExtendFillinSerialzier([
+                    jo.candidate_contact for jo in shift.job_offers.exclude(
                         status=hr_models.JobOffer.STATUS_CHOICES.cancelled
                     )
-                ]
-            }
+                ], many=True, context={'job': obj}).data
+            } for shift in latest_fullfilled_shifts]
 
 
 class JobsiteMapAddressSerializer(core_serializers.ApiMethodFieldsMixin, serializers.ModelSerializer):
