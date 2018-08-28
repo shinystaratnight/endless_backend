@@ -84,7 +84,7 @@ class UserAdmin(BaseUserAdmin):
     list_display = ('get_full_name', 'email', 'phone_mobile')
     list_display_links = list_display
     ordering = ('date_joined',)
-    search_fields = ('contact__email', 'contact__phone_mobile')
+    search_fields = ('contact__email', 'contact__phone_mobile', 'contact__first_name', 'contact__last_nam')
 
     inlines = [ContactInlineAdmin]
 
@@ -262,7 +262,7 @@ if admin.site.is_registered(Site):
 
 
 admin.site.site_header = "Core Administration"
-admin.site.register(models.Contact)
+admin.site.register(models.Contact, search_fields=('email', 'phone_mobile', 'first_name', 'last_name'))
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
