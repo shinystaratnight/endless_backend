@@ -1,6 +1,7 @@
 import mock
 import pytest
 
+from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 
 from r3sourcer.apps.core.models import SiteCompany, Contact
@@ -24,6 +25,8 @@ class TestTrialUserView:
             'company_name': 'Test Company',
             'website': 'test',
         }
+
+        ContentType.objects.get_oe_create(app_label='candidate', model='candidatecontact')
 
         resp = self.make_post_request(client, data).json()
 

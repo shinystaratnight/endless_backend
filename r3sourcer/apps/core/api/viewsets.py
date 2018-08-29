@@ -98,6 +98,8 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         data = self.prepare_related_data(request.data, is_create=True)
         data = self.clean_request_data(data)
 
+        print('!', data)
+
         return self.create_from_data(data, *args, **kwargs)
 
     def create_from_data(self, data, *args, **kwargs):
@@ -158,8 +160,6 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
                 res[key] = self._prepare_internal_data(val)
             elif isinstance(val, list):
                 res[key] = self._prepare_internal_data(val)
-
-                # res[key] = [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in val]
             else:
                 res[key] = val
 

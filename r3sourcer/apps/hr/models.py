@@ -319,17 +319,17 @@ class Job(core_models.AbstractBaseOrder):
     get_total_bookings_count.short_description = _('Bookings')
 
     def is_fulfilled(self):
-        # FIXME: change to new workflow
-        # if self.get_state() in [OrderState.STATE_CHOICES.cancelled,
-        #                               OrderState.STATE_CHOICES.completed]:
-        #     return IRRELEVANT
+        irrelevant_state_exist = core_models.WorkflowObject.objects.filter(
+            object_id=self.pk, state__number__in=[40, 60], active=True
+        ).exists()
+
+        if irrelevant_state_exist:
+            return IRRELEVANT
 
         result = NOT_FULFILLED
         now = timezone.now()
         today = now.date()
-        next_date = self.shift_dates.filter(
-            shift_date__gt=today, cancelled=False
-        ).order_by('shift_date').first()
+        next_date = self.shift_dates.filter(shift_date__gt=today, cancelled=False).order_by('shift_date').first()
 
         if next_date is not None:
             result = next_date.is_fulfilled()
@@ -354,10 +354,12 @@ class Job(core_models.AbstractBaseOrder):
     is_fulfilled.short_description = _('Fulfilled')
 
     def is_fulfilled_today(self):
-        # FIXME: change to new workflow
-        # if self.order.get_state() in [OrderState.STATE_CHOICES.cancelled,
-        #                               OrderState.STATE_CHOICES.completed]:
-        #     return IRRELEVANT
+        irrelevant_state_exist = core_models.WorkflowObject.objects.filter(
+            object_id=self.pk, state__number__in=[40, 60], active=True
+        ).exists()
+
+        if irrelevant_state_exist:
+            return IRRELEVANT
 
         result = NOT_FULFILLED
         today = timezone.localtime(timezone.now()).date()
@@ -448,10 +450,7 @@ class Job(core_models.AbstractBaseOrder):
 
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
-            sd, _ = ShiftDate.objects.get_or_create(
-                job=self, shift_date=self.work_start_date,
-                workers=self.workers
-            )
+            sd, _ = ShiftDate.objects.get_or_create(job=self, shift_date=self.work_start_date)
             Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
 
             hr_utils.send_job_confirmation_sms(self)
@@ -513,12 +512,6 @@ class ShiftDate(core_models.UUIDModel):
         verbose_name=_("Shift date")
     )
 
-    workers = models.PositiveSmallIntegerField(
-        verbose_name=_("Workers"),
-        default=1,
-        validators=[MinValueValidator(1)]
-    )
-
     hourly_rate = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -535,26 +528,18 @@ class ShiftDate(core_models.UUIDModel):
         verbose_name_plural = _("Shift Dates")
 
     def __str__(self):
-        return '{}, {}: {}'.format(
-            date_format(
-                self.shift_date,
-                settings.DATE_FORMAT
-            ),
-            _("workers"), self.workers
-        )
+        return date_format(self.shift_date, settings.DATE_FORMAT)
 
     @property
     def job_offers(self):
         return JobOffer.objects.filter(shift__date=self)
 
     def is_fulfilled(self):
-        result = NOT_FULFILLED
-        jos = self.job_offers
-        accepted_jos = jos.filter(status=JobOffer.STATUS_CHOICES.accepted)
+        for shift in self.shifts.all():
+            if shift.is_fulfilled() != FULFILLED:
+                return NOT_FULFILLED
 
-        if jos.exists() and self.workers <= accepted_jos.count():
-            result = FULFILLED
-        return result
+        return FULFILLED
     is_fulfilled.short_description = _('Fulfilled')
 
 
@@ -1129,7 +1114,7 @@ class TimeSheet(
             'break_ended_at': start_time + timedelta(hours=5, minutes=30),
             'shift_ended_at': start_time + timedelta(hours=8, minutes=30),
             'supervisor': job_offer.job.jobsite.primary_contact,
-            'candidate_rate': job_offer.shift.date.hourly_rate
+            'candidate_rate': job_offer.shift.hourly_rate
         }
 
         try:

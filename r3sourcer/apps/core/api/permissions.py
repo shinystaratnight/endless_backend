@@ -49,7 +49,7 @@ class SiteContactPermissions(SitePermissions):
         closest_company = None
 
         if contact.is_company_contact():
-            site_master_company = get_site_master_company(request)
+            site_master_company = get_site_master_company(request=request)
             company_contacts = contact.company_contact.filter(
                 Q(relationships__company=site_master_company) |
                 Q(relationships__company__regular_companies__master_company=site_master_company),
