@@ -723,7 +723,7 @@ class JobViewset(BaseApiViewset):
                 new_shift_date = datetime.datetime.strptime(new_shift_date, '%Y-%m-%d').date()
                 new_shift_date_obj, created = hr_models.ShiftDate.objects.get_or_create(
                     job=job, shift_date=new_shift_date, defaults={
-                        'workers': latest_shift_date.workers,
+                        'workers': job.workers,
                         'hourly_rate': latest_shift_date.hourly_rate,
                     },
                 )
@@ -846,6 +846,8 @@ class JobOffersCandidateViewset(
 
 
 class ShiftViewset(BaseApiViewset):
+
+    exclude_empty = True
 
     def perform_destroy(self, instance):
         shift_date = instance.date

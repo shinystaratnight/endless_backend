@@ -547,7 +547,7 @@ class TestCompanyAddressViewset:
         viewset = company_address_vs()
         company_address_vs.request = req
 
-        qs = company_address_vs.get_queryset()
+        qs = viewset.get_queryset()
 
         assert not qs.exists()
 
@@ -560,7 +560,7 @@ class TestCompanyAddressViewset:
         viewset = company_address_vs()
         company_address_vs.request = req
 
-        qs = company_address_vs.get_queryset()
+        qs = viewset.get_queryset()
 
         assert not qs.exists()
 
@@ -573,7 +573,7 @@ class TestCompanyAddressViewset:
         viewset = company_address_vs()
         company_address_vs.request = req
 
-        qs = company_address_vs.get_queryset()
+        qs = viewset.get_queryset()
 
         assert qs.count() == 1
         assert qs.first() == company_address
@@ -588,7 +588,7 @@ class TestCompanyAddressViewset:
         viewset = company_address_vs()
         company_address_vs.request = req
 
-        qs = company_address_vs.get_queryset()
+        qs = viewset.get_queryset()
 
         assert qs.count() == 1
         assert qs.first() == company_address_regular

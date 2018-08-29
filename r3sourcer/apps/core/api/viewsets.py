@@ -158,8 +158,6 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
                 res[key] = self._prepare_internal_data(val)
             elif isinstance(val, list):
                 res[key] = self._prepare_internal_data(val)
-
-                # res[key] = [self._prepare_internal_data(item) if isinstance(item, dict) else item for item in val]
             else:
                 res[key] = val
 

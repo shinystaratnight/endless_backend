@@ -744,8 +744,7 @@ class JobsiteUnavailabilityConfig(BaseConfig):
 
 class ShiftDateConfig(BaseRateMixin, BaseConfig):
     columns = {
-        'id', 'created_at', 'updated_at', 'job_id', 'shift_date',
-        'workers', 'hourly_rate_id', 'cancelled',
+        'id', 'created_at', 'updated_at', 'job_id', 'shift_date', 'hourly_rate_id', 'cancelled',
     }
     columns_map = {
         'shift_start_time': 'shift_date',
