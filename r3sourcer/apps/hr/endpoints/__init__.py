@@ -78,6 +78,7 @@ class ShiftEndpoint(ApiEndpoint):
 class ShiftDateEndpoint(ApiEndpoint):
 
     model = hr_models.ShiftDate
+    base_viewset = hr_viewsets.ShiftDateViewset
 
 
 class CandidateJobOfferEndpoint(ApiEndpoint):
