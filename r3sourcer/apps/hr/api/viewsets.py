@@ -792,7 +792,7 @@ class JobViewset(BaseApiViewset):
     def perform_update(self, serializer):
         instance = serializer.save()
 
-        tag_ids = self.request.data['tags']
+        tag_ids = self.request.data.get('tags', [])
         instance.tags.exclude(id__in=tag_ids).delete()
 
         for tag_id in tag_ids:

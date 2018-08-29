@@ -434,6 +434,18 @@ class Job(core_models.AbstractBaseOrder):
         return res
     is_client_active.short_description = _('Active Client')
 
+    @workflow_function
+    def is_unique_position_jobsite(self):
+        existing_jobs = Job.objects.filter(
+            jobsite=self.jobsite, position=self.position
+        ).exclude(id=self.pk)
+        completed_list = core_models.WorkflowObject.objects.filter(
+            object_id__in=existing_jobs.values_list('id', flat=True), state__number=60, active=True
+        ).values_list('object_id', flat=True)
+
+        return not existing_jobs.exclude(id__in=completed_list).exists()
+    is_unique_position_jobsite.short_description = _('Unique Position and Jobsite')
+
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
             sd, _ = ShiftDate.objects.get_or_create(
@@ -443,6 +455,12 @@ class Job(core_models.AbstractBaseOrder):
             Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
 
             hr_utils.send_job_confirmation_sms(self)
+
+    def after_state_activated(self, workflow_object):
+        if workflow_object.state.number == 20:
+            core_models.WorkflowObject.objects.filter(
+                object_id=self.pk, state__number=40, active=True
+            ).update(active=False)
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
