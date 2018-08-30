@@ -461,6 +461,11 @@ class Job(core_models.AbstractBaseOrder):
                 object_id=self.pk, state__number=40, active=True
             ).update(active=False)
 
+        if workflow_object.state.number == 40:
+            core_models.WorkflowObject.objects.filter(
+                object_id=self.pk, state__number=20, active=True
+            ).update(active=False)
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         if just_added:
