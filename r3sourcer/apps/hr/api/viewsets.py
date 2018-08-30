@@ -928,8 +928,11 @@ class ShiftDateViewset(BaseApiViewset):
 
         serializer = self.get_serializer(data=data, many=many)
         serializer.is_valid(raise_exception=True)
+        date = hr_models.ShiftDate.objects.filter(
+            shift_date=serializer.validated_data['shift_date'],
+            job=serializer.validated_data['job'],
+        ).first()
 
-        date = hr_models.ShiftDate.objects.filter(shift_date=serializer.validated_data['shift_date']).first()
         if not date:
             self.perform_create(serializer)
         else:
