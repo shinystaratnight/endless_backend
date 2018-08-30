@@ -9,11 +9,13 @@ from r3sourcer.apps.pricing.models import (
     Industry, PriceList, PriceListRate, RateCoefficientGroup, RateCoefficient,
     RateCoefficientModifier, DynamicCoefficientRule,
 )
-from r3sourcer.apps.skills.models import Skill
+from r3sourcer.apps.skills.models import Skill, SkillName
 
 
 industry_fake = Industry(type='test')
-skill_f = Skill(name='skill')
+company_f = Company(name='company')
+skill_name = SkillName(name='skill', industry=industry_fake)
+skill_f = Skill(name=skill_name, company=company_f)
 rate_coeff_fake = RateCoefficient(name='coefficient')
 
 
@@ -106,7 +108,7 @@ class TestRateCoefficientModifier:
 
 class TestPriceListRate:
     @pytest.mark.django_db
-    def test_default_rate(self, skill, price_list):
+    def test_default_rate(self, skill, price_list, skill_name, company):
         base_rate1 = PriceListRate.objects.create(
             skill=skill, price_list=price_list, hourly_rate=20, default_rate=True
         )
@@ -117,7 +119,9 @@ class TestPriceListRate:
         assert not PriceListRate.objects.get(pk=str(base_rate1.pk)).default_rate
         assert PriceListRate.objects.get(pk=str(base_rate2.pk)).default_rate
 
-        skill2 = Skill.objects.create(name="Driver", carrier_list_reserve=2, short_name="Drv", active=False)
+        skill2 = Skill.objects.create(
+            name=skill_name, company=company, carrier_list_reserve=2, short_name="Drv", active=False
+        )
         base_rate3 = PriceListRate.objects.create(
             skill=skill2, price_list=price_list, hourly_rate=20, default_rate=False
         )

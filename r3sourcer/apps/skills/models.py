@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
-from r3sourcer.apps.core.models import UUIDModel, Tag
+from r3sourcer.apps.core.models import UUIDModel, Tag, Company
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
 
@@ -27,9 +27,37 @@ class EmploymentClassification(UUIDModel):
         return False
 
 
+class SkillName(UUIDModel):
+
+    name = models.CharField(max_length=127, verbose_name=_("Skill Name"))
+
+    industry = models.ForeignKey(
+        'pricing.Industry',
+        on_delete=models.PROTECT,
+        verbose_name=_('Industry'),
+    )
+
+    class Meta:
+        verbose_name = _("Skill")
+        verbose_name_plural = _("Skills")
+
+    def __str__(self):
+        return self.name
+
+
 class Skill(MYOBMixin, UUIDModel):
 
-    name = models.CharField(max_length=63, verbose_name=_("Skill Name"))
+    name = models.ForeignKey(
+        SkillName,
+        on_delete=models.PROTECT,
+        verbose_name=_('Skill Name')
+    )
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.PROTECT,
+        verbose_name=_('Company')
+    )
 
     carrier_list_reserve = models.PositiveSmallIntegerField(
         default=0,
@@ -126,12 +154,12 @@ class Skill(MYOBMixin, UUIDModel):
         super(Skill, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.name
+        return self.short_name or self.name.name
 
     def get_myob_name(self):
         name = self.short_name
         if not name:
-            parts = self.name.split(' ')
+            parts = self.name.name.split(' ')
             parts_len = len(parts)
             trim_size = 1
 
@@ -145,8 +173,12 @@ class Skill(MYOBMixin, UUIDModel):
         return name[:6]
 
     @classmethod
-    def is_owned(cls):
-        return False
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                models.Q(company=owner),
+                models.Q(company__regular_companies__master_company=owner)
+            ]
 
 
 class SkillBaseRate(UUIDModel):
@@ -220,8 +252,12 @@ class SkillTag(UUIDModel):
         unique_together = ("tag", "skill")
 
     def __str__(self):
-        return self.skill.name
+        return self.skill.short_name or self.skill.name.name
 
     @classmethod
-    def is_owned(cls):
-        return False
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                models.Q(skill__company=owner),
+                models.Q(skill__company__regular_companies__master_company=owner)
+            ]

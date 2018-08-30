@@ -2,17 +2,58 @@ import datetime
 import pytest
 
 from r3sourcer.apps.acceptance_tests import models
-from r3sourcer.apps.core.models import WorkflowNode
-from r3sourcer.apps.hr.models import Skill
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.pricing.models import Industry
+from r3sourcer.apps.skills.models import Skill, SkillName
 
 
 @pytest.fixture
-def skill(db):
+def user(db):
+    return core_models.User.objects.create_user(
+        email='test@test.tt', phone_mobile='+12345678901',
+        password='test1234'
+    )
+
+
+@pytest.fixture
+def contact(db, user):
+    return user.contact
+
+
+@pytest.fixture
+def manager(db, contact):
+    return core_models.CompanyContact.objects.create(contact=contact)
+
+
+@pytest.fixture
+def company(db, manager):
+    return core_models.Company.objects.create(
+        name='Company',
+        business_id='123',
+        registered_for_gst=True,
+        type=core_models.Company.COMPANY_TYPES.master,
+        manager=manager
+    )
+
+
+@pytest.fixture
+def industry(db):
+    return Industry.objects.create(type='test')
+
+
+@pytest.fixture
+def skill_name(db, industry):
+    return SkillName.objects.create(name="Driver", industry=industry)
+
+
+@pytest.fixture
+def skill(db, skill_name, company):
     return Skill.objects.create(
-        name="Driver",
+        name=skill_name,
         carrier_list_reserve=2,
         short_name="Drv",
-        active=False
+        active=False,
+        company=company
     )
 
 

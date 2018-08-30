@@ -8,7 +8,7 @@ from r3sourcer.apps.pricing.models import (
     RateCoefficient, RateCoefficientModifier, Industry, PriceList, PriceListRateCoefficient,
     PriceListRate,
 )
-from r3sourcer.apps.skills.models import Skill
+from r3sourcer.apps.skills.models import Skill, SkillName
 
 
 @pytest.fixture
@@ -22,18 +22,24 @@ def company(db):
 
 
 @pytest.fixture
-def skill(db):
-    return Skill.objects.create(
-        name="Driver",
-        carrier_list_reserve=2,
-        short_name="Drv",
-        active=False
-    )
+def industry(db):
+    return Industry.objects.create(type='test')
 
 
 @pytest.fixture
-def industry(db):
-    return Industry.objects.create(type='test')
+def skill_name(db, industry):
+    return SkillName.objects.create(name="Driver", industry=industry)
+
+
+@pytest.fixture
+def skill(db, skill_name, company):
+    return Skill.objects.create(
+        name=skill_name,
+        carrier_list_reserve=2,
+        short_name="Drv",
+        active=False,
+        company=company
+    )
 
 
 @pytest.fixture

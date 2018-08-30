@@ -86,7 +86,7 @@ class TestCandidateContactSerializer:
                             skill_rel):
         res = serializer_obj.get_skill_list(candidate)
 
-        assert res[0]['skill']['__str__'] == 'Driver'
+        assert res[0]['skill']['__str__'] == 'Drv'
 
     def test_get_skill_list_no_items(self, candidate,
                                      serializer_obj):

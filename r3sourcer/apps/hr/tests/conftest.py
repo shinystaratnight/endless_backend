@@ -10,7 +10,7 @@ from unittest.mock import patch
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.skills.models import Skill
+from r3sourcer.apps.skills.models import Skill, SkillName
 from r3sourcer.apps.pricing import models as pricing_models
 from r3sourcer.apps.sms_interface import models as sms_models
 
@@ -148,12 +148,18 @@ def address(db):
 
 
 @pytest.fixture
-def skill(db):
+def skill_name(db, industry):
+    return SkillName.objects.create(name="Driver", industry=industry)
+
+
+@pytest.fixture
+def skill(db, skill_name, master_company):
     return Skill.objects.create(
-        name="Driver",
+        name=skill_name,
         carrier_list_reserve=2,
         short_name="Drv",
-        active=False
+        active=False,
+        company=master_company
     )
 
 
