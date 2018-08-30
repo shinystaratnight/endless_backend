@@ -26,7 +26,7 @@ class TestTrialUserView:
             'website': 'test',
         }
 
-        ContentType.objects.get_oe_create(app_label='candidate', model='candidatecontact')
+        ContentType.objects.get_or_create(app_label='candidate', model='candidatecontact')
 
         resp = self.make_post_request(client, data).json()
 

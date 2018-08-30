@@ -1193,10 +1193,13 @@ class Company(
 
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
+        from r3sourcer.apps.core.models.workflow import WorkflowNode, CompanyWorkflowNode
         from r3sourcer.apps.hr.models import PayslipRule
         from r3sourcer.apps.billing.models import SMSBalance
 
-        if self._state.adding and not self.short_name:
+        just_added = self._state.adding
+
+        if just_added and not self.short_name:
             self.short_name = self.name
 
         super(Company, self).save(*args, **kwargs)
@@ -1215,6 +1218,14 @@ class Company(
 
         if not self.invoice_rules.all():
             InvoiceRule.objects.create(company=self)
+
+        if just_added and self.type == self.COMPANY_TYPES.master:
+            bulk_objects = [
+                CompanyWorkflowNode(company=self, workflow_node=wf_node)
+                for wf_node in WorkflowNode.objects.all()
+            ]
+
+            CompanyWorkflowNode.objects.bulk_create(bulk_objects)
 
     @classmethod
     def owned_by_lookups(cls, owner):
