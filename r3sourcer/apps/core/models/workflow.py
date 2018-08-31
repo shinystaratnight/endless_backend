@@ -397,6 +397,6 @@ class CompanyWorkflowNode(UUIDModel):
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
             return [
-                Q(company=owner),
-                Q(company__regular_companies__master_company=owner)
+                models.Q(company=owner),
+                models.Q(company__regular_companies__master_company=owner)
             ]
