@@ -11,7 +11,7 @@ class SkillEndpoint(ApiEndpoint):
     filter_class = skills_filters.SkillFilter
     serializer = skill_serializer.SkillSerializer
 
-    search_fields = ('name', )
+    search_fields = ('name__name', )
 
 
 class EmploymentClassificationEndpoint(ApiEndpoint):
@@ -25,14 +25,14 @@ class SkillBaseRateEndpoint(ApiEndpoint):
     model = models.SkillBaseRate
     serializer = skill_serializer.SkillBaseRateSerializer
     filter_class = skills_filters.SkillBaseRateFilter
-    search_fields = ('skill__name', )
+    search_fields = ('skill__name__name', )
 
 
 class SkillTagEndpoint(ApiEndpoint):
     model = models.SkillTag
     filter_class = skills_filters.SkillTagFilter
-    search_fields = ('skill__name', 'tag__name')
-    serializer_fields = ('id', 'skill', 'tag')
+    serializer = skill_serializer.SkillTagSerializer
+    search_fields = ('skill__name__name', 'tag__name')
 
 
 router.register(endpoint=SkillEndpoint())

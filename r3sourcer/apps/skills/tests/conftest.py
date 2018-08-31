@@ -2,7 +2,7 @@ import pytest
 
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.pricing.models import PriceList, Industry
-from r3sourcer.apps.skills.models import Skill
+from r3sourcer.apps.skills.models import Skill, SkillName
 
 
 @pytest.fixture
@@ -21,12 +21,18 @@ def company(db):
 
 
 @pytest.fixture
-def skill(db):
+def skill_name(db, industry):
+    return SkillName.objects.create(name="Driver", industry=industry)
+
+
+@pytest.fixture
+def skill(db, skill_name, company):
     return Skill.objects.create(
-        name="Driver",
+        name=skill_name,
         carrier_list_reserve=2,
         short_name="Drv",
-        active=False
+        active=False,
+        company=company
     )
 
 

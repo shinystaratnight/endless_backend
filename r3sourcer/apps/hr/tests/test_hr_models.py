@@ -201,16 +201,13 @@ class TestJob:
 @pytest.mark.django_db
 class TestShiftDate:
     def test_str(self, shift_date):
-        assert str(shift_date) == '{}, {}: {}'.format(date_format(
-            shift_date.shift_date, settings.DATE_FORMAT),
-            "workers", shift_date.workers
-        )
+        assert str(shift_date) == date_format(shift_date.shift_date, settings.DATE_FORMAT)
 
     def test_job_offers(self, shift_date, job_offer):
         assert shift_date.job_offers.count() == 1
         assert job_offer in shift_date.job_offers
 
-    def test_is_fulfilled(self, shift_date):
+    def test_is_fulfilled(self, shift_date, shift):
         assert shift_date.is_fulfilled() == NOT_FULFILLED
 
     @patch.object(JobOffer, 'check_job_quota', return_value=True)
@@ -236,8 +233,8 @@ class TestShift:
     def test_get_job(self, shift, job):
         assert shift.job == job
 
-    def test_is_fulfilled(self, shift_date):
-        assert shift_date.is_fulfilled() == NOT_FULFILLED
+    def test_is_fulfilled(self, shift):
+        assert shift.is_fulfilled() == NOT_FULFILLED
 
     @patch.object(JobOffer, 'check_job_quota', return_value=True)
     def test_is_fulfilled_true(self, mock_check, shift, candidate_contact):

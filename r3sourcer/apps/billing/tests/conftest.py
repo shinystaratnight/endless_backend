@@ -4,9 +4,11 @@ import pytest
 
 from unittest.mock import patch
 
-from r3sourcer.apps.core.models import User, Company, CompanyContact, CompanyContactRelationship, Country, Region, City, Address
+from r3sourcer.apps.core.models import (
+    User, Company, CompanyContact, CompanyContactRelationship, Country, Region, City, Address
+)
 from r3sourcer.apps.hr.models import Shift, ShiftDate, Job, Jobsite
-from r3sourcer.apps.skills.models import Skill
+from r3sourcer.apps.skills.models import Skill, SkillName
 from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.billing.models import Payment, Subscription
 
@@ -70,12 +72,23 @@ def regular_company(db):
 
 
 @pytest.fixture
-def skill(db):
+def industry(db):
+    return Industry.objects.create(type='test')
+
+
+@pytest.fixture
+def skill_name(db, industry):
+    return SkillName.objects.create(name="Driver", industry=industry)
+
+
+@pytest.fixture
+def skill(db, skill_name, company):
     return Skill.objects.create(
-        name="Driver",
+        name=skill_name,
         carrier_list_reserve=2,
         short_name="Drv",
-        active=False
+        active=False,
+        company=company
     )
 
 
@@ -85,11 +98,6 @@ def company_contact(db, contact):
         contact=contact,
         pin_code='1234'
     )
-
-
-@pytest.fixture
-def industry(db):
-    return Industry.objects.create(type='test')
 
 
 @pytest.fixture

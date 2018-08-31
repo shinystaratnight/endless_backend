@@ -138,14 +138,35 @@ def superannuation_fund(db):
 
 
 @pytest.fixture
-def skill(db):
+def company(db):
+    return core_models.Company.objects.create(
+        name='Company',
+        business_id='123',
+        registered_for_gst=True,
+        type=core_models.Company.COMPANY_TYPES.master,
+    )
+
+
+@pytest.fixture
+def industry(db):
+    return Industry.objects.create(type='test')
+
+
+@pytest.fixture
+def skill_name(db, industry):
+    return skills_models.SkillName.objects.create(name="Driver", industry=industry)
+
+
+@pytest.fixture
+def skill(db, skill_name, company):
     return skills_models.Skill.objects.create(
-        name="Driver",
+        name=skill_name,
         carrier_list_reserve=2,
         short_name="Drv",
         active=False,
         default_rate=10,
-        price_list_default_rate=20
+        price_list_default_rate=20,
+        company=company
     )
 
 
@@ -188,16 +209,6 @@ def tag_rel(db, tag, candidate):
 def company_contact(db, contact):
     return core_models.CompanyContact.objects.create(
         contact=contact
-    )
-
-
-@pytest.fixture
-def company(db):
-    return core_models.Company.objects.create(
-        name='Company',
-        business_id='123',
-        registered_for_gst=True,
-        type=core_models.Company.COMPANY_TYPES.master,
     )
 
 
@@ -313,11 +324,6 @@ def workflow_state(db, candidate, company):
     core_models.CompanyWorkflowNode.objects.get_or_create(company=company, workflow_node=wf_node)
 
     return wf_node
-
-
-@pytest.fixture
-def industry(db):
-    return Industry.objects.create(type='test')
 
 
 @pytest.fixture

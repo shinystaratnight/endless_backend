@@ -1,13 +1,18 @@
 import pytest
 
-from r3sourcer.apps.skills.models import EmploymentClassification, Skill, SkillBaseRate
-from r3sourcer.apps.pricing.models import PriceListRate
+from r3sourcer.apps.skills.models import EmploymentClassification, Skill, SkillBaseRate, SkillName
+from r3sourcer.apps.pricing.models import Industry
+from r3sourcer.apps.core.models import Company
 
 
+industry_fake = Industry(type='test')
+company_f = Company(name='company')
+skill_name = SkillName(name='test', industry=industry_fake)
+skill_name_f = SkillName(name='t', industry=industry_fake)
 str_test_data = [
     (EmploymentClassification(name='test'), 'test'),
-    (Skill(name='test'), 'test'),
-    (SkillBaseRate(skill=Skill(name='t'), hourly_rate=1.23), 't $1.23/h'),
+    (Skill(name=skill_name, company=company_f), 'test'),
+    (SkillBaseRate(skill=Skill(name=skill_name_f, company=company_f), hourly_rate=1.23), 't $1.23/h'),
 ]
 
 
@@ -19,14 +24,16 @@ class TestStr:
 
 class TestSkillBaseRate:
     @pytest.mark.django_db
-    def test_default_rate(self, skill):
+    def test_default_rate(self, skill, skill_name, company):
         base_rate1 = SkillBaseRate.objects.create(skill=skill, hourly_rate=1, default_rate=True)
         base_rate2 = SkillBaseRate.objects.create(skill=skill, hourly_rate=2, default_rate=True)
 
         assert not SkillBaseRate.objects.get(pk=str(base_rate1.pk)).default_rate
         assert SkillBaseRate.objects.get(pk=str(base_rate2.pk)).default_rate
 
-        skill2 = Skill.objects.create(name="Driver", carrier_list_reserve=2, short_name="Drv", active=False)
+        skill2 = Skill.objects.create(
+            name=skill_name, company=company, carrier_list_reserve=2, short_name="Drv", active=False
+        )
         base_rate3 = SkillBaseRate.objects.create(skill=skill2, hourly_rate=20, default_rate=False)
         base_rate4 = SkillBaseRate.objects.create(skill=skill2, hourly_rate=30, default_rate=False)
 
@@ -44,10 +51,10 @@ class TestSkillBaseRate:
 
 
 class TestSkill:
-    def test_validation_success(self, price_list):
+    def test_validation_success(self, price_list, skill_name, company):
         skill = Skill.objects.create(
-            name="Driver", carrier_list_reserve=2, short_name="Drv", active=False, default_rate=10,
-            price_list_default_rate=10
+            name=skill_name, carrier_list_reserve=2, short_name="Drv", active=False, default_rate=10,
+            price_list_default_rate=10, company=company
         )
         skill.active = True
         skill.save()
