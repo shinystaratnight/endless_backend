@@ -1071,8 +1071,9 @@ class TestWorkflowObjectSerializer:
             'object_id': 'test',
         }
 
+    @patch.object(WorkflowObject, 'validate_tests', return_value=True)
     @patch.object(WorkflowObject, 'validate_object', return_value=True)
-    def test_validate(self, mock_validate, data):
+    def test_validate(self, mock_validate, mock_validate_tests, data):
         serializer = WorkflowObjectSerializer()
 
         assert serializer.validate(data) == data
@@ -1119,24 +1120,26 @@ class TestWorkflowTimelineSerializer:
     def test_get_state_no_obj(self, target, serializer):
         assert serializer.get_state(None) == NOT_ALLOWED
 
+    @patch.object(WorkflowObject, 'validate_tests', return_value=True)
     @patch.object(WorkflowObject, 'objects', new_callable=PropertyMock)
-    def test_get_state_allowed(self, mock_objects, target, serializer):
+    def test_get_state_allowed(self, mock_objects, mock_validate_tests, target, serializer):
         mock_objects.return_value = MockSet()
         target.is_allowed.return_value = True
 
         assert serializer.get_state(MagicMock()) == ALLOWED
 
+    @patch.object(WorkflowObject, 'validate_tests', return_value=True)
     @patch.object(WorkflowObject, 'objects', new_callable=PropertyMock)
-    def test_get_state_not_allowed(self, mock_objects, target, serializer):
+    def test_get_state_not_allowed(self, mock_objects, mock_validate_tests, target, serializer):
         mock_objects.return_value = MockSet()
         target.is_allowed.return_value = False
         target._check_condition.return_value = False
 
         assert serializer.get_state(MagicMock()) == NOT_ALLOWED
 
+    @patch.object(WorkflowObject, 'validate_tests', return_value=True)
     @patch.object(WorkflowObject, 'objects', new_callable=PropertyMock)
-    def test_get_state_need_requirements(self, mock_objects, target,
-                                         serializer):
+    def test_get_state_need_requirements(self, mock_objects, mock_validate_tests, target, serializer):
         mock_objects.return_value = MockSet()
         target.is_allowed.return_value = False
         target._check_condition.return_value = True

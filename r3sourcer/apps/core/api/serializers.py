@@ -1093,9 +1093,9 @@ class WorkflowObjectSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSe
         })
 
     def validate(self, data):
-        core_models.WorkflowObject.validate_object(
-            data["state"], data["object_id"], self.instance is None
-        )
+        core_models.WorkflowObject.validate_object(data["state"], data["object_id"], self.instance is None)
+        core_models.WorkflowObject.validate_tests(data["state"], data["object_id"], data.get("active", True))
+
         return data
 
     def get_state_name(self, obj):
@@ -1133,7 +1133,12 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         if workflow_object is not None and workflow_object.active:
             return ACTIVE
         else:
-            if self.target.is_allowed(obj):
+            is_tests_filled = core_models.WorkflowObject.validate_tests(
+                obj, self.target.id, True, raise_exception=False
+            )
+            is_test_fill_needed = workflow_object is not None and not workflow_object.active and not is_tests_filled
+
+            if self.target.is_allowed(obj) or is_test_fill_needed:
                 return ALLOWED
 
             if not self.target._check_condition(obj.rules.get('required_states')) or (workflow_object and obj.initial):

@@ -4,7 +4,7 @@ import pytest
 from django.contrib.contenttypes.models import ContentType
 from django.core.urlresolvers import reverse
 
-from r3sourcer.apps.core.models import SiteCompany, Contact
+from r3sourcer.apps.core.models import SiteCompany, Contact, FormBuilder
 
 
 @pytest.mark.django_db
@@ -26,7 +26,8 @@ class TestTrialUserView:
             'website': 'test',
         }
 
-        ContentType.objects.get_or_create(app_label='candidate', model='candidatecontact')
+        ct, _ = ContentType.objects.get_or_create(app_label='candidate', model='candidatecontact')
+        FormBuilder.objects.get_or_create(content_type=ct)
 
         resp = self.make_post_request(client, data).json()
 
