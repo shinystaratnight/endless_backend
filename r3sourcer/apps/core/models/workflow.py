@@ -315,6 +315,46 @@ class WorkflowObject(UUIDModel):
                 model_object.get_required_message(state))
             )
 
+    @classmethod
+    def validate_tests(cls, state, object_id, is_active, raise_exception=True):
+        from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
+
+        if not is_active:
+            return
+
+        try:
+            model_object = cls.get_model_object(state, object_id)
+        except Exception as e:
+            raise ValidationError(e)
+
+        qry = models.Q(
+            acceptance_test__acceptance_tests_skills__isnull=True,
+            acceptance_test__acceptance_tests_tags__isnull=True,
+            acceptance_test__acceptance_tests_industries__isnull=True,
+        )
+
+        closest_company = model_object.get_closest_company()
+        if closest_company.industry is not None:
+            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry=closest_company.industry)
+
+        if hasattr(model_object, 'candidate_skills'):
+            skill_ids = model_object.candidate_skills.values_list('skill', flat=True)
+            qry |= models.Q(acceptance_test__acceptance_tests_skills__skill_id__in=skill_ids)
+
+        if hasattr(model_object, 'tag_rels'):
+            tag_ids = model_object.tag_rels.values_list('tag', flat=True)
+            qry |= models.Q(acceptance_test__acceptance_tests_tags__tag_id__in=tag_ids)
+
+        tests = AcceptanceTestWorkflowNode.objects.filter(qry, company_workflow_node__workflow_node=state).distinct()
+        is_answers_exist = tests.filter(
+            acceptance_test__acceptance_test_questions__workflow_object_answers__workflow_object__object_id=object_id
+        ).distinct().count() >= tests.count()
+
+        if not is_answers_exist and raise_exception:
+            raise ValidationError('Please fill all tests')
+
+        return is_answers_exist
+
     def get_score(self, related_obj, company):
         from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 

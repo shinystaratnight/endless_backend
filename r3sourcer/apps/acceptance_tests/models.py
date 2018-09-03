@@ -1,3 +1,4 @@
+from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -326,3 +327,11 @@ class WorkflowObjectAnswer(UUIDModel):
             self.score = self.answer.score
 
         super().save(*args, **kwargs)
+
+        is_all_test_filled = WorkflowObject.validate_tests(
+            self.workflow_object.state, self.workflow_object.object_id, True, raise_exception=False
+        )
+
+        if is_all_test_filled:
+            self.workflow_object.active = True
+            self.workflow_object.save()
