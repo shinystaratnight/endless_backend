@@ -44,3 +44,10 @@ class SkillTagFilter(FilterSet):
     class Meta:
         model = skills_models.SkillTag
         fields = ['tag', 'skill', 'tag__confidential']
+
+
+class SkillNameFilter(FilterSet):
+
+    class Meta:
+        model = skills_models.SkillName
+        fields = ['industry']

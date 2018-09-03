@@ -35,6 +35,16 @@ class SkillTagEndpoint(ApiEndpoint):
     search_fields = ('skill__name__name', 'tag__name')
 
 
+class SkillNameEndpoint(ApiEndpoint):
+
+    model = models.SkillName
+    filter_class = skills_filters.SkillNameFilter
+    serializer = skill_serializer.SkillNameSerializer
+
+    search_fields = ('name', )
+
+
+router.register(endpoint=SkillNameEndpoint())
 router.register(endpoint=SkillEndpoint())
 router.register(endpoint=SkillBaseRateEndpoint())
 router.register(endpoint=EmploymentClassificationEndpoint())

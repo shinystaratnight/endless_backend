@@ -38,8 +38,8 @@ class SkillName(UUIDModel):
     )
 
     class Meta:
-        verbose_name = _("Skill")
-        verbose_name_plural = _("Skills")
+        verbose_name = _("Skill Name")
+        verbose_name_plural = _("Skill Name")
 
     def __str__(self):
         return self.name
@@ -136,16 +136,22 @@ class Skill(MYOBMixin, UUIDModel):
     def clean(self, *args, **kwargs):
         have_default_base_rate = self.default_rate
         have_default_price_list_rate = self.price_list_default_rate
+        is_limits_set = (
+            self.upper_rate_limit and self.lower_rate_limit and
+            self.price_list_lower_rate_limit and self.price_list_upper_rate_limit
+        )
 
         if self.active:
             if not have_default_base_rate and not have_default_price_list_rate:
                 raise ValidationError(
-                    "Skill cant be active. It doesnt have default price list rate and defalut base rate."
+                    "Skill can't be active. It doesn't have default price list rate and defalut base rate."
                 )
             elif not have_default_base_rate:
-                raise ValidationError("Skill cant be active. It doesnt have default base rate.")
+                raise ValidationError("Skill can't be active. It doesn't have default base rate.")
             elif not have_default_price_list_rate:
-                raise ValidationError("Skill cant be active. It doesnt have default price list rate.")
+                raise ValidationError("Skill can't be active. It doesn't have default price list rate.")
+            elif not is_limits_set:
+                raise ValidationError("Skill can't be active. It doesn't have limits.")
 
         super(Skill, self).clean(*args, **kwargs)
 
@@ -154,7 +160,7 @@ class Skill(MYOBMixin, UUIDModel):
         super(Skill, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.short_name or self.name.name
+        return self.name.name
 
     def get_myob_name(self):
         name = self.short_name
