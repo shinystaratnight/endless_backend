@@ -244,7 +244,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
 class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('is_fulfilled', 'workers_details')
+    method_fields = ('is_fulfilled', 'workers_details', 'can_delete')
 
     class Meta:
         model = hr_models.Shift
@@ -267,6 +267,18 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
             'cancelled': [str(jo.candidate_contact) for jo in cancelled],
             'undefined': [str(jo.candidate_contact) for jo in undefined],
         }
+
+    def get_can_delete(self, obj):  # pragma: no cover
+        return not obj.date.shifts.filter(job_offers__isnull=False).exists()
+
+    def validate(self, validated_data):
+        shift_date = validated_data['date']
+        shift_time = validated_data['time']
+
+        if shift_date.shifts.filter(time=shift_time).exists():
+            raise exceptions.ValidationError({'time': _('Shift time must be unique')})
+
+        return validated_data
 
 
 class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
