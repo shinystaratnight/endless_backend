@@ -2,7 +2,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions
 
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
-from r3sourcer.apps.skills.models import SkillBaseRate, Skill, SkillTag
+from r3sourcer.apps.skills.models import SkillBaseRate, Skill, SkillTag, SkillName
 
 
 class SkillBaseRateSerializer(ApiBaseModelSerializer):
@@ -62,4 +62,13 @@ class SkillTagSerializer(ApiBaseModelSerializer):
         model = SkillTag
         fields = ('id', 'tag', {
             'skill': ('id', 'name')
+        })
+
+
+class SkillNameSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = SkillName
+        fields = ('id', 'name', {
+            'industry': ('id', 'type')
         })
