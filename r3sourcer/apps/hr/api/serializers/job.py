@@ -278,7 +278,9 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         shift_date = validated_data['date']
         shift_time = validated_data['time']
 
-        if shift_date.shifts.filter(time=shift_time).exists():
+        is_another_shift = self.instance and self.instance.time != shift_time
+
+        if (not self.instance or is_another_shift) and shift_date.shifts.filter(time=shift_time).exists():
             raise exceptions.ValidationError({'time': _('Shift time must be unique')})
 
         return validated_data
