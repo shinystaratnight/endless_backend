@@ -74,6 +74,8 @@ class TrialUserView(APIView):
             type=models.Company.COMPANY_TYPES.master,
         )
 
+        models.CompanyRel.objects.create(master_company=company, regular_company=company)
+
         company_contact = models.CompanyContact.objects.create(contact=contact)
         models.CompanyContactRelationship.objects.create(company=company, company_contact=company_contact)
 
