@@ -339,7 +339,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
                     self.transportation_to_work is not None and
                     self.strength and self.language)
     is_personal_info_filled.short_description = _(
-        'All personal info is required'
+        'Height, weight, transportation to work, strength and language'
     )
 
     @workflow_function
