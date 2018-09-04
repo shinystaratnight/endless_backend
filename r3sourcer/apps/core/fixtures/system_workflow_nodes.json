@@ -16,6 +16,14 @@
         "pk": "93c26581-6dda-440a-87ce-d7ca7904a0b6"
     },
     {
+        "model": "core.workflow",
+        "fields": {
+            "model": "core.company",
+            "name": "Master Company Workflow"
+        },
+        "pk": "5f4d5dbc-1b32-4ab5-892e-1f0e9c88b61b"
+    },
+    {
         "model": "core.workflownode",
         "fields": {
             "active": true,
@@ -378,5 +386,97 @@
             }
         },
         "pk": "cb2b481d-2554-46bd-9592-03032b192fb9"
+    },
+    {
+        "model": "core.workflownode",
+        "fields": {
+            "active": true,
+            "hardlock": true,
+            "workflow": "5f4d5dbc-1b32-4ab5-892e-1f0e9c88b61b",
+            "name_after_activation": "",
+            "name_before_activation": "Trial",
+            "number": 10,
+            "rules": {
+                "active": [
+                    10,
+                    20
+                ]
+            }
+        },
+        "pk": "fe870898-af51-45d1-b6aa-9e1c1f9c492e"
+    },
+    {
+        "model": "core.workflownode",
+        "fields": {
+            "active": true,
+            "hardlock": true,
+            "workflow": "5f4d5dbc-1b32-4ab5-892e-1f0e9c88b61b",
+            "name_after_activation": "Set up MYOB",
+            "name_before_activation": "MYOB configured",
+            "number": 20,
+            "rules": {
+                "active": [
+                    10,
+                    20
+                ],
+                "required_states": [
+                    "and",
+                    10
+                ]
+            }
+        },
+        "pk": "da44d519-7aad-46c2-97bc-e845a48d00ac"
+    },
+    {
+        "model": "core.workflownode",
+        "fields": {
+            "active": true,
+            "hardlock": true,
+            "workflow": "5f4d5dbc-1b32-4ab5-892e-1f0e9c88b61b",
+            "name_after_activation": "Set up Twilio",
+            "name_before_activation": "Twilio configured",
+            "number": 30,
+            "rules": {
+                "active": [
+                    10,
+                    20,
+                    30
+                ],
+                "required_states": [
+                    "and",
+                    10
+                ]
+            }
+        },
+        "pk": "b25bf5ec-446d-4c2d-86fd-d97a458b88f4"
+    },
+    {
+        "model": "core.workflownode",
+        "fields": {
+            "active": true,
+            "hardlock": true,
+            "workflow": "5f4d5dbc-1b32-4ab5-892e-1f0e9c88b61b",
+            "name_after_activation": "",
+            "name_before_activation": "Active",
+            "number": 40,
+            "rules": {
+                "active": [
+                    10,
+                    20,
+                    30,
+                    40
+                ],
+                "required_states": [
+                    "and",
+                    10,
+                    [
+                        "and",
+                        20,
+                        30
+                    ]
+                ]
+            }
+        },
+        "pk": "aee9d4b2-9e3f-4bd9-a0af-37e80ec861f8"
     }
 ]

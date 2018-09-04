@@ -14,8 +14,12 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         abstract = True
 
     def __init__(self, *args, **kwargs):
+        is_fake = kwargs.pop('fake_wf', False)
+
         super(WorkflowProcess, self).__init__(*args, **kwargs)
-        self.active_states = self.get_active_states()
+
+        if not is_fake:
+            self.active_states = self.get_active_states()
 
     @property
     def content_type(self):

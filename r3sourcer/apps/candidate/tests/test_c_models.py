@@ -89,8 +89,8 @@ class TestCandidateContact:
         assert not candidate.is_address_set()
 
     def test_is_skill_defined_successful(self, candidate, skill_rel, price_list):
-        SkillBaseRate.objects.create(skill=skill_rel.skill, hourly_rate=1, default_rate=True)
-        PriceListRate.objects.create(skill=skill_rel.skill, hourly_rate=1, price_list=price_list, default_rate=True)
+        SkillBaseRate.objects.create(skill=skill_rel.skill, hourly_rate=8, default_rate=True)
+        PriceListRate.objects.create(skill=skill_rel.skill, hourly_rate=8, price_list=price_list, default_rate=True)
         skill_rel.skill.active = True
         skill_rel.skill.save()
 
@@ -111,7 +111,7 @@ class TestCandidateContact:
 
     def test_are_skill_rates_set_unsuccessful(self, candidate, skill_rel, price_list):
         skill = skill_rel.skill
-        PriceListRate.objects.create(skill=skill, hourly_rate=1, price_list=price_list, default_rate=True)
+        PriceListRate.objects.create(skill=skill, hourly_rate=7, price_list=price_list, default_rate=True)
         skill.active = True
         skill.save()
         skill_rel.hourly_rate = 0
