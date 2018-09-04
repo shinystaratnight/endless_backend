@@ -47,7 +47,13 @@ class SkillTagFilter(FilterSet):
 
 
 class SkillNameFilter(FilterSet):
+    exclude_company = UUIDFilter(method='exclude_by_company')
 
     class Meta:
         model = skills_models.SkillName
         fields = ['industry']
+
+    def exclude_by_company(self, queryset, name, value):
+        return queryset.exclude(
+            skills__company=value
+        )
