@@ -39,7 +39,7 @@ class SkillName(UUIDModel):
 
     class Meta:
         verbose_name = _("Skill Name")
-        verbose_name_plural = _("Skill Name")
+        verbose_name_plural = _("Skill Names")
 
     def __str__(self):
         return self.name
