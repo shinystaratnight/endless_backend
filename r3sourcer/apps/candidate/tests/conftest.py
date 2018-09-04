@@ -166,7 +166,11 @@ def skill(db, skill_name, company):
         active=False,
         default_rate=10,
         price_list_default_rate=20,
-        company=company
+        company=company,
+        upper_rate_limit=20,
+        lower_rate_limit=5,
+        price_list_upper_rate_limit=30,
+        price_list_lower_rate_limit=5,
     )
 
 

@@ -13,7 +13,7 @@ from r3sourcer.apps.skills.models import Skill, SkillName
 
 
 industry_fake = Industry(type='test')
-company_f = Company(name='company')
+company_f = Company(name='company', fake_wf=True)
 skill_name = SkillName(name='skill', industry=industry_fake)
 skill_f = Skill(name=skill_name, company=company_f)
 rate_coeff_fake = RateCoefficient(name='coefficient')
@@ -21,9 +21,9 @@ rate_coeff_fake = RateCoefficient(name='coefficient')
 
 str_test_data = [
     (industry_fake, 'test'),
-    (PriceList(company=Company(name='company'), valid_from=date(2017, 1, 1)),
+    (PriceList(company=Company(name='company', fake_wf=True), valid_from=date(2017, 1, 1)),
         'company: 01/01/2017'),
-    (PriceList(company=Company(name='company'), valid_from=date(2017, 1, 1),
+    (PriceList(company=Company(name='company', fake_wf=True), valid_from=date(2017, 1, 1),
                valid_until=date(2017, 2, 1)),
         'company: 01/01/2017 - 01/02/2017'),
     (PriceListRate(skill=skill_f, hourly_rate=1.23), 'skill: $1.23/h'),

@@ -6,7 +6,7 @@ from r3sourcer.apps.core.models import Company
 
 
 industry_fake = Industry(type='test')
-company_f = Company(name='company')
+company_f = Company(name='company', fake_wf=True)
 skill_name = SkillName(name='test', industry=industry_fake)
 skill_name_f = SkillName(name='t', industry=industry_fake)
 str_test_data = [
@@ -54,7 +54,8 @@ class TestSkill:
     def test_validation_success(self, price_list, skill_name, company):
         skill = Skill.objects.create(
             name=skill_name, carrier_list_reserve=2, short_name="Drv", active=False, default_rate=10,
-            price_list_default_rate=10, company=company
+            price_list_default_rate=10, company=company,
+            upper_rate_limit=20, lower_rate_limit=5, price_list_upper_rate_limit=20, price_list_lower_rate_limit=5,
         )
         skill.active = True
         skill.save()
@@ -68,5 +69,5 @@ class TestSkill:
         with pytest.raises(Exception) as excinfo:
             skill.save()
 
-        error = 'Skill cant be active. It doesnt have default price list rate and defalut base rate.'
+        error = "Skill can't be active. It doesn't have default price list rate and defalut base rate."
         assert excinfo.value.messages[0] == error

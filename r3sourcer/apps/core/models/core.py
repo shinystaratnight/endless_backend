@@ -850,6 +850,8 @@ class BankAccount(UUIDModel):
 class Company(
     CategoryFolderMixin,
     MYOBMixin,
+    WorkflowProcess,
+    CompanyLookupMixin,
     UUIDModel,
     MasterCompanyLookupMixin
 ):
@@ -1226,6 +1228,9 @@ class Company(
             ]
 
             CompanyWorkflowNode.objects.bulk_create(bulk_objects)
+
+    def get_closest_company(self):
+        return self.get_closest_master_company()
 
     @classmethod
     def owned_by_lookups(cls, owner):
