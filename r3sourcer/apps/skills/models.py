@@ -49,12 +49,14 @@ class Skill(MYOBMixin, UUIDModel):
 
     name = models.ForeignKey(
         SkillName,
+        related_name='skills',
         on_delete=models.PROTECT,
         verbose_name=_('Skill Name')
     )
 
     company = models.ForeignKey(
         Company,
+        related_name='skills',
         on_delete=models.PROTECT,
         verbose_name=_('Company')
     )
@@ -68,7 +70,8 @@ class Skill(MYOBMixin, UUIDModel):
         max_length=15,
         verbose_name=_("Short Name"),
         help_text=_("Abbreviation, for use by staff reports and dashboards"),
-        blank=True
+        blank=True,
+        null=True
     )
 
     employment_classification = models.ForeignKey(
