@@ -1,3 +1,5 @@
+from django.db.models import Avg
+
 from r3sourcer.apps.acceptance_tests import models
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 
@@ -38,6 +40,25 @@ class AcceptanceTestWorkflowNodeSerializer(ApiBaseModelSerializer):
 
     def get_score(self, obj):
         return obj.get_score(self.workflow_object_id)
+
+
+class AcceptanceTestCandidateWorkflowSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('score', )
+
+    class Meta:
+        model = models.AcceptanceTestWorkflowNode
+        fields = ('id', 'acceptance_test', 'company_workflow_node')
+
+    def __init__(self, *args, **kwargs):
+        self.object_id = kwargs.pop('object_id', None)
+
+        super().__init__(*args, **kwargs)
+
+    def get_score(self, obj):
+        return obj.get_all_questions().filter(
+            workflow_object_answers__workflow_object__object_id=self.object_id
+        ).aggregate(score_avg=Avg('workflow_object_answers__score'))['score_avg'] or 0
 
 
 class WorkflowObjectAnswerSerializer(ApiBaseModelSerializer):
