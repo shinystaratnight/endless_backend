@@ -5,11 +5,13 @@ from django.apps import apps
 from django.conf import settings
 
 from .manager import get_endless_logger
+from .services import LocationLogger
 from .query import get_logger_queryset
 from .decorators import __name__ as __decorators_name__
 
 
 endless_logger = get_endless_logger()
+location_logger = LocationLogger()
 
 
 def autodiscover():

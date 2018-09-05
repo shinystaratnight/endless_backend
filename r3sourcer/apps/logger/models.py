@@ -18,3 +18,14 @@ class LogHistory(Model):
     date = fields.DateField()
 
     engine = engines.MergeTree('date', ('updated_by', 'object_id'))
+
+
+class LocationHistory(Model):
+    model = fields.StringField()
+    object_id = fields.StringField()
+    latitude = fields.Float32Field()
+    longitude = fields.Float32Field()
+    log_at = fields.DateTimeField()
+    date = fields.DateField()
+
+    engine = engines.MergeTree('date', ('object_id',))

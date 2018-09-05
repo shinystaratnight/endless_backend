@@ -2,15 +2,16 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 
-from rest_framework import status, exceptions, permissions as drf_permissions
+from rest_framework import status, exceptions, permissions as drf_permissions, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestCandidateWorkflowSerializer
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
-from r3sourcer.apps.core.api.viewsets import BaseApiViewset
+from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow
+from r3sourcer.apps.logger.main import location_logger
 
 from . import serializers, permissions
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
@@ -179,3 +180,46 @@ class SubcontractorViewset(BaseApiViewset):
         return Response(serializer.data,
                         status=status.HTTP_201_CREATED,
                         headers=headers)
+
+
+class CandidateLocationViewset(
+    BaseViewsetMixin,
+    mixins.UpdateModelMixin,
+    viewsets.GenericViewSet
+):
+
+    queryset = CandidateContact.objects.all()
+    serializer_class = serializers.CandidateContactSerializer
+    permission_classes = [drf_permissions.IsAuthenticated]
+
+    def update(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        latitude = request.data.get('latitude')
+        longitude = request.data.get('longitude')
+
+        if not latitude:
+            raise exceptions.ValidationError({
+                'latitude': _('Latitude is required')
+            })
+
+        if not longitude:
+            raise exceptions.ValidationError({
+                'longitude': _('Longitude is required')
+            })
+
+        location_logger.log_instance_location(instance, float(latitude), float(longitude))
+
+        return Response({'status': 'success'})
+
+    @action(methods=['get'], detail=True)
+    def history(self, request, *args, **kwargs):
+        instance = self.get_object()
+
+        limit = request.data.get('limit', 10)
+        offset = request.data.get('offset', 0)
+        page = offset // limit + 1
+
+        data = location_logger.fetch_location_history(instance, page_num=page, page_size=limit)
+
+        return Response(data)
