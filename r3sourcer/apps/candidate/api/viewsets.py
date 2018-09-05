@@ -1,13 +1,16 @@
-from django.utils.translation import ugettext_lazy as _
+from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
+from django.utils.translation import ugettext_lazy as _
 
 from rest_framework import status, exceptions, permissions as drf_permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
+from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestCandidateWorkflowSerializer
+from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
-from r3sourcer.apps.core.models import Company, InvoiceRule
+from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow
 
 from . import serializers, permissions
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
@@ -113,6 +116,39 @@ class CandidateContactViewset(BaseApiViewset):
             buy_candidate.apply_async([rel.id], countdown=10)
 
         return Response({'status': 'success', 'message': _('Please wait for payment to complete')})
+
+    @action(methods=['get'], detail=True)
+    def tests(self, request, *args, **kwargs):
+        candidate = self.get_object()
+
+        qry = Q(
+            acceptance_test__acceptance_tests_skills__isnull=True,
+            acceptance_test__acceptance_tests_tags__isnull=True,
+            acceptance_test__acceptance_tests_industries__isnull=True,
+        )
+
+        closest_company = candidate.get_closest_company()
+        if closest_company.industry is not None:
+            qry |= Q(acceptance_test__acceptance_tests_industries__industry=closest_company.industry)
+
+        if hasattr(candidate, 'candidate_skills'):
+            skill_ids = candidate.candidate_skills.values_list('skill', flat=True)
+            qry |= Q(acceptance_test__acceptance_tests_skills__skill_id__in=skill_ids)
+
+        if hasattr(candidate, 'tag_rels'):
+            tag_ids = candidate.tag_rels.values_list('tag', flat=True)
+            qry |= Q(acceptance_test__acceptance_tests_tags__tag_id__in=tag_ids)
+
+        workflow = Workflow.objects.get(model=ContentType.objects.get_for_model(candidate))
+
+        tests = AcceptanceTestWorkflowNode.objects.filter(
+            qry, company_workflow_node__workflow_node__workflow=workflow,
+            company_workflow_node__company=closest_company
+        ).distinct()
+
+        serializer = AcceptanceTestCandidateWorkflowSerializer(tests, many=True, object_id=candidate.id)
+
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class SubcontractorViewset(BaseApiViewset):
