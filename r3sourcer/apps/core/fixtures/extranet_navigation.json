@@ -11,7 +11,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 74,
+    "rght": 64,
     "tree_id": 4,
     "level": 0
   }
@@ -54,16 +54,16 @@
   "model": "core.extranetnavigation",
   "pk": 4,
   "fields": {
-    "updated_at": "2017-10-13T06:47:02.312Z",
+    "updated_at": "2018-09-06T07:40:12.396Z",
     "created_at": "2017-10-13T06:41:46.742Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Dashboard",
     "url": "/",
     "endpoint": "/",
-    "access_level": "manager",
-    "lft": 12,
-    "rght": 17,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 10,
+    "rght": 15,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -71,16 +71,16 @@
   "model": "core.extranetnavigation",
   "pk": 5,
   "fields": {
-    "updated_at": "2017-10-13T06:42:37.406Z",
+    "updated_at": "2018-09-06T07:40:20.612Z",
     "created_at": "2017-10-13T06:42:37.406Z",
     "parent": 4,
     "name": "Dashboard modules",
     "url": "/core/dashboardmodules/",
     "endpoint": "/ecore/api/v2/core/dashboardmodules/",
-    "access_level": "manager",
-    "lft": 13,
-    "rght": 14,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 11,
+    "rght": 12,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -88,16 +88,16 @@
   "model": "core.extranetnavigation",
   "pk": 6,
   "fields": {
-    "updated_at": "2017-10-13T06:44:00.266Z",
+    "updated_at": "2018-09-06T07:40:25.907Z",
     "created_at": "2017-10-13T06:44:00.266Z",
     "parent": 4,
     "name": "User dashboard modules",
     "url": "/core/userdashboardmodules/",
     "endpoint": "/ecore/api/v2/core/userdashboardmodules/",
-    "access_level": "manager",
-    "lft": 15,
-    "rght": 16,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 13,
+    "rght": 14,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -112,8 +112,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 18,
-    "rght": 27,
+    "lft": 12,
+    "rght": 21,
     "tree_id": 4,
     "level": 1
   }
@@ -129,8 +129,8 @@
     "url": "/core/cities/",
     "endpoint": "/ecore/api/v2/core/cities/",
     "access_level": "manager",
-    "lft": 21,
-    "rght": 22,
+    "lft": 15,
+    "rght": 16,
     "tree_id": 4,
     "level": 2
   }
@@ -146,8 +146,8 @@
     "url": "/core/addresses/",
     "endpoint": "/ecore/api/v2/core/addresses/",
     "access_level": "manager",
-    "lft": 19,
-    "rght": 20,
+    "lft": 13,
+    "rght": 14,
     "tree_id": 4,
     "level": 2
   }
@@ -163,8 +163,8 @@
     "url": "/core/countries/",
     "endpoint": "/ecore/api/v2/core/countries/",
     "access_level": "manager",
-    "lft": 23,
-    "rght": 24,
+    "lft": 17,
+    "rght": 18,
     "tree_id": 4,
     "level": 2
   }
@@ -180,8 +180,8 @@
     "url": "/core/regions/",
     "endpoint": "/ecore/api/v2/core/regions/",
     "access_level": "manager",
-    "lft": 25,
-    "rght": 26,
+    "lft": 19,
+    "rght": 20,
     "tree_id": 4,
     "level": 2
   }
@@ -197,8 +197,8 @@
     "url": "/core/filestorages/",
     "endpoint": "/ecore/api/v2/core/filestorages/",
     "access_level": "manager",
-    "lft": 28,
-    "rght": 29,
+    "lft": 22,
+    "rght": 23,
     "tree_id": 4,
     "level": 1
   }
@@ -214,8 +214,8 @@
     "url": "/core/extranetnavigations/",
     "endpoint": "/ecore/api/v2/core/extranetnavigations/",
     "access_level": "manager",
-    "lft": 30,
-    "rght": 31,
+    "lft": 24,
+    "rght": 25,
     "tree_id": 4,
     "level": 1
   }
@@ -231,8 +231,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 32,
-    "rght": 39,
+    "lft": 26,
+    "rght": 33,
     "tree_id": 4,
     "level": 1
   }
@@ -248,8 +248,8 @@
     "url": "/core/workflows/",
     "endpoint": "/ecore/api/v2/core/workflows/",
     "access_level": "manager",
-    "lft": 33,
-    "rght": 34,
+    "lft": 27,
+    "rght": 28,
     "tree_id": 4,
     "level": 2
   }
@@ -265,8 +265,8 @@
     "url": "/core/workflownodes/",
     "endpoint": "/ecore/api/v2/core/workflownodes/",
     "access_level": "manager",
-    "lft": 35,
-    "rght": 36,
+    "lft": 29,
+    "rght": 30,
     "tree_id": 4,
     "level": 2
   }
@@ -282,8 +282,8 @@
     "url": "/core/workflowobjects/",
     "endpoint": "/ecore/api/v2/core/workflowobjects/",
     "access_level": "manager",
-    "lft": 37,
-    "rght": 38,
+    "lft": 31,
+    "rght": 32,
     "tree_id": 4,
     "level": 2
   }
@@ -299,8 +299,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 40,
-    "rght": 51,
+    "lft": 34,
+    "rght": 45,
     "tree_id": 4,
     "level": 1
   }
@@ -316,8 +316,8 @@
     "url": "/core/forms/",
     "endpoint": "/ecore/api/v2/core/forms/",
     "access_level": "manager",
-    "lft": 41,
-    "rght": 42,
+    "lft": 35,
+    "rght": 36,
     "tree_id": 4,
     "level": 2
   }
@@ -333,8 +333,8 @@
     "url": "/core/formbuilders/",
     "endpoint": "/ecore/api/v2/core/formbuilders/",
     "access_level": "manager",
-    "lft": 43,
-    "rght": 50,
+    "lft": 37,
+    "rght": 44,
     "tree_id": 4,
     "level": 2
   }
@@ -350,8 +350,8 @@
     "url": "/core/formfields/",
     "endpoint": "/ecore/api/v2/core/formfields/",
     "access_level": "manager",
-    "lft": 44,
-    "rght": 45,
+    "lft": 38,
+    "rght": 39,
     "tree_id": 4,
     "level": 3
   }
@@ -367,8 +367,8 @@
     "url": "/core/formfieldgroups/",
     "endpoint": "/ecore/api/v2/core/formfieldgroups/",
     "access_level": "manager",
-    "lft": 46,
-    "rght": 47,
+    "lft": 40,
+    "rght": 41,
     "tree_id": 4,
     "level": 3
   }
@@ -384,8 +384,8 @@
     "url": "/core/formstorages/",
     "endpoint": "/ecore/api/v2/core/formstorages/",
     "access_level": "manager",
-    "lft": 48,
-    "rght": 49,
+    "lft": 42,
+    "rght": 43,
     "tree_id": 4,
     "level": 3
   }
@@ -401,8 +401,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 52,
-    "rght": 61,
+    "lft": 46,
+    "rght": 55,
     "tree_id": 4,
     "level": 1
   }
@@ -418,8 +418,8 @@
     "url": "/acceptance-tests/acceptancetests/",
     "endpoint": "/ecore/api/v2/acceptance-tests/acceptancetests/",
     "access_level": "manager",
-    "lft": 53,
-    "rght": 60,
+    "lft": 47,
+    "rght": 54,
     "tree_id": 4,
     "level": 2
   }
@@ -435,8 +435,8 @@
     "url": "/acceptance-tests/acceptancetestquestions/",
     "endpoint": "/ecore/api/v2/acceptance-tests/acceptancetestquestions/",
     "access_level": "manager",
-    "lft": 54,
-    "rght": 55,
+    "lft": 48,
+    "rght": 49,
     "tree_id": 4,
     "level": 3
   }
@@ -452,8 +452,8 @@
     "url": "/acceptance-tests/acceptancetestanswers/",
     "endpoint": "/ecore/api/v2/acceptance-tests/acceptancetestanswers/",
     "access_level": "manager",
-    "lft": 56,
-    "rght": 57,
+    "lft": 50,
+    "rght": 51,
     "tree_id": 4,
     "level": 3
   }
@@ -469,8 +469,8 @@
     "url": "/acceptance-tests/acceptancetestskills/",
     "endpoint": "/ecore/api/v2/acceptance-tests/acceptancetestskills/",
     "access_level": "manager",
-    "lft": 58,
-    "rght": 59,
+    "lft": 52,
+    "rght": 53,
     "tree_id": 4,
     "level": 3
   }
@@ -486,8 +486,8 @@
     "url": "/candidate/interviewschedules/",
     "endpoint": "/ecore/api/v2/candidate/interviewschedules/",
     "access_level": "manager",
-    "lft": 62,
-    "rght": 63,
+    "lft": 56,
+    "rght": 57,
     "tree_id": 4,
     "level": 1
   }
@@ -504,7 +504,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 14,
+    "rght": 12,
     "tree_id": 3,
     "level": 0
   }
@@ -666,16 +666,16 @@
   "model": "core.extranetnavigation",
   "pk": 41,
   "fields": {
-    "updated_at": "2017-10-13T07:23:05.299Z",
+    "updated_at": "2018-09-06T07:39:11.786Z",
     "created_at": "2017-10-13T07:23:05.299Z",
-    "parent": 30,
+    "parent": 140,
     "name": "Industries",
     "url": "/pricing/industries/",
     "endpoint": "/ecore/api/v2/pricing/industries/",
-    "access_level": "manager",
-    "lft": 4,
-    "rght": 5,
-    "tree_id": 3,
+    "access_level": "admin",
+    "lft": 2,
+    "rght": 3,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -775,8 +775,8 @@
     "url": "/candidate/superannuationfunds/",
     "endpoint": "/ecore/api/v2/candidate/superannuationfunds/",
     "access_level": "manager",
-    "lft": 8,
-    "rght": 9,
+    "lft": 6,
+    "rght": 7,
     "tree_id": 3,
     "level": 1
   }
@@ -809,8 +809,8 @@
     "url": "/core/invoices/",
     "endpoint": "/ecore/api/v2/core/invoices/",
     "access_level": "manager",
-    "lft": 10,
-    "rght": 11,
+    "lft": 8,
+    "rght": 9,
     "tree_id": 3,
     "level": 1
   }
@@ -911,8 +911,8 @@
     "url": "/skills/employmentclassifications/",
     "endpoint": "/ecore/api/v2/skills/employmentclassifications/",
     "access_level": "manager",
-    "lft": 12,
-    "rght": 13,
+    "lft": 10,
+    "rght": 11,
     "tree_id": 3,
     "level": 1
   }
@@ -996,8 +996,8 @@
     "url": "/candidate/visatypes/",
     "endpoint": "/ecore/api/v2/candidate/visatypes/",
     "access_level": "manager",
-    "lft": 72,
-    "rght": 73,
+    "lft": 62,
+    "rght": 63,
     "tree_id": 4,
     "level": 1
   }
@@ -1795,8 +1795,8 @@
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 74,
-    "rght": 81,
+    "lft": 64,
+    "rght": 71,
     "tree_id": 4,
     "level": 1
   }
@@ -1812,8 +1812,8 @@
     "url": "/sms-interface/messages/",
     "endpoint": "/ecore/api/v2/sms-interface/smsmessages/",
     "access_level": "manager",
-    "lft": 75,
-    "rght": 76,
+    "lft": 65,
+    "rght": 66,
     "tree_id": 4,
     "level": 2
   }
@@ -1829,8 +1829,8 @@
     "url": "/sms-interface/relatedobjects/",
     "endpoint": "/ecore/api/v2/sms-interface/smsrelatedobjects/",
     "access_level": "manager",
-    "lft": 77,
-    "rght": 78,
+    "lft": 67,
+    "rght": 68,
     "tree_id": 4,
     "level": 2
   }
@@ -1846,8 +1846,8 @@
     "url": "/sms-interface/templates/",
     "endpoint": "/ecore/api/v2/sms-interface/smstemplates/",
     "access_level": "manager",
-    "lft": 79,
-    "rght": 80,
+    "lft": 69,
+    "rght": 70,
     "tree_id": 4,
     "level": 2
   }
@@ -1914,8 +1914,8 @@
     "url": "/hr/timesheets/",
     "endpoint": "/ecore/api/v2/hr/timesheets/",
     "access_level": "manager",
-    "lft": 6,
-    "rght": 7,
+    "lft": 4,
+    "rght": 5,
     "tree_id": 3,
     "level": 1
   }
@@ -1931,8 +1931,8 @@
     "url": "/core/users/",
     "endpoint": "/ecore/api/v2/core/users/",
     "access_level": "manager",
-    "lft": 64,
-    "rght": 65,
+    "lft": 58,
+    "rght": 59,
     "tree_id": 4,
     "level": 1
   }
@@ -1965,8 +1965,8 @@
     "url": "/billing/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 66,
-    "rght": 67,
+    "lft": 60,
+    "rght": 61,
     "tree_id": 4,
     "level": 1
   }
@@ -1975,16 +1975,16 @@
   "model": "core.extranetnavigation",
   "pk": 138,
   "fields": {
-    "updated_at": "2018-08-13T08:36:27.251Z",
+    "updated_at": "2018-09-06T07:39:05.850Z",
     "created_at": "2018-08-13T08:36:27.251Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Discounts",
     "url": "/discounts/",
     "endpoint": "/ecore/api/v2/billing/discounts/",
-    "access_level": "manager",
-    "lft": 68,
-    "rght": 69,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 6,
+    "rght": 7,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -1992,16 +1992,50 @@
   "model": "core.extranetnavigation",
   "pk": 139,
   "fields": {
-    "updated_at": "2018-08-13T08:37:45.852Z",
+    "updated_at": "2018-09-06T07:39:16.878Z",
     "created_at": "2018-08-13T08:37:45.852Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Subscriptions",
     "url": "/subscriptions/",
     "endpoint": "/ecore/api/v2/billing/companies/",
-    "access_level": "manager",
-    "lft": 70,
-    "rght": 71,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 8,
+    "rght": 9,
+    "tree_id": 14,
+    "level": 1
+  }
+},
+{
+  "model": "core.extranetnavigation",
+  "pk": 140,
+  "fields": {
+    "updated_at": "2018-09-06T07:37:31.489Z",
+    "created_at": "2018-09-06T07:37:22.430Z",
+    "parent": null,
+    "name": "Admin",
+    "url": "/",
+    "endpoint": "/",
+    "access_level": "admin",
+    "lft": 1,
+    "rght": 16,
+    "tree_id": 14,
+    "level": 0
+  }
+},
+{
+  "model": "core.extranetnavigation",
+  "pk": 141,
+  "fields": {
+    "updated_at": "2018-09-06T07:46:42.084Z",
+    "created_at": "2018-09-06T07:46:28.382Z",
+    "parent": 140,
+    "name": "Skills",
+    "url": "/skills/skillnames/",
+    "endpoint": "/ecore/api/v2/skills/skillnames/",
+    "access_level": "admin",
+    "lft": 4,
+    "rght": 5,
+    "tree_id": 14,
     "level": 1
   }
 }
