@@ -42,9 +42,31 @@ class AcceptanceTestWorkflowNodeSerializer(ApiBaseModelSerializer):
         return obj.get_score(self.workflow_object_id)
 
 
+class AcceptanceTestCandidateQuestionSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('answer', )
+
+    class Meta:
+        model = models.AcceptanceTestQuestion
+        fields = ('question', 'details')
+
+    def get_answer(self, obj):
+        object_id = self.context['object_id']
+        workflow_node = self.context['workflow_node']
+        object_answer = obj.workflow_object_answers.filter(
+            workflow_object__object_id=object_id,
+            workflow_object__state=workflow_node
+        ).first()
+
+        return object_answer and {
+            'answer': object_answer.answer_text or object_answer.answer.answer,
+            'score': object_answer.score
+        }
+
+
 class AcceptanceTestCandidateWorkflowSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('score', )
+    method_fields = ('score', 'questions')
 
     class Meta:
         model = models.AcceptanceTestWorkflowNode
@@ -57,8 +79,17 @@ class AcceptanceTestCandidateWorkflowSerializer(ApiBaseModelSerializer):
 
     def get_score(self, obj):
         return obj.get_all_questions().filter(
-            workflow_object_answers__workflow_object__object_id=self.object_id
+            workflow_object_answers__workflow_object__object_id=self.object_id,
+            workflow_object_answers__workflow_object__state=obj.company_workflow_node.workflow_node
         ).aggregate(score_avg=Avg('workflow_object_answers__score'))['score_avg'] or 0
+
+    def get_questions(self, obj):
+        all_questions = obj.get_all_questions().order_by('order')
+
+        return AcceptanceTestCandidateQuestionSerializer(all_questions, many=True, context={
+            'object_id': self.object_id,
+            'workflow_node': obj.company_workflow_node.workflow_node
+        }).data
 
 
 class WorkflowObjectAnswerSerializer(ApiBaseModelSerializer):

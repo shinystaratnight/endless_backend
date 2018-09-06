@@ -1,4 +1,3 @@
-from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -26,7 +25,9 @@ class AcceptanceTest(UUIDModel):
     )
 
     valid_until = models.DateField(
-        verbose_name=_("Valid Until")
+        verbose_name=_("Valid Until"),
+        null=True,
+        blank=True
     )
 
     is_active = models.BooleanField(
