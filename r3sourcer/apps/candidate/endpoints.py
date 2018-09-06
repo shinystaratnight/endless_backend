@@ -59,6 +59,13 @@ class VisaTypeEndpoint(core_endpoints.ApiEndpoint):
     serializer_fields = ('id', 'subclass', 'name', 'general_type', 'work_hours_allowed', 'is_available')
 
 
+class CandidateLocationEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.CandidateContact
+    base_viewset = candidate_viewsets.CandidateLocationViewset
+    serializer_fields = ('id', )
+
+
 router.register(endpoint=VisaTypeEndpoint())
 router.register(endpoint=SuperannuationFundEndpoint())
 router.register(endpoint=CandidateContactEndpoint())
@@ -68,3 +75,4 @@ router.register(endpoint=SkillRelEndpoint())
 router.register(candidate_models.InterviewSchedule)
 router.register(candidate_models.CandidateRel)
 router.register(endpoint=SubcontractorCandidateRelationEndpoint())
+router.register(endpoint=CandidateLocationEndpoint(), url='candidate/location')
