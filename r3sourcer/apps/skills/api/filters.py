@@ -6,9 +6,9 @@ from r3sourcer.apps.skills import models as skills_models
 
 
 class SkillFilter(FilterSet):
-    company = UUIDFilter(method='filter_by_company_price_lists')
     exclude = UUIDFilter(method='exclude_by_candidate')
     exclude_pricelist = UUIDFilter(method='exclude_by_pricelist')
+    industry = UUIDFilter(method='filter_by_industry')
 
     class Meta:
         model = skills_models.Skill
@@ -32,6 +32,9 @@ class SkillFilter(FilterSet):
         return queryset.exclude(
             price_list_rates__price_list_id=value
         )
+
+    def filter_by_industry(self, queryset, name, value):
+        return queryset.filter(name__industry=value).distinct()
 
 
 class SkillBaseRateFilter(FilterSet):
