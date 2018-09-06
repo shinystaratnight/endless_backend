@@ -1,6 +1,6 @@
-from r3sourcer.apps.core.api.router import router
-
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
+from r3sourcer.apps.core.api.permissions import ReadonlyOrIsSuperUser
+from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.pricing import models
 from r3sourcer.apps.pricing.api import serializers, viewsets, filters
 
@@ -10,6 +10,7 @@ class IndustryEndpoint(ApiEndpoint):
     model = models.Industry
     serializer = serializers.IndustrySerializer
     search_fields = ('type', )
+    permission_classes = (ReadonlyOrIsSuperUser, )
 
 
 class DynamicCoefficientRuleEndpoint(ApiEndpoint):
