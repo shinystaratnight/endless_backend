@@ -2,10 +2,12 @@ from django.utils import timezone
 from django_filters import UUIDFilter
 from django_filters.rest_framework import FilterSet
 
+from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.skills import models as skills_models
 
 
 class SkillFilter(FilterSet):
+    company = UUIDFilter(method='filter_by_company_price_lists')
     exclude = UUIDFilter(method='exclude_by_candidate')
     exclude_pricelist = UUIDFilter(method='exclude_by_pricelist')
     industry = UUIDFilter(method='filter_by_industry')
@@ -15,6 +17,11 @@ class SkillFilter(FilterSet):
         fields = ['company', 'active']
 
     def filter_by_company_price_lists(self, queryset, name, value):
+        company = core_models.Company.objects.filter(id=value).first()
+
+        if company and company.type == core_models.Company.COMPANY_TYPES.master:
+            return queryset.filter(company=company).distinct()
+
         now = timezone.now()
         return queryset.filter(
             price_list_rates__price_list__company_id=value,
