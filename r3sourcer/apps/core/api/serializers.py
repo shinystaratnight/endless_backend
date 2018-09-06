@@ -1235,7 +1235,7 @@ class NavigationSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = core_models.ExtranetNavigation
-        fields = ('name', 'url', 'endpoint')
+        fields = ('id', 'name', 'url', 'endpoint')
 
     def get_childrens(self, obj):
         if obj is None:
