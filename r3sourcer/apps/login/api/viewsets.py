@@ -130,7 +130,7 @@ class AuthViewSet(BaseViewsetMixin,
                     }
             else:
                 message = {
-                    'register': 'email' if is_email else 'phone_mobile',
+                    'username': self.errors['email_not_found'] if is_email else self.errors['phone_not_found'],
                 }
 
             raise exceptions.ValidationError(message)
