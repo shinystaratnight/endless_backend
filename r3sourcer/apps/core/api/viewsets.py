@@ -536,7 +536,12 @@ class NavigationViewset(BaseApiViewset):
         except Exception:
             access_level = self.request.user.access_level
 
-        return models.ExtranetNavigation.objects.filter(parent=None, access_level=access_level)
+        access_qry = Q(access_level=access_level)
+
+        if self.request.user.is_superuser:
+            access_qry |= Q(access_level=models.ExtranetNavigation.ADMIN)
+
+        return models.ExtranetNavigation.objects.filter(access_qry, parent=None)
 
 
 class CompanyAddressViewset(GoogleAddressMixin, BaseApiViewset):

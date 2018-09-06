@@ -2631,10 +2631,12 @@ class ExtranetNavigation(MPTTModel, UUIDModel):
     CLIENT = 'client'
     MANAGER = 'manager'
     CANDIDATE = 'candidate'
+    ADMIN = 'admin'
     ACCESS_LEVEL_CHOICES = Choices(
         (CLIENT, _('Client')),
         (MANAGER, _('Manager')),
-        (CANDIDATE, _('Candidate'))
+        (CANDIDATE, _('Candidate')),
+        (ADMIN, _('Admin'))
     )
 
     id = models.AutoField(auto_created=True, primary_key=True,
