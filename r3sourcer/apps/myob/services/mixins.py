@@ -1,4 +1,10 @@
+import datetime
 import logging
+
+from django.utils import timezone
+
+from r3sourcer.apps.activity.models import Activity
+from r3sourcer.apps.myob.models import MYOBSyncObject
 
 
 log = logging.getLogger(__name__)
@@ -89,3 +95,75 @@ class CandidateCardFinderMixin:
             return
 
         return resp
+
+
+class SalespersonMixin:
+    def _get_salesperson(self, portfolio_manager):
+        myob_card_number = portfolio_manager.legacy_myob_card_number
+        salesperson = None
+
+        if myob_card_number:
+            salesperson = self._get_object_by_field(
+                myob_card_number, resource=self.client.api.Contact.Employee, single=True
+            )
+
+        if salesperson is None:
+            contact = portfolio_manager.contact
+            myob_card_number = contact.get_myob_card_number()
+
+            candidate = getattr(contact, 'candidate_contacts', None)
+            if candidate:
+                model_parts = ['candidate', 'CandidateContact']
+                sync_obj = MYOBSyncObject.objects.filter(
+                    app=model_parts[0],
+                    model=model_parts[1],
+                    record=candidate.id,
+                    company=self.company,
+                    direction=MYOBSyncObject.SYNC_DIRECTION_CHOICES.myob
+                ).first()
+
+                old_myob_card_number = sync_obj and sync_obj.legacy_myob_card_number
+                if old_myob_card_number:
+                    myob_card_number = old_myob_card_number
+
+            resp = self._get_object_by_field(myob_card_number, resource=self.client.api.Contact.Employee)
+            if not resp or not resp['Count']:
+                resp = self.client.api.Contact.Employee.get(params={
+                    '$filter':
+                        "tolower(FirstName) eq '{first_name}' and tolower(LastName) eq '{last_name}'"
+                        .format(first_name=contact.first_name.replace("'", "''").lower(),
+                                last_name=contact.last_name.replace("'", "''").lower())
+                })
+
+            if not resp or not resp['Count']:
+                return self._sync_salesperson_employee(contact)
+
+            if resp['Count'] == 1:
+                salesperson = resp['Items'][0]
+                if contact.get_myob_card_number() != salesperson['DisplayID']:
+                    portfolio_manager.legacy_myob_card_number = salesperson['DisplayID']
+                    portfolio_manager.save(update_fields=['legacy_myob_card_number'])
+            else:
+                starts_at = timezone.now()
+                activity_values = {
+                    'contact': contact,
+                    'starts_at': starts_at,
+                    'ends_at': starts_at + datetime.timedelta(days=1)
+                }
+                Activity.objects.create(**activity_values)
+
+        return salesperson
+
+    def _sync_salesperson_employee(self, contact):
+        data = self.mapper._map_contact_to_myob(contact)
+
+        data['DisplayID'] = contact.get_myob_card_number()
+        data['IsIndividual'] = True
+        resp = self.client.api.Contact.Employee.post(json=data, raw_resp=True)
+
+        if 200 <= resp.status_code < 400:
+            return self._get_object_by_field(
+                contact.get_myob_card_number(),
+                resource=self.client.api.Contact.Employee,
+                single=True
+            )

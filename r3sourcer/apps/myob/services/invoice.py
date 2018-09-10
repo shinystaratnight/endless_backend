@@ -3,12 +3,13 @@ import logging
 from r3sourcer.apps.pricing.models import PriceListRate
 from r3sourcer.apps.myob.mappers import InvoiceMapper, ActivityMapper
 from r3sourcer.apps.myob.services.base import BaseSync
+from r3sourcer.apps.myob.services.mixins import SalespersonMixin
 
 
 log = logging.getLogger(__name__)
 
 
-class InvoiceSync(BaseSync):
+class InvoiceSync(SalespersonMixin, BaseSync):
     app = "core"
     model = "Invoice"
     mapper_class = InvoiceMapper
@@ -35,13 +36,13 @@ class InvoiceSync(BaseSync):
             job = invoice_line.timesheet.job_offer.job
             skill = job.position
             activity_display_id = str(job.id)[:30]
-            position_parts = job.position.name.split(' ')
+            position_parts = job.position.name.name.split(' ')
             price_list = invoice.customer_company.price_lists.get(effective=True)
-            rate = PriceListRate.objects.filter(price_list=price_list, skill=skill)
+            rate = PriceListRate.objects.filter(price_list=price_list, skill=skill).first()
             name = ' '.join([part[:4] for part in position_parts])
 
-            if invoice.provider_company.company_settings.invoice_activity_account:
-                account_id = invoice.provider_company.company_settings.invoice_activity_account.display_id
+            if invoice.provider_company.myob_settings.invoice_activity_account:
+                account_id = invoice.provider_company.myob_settings.invoice_activity_account.display_id
             else:
                 account_id = '4-1000'
 
@@ -86,7 +87,12 @@ class InvoiceSync(BaseSync):
         customer_uid = customer_data['Items'][0]['UID']
         activities = self._create_or_update_activities(invoice, tax_codes)
 
-        data = self.mapper.map_to_myob(invoice, customer_uid, tax_codes, activities)
+        salesperson = None
+        portfolio_manager = invoice.customer_company.get_portfolio_manager()
+        if portfolio_manager:
+            salesperson = self._get_salesperson(portfolio_manager)
+
+        data = self.mapper.map_to_myob(invoice, customer_uid, tax_codes, activities, salesperson=salesperson)
 
         if partial:
             params = {"$filter": "Number eq '%s'" % invoice.number}
