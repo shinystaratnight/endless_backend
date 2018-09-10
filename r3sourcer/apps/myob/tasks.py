@@ -129,8 +129,8 @@ def sync_invoice(invoice_id):
     invoice = Invoice.objects.get(id=invoice_id)
     company = invoice.provider_company
 
-    if company.company_settings.invoice_company_file:
-        company_file = company.company_settings.invoice_company_file
+    if company.myob_settings.invoice_company_file:
+        company_file = company.myob_settings.invoice_company_file
         cf_token = company_file.tokens.first()
     else:
         cf_token = MYOBCompanyFileToken.objects.filter(company=company).first()

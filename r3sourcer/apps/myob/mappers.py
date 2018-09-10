@@ -69,19 +69,88 @@ class StandardPayMapMixin:
         return data
 
 
-class InvoiceMapper:
-    def map_to_myob(self, invoice, customer_uid, tax_codes, activities):
+class ContactMapper:
+
+    def _map_address_to_myob(self, address, idx=1):
+        myob_address = {
+            'Location': idx,
+        }
+
+        if not address:
+            return myob_address
+
+        myob_address.update({
+            'City': address.city.name if address.city else '',
+            'Street': address.street_address,
+            'PostCode': address.postal_code,
+            'State': address.state.name if address.state else '',
+            'Country': address.country.name,
+        })
+
+        return myob_address
+
+    def _map_contact_to_myob(self, contact_obj):
+        myob_address = {
+            'Email': contact_obj.email,
+            'Location': 1,
+        }
+        if contact_obj.phone_mobile:
+            myob_address['Phone1'] = str(contact_obj.phone_mobile)
+        myob_address.update(self._map_address_to_myob(contact_obj.address))
+
+        first_name = contact_obj.first_name
+        last_name = contact_obj.last_name
+        if not last_name and first_name:
+            name_parts = first_name.split(' ')
+            first_name = name_parts[0]
+            last_name = name_parts[1] if len(name_parts) > 1 else ''
+
+        data = {
+            'FirstName': first_name[:20].strip(),
+            'LastName': last_name[:30].strip(),
+            'Addresses': [myob_address],
+            'IsActive': contact_obj.get_availability(),
+        }
+
+        if contact_obj.notes.exists():
+            data['Notes'] = ' | '.join(
+                contact_obj.notes.values_list('note', flat=True)
+            )[:255]
+
+        return data
+
+    def _map_extra_data_to_myob(self, contact):
+        return {}
+
+    def map_to_myob(self, contact):
+        data = {
+            'IsIndividual': True,
+        }
+        data.update(self._map_contact_to_myob(contact.contact))
+        data.update(self._map_extra_data_to_myob(contact))
+
+        return data
+
+
+class InvoiceMapper(ContactMapper):
+    def map_to_myob(self, invoice, customer_uid, tax_codes, activities, salesperson=None):
         data = {
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
             "TotalTax": invoice.tax,
             "TotalAmount": invoice.total_with_tax,
             "Status": "Open",
+            "Number": invoice.number[:8],
+            "Terms": {
+                "PaymentIsDue": CompanyMapper.PAYMENT_IS_DUE_MAP.get(invoice.customer_company.terms_of_payment),
+                "BalanceDueDate": invoice.customer_company.payment_due_date
+            },
         }
         lines = list()
 
         for invoice_line in invoice.invoice_lines.all():
             lines.append({
+                "Date": format_date_to_myob(invoice_line.date),
                 "Hours": invoice_line.units,
                 "Rate": invoice_line.unit_price,
                 "Total": invoice_line.amount,
@@ -91,6 +160,11 @@ class InvoiceMapper:
             })
 
         data['Lines'] = lines
+
+        if salesperson:
+            data["SalesPerson"] = {
+                "UID": salesperson["UID"]
+            }
 
         return data
 
@@ -186,7 +260,7 @@ class ActivityMapper:
             if rate:
                 data['ChargeableDetails'].update({
                     'Rate': 'ActivityRate',
-                    'ActivityRateExcludingTax': "{0:.2f}".format(rate)
+                    'ActivityRateExcludingTax': "{0:.2f}".format(rate.hourly_rate)
                 })
 
         return data
@@ -266,69 +340,6 @@ class TimeSheetMapper(StandardPayMapMixin):
         }
 
         data['WageCategories'].extend([{'UID': uid} for uid in new_rates])
-
-        return data
-
-
-class ContactMapper:
-
-    def _map_address_to_myob(self, address, idx=1):
-        myob_address = {
-            'Location': idx,
-        }
-
-        if not address:
-            return myob_address
-
-        myob_address.update({
-            'City': address.city.name if address.city else '',
-            'Street': address.street_address,
-            'PostCode': address.postal_code,
-            'State': address.state.name if address.state else '',
-            'Country': address.country.name,
-        })
-
-        return myob_address
-
-    def _map_contact_to_myob(self, contact_obj):
-        myob_address = {
-            'Email': contact_obj.email,
-            'Location': 1,
-        }
-        if contact_obj.phone_mobile:
-            myob_address['Phone1'] = str(contact_obj.phone_mobile)
-        myob_address.update(self._map_address_to_myob(contact_obj.address))
-
-        first_name = contact_obj.first_name
-        last_name = contact_obj.last_name
-        if not last_name and first_name:
-            name_parts = first_name.split(' ')
-            first_name = name_parts[0]
-            last_name = name_parts[1] if len(name_parts) > 1 else ''
-
-        data = {
-            'FirstName': first_name[:20].strip(),
-            'LastName': last_name[:30].strip(),
-            'Addresses': [myob_address],
-            'IsActive': contact_obj.get_availability(),
-        }
-
-        if contact_obj.notes.exists():
-            data['Notes'] = ' | '.join(
-                contact_obj.notes.values_list('note', flat=True)
-            )[:255]
-
-        return data
-
-    def _map_extra_data_to_myob(self, contact):
-        return {}
-
-    def map_to_myob(self, contact):
-        data = {
-            'IsIndividual': True,
-        }
-        data.update(self._map_contact_to_myob(contact.contact))
-        data.update(self._map_extra_data_to_myob(contact))
 
         return data
 
