@@ -134,10 +134,7 @@ class JobsiteFilter(ActiveStateFilterMixin, FilterSet):
         ]
 
     def filter_company(self, queryset, name, value):
-        return queryset.filter(
-            Q(master_company_id=value) |
-            Q(regular_company_id=value)
-        )
+        return queryset.filter(regular_company_id=value)
 
     def filter_state(self, queryset, name, value):
         return queryset.filter(address__state=value)
