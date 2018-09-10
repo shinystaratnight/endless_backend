@@ -116,14 +116,6 @@ class InvoiceService(BasePaymentService):
         else:
             master_logo = get_thumbnail_picture(invoice.provider_company.logo, 'large')
 
-        if hasattr(invoice.provider_company, 'company_settings'):
-            master_logo = invoice.provider_company.company_settings.logo
-
-        if master_logo and master_logo.url:
-            master_logo = master_logo.url
-        else:
-            master_logo = get_thumbnail_picture(invoice.provider_company.logo, 'large')
-
         context = Context({
             'lines': invoice.invoice_lines.all(),
             'invoice': invoice,
