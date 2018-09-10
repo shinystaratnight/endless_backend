@@ -5,6 +5,7 @@ from collections import defaultdict
 from functools import reduce
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone, formats
 
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -234,16 +235,25 @@ def get_invoice(company, date_from, date_to, timesheet):
 
     try:
         if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
-            invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
-                                          approved=False)
+            invoice = Invoice.objects.filter(
+                Q(date__gte=date_from, date__lt=date_to) |
+                Q(invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to),
+                customer_company=company, approved=False
+            ).latest('date')
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
             jobsite = timesheet.job_offer.shift.date.job.jobsite
-            invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
-                                          invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite)
+            invoice = Invoice.objects.get(
+                Q(date__gte=date_from, date__lt=date_to) |
+                Q(invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to),
+                invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite
+            )
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
             candidate = timesheet.job_offer.candidate_contact
-            invoice = Invoice.objects.get(customer_company=company, date__gte=date_from, date__lt=date_to,
-                                          invoice_lines__timesheet__job_offer__candidate_contact=candidate)
+            invoice = Invoice.objects.get(
+                Q(date__gte=date_from, date__lt=date_to) |
+                Q(invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to),
+                customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate
+            )
     except Exception:
         pass
 
