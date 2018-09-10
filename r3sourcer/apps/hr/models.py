@@ -597,9 +597,6 @@ class Shift(core_models.UUIDModel):
 
 class JobOffer(core_models.UUIDModel):
 
-    sent_sms_field = 'offer_sent_by_sms'
-    receive_sms_field = 'reply_received_by_sms'
-
     shift = models.ForeignKey(
         Shift,
         on_delete=models.CASCADE,
@@ -612,24 +609,6 @@ class JobOffer(core_models.UUIDModel):
         verbose_name=_("Candidate contact"),
         on_delete=models.PROTECT,
         related_name='job_offers'
-    )
-
-    offer_sent_by_sms = models.ForeignKey(
-        SMSMessage,
-        null=True,
-        blank=True,
-        verbose_name=_("Offer sent by sms"),
-        on_delete=models.PROTECT,
-        related_name='job_offers'
-    )
-
-    reply_received_by_sms = models.ForeignKey(
-        SMSMessage,
-        verbose_name=_("Reply received by sms"),
-        related_name='reply_job_offers',
-        on_delete=models.PROTECT,
-        null=True,
-        blank=True
     )
 
     STATUS_CHOICES = Choices(
@@ -774,10 +753,13 @@ class JobOffer(core_models.UUIDModel):
         if not (self.is_accepted() or self.is_cancelled()):
             assert isinstance(positive, bool), _('Looks like we could not decide if reply was positive')
 
-            if self.offer_sent_by_sms == sent_sms:
-                setattr(self, self.receive_sms_field, reply_sms)
+            sent_offer_sms = self.job_offer_smses.filter(offer_sent_by_sms=sent_sms).first()
+            if sent_offer_sms is not None:
+                sent_offer_sms.reply_received_by_sms = reply_sms
+                sent_offer_sms.save()
+
                 if positive:
-                    self.accept('status', self.receive_sms_field, 'scheduled_sms_datetime')
+                    self.accept('status', 'scheduled_sms_datetime')
                 else:
                     self.cancel()
 
@@ -838,9 +820,9 @@ class JobOffer(core_models.UUIDModel):
         with transaction.atomic():
             # if celery worked with JO sending
             qs = self.job.get_job_offers().filter(
-                models.Q(offer_sent_by_sms=None) | models.Q(time_sheets=None), shift=self.shift
+                models.Q(job_offer_smses__offer_sent_by_sms=None) | models.Q(time_sheets=None), shift=self.shift
             ).exclude(status=JobOffer.STATUS_CHOICES.accepted)
-            jo_with_sms_sent = list(qs.filter(offer_sent_by_sms__isnull=False))
+            jo_with_sms_sent = list(qs.filter(job_offer_smses__offer_sent_by_sms__isnull=False).distinct())
             qs.update(status=JobOffer.STATUS_CHOICES.cancelled)
 
             # send placement rejection sms
@@ -934,6 +916,38 @@ class JobOffer(core_models.UUIDModel):
                     self.scheduled_sms_datetime = eta
                     self.save(update_fields=['scheduled_sms_datetime'])
                     task.apply_async(args=[self.id], eta=eta)
+
+
+class JobOfferSMS(core_models.UUIDModel):
+
+    job_offer = models.ForeignKey(
+        JobOffer,
+        on_delete=models.CASCADE,
+        related_name='job_offer_smses',
+        verbose_name=_('Job Offer')
+    )
+
+    offer_sent_by_sms = models.ForeignKey(
+        SMSMessage,
+        on_delete=models.SET_NULL,
+        related_name='job_offer_smses',
+        verbose_name=_("Offer sent by sms"),
+        null=True,
+        blank=True
+    )
+
+    reply_received_by_sms = models.ForeignKey(
+        SMSMessage,
+        on_delete=models.SET_NULL,
+        related_name='reply_job_offer_smses',
+        verbose_name=_("Reply received by sms"),
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = _("Job Offer SMS")
+        verbose_name_plural = _("Job Offer SMSes")
 
 
 class TimeSheet(
@@ -2047,7 +2061,7 @@ class CandidateScore(core_models.UUIDModel):
             JobOffer, 'status', '1', ids=jos.values_list('id', flat=True)
         ))
         time_bonus = accepted_jos.filter(
-            offer_sent_by_sms__sent_at__gte=(
+            job_offer_smses__offer_sent_by_sms__sent_at__gte=(
                 models.F('shift__date__shift_date') - time_shift
             )
         ).count()

@@ -89,10 +89,14 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
     )
 
     if action_sent:
-        related_query_name = hr_models.JobOffer._meta.get_field(action_sent).related_query_name()
+        related_query_name = hr_models.JobOfferSMS._meta.get_field(action_sent).related_query_name()
         cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
 
-        setattr(job_offer, action_sent, sent_message)
+        hr_models.JobOfferSMS.objects.create(
+            job_offer=job_offer,
+            **{action_sent: sent_message}
+        )
+
         job_offer.scheduled_sms_datetime = None
         job_offer.save()
 
@@ -110,11 +114,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
             elif job_offer.is_cancelled():
                 job_offer.scheduled_sms_datetime = None
                 job_offer.status = hr_models.JobOffer.STATUS_CHOICES.undefined
-                job_offer.reply_received_by_sms = None
-                job_offer.offer_sent_by_sms = None
-                job_offer.save(update_fields=[
-                    'scheduled_sms_datetime', 'status', 'reply_received_by_sms', 'offer_sent_by_sms'
-                ])
+                job_offer.save(update_fields=['scheduled_sms_datetime', 'status'])
 
             if log_message:
                 job_offer.scheduled_sms_datetime = None
