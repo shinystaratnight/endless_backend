@@ -14,7 +14,7 @@ from django_mock_queries.query import MockSet, MockModel
 
 from r3sourcer.apps.hr.models import (
     TimeSheet, JobsiteUnavailability, CandidateEvaluation, JobOffer, ShiftDate, TimeSheetIssue, BlackList,
-    FavouriteList, Job, CarrierList, Shift, NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT
+    FavouriteList, Job, CarrierList, Shift, JobOfferSMS, NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT
 )
 from r3sourcer.apps.hr.utils.utils import tomorrow
 
@@ -585,8 +585,9 @@ class TestJobOffer:
             shift=shift,
             candidate_contact=candidate_contact,
             status=JobOffer.STATUS_CHOICES.accepted,
-            offer_sent_by_sms=fake_sms,
         )
+        JobOfferSMS.objects.create(job_offer=accepted_jo, offer_sent_by_sms=fake_sms)
+
         res = job_offer.check_job_quota(True)
 
         assert not res
@@ -604,8 +605,9 @@ class TestJobOffer:
             shift=shift,
             candidate_contact=candidate_contact,
             status=JobOffer.STATUS_CHOICES.accepted,
-            offer_sent_by_sms=fake_sms,
         )
+        JobOfferSMS.objects.create(job_offer=accepted_jo, offer_sent_by_sms=fake_sms)
+
         res = accepted_jo.check_job_quota(True)
 
         assert not res

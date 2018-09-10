@@ -367,9 +367,12 @@ class JobOfferViewset(BaseApiViewset):
         serializer_class = self.get_serializer_class()
 
         if serializer_class.is_available_for_resend(obj):
-            if obj.reply_received_by_sms is None:
-                if obj.offer_sent_by_sms is not None:
-                    obj.offer_sent_by_sms.no_check_reply()
+            not_received_smses = obj.job_offer_smses.filter(reply_received_by_sms__isnull=True)
+            if not_received_smses.exists():
+                sent_smses = not_received_smses.filter(offer_sent_by_sms__isnull=False)
+                if sent_smses.exists():
+                    for sent_sms in sent_smses:
+                        sent_sms.offer_sent_by_sms.no_check_reply()
 
                 if obj.is_cancelled():
                     obj.status = hr_models.JobOffer.STATUS_CHOICES.undefined

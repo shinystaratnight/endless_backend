@@ -193,10 +193,14 @@ def shift(db, shift_date):
 @pytest.fixture
 @patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
 def job_offer(mock_check, db, shift, candidate_contact):
-    return hr_models.JobOffer.objects.create(
+    job_offer = hr_models.JobOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact
     )
+
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+
+    return job_offer
 
 
 @pytest.fixture

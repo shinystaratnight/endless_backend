@@ -131,7 +131,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'candidate_rate', 'client_rate', 'timesheets', 'has_accept_action', 'has_cancel_action', 'has_resend_action',
-        'has_send_action',
+        'has_send_action', 'offer_smses'
     )
 
     class Meta:
@@ -139,8 +139,6 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         fields = [
             '__all__',
             {
-                'offer_sent_by_sms': ['id', 'text', 'status', 'sent_at'],
-                'reply_received_by_sms': ['id', 'text', 'status', 'sent_at'],
                 'shift': ['id', 'time', {
                     'date': ['shift_date'],
                 }],
@@ -184,9 +182,11 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         return timesheet and timesheet.id
 
     def has_late_reply_handling(self, obj):
+        sent_smses = obj.job_offer_smses.filter(offer_sent_by_sms__isnull=False)
+        reply_smses = obj.job_offer_smses.filter(reply_received_by_sms__isnull=False)
         return (
-            obj.offer_sent_by_sms and not obj.reply_received_by_sms and obj.offer_sent_by_sms.late_reply and
-            not obj.accepted
+            sent_smses.exists() and not reply_smses.exists() and
+            sent_smses.filter(offer_sent_by_sms__late_reply__isnull=False) and not obj.accepted
         )
 
     def get_has_accept_action(self, obj):
@@ -206,19 +206,21 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     @classmethod
     def is_available_for_resend(cls, obj):
-        not_received_or_scheduled = obj.reply_received_by_sms is None and not obj.is_accepted()
+        not_received_or_scheduled = (
+            obj.job_offer_smses.filter(reply_received_by_sms__isnull=True).exists() and not obj.is_accepted()
+        )
         target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
         is_today_or_future = target_date_and_time.date() >= timezone.now().date()
 
         if (obj.is_cancelled() or not_received_or_scheduled) and not is_filled and is_today_or_future:
             last_jo = obj.job.get_job_offers().filter(
-                offer_sent_by_sms__isnull=False,
+                job_offer_smses__offer_sent_by_sms__isnull=False,
                 candidate_contact=obj.candidate_contact
-            ).order_by('offer_sent_by_sms__sent_at').last()
+            ).order_by('job_offer_smses__offer_sent_by_sms__sent_at').last()
             return bool(
-                obj.offer_sent_by_sms and last_jo and
-                last_jo.offer_sent_by_sms.sent_at < timezone.now()
+                obj.job_offer_smses.filter(offer_sent_by_sms__isnull=False).exists() and last_jo and
+                last_jo.job_offer_smses.filter(offer_sent_by_sms__sent_at__lt=timezone.now()).exists()
             )
 
         return False
@@ -231,7 +233,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     @classmethod
     def is_available_for_send(cls, obj):
-        not_sent = obj.offer_sent_by_sms is None and not obj.is_accepted()
+        not_sent = obj.job_offer_smses.filter(offer_sent_by_sms__isnull=True).exists() and not obj.is_accepted()
         target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
         is_today_or_future = target_date_and_time.date() >= timezone.now().date()
@@ -243,6 +245,21 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             return None
 
         return self.is_available_for_send(obj)
+
+    def get_offer_smses(self, obj):
+        return JobOfferSMSSimpleSerializer(obj.job_offer_smses.all(), many=True).data
+
+
+class JobOfferSMSSimpleSerializer(core_serializers.ApiBaseModelSerializer):
+
+    class Meta:
+        model = hr_models.JobOfferSMS
+        fields = (
+            {
+                'offer_sent_by_sms': ['id', 'text', 'status', 'sent_at'],
+                'reply_received_by_sms': ['id', 'text', 'status', 'sent_at'],
+            },
+        )
 
 
 class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
@@ -545,7 +562,9 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
         updated_by_id = last_change['updated_by']
         system_user = get_default_user()
-        reply_sms = obj.reply_received_by_sms
+        reply_sms = obj.job_offer_smses.filter(
+            reply_received_by_sms__isnull=False
+        ).order_by('-reply_received_by_sms__sent_at').first()
         jobsite_contact = obj.job.jobsite.primary_contact
 
         if obj.is_quota_filled() or (reply_sms and reply_sms.is_positive_answer() and not obj.is_accepted()):

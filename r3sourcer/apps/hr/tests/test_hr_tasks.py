@@ -47,7 +47,7 @@ class TestVOTasks:
 
         assert mock_sms_service.return_value.send_tpl.called
         assert job_offer.scheduled_sms_datetime is None
-        assert job_offer.offer_sent_by_sms is not None
+        assert job_offer.job_offer_smses.exists()
 
     @freezegun.freeze_time(tz.localize(datetime(2017, 1, 1, 18, 0)))
     @mock.patch.object(hr_models.JobOffer, 'has_timesheets_with_going_work_unset_or_timeout', return_value=True)
