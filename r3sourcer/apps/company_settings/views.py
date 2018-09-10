@@ -308,6 +308,11 @@ class MYOBAuthorizationView(APIView):
         }
         auth_client = MYOBAuth(self.request)
         response = auth_client.retrieve_access_token(data=data)
+        company = get_site_master_company(request=request, default=False)
+
+        if not company and self.request.user.is_authenticated:
+            company = self.request.user.company.get_closest_master_company()
+
         MYOBAuthData.objects.get_or_create(
             client_id=settings.MYOB_APP['api_key'],
             client_secret=settings.MYOB_APP['api_secret'],
@@ -316,7 +321,8 @@ class MYOBAuthorizationView(APIView):
             myob_user_uid=response['user']['uid'],
             myob_user_username=response['user']['username'],
             expires_in=response['expires_in'],
-            user=request.user
+            user=request.user,
+            company=company
         )
 
         return Response()
@@ -327,7 +333,12 @@ class MYOBAuthDataListView(APIView):
     Returns list of MYOBAuthData objects of given user
     """
     def get(self, request, *args, **kwargs):
-        auth_data_list = MYOBAuthData.objects.filter(user=request.user)
+        company = get_site_master_company(request=request, default=False)
+
+        if not company and self.request.user.is_authenticated:
+            company = self.request.user.company.get_closest_master_company()
+
+        auth_data_list = MYOBAuthData.objects.filter(company=company)
         serializer = MYOBAuthDataSerializer(auth_data_list, many=True)
         data = {
             "auth_data_list": serializer.data

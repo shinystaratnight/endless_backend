@@ -136,6 +136,7 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
     )
 
     user = models.ForeignKey(User, related_name='auth_data', blank=True, null=True)
+    company = models.ForeignKey(Company, related_name='auth_data', blank=True, null=True)
 
     class Meta:
         verbose_name = _("MYOB OAuth2 Data")
