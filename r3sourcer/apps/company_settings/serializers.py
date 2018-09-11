@@ -1,9 +1,10 @@
 from django.contrib.auth.models import Group
+from django.db.models import Q
 from rest_framework import serializers
 
 from r3sourcer.apps.company_settings.models import CompanySettings, MYOBAccount, MYOBSettings, MYOBCompanyFile
 from r3sourcer.apps.core.api.fields import ApiBase64ImageField
-from r3sourcer.apps.core.models import InvoiceRule, Form
+from r3sourcer.apps.core.models import InvoiceRule, Form, Company
 from r3sourcer.apps.hr.models import PayslipRule
 from r3sourcer.apps.core.models import User
 from r3sourcer.apps.company_settings.models import GlobalPermission
@@ -130,7 +131,18 @@ class CompanyUserSerializer(serializers.ModelSerializer):
         fields = ('id', 'name')
 
     def get_name(self, obj):
-        return obj.contact.first_name + ' ' + obj.contact.last_name
+        title = ''
+        name = '{} {}'.format(obj.contact.first_name, obj.contact.last_name)
+        if obj.contact.is_company_contact():
+            qry = Q(relationships__company__type=Company.COMPANY_TYPES.master)
+
+            if 'company' in self.context:
+                qry = Q(relationships__company=self.context['company'])
+
+            title = obj.contact.company_contact.filter(qry).first().job_title
+            name = '{} {}'.format(title, name)
+
+        return name
 
 
 class UserGroupSerializer(serializers.ModelSerializer):
