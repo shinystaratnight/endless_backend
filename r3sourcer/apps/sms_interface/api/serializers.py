@@ -1,3 +1,5 @@
+from django.conf import settings
+
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.core.utils.text import pluralize
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
@@ -45,3 +47,16 @@ class SMSMessageSerializer(ApiBaseModelSerializer):
             resp.append(self._related_item(related.content_object, related.content_type))
 
         return resp or '-'
+
+
+class SMSLogSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('cost', )
+
+    class Meta:
+        model = sms_models.SMSMessage
+        fields = ('sent_at', 'sid', 'type', 'from_number', 'to_number', 'segments', 'status')
+        exclude_many = True
+
+    def get_cost(self, obj):
+        return obj.company.sms_balance.segment_cost * obj.segments

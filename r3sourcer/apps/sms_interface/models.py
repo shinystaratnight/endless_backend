@@ -187,8 +187,7 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
     )
     segments = models.IntegerField(
         verbose_name=_('Number of segments'),
-        null=True,
-        blank=True
+        default=0
     )
 
     # check message status
