@@ -1,5 +1,6 @@
 import re
 
+from django.core.files.base import File
 from django.db import models
 from django.db import transaction
 from django.forms import ModelForm, ValidationError
@@ -54,6 +55,8 @@ class StorageHelper(object):
         Validate fields
         :return:
         """
+        from r3sourcer.apps.candidate.models import CandidateContact
+
         fields_to_validate = {}
         self._errors = {}
         related_fields = {}
@@ -75,7 +78,11 @@ class StorageHelper(object):
             'fields': [name for name, field in fields_to_validate.items()]
         })
 
-        form = type('MForm', (ModelForm, ), {
+        base_classes = (ModelForm, )
+        if issubclass(self._model, CandidateContact):
+            base_classes = (CandidateFormMixin, ) + base_classes
+
+        form = type('MForm', base_classes, {
             'Meta': meta_class,
         })
 
@@ -241,10 +248,14 @@ class RelatedFieldHelper(object):
                         errors[name] = e.error_list
 
         data = dict(
-            **{name: field.value for name, field in self.simple_fields.items()},
+            **{name: field.value for name, field in self.simple_fields.items() if not isinstance(field.value, File)},
             **related_fields
         )
-        model_form = self.get_modelform(data)
+        files = {
+            name: field.value for name, field in self.simple_fields.items() if isinstance(field.value, File)
+        }
+
+        model_form = self.get_modelform(data, files=files)
 
         if not model_form.is_valid():
             errors.update({
@@ -255,7 +266,7 @@ class RelatedFieldHelper(object):
 
         self.value = model_form.save()
 
-    def get_modelform(self, data):
+    def get_modelform(self, data, files=None):
         meta_class = type('Meta', (object, ), {
             'model': self._model,
             'fields': [name for name, field in self.simple_fields.items()]
@@ -265,4 +276,21 @@ class RelatedFieldHelper(object):
             'Meta': meta_class,
         })
 
-        return form(data)
+        return form(data, files=files)
+
+
+class CandidateFormMixin(ModelForm):
+
+    def save(self, *args, **kwargs):
+        from r3sourcer.apps.candidate.models import CandidateRel
+        from r3sourcer.apps.core.utils.companies import get_site_master_company
+
+        instance = super().save(*args, **kwargs)
+
+        master_company = get_site_master_company()
+        CandidateRel.objects.create(
+            master_company=master_company,
+            candidate_contact=instance,
+            owner=True,
+            active=True,
+        )

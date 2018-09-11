@@ -6,6 +6,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import JSONField, ArrayField
 from django.core.exceptions import ValidationError
+from django.core.files.base import File
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import UploadedFile
 from django.db import models, transaction
@@ -253,15 +254,7 @@ class Form(UUIDModel):
             if isinstance(value, models.Model):
                 key = '{key}_id'.format(key=key)
                 value = str(value.id)
-            elif isinstance(value, UploadedFile):
-                full_file_name = '{path}/{filename}.{ext}'.format(
-                    path=cls.CONTENT_STORAGE_PATH,
-                    filename=str(uuid.uuid4()),
-                    ext=value.name.split('.')[-1]
-                )
-                default_storage.save(full_file_name, value)
-                value = full_file_name
-            else:
+            elif not isinstance(value, (File)):
                 value = value if isinstance(value, bool) or value is None else str(value)
             parsed_data.setdefault(key, value)
         return parsed_data
@@ -304,6 +297,24 @@ class Form(UUIDModel):
             if isinstance(value, dict):
                 parsed_data.update(cls.parse_api_data(value, parent=field_name))
             else:
+                parsed_data[field_name] = value
+
+        return parsed_data
+
+    @classmethod
+    def parse_api_files(cls, data, parent=None):
+        from r3sourcer.apps.core.api.fields import ApiBase64FileField
+
+        parsed_data = {}
+        for field, value in data.items():
+            field_name = '%s__%s' % (parent, field) if parent else field
+
+            if isinstance(value, dict):
+                parsed_data.update(cls.parse_api_files(value, parent=field_name))
+            else:
+                if ';base64,' in value:
+                    value = ApiBase64FileField().to_internal_value(value)
+
                 parsed_data[field_name] = value
 
         return parsed_data

@@ -1,6 +1,7 @@
 from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
 from r3sourcer.apps.core.api.router import router
+from rest_framework.permissions import AllowAny
 
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.api import serializers, viewsets, filters
@@ -309,6 +310,7 @@ class AddressEndpoint(ApiEndpoint):
     model = models.Address
     serializer = serializers.AddressSerializer
     base_viewset = viewsets.AddressViewset
+    permission_classes = [AllowAny]
 
 
 class TagEndpoint(ApiEndpoint):
