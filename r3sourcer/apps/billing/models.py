@@ -78,9 +78,14 @@ class SMSBalance(models.Model):
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
     last_payment = models.ForeignKey('Payment', blank=True, null=True)
+    cost_of_segment = models.DecimalField(default=0, max_digits=8, decimal_places=2)
+
+    @property
+    def segment_cost(self):
+        return self.cost_of_segment or settings.COST_OF_SMS_SEGMENT
 
     def substract_sms_cost(self, number_of_segments):
-        amount = Decimal(number_of_segments) * settings.COST_OF_SMS_SEGMENT
+        amount = Decimal(number_of_segments) * self.segment_cost
         self.balance = self.balance - Decimal(amount)
         self.save()
 
@@ -90,11 +95,11 @@ class SMSBalance(models.Model):
         if self.balance <= self.top_up_limit:
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
 
-        if Decimal(self.balance) - Decimal(settings.COST_OF_SMS_SEGMENT) < 0:
+        if Decimal(self.balance) - self.segment_cost < 0:
             self.company.sms_enabled = False
             self.company.save()
 
-        if not self.company.sms_enabled and Decimal(self.balance) - Decimal(settings.COST_OF_SMS_SEGMENT) > 0:
+        if not self.company.sms_enabled and Decimal(self.balance) - self.segment_cost > 0:
             self.company.sms_enabled = True
             self.company.save()
 
