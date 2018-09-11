@@ -233,17 +233,17 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     @classmethod
     def is_available_for_send(cls, obj):
-        not_sent = obj.job_offer_smses.filter(offer_sent_by_sms__isnull=True).exists() and not obj.is_accepted()
+        has_not_sent = (
+            obj.job_offer_smses.filter(offer_sent_by_sms__isnull=True).exists() or
+            not obj.job_offer_smses.exists()
+        )
         target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
         is_today_or_future = target_date_and_time.date() >= timezone.now().date()
 
-        return not_sent and not is_filled and is_today_or_future
+        return has_not_sent and not obj.is_accepted() and not is_filled and is_today_or_future
 
     def get_has_send_action(self, obj):
-        if not obj:
-            return None
-
         return self.is_available_for_send(obj)
 
     def get_offer_smses(self, obj):
