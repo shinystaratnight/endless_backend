@@ -9,6 +9,7 @@ urlpatterns = [
     url(r'^permissions/user/(?P<id>[\w\-]+)/set/$', views.SetUserGlobalPermissionView.as_view(), name='set_user_global_permission'),
     url(r'^permissions/user/(?P<id>[\w\-]+)/revoke/$', views.RevokeUserGlobalPermissionView.as_view(), name='revoke_user_global_permission'),
     url(r'^permissions/user/(?P<id>[\w\-]+)/groups/$', views.UserGroupListView.as_view(), name='user_group_list'),
+    url(r'^permissions/user/(?P<id>[\w\-]+)/available_groups/$', views.UserAvailableGroupListView.as_view(), name='user_available_group_list'),
     url(r'^permissions/user/(?P<id>[\w\-]+)/$', views.UserGlobalPermissionListView.as_view(), name='user_global_permission_list'),
     url(r'^permissions/group/(?P<id>[\w\-]+)/add_user/$', views.AddUserToGroupView.as_view(), name='add_user_to_group'),
     url(r'^permissions/group/(?P<id>[\w\-]+)/remove_user/$', views.RemoveUserFromGroupView.as_view(), name='remove_user_from_group'),

@@ -11,7 +11,7 @@ from rest_framework.views import APIView
 
 from r3sourcer.apps.company_settings import serializers
 from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission, CompanySettings
-from r3sourcer.apps.core.models import User
+from r3sourcer.apps.core.models import User, Company
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
 from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
@@ -142,6 +142,9 @@ class CompanyGroupListView(ListAPIView):
     action = 'list'
 
     def get_queryset(self):
+        if self.request.user.is_superuser:
+            return Group.objects.filter(companies__type=Company.COMPANY_TYPES.master).distinct()
+
         company = self.request.user.company
 
         if not company:
@@ -196,17 +199,41 @@ class UserGroupListView(ListAPIView):
         return user.groups.all()
 
 
+class UserAvailableGroupListView(ListAPIView):
+    """
+    Returns list of Groups of a given User.
+    """
+    serializer_class = serializers.UserGroupSerializer
+    action = 'list'
+
+    def get_queryset(self):
+        user = get_object_or_404(User, id=self.kwargs['id'])
+        company = user.company
+
+        if not company:
+            raise exceptions.APIException("User has no relation to any company.")
+
+        return company.groups.all()
+
 class CompanyUserListView(APIView):
     """
     Returns list of all users of current user's company.
     """
     def get(self, *args, **kwargs):
-        company = self.request.user.company
+        context = {}
 
-        if not company:
-            raise exceptions.APIException("User has no relation to any company.")
+        if self.request.user.is_superuser:
+            user_list = User.objects.filter(
+                contact__company_contact__relationships__company__type=Company.COMPANY_TYPES.master
+            ).distinct()
+        else:
+            company = self.request.user.company
 
-        user_list = User.objects.filter(contact__company_contact__relationships__company=company).distinct()
+            if not company:
+                raise exceptions.APIException("User has no relation to any company.")
+            user_list = User.objects.filter(contact__company_contact__relationships__company=company).distinct()
+            context['company'] = company
+
         serializer = serializers.CompanyUserSerializer(user_list, many=True)
         data = {
             "user_list": serializer.data
