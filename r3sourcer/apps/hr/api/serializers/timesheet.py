@@ -1,5 +1,3 @@
-from datetime import date
-
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -8,6 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 from r3sourcer.apps.core.models import Company
+from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
@@ -73,7 +72,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
     method_fields = (
         'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
-        'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms'
+        'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms', 'invoice',
     )
 
     class Meta:
@@ -199,6 +198,11 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_candidate_sms(self, obj):
         return self._get_related_sms(obj, 'candidate-timesheet-agree')
+
+    def get_invoice(self, obj):
+        invoice_line = obj.invoice_lines.first()
+        invoice = invoice_line and invoice_line.invoice
+        return invoice and ApiBaseRelatedField.to_read_only_data(invoice)
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):
