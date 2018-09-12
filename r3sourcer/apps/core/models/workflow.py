@@ -138,6 +138,8 @@ class WorkflowNode(UUIDModel):
             system_state_qry |
             models.Q(workflow=workflow, number=number, company_workflow_nodes__company=company)
         )
+        if not just_added:
+            state_number_exist = state_number_exist.exclude(id=_id)
 
         if state_number_exist.exists():
             raise ValidationError(_('State with number {number} already exist on company').format(number=number))
