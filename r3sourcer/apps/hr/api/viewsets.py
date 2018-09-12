@@ -405,7 +405,7 @@ class JobViewset(BaseApiViewset):
 
         requested_shift_ids = request.query_params.getlist('shifts')
 
-        now = timezone.now()
+        now = timezone.localtime(timezone.now()) - datetime.timedelta(days=1)
         today = now.date()
 
         shifts_q = Q(id__in=requested_shift_ids) if requested_shift_ids else Q()
