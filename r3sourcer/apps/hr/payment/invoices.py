@@ -23,9 +23,9 @@ from ..utils.utils import get_invoice_rule
 
 
 class InvoiceService(BasePaymentService):
-    def _get_order_number(self, rule, date_from, timesheet):
+    def _get_order_number(self, rule, date_from, date_to, timesheet):
         if rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
-            order_number = '{} - {}'.format(date_from, datetime.now().date())
+            order_number = '{} - {}'.format(date_from, date_to)
         elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
             jobsite = timesheet.job_offer.shift.date.job.jobsite
             city = jobsite.address.city
@@ -168,7 +168,7 @@ class InvoiceService(BasePaymentService):
                 invoice = Invoice.objects.create(
                     provider_company=provider_company,
                     customer_company=company,
-                    order_number=self._get_order_number(invoice_rule, date_from, timesheets[0]),
+                    order_number=self._get_order_number(invoice_rule, date_from, date_to, timesheets[0]),
                     period=invoice_rule.period,
                     separation_rule=invoice_rule.separation_rule
                 )
