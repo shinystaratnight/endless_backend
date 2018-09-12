@@ -59,4 +59,5 @@ class SMSLogSerializer(ApiBaseModelSerializer):
         exclude_many = True
 
     def get_cost(self, obj):
-        return obj.company.sms_balance.segment_cost * obj.segments
+        segment_cost = obj.company and hasattr(obj.company, 'sms_balance') and obj.company.sms_balance.segment_cost
+        return segment_cost * obj.segments if segment_cost else 0

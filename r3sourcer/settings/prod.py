@@ -389,8 +389,8 @@ TIME_INPUT_FORMATS = [
 
 MYOB_APP = {
     'desc': env('MYOB_APP_DESC', 'MYOB'),
-    'api_key': '8k7zu43jfvqsg4dn9sh2entu',
-    'api_secret': 'WMTnbeACJu83SzjtDe7NkuSe'
+    'api_key': env('MYOB_APP_API_KEY'),
+    'api_secret': env('MYOB_APP_API_SECRET')
 }
 
 EMAIL_SERVICE_ENABLED = env('EMAIL_SERVICE_ENABLED', '0') == '1'
