@@ -811,7 +811,8 @@ class FormViewSet(BaseApiViewset):
     def submit(self, request, pk, *args, **kwargs):
         form_obj = self.get_object()
         data = models.Form.parse_api_data(request.data)
-        form = form_obj.get_form_class()(data=data, files=request.data)
+        files = models.Form.parse_api_files(request.data)
+        form = form_obj.get_form_class()(data=data, files=files)
 
         if not form.is_valid():
             raise exceptions.ValidationError({k.replace('__', '.'): v for k, v in form.errors.items()})

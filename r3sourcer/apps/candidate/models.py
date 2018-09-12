@@ -550,6 +550,13 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
             cache.set(cached_key, result)
         return result
 
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, core_models.Company):
+            return [
+                models.Q(candidate_rels__master_company=owner)
+            ]
+
 
 class TagRel(core_models.UUIDModel):
     tag = models.ForeignKey(
