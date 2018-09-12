@@ -312,7 +312,7 @@ class Form(UUIDModel):
             if isinstance(value, dict):
                 parsed_data.update(cls.parse_api_files(value, parent=field_name))
             else:
-                if ';base64,' in value:
+                if isinstance(value, str) and ';base64,' in value:
                     value = ApiBase64FileField().to_internal_value(value)
 
                 parsed_data[field_name] = value
