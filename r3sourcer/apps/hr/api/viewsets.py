@@ -548,17 +548,17 @@ class JobViewset(BaseApiViewset):
         job_tags = job.tags.values_list('tag_id', flat=True)
 
         candidate_contacts = candidate_contacts.annotate(
-            distance_to_jobsite=Case(
+            distance_to_jobsite=Max(Case(
                 When(contact__distance_caches__jobsite=job.jobsite,
                      then='contact__distance_caches__distance'),
                 default=-1
-            ),
-            time_to_jobsite=Case(
+            )),
+            time_to_jobsite=Max(Case(
                 When(contact__distance_caches__jobsite=job.jobsite,
                      contact__distance_caches__time__isnull=False,
                      then='contact__distance_caches__time'),
                 default=-1
-            ),
+            )),
             skills_score=Max(Case(
                 When(candidate_skills__score__gt=0,
                      candidate_skills__skill__active=True,
@@ -604,6 +604,7 @@ class JobViewset(BaseApiViewset):
             '__str__': str(job),
             'jobsite': str(job.jobsite),
             'position': str(job.position),
+            'default_rate': job.position.default_rate,
         }
         if jobsite_address:
             job_ctx.update({

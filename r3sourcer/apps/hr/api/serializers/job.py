@@ -339,6 +339,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
         accepted_messages = []
         not_accepted_messages = []
+        pending_messages = []
 
         for jo in job_offers.all():
             message = {
@@ -353,9 +354,9 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 not_accepted_messages.append(message)
             else:
                 message['status'] = _('Pending')
-                not_accepted_messages.append(message)
+                pending_messages.append(message)
 
-        return accepted_messages, not_accepted_messages
+        return accepted_messages, not_accepted_messages, pending_messages
 
     def get_available(self, obj):
         shifts_data = self.context['partially_available_candidates'].get(obj.id, {})
@@ -372,7 +373,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                     'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
                 }
 
-                accepted_messages, not_accepted_messages = self._get_jo_messages(obj, data['datetime'])
+                accepted_messages, not_accepted_messages, unknown = self._get_jo_messages(obj, data['datetime'])
 
                 if hr_job_utils.HAS_JOBOFFER in shifts_data['reasons'] and len(accepted_messages) > 0:
                     data['messages'] = accepted_messages
@@ -401,12 +402,12 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
             }
 
-            accepted_messages, not_accepted_messages = self._get_jo_messages(obj, data['datetime'])
+            accepted_messages, not_accepted_messages, pending_messages = self._get_jo_messages(obj, data['datetime'])
 
             if len(not_accepted_messages) > 0:
                 data['messages'] = not_accepted_messages
                 dates.append(data)
-            elif len(accepted_messages) == 0:
+            elif len(pending_messages) > 0:
                 data['messages'] = [{
                     'status': _('Unknown'),
                     'message': None,
@@ -419,11 +420,12 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 'text': _('Available shifts'),
                 'shifts': dates,
             })
-            if len(unknown_dates) > 0:
-                response_data.append({
-                    'text': _('Unknown shifts'),
-                    'shifts': unknown_dates,
-                })
+
+        if len(unknown_dates) > 0:
+            response_data.append({
+                'text': _('Unknown shifts'),
+                'shifts': unknown_dates,
+            })
         else:
             response_data = [{
                 'text': text,
