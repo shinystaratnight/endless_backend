@@ -241,7 +241,7 @@ def send_placement_rejection_sms(self, job_offer_id):
 
 
 @shared_task
-def generate_invoice(timesheet_id=None):
+def generate_invoice(timesheet_id=None, recreate=False):
     """
     Generates new or updates existing invoice. Accepts regular(customer) company.
     """
@@ -255,6 +255,10 @@ def generate_invoice(timesheet_id=None):
     invoice_rule = utils.get_invoice_rule(company)
     date_from, date_to = utils.get_invoice_dates(invoice_rule, timesheet)
     invoice = utils.get_invoice(company, date_from, date_to, timesheet)
+
+    if invoice is None and recreate:
+        invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
+
     service.generate_invoice(date_from, date_to, company=company, invoice=invoice)
 
 

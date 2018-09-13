@@ -226,7 +226,7 @@ def get_invoice_dates(invoice_rule, timesheet=None):
     return date_from, date_to
 
 
-def get_invoice(company, date_from, date_to, timesheet):
+def get_invoice(company, date_from, date_to, timesheet, recreate=False):
     """
     Checks if needed invoice already exists and returns it to update with new timesheets.
     """
@@ -234,22 +234,31 @@ def get_invoice(company, date_from, date_to, timesheet):
     invoice_rule = company.invoice_rules.first()
 
     try:
+        qry = Q(
+            invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
+        )
+
+        if recreate:
+            qry = Q()
+
         if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
             invoice = Invoice.objects.filter(
-                invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
+                qry,
                 customer_company=company, approved=False
             ).latest('date')
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
             jobsite = timesheet.job_offer.shift.date.job.jobsite
             invoice = Invoice.objects.filter(
-                invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
-                invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite
+                qry,
+                invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite,
+                approved=False
             ).latest('date')
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
             candidate = timesheet.job_offer.candidate_contact
             invoice = Invoice.objects.filter(
-                invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
-                customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate
+                qry,
+                customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate,
+                approved=False
             ).latest('date')
     except Exception:
         pass
