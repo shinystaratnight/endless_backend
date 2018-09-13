@@ -313,6 +313,20 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         return Response(status=status.HTTP_200_OK)
 
+    @transaction.atomic
+    @action(methods=['post'], detail=True)
+    def recreate_invoice(self, request, pk, *args, **kwargs):
+        timesheet = self.get_object()
+
+        if timesheet.invoice_lines.filter(invoice__approved=False).exists():
+            timesheet.invoice_lines.all().delete()
+
+        generate_invoice.apply_async([timesheet.id], countdown=10)
+
+        return Response({
+            'status': 'success',
+        })
+
 
 class InvoiceViewset(BaseApiViewset):
 

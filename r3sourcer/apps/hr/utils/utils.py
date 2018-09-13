@@ -243,13 +243,15 @@ def get_invoice(company, date_from, date_to, timesheet):
             jobsite = timesheet.job_offer.shift.date.job.jobsite
             invoice = Invoice.objects.filter(
                 invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
-                invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite
+                invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite,
+                approved=False
             ).latest('date')
         elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
             candidate = timesheet.job_offer.candidate_contact
             invoice = Invoice.objects.filter(
                 invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
-                customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate
+                customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate,
+                approved=False
             ).latest('date')
     except Exception:
         pass
