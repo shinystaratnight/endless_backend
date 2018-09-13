@@ -1388,7 +1388,7 @@ class CompanyListSerializer(
             return core_field.ApiBaseRelatedField.to_read_only_data(company_rel.master_company)
 
     def get_active_states(self, obj):
-        if obj:
+        if obj and obj.type == core_models.Company.COMPANY_TYPES.regular:
             obj = self.get_company_rel(obj)
 
         return super().get_active_states(obj)
@@ -1432,7 +1432,7 @@ class CompanyListSerializer(
         return msg
 
     def get_latest_state(self, obj):
-        if obj:
+        if obj and obj.type == core_models.Company.COMPANY_TYPES.regular:
             obj = self.get_company_rel(obj)
 
         return super().get_latest_state(obj)
