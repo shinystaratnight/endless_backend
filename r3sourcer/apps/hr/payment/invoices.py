@@ -173,7 +173,10 @@ class InvoiceService(BasePaymentService):
                     separation_rule=invoice_rule.separation_rule
                 )
             else:
-                lines = [x for x in lines if not InvoiceLine.objects.filter(timesheet=x['timesheet']).exists()]
+                lines = [
+                    x for x in lines
+                    if not InvoiceLine.objects.filter(timesheet=x['timesheet'], invoice__approved=False).exists()
+                ]
 
             invoice_lines = []
 
