@@ -1213,7 +1213,8 @@
                     "has_active_price_list_and_rate",
                     "is_start_date_set",
                     "is_client_active",
-                    "is_unique_position_jobsite"
+                    "is_unique_position_jobsite",
+                    "is_position_active"
                 ]
             },
             "hardlock": true

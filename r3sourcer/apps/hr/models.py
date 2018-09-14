@@ -387,6 +387,9 @@ class Job(core_models.AbstractBaseOrder):
 
     @workflow_function
     def has_active_price_list_and_rate(self):
+        if self.customer_company.type == core_models.Company.TYPE_CHOICES.master:
+            return True
+
         today = timezone.localtime(timezone.now()).date()
 
         return self.customer_company.price_lists.filter(
@@ -428,10 +431,17 @@ class Job(core_models.AbstractBaseOrder):
 
     @workflow_function
     def is_client_active(self):
-        content_type = ContentType.objects.get_for_model(core_models.CompanyRel)
-        company_rel = self.customer_company.regular_companies.filter(master_company=self.provider_company).first()
+        if self.customer_company.type == core_models.Company.TYPE_CHOICES.master:
+            content_type = ContentType.objects.get_for_model(core_models.Company)
+            obj = self.customer_company
+            number = 40
+        else:
+            content_type = ContentType.objects.get_for_model(core_models.CompanyRel)
+            obj = self.customer_company.regular_companies.filter(master_company=self.provider_company).first()
+            number = 70
+
         res = core_models.WorkflowObject.objects.filter(
-            state__number=70, state__workflow__model=content_type, active=True, object_id=company_rel.id
+            state__number=number, state__workflow__model=content_type, active=True, object_id=obj.id
         ).exists()
         return res
     is_client_active.short_description = _('Active Client')
@@ -447,6 +457,15 @@ class Job(core_models.AbstractBaseOrder):
 
         return not existing_jobs.exclude(id__in=completed_list).exists()
     is_unique_position_jobsite.short_description = _('Unique Position and Jobsite')
+
+    @workflow_function
+    def is_position_active(self):
+        if self.customer_company.type != core_models.Company.TYPE_CHOICES.master:
+            return True
+
+        return self.position and self.position.active
+
+    is_position_active.short_description = _('Active position')
 
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
