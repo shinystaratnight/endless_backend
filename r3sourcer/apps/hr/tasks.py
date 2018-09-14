@@ -251,6 +251,10 @@ def generate_invoice(timesheet_id=None, recreate=False):
         return
 
     company = timesheet.regular_company
+
+    if company.type == core_models.Company.TYPE_CHOICES.master:
+        return
+
     service = InvoiceService()
     invoice_rule = utils.get_invoice_rule(company)
     date_from, date_to = utils.get_invoice_dates(invoice_rule, timesheet)
