@@ -144,22 +144,9 @@ class WorkflowNode(UUIDModel):
         if state_number_exist.exists():
             raise ValidationError(_('State with number {number} already exist on company').format(number=number))
 
-        system_node = WorkflowNode.objects.filter(system_state_qry).first()
-
-        if system_node:
-            if active != system_node.active:
-                raise ValidationError(_('Active for system node cannot be changed.'))
-            elif rules != system_node.rules:
-                raise ValidationError(_('Rules for system node cannot be changed.'))
-
         if not just_added:
             origin = WorkflowNode.objects.get(id=_id)
             number_changed = origin.number != number
-
-            if system_node and number_changed:
-                raise ValidationError(
-                    _('Number for system node cannot be changed.')
-                )
 
             if number_changed:
                 nodes = WorkflowNode.objects.filter(workflow=workflow, company_workflow_nodes__company=company)
