@@ -5,6 +5,7 @@ from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth import logout
 from django.contrib.sites.shortcuts import get_current_site
+from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
@@ -176,7 +177,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
     phone_fields = ['phone_mobile']
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def validate(self, request, *args, **kwargs):
         email = request.GET.get('email')
         phone = request.GET.get('phone')
@@ -212,6 +213,28 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
                 'valid': True,
                 'message': message
             }
+        })
+
+    @action(methods=['get'], detail=False, permission_classes=[AllowAny])
+    def exists(self, request, *args, **kwargs):
+        email = request.GET.get('email')
+        phone = request.GET.get('phone')
+
+        message = {}
+
+        if email and models.Contact.objects.filter(email=email).exists():
+            message['email'] = _('User with this email already registered')
+        elif phone and models.Contact.objects.filter(phone_mobile=phone).exists():
+            message['phone_mobile'] = _('User with this phone number already registered')
+
+        if message:
+            return Response({
+                'status': 'error',
+                'errors': [message]
+            })
+
+        return Response({
+            'status': 'success'
         })
 
     @action(methods=['put'], detail=True)
@@ -429,6 +452,24 @@ class CompanyViewset(BaseApiViewset):
 
         super().perform_destroy(instance)
 
+    @action(methods=['get'], detail=False, permission_classes=[AllowAny])
+    def exists(self, request, *args, **kwargs):
+        company_name = request.GET.get('name')
+
+        try:
+            models.Company.objects.get(name=company_name)
+
+            return Response({
+                'status': 'error',
+                'errors': [{'company_name': _('Company with this name alredy exists')}]
+            })
+        except models.Company.DoesNotExist:
+            pass
+
+        return Response({
+            'status': 'success'
+        })
+
 
 class CompanyContactViewset(BaseApiViewset):
 
@@ -523,6 +564,24 @@ class SiteViewset(BaseApiViewset):
 
     permission_classes = (permissions.SitePermissions,)
     filter_backends = (permissions.SiteClosestCompanyFilterBackend,)
+
+    @action(methods=['get'], detail=False, permission_classes=[AllowAny])
+    def exists(self, request, *args, **kwargs):
+        website = request.GET.get('website')
+
+        try:
+            Site.objects.get(domain='%s.r3sourcer.com' % website)
+
+            return Response({
+                'status': 'error',
+                'errors': [{'website': _('Website with this domain alredy exists')}]
+            })
+        except Site.DoesNotExist:
+            pass
+
+        return Response({
+            'status': 'success'
+        })
 
 
 class NavigationViewset(BaseApiViewset):

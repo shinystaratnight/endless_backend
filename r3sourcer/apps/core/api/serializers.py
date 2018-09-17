@@ -9,7 +9,9 @@ from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.sites.shortcuts import get_current_site
+from django.contrib.sites.models import Site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
+from django.core.validators import URLValidator
 from django.db import models
 from django.utils import six, timezone
 from django.utils.formats import date_format
@@ -1715,14 +1717,16 @@ class TrialSerializer(serializers.Serializer):
         if not phone_mobile or not phone_mobile.is_valid():
             raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})
 
-        try:
-            core_models.Contact.objects.get(models.Q(email=email) | models.Q(phone_mobile=phone_mobile))
-            key = 'email' if email else 'phone_mobile'
-            raise serializers.ValidationError({
-                key: _('User with this email or phone number already registered')
-            })
-        except core_models.Contact.DoesNotExist:
-            pass
+        messages = {}
+
+        if core_models.Contact.objects.filter(email=email).exists():
+            messages['email'] = _('User with this email already registered')
+
+        if core_models.Contact.objects.filter(phone_mobile=phone_mobile).exists():
+            messages['phone_mobile'] = _('User with this phone number already registered')
+
+        if messages:
+            raise serializers.ValidationError(messages)
 
         try:
             core_models.Company.objects.get(name=company_name)
@@ -1730,6 +1734,22 @@ class TrialSerializer(serializers.Serializer):
                 'company_name': _('Company with this name already registered')
             })
         except core_models.Company.DoesNotExist:
+            pass
+
+        domain = '%s.r3sourcer.com' % data['website']
+        try:
+            URLValidator()('http://'.format(domain))
+        except ValidationError:
+            raise serializers.ValidationError({
+                'website': _('Website address is invalid')
+            })
+
+        try:
+            Site.objects.get(domain=domain)
+            raise serializers.ValidationError({
+                'website': _('Website address already registered')
+            })
+        except Site.DoesNotExist:
             pass
 
         return data
