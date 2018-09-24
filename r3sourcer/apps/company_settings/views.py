@@ -10,7 +10,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from r3sourcer.apps.company_settings import serializers
-from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission, CompanySettings
+from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
 from r3sourcer.apps.core.models import User, Company
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
@@ -215,6 +215,7 @@ class UserAvailableGroupListView(ListAPIView):
 
         return company.groups.all()
 
+
 class CompanyUserListView(APIView):
     """
     Returns list of all users of current user's company.
@@ -325,9 +326,11 @@ class MYOBAuthorizationView(APIView):
     Accepts Developer Key and Developer Secret and checks if they are correct.
     """
     def post(self, request, *args, **kwargs):
+        postfix = '_ssl' if request.is_secure() else ''
+
         data = {
-            'client_id': settings.MYOB_APP['api_key'],
-            'client_secret': settings.MYOB_APP['api_secret'],
+            'client_id': settings.MYOB_APP['api_key{}'.format(postfix)],
+            'client_secret': settings.MYOB_APP['api_secret{}'.format(postfix)],
             'scope': 'CompanyFile',
             'code': request.data.get('code', None),
             'redirect_uri': request.data.get('redirect_uri', None),
@@ -345,8 +348,8 @@ class MYOBAuthorizationView(APIView):
             company=company,
             myob_user_username=response['user']['username'],
             defaults=dict(
-                client_id=settings.MYOB_APP['api_key'],
-                client_secret=settings.MYOB_APP['api_secret'],
+                client_id=data['client_id'],
+                client_secret=data['client_secret'],
                 access_token=response['access_token'],
                 refresh_token=response['refresh_token'],
                 myob_user_uid=response['user']['uid'],
@@ -411,17 +414,21 @@ class RefreshCompanyFilesView(APIView):
             raw_company_files = client.get_company_files()
 
             for raw_company_file in raw_company_files:
-                company_file, created = MYOBCompanyFile.objects.update_or_create(cf_id=raw_company_file['Id'],
-                                                                                 defaults={
-                                                                                     'cf_uri': raw_company_file['Uri'],
-                                                                                     'cf_name': raw_company_file['Name'],
-                                                                                     'auth_data': auth_data
-                                                                                 })
-                company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(company_file=company_file,
-                                                                                      company=company,
-                                                                                      defaults={
-                                                                                          'auth_data': auth_data,
-                                                                                      })
+                company_file, created = MYOBCompanyFile.objects.update_or_create(
+                    cf_id=raw_company_file['Id'],
+                    defaults={
+                        'cf_uri': raw_company_file['Uri'],
+                        'cf_name': raw_company_file['Name'],
+                        'auth_data': auth_data
+                    }
+                )
+                company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(
+                    company_file=company_file,
+                    company=company,
+                    defaults={
+                        'auth_data': auth_data,
+                    }
+                )
                 if created:
                     new_company_files.append(company_file)
 
@@ -481,13 +488,14 @@ class RefreshMYOBAccountsView(APIView):
 
             account_response = client.get_accounts(company_file.cf_id, company_file_token).json()
 
-            if not 'Items' in account_response:
+            if 'Items' not in account_response:
                 continue
 
             accounts = account_response['Items']
 
             for account in accounts:
-                account_object, created = MYOBAccount.objects.update_or_create(uid=account['UID'],
+                account_object, created = MYOBAccount.objects.update_or_create(
+                    uid=account['UID'],
                     defaults={
                         'name': account['Name'],
                         'display_id': account['DisplayID'],
@@ -557,7 +565,7 @@ class MYOBAPIKeyView(APIView):
     """
     def get(self, *args, **kwargs):
         data = {
-            'api_key': settings.MYOB_APP['api_key']
+            'api_key': settings.MYOB_APP['api_key{}'.format('_ssl' if self.request.is_secure() else '')]
         }
         return Response(data)
 

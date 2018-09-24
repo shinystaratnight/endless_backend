@@ -20,9 +20,10 @@ log = logging.getLogger(__name__)
 
 @login_required
 def index(request):
+    postfix = '_ssl' if request.is_secure() else ''
     initial_keys = {
-        'key': settings.MYOB_APP['api_key'],
-        'secret': settings.MYOB_APP['api_secret']
+        'key': settings.MYOB_APP['api_key{}'.format(postfix)],
+        'secret': settings.MYOB_APP['api_secret{}'.format(postfix)]
     }
     context = {
         'title': 'MYOB Sign In',
