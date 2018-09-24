@@ -7,7 +7,7 @@ from functools import reduce
 
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max
+from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Min
 from django.utils import timezone, dateparse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -424,7 +424,7 @@ class JobViewset(BaseApiViewset):
 
         shifts_q = Q(id__in=requested_shift_ids) if requested_shift_ids else Q()
 
-        init_shifts = list(hr_models.Shift.objects.filter(
+        init_shifts_qry = hr_models.Shift.objects.filter(
             shifts_q,
             Q(date__shift_date=today, time__gte=now.timetz()) | Q(date__shift_date__gt=today),
             date__job=job,
@@ -434,8 +434,17 @@ class JobViewset(BaseApiViewset):
                 When(job_offers__status=hr_models.JobOffer.STATUS_CHOICES.accepted, then=Value(1)),
                 default=Value(0),
                 output_field=IntegerField(),
-            ))
-        ).filter(accepted_jo_count__lt=F('workers')).select_related('date').order_by('date__shift_date', 'time'))
+            )),
+        ).filter(accepted_jo_count__lt=F('workers')).select_related('date').order_by('date__shift_date', 'time')
+
+        init_shifts = list(init_shifts_qry)
+
+        if not requested_shift_ids:
+            single_shifts = list(
+                init_shifts_qry.annotate(min_time=Min('date__shifts__time')).filter(time=F('min_time'))
+            )
+        else:
+            single_shifts = init_shifts
 
         if request.method == 'POST':
             return self.fillin_post(request, init_shifts)
@@ -490,14 +499,14 @@ class JobViewset(BaseApiViewset):
         # filter partially available
         partially_available = request.GET.get('available', 'False') == 'True'
         partially_available_candidates = {}
-        if init_shifts:
+        if single_shifts:
             partially_available_candidates = job_utils.get_partially_available_candidate_ids(
-                candidate_contacts, init_shifts
+                candidate_contacts, single_shifts
             )
 
             unavailable_all = [
                 partial for partial, data in partially_available_candidates.items()
-                if len(data['shifts']) == len(init_shifts)
+                if len(data['shifts']) == len(single_shifts)
             ]
 
             candidate_contacts = candidate_contacts.exclude(
@@ -513,10 +522,10 @@ class JobViewset(BaseApiViewset):
                 )
             else:
                 for r_id, data in partially_available_candidates.items():
-                    data['shifts'] = [shift for shift in init_shifts if shift.id in data['shifts']]
+                    data['shifts'] = [shift for shift in single_shifts if shift.id in data['shifts']]
         # end
 
-        when_list = self._get_undefined_jo_lookups(init_shifts)
+        when_list = self._get_undefined_jo_lookups(single_shifts)
 
         candidate_contacts = candidate_contacts.annotate(
             jos=Sum(Case(
