@@ -567,10 +567,10 @@ class SiteViewset(BaseApiViewset):
 
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def exists(self, request, *args, **kwargs):
-        website = request.GET.get('website')
+        website = request.GET.get('website', '').lower()
 
         try:
-            Site.objects.get(domain='%s.r3sourcer.com' % website)
+            Site.objects.get(domain__iexact='%s.r3sourcer.com' % website)
 
             return Response({
                 'status': 'error',

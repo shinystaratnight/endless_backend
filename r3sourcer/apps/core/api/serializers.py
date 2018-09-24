@@ -1736,7 +1736,7 @@ class TrialSerializer(serializers.Serializer):
         except core_models.Company.DoesNotExist:
             pass
 
-        domain = '%s.r3sourcer.com' % data['website']
+        domain = '%s.r3sourcer.com' % data['website'].lower()
         try:
             URLValidator()('http://{}'.format(domain))
         except ValidationError:
@@ -1745,7 +1745,7 @@ class TrialSerializer(serializers.Serializer):
             })
 
         try:
-            Site.objects.get(domain=domain)
+            Site.objects.get(domain__iexact=domain)
             raise serializers.ValidationError({
                 'website': _('Website address already registered')
             })

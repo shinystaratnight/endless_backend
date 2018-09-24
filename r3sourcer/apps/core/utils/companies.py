@@ -57,7 +57,7 @@ def get_site_master_company(site=None, request=None, user=None, default=True):
     if isinstance(site, str):
         site = Site.objects.get_by_natural_key(site)
     elif request:
-        site = Site.objects.filter(domain=request.get_host()).first()
+        site = Site.objects.filter(domain__iexact=request.get_host()).first()
 
     if site is None:
         if not default:
