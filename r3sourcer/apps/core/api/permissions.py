@@ -64,7 +64,9 @@ class SiteContactPermissions(SitePermissions):
 
         host = request.get_host()
 
-        return user.is_superuser or SiteCompany.objects.filter(company=closest_company, site__domain=host).exists()
+        return user.is_superuser or SiteCompany.objects.filter(
+            company=closest_company, site__domain__iexact=host
+        ).exists()
 
 
 class SiteMasterCompanyFilterBackend(DRYPermissionFiltersBase):
