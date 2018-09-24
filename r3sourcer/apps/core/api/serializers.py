@@ -1738,7 +1738,7 @@ class TrialSerializer(serializers.Serializer):
 
         domain = '%s.r3sourcer.com' % data['website']
         try:
-            URLValidator()('http://'.format(domain))
+            URLValidator()('http://{}'.format(domain))
         except ValidationError:
             raise serializers.ValidationError({
                 'website': _('Website address is invalid')
