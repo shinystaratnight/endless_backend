@@ -168,8 +168,9 @@ class TestCompanyFileAccountsView:
 
 class TestMYOBAuthorizationView:
     @pytest.mark.django_db
+    @mock.patch('r3sourcer.apps.company_settings.views.get_site_master_company')
     @mock.patch('r3sourcer.apps.myob.api.wrapper.MYOBAuth.retrieve_access_token')
-    def test_authorization_success(self, mocked_function, client, user):
+    def test_authorization_success(self, mocked_function, mock_company, client, user, company):
         mocked_function.return_value = {
             'access_token': 'access_token',
             'refresh_token': 'refresh_token',
@@ -179,6 +180,7 @@ class TestMYOBAuthorizationView:
                 'username': 'username'
             }
         }
+        mock_company.return_value = company
         data = {
             'api_key': 'qwe',
             'api_secret': 'api_secret',
@@ -627,7 +629,10 @@ class TestMYOBSettingsView:
 
 
 class TestMYOBAuthDataListView:
-    def test_get(self, user, client):
+    @mock.patch('r3sourcer.apps.company_settings.views.get_site_master_company')
+    def test_get(self, mock_company, user, client, company):
+        mock_company.return_value = company
+
         auth_data = MYOBAuthData.objects.create(
             client_id='client_id1',
             client_secret='client_secret',
@@ -636,7 +641,8 @@ class TestMYOBAuthDataListView:
             myob_user_uid='myob_user_uid',
             myob_user_username='myob_user_username',
             expires_in=1,
-            user=user
+            user=user,
+            company=company
         )
         auth_data2 = MYOBAuthData.objects.create(
             client_id='client_id2',
@@ -646,7 +652,8 @@ class TestMYOBAuthDataListView:
             myob_user_uid='myob_user_uid',
             myob_user_username='myob_user_username2',
             expires_in=1,
-            user=user
+            user=user,
+            company=company
         )
 
         url = reverse('auth_data', kwargs={'version': 'v2'})

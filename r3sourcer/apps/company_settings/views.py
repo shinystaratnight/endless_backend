@@ -304,14 +304,18 @@ class CompanySettingsView(APIView):
 class CompanyFileAccountsView(APIView):
     """
     Returns list of MYOB accounts of a given company file.
-    If company file wasnt given returns all MYOB accounts
+    If company file wasnt given returns empty list
     """
     def get(self, request, *args, **kwargs):
         if 'id' in self.kwargs:
             company_file = get_object_or_404(MYOBCompanyFile, cf_id=self.kwargs['id'])
             myob_accounts = company_file.accounts.all()
         else:
-            myob_accounts = MYOBAccount.objects.all()
+            myob_accounts = MYOBAccount.objects.none()
+
+        account_type = request.query_params.get('type')
+        if account_type:
+            myob_accounts = myob_accounts.filter(type__iexact=account_type)
 
         serializer = serializers.MYOBAccountSerializer(myob_accounts, many=True)
         data = {
@@ -477,13 +481,21 @@ class RefreshMYOBAccountsView(APIView):
         data = dict()
         new_accounts = list()
 
-        for company_file in request.user.company_files:
+        if 'id' in self.kwargs:
+            print('!', self.kwargs['id'])
+            company_files = [get_object_or_404(MYOBCompanyFile, cf_id=self.kwargs['id'])]
+        else:
+            company_files = request.user.company_files
+
+        for company_file in company_files:
             if not company_file.authenticated:
                 continue
 
-            company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created').cf_token
-
-            if not company_file_token:
+            try:
+                company_file_token = company_file.tokens.filter(
+                    auth_data__user=request.user
+                ).latest('created').cf_token
+            except MYOBCompanyFileToken.DoesNotExist:
                 continue
 
             account_response = client.get_accounts(company_file.cf_id, company_file_token).json()
