@@ -140,7 +140,7 @@ class CompanyUserSerializer(serializers.ModelSerializer):
                 qry = Q(relationships__company=self.context['company'])
 
             title = obj.contact.company_contact.filter(qry).first().job_title
-            name = '{} {}'.format(title, name)
+            name = '{} {}'.format(title, name) if title else name
 
         return name
 

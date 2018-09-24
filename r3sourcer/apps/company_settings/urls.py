@@ -29,6 +29,7 @@ urlpatterns = [
     url(r'^company_settings/company_files/refresh/$', views.RefreshCompanyFilesView.as_view(), name='refresh_company_files'),
     url(r'^company_settings/company_files/check/$', views.CheckCompanyFilesView.as_view(), name='check_company_files'),
     url(r'^company_settings/company_files/(?P<id>[\w\-]+)/accounts/$', views.CompanyFileAccountsView.as_view(), name='company_file_accounts'),
+    url(r'^company_settings/company_files/(?P<id>[\w\-]+)/accounts/refresh/$', views.RefreshMYOBAccountsView.as_view(), name='refresh_company_file_accounts'),
     url(r'^company_settings/company_files/$', views.UserCompanyFilesView.as_view(), name='user_company_files'),
     url(r'^company_settings/myob_accounts/refresh/$', views.RefreshMYOBAccountsView.as_view(), name='refresh_myob_accounts'),
     url(r'^company_settings/myob_accounts/$', views.CompanyFileAccountsView.as_view(), name='myob_accounts'),
