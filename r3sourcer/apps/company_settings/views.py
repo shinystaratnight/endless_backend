@@ -341,15 +341,17 @@ class MYOBAuthorizationView(APIView):
             company = self.request.user.company.get_closest_master_company()
 
         MYOBAuthData.objects.get_or_create(
-            client_id=settings.MYOB_APP['api_key'],
-            client_secret=settings.MYOB_APP['api_secret'],
-            access_token=response['access_token'],
-            refresh_token=response['refresh_token'],
-            myob_user_uid=response['user']['uid'],
-            myob_user_username=response['user']['username'],
-            expires_in=response['expires_in'],
             user=request.user,
-            company=company
+            company=company,
+            myob_user_username=response['user']['username'],
+            defaults=dict(
+                client_id=settings.MYOB_APP['api_key'],
+                client_secret=settings.MYOB_APP['api_secret'],
+                access_token=response['access_token'],
+                refresh_token=response['refresh_token'],
+                myob_user_uid=response['user']['uid'],
+                expires_in=response['expires_in'],
+            )
         )
 
         return Response()
