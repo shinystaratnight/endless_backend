@@ -535,8 +535,8 @@ class JobViewset(BaseApiViewset):
             ))
         )
 
-        company_contact = request.user.contact.company_contact.first()
-        if company_contact:
+        company_contacts = request.user.contact.company_contact.all()
+        if company_contacts.exists():
             favourite_list = list(candidate_contacts.filter(
                 Q(favouritelists__job=job) |
                 Q(favouritelists__jobsite=job.jobsite) |
@@ -544,7 +544,7 @@ class JobViewset(BaseApiViewset):
                 Q(favouritelists__job__isnull=True,
                   favouritelists__jobsite__isnull=True,
                   favouritelists__company__isnull=True),
-                favouritelists__company_contact=company_contact
+                favouritelists__company_contact__in=company_contacts
             ).values_list('id', flat=True).distinct())
         else:
             favourite_list = []
