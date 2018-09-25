@@ -312,29 +312,29 @@ class TimeSheetSync(
         offer = timesheet.job_offer
         shift = offer.shift
         name = None
+        job = timesheet.job_offer.job
+        skill_name = job.position.get_myob_name()
         if timesheet.rate_overrides_approved_by and timesheet.candidate_rate:
             return '{} {}'.format(
-                str(timesheet.candidate_rate.skill.get_myob_name()),
-                str(timesheet.candidate_rate.hourly_rate)
-            ), timesheet.candidate_rate.hourly_rate
+                str(skill_name),
+                str(timesheet.candidate_rate)
+            ), timesheet.candidate_rate
         if shift.hourly_rate:
             return '{} {}'.format(
-                str(shift.hourly_rate.skill.get_myob_name()),
-                str(shift.hourly_rate.hourly_rate)
-            ), shift.hourly_rate.hourly_rate
+                str(skill_name),
+                str(shift.hourly_rate)
+            ), shift.hourly_rate
         if shift.date.hourly_rate:
             return '{} {}'.format(
-                str(shift.date.hourly_rate.skill.get_myob_name()),
-                str(shift.date.hourly_rate.hourly_rate)
-            ), shift.date.hourly_rate.hourly_rate
-
-        job = timesheet.job_offer.job
+                str(skill_name),
+                str(shift.date.hourly_rate)
+            ), shift.date.hourly_rate
         if job.hourly_rate_default:
             name = '{} {}'.format(
                 str(job.position.get_myob_name()),
                 str(job.hourly_rate_default)
             )
-            base_rate = job.top_hourly_rate_default
+            base_rate = job.hourly_rate_default
 
         if name is None:
             candidate_skill_rate = SkillRel.objects.filter(
