@@ -387,7 +387,7 @@ class Job(core_models.AbstractBaseOrder):
 
     @workflow_function
     def has_active_price_list_and_rate(self):
-        if self.customer_company.type == core_models.Company.TYPE_CHOICES.master:
+        if self.customer_company.type == core_models.Company.COMPANY_TYPES.master:
             return True
 
         today = timezone.localtime(timezone.now()).date()
@@ -431,7 +431,7 @@ class Job(core_models.AbstractBaseOrder):
 
     @workflow_function
     def is_client_active(self):
-        if self.customer_company.type == core_models.Company.TYPE_CHOICES.master:
+        if self.customer_company.type == core_models.Company.COMPANY_TYPES.master:
             content_type = ContentType.objects.get_for_model(core_models.Company)
             obj = self.customer_company
             number = 40
@@ -460,7 +460,7 @@ class Job(core_models.AbstractBaseOrder):
 
     @workflow_function
     def is_position_active(self):
-        if self.customer_company.type != core_models.Company.TYPE_CHOICES.master:
+        if self.customer_company.type != core_models.Company.COMPANY_TYPES.master:
             return True
 
         return self.position and self.position.active
