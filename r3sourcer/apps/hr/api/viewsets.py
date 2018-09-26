@@ -920,7 +920,13 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
         if filter_manager:
             filter_qry = (
                 Q(company_addresses__primary_contact_id=filter_manager) |
-                Q(jobsites__primary_contact_id=filter_manager)
+                Q(jobsites__portfolio_manager_id=filter_manager)
+            )
+
+        filter_primary = serializer.validated_data.get('primary_contact')
+        if filter_primary:
+            filter_qry = (
+                Q(jobsites__primary_contact_id=filter_primary)
             )
 
         site_master_company = get_site_master_company(request=request)
