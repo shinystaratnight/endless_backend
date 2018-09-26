@@ -336,10 +336,15 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
 
     def add_related_objects(self, *args):
         logger.info("Add related objects to message {}({}): {}".format(self.id, self, args))
-        return [SMSRelatedObject.objects.get_or_create(
-            object_id=obj.id, sms=self,
-            defaults={'content_object': obj}
-        ) for obj in args if isinstance(obj, models.Model)]
+        return [
+            SMSRelatedObject.objects.get_or_create(
+                object_id=obj.id if isinstance(obj, models.Model) else obj['object_id'],
+                sms=self,
+                defaults=(
+                    {'content_object': obj} if isinstance(obj, models.Model) else {'content_type_id': obj['content_type']}
+                )
+            ) for obj in args
+        ]
 
     def get_related_objects(self, obj_type=None):
         qry = models.Q()
@@ -374,6 +379,12 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
 
     def __str__(self):
         return '{} -> {}'.format(self.from_number, self.to_number)
+
+    def is_delivered(self):
+        return self.status in [
+            self.STATUS_CHOICES.RECEIVED,
+            self.STATUS_CHOICES.DELIVERED
+        ]
 
     class Meta:
         ordering = ['-sent_at']
