@@ -252,7 +252,7 @@ def generate_invoice(timesheet_id=None, recreate=False):
 
     company = timesheet.regular_company
 
-    if company.type == core_models.Company.TYPE_CHOICES.master:
+    if company.type == core_models.Company.COMPANY_TYPES.master:
         return
 
     service = InvoiceService()
