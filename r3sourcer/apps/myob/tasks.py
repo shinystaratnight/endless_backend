@@ -5,6 +5,7 @@ from celery.utils.log import get_task_logger
 
 from django.db.models import Q
 
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import Company, Invoice
 from r3sourcer.apps.core.tasks import one_task_at_the_same_time
 from r3sourcer.apps.core.utils.user import get_default_company
@@ -68,49 +69,22 @@ def sync_to_myob(self):
 @one_task_at_the_same_time()
 @retry_on_myob_error
 def sync_timesheets(self):
-    timesheets = TimeSheet.objects.filter(
-        candidate_submitted_at__isnull=False,
-        supervisor_approved_at__isnull=False
-    ).select_related('job_offer__shift__date__job__jobsite', 'job_offer__candidate_contact')
+    companies = Company.objects.filter(type=Company.COMPANY_TYPES.master)
 
-    company = get_default_company()
-    company_settings = getattr(company, 'myob_settings', None)
-    if not company_settings or not company_settings.timesheet_company_file:
-        logger.warn('Company has no TimeSheet Company Files configured')
-        return
+    for company in companies:
+        candidates = CandidateContact.objects.owned_by(company).filter(id='52af508d-70d5-4185-9564-2ed268e3fa4d')
 
-    myob_client = get_myob_client(cf_id=company_settings.timesheet_company_file.cf_id)
-    sync_service = TimeSheetSync(myob_client, company=company)
-    candidate_service = CandidateSync(myob_client, company=company)
+        company_settings = getattr(company, 'myob_settings', None)
+        if not company_settings or not company_settings.timesheet_company_file:
+            logger.warn('Company %s has no TimeSheet Company Files configured', str(company))
+            continue
 
-    _service_cache = {
-        None: (sync_service, candidate_service),
-    }
+        sync_service = TimeSheetSync(cf_id=company_settings.timesheet_company_file.cf_id, company=company)
 
-    for timesheet in timesheets:
-        company = timesheet.regular_company or timesheet.master_company
-        cft = company and company.myob_settings.get_client_myob_company_file()
+        for candidate in candidates:
+            sync_service.sync_to_myob(candidate)
 
-        if cft is not None and cft not in _service_cache:
-            myob_client = get_myob_client(cf_id=cft.company_file.id)
-            sync_service = TimeSheetSync(myob_client, company=company)
-            candidate_service = CandidateSync(myob_client, company=company)
-            _service_cache[cft.id] = (sync_service, candidate_service)
-        else:
-            sync_service, candidate_service = _service_cache.get(cft and cft.id)
-
-        candidate = timesheet.job_offer.candidate_contact
-        updated_at = candidate.updated_at
-
-        sync_obj = MYOBSyncObject.objects.filter(
-            model='CandidateContact', company=company, record=candidate.id
-        ).first()
-        if not sync_obj or sync_obj.synced_at <= updated_at:
-            candidate_service.sync_to_myob(candidate)
-
-        sync_service.sync_to_myob(timesheet)
-
-    print("sync Timesheets {} finished".format(TimeSheetSync))
+        logger.warn('Sync Timesheets for company %s finished', str(company))
 
 
 @app.task(bind=True)
