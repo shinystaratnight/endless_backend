@@ -159,7 +159,12 @@ class MessageViewBase(object):
         """
         Return contacts recipient by recipient_field (email, phone_mobile)
         """
-        return get_list_or_404(Contact, **{'%s__in' % self.recipient_field: self.get_recipient_value()})
+        recipients = self.get_recipient_value()
+
+        if recipients:
+            return get_list_or_404(Contact, **{'%s__in' % self.recipient_field: recipients})
+
+        return Contact.objects.filter(phone_mobile__isnull=False)
 
     def get_recipient_id(self):
         return self.request.POST.getlist('recipient_id', None) or self.request.POST.getlist('recipient_id[]', None)
@@ -168,14 +173,16 @@ class MessageViewBase(object):
         """
         Return contact recipient by recipient_field (email, phone_mobile)
         """
+        recipients = self.get_recipient_value()
         if self.request.method == 'POST':
             # get recipient by recipient_id
             return get_list_or_404(Contact,
-                                   models.Q(**{'%s__in' % self.recipient_field: self.get_recipient_value()}) |
+                                   models.Q(**{'%s__in' % self.recipient_field: recipients}) |
                                    models.Q(pk__in=self.get_recipient_id()))
 
-        if Contact.objects.filter(**{'%s__in' % self.recipient_field: self.get_recipient_value()}).exists():
-            return Contact.objects.filter(**{'%s__in' % self.recipient_field: self.get_recipient_value()})
+        contacts = Contact.objects.filter(**{'%s__in' % self.recipient_field: recipients})
+        if not recipients or contacts.exists():
+            return contacts
         raise Http404(_("No such contact"))
 
     @property
@@ -261,13 +268,14 @@ class MessageView(MessageViewBase, SuperUserRequiredMixin):
         """
         Checking allowed modal service for current contact
         """
-        return bool(self.get_recipient_value())  # and bool(self.get_sender_value())
+        allowed = self.request.GET.get('allowed', 'true') == 'true'
+        return allowed or bool(self.get_recipient_value())  # and bool(self.get_sender_value())
 
     def get_template(self):
         if self.template_key in self.request.GET:
             try:
                 return TemplateMessage.objects.get(id=self.request.GET.get(self.template_key))
-            except:
+            except TemplateMessage.DoesNotExist:
                 pass
 
     def get_success_url(self):

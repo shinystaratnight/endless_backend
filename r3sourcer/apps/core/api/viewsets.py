@@ -49,7 +49,7 @@ class BaseViewsetMixin():
         return self.list_fields or []
 
     def dispatch(self, request, *args, **kwargs):
-        self.list_fields = request.GET.getlist('fields', [])
+        self.list_fields = request.GET.getlist('fields', []) or request.GET.getlist('fields[]', [])
         self.related_setting = request.GET.get('related')
 
         return super(BaseViewsetMixin, self).dispatch(request, *args, **kwargs)
