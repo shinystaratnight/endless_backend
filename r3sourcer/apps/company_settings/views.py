@@ -482,7 +482,6 @@ class RefreshMYOBAccountsView(APIView):
         new_accounts = list()
 
         if 'id' in self.kwargs:
-            print('!', self.kwargs['id'])
             company_files = [get_object_or_404(MYOBCompanyFile, cf_id=self.kwargs['id'])]
         else:
             company_files = request.user.company_files
