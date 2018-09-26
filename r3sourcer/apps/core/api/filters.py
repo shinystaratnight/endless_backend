@@ -2,7 +2,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import FieldDoesNotExist
 from django.db.models import Q
 from django.db.models.fields.related import ForeignObjectRel, OneToOneRel
-from django_filters import CharFilter, UUIDFilter, NumberFilter, BooleanFilter, ModelChoiceFilter
+from django_filters import CharFilter, UUIDFilter, NumberFilter, BooleanFilter, ModelChoiceFilter, ChoiceFilter
 from django_filters.rest_framework import FilterSet
 from rest_framework.filters import OrderingFilter
 
@@ -404,3 +404,15 @@ class ContactUnavailabilityFilter(FilterSet):
     class Meta:
         model = models.ContactUnavailability
         fields = ['contact']
+
+
+class UserFilter(FilterSet):
+
+    role = ChoiceFilter(choices=models.Role.ROLE_NAMES, method='filter_role')
+
+    class Meta:
+        model = models.User
+        fields = ['role']
+
+    def filter_role(self, queryset, name, value):
+        return queryset.filter(role__name=value)

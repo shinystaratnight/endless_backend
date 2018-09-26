@@ -297,6 +297,7 @@ class BankAccountEndpoint(ApiEndpoint):
 class UserEndpoint(ApiEndpoint):
 
     model = models.User
+    filter_class = filters.UserFilter
     serializer_fields = (
         'id', 'date_joined', {
             'contact': ('id', 'email', 'phone_mobile'),
