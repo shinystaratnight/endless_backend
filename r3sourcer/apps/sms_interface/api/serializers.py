@@ -1,6 +1,8 @@
 from django.conf import settings
 
+from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
+from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.core.utils.text import pluralize
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
 from r3sourcer.apps.sms_interface import models as sms_models
@@ -8,7 +10,7 @@ from r3sourcer.apps.sms_interface import models as sms_models
 
 class SMSMessageSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('delivered_received_datetime', 'related')
+    method_fields = ('delivered_received_datetime', 'related', 'from', 'to')
 
     class Meta:
         model = sms_models.SMSMessage
@@ -47,6 +49,20 @@ class SMSMessageSerializer(ApiBaseModelSerializer):
             resp.append(self._related_item(related.content_object, related.content_type))
 
         return resp or '-'
+
+    def _get_contact_by_number(self, phone_number):
+        try:
+            return Contact.objects.get(phone_mobile=phone_number)
+        except Contact.DoesNotExist:
+            return None
+
+    def get_from(self, obj):
+        contact = self._get_contact_by_number(obj.from_number)
+        return contact and ApiBaseRelatedField.to_read_only_data(contact)
+
+    def get_to(self, obj):
+        contact = self._get_contact_by_number(obj.to_number)
+        return contact and ApiBaseRelatedField.to_read_only_data(contact)
 
 
 class SMSLogSerializer(ApiBaseModelSerializer):
