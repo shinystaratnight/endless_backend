@@ -5,6 +5,7 @@ from django_filters.rest_framework import FilterSet
 from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, TagRel
 from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Tag
+from r3sourcer.apps.core_adapter.filters import DateRangeFilter, RangeNumberFilter
 from r3sourcer.apps.skills.models import Skill
 
 
@@ -15,10 +16,12 @@ class CandidateContactFilter(ActiveStateFilterMixin, FilterSet):
     active_states = NumberFilter(method='filter_active_state')
     contact__gender = MultipleChoiceFilter(choices=(("male", _("Male")), ("female", _("Female"))))
     transportation_to_work = MultipleChoiceFilter(choices=CandidateContact.TRANSPORTATION_CHOICES)
+    created_at = DateRangeFilter()
+    candidate_scores__average_score = RangeNumberFilter()
 
     class Meta:
         model = CandidateContact
-        fields = ['skill', 'tag', 'contact']
+        fields = ['skill', 'tag', 'contact', 'recruitment_agent']
 
     def filter_skill(self, queryset, name, value):
         if not value:
