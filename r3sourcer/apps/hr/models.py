@@ -911,7 +911,9 @@ class JobOffer(core_models.UUIDModel):
 
                 # TODO: maybe need to rethink, but it should work
                 # compute eta to schedule SMS sending
-                if target_date_and_time <= tomorrow_end:
+                if is_resend:
+                    eta = now + timedelta(seconds=10)
+                elif target_date_and_time <= tomorrow_end:
                     # today and tomorrow day and night shifts
                     eta = datetime.combine(now.date(), time(10, 0, 0, tzinfo=now.tzinfo))
 

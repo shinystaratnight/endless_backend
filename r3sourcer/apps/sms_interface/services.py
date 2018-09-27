@@ -308,8 +308,15 @@ class BaseSMSService(metaclass=ABCMeta):
 class FakeSMSService(BaseSMSService):
 
     def process_sms_send(self, sms_message):
+        company = get_site_master_company()
+        from_number = company.phone_numbers.first()
+
+        if from_number:
+            from_number = from_number.phone_number
+            sms_message.from_number = from_number
+
         sms_message.sid = 'FAKE_%s' % sms_message.id
-        sms_message.save(update_fields=['sid'])
+        sms_message.save(update_fields=['sid', 'from_number'])
 
     def process_sms_fetch(self):
         res = []
