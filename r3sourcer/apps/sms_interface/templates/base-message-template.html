@@ -326,7 +326,39 @@
             });
             if (messageType == 'email')
                 tinyMCE.init({selector: 'textarea#id_body'});
-            $('#id_recipient_id').select2({width: '100%'});
+
+            {% if recipient|length_is:"0" %}
+            $('#id_recipient_id').select2({
+                width: '100%',
+                ajax: {
+                    url: '/ecore/api/v2/core/contacts/',
+                    dataType: 'json',
+                    data: function (params) {
+                        var query = {
+                            search: params.term,
+                            fields: ['id', '__str__', 'phone_mobile', 'email'],
+                            offset: (params.page || 0) * 10,
+                            limit: 10,
+                        }
+                        return query;
+                    },
+                    processResults: function (data) {
+                        return {
+                            results: $.map(data.results, function (obj) {
+                                obj.text = obj.__str__ + ' (' + {% if message_type == 'sms' %}obj.phone_mobile{% else %}obj.email{% endif %} + ')';
+
+                                return obj;
+                            }),
+                            pagination: {
+                                more: data.results.length > 0,
+                            }
+                        };
+                    }
+                }
+            });
+            {% else %}
+                $('#id_recipient_id').select2({ width: '100%' });
+            {% endif %}
         });
     </script>
     <!-- end scripts -->
@@ -411,8 +443,8 @@
             <div class="form-row">
                 <label for="id_recipient_id">{% trans "Recipient" %}</label>
                 <select name="recipient_id" id="id_recipient_id" multiple>
-                    {% for r in recipients %}
-                        <option value="{{ r.id }}" class="recipient" selected>{{ r }} {% if message_type == 'sms' %}({{ r.phone_mobile }}){% else %}({{ r.email }}){% endif %}
+                    {% for r in recipient %}
+                        <option value="{{ r.id }}" class="recipient" {% if recipient %}selected{% endif %}>{{ r }} {% if message_type == 'sms' %}({{ r.phone_mobile }}){% else %}({{ r.email }}){% endif %}
                         </option>
                     {% endfor %}
                 </select>
