@@ -252,7 +252,7 @@ class BaseSMSService(metaclass=ABCMeta):
                 'phone_number': sms_message.from_number,
                 'text': sms_message.text
             }
-            template = "[[full_name]]: [[phone_number]]\n[[text]]"
+            template = "{full_name}: {phone_number}\n{text}".format(sms_data)
             # TODO: compile template
             sms_text = template
             try:
@@ -265,7 +265,7 @@ class BaseSMSService(metaclass=ABCMeta):
                     sms_activity.to_contact.phone_mobile, sms_text, sms_activity.from_contact,
                     from_number=from_number, check_reply=False
                 )
-            except:
+            except Exception:
                 pass
 
     @abstractmethod

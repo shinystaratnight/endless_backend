@@ -2,13 +2,14 @@ from r3sourcer.apps.core.api.router import router
 
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.sms_interface import models as sms_models
-from r3sourcer.apps.sms_interface.api import serializers as sms_serializers, filters
+from r3sourcer.apps.sms_interface.api import serializers as sms_serializers, filters, viewsets
 
 
 class SMSMessageApiEndpoint(ApiEndpoint):
 
     model = sms_models.SMSMessage
     serializer = sms_serializers.SMSMessageSerializer
+    base_viewset = viewsets.SMSMessageViewset
     filter_class = filters.SMSMessageFilter
 
     search_fields = ('from_number', 'to_number')
