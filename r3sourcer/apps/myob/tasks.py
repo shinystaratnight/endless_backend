@@ -72,7 +72,7 @@ def sync_timesheets(self):
     companies = Company.objects.filter(type=Company.COMPANY_TYPES.master)
 
     for company in companies:
-        candidates = CandidateContact.objects.owned_by(company).filter(id='52af508d-70d5-4185-9564-2ed268e3fa4d')
+        candidates = CandidateContact.objects.owned_by(company)
 
         company_settings = getattr(company, 'myob_settings', None)
         if not company_settings or not company_settings.timesheet_company_file:
