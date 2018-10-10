@@ -252,7 +252,7 @@ class BaseSMSService(metaclass=ABCMeta):
                 'phone_number': sms_message.from_number,
                 'text': sms_message.text
             }
-            template = "{full_name}: {phone_number}\n{text}".format(sms_data)
+            template = "{full_name}: {phone_number}\n{text}".format(**sms_data)
             # TODO: compile template
             sms_text = template
             try:

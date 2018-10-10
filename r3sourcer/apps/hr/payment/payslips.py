@@ -88,14 +88,14 @@ class PayslipService(BasePaymentService):
 
         domain = 'http://%s' % Site.objects.get_current().domain
 
-        context = Context({
+        context = {
             'lines': payslip.payslip_lines.all(),
             'payslip': payslip,
             'company': payslip.company,
             'candidate': payslip.candidate,
             'STATIC_URL': '%s/ecore/static' % domain,
             'DOMAIN': domain
-        })
+        }
 
         pdf_file = cls._get_file_from_str(str(template.render(context)))
 

@@ -129,13 +129,15 @@ class TestSMSServices:
         assert mock_log.exception.called
         assert not service._process_sms.called
 
+    @mock.patch('r3sourcer.apps.sms_interface.services.get_site_master_company')
     @mock.patch.object(factory, 'get_instance')
     @mock.patch.object(FakeSMSService, 'can_send_sms')
     @mock.patch('r3sourcer.apps.sms_interface.utils.get_sms_service', return_value=FakeSMSService)
     def test_fake_sms_service_send(
-        self, mock_get_service, mock_can_send, mock_factory, twilio_account, phone_number, company
+        self, mock_get_service, mock_can_send, mock_factory, mock_master, twilio_account, phone_number, company
     ):
         mock_can_send.return_value = company
+        mock_master.return_value = company
 
         service = FakeSMSService()
         service.send(
@@ -384,15 +386,18 @@ class TestSMSServices:
     @mock.patch.object(SMSTestService, 'send')
     @mock.patch('r3sourcer.apps.sms_interface.services.get_phone_number')
     def test_process_ambiguous_answer_to_from_company_contact_exists(
-                self, mock_get_phone, mock_send,
-                service, fake_sms, sms_activity
-            ):
+        self, mock_get_phone, mock_send, service, fake_sms, sms_activity
+    ):
         # sms_activity.from_contact.company_contact.last.return_value = None
 
         service.process_ambiguous_answer(fake_sms, None, sms_activity)
 
+        message_text = '{}: {}\n{}'.format(
+            str(sms_activity.from_contact), fake_sms.from_number, fake_sms.text
+        )
+
         mock_send.assert_called_once_with(
-            sms_activity.to_contact.phone_mobile, '[[full_name]]: [[phone_number]]\n[[text]]',
+            sms_activity.to_contact.phone_mobile, message_text,
             sms_activity.from_contact, from_number=mock_get_phone.return_value,
             check_reply=False
         )

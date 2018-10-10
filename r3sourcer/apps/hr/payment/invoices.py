@@ -116,7 +116,7 @@ class InvoiceService(BasePaymentService):
         else:
             master_logo = get_thumbnail_picture(invoice.provider_company.logo, 'large')
 
-        context = Context({
+        context = {
             'lines': invoice.invoice_lines.all(),
             'invoice': invoice,
             'company': invoice.customer_company,
@@ -126,7 +126,7 @@ class InvoiceService(BasePaymentService):
             'show_candidate': show_candidate,
             'STATIC_URL': '%s/ecore/static' % domain,
             'DOMAIN': domain
-        })
+        }
 
         pdf_file = cls._get_file_from_str(str(template.render(context)))
 

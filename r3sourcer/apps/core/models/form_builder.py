@@ -17,6 +17,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from inflector import Inflector
 from model_utils import Choices
+from model_utils.managers import InheritanceManager
 from polymorphic.models import PolymorphicModel
 
 from r3sourcer.apps.core.models import UUIDModel, Country
@@ -198,7 +199,7 @@ class Form(UUIDModel):
                 'name': group.name,
                 'fields': OrderedDict()
             }
-            for field in FormField.objects.filter(group_id=group.id):
+            for field in FormField.inheritance_objects.filter(group_id=group.id).select_subclasses():
                 group_data['fields'].setdefault(field.name, field.get_form_field())
             group_data['form_cls'] = type('BuilderForm', (forms.Form,), group_data['fields'].copy())
 
@@ -415,6 +416,8 @@ class FormField(PolymorphicModel):
         default='',
         blank=True
     )
+
+    inheritance_objects = InheritanceManager()
 
     class Meta:
         ordering = ('position',)
