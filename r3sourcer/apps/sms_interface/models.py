@@ -343,7 +343,7 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
                 defaults=(
                     {'content_object': obj} if isinstance(obj, models.Model) else {'content_type_id': obj['content_type']}
                 )
-            ) for obj in args
+            ) for obj in args if isinstance(obj, (dict, models.Model))
         ]
 
     def get_related_objects(self, obj_type=None):

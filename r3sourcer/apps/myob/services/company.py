@@ -29,7 +29,7 @@ class CompanySync(SalespersonMixin, BaseSync):
                                              myob_field='tolower(CompanyName)')
         return resp
 
-    def _sync_to(self, company, sync_obj=None):
+    def _sync_to(self, company, sync_obj=None, partial=False):
         myob_card_number, old_myob_card_number, myob_client_resp = self._get_myob_existing_resp(
             company, company.get_myob_card_number(), sync_obj
         )

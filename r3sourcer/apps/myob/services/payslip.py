@@ -27,7 +27,7 @@ class PayslipSync(BaseSync):
             resource=resource,
         )
 
-    def _sync_to(self, payslip, sync_obj=None):
+    def _sync_to(self, payslip, sync_obj=None, partial=False):
         myob_tax = self._get_tax_code('GST')
         myob_account_wages = self._get_account('6-5130')
         myob_account_pay = self._get_account('1-1190')
