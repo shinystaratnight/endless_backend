@@ -2014,6 +2014,14 @@ class CandidateScore(core_models.UUIDModel):
         editable=False
     )
 
+    skill_score = models.DecimalField(
+        decimal_places=2,
+        max_digits=3,
+        verbose_name=_("Skill Score"),
+        null=True,
+        editable=False
+    )
+
     class Meta:
         verbose_name = _("Candidate Score")
         verbose_name_plural = _("Candidates' Scores")
@@ -2122,11 +2130,22 @@ class CandidateScore(core_models.UUIDModel):
         if len(states) > 0:
             self.recruitment_score = score_sum / len(states)
 
+    def recalc_skill_score(self):
+        """
+        Calculate skill score
+        :return: self
+        """
+        score = self.candidate_contact.candidate_skills.filter(
+            score__gte=1
+        ).aggregate(avg_score=models.Avg('score'))['avg_score']
+        self.skill_score = score or None
+
     def recalc_scores(self):
         self.recalc_client_feedback()
         self.recalc_reliability()
         self.recalc_loyalty()
         self.recalc_recruitment_score()
+        self.recalc_skill_score()
         self.average_score = self.get_average_score()
         self.save()
 
@@ -2145,6 +2164,9 @@ class CandidateScore(core_models.UUIDModel):
                 scores_count += 1
             if self.recruitment_score is not None:
                 total_score += self.recruitment_score
+                scores_count += 1
+            if self.skill_score is not None:
+                total_score += self.skill_score
                 scores_count += 1
             self.average_score = total_score / scores_count if scores_count else None
             self.save(update_fields=['average_score'])
