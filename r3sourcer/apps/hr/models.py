@@ -2063,7 +2063,7 @@ class CandidateScore(core_models.UUIDModel):
             5 * (accepted_jos / total_jos) if total_jos > 4 else 0
         )
         if save:
-            self.reliability = reliability if reliability > 0 else None
+            self.reliability = reliability if reliability >= 1 else None
 
         return reliability
 
@@ -2086,9 +2086,6 @@ class CandidateScore(core_models.UUIDModel):
 
         # Calculate time bonus
         time_shift = timedelta(hours=1, minutes=30)
-        time_bonus = len(endless_logger.get_history_object_ids(
-            JobOffer, 'status', '1', ids=jos.values_list('id', flat=True)
-        ))
         time_bonus = accepted_jos.filter(
             job_offer_smses__offer_sent_by_sms__sent_at__gte=(
                 models.F('shift__date__shift_date') - time_shift
@@ -2125,10 +2122,13 @@ class CandidateScore(core_models.UUIDModel):
         states = self.candidate_contact.get_active_states()
         company = self.candidate_contact.get_closest_company()
 
-        score_sum = sum([s.get_score(self.candidate_contact, company) for s in states])
+        scores = []
+        for state in states:
+            score = state.get_score(self.candidate_contact, company)
+            if score > 0:
+                scores.append(score)
 
-        if len(states) > 0:
-            self.recruitment_score = score_sum / len(states)
+        self.recruitment_score = sum(scores) / len(scores) if len(scores) > 0 else None
 
     def recalc_skill_score(self):
         """
@@ -2136,7 +2136,7 @@ class CandidateScore(core_models.UUIDModel):
         :return: self
         """
         score = self.candidate_contact.candidate_skills.filter(
-            score__gte=1
+            score__gt=0
         ).aggregate(avg_score=models.Avg('score'))['avg_score']
         self.skill_score = score or None
 
@@ -2150,26 +2150,24 @@ class CandidateScore(core_models.UUIDModel):
         self.save()
 
     def get_average_score(self):
-        if not self.average_score:
-            total_score = 0
-            scores_count = 0
-            if self.client_feedback is not None:
-                total_score += self.client_feedback
-                scores_count += 1
-            if self.reliability is not None:
-                total_score += self.reliability
-                scores_count += 1
-            if self.loyalty is not None:
-                total_score += self.loyalty
-                scores_count += 1
-            if self.recruitment_score is not None:
-                total_score += self.recruitment_score
-                scores_count += 1
-            if self.skill_score is not None:
-                total_score += self.skill_score
-                scores_count += 1
-            self.average_score = total_score / scores_count if scores_count else None
-            self.save(update_fields=['average_score'])
+        total_score = 0
+        scores_count = 0
+        if self.client_feedback:
+            total_score += self.client_feedback
+            scores_count += 1
+        if self.reliability:
+            total_score += self.reliability
+            scores_count += 1
+        if self.loyalty:
+            total_score += self.loyalty
+            scores_count += 1
+        if self.recruitment_score:
+            total_score += self.recruitment_score
+            scores_count += 1
+        if self.skill_score:
+            total_score += self.skill_score
+            scores_count += 1
+        self.average_score = total_score / scores_count if scores_count else None
 
         return self.average_score
 

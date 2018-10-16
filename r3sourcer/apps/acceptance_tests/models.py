@@ -176,7 +176,8 @@ class AcceptanceTestWorkflowNode(UUIDModel):
             return 0
 
         return self.get_all_questions().filter(
-            workflow_object_answers__workflow_object_id=workflow_object_id
+            workflow_object_answers__workflow_object_id=workflow_object_id,
+            workflow_object_answers__score__gt=0,
         ).aggregate(score_avg=models.Avg('workflow_object_answers__score'))['score_avg'] or 0
 
 

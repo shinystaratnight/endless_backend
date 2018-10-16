@@ -1,5 +1,6 @@
 import mock
 import pytest
+from decimal import Decimal
 
 from rest_framework.exceptions import ValidationError
 from django_mock_queries.query import MockModel
@@ -51,11 +52,11 @@ class TestCandidateContactSerializer:
 
         assert res is None
 
-    @mock.patch.object(hr_models.CandidateScore, 'get_average_score', return_value=5)
+    @mock.patch.object(hr_models.CandidateScore, 'get_average_score', return_value=Decimal('5.00'))
     def test_get_average_score(self, mock_states, candidate, serializer_obj):
         res = serializer_obj.get_average_score(candidate)
 
-        assert res == 5
+        assert res == '5.00'
 
     def test_get_average_score_none(self, serializer_obj):
         res = serializer_obj.get_average_score(None)

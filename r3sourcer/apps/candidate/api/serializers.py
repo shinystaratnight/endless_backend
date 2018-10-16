@@ -150,7 +150,9 @@ class CandidateContactSerializer(
         if not obj:
             return
 
-        return obj.candidate_scores.get_average_score()
+        score = obj.candidate_scores.get_average_score()
+
+        return score and '{0:.3}'.format(score)
 
     def get_bmi(self, obj):
         if not obj:
