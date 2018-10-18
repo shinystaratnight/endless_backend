@@ -1,6 +1,7 @@
 import copy
 import datetime
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
@@ -48,7 +49,7 @@ class TrialUserView(APIView):
     @method_decorator(csrf_exempt)
     def post(self, request, **kwargs):
         data = copy.copy(request.data)
-        data['website'] = '%s.r3sourcer.com' % data['website']
+        data['website'] = '{}.{}'.format(data['website'], settings.REDIRECT_DOMAIN)
 
         serializer = serializers.TrialSerializer(data=data)
         serializer.is_valid(raise_exception=True)

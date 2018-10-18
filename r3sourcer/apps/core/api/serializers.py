@@ -1736,7 +1736,7 @@ class TrialSerializer(serializers.Serializer):
         except core_models.Company.DoesNotExist:
             pass
 
-        domain = '%s.r3sourcer.com' % data['website'].lower()
+        domain = '{}.{}'.format(data['website'].lower(), settings.REDIRECT_DOMAIN)
         try:
             URLValidator()('http://{}'.format(domain))
         except ValidationError:

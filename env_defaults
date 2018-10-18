@@ -26,12 +26,13 @@ DJANGO_UWSGI_PORT=8081
 SUPERVISOR_CONF=conf/production/supervisor.conf
 
 DOMAIN_NAME=r3.labourking.com.au
+REDIRECT_DOMAIN=r3sourcer.com
 
 DJANGO_DEBUG=1
 DJANGO_SECRET_KEY=9ifdsgtncr3yb&3uhb!=lwxa-a$=k#zq593=4a^b!agsx-l4s9
 NGINX_VOLUME=/var/nginx_volume
 
-ALLOWED_HOSTS=localhost,r3sourcer.com,*.r3sourcer.com
+ALLOWED_HOSTS=localhost,r3sourcer.com,*.r3sourcer.com,r3sourcersofttest.com,*.r3sourcersofttest.com
 
 DOCKER_NGINX_HTTP_PORT=80
 DOCKER_NGINX_HTTPS_PORT=443

@@ -228,6 +228,7 @@ LANGUAGES = [
 
 # Need to set your actual domain
 SITE_URL = "https://{}".format(env('DOMAIN_NAME', 'localhost'))
+REDIRECT_DOMAIN = env('REDIRECT_DOMAIN', 'localhost')
 
 FILER_CANONICAL_URL = 'sharing/'
 

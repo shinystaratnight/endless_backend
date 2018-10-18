@@ -1,5 +1,5 @@
+from django.conf import settings
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
@@ -9,7 +9,7 @@ from rest_framework import viewsets, status, exceptions, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from r3sourcer.apps.core.models import Contact, User, SiteCompany, Company
+from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 
@@ -72,7 +72,7 @@ class AuthViewSet(BaseViewsetMixin,
             raise exceptions.PermissionDenied(self.errors['wrong_domain'])
 
         if not user.is_superuser and redirect_site.domain != host:
-            if host != 'r3sourcer.com':
+            if host != settings.REDIRECT_DOMAIN:
                 raise exceptions.PermissionDenied(self.errors['wrong_domain'])
             else:
                 host_url = 'http://{}'.format(redirect_site.domain)
