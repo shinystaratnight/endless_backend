@@ -177,6 +177,14 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
     phone_fields = ['phone_mobile']
 
+    def normalize_phone(self, phone):
+        if phone.startswith('0'):
+            phone = '+61{}'.format(phone[1:])
+        elif not phone.startswith('+'):
+            phone = '+{}'.format(phone)
+
+        return phone
+
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def validate(self, request, *args, **kwargs):
         email = request.GET.get('email')
@@ -192,7 +200,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
                     'message': e.message
                 })
         elif phone is not None:
-            phone = '+{}'.format(phone) if '+' not in phone else phone
+            phone = self.normalize_phone(phone)
             phone_number = phonenumber.to_python(phone)
             if not phone_number or not phone_number.is_valid():
                 raise exceptions.ValidationError({
@@ -218,7 +226,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def exists(self, request, *args, **kwargs):
         email = request.GET.get('email')
-        phone = request.GET.get('phone')
+        phone = request.GET.get('phone', '').strip()
+        phone = self.normalize_phone(phone)
 
         message = {}
 
@@ -457,7 +466,7 @@ class CompanyViewset(BaseApiViewset):
         company_name = request.GET.get('name')
 
         try:
-            models.Company.objects.get(name=company_name)
+            models.Company.objects.get(name__iexact=company_name)
 
             return Response({
                 'status': 'error',
