@@ -1,3 +1,5 @@
+from decimal import Decimal
+
 from django.db.models import Avg
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, serializers
@@ -42,6 +44,9 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
                 'skill': ('id', 'name', '__str__'),
             },
         )
+        extra_kwargs = {
+            'score': {'max_value': Decimal(5)},
+        }
 
     def validate(self, data):
         skill = data.get('skill')
@@ -128,7 +133,9 @@ class CandidateContactSerializer(
                         'address': ('__all__', ),
                     }
                 ),
-                'candidate_scores': ('id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score'),
+                'candidate_scores': (
+                    'id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score', 'skill_score'
+                ),
                 'recruitment_agent': ('id', 'job_title', {
                     'contact': ('id', 'phone_mobile')
                 }),
@@ -143,7 +150,9 @@ class CandidateContactSerializer(
         if not obj:
             return
 
-        return obj.candidate_scores.get_average_score()
+        score = obj.candidate_scores.get_average_score()
+
+        return score and '{0:.3}'.format(score)
 
     def get_bmi(self, obj):
         if not obj:

@@ -320,7 +320,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 'contact': ['gender', 'first_name', 'last_name', {
                     'address': ('longitude', 'latitude'),
                 }],
-                'candidate_scores': ['reliability', 'average_score', 'loyalty', 'recruitment_score'],
+                'candidate_scores': ['reliability', 'average_score', 'loyalty', 'recruitment_score', 'skill_score'],
                 'tag_rels': ['tag'],
             }
         )

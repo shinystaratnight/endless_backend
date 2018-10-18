@@ -689,6 +689,11 @@ class SkillRel(core_models.UUIDModel):
     def is_owned(cls):
         return False
 
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+
+        self.candidate_contact.candidate_scores.recalc_scores()
+
 
 class InterviewSchedule(core_models.UUIDModel):
 

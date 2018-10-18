@@ -358,7 +358,6 @@ class WorkflowObject(UUIDModel):
                 child_wf_object = WorkflowObject.objects.filter(state=substate, object_id=related_obj.id).first()
 
                 if not child_wf_object:
-                    children_cnt += 1
                     continue
 
                 child_score = child_wf_object.get_score(related_obj, company)
@@ -373,7 +372,12 @@ class WorkflowObject(UUIDModel):
             return (self.score + sub_score) / 2 if sub_score > 0 else self.score
 
         tests = AcceptanceTestWorkflowNode.objects.filter(company_workflow_node__workflow_node=self.state).distinct()
-        a_tests = [a_test.get_score(self) for a_test in tests]
+        a_tests = []
+        for a_test in tests:
+            a_score = a_test.get_score(self)
+            if a_score > 0:
+                a_tests.append(a_score)
+
         if sub_score > 0:
             a_tests.append(sub_score)
 
