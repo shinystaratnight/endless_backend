@@ -579,7 +579,7 @@ class SiteViewset(BaseApiViewset):
         website = request.GET.get('website', '').lower()
 
         try:
-            Site.objects.get(domain__iexact='%s.r3sourcer.com' % website)
+            Site.objects.get(domain__iexact='{}.{}'.format(website, settings.REDIRECT_DOMAIN))
 
             return Response({
                 'status': 'error',

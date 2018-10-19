@@ -36,6 +36,8 @@ REST_FRAMEWORK = {
 LOGGER_DB = 'testing'
 LOGGER_ENABLED = False
 
+REDIRECT_DOMAIN = 'r3sourcer.com'
+
 
 def cities_light_uri(n): return 'file://%s' % os.path.join(
     BASE_DIR, 'r3sourcer/apps/core/tests/fixtures/django_cities', n
