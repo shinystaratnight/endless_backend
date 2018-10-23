@@ -2136,7 +2136,7 @@ class CandidateScore(core_models.UUIDModel):
         :return: self
         """
         score = self.candidate_contact.candidate_skills.filter(
-            score__gt=0
+            skill__active=True
         ).aggregate(avg_score=models.Avg('score'))['avg_score']
         self.skill_score = score or None
 
