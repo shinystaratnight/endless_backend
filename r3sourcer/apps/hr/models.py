@@ -2135,9 +2135,7 @@ class CandidateScore(core_models.UUIDModel):
         Calculate skill score
         :return: self
         """
-        score = self.candidate_contact.candidate_skills.filter(
-            skill__active=True
-        ).aggregate(avg_score=models.Avg('score'))['avg_score']
+        score = self.candidate_contact.candidate_skills.aggregate(avg_score=models.Avg('score'))['avg_score']
         self.skill_score = score or None
 
     def recalc_scores(self):
