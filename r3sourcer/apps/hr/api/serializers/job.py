@@ -444,7 +444,7 @@ class CandidateScoreSerializer(core_serializers.ApiBaseModelSerializer):
         fields = ('reliability', 'average_score', 'loyalty', 'recruitment_score')
 
     def get_skill_score(self, obj):
-        return '{} ({})'.format(obj.skill_score, obj.candidate_contact.candidate_skills.count())
+        return '{} ({})'.format(obj.skill_score or 0, obj.candidate_contact.candidate_skills.count())
 
     def get_client_feedback(self, obj):
         counter = 0
@@ -452,7 +452,7 @@ class CandidateScoreSerializer(core_serializers.ApiBaseModelSerializer):
             if evaluation.single_evaluation_average() > 0:
                 counter += 1
 
-        return '{} ({})'.format(obj.client_feedback, counter)
+        return '{} ({})'.format(obj.client_feedback or 0, counter)
 
 
 class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSerializer):
