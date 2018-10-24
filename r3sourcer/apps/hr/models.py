@@ -1,7 +1,6 @@
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
-from crum import get_current_request
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
@@ -16,7 +15,6 @@ from model_utils import Choices
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.mixins import CategoryFolderMixin
-from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -559,7 +557,8 @@ class ShiftDate(core_models.UUIDModel):
         return JobOffer.objects.filter(shift__date=self)
 
     def is_fulfilled(self):
-        for shift in self.shifts.all():
+        now = timezone.localtime(timezone.now()).timetz()
+        for shift in self.shifts.filter(time__gte=now):
             if shift.is_fulfilled() != FULFILLED:
                 return NOT_FULFILLED
 
