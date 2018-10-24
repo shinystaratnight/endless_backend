@@ -590,7 +590,10 @@ class SiteCompanySettingsView(APIView):
             company = self.request.user.company.get_closest_master_company()
 
         if not company:
-            raise exceptions.NotFound()
+            return Response({
+                'status': 'error',
+                'redirect_to': 'http://{}'.format(settings.REDIRECT_DOMAIN)
+            })
         else:
             company_settings = company.company_settings
 
