@@ -16,6 +16,138 @@ from r3sourcer.apps.hr.utils import utils as hr_utils, job as hr_job_utils
 from r3sourcer.apps.logger.main import endless_logger
 
 
+class FillinAvailableMixin:
+
+    def _get_jo_messages(self, obj, date):
+        from_date = date - timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
+        to_date = date + timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
+        job_offers = obj.job_offers.filter(
+            Q(shift__date__shift_date=from_date.date(),
+                shift__time__gte=from_date.timetz()) |
+            Q(shift__date__shift_date__gt=from_date.date()),
+            Q(shift__date__shift_date=to_date.date(),
+                shift__time__lte=to_date.timetz()) |
+            Q(shift__date__shift_date__lt=to_date.date())
+        )
+
+        accepted_messages = []
+        not_accepted_messages = []
+
+        for jo in job_offers.all():
+            message = {
+                'message': str(jo.shift.date.job.jobsite),
+                'job': jo.shift.date.job.id,
+            }
+            if jo.status == hr_models.JobOffer.STATUS_CHOICES.accepted:
+                message['status'] = _('Accepted')
+                accepted_messages.append(message)
+            elif jo.status == hr_models.JobOffer.STATUS_CHOICES.cancelled:
+                message['status'] = _('Rejected')
+                not_accepted_messages.append(message)
+            else:
+                message['status'] = _('Pending')
+                accepted_messages.append(message)
+
+        return accepted_messages, not_accepted_messages
+
+    def get_available(self, obj):
+        shifts_data = self.context['partially_available_candidates'].get(obj.id, {})
+        init_shifts = self.context['init_shifts']
+
+        response_data = []
+        text = _('All shifts')
+
+        unavailable_dates = []
+
+        if len(shifts_data) > 0:
+            dates = []
+
+            for shift in shifts_data['shifts']:
+                data = {
+                    'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
+                }
+
+                accepted_messages, not_accepted_messages = self._get_jo_messages(
+                    obj, data['datetime'])
+
+                if hr_job_utils.HAS_JOBOFFER in shifts_data['reasons'] and len(accepted_messages) > 0:
+                    data['messages'] = accepted_messages
+                elif hr_job_utils.UNAVAILABLE in shifts_data['reasons']:
+                    data['messages'] = [{
+                        'status': _('Unavailable'),
+                        'message': None,
+                        'job': None,
+                    }]
+                else:
+                    continue
+
+                dates.append(data)
+                unavailable_dates.append(data['datetime'])
+
+            if len(dates) > 0:
+                response_data.append({
+                    'text': _('Unavailable shifts'),
+                    'shifts': dates,
+                })
+
+        dates = []
+        unknown_dates = []
+
+        for shift in init_shifts:
+            data = {
+                'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
+            }
+
+            accepted_messages, not_accepted_messages = self._get_jo_messages(
+                obj, data['datetime'])
+
+            in_carrier_list = obj.carrier_lists.filter(
+                target_date=shift.date.shift_date, confirmed_available=True)
+            if in_carrier_list:
+                if len(not_accepted_messages) > 0:
+                    data['messages'] = not_accepted_messages
+                    dates.append(data)
+                elif data['datetime'] not in unavailable_dates:
+                    data['messages'] = [{
+                        'status': _('Available'),
+                        'message': None,
+                        'job': None,
+                    }]
+                    dates.append(data)
+            else:
+                if len(not_accepted_messages) > 0:
+                    data['messages'] = not_accepted_messages
+                    unknown_dates.append(data)
+                elif data['datetime'] not in unavailable_dates:
+                    data['messages'] = [{
+                        'status': _('Unknown'),
+                        'message': None,
+                        'job': None,
+                    }]
+                    unknown_dates.append(data)
+
+        has_unknown = len(unknown_dates) > 0 and len(
+            unknown_dates) < len(init_shifts)
+        if len(dates) > 0 and (has_unknown or len(response_data) > 0):
+            response_data.append({
+                'text': _('Available shifts'),
+                'shifts': dates,
+            })
+
+        if len(unknown_dates) > 0:
+            response_data.append({
+                'text': _('Unknown shifts'),
+                'shifts': unknown_dates,
+            })
+        elif len(response_data) == 0:
+            response_data = [{
+                'text': text,
+                'shifts': [],
+            }]
+
+        return response_data
+
+
 class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiBaseModelSerializer):
 
     method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'title', 'extend', 'tags')
@@ -303,7 +435,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         return validated_data
 
 
-class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
+class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'count_timesheets',
@@ -326,131 +458,6 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
                 'tag_rels': ['tag'],
             }
         )
-
-    def _get_jo_messages(self, obj, date):
-        from_date = date - timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
-        to_date = date + timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
-        job_offers = obj.job_offers.filter(
-            Q(shift__date__shift_date=from_date.date(),
-                shift__time__gte=from_date.timetz()) |
-            Q(shift__date__shift_date__gt=from_date.date()),
-            Q(shift__date__shift_date=to_date.date(),
-                shift__time__lte=to_date.timetz()) |
-            Q(shift__date__shift_date__lt=to_date.date())
-        )
-
-        accepted_messages = []
-        not_accepted_messages = []
-
-        for jo in job_offers.all():
-            message = {
-                'message': str(jo.shift.date.job.jobsite),
-                'job': jo.shift.date.job.id,
-            }
-            if jo.status == hr_models.JobOffer.STATUS_CHOICES.accepted:
-                message['status'] = _('Accepted')
-                accepted_messages.append(message)
-            elif jo.status == hr_models.JobOffer.STATUS_CHOICES.cancelled:
-                message['status'] = _('Rejected')
-                not_accepted_messages.append(message)
-            else:
-                message['status'] = _('Pending')
-                accepted_messages.append(message)
-
-        return accepted_messages, not_accepted_messages
-
-    def get_available(self, obj):
-        shifts_data = self.context['partially_available_candidates'].get(obj.id, {})
-        init_shifts = self.context['init_shifts']
-
-        response_data = []
-        text = _('All shifts')
-
-        unavailable_dates = []
-
-        if len(shifts_data) > 0:
-            dates = []
-
-            for shift in shifts_data['shifts']:
-                data = {
-                    'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
-                }
-
-                accepted_messages, not_accepted_messages = self._get_jo_messages(obj, data['datetime'])
-
-                if hr_job_utils.HAS_JOBOFFER in shifts_data['reasons'] and len(accepted_messages) > 0:
-                    data['messages'] = accepted_messages
-                elif hr_job_utils.UNAVAILABLE in shifts_data['reasons']:
-                    data['messages'] = [{
-                        'status': _('Unavailable'),
-                        'message': None,
-                        'job': None,
-                    }]
-                else:
-                    continue
-
-                dates.append(data)
-                unavailable_dates.append(data['datetime'])
-
-            if len(dates) > 0:
-                response_data.append({
-                    'text': _('Unavailable shifts'),
-                    'shifts': dates,
-                })
-
-        dates = []
-        unknown_dates = []
-
-        for shift in init_shifts:
-            data = {
-                'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
-            }
-
-            accepted_messages, not_accepted_messages = self._get_jo_messages(obj, data['datetime'])
-
-            in_carrier_list = obj.carrier_lists.filter(target_date=shift.date.shift_date, confirmed_available=True)
-            if in_carrier_list:
-                if len(not_accepted_messages) > 0:
-                    data['messages'] = not_accepted_messages
-                    dates.append(data)
-                elif data['datetime'] not in unavailable_dates:
-                    data['messages'] = [{
-                        'status': _('Available'),
-                        'message': None,
-                        'job': None,
-                    }]
-                    dates.append(data)
-            else:
-                if len(not_accepted_messages) > 0:
-                    data['messages'] = not_accepted_messages
-                    unknown_dates.append(data)
-                elif data['datetime'] not in unavailable_dates:
-                    data['messages'] = [{
-                        'status': _('Unknown'),
-                        'message': None,
-                        'job': None,
-                    }]
-                    unknown_dates.append(data)
-
-        has_unknown = len(unknown_dates) > 0 and len(unknown_dates) < len(init_shifts)
-        if len(dates) > 0 and (has_unknown or len(response_data) > 0):
-            response_data.append({
-                'text': _('Available shifts'),
-                'shifts': dates,
-            })
-
-        if len(unknown_dates) > 0:
-            response_data.append({
-                'text': _('Unknown shifts'),
-                'shifts': unknown_dates,
-            })
-        elif len(response_data) == 0:
-            response_data = [{
-                'text': text,
-                'shifts': [],
-            }]
-
-        return response_data
 
     def get_days_from_last_timesheet(self, obj):
         last_timesheet = obj.last_timesheet_date
@@ -661,9 +668,9 @@ class JobsiteSerializer(
         return validated_data
 
 
-class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
+class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('job_shift', 'latest_date', 'last_fullfilled')
+    method_fields = ('available', 'job_shift', 'latest_date')
 
     autofill = serializers.BooleanField(required=False)
 
@@ -689,25 +696,14 @@ class JobExtendSerialzier(core_serializers.ApiBaseModelSerializer):
 
         return latest_shift_date and latest_shift_date.pk
 
-    def get_last_fullfilled(self, obj):
-        latest_shift_date = self._get_latest_shift_date(obj)
+    def get_available(self, obj):
+        candidates = self.context['candidates']
+        available = {}
 
-        if latest_shift_date:
-            latest_fullfilled_shifts = latest_shift_date.shifts.exclude(
-                job_offers__status=hr_models.JobOffer.STATUS_CHOICES.cancelled
-            ).order_by('-time')
+        for candidate in candidates:
+            available[str(candidate)] = super().get_available(candidate)
 
-            if not latest_fullfilled_shifts.exists():
-                latest_fullfilled_shifts = latest_shift_date.shifts
-
-            return [{
-                'shift_datetime': timezone.make_aware(datetime.combine(latest_shift_date.shift_date, shift.time)),
-                'candidates': JobExtendFillinSerialzier([
-                    jo.candidate_contact for jo in shift.job_offers.exclude(
-                        status=hr_models.JobOffer.STATUS_CHOICES.cancelled
-                    )
-                ], many=True, context={'job': obj}).data
-            } for shift in latest_fullfilled_shifts]
+        return available
 
 
 class JobsiteMapAddressSerializer(core_serializers.ApiMethodFieldsMixin, serializers.ModelSerializer):

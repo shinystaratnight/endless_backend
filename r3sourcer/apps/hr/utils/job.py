@@ -113,3 +113,21 @@ def update_unavailable_reason(candidate_ids, updates, reason):
         candidate_ids[candidate_id].add(reason)
 
     return candidate_ids
+
+
+def get_partially_available_candidates(candidate_contacts, shifts):
+    partially_available_candidates = {}
+    if shifts:
+        partially_available_candidates = get_partially_available_candidate_ids(
+            candidate_contacts, shifts
+        )
+        unavailable_all = [
+            partial for partial, data in partially_available_candidates.items()
+            if len(data['shifts']) == len(shifts)
+        ]
+        candidate_contacts = candidate_contacts.exclude(id__in=unavailable_all)
+
+        for key in unavailable_all:
+            partially_available_candidates.pop(key)
+
+    return partially_available_candidates

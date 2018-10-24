@@ -502,21 +502,9 @@ class JobViewset(BaseApiViewset):
         partially_available = request.GET.get('available', 'False') == 'True'
         partially_available_candidates = {}
         if single_shifts:
-            partially_available_candidates = job_utils.get_partially_available_candidate_ids(
+            partially_available_candidates = job_utils.get_partially_available_candidates(
                 candidate_contacts, single_shifts
             )
-
-            unavailable_all = [
-                partial for partial, data in partially_available_candidates.items()
-                if len(data['shifts']) == len(single_shifts)
-            ]
-
-            candidate_contacts = candidate_contacts.exclude(
-                id__in=unavailable_all
-            )
-
-            for key in unavailable_all:
-                partially_available_candidates.pop(key)
 
             if not partially_available:
                 candidate_contacts = candidate_contacts.exclude(
@@ -760,9 +748,26 @@ class JobViewset(BaseApiViewset):
             for new_shift_date_obj in new_shift_dates_objs:
                 self._extend_shift_date(job, new_shift_date_obj, shift_objs, is_autofill)
 
-            serializer = job_serializers.JobExtendSerialzier(job)
-        else:
-            serializer = job_serializers.JobExtendSerialzier(job)
+        today = timezone.localtime(timezone.now()).date()
+        shifts = hr_models.Shift.objects.filter(
+            date__job=job, date__shift_date__gte=today, date__cancelled=False
+        ).select_related('date').order_by('date__shift_date', 'time')
+
+        candidate_ids = hr_models.JobOffer.objects.filter(
+            shift__date__job=job, shift__date__cancelled=False
+        ).values_list('candidate_contact_id', flat=True).distinct()
+        candidate_contacts = candidate_models.CandidateContact.objects.filter(id__in=candidate_ids)
+
+        partially_available_candidates = job_utils.get_partially_available_candidates(
+            candidate_contacts, shifts
+        )
+        context = {
+            'partially_available_candidates': partially_available_candidates,
+            'init_shifts': shifts,
+            'candidates': candidate_contacts
+        }
+
+        serializer = job_serializers.JobExtendSerialzier(job, context=context)
 
         return Response(serializer.data)
 
