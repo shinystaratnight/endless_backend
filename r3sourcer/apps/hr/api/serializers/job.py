@@ -435,6 +435,26 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         return validated_data
 
 
+class CandidateScoreSerializer(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = ('skill_score', 'client_feedback')
+
+    class Meta:
+        model = hr_models.CandidateScore
+        fields = ('reliability', 'average_score', 'loyalty', 'recruitment_score')
+
+    def get_skill_score(self, obj):
+        return '{} ({})'.format(obj.skill_score, obj.candidate_contact.candidate_skills.count())
+
+    def get_client_feedback(self, obj):
+        counter = 0
+        for evaluation in obj.candidate_contact.candidate_evaluations.all():
+            if evaluation.single_evaluation_average() > 0:
+                counter += 1
+
+        return '{} ({})'.format(obj.client_feedback, counter)
+
+
 class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
@@ -443,18 +463,16 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
     )
 
     jos = serializers.IntegerField(read_only=True)
+    candidate_scores = CandidateScoreSerializer(read_only=True)
 
     class Meta:
         model = candidate_models.CandidateContact
         fields = (
             'id', 'recruitment_agent', 'tag_rels', 'nationality', 'transportation_to_work',
-            'jos', {
+            'jos', 'candidate_scores', {
                 'contact': ['gender', 'first_name', 'last_name', {
                     'address': ('longitude', 'latitude'),
                 }],
-                'candidate_scores': [
-                    'reliability', 'average_score', 'loyalty', 'recruitment_score', 'skill_score', 'client_feedback'
-                ],
                 'tag_rels': ['tag'],
             }
         )
