@@ -535,21 +535,6 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
                 return candidate_skill_rate
         return None
 
-    def total_evaluation_average(self):
-        cached_key = 'candidate:evaluation:avg:{}'.format(self.id)
-        result = cache.get(cached_key, None)
-
-        if result is None:
-            total = 0
-            counter = 0
-            for evaluation in self.candidate_evaluations.all():
-                if evaluation.single_evaluation_average() > 0:
-                    total += evaluation.single_evaluation_average()
-                    counter += 1
-            result = total / counter if counter > 0 else 0
-            cache.set(cached_key, result)
-        return result
-
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, core_models.Company):
