@@ -11,7 +11,7 @@ from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F
 from django.utils import timezone, dateparse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import exceptions, mixins, status
+from rest_framework import exceptions, mixins, status, filters
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
@@ -21,7 +21,9 @@ from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
+from r3sourcer.apps.core.api.filters import ApiOrderingFilter
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.api.permissions import SiteMasterCompanyFilterBackend
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.models import Role, Address
@@ -780,9 +782,14 @@ class JobViewset(BaseApiViewset):
                     candidate_contact=shift.candidate_contact,
                 )
 
-    @action(methods=['get'], detail=True)
+    @action(methods=['get'], detail=True, filter_backends=[
+        SiteMasterCompanyFilterBackend, filters.SearchFilter, ApiOrderingFilter
+    ], search_fields=[
+        'contact__title', 'contact__last_name', 'contact__first_name', 'contact__address__city__search_names',
+        'contact__address__street_address',
+    ])
     def extend_fillin(self, request, *args, **kwargs):
-        job = self.get_object()
+        job = get_object_or_404(hr_models.Job.objects, pk=kwargs['pk'])
         shift_datetime = request.query_params.get('shift')
 
         if not shift_datetime:
@@ -807,8 +814,10 @@ class JobViewset(BaseApiViewset):
 
             hr_utils.calculate_distances_for_jobsite([c.contact for c in distances_to_update], job.jobsite)
 
-        serializer = job_serializers.JobExtendFillinSerialzier(candidate_contacts, many=True, context={'job': job})
-        return Response(serializer.data)
+        return self._paginate(
+            request, job_serializers.JobExtendFillinSerialzier,
+            self.filter_queryset(candidate_contacts), context={'job': job}
+        )
 
     def perform_update(self, serializer):
         instance = serializer.save()
