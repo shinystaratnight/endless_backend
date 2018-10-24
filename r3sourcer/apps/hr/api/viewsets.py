@@ -582,12 +582,6 @@ class JobViewset(BaseApiViewset):
                      then='contact__distance_caches__time'),
                 default=-1
             )),
-            skills_score=Max(Case(
-                When(candidate_skills__score__gt=0,
-                     candidate_skills__skill__active=True,
-                     then='candidate_skills__score'),
-                default=0
-            )),
             last_timesheet_date=Max('job_offers__time_sheets__shift_started_at'),
             tags_count=Sum(Case(
                 When(tag_rels__tag_id__in=job_tags, job_offers__isnull=True, then=1),

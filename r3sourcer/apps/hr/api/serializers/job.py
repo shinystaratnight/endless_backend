@@ -306,8 +306,8 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
 class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
-        'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'skills_score',
-        'count_timesheets', 'hourly_rate', 'evaluation', 'color', 'overpriced', 'favourite', 'tags',
+        'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'count_timesheets',
+        'hourly_rate', 'color', 'overpriced', 'favourite', 'tags',
     )
 
     jos = serializers.IntegerField(read_only=True)
@@ -315,7 +315,7 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
     class Meta:
         model = candidate_models.CandidateContact
         fields = (
-            'id', 'recruitment_agent', 'tag_rels', 'nationality', 'transportation_to_work', 'strength', 'language',
+            'id', 'recruitment_agent', 'tag_rels', 'nationality', 'transportation_to_work',
             'jos', {
                 'contact': ['gender', 'first_name', 'last_name', {
                     'address': ('longitude', 'latitude'),
@@ -464,12 +464,6 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
     def get_time_to_jobsite(self, obj):
         return hr_utils.seconds_to_hrs(obj.time_to_jobsite) if obj.time_to_jobsite and obj.time_to_jobsite > 0 else -1
 
-    def get_skills_score(self, obj):
-        max_score = obj.candidate_skills.filter(
-            score__gt=0, skill__active=True
-        ).aggregate(Max('score'))["score__max"]
-        return max_score or 0
-
     def get_count_timesheets(self, obj):
         return hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj.id).count()
 
@@ -478,9 +472,6 @@ class JobFillinSerialzier(core_serializers.ApiBaseModelSerializer):
             self.context['job'].position, score__gt=0, skill__active=True
         )
         return hourly_rate
-
-    def get_evaluation(self, obj):
-        return '{} ({})'.format(obj.total_evaluation_average(), obj.candidate_evaluations.count())
 
     def get_favourite(self, obj):
         return obj.id in self.context['favourite_list']
