@@ -761,6 +761,10 @@ class JobViewset(BaseApiViewset):
         partially_available_candidates = job_utils.get_partially_available_candidates(
             candidate_contacts, shifts
         )
+
+        for r_id, data in partially_available_candidates.items():
+            data['shifts'] = [shift for shift in shifts if shift.id in data['shifts']]
+
         context = {
             'partially_available_candidates': partially_available_candidates,
             'init_shifts': shifts,
