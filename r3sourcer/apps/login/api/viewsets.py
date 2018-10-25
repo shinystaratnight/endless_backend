@@ -78,7 +78,7 @@ class AuthViewSet(BaseViewsetMixin,
                 host_url = 'http://{}'.format(redirect_site.domain)
                 token_login = TokenLogin.objects.create(
                     contact=user.contact,
-                    redirect_to=host_url
+                    redirect_to='/'
                 )
                 redirect_host = '{}{}'.format(host_url, token_login.auth_url)
                 cache.set('user_site_%s' % str(user.id), redirect_site.domain)
