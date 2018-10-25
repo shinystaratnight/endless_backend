@@ -11,7 +11,7 @@ from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F
 from django.utils import timezone, dateparse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import exceptions, mixins, status
+from rest_framework import exceptions, mixins, status, filters
 from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
@@ -21,7 +21,9 @@ from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
+from r3sourcer.apps.core.api.filters import ApiOrderingFilter
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.api.permissions import SiteMasterCompanyFilterBackend
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.models import Role, Address
@@ -500,21 +502,9 @@ class JobViewset(BaseApiViewset):
         partially_available = request.GET.get('available', 'False') == 'True'
         partially_available_candidates = {}
         if single_shifts:
-            partially_available_candidates = job_utils.get_partially_available_candidate_ids(
+            partially_available_candidates = job_utils.get_partially_available_candidates(
                 candidate_contacts, single_shifts
             )
-
-            unavailable_all = [
-                partial for partial, data in partially_available_candidates.items()
-                if len(data['shifts']) == len(single_shifts)
-            ]
-
-            candidate_contacts = candidate_contacts.exclude(
-                id__in=unavailable_all
-            )
-
-            for key in unavailable_all:
-                partially_available_candidates.pop(key)
 
             if not partially_available:
                 candidate_contacts = candidate_contacts.exclude(
@@ -758,9 +748,26 @@ class JobViewset(BaseApiViewset):
             for new_shift_date_obj in new_shift_dates_objs:
                 self._extend_shift_date(job, new_shift_date_obj, shift_objs, is_autofill)
 
-            serializer = job_serializers.JobExtendSerialzier(job)
-        else:
-            serializer = job_serializers.JobExtendSerialzier(job)
+        today = timezone.localtime(timezone.now()).date()
+        shifts = hr_models.Shift.objects.filter(
+            date__job=job, date__shift_date__gte=today, date__cancelled=False
+        ).select_related('date').order_by('date__shift_date', 'time')
+
+        candidate_ids = hr_models.JobOffer.objects.filter(
+            shift__date__job=job, shift__date__cancelled=False
+        ).values_list('candidate_contact_id', flat=True).distinct()
+        candidate_contacts = candidate_models.CandidateContact.objects.filter(id__in=candidate_ids)
+
+        partially_available_candidates = job_utils.get_partially_available_candidates(
+            candidate_contacts, shifts
+        )
+        context = {
+            'partially_available_candidates': partially_available_candidates,
+            'init_shifts': shifts,
+            'candidates': candidate_contacts
+        }
+
+        serializer = job_serializers.JobExtendSerialzier(job, context=context)
 
         return Response(serializer.data)
 
@@ -780,9 +787,14 @@ class JobViewset(BaseApiViewset):
                     candidate_contact=shift.candidate_contact,
                 )
 
-    @action(methods=['get'], detail=True)
+    @action(methods=['get'], detail=True, filter_backends=[
+        SiteMasterCompanyFilterBackend, filters.SearchFilter, ApiOrderingFilter
+    ], search_fields=[
+        'contact__title', 'contact__last_name', 'contact__first_name', 'contact__address__city__search_names',
+        'contact__address__street_address',
+    ])
     def extend_fillin(self, request, *args, **kwargs):
-        job = self.get_object()
+        job = get_object_or_404(hr_models.Job.objects, pk=kwargs['pk'])
         shift_datetime = request.query_params.get('shift')
 
         if not shift_datetime:
@@ -807,8 +819,10 @@ class JobViewset(BaseApiViewset):
 
             hr_utils.calculate_distances_for_jobsite([c.contact for c in distances_to_update], job.jobsite)
 
-        serializer = job_serializers.JobExtendFillinSerialzier(candidate_contacts, many=True, context={'job': job})
-        return Response(serializer.data)
+        return self._paginate(
+            request, job_serializers.JobExtendFillinSerialzier,
+            self.filter_queryset(candidate_contacts), context={'job': job}
+        )
 
     def perform_update(self, serializer):
         instance = serializer.save()
