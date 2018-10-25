@@ -426,7 +426,7 @@ class JobViewset(BaseApiViewset):
 
         init_shifts_qry = hr_models.Shift.objects.filter(
             shifts_q,
-            Q(date__shift_date=today, time__gte=now.timetz()) | Q(date__shift_date__gt=today),
+            date__shift_date__gte=today,
             date__job=job,
             date__cancelled=False,
         ).annotate(

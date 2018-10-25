@@ -557,8 +557,7 @@ class ShiftDate(core_models.UUIDModel):
         return JobOffer.objects.filter(shift__date=self)
 
     def is_fulfilled(self):
-        now = timezone.localtime(timezone.now()).timetz()
-        for shift in self.shifts.filter(time__gte=now):
+        for shift in self.shifts.all():
             if shift.is_fulfilled() != FULFILLED:
                 return NOT_FULFILLED
 
