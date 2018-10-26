@@ -217,7 +217,7 @@ class Form(UUIDModel):
         fields = []
         for group in self.groups.all():
             fields.append(group.get_ui_config())
-            for field in group.fields.all():
+            for field in group.fields.select_subclasses():
                 fields.append(field.get_ui_config())
         return fields
 
