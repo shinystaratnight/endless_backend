@@ -479,7 +479,8 @@ class ModelFormField(FormField):
 
             if field.name in cls.exclude_fields or not field.editable:
                 continue
-            if isinstance(field, models.ForeignObject) and level < cls.MAX_RELATED_LEVEL:
+            in_builder_fields = field.name + '__id' in builder.fields
+            if isinstance(field, models.ForeignObject) and level < cls.MAX_RELATED_LEVEL and not in_builder_fields:
                 field_name = field.name
                 if lookup:
                     field_name = StorageHelper.join_lookup_names(lookup, field.name)
@@ -501,7 +502,7 @@ class ModelFormField(FormField):
                 field_name = field.name
                 if lookup:
                     field_name = StorageHelper.join_lookup_names(lookup, field.name)
-                if field_name in builder.fields or lookup in builder.fields:
+                if field_name in builder.fields or lookup in builder.fields or field.name + '__id' in builder.fields:
                     yield {
                         'name': field_name,
                         'required': not field.blank,
