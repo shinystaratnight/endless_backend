@@ -688,7 +688,7 @@ class JobsiteSerializer(
 
 class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('available', 'job_shift', 'latest_date')
+    method_fields = ('available', 'job_shift', 'latest_date', 'last_fullfilled')
 
     autofill = serializers.BooleanField(required=False)
 
@@ -722,6 +722,26 @@ class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
             available[str(candidate)] = super().get_available(candidate)
 
         return available
+
+    def get_last_fullfilled(self, obj):
+        latest_shift_date = self._get_latest_shift_date(obj)
+
+        if latest_shift_date:
+            latest_fullfilled_shifts = latest_shift_date.shifts.exclude(
+                job_offers__status=hr_models.JobOffer.STATUS_CHOICES.cancelled
+            ).order_by('-time')
+
+            if not latest_fullfilled_shifts.exists():
+                latest_fullfilled_shifts = latest_shift_date.shifts
+
+            return [{
+                'shift_datetime': timezone.make_aware(datetime.combine(latest_shift_date.shift_date, shift.time)),
+                'candidates': JobExtendFillinSerialzier([
+                    jo.candidate_contact for jo in shift.job_offers.exclude(
+                        status=hr_models.JobOffer.STATUS_CHOICES.cancelled
+                    )
+                ], many=True, context={'job': obj}).data
+            } for shift in latest_fullfilled_shifts]
 
 
 class JobsiteMapAddressSerializer(core_serializers.ApiMethodFieldsMixin, serializers.ModelSerializer):
