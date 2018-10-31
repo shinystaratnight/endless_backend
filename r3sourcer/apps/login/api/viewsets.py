@@ -212,11 +212,19 @@ class AuthViewSet(BaseViewsetMixin,
         except User.DoesNotExist:
             raise exceptions.NotFound({'user': _('User not found')})
 
+        is_login, redirect_host = self.is_login_allowed(request, user)
+
         logout(request)
 
-        login_as(user, request, store_original_user=False)
+        if is_login:
+            login_as(user, request, store_original_user=False)
 
-        return Response({
+        response_data = {
             'status': 'success',
             'message': _('You are logged in as {user}').format(user=str(user.contact))
-        }, status=status.HTTP_200_OK)
+        }
+
+        if redirect_host is not None:
+            response_data['redirect_to'] = redirect_host
+
+        return Response(response_data, status=status.HTTP_200_OK)
