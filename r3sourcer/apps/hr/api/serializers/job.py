@@ -726,13 +726,13 @@ class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
     def get_last_fullfilled(self, obj):
         latest_shift_date = self._get_latest_shift_date(obj)
 
-        if latest_shift_date:
+        if latest_shift_date and latest_shift_date.shifts.filter(job_offers__isnull=False).exists():
             latest_fullfilled_shifts = latest_shift_date.shifts.exclude(
                 job_offers__status=hr_models.JobOffer.STATUS_CHOICES.cancelled
             ).order_by('-time')
 
             if not latest_fullfilled_shifts.exists():
-                latest_fullfilled_shifts = latest_shift_date.shifts
+                latest_fullfilled_shifts = latest_shift_date.shifts.all()
 
             return [{
                 'shift_datetime': timezone.make_aware(datetime.combine(latest_shift_date.shift_date, shift.time)),
