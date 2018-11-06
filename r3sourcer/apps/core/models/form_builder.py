@@ -99,7 +99,7 @@ class Form(UUIDModel):
 
     is_active = models.BooleanField(
         verbose_name=_("Is active"),
-        default=False
+        default=True
     )
 
     short_description = models.TextField(

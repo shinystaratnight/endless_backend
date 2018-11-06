@@ -84,7 +84,7 @@ class SuperannuationFund(core_models.UUIDModel):
 
     membership_number = models.CharField(
         max_length=255,
-        verbose_name=_("Employer Membership Number"),
+        verbose_name=_("Employee Membership Number"),
         blank=True,
         null=True
     )
