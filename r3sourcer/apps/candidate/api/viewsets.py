@@ -22,15 +22,6 @@ class CandidateContactViewset(BaseApiViewset):
 
     permission_classes = (permissions.CandidateContactPermissions, SiteContactPermissions)
 
-    def list(self, request, *args, **kwargs):
-        company = request.user.contact.get_closest_company()
-        master_company = company.get_closest_master_company()
-        queryset = CandidateContact.objects.filter(
-            candidate_rels__master_company=master_company,
-            candidate_rels__active=True
-        ).distinct()
-        return self._paginate(request, self.get_serializer_class(), self.filter_queryset(queryset))
-
     @action(methods=['post'], detail=False, permission_classes=[drf_permissions.AllowAny])
     def register(self, request, *args, **kwargs):
         serializer = serializers.CandidateContactRegisterSerializer(
