@@ -296,6 +296,11 @@ class BaseSMSService(metaclass=ABCMeta):
         if contact and not contact.sms_enabled:
             return
 
+        master_company = company.get_closest_master_company()
+
+        if master_company.company_settings.sms_enabled:
+            return None
+
         return company
 
     def get_from_number(self, from_number):
@@ -332,4 +337,5 @@ class FakeSMSService(BaseSMSService):
         pass
 
     def can_send_sms(self, from_number, to_number):
-        return get_site_master_company()
+        company = get_site_master_company()
+        return company if company.company_settings.sms_enabled else None
