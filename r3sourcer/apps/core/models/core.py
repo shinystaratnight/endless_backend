@@ -1229,6 +1229,8 @@ class Company(
 
             CompanyWorkflowNode.objects.bulk_create(bulk_objects)
 
+            self.create_state(10)
+
     def get_closest_company(self):
         return self.get_closest_master_company()
 
