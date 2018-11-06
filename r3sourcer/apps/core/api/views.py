@@ -65,8 +65,6 @@ class TrialUserView(APIView):
         contact.save(update_fields=['first_name', 'last_name'])
 
         # set role and permissions
-        trial_role, created = models.Role.objects.get_or_create(name=models.Role.ROLE_NAMES.trial)
-        new_user.role.add(trial_role)
         permission_list = GlobalPermission.objects.all()
         new_user.user_permissions.add(*permission_list)
 
