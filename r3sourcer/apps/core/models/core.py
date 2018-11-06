@@ -435,7 +435,7 @@ class User(UUIDModel,
         verbose_name_plural = _('Users')
 
     def __str__(self):
-        return str(self.contact)
+        return str(self.contact) if hasattr(self, 'contact') else '-'
 
     def get_short_name(self):
         return str(self)
