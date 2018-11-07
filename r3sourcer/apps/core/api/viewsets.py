@@ -4,7 +4,6 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth import logout
-from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
@@ -333,14 +332,6 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
         return data
 
-    def perform_create(self, serializer):
-        instance = serializer.save()
-
-        manager_id = self.request.user.contact
-
-        tasks.send_contact_verify_sms.apply_async(args=(instance.id, manager_id.id), countdown=10)
-        tasks.send_contact_verify_email.apply_async(args=(instance.id, manager_id.id), countdown=10)
-
 
 class CompanyViewset(BaseApiViewset):
 
@@ -534,6 +525,20 @@ class CompanyContactViewset(BaseApiViewset):
             data['contact'] = fields.empty
 
         return self._prepare_internal_data(data, is_create=is_create)
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        manager_id = self.request.user.contact
+        master_company = get_site_master_company(request=self.request)
+
+        if not instance.contact.phone_mobile_verified:
+            tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id), countdown=10)
+
+        if not instance.contact.email_verified:
+            tasks.send_contact_verify_email.apply_async(
+                args=(instance.contact.id, manager_id.id, master_company.id), countdown=10
+            )
 
     @action(methods=['post'], detail=False)
     def register(self, request, *args, **kwargs):
