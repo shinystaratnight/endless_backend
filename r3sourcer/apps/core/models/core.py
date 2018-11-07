@@ -42,7 +42,9 @@ from ..fields import ContactLookupField
 from ..managers import (
     TagManager, AbstractCompanyContactOwnerManager, AbstractObjectOwnerManager
 )
-from ..mixins import CompanyLookupMixin, MasterCompanyLookupMixin, CategoryFolderMixin, MYOBMixin
+from ..mixins import (
+    CompanyLookupMixin, MasterCompanyLookupMixin, CategoryFolderMixin, MYOBMixin, GenerateAuthTokenMixin
+)
 from ..service import factory
 from ..utils.geo import fetch_geo_coord_by_address
 from ..utils.validators import string_is_numeric
@@ -85,6 +87,7 @@ class UUIDModel(models.Model):
 class Contact(
     CategoryFolderMixin,
     MYOBMixin,
+    GenerateAuthTokenMixin,
     UUIDModel
 ):
 
@@ -196,6 +199,8 @@ class Contact(
     )
 
     sms_enabled = models.BooleanField(default=True)
+
+    verification_token = models.CharField(max_length=64, default='')
 
     class Meta:
         verbose_name = _("Contact")

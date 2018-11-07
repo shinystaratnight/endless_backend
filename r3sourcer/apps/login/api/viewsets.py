@@ -181,7 +181,7 @@ class AuthViewSet(BaseViewsetMixin,
 
     @action(methods=['get'], detail=False)
     def restore_session(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             raise exceptions.AuthenticationFailed()
         serializer = ContactLoginSerializer(request.user.contact)
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))

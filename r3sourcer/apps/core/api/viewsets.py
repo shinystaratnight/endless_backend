@@ -9,6 +9,7 @@ from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
+from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 
 from phonenumber_field import phonenumber
@@ -253,15 +254,15 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def password(self, request, *args, **kwargs):
         return self._update_password(serializers.ContactPasswordSerializer)
 
-    @action(methods=['get'], detail=True)
+    @action(methods=['get'], detail=False)
     def verify_email(self, request, *args, **kwargs):
-        contact = self.get_object()
+        contact = get_object_or_404(models.Contact, verification_token=request.query_params.get('token'))
         contact.email_verified = True
         contact.save(update_fields=['email_verified'])
 
         return Response({
             'status': 'success',
-            'message': _('Email verified!')
+            'message': _('Thank you! Your email has been verified!'),
         })
 
     @action(methods=['post'], detail=False, permission_classes=[AllowAny])

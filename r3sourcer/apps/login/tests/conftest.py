@@ -29,7 +29,7 @@ def contact(db, user):
 
 
 @pytest.fixture
-@mock.patch('r3sourcer.apps.login.mixins.get_random_string', return_value='1'*8)
+@mock.patch('r3sourcer.apps.core.mixins.get_random_string', return_value='1'*8)
 def token_login(mock_gen_token, contact):
     return TokenLogin.objects.create(contact=contact)
 

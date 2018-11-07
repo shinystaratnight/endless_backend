@@ -4,8 +4,7 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import UUIDModel, Contact, Role
-
-from .mixins import GenerateAuthTokenMixin
+from r3sourcer.apps.core.mixins import GenerateAuthTokenMixin
 
 
 class TokenLogin(UUIDModel,

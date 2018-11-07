@@ -4,7 +4,7 @@ from __future__ import unicode_literals
 
 from django.db import migrations, models
 import django.db.models.deletion
-import r3sourcer.apps.login.mixins
+import r3sourcer.apps.core.mixins
 import uuid
 
 
@@ -33,6 +33,6 @@ class Migration(migrations.Migration):
                 'verbose_name': 'Token Login',
                 'verbose_name_plural': 'Token Logins',
             },
-            bases=(models.Model, r3sourcer.apps.login.mixins.GenerateAuthTokenMixin),
+            bases=(models.Model, r3sourcer.apps.core.mixins.GenerateAuthTokenMixin),
         ),
     ]
