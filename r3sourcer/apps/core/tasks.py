@@ -16,6 +16,7 @@ from r3sourcer.apps.core.open_exchange.client import client as openexchange_clie
 from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.core.utils.public_holidays import EnricoApi, EnricoApiException
 from r3sourcer.apps.email_interface.utils import get_email_service
+from r3sourcer.apps.login.models import TokenLogin
 
 
 LOCK_EXPIRE = 5 * 60
@@ -202,7 +203,7 @@ def send_contact_verify_sms(self, contact_id, manager_id):
 
 
 @shared_task(bind=True)
-def send_contact_verify_email(self, contact_id, manager_id):
+def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
     from r3sourcer.apps.email_interface.utils import get_email_service
 
     try:
@@ -220,10 +221,10 @@ def send_contact_verify_email(self, contact_id, manager_id):
     else:
         with transaction.atomic():
             manager = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
+            if manager is None:
+                manager = contact.get_closest_company().manager
 
-            master_company = core_companies_utils.get_site_master_company(
-                user=manager.contact.user
-            )
+            master_company = core_models.Company.objects.get(id=master_company_id)
 
             if not contact.verification_token:
                 contact.verification_token = contact.generate_auth_token(
@@ -231,16 +232,19 @@ def send_contact_verify_email(self, contact_id, manager_id):
                 )
                 contact.save(update_fields=['verification_token'])
 
-            site_url = core_companies_utils.get_site_url(user=contact.user)
+            extranet_login = TokenLogin.objects.create(
+                contact=contact,
+                redirect_to='/contacts/verify_email/?token={}'.format(contact.verification_token)
+            )
+
+            site_url = core_companies_utils.get_site_url(master_company=master_company)
 
             data_dict = dict(
                 contact=contact,
                 manager=manager or contact.get_closest_company().manager,
                 related_obj=contact,
                 master_company=master_company,
-                email_verification_link="%s%s" % (
-                    site_url, '/contact/verify_email/?token={}'.format(contact.verification_token)
-                ),
+                email_verification_link="%s%s" % (site_url, extranet_login.auth_url),
             )
 
             logger.info('Sending e-mail verify to %s.', contact)

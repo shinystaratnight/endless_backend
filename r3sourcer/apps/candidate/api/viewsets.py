@@ -8,9 +8,11 @@ from rest_framework.response import Response
 
 from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestCandidateWorkflowSerializer
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
+from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
 
 from . import serializers, permissions
@@ -21,6 +23,20 @@ from ..tasks import buy_candidate
 class CandidateContactViewset(BaseApiViewset):
 
     permission_classes = (permissions.CandidateContactPermissions, SiteContactPermissions)
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        manager_id = self.request.user.contact
+        master_company = get_site_master_company(request=self.request)
+
+        if not instance.contact.phone_mobile_verified:
+            core_tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id), countdown=10)
+
+        if not instance.contact.email_verified:
+            core_tasks.send_contact_verify_email.apply_async(
+                args=(instance.contact.id, manager_id.id, master_company.id), countdown=10
+            )
 
     @action(methods=['post'], detail=False, permission_classes=[drf_permissions.AllowAny])
     def register(self, request, *args, **kwargs):
