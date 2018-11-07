@@ -221,6 +221,10 @@ def send_contact_verify_email(self, contact_id, manager_id):
         with transaction.atomic():
             manager = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
 
+            master_company = core_companies_utils.get_site_master_company(
+                user=manager.contact.user
+            )
+
             if not contact.verification_token:
                 contact.verification_token = contact.generate_auth_token(
                     token_field_name='verification_token', length=64
@@ -233,6 +237,7 @@ def send_contact_verify_email(self, contact_id, manager_id):
                 contact=contact,
                 manager=manager or contact.get_closest_company().manager,
                 related_obj=contact,
+                master_company=master_company,
                 email_verification_link="%s%s" % (
                     site_url, '/contact/verify_email/?token={}'.format(contact.verification_token)
                 ),
