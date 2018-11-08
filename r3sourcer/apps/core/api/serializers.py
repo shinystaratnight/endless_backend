@@ -887,6 +887,10 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
             'company': company,
         })
 
+        if company.type == core_models.Company.COMPANY_TYPES.regular:
+            instance.role = core_models.CompanyContact.ROLE_CHOICES.client
+            instance.save(update_fields=['role'])
+
         return instance
 
     def update(self, instance, validated_data):
