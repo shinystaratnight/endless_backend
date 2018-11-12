@@ -336,10 +336,9 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     def is_personal_info_filled(self):
         return bool(self.height is not None and
                     self.weight is not None and
-                    self.transportation_to_work is not None and
-                    self.strength and self.language)
+                    self.transportation_to_work is not None)
     is_personal_info_filled.short_description = _(
-        'Height, weight, transportation to work, strength and language'
+        'Height, weight, transportation to work'
     )
 
     @workflow_function
