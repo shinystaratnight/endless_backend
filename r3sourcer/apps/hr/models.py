@@ -1331,7 +1331,7 @@ class BlackList(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="blacklists",
         verbose_name=_("Candidate Contact")
     )
@@ -1487,7 +1487,7 @@ class CarrierList(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name='carrier_lists',
         verbose_name=_('Candidate Contact'),
         blank=True,
@@ -1573,7 +1573,7 @@ class CandidateEvaluation(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="candidate_evaluations",
         verbose_name=_("Candidate Contact")
     )

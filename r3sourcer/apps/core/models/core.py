@@ -326,7 +326,32 @@ class Contact(
                 Q(candidate_contacts__candidate_rels__master_company=owner),
                 Q(company_contact__relationships__company=owner),
                 Q(company_contact__relationships__company__regular_companies__master_company=owner),
+                Q(contact_relations__company=owner),
             ]
+
+
+class ContactRelationship(UUIDModel):
+
+    contact = models.ForeignKey(
+        Contact,
+        related_name="contact_relations",
+        verbose_name=_("Contact"),
+        on_delete=models.CASCADE
+    )
+
+    company = models.ForeignKey(
+        'Company',
+        related_name="contact_relations",
+        verbose_name=_("Company"),
+        on_delete=models.CASCADE
+    )
+
+    class Meta:
+        verbose_name = _("Contact Relationship")
+        verbose_name_plural = _("Contact Relationships")
+
+    def __str__(self):
+        return '{} {} - {}'.format(str(self.contact), self.unavailable_from, self.unavailable_until)
 
 
 class ContactUnavailability(UUIDModel):

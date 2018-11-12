@@ -38,6 +38,14 @@ class CandidateContactViewset(BaseApiViewset):
                 args=(instance.contact.id, manager_id.id, master_company.id), countdown=10
             )
 
+    def perform_destroy(self, instance):
+        has_joboffers = instance.job_offers.exists()
+
+        if has_joboffers:
+            raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
+
+        super().perform_destroy(instance)
+
     @action(methods=['post'], detail=False, permission_classes=[drf_permissions.AllowAny])
     def register(self, request, *args, **kwargs):
         serializer = serializers.CandidateContactRegisterSerializer(
