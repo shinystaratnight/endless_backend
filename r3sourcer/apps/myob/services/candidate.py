@@ -24,7 +24,6 @@ class CandidateSync(
         super().__init__(*args, **kwargs)
 
         self._superannuation_fund = {}
-        self._employment_classifications = {}
         self._expense_account = None
         self._base_category = None
         self._superannuation_category = None
@@ -146,7 +145,6 @@ class CandidateSync(
         else:
             tax_table = self._get_tax_table('Tax Free Threshold')
             withholding_rate = None
-        employment_classification = self._get_employment_classification(candidate_contact)
 
         for payroll_wage_cat in payroll_details['Wage']['WageCategories']:
             wage_categories.add(payroll_wage_cat['UID'])
@@ -163,19 +161,13 @@ class CandidateSync(
             tax_table=tax_table,
             withholding_rate=withholding_rate,
             superannuation_category=superannuation_category,
-            employment_classification=employment_classification,
             base_hourly_rate=base_hourly_rate
         )
-        data = self._get_data_to_update(payroll_details, data, deep=True, if_not_exists=['EmploymentClassification'])
+        data = self._get_data_to_update(payroll_details, data, deep=True)
 
         if superannuation_fund:
             data['Superannuation']['SuperannuationFund'] = {
                 'UID': superannuation_fund['UID'],
-            }
-
-        if employment_classification:
-            data['EmploymentClassification'] = {
-                'UID': employment_classification['UID'],
             }
 
         data['Employee'] = {
@@ -282,19 +274,3 @@ class CandidateSync(
             resp = self.client.api.Payroll.PayrollCategory.Wage.get()
             return resp['Count'] and resp['Items'][0]
         return tax_table['Count'] and tax_table['Items'][0]
-
-    def _get_employment_classification(self, candidate_contact):
-        if not candidate_contact.employment_classification:
-            return
-
-        classification_name = candidate_contact.employment_classification.name
-        if classification_name not in self._employment_classifications:
-            resp = self._get_object_by_field(
-                classification_name.lower(),
-                resource=self.client.api.Payroll.EmploymentClassification,
-                myob_field='tolower(Name)',
-                single=True
-            )
-            self._employment_classifications[classification_name] = resp
-
-        return self._employment_classifications[classification_name]

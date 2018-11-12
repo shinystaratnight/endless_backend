@@ -361,8 +361,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
                     self.superannuation_fund.membership_number and
                     self.bank_account and
                     self.emergency_contact_name and
-                    self.emergency_contact_phone and
-                    self.employment_classification)
+                    self.emergency_contact_phone)
     is_formalities_filled.short_description = _(
         'All formalities info is required'
     )
