@@ -552,7 +552,7 @@ class TagRel(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="tag_rels",
         verbose_name=_("Candidate Contact")
     )
@@ -638,7 +638,7 @@ class SkillRel(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="candidate_skills"
     )
 
@@ -727,7 +727,7 @@ class CandidateRel(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="candidate_rels",
         verbose_name=_("Candidate Contact")
     )
@@ -742,7 +742,7 @@ class CandidateRel(core_models.UUIDModel):
     company_contact = models.ForeignKey(
         core_models.CompanyContact,
         related_name="candidate_rels",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Company Contact"),
         blank=True,
         null=True
@@ -777,7 +777,7 @@ class AcceptanceTestRel(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name='candidate_acceptance_tests',
         verbose_name=_("Candidate Contact")
     )
