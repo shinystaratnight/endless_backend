@@ -3,7 +3,7 @@ from django.utils.translation import ugettext_lazy as _
 
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import UUIDModel, Tag, CompanyWorkflowNode, WorkflowObject
+from r3sourcer.apps.core.models import UUIDModel, Tag, CompanyWorkflowNode, WorkflowObject, Company
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models import Industry
 
@@ -337,3 +337,24 @@ class WorkflowObjectAnswer(UUIDModel):
         if is_all_test_filled:
             self.workflow_object.active = True
             self.workflow_object.save()
+
+
+class AcceptanceTestRelationship(UUIDModel):
+
+    acceptance_test = models.ForeignKey(
+        AcceptanceTest,
+        on_delete=models.CASCADE,
+        related_name='acceptance_test_relations',
+        verbose_name=_("Acceptance Test")
+    )
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='acceptance_test_relations',
+        verbose_name=_("Company")
+    )
+
+    class Meta:
+        verbose_name = _("Acceptance Test Relation")
+        verbose_name_plural = _("Acceptance Test Relations")

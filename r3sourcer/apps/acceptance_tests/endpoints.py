@@ -1,4 +1,4 @@
-from r3sourcer.apps.acceptance_tests.api import filters, serializers
+from r3sourcer.apps.acceptance_tests.api import filters, serializers, viewsets
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 
@@ -10,6 +10,7 @@ class AcceptanceTestEndpoint(ApiEndpoint):
     model = models.AcceptanceTest
     filter_class = filters.AcceptanceTestFilter
     serializer = serializers.AcceptanceTestSerializer
+    base_viewset = viewsets.AcceptanceTestViewset
 
     search_fields = ('test_name', )
 
