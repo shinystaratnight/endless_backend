@@ -243,3 +243,4 @@ class CandidateLocationViewset(
 class SuperannuationFundViewset(BaseApiViewset):
 
     http_method_names = ['get']
+    permission_classes = [drf_permissions.AllowAny]
