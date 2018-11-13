@@ -21,7 +21,7 @@ class TestLoggerQuerySet:
     def test_bulk_create(self, db):
         objects = self.test_model.objects.bulk_create([NameModel(name='n1'), NameModel(name='n2')])
         assert len(objects) == 2
-        assert self.logger.logger_database.count(LogHistory, conditions="transaction_type='create'") == 26
+        assert self.logger.logger_database.count(LogHistory, conditions="transaction_type='create'") == 4
 
         query = "SELECT * FROM $table " \
                 "where model='{}.{}'".format(NameModel.__module__, NameModel.__name__)

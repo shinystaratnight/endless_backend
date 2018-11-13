@@ -1,6 +1,5 @@
 from datetime import timedelta
 
-from django.core.cache import cache
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -372,7 +371,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     def is_formalities_filled(self):
         return bool(self.tax_file_number and
                     self.superannuation_fund and
-                    self.superannuation_fund.membership_number and
+                    self.superannuation_membership_number and
                     self.bank_account and
                     self.emergency_contact_name and
                     self.emergency_contact_phone)
