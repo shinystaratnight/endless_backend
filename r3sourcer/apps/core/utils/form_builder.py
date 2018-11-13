@@ -48,6 +48,12 @@ class StorageHelper(object):
                 else:
                     self._fields.setdefault(field.name, field)
             else:
+                if isinstance(field_value, models.Model):
+                    from r3sourcer.apps.core.models import Country
+                    if isinstance(field_value, Country):
+                        field_value = field_value.code2
+                    else:
+                        field_value = field_value.id
                 self._fields.setdefault(field_name, SimpleFieldHelper(field_name, field_value))
 
     def validate(self, raise_errors=False):

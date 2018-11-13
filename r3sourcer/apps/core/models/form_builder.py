@@ -253,8 +253,7 @@ class Form(UUIDModel):
         parsed_data = {}
         for (key, value) in data.items():
             if isinstance(value, models.Model):
-                key = '{key}_id'.format(key=key)
-                value = str(value.id)
+                value = str(value.code2 if isinstance(value, Country) else value.id)
             elif not isinstance(value, (File)):
                 value = value if isinstance(value, bool) or value is None else str(value)
             parsed_data.setdefault(key, value)
@@ -283,7 +282,13 @@ class Form(UUIDModel):
         return data_storage, errors
 
     @classmethod
-    def parse_api_data(cls, data, parent=None):
+    def parse_api_data(cls, data, parent=None, form=None):
+        form_fields = {}
+        if form:
+            fieldsets = form.get_fieldsets()
+            for fieldset in fieldsets:
+                form_fields.update(fieldset['fields'].copy())
+
         parsed_data = {}
         for field, value in data.items():
             field_name = '%s__%s' % (parent, field) if parent else field
@@ -296,9 +301,16 @@ class Form(UUIDModel):
                 value = country and country.code2
 
             if isinstance(value, dict):
-                parsed_data.update(cls.parse_api_data(value, parent=field_name))
+                parsed_data.update(cls.parse_api_data(value, parent=field_name, form=form))
             else:
-                parsed_data[field_name] = value
+                if '__id' in field_name and parent:
+                    obj = form_fields[parent].queryset.get(id=value) if parent in form_fields else value
+                    if not isinstance(obj, str):
+                        parsed_data[parent] = obj.code2 if isinstance(obj, Country) else obj.id
+                    else:
+                        parsed_data[parent] = value
+                else:
+                    parsed_data[field_name] = value
 
         return parsed_data
 
