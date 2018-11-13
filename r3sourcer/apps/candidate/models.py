@@ -78,41 +78,48 @@ class VisaType(core_models.UUIDModel):
 class SuperannuationFund(core_models.UUIDModel):
 
     name = models.CharField(
-        max_length=76,
+        max_length=255,
         verbose_name=_('Name')
     )
 
-    membership_number = models.CharField(
-        max_length=255,
-        verbose_name=_("Employee Membership Number"),
-        blank=True,
-        null=True
+    abn = models.CharField(
+        max_length=16,
+        verbose_name=_("ABN")
     )
 
-    phone = PhoneNumberField(
-        verbose_name=_("Phone Number"),
-        blank=True,
-        null=True
+    usi = models.CharField(
+        max_length=16,
+        verbose_name=_("USI")
     )
 
-    website = models.CharField(
+    product_name = models.CharField(
         max_length=255,
-        verbose_name=_("Website"),
-        blank=True,
-        null=True
+        verbose_name=_("Product Name")
+    )
+
+    contribution_restrictions = models.BooleanField(
+        verbose_name=_("Contribution Restrictions")
+    )
+
+    from_date = models.DateField(
+        verbose_name=_("From Date")
+    )
+
+    to_date = models.DateField(
+        verbose_name=_("To Date")
     )
 
     class Meta:
         verbose_name = _("Superannuation Fund")
         verbose_name_plural = _("Superannuation Funds")
+        unique_together = ('product_name', 'abn', 'usi')
 
     def __str__(self):
         return self.name
 
     @classmethod
-    def owned_by_lookups(cls, owner):
-        if isinstance(owner, core_models.Company):
-            return [models.Q(candidates__candidate_rels__master_company=owner)]
+    def is_owned(cls):
+        return False
 
 
 class CandidateContact(core_models.UUIDModel, WorkflowProcess):
@@ -284,6 +291,13 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
         related_name="candidates",
         on_delete=models.PROTECT,
         verbose_name=_("Superannuation Fund"),
+        blank=True,
+        null=True
+    )
+
+    superannuation_membership_number = models.CharField(
+        max_length=255,
+        verbose_name=_("Employee Membership Number"),
         blank=True,
         null=True
     )

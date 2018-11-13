@@ -1,7 +1,10 @@
+from datetime import datetime
+
 from django.conf import settings
 from django.db import transaction
 from django.utils import module_loading
 
+import requests
 import stripe
 
 from celery import shared_task
@@ -78,3 +81,58 @@ def buy_candidate(candidate_rel_id):
         candidate_rel.save()
     except stripe.StripeError as e:
         logger.exception(e)
+
+
+@shared_task()
+def update_superannuation_fund_list():
+    file_url = 'http://superfundlookup.gov.au/Tools/DownloadUsiList?download=usi'
+    response = requests.get(file_url, stream=True)
+
+    if response.encoding is None:
+        response.encoding = 'utf-8'
+
+    lines = response.iter_lines(decode_unicode=True)
+
+    # skip header and delimiter lines
+    next(lines)
+    next(lines)
+
+    batch = []
+    for line in lines:
+        if not line:
+            continue
+
+        abn = line[0:12].strip()
+        product_name = line[234:435].strip()
+        usi = line[213:234].strip()
+
+        try:
+            defaults = {
+                'abn': abn,
+                'product_name': product_name,
+                'name': line[12:213].strip(),
+                'usi': usi,
+                'contribution_restrictions': line[435:460].strip().lower() == 'y',
+                'from_date': datetime.strptime(line[460:471].strip(), '%Y-%m-%d').date(),
+                'to_date': datetime.strptime(line[471:].strip(), '%Y-%m-%d').date(),
+            }
+        except ValueError:
+            continue
+
+        superfund_exist = candidate_models.SuperannuationFund.objects.filter(
+            abn=abn, product_name=product_name, usi=usi
+        ).first()
+
+        if superfund_exist is None:
+            if len(batch) < 50:
+                batch.append(candidate_models.SuperannuationFund(**defaults))
+            else:
+                candidate_models.SuperannuationFund.objects.bulk_create(batch)
+                batch = []
+        else:
+            for key, value in defaults.items():
+                setattr(superfund_exist, key, value)
+            superfund_exist.save()
+
+    if len(batch) > 0:
+        candidate_models.SuperannuationFund.objects.bulk_create(batch)
