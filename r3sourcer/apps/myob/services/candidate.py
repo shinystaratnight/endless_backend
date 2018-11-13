@@ -183,7 +183,7 @@ class CandidateSync(
 
     def _get_superannuation_fund(self, candidate_contact):
         super_fund = candidate_contact.superannuation_fund
-        fund_name = super_fund.name if super_fund else ''
+        fund_name = super_fund.product_name if super_fund else ''
 
         if not fund_name:
             return
@@ -195,6 +195,15 @@ class CandidateSync(
                 myob_field='tolower(Name)',
                 single=True
             )
+
+            if not resp:
+                resp = self._get_object_by_field(
+                    super_fund.name.lower(),
+                    resource=self.client.api.Payroll.SuperannuationFund,
+                    myob_field='tolower(Name)',
+                    single=True
+                )
+
             self._superannuation_fund[fund_name] = resp
 
         return self._superannuation_fund[fund_name]
