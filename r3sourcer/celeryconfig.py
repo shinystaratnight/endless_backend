@@ -78,6 +78,10 @@ beat_schedule = {
         'task': 'r3sourcer.apps.billing.tasks.send_sms_payment_reminder',
         'schedule': crontab(minute=45)
     },
+    'update_superannuation_fund_list': {
+        'task': 'r3sourcer.apps.candidate.tasks.update_superannuation_fund_list',
+        'schedule': crontab(minute=0, hour=0, day_of_month=2)
+    },
 }
 
 task_ignore_result = True
