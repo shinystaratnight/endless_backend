@@ -77,6 +77,7 @@ def candidate_data(employment_classification, bank_account, superannuation_fund)
         emergency_contact_phone="+41789232323",
         employment_classification=employment_classification,
         superannuation_fund=superannuation_fund,
+        superannuation_membership_number='123'
     )
 
 
@@ -92,7 +93,7 @@ def candidate(db, contact, candidate_data):
 
     keys = [
         'height', 'weight', 'transportation_to_work', 'strength', 'language', 'tax_file_number', 'superannuation_fund',
-        'bank_account', 'emergency_contact_name', 'emergency_contact_phone',
+        'bank_account', 'emergency_contact_name', 'emergency_contact_phone', 'superannuation_membership_number',
         'employment_classification'
     ]
     for key in keys:
@@ -133,7 +134,12 @@ def visa_type(db):
 def superannuation_fund(db):
     return candidate_models.SuperannuationFund.objects.create(
         name="Test fund",
-        membership_number="321"
+        abn='123',
+        usi='123',
+        product_name='Test fund',
+        contribution_restrictions=False,
+        from_date=datetime.date(2018, 1, 1),
+        to_date=datetime.date(9999, 1, 1),
     )
 
 

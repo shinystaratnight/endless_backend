@@ -69,12 +69,12 @@ class TestClickhouseLogger:
     def test_log_create_instance(self, test_instance):
         general_logger_fields = self.logger.get_general_fields(test_instance, 'create')
         self.logger.log_create_instance(test_instance, general_logger_fields, None)
-        assert self.logger.logger_database.count(LogHistory) == 24
+        assert self.logger.logger_database.count(LogHistory) == 2
         test_instance.id = None
         test_instance.save()
         general_logger_fields = self.logger.get_general_fields(test_instance, 'create')
         self.logger.log_create_instance(test_instance, general_logger_fields, None)
-        assert self.logger.logger_database.count(LogHistory) == 26
+        assert self.logger.logger_database.count(LogHistory) == 4
 
     def test_log_update_instance(self, test_instance):
         general_logger_fields = self.logger.get_general_fields(test_instance, 'update')
@@ -108,7 +108,7 @@ class TestClickhouseLogger:
         new_instance = test_model.objects.create(name='test name 2', id=3)
         count = self.logger.logger_database.count(LogHistory)
         self.logger.log_instance_change(new_instance, old_instance=None, transaction_type='create')
-        assert self.logger.logger_database.count(LogHistory) == count + 24
+        assert self.logger.logger_database.count(LogHistory) == count + 2
 
     def test_log_update_field(self, test_instance):
         general_logger_fields = self.logger.get_general_fields(test_instance, 'update')

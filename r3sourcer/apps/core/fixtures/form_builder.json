@@ -3,10 +3,8 @@
   "model": "core.formbuilder",
   "pk": "d44b7c2b-da80-44b2-b587-ac7840eddcd5",
   "fields": {
-    "updated_at": "2018-07-10T09:24:37.945Z",
-    "created_at": "2018-02-28T13:56:38.183Z",
-    "content_type": 90,
-    "fields": "[\"contact__title\", \"contact__first_name\", \"contact__last_name\", \"contact__email\", \"contact__phone_mobile\", \"contact__gender\", \"contact__birthday\", \"contact__picture\", \"contact__address__street_address\", \"contact__address__city\", \"contact__address__postal_code\", \"contact__address__state\", \"contact__address__country\", \"transportation_to_work\", \"height\", \"weight\", \"residency\", \"nationality__id\", \"tax_file_number\", \"bank_account\", \"superannuation_fund__name\", \"superannuation_fund__membership_number\"]"
+    "content_type": "candidate.candidatecontact",
+    "fields": "[\"contact__title\", \"contact__first_name\", \"contact__last_name\", \"contact__email\", \"contact__phone_mobile\", \"contact__gender\", \"contact__birthday\", \"contact__picture\", \"contact__address__street_address\", \"contact__address__city\", \"contact__address__postal_code\", \"contact__address__state\", \"contact__address__country\", \"transportation_to_work\", \"height\", \"weight\", \"residency\", \"nationality__id\", \"tax_file_number\", \"bank_account\", \"superannuation_fund__id\", \"superannuation_membership_number\"]"
   }
 }
 ]

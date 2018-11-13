@@ -49,8 +49,11 @@ class SubcontractorCandidateRelationEndpoint(core_endpoints.ApiEndpoint):
 class SuperannuationFundEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.SuperannuationFund
-    search_fields = ['name']
-    serializer_fields = ('id', 'name', 'membership_number', 'phone', 'website')
+    base_viewset = candidate_viewsets.SuperannuationFundViewset
+    search_fields = ['product_name']
+    serializer_fields = (
+        'id', 'name', 'abn', 'usi', 'product_name', 'contribution_restrictions', 'from_date', 'to_date'
+    )
 
 
 class VisaTypeEndpoint(core_endpoints.ApiEndpoint):

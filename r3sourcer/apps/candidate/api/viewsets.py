@@ -238,3 +238,9 @@ class CandidateLocationViewset(
         data = location_logger.fetch_location_history(instance, page_num=page, page_size=limit)
 
         return Response(data)
+
+
+class SuperannuationFundViewset(BaseApiViewset):
+
+    http_method_names = ['get']
+    permission_classes = [drf_permissions.AllowAny]
