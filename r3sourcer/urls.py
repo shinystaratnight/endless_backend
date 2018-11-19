@@ -23,8 +23,6 @@ router.registry.append(('functions', FunctionsList, 'functions'))
 
 admin.site.login_form = CoreAdminAuthenticationForm
 
-api_versions = '(?P<version>v2)'
-
 _urlpatterns = [
     url(r'^admin/', admin.site.urls),
     url(r'^i18n/', include('django.conf.urls.i18n')),
@@ -35,17 +33,17 @@ _urlpatterns = [
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),
     url(r'^myob/', include('r3sourcer.apps.myob.urls', namespace='myob')),
     url(r'^admin/', admin_logger.urls),
-    url(r'^api/{}/token/$'.format(api_versions), JwtTokenPairView.as_view(), name='token_obtain_pair'),
-    url(r'^api/{}/token/refresh/$'.format(api_versions), TokenRefreshView.as_view(), name='token_refresh'),
-    url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/'.format(api_versions), journal_detail),
-    url(r'^api/{}/journal/(?P<app_path>.+)/(?P<model>.+)/'.format(api_versions), journal_list),
-    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.billing.urls', namespace='billing')),
-    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.company_settings.urls')),
-    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.core.urls')),
-    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.hr.urls')),
-    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.skills.urls')),
-    url(r'^api/{}/'.format(api_versions), include('r3sourcer.apps.pricing.urls')),
-    url(r'^api/{}/'.format(api_versions), include(router.urls, namespace='api')),
+    url(r'^token/$', JwtTokenPairView.as_view(), name='token_obtain_pair'),
+    url(r'^token/refresh/$', TokenRefreshView.as_view(), name='token_refresh'),
+    url(r'^journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/', journal_detail),
+    url(r'^journal/(?P<app_path>.+)/(?P<model>.+)/', journal_list),
+    url(r'^', include('r3sourcer.apps.billing.urls', namespace='billing')),
+    url(r'^', include('r3sourcer.apps.company_settings.urls')),
+    url(r'^', include('r3sourcer.apps.core.urls')),
+    url(r'^', include('r3sourcer.apps.hr.urls')),
+    url(r'^', include('r3sourcer.apps.skills.urls')),
+    url(r'^', include('r3sourcer.apps.pricing.urls')),
+    url(r'^', include(router.urls, namespace='api')),
     url(r'^', include('filer.urls', namespace='filer')),
     url(r'^admin/', include('loginas.urls')),
 ]

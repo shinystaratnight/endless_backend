@@ -50,7 +50,7 @@ class TestCompanyContactResource(ResourceMixin):
         self, mock_geo, rf, user, staff_relationship, candidate_contact_data, site_company
     ):
         req = rf.post(
-            '/api/v2/candidate_contacts/register/', data=json.dumps(candidate_contact_data),
+            '/candidate_contacts/register/', data=json.dumps(candidate_contact_data),
             content_type='application/json'
         )
         force_authenticate(req, user=user)
@@ -66,7 +66,7 @@ class TestCompanyContactResource(ResourceMixin):
     def test_can_register_candidate_contact_do_not_agree(
             self, mock_geo, rf, user, candidate_contact_data):
         candidate_contact_data['agree'] = False
-        req = rf.post('/api/v2/candidate_contacts/register/',
+        req = rf.post('/candidate_contacts/register/',
                       data=json.dumps(candidate_contact_data),
                       content_type='application/json')
         force_authenticate(req, user=user)
@@ -86,7 +86,7 @@ class TestSubcontractorResource(ResourceMixin):
     @mock.patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
                 return_value=(42, 42))
     def test_can_register_subcontractor(self, mock_geo, rf, user, candidate_contact_data):
-        req = rf.post('/api/v2/candidate_contacts/register/',
+        req = rf.post('/candidate_contacts/register/',
                       data=json.dumps(candidate_contact_data),
                       content_type='application/json')
         force_authenticate(req, user=user)
@@ -101,7 +101,7 @@ class TestSubcontractorResource(ResourceMixin):
                 return_value=(42, 42))
     def test_can_register_subcontractor_do_not_agree(self, mock_geo, rf, user, candidate_contact_data):
         candidate_contact_data['agree'] = False
-        req = rf.post('/api/v2/candidate_contacts/register/',
+        req = rf.post('/candidate_contacts/register/',
                       data=json.dumps(candidate_contact_data),
                       content_type='application/json')
         force_authenticate(req, user=user)

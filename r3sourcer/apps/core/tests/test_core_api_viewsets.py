@@ -300,7 +300,7 @@ class TestCompanyContactResource(ResourceMixin):
                 return_value=(42, 42))
     def test_can_register_company_contact(self, mock_geo, mock_factory, rf,
                                           user,  company_contact_data):
-        req = rf.post('/api/v2/company_contacts/register/',
+        req = rf.post('/company_contacts/register/',
                       data=json.dumps(company_contact_data),
                       content_type='application/json')
         force_authenticate(req, user=user)
@@ -316,7 +316,7 @@ class TestCompanyContactResource(ResourceMixin):
                 return_value=(42, 42))
     def test_can_create_with_referenced_company(
             self, mock_geo, mock_factory, rf, user, company_contact_ref_data):
-        req = rf.post('/api/v2/company_contacts/register/',
+        req = rf.post('/company_contacts/register/',
                       data=json.dumps(company_contact_ref_data),
                       content_type='application/json')
         force_authenticate(req, user=user)
@@ -382,7 +382,7 @@ class TestContactResource(ResourceMixin):
         return dict(picture=copy.deepcopy(picture), email='test_email@testemail.com')
 
     def test_can_update_contact(self, rf, contact, staff_user, contact_update_data):
-        req = rf.put('/api/v2/contacts/',
+        req = rf.put('/contacts/',
                      encode_multipart(BOUNDARY, contact_update_data),
                      content_type=MULTIPART_CONTENT)
         force_authenticate(req, user=staff_user)
@@ -394,7 +394,7 @@ class TestContactResource(ResourceMixin):
         assert response.status_code == 200
 
     def test_can_update_avatar(self, rf, contact, staff_user, contact_picture_data):
-        req = rf.put('/api/v2/contacts/',
+        req = rf.put('/contacts/',
                      encode_multipart(BOUNDARY, contact_picture_data),
                      content_type=MULTIPART_CONTENT)
         force_authenticate(req, user=staff_user)
@@ -407,7 +407,7 @@ class TestContactResource(ResourceMixin):
         assert response.status_code == 200
 
     def test_check_phone_valid(self, rf):
-        req = rf.get('/api/v2/contacts/validate?phone=%2B61234567891')
+        req = rf.get('/contacts/validate?phone=%2B61234567891')
 
         resource = endpoints.ContactEndpoint().get_viewset()()
         response = resource.validate(req)
@@ -416,21 +416,21 @@ class TestContactResource(ResourceMixin):
         assert response.data['data']['valid']
 
     def test_check_phone_invalid(self, rf):
-        req = rf.get('/api/v2/contacts/validate?phone=1234')
+        req = rf.get('/contacts/validate?phone=1234')
 
         resource = endpoints.ContactEndpoint().get_viewset()()
         with pytest.raises(ValidationError):
             resource.validate(req)
 
     def test_check_phone_empty(self, rf):
-        req = rf.get('/api/v2/contacts/validate?phone=')
+        req = rf.get('/contacts/validate?phone=')
 
         resource = endpoints.ContactEndpoint().get_viewset()()
         with pytest.raises(ValidationError):
             resource.validate(req)
 
     def test_check_email_valid(self, rf):
-        req = rf.get('/api/v2/contacts/validate?email=email@test.tt')
+        req = rf.get('/contacts/validate?email=email@test.tt')
 
         resource = endpoints.ContactEndpoint().get_viewset()()
         response = resource.validate(req)
@@ -439,21 +439,21 @@ class TestContactResource(ResourceMixin):
         assert response.data['data']['valid']
 
     def test_check_email_invalid(self, rf):
-        req = rf.get('/api/v2/contacts/validate?email=test')
+        req = rf.get('/contacts/validate?email=test')
 
         resource = endpoints.ContactEndpoint().get_viewset()()
         with pytest.raises(ValidationError):
             resource.validate(req)
 
     def test_check_email_empty(self, rf):
-        req = rf.get('/api/v2/contacts/validate?email=')
+        req = rf.get('/contacts/validate?email=')
 
         resource = endpoints.ContactEndpoint().get_viewset()()
         with pytest.raises(ValidationError):
             resource.validate(req)
 
     def test_check_empty_validate(self, rf):
-        req = rf.get('/api/v2/contacts/validate')
+        req = rf.get('/contacts/validate')
 
         resource = endpoints.ContactEndpoint().get_viewset()()
         with pytest.raises(ValidationError):
@@ -472,7 +472,7 @@ class TestCompanyResource(ResourceMixin):
         return endpoints.CompanyEndpoint().get_viewset()
 
     def test_process_response_data_searching_country(self, rf, company_vs):
-        req = rf.get('/api/v2/company/?country=AU')
+        req = rf.get('/company/?country=AU')
 
         resource = company_vs(request=req)
         data = {
@@ -484,7 +484,7 @@ class TestCompanyResource(ResourceMixin):
         assert 'message' in resp_data
 
     def test_process_response_data_searching_business_id(self, rf, company_vs):
-        req = rf.get('/api/v2/company/?business_id=1234')
+        req = rf.get('/company/?business_id=1234')
 
         resource = company_vs(request=req)
         data = {
@@ -496,7 +496,7 @@ class TestCompanyResource(ResourceMixin):
         assert 'message' in resp_data
 
     def test_process_response_data_searching_without_pagination(self, rf, company_vs):
-        req = rf.get('/api/v2/company/?country=AU')
+        req = rf.get('/company/?country=AU')
 
         resource = company_vs(request=req)
         data = [{
@@ -508,7 +508,7 @@ class TestCompanyResource(ResourceMixin):
         assert 'message' in resp_data
 
     def test_process_response_data_searching_not_found(self, rf, company_vs):
-        req = rf.get('/api/v2/company/?country=GB')
+        req = rf.get('/company/?country=GB')
 
         resource = company_vs(request=req)
         data = {
@@ -520,7 +520,7 @@ class TestCompanyResource(ResourceMixin):
         assert 'data' not in resp_data
 
     def test_process_response_data_not_searching(self, rf, company_vs):
-        req = rf.get('/api/v2/company/')
+        req = rf.get('/company/')
 
         resource = company_vs(request=req)
         data = {
@@ -595,7 +595,7 @@ class TestDashboardModules(ResourceMixin):
         return dashboard_modules, primary_company_contact
 
     def test_get_all_modules(self, user, rf, dashboard_modules):
-        req = rf.get('/api/v2/core/dashboardmodules/')
+        req = rf.get('/core/dashboardmodules/')
         force_authenticate(req, user=user)
         resp_data = self.get_response_as_view(req)
 
@@ -608,7 +608,7 @@ class TestDashboardModules(ResourceMixin):
     def test_get_active_modules(self, mock_owned, rf, assigned_modules):
         modules, c_contact = assigned_modules
         mock_owned.return_value = DashboardModule.objects.all()
-        req = rf.get('/api/v2/core/dashboardmodules/?is_active=true')
+        req = rf.get('/core/dashboardmodules/?is_active=true')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
 
@@ -620,7 +620,7 @@ class TestDashboardModules(ResourceMixin):
     def test_get_inactive_modules(self, mock_owned, rf, assigned_modules):
         modules, c_contact = assigned_modules
         mock_owned.return_value = DashboardModule.objects.all()
-        req = rf.get('/api/v2/core/dashboardmodules/?is_active=false')
+        req = rf.get('/core/dashboardmodules/?is_active=false')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
 
@@ -632,7 +632,7 @@ class TestDashboardModules(ResourceMixin):
     def test_get_module_filtering(self, mock_owned, rf, assigned_modules):
         modules, c_contact = assigned_modules
         mock_owned.return_value = DashboardModule.objects.all()
-        req = rf.get('/api/v2/core/dashboardmodules/?model=companycontact')
+        req = rf.get('/core/dashboardmodules/?model=companycontact')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
 
@@ -642,7 +642,7 @@ class TestDashboardModules(ResourceMixin):
 
     def test_create_module(self, rf, assigned_modules):
         modules, c_contact = assigned_modules
-        req = rf.post('/api/v2/core/dashboardmodules/')
+        req = rf.post('/core/dashboardmodules/')
         force_authenticate(req, user=c_contact.contact.user)
         resp_data = self.get_response_as_view(req)
 
@@ -659,7 +659,7 @@ class TestUserDashboardModule(ResourceMixin):
     }
 
     def test_create_module_without_company_contact_relation(self, rf, user, dashboard_modules):
-        req = rf.post('/api/v2/core/userdashboardmodules/',
+        req = rf.post('/core/userdashboardmodules/',
                       data=json.dumps({
                           'dashboard_module': str(dashboard_modules[0].id),
                           'position': 1

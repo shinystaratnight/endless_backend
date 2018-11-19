@@ -32,3 +32,4 @@ webui-app
 /users.xml
 id_rsa
 docker-compose.local.yml
+config/nginx.conf

@@ -42,7 +42,7 @@ class TestDashboardModules(ResourceMixin):
     def test_get_activities(self, mock_owned, rf, primary_activity, secondary_activity):
         mock_owned.return_value = Activity.objects.filter(id=primary_activity.id)
 
-        req = rf.get('/api/v2/activity/activities/')
+        req = rf.get('/activity/activities/')
         force_authenticate(req, user=primary_activity.contact.user)
 
         resp_data = self.get_response_as_view(req)
@@ -53,7 +53,7 @@ class TestDashboardModules(ResourceMixin):
         assert Activity.objects.all().count() == 2
 
     def test_get_activities_by_superuser(self, rf, primary_activity, secondary_activity):
-        req = rf.get('/api/v2/activity/activities/')
+        req = rf.get('/activity/activities/')
 
         primary_activity.contact.user.is_superuser = True
 
