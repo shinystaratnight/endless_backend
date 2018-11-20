@@ -52,7 +52,7 @@ class SuperannuationFundEndpoint(core_endpoints.ApiEndpoint):
     base_viewset = candidate_viewsets.SuperannuationFundViewset
     search_fields = ['product_name']
     serializer_fields = (
-        'id', 'name', 'abn', 'usi', 'product_name', 'contribution_restrictions', 'from_date', 'to_date'
+        'id', 'fund_name', 'abn', 'usi', 'product_name', 'contribution_restrictions', 'from_date', 'to_date'
     )
 
 
