@@ -129,7 +129,9 @@ class CandidateContactSerializer(
             '__all__',
             {
                 'contact': (
-                    'id', 'first_name', 'last_name', 'email', 'phone_mobile', 'is_available', 'picture', 'gender', {
+                    'id', 'first_name', 'last_name', 'email', 'phone_mobile', 'is_available', 'picture', 'gender',
+                    'birthday',
+                    {
                         'address': ('__all__', ),
                     }
                 ),
