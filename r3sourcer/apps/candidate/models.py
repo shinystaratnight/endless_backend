@@ -76,7 +76,7 @@ class VisaType(core_models.UUIDModel):
 
 class SuperannuationFund(core_models.UUIDModel):
 
-    name = models.CharField(
+    fund_name = models.CharField(
         max_length=255,
         verbose_name=_('Name')
     )
@@ -114,7 +114,7 @@ class SuperannuationFund(core_models.UUIDModel):
         unique_together = ('product_name', 'abn', 'usi')
 
     def __str__(self):
-        return self.name
+        return self.product_name
 
     @classmethod
     def is_owned(cls):
