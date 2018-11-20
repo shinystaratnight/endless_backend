@@ -887,8 +887,13 @@ class FormViewSet(BaseApiViewset):
     @action(methods=['post'], detail=True, permission_classes=(AllowAny,))
     def submit(self, request, pk, *args, **kwargs):
         form_obj = self.get_object()
-        data = models.Form.parse_api_data(request.data, form=form_obj)
-        files = models.Form.parse_api_files(request.data)
+
+        try:
+            data = models.Form.parse_api_data(request.data, form=form_obj)
+            files = models.Form.parse_api_files(request.data)
+        except ValidationError as e:
+            raise exceptions.ValidationError({k.replace('__', '.'): v for k, v in e.message_dict.items()})
+
         form = form_obj.get_form_class()(data=data, files=files)
 
         if not form.is_valid():

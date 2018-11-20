@@ -290,12 +290,14 @@ class Form(UUIDModel):
                 form_fields.update(fieldset['fields'].copy())
 
         parsed_data = {}
+        errors = {}
         for field, value in data.items():
             field_name = '%s__%s' % (parent, field) if parent else field
 
             if field == 'street_address':
-                address_parts = get_address_parts(value)
-                value = get_street_address(address_parts)
+                if isinstance(value, dict):
+                    address_parts = get_address_parts(value)
+                    value = get_street_address(address_parts)
             elif field == 'country':
                 country = Country.objects.filter(models.Q(id=value) | models.Q(code2=value)).first()
                 value = country and country.code2
@@ -304,13 +306,20 @@ class Form(UUIDModel):
                 parsed_data.update(cls.parse_api_data(value, parent=field_name, form=form))
             else:
                 if '__id' in field_name and parent:
-                    obj = form_fields[parent].queryset.get(id=value) if parent in form_fields else value
-                    if not isinstance(obj, str):
-                        parsed_data[parent] = obj.code2 if isinstance(obj, Country) else obj.id
-                    else:
-                        parsed_data[parent] = value
+                    try:
+                        obj = form_fields[parent].queryset.get(id=value) if parent in form_fields else value
+                        if not isinstance(obj, str):
+                            parsed_data[parent] = obj.code2 if isinstance(obj, Country) else obj.id
+                        else:
+                            parsed_data[parent] = value
+                    except Exception:
+                        if form_fields[parent].required:
+                            errors[field_name] = _('This field is required.')
                 else:
                     parsed_data[field_name] = value
+
+        if errors:
+            raise ValidationError(errors)
 
         return parsed_data
 

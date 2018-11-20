@@ -7,7 +7,7 @@ from r3sourcer.apps.core.models import Country, Region, City
 def get_address_parts(address_data):
     address_parts = {}
 
-    for item in address_data['address_components']:
+    for item in address_data.get('address_components', []):
         for item_type in item['types']:
             if item_type != 'political':
                 address_parts[item_type] = item

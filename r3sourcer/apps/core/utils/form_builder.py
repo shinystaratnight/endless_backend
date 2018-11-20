@@ -88,10 +88,11 @@ class StorageHelper(object):
             except exceptions.ValidationError as e:
                 self._errors.update({k.replace('__', '.'): v for k, v in e.detail.items()})
 
-        for name, field in lazy_fields.items():
-            field.save_related(name, values=fields_to_validate)
-            related_fields[name] = field
-            fields_to_validate.setdefault(name, field.value.id)
+        if not self._errors:
+            for name, field in lazy_fields.items():
+                field.save_related(name, values=fields_to_validate)
+                related_fields[name] = field
+                fields_to_validate.setdefault(name, field.value.id)
 
         meta_class = type('Meta', (object, ), {
             'model': self._model,
