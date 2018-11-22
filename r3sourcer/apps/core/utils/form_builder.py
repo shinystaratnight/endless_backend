@@ -13,6 +13,17 @@ __all__ = [
 ]
 
 
+def _get_model_field_value(value):
+    if isinstance(value, models.Model):
+        from r3sourcer.apps.core.models import Country
+        if isinstance(value, Country):
+            return value.code2
+        else:
+            return value.id
+
+    return value
+
+
 class StorageHelper(object):
     """
     Helper class for form builder.
@@ -48,12 +59,7 @@ class StorageHelper(object):
                 else:
                     self._fields.setdefault(field.name, field)
             else:
-                if isinstance(field_value, models.Model):
-                    from r3sourcer.apps.core.models import Country
-                    if isinstance(field_value, Country):
-                        field_value = field_value.code2
-                    else:
-                        field_value = field_value.id
+                field_value = _get_model_field_value(field_value)
                 self._fields.setdefault(field_name, SimpleFieldHelper(field_name, field_value))
 
     def validate(self, raise_errors=False):
@@ -223,6 +229,7 @@ class RelatedFieldHelper(object):
             self.related_fields.setdefault(related_field.name, related_field)
         else:
             if '_id' not in self._lookup_name:
+                value = _get_model_field_value(value)
                 self.simple_fields.setdefault(self._lookup_name, SimpleFieldHelper(self._lookup_name, value))
         self._done = True
 
@@ -259,7 +266,10 @@ class RelatedFieldHelper(object):
             for name, related_field in self.related_fields.items():
                 try:
                     related_field.save_related(name)
-                    related_fields[name] = related_field.value
+                    if isinstance(related_field.value, models.Model):
+                        related_fields[name] = related_field.value.pk
+                    else:
+                        related_fields[name] = related_field.value
                 except ValidationError as e:
                     if hasattr(e, 'error_dict'):
                         errors.update(e.error_dict)
@@ -294,6 +304,7 @@ class RelatedFieldHelper(object):
 
     def get_modelform(self, data, files=None, required_fields=None):
         fields = [name for name, field in self.simple_fields.items()]
+        fields.extend([name for name, field in self.related_fields.items()])
         fields.extend(required_fields)
         meta_class = type('Meta', (object, ), {
             'model': self._model,

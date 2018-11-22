@@ -1,4 +1,3 @@
-import uuid
 from collections import OrderedDict
 
 from django import forms
@@ -7,9 +6,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import JSONField, ArrayField
 from django.core.exceptions import ValidationError
 from django.core.files.base import File
-from django.core.files.storage import default_storage
-from django.core.files.uploadedfile import UploadedFile
-from django.db import models, transaction
+from django.db import models
 from django.urls import reverse, exceptions as url_exceptions
 from django.utils.functional import cached_property
 from django.utils.module_loading import import_string
@@ -21,7 +18,7 @@ from model_utils.managers import InheritanceManager
 from polymorphic.models import PolymorphicModel
 
 from r3sourcer.apps.core.models import UUIDModel, Country
-from r3sourcer.apps.core.utils.address import get_address_parts, get_street_address
+from r3sourcer.apps.core.utils.address import parse_google_address
 from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.user import get_default_company
@@ -291,16 +288,17 @@ class Form(UUIDModel):
 
         parsed_data = {}
         errors = {}
+
+        if 'street_address' in data:
+            value = data['street_address']
+
+            if isinstance(value, dict):
+                data.update(parse_google_address(value))
+                country = Country.objects.get(id=data['country'])
+                data['country'] = country.code2
+
         for field, value in data.items():
             field_name = '%s__%s' % (parent, field) if parent else field
-
-            if field == 'street_address':
-                if isinstance(value, dict):
-                    address_parts = get_address_parts(value)
-                    value = get_street_address(address_parts)
-            elif field == 'country':
-                country = Country.objects.filter(models.Q(id=value) | models.Q(code2=value)).first()
-                value = country and country.code2
 
             if isinstance(value, dict):
                 parsed_data.update(cls.parse_api_data(value, parent=field_name, form=form))
