@@ -288,6 +288,10 @@ class Contact(
                 return master_company[0]
         elif self.is_candidate_contact():
             return self.candidate_contacts.get_closest_company()
+        else:
+            contact_rel = self.contact_relations.first()
+            if contact_rel:
+                return contact_rel.company
 
         return get_site_master_company() or get_default_company()
 
@@ -570,6 +574,7 @@ class User(UUIDModel,
                 Q(contact__candidate_contacts__candidate_rels__master_company=owner),
                 Q(contact__company_contact__relationships__company=owner),
                 Q(contact__company_contact__relationships__company__regular_companies__master_company=owner),
+                Q(contact__contact_relations__company=owner)
             ]
 
 
@@ -2725,7 +2730,7 @@ connect_default_signals(City)
 
 __all__ = [
     'UUIDModel',
-    'Contact', 'ContactUnavailability',
+    'Contact', 'ContactRelationship', 'ContactUnavailability',
     'User', 'UserManager',
     'Country', 'Region', 'City',
     'Company', 'CompanyContact', 'CompanyRel', 'CompanyContactRelationship', 'CompanyContactAddress',

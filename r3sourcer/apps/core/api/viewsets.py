@@ -188,6 +188,15 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
         return phone
 
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        master_company = get_site_master_company(request=self.request)
+        models.ContactRelationship.objects.create(
+            contact=instance,
+            company=master_company
+        )
+
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def validate(self, request, *args, **kwargs):
         email = request.GET.get('email')
