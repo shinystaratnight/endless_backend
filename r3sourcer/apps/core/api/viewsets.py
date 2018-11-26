@@ -253,11 +253,16 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def password(self, request, *args, **kwargs):
         return self._update_password(serializers.ContactPasswordSerializer)
 
-    @action(methods=['get'], detail=False)
+    @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def verify_email(self, request, *args, **kwargs):
         contact = get_object_or_404(models.Contact, verification_token=request.query_params.get('token'))
         contact.email_verified = True
         contact.save(update_fields=['email_verified'])
+
+        master_company = get_site_master_company(request=self.request)
+        tasks.send_verification_success_email.apply_async(
+            args=(contact.id, master_company.id), countdown=10
+        )
 
         return Response({
             'status': 'success',
