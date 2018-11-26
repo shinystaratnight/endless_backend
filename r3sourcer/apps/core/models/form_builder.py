@@ -65,6 +65,20 @@ class FormBuilder(UUIDModel):
         blank=True
     )
 
+    required_fields = ArrayField(
+        models.CharField(max_length=255),
+        default=list,
+        verbose_name=_('Required fields'),
+        blank=True
+    )
+
+    active_fields = ArrayField(
+        models.CharField(max_length=255),
+        default=list,
+        verbose_name=_('Default active fields'),
+        blank=True
+    )
+
     def __str__(self):
         return str(self.content_type)
 
@@ -339,6 +353,35 @@ class Form(UUIDModel):
 
         return parsed_data
 
+    def save(self, *args, **kwargs):
+        just_added = self._state.adding
+
+        super().save(*args, **kwargs)
+
+        if just_added:
+            builder = self.builder
+            group = FormFieldGroup.objects.create(form=self, name='default')
+
+            model_fields = ModelFormField.get_model_fields(
+                builder.content_type.model_class(),
+                builder=builder
+            )
+            model_fields = ModelFormField.flatten_model_fields_config(
+                model_fields)
+
+            for order, active_field in enumerate(builder.active_fields):
+                if active_field not in builder.fields:
+                    continue
+
+                ModelFormField.objects.create(
+                    group=group,
+                    label=model_fields[active_field]['label'],
+                    name=active_field,
+                    position=order,
+                    required=model_fields[active_field]['required'],
+                    help_text=model_fields[active_field]['help_text'],
+                )
+
 
 class FormFieldGroup(UUIDModel):
     """
@@ -522,12 +565,25 @@ class ModelFormField(FormField):
                 if lookup:
                     field_name = StorageHelper.join_lookup_names(lookup, field.name)
                 if field_name in builder.fields or lookup in builder.fields or field.name + '__id' in builder.fields:
+                    required = not field.blank or field_name in builder.required_fields
                     yield {
                         'name': field_name,
-                        'required': not field.blank,
+                        'required': required,
                         'help_text': field.help_text,
                         'label': field.verbose_name
                     }
+
+    @classmethod
+    def flatten_model_fields_config(cls, model_fields):
+        fields = {}
+        for model_field in model_fields:
+            if 'model_fields' in model_field:
+                fields.update(cls.flatten_model_fields_config(
+                    model_field['model_fields']))
+            else:
+                fields[model_field['name']] = model_field
+
+        return fields
 
     def get_form_field(self) -> forms.Field:
         """
