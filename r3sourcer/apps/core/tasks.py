@@ -306,3 +306,46 @@ def send_generated_password_sms(contact_id, new_password=None):
 
     contact.user.set_password(new_password)
     contact.user.save()
+
+
+@shared_task()
+def send_verification_success_email(contact_id, master_company_id):
+    from r3sourcer.apps.email_interface.utils import get_email_service
+
+    try:
+        email_interface = get_email_service()
+    except ImportError:
+        logger.exception('Cannot load E-mail service')
+        return
+
+    email_tpl = 'e-mail-verification-success'
+
+    try:
+        contact = core_models.Contact.objects.get(id=contact_id)
+    except core_models.Contact.DoesNotExist as e:
+        logger.exception(e)
+    else:
+        with transaction.atomic():
+            master_company = core_models.Company.objects.get(id=master_company_id)
+            site_url = core_companies_utils.get_site_url(master_company=master_company)
+            manager = master_company.manager or contact.get_closest_company().manager
+            new_password = core_models.User.objects.make_random_password(20)
+            username = contact.email
+            if contact.phone_mobile:
+                username = '{} or {}'.format(username, contact.phone_mobile)
+
+            data_dict = dict(
+                contact=contact,
+                manager=manager,
+                username=username,
+                password=new_password,
+                master_company=master_company,
+                master_company_url=site_url,
+            )
+
+            contact.user.set_password(new_password)
+            contact.user.save()
+
+            logger.info('Sending e-mail verification success to %s.', contact)
+
+            email_interface.send_tpl(contact.email, tpl_name=email_tpl, **data_dict)
