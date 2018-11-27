@@ -179,6 +179,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
     phone_fields = ['phone_mobile']
+    raise_invalid_address = False
 
     def normalize_phone(self, phone):
         if phone.startswith('0'):
