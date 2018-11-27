@@ -675,7 +675,7 @@ class ContactSerializer(ApiContactImageFieldsMixin, core_mixins.ApiContentTypeFi
 
     def create(self, validated_data):
         address = validated_data.pop('address', None)
-        if not isinstance(address, core_models.Address):
+        if address is not None and not isinstance(address, core_models.Address):
             try:
                 address = core_models.Address.objects.create(**address)
             except (ValidationError, TypeError) as e:
