@@ -341,12 +341,17 @@ class CandidateFormMixin(ModelForm):
 
     def save(self, *args, **kwargs):
         from r3sourcer.apps.candidate.models import CandidateRel
+        from r3sourcer.apps.core.models import ContactRelationship
         from r3sourcer.apps.core.utils.companies import get_site_master_company
 
         instance = super().save(*args, **kwargs)
 
         master_company = get_site_master_company()
-        CandidateRel.objects.create(
+        ContactRelationship.objects.create(
+            contact=instance.contact,
+            company=master_company
+        )
+        return CandidateRel.objects.create(
             master_company=master_company,
             candidate_contact=instance,
             owner=True,
