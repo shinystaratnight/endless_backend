@@ -13,10 +13,13 @@ class ContactBackend(ModelBackend):
                 return value
         return value
 
-    def authenticate(self, username=None, password=None, **kwargs):
+    def authenticate(self, request, username=None, password=None, **kwargs):
         UserModel = get_user_model()
         if username is None:
             username = self.get_login_value(UserModel, **kwargs)
+
+        if not username or not password:
+            return
 
         params = Q()
         for field in UserModel.REQUIRED_FIELDS:

@@ -72,6 +72,7 @@ INSTALLED_APPS = [
     'easy_select2',
     'polymorphic',
     'corsheaders',
+    'oauth2_provider',
 
     'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',
@@ -110,6 +111,7 @@ if 'r3sourcer.apps.logger' in INSTALLED_APPS:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -288,7 +290,9 @@ REST_FRAMEWORK = {
     'DATETIME_INPUT_FORMATS': ['iso-8601'],
     'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
+        'rest_framework.authentication.BasicAuthentication',
+        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -303,6 +307,7 @@ GOOGLE_DISTANCE_MATRIX_API_KEY = env('GOOGLE_DISTANCE_MATRIX_API_KEY', '')
 
 AUTH_USER_MODEL = 'core.User'
 AUTHENTICATION_BACKENDS = [
+    'oauth2_provider.backends.OAuth2Backend',
     'r3sourcer.apps.core.backends.ContactBackend',
     'guardian.backends.ObjectPermissionBackend',
 ]
