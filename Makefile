@@ -536,3 +536,9 @@ nginx_config_docker:
 	docker-compose stop nginx
 	docker-compose rm -f nginx
 	docker-compose up --build -d nginx
+
+generate_jwt_rsa:
+	yes y | ssh-keygen -t rsa -b 4096 -f jwtRS256.key -q -N "" > /dev/null
+	openssl rsa -in jwtRS256.key -pubout -outform PEM -out jwtRS256.key.pub
+	echo "JWT_RS256_PRIVATE_KEY_PATH=conf/jwtRS256.key" >> .env
+	echo "JWT_RS256_PUBLIC_KEY_PATH=conf/jwtRS256.key.pub" >> .env

@@ -2,11 +2,10 @@ from django.conf import settings
 from django.conf.urls import url, include
 from django.conf.urls.static import static
 from django.contrib import admin
-from oauth2_provider.urls import base_urlpatterns as base_oauth2_patterns, app_name as oauth2_app_name
 
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
-from r3sourcer.apps.core.views import FormView, RegisterFormView
+from r3sourcer.apps.core.views import FormView, RegisterFormView, OAuthJWTToken
 from r3sourcer.apps.core.forms import CoreAdminAuthenticationForm
 from r3sourcer.apps.logger.admin import admin_logger
 from r3sourcer.apps.logger.api.viewsets import journal_list, journal_detail
@@ -42,7 +41,8 @@ _urlpatterns = [
     url(r'^', include(router.urls, namespace='api')),
     url(r'^', include('filer.urls', namespace='filer')),
     url(r'^admin/', include('loginas.urls')),
-    url(r'^oauth2/', include((base_oauth2_patterns, oauth2_app_name), namespace='oauth2_provider')),
+    url(r'^oauth2/token/$', OAuthJWTToken.as_view(), name='oauth2_token'),
+    url(r'^oauth2/', include('oauth2_provider_jwt.urls', namespace='oauth2_provider')),
 ]
 
 urlpatterns = [
