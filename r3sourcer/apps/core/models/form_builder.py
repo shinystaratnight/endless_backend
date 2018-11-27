@@ -327,7 +327,7 @@ class Form(UUIDModel):
                     except Exception:
                         if form_fields[parent].required:
                             errors[field_name] = _('This field is required.')
-                else:
+                elif value:
                     parsed_data[field_name] = value
 
         if errors:
