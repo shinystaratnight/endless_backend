@@ -183,7 +183,15 @@ class AuthViewSet(BaseViewsetMixin,
 
         request.session.set_expiry(0)
 
-        return Response({'status': 'success', 'data': serializer.data})
+        jwt_token = RefreshToken.for_user(user)
+        data = {
+            'status': 'success',
+            'data': serializer.data,
+            'access_token': str(jwt_token.access_token),
+            'refresh_token': str(jwt_token)
+        }
+
+        return Response(data)
 
     @action(methods=['get'], detail=False)
     def restore_session(self, request, *args, **kwargs):
@@ -232,5 +240,11 @@ class AuthViewSet(BaseViewsetMixin,
 
         if redirect_host is not None:
             response_data['redirect_to'] = redirect_host
+        else:
+            jwt_token = RefreshToken.for_user(user)
+            response_data.update({
+                'access_token': str(jwt_token.access_token),
+                'refresh_token': str(jwt_token),
+            })
 
         return Response(response_data, status=status.HTTP_200_OK)
