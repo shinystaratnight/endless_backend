@@ -918,6 +918,8 @@ class FormViewSet(BaseApiViewset):
         if errors:
             raise exceptions.ValidationError(errors)
 
+        form_storage_data = {k: v for k, v in form_storage_data.items() if v}
+
         storage_helper = StorageHelper(form_obj.content_type.model_class(), form_storage_data)
         storage_helper.process_fields()
 
