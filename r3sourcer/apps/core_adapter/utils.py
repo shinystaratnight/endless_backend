@@ -9,8 +9,6 @@ except ImportError:  # pragma: no cover
 
 
 def api_reverse(endpoint, methodname='list', *args, **kwargs):
-    kwargs['version'] = 'v2'
-
     return reverse('api:{}-{}'.format(endpoint, methodname),
                    kwargs=kwargs)  # pragma: no cover
 

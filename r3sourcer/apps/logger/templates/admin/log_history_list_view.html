@@ -23,7 +23,7 @@ $(document).ready(function() {
         "dataType": "json",
         "ajax": function (data, callback, settings) {
             $.ajax({
-            url: "/{{stuff_url_prefix}}" + "api/v2/journal/" + $('select[name=model_name]').val().toLowerCase().replace(".", "/") + "/",
+            url: "/{{stuff_url_prefix}}" + "journal/" + $('select[name=model_name]').val().toLowerCase().replace(".", "/") + "/",
             dataSrc: 'data',
             data: {
                 page: data.start/data.length + 1,

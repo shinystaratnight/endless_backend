@@ -1,3 +1,5 @@
+from urllib.parse import urlparse
+
 from django.db.models import Q
 
 from dry_rest_permissions.generics import DRYPermissions, DRYPermissionFiltersBase
@@ -6,6 +8,7 @@ from rest_framework import permissions
 from r3sourcer.apps.core.models import SiteCompany
 
 from ..utils.companies import get_master_companies, get_closest_companies, get_site_master_company
+from ..utils.utils import get_host
 
 
 class SitePermissions(DRYPermissions):
@@ -62,10 +65,8 @@ class SiteContactPermissions(SitePermissions):
         if not closest_company:
             closest_company = user.contact.get_closest_company()
 
-        host = request.get_host()
-
         return user.is_superuser or SiteCompany.objects.filter(
-            company=closest_company, site__domain__iexact=host
+            company=closest_company, site__domain__iexact=get_host(request)
         ).exists()
 
 

@@ -13,7 +13,7 @@ class TestApproveInvoiceView:
         invoice.approved = False
         invoice.save()
 
-        url = reverse('approve_invoice', kwargs={'version': 'v2', 'id': invoice.id})
+        url = reverse('approve_invoice', kwargs={'id': invoice.id})
         response = client.post(url)
 
         assert response.status_code == status.HTTP_200_OK
@@ -25,7 +25,7 @@ class TestUserRolesView:
     def test_get(self, client, user, roles):
         user.role.add(*roles)
         user.save()
-        url = reverse('user_roles', kwargs={'version': 'v2'})
+        url = reverse('user_roles')
         client.force_login(user)
         response = client.get(url).json()
 
@@ -41,7 +41,7 @@ class TestSetRolesView:
         data = {
             'roles': ['candidate']
         }
-        url = reverse('set_roles', kwargs={'version': 'v2', 'id': user.id})
+        url = reverse('set_roles', kwargs={'id': user.id})
         client.force_login(user)
         client.post(url, data=data)
 
@@ -54,7 +54,7 @@ class TestRevokeRolesView:
         data = {
             'roles': ['candidate']
         }
-        url = reverse('revoke_roles', kwargs={'version': 'v2', 'id': user.id})
+        url = reverse('revoke_roles', kwargs={'id': user.id})
         client.force_login(user)
         client.post(url, data=data)
         roles = [x.name for x in user.role.all()]

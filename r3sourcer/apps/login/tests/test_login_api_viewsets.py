@@ -22,14 +22,14 @@ class TestLoginResource:
         get_active_states.return_value = [mocked_value]
         mock_company.return_value = company
 
-        client.get(reverse('api:auth-login-by-token', kwargs={'version': 'v2', 'auth_token': token_login.auth_token}))
+        client.get(reverse('api:auth-login-by-token', kwargs={'auth_token': token_login.auth_token}))
         company_contact = CompanyContact.objects.create(
             contact=user.contact, role=CompanyContact.ROLE_CHOICES[CompanyContact.MANAGER]
         )
         company_contact_rel = CompanyContactRelationship.objects.create(
             company=company, company_contact=company_contact
         )
-        url = reverse('api:auth-restore-session', kwargs={'version': 'v2'})
+        url = reverse('api:auth-restore-session')
         response1 = client.get(url)
         company_contact.role = CompanyContact.ROLE_CHOICES[CompanyContact.CLIENT]
         company_contact.save()
@@ -44,20 +44,20 @@ class TestLoginResource:
         assert response3.json()['data']['contact']['contact_type'] == 'candidate'
 
     def test_cannot_put_to_login(self, client, user):
-        response = client.put(reverse('api:auth-login', kwargs={'version': 'v2'}))
+        response = client.put(reverse('api:auth-login'))
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
     def test_cannot_patch_to_login(self, client, user):
-        response = client.patch(reverse('api:auth-login', kwargs={'version': 'v2'}))
+        response = client.patch(reverse('api:auth-login'))
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
     def test_cannot_delete_to_login(self, client, user):
-        response = client.delete(reverse('api:auth-login', kwargs={'version': 'v2'}))
+        response = client.delete(reverse('api:auth-login'))
         assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
 
     @mock.patch.object(AuthViewSet, 'is_login_allowed', return_value=(True, None))
     def test_user_email_login_success(self, mock_login_allowed, client, user):
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        response = client.post(reverse('api:auth-login'),
                                data={'username': user.email, 'password': 'test1234'})
 
         assert response.json()['status'] == 'success'
@@ -69,7 +69,7 @@ class TestLoginResource:
 
     @mock.patch.object(AuthViewSet, 'is_login_allowed', return_value=(True, None))
     def test_user_mobile_phone_login_success(self, mock_login_allowed, client, user):
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        response = client.post(reverse('api:auth-login'),
                                data={'username': user.phone_mobile, 'password': 'test1234'})
 
         assert response.json()['status'] == 'success'
@@ -80,13 +80,13 @@ class TestLoginResource:
         assert auth_user.is_authenticated
 
     def test_user_login_email_not_exists(self, client):
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        response = client.post(reverse('api:auth-login'),
                                data={'username': 'test42@test.tt', 'password': 'test1234'})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_user_login_phone_not_exists(self, client):
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        response = client.post(reverse('api:auth-login'),
                                data={'username': '+12345654321', 'password': 'test1234'})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -94,12 +94,12 @@ class TestLoginResource:
     @mock.patch.object(AuthViewSet, 'is_login_allowed', return_value=(True, None))
     def test_user_already_logged_in(self, mock_login_allowed, client, user, superuser):
         client.post(
-            reverse('api:auth-login', kwargs={'version': 'v2'}),
+            reverse('api:auth-login'),
             data={'username': user.phone_mobile, 'password': 'test1234'}
         )
 
         client.post(
-            reverse('api:auth-login', kwargs={'version': 'v2'}),
+            reverse('api:auth-login'),
             data={'username': superuser.email, 'password': 'test4242'}
         )
 
@@ -110,7 +110,7 @@ class TestLoginResource:
     def test_token_login_success(self, client, user, token_login):
         response = client.get(reverse(
             'api:auth-login-by-token',
-            kwargs={'version': 'v2', 'auth_token': token_login.auth_token}
+            kwargs={'auth_token': token_login.auth_token}
         ))
 
         assert response.status_code == status.HTTP_200_OK
@@ -128,7 +128,7 @@ class TestLoginResource:
 
         response = client.get(reverse(
             'api:auth-login-by-token',
-            kwargs={'version': 'v2', 'auth_token': token_login.auth_token}
+            kwargs={'auth_token': token_login.auth_token}
         ))
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
@@ -136,12 +136,12 @@ class TestLoginResource:
     def test_token_used_twice_login_forbidden(self, client, user, token_login):
         response = client.get(reverse(
             'api:auth-login-by-token',
-            kwargs={'version': 'v2', 'auth_token': token_login.auth_token}
+            kwargs={'auth_token': token_login.auth_token}
         ))
 
         response = client.get(reverse(
             'api:auth-login-by-token',
-            kwargs={'version': 'v2', 'auth_token': token_login.auth_token}
+            kwargs={'auth_token': token_login.auth_token}
         ))
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
@@ -151,12 +151,12 @@ class TestLoginResource:
 
         response = client.get(reverse(
             'api:auth-login-by-token',
-            kwargs={'version': 'v2', 'auth_token': token_login.auth_token}
+            kwargs={'auth_token': token_login.auth_token}
         ))
 
         response = client.get(reverse(
             'api:auth-login-by-token',
-            kwargs={'version': 'v2', 'auth_token': token_login_another.auth_token}
+            kwargs={'auth_token': token_login_another.auth_token}
         ))
 
         assert response.status_code == status.HTTP_200_OK
@@ -171,12 +171,12 @@ class TestLoginResource:
 
         response = client.get(reverse(
             'api:auth-login-by-token',
-            kwargs={'version': 'v2', 'auth_token': token_login.auth_token}
+            kwargs={'auth_token': token_login.auth_token}
         ))
 
         response = client.get(reverse(
             'api:auth-login-by-token',
-            kwargs={'version': 'v2', 'auth_token': token_login_another.auth_token}
+            kwargs={'auth_token': token_login_another.auth_token}
         ))
 
         assert response.status_code == status.HTTP_200_OK
@@ -187,32 +187,32 @@ class TestLoginResource:
 
     @mock.patch('r3sourcer.apps.login.api.viewsets.send_login_message')
     def test_login_without_password_send_sms_message(self, mock_send_message, client, user):
-        client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        client.post(reverse('api:auth-login'),
                     data={'username': user.phone_mobile})
 
         assert mock_send_message.called
 
     @mock.patch('r3sourcer.apps.login.api.viewsets.send_login_message')
     def test_login_without_password_send_email_message(self, mock_send_message, client, user):
-        client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        client.post(reverse('api:auth-login'),
                     data={'username': user.email})
 
         assert mock_send_message.called
 
     def test_login_without_password_user_not_found(self, client, user):
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        response = client.post(reverse('api:auth-login'),
                                data={'username': 'test2@test.tt'})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_login_email_wrong_password_(self, client, user):
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        response = client.post(reverse('api:auth-login'),
                                data={'username': user.email, 'password': '1'})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     def test_login_phone_wrong_password_(self, client, user):
-        response = client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        response = client.post(reverse('api:auth-login'),
                                data={'username': user.phone_mobile, 'password': '1'})
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -222,16 +222,16 @@ class TestLoginResource:
 class TestLogoutResource:
 
     def test_user_logout_success(self, client, user):
-        client.post(reverse('api:auth-login', kwargs={'version': 'v2'}),
+        client.post(reverse('api:auth-login'),
                     data={'username': user.email, 'password': 'test1234'})
 
-        client.post(reverse('api:auth-logout', kwargs={'version': 'v2'}))
+        client.post(reverse('api:auth-logout'))
 
         auth_user = auth.get_user(client)
         assert not auth_user.is_authenticated
 
     def test_anonymous_user_logout_success(self, client, user):
-        client.post(reverse('api:auth-logout', kwargs={'version': 'v2'}))
+        client.post(reverse('api:auth-logout'))
 
         auth_user = auth.get_user(client)
         assert not auth_user.is_authenticated

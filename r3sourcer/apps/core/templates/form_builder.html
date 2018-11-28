@@ -9,7 +9,7 @@
   <link rel="stylesheet" href="{% static 'jquery-ui/themes/base/jquery-ui.css' %}"/>
   <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro|Barlow|Lato|Open+Sans|Roboto+Condensed|Roboto:400,400i,600,700" rel="stylesheet">
   <script type="application/javascript">
-      var storageApiUrl = '{% url 'api:core/forms-list' version='v2' %}{{ form.id }}/submit/?format=json',
+      var storageApiUrl = '{% url 'api:core/forms-list' %}{{ form.id }}/submit/?format=json',
           companyId = '{{ company_id }}';
   </script>
   <style>

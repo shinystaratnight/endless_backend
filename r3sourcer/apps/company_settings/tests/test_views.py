@@ -25,7 +25,7 @@ class TestCompanySettingsView:
         company_settings.font = 'font'
         company_settings.forwarding_number = '+12345678901'
         company_settings.save()
-        url = reverse('company_settings', kwargs={'version': 'v2'})
+        url = reverse('company_settings')
         client.force_login(user)
         response = client.get(url)
 
@@ -74,14 +74,14 @@ class TestCompanySettingsView:
         self._get_company_settings(client, company, user_sec, invoice_rule, payslip_rule, myob_account)
 
     def test_get_company_settings_as_unknown_role(self, user, client):
-        url = reverse('company_settings', kwargs={'version': 'v2'})
+        url = reverse('company_settings')
         client.force_login(user)
         response = client.get(url)
 
         assert response.json()['errors']['detail'] == "Unknown user's role."
 
     def test_get_company_settings_as_user_without_company(self, manager, client):
-        url = reverse('company_settings', kwargs={'version': 'v2'})
+        url = reverse('company_settings')
         client.force_login(manager.contact.user)
         response = client.get(url)
 
@@ -101,7 +101,7 @@ class TestCompanySettingsView:
                 'serial_number': '1NEW',
             },
         }
-        url = reverse('company_settings', kwargs={'version': 'v2'})
+        url = reverse('company_settings')
         client.force_login(user)
         response = client.post(url, data=json.dumps(data), content_type='application/json')
         payslip_rule_new = PayslipRule.objects.get(id=payslip_rule.id)
@@ -151,7 +151,7 @@ class TestCompanyFileAccountsView:
                                               uri="/GeneralLedger/Account/eb043b43-1d66-472b-a6ee-ad48def81b96",
                                               row_version="5548997690873872384",
                                               company_file=company_file)
-        url = reverse('company_file_accounts', kwargs={'version': 'v2', 'id': company_file.cf_id})
+        url = reverse('company_file_accounts', kwargs={'id': company_file.cf_id})
         client.force_login(user)
         response = client.get(url)
 
@@ -186,7 +186,7 @@ class TestMYOBAuthorizationView:
             'api_secret': 'api_secret',
             'redirect_uri': 'redirect_uri',
         }
-        url = reverse('myob_authorization', kwargs={'version': 'v2'}) + "?code=code"
+        url = reverse('myob_authorization') + "?code=code"
         client.force_login(user)
         response = client.post(url, data=data)
 
@@ -198,7 +198,7 @@ class TestMYOBAuthorizationView:
             'api_secret': 'api_secret',
             'redirect_uri': 'redirect_uri',
         }
-        url = reverse('myob_authorization', kwargs={'version': 'v2'}) + "?code=code"
+        url = reverse('myob_authorization') + "?code=code"
         response = client.post(url, data=data)
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -215,7 +215,7 @@ class TestUserGlobalPermissionListView:
         group.permissions.add(permission3, permission4)
         group.user_set.add(user)
 
-        url = reverse('user_global_permission_list', kwargs={'version': 'v2', 'id': user.id})
+        url = reverse('user_global_permission_list', kwargs={'id': user.id})
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
@@ -238,7 +238,7 @@ class TestGroupGlobalPermissionListView:
         permission = GlobalPermission.objects.create(name='permission_name', codename='permission_codename')
         permission2 = GlobalPermission.objects.create(name='permission_name2', codename='permission_codename2')
         group.permissions.add(permission, permission2)
-        url = reverse('group_global_permission_list', kwargs={'version': 'v2', 'id': group.id})
+        url = reverse('group_global_permission_list', kwargs={'id': group.id})
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
@@ -254,7 +254,7 @@ class TestSetGroupGlobalPermissionView:
     def test_set_group_permission(self, client, group):
         permission = GlobalPermission.objects.create(name='permission_name', codename='permission_codename')
         permission2 = GlobalPermission.objects.create(name='permission_name2', codename='permission_codename2')
-        url = reverse('set_group_global_permission', kwargs={'version': 'v2', 'id': group.id})
+        url = reverse('set_group_global_permission', kwargs={'id': group.id})
         payload = {
             'permission_list': [permission.id, permission2.id]
         }
@@ -270,7 +270,7 @@ class TestSetUserGlobalPermissionView:
     def test_set_user_permission(self, client, user):
         permission = GlobalPermission.objects.create(name='permission_name', codename='permission_codename')
         permission2 = GlobalPermission.objects.create(name='permission_name2', codename='permission_codename2')
-        url = reverse('set_user_global_permission', kwargs={'version': 'v2', 'id': user.id})
+        url = reverse('set_user_global_permission', kwargs={'id': user.id})
         payload = {
             'permission_list': [permission.id, permission2.id]
         }
@@ -287,7 +287,7 @@ class TestGlobalPermissionListView:
     def test_get_permission_list(self, client):
         permission = GlobalPermission.objects.create(name='permission_name', codename='permission_codename')
         permission2 = GlobalPermission.objects.create(name='permission_name2', codename='permission_codename2')
-        url = reverse('global_permission_list', kwargs={'version': 'v2'})
+        url = reverse('global_permission_list')
         response = client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
@@ -303,7 +303,7 @@ class TestCompanyGroupListView:
     def test_list_company_group(self, group_with_permissions, rf, company, company_contact_rel):
         user = company.get_user()
         company.groups.add(group_with_permissions)
-        url = reverse('company_group_list', kwargs={'version': 'v2'})
+        url = reverse('company_group_list')
         request = rf.get(url)
         force_authenticate(request, user=user)
         response = CompanyGroupListView.as_view()(request)
@@ -321,7 +321,7 @@ class TestAddUserToGroupView:
         data = {
             'user_id': user.id
         }
-        url = reverse('add_user_to_group', kwargs={'version': 'v2', 'id': group.id})
+        url = reverse('add_user_to_group', kwargs={'id': group.id})
         response = client.post(url, data=data)
 
         assert response.status_code == status.HTTP_200_OK
@@ -334,7 +334,7 @@ class TestRemoveUserFromGroupView:
         data = {
             'user_id': user.id
         }
-        url = reverse('remove_user_from_group', kwargs={'version': 'v2', 'id': group.id})
+        url = reverse('remove_user_from_group', kwargs={'id': group.id})
         response = client.post(url, data=data)
 
         assert response.status_code == status.HTTP_200_OK
@@ -347,7 +347,7 @@ class TestCompanyGroupCreateView:
         data = {
             "name": 'group_name'
         }
-        url = reverse('company_group_create', kwargs={'version': 'v2'})
+        url = reverse('company_group_create')
         request = rf.post(url, data=data)
         force_authenticate(request, user=user)
         response = CompanyGroupCreateView.as_view()(request)
@@ -363,7 +363,7 @@ class TestRevokeGroupGlobalPermissionView:
         data = {
             "permission_list": list(permission_ids)
         }
-        url = reverse('revoke_group_global_permission', kwargs={'version': 'v2', 'id': group_with_permissions.id})
+        url = reverse('revoke_group_global_permission', kwargs={'id': group_with_permissions.id})
         response = client.post(url, data=data)
 
         assert response.status_code == status.HTTP_200_OK
@@ -373,7 +373,7 @@ class TestRevokeGroupGlobalPermissionView:
         data = {
             "permission_list": list()
         }
-        url = reverse('revoke_group_global_permission', kwargs={'version': 'v2', 'id': group.id})
+        url = reverse('revoke_group_global_permission', kwargs={'id': group.id})
         response = client.post(url, data=data)
 
         assert response.status_code == 400
@@ -384,7 +384,7 @@ class TestRevokeGroupGlobalPermissionView:
         data = {
             "permission_list": [last_permission.id+1]
         }
-        url = reverse('revoke_group_global_permission', kwargs={'version': 'v2', 'id': group.id})
+        url = reverse('revoke_group_global_permission', kwargs={'id': group.id})
         response = client.post(url, data=data)
 
         assert response.status_code == 400
@@ -399,7 +399,7 @@ class TestRevokeUserGlobalPermissionView:
         data = {
             "permission_list": list(permission_ids)
         }
-        url = reverse('revoke_user_global_permission', kwargs={'version': 'v2', 'id': user.id})
+        url = reverse('revoke_user_global_permission', kwargs={'id': user.id})
         response = client.post(url, data=data)
 
         assert response.status_code == status.HTTP_200_OK
@@ -409,7 +409,7 @@ class TestRevokeUserGlobalPermissionView:
         data = {
             "permission_list": list()
         }
-        url = reverse('revoke_user_global_permission', kwargs={'version': 'v2', 'id': user.id})
+        url = reverse('revoke_user_global_permission', kwargs={'id': user.id})
         response = client.post(url, data=data)
 
         assert response.status_code == 400
@@ -420,7 +420,7 @@ class TestRevokeUserGlobalPermissionView:
         data = {
             "permission_list": [last_permission.id+1]
         }
-        url = reverse('revoke_user_global_permission', kwargs={'version': 'v2', 'id': user.id})
+        url = reverse('revoke_user_global_permission', kwargs={'id': user.id})
         response = client.post(url, data=data)
 
         assert response.status_code == 400
@@ -430,7 +430,7 @@ class TestRevokeUserGlobalPermissionView:
 class TestCompanyGroupDeleteView:
     def test_delete_group(self, group, client):
         group_id = group.id
-        url = reverse('company_group_delete', kwargs={'version': 'v2', 'id': group_id})
+        url = reverse('company_group_delete', kwargs={'id': group_id})
         response = client.get(url)
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
@@ -455,7 +455,7 @@ class TestCompanyUserListView:
         CompanyContactRelationship.objects.create(company=company, company_contact=company_contact2)
         CompanyContactRelationship.objects.create(company=company, company_contact=company_contact3)
 
-        url = reverse('company_users_list', kwargs={'version': 'v2'})
+        url = reverse('company_users_list')
         client.force_login(company.manager.contact.user)
         response = client.get(url)
         id_list = [x['id'] for x in response.data['user_list']]
@@ -476,7 +476,7 @@ class TestUserGroupListView:
         group1 = Group.objects.create(name='group1')
         group2 = Group.objects.create(name='group2')
         user.groups.add(group1, group2)
-        url = reverse('user_group_list', kwargs={'version': 'v2', 'id': user.id})
+        url = reverse('user_group_list', kwargs={'id': user.id})
         client.force_login(user)
         response = client.get(url)
 
@@ -503,7 +503,7 @@ class TestUserCompanyFilesView:
                                             auth_data=auth_data,
                                             company=company,
                                             cf_token='cf_token')
-        url = reverse('user_company_files', kwargs={'version': 'v2'})
+        url = reverse('user_company_files')
         client.force_login(user)
         response = client.get(url)
 
@@ -522,7 +522,7 @@ class TestRefreshCompanyFilesView:
         company_file_token_count = MYOBCompanyFileToken.objects.count()
         last_refreshed = company.myob_settings.company_files_last_refreshed
         client.force_login(user)
-        url = reverse('refresh_company_files', kwargs={'version': 'v2'})
+        url = reverse('refresh_company_files')
         client.get(url)
 
         assert MYOBCompanyFile.objects.count() == company_file_count + 1
@@ -535,7 +535,7 @@ class TestCheckCompanyFilesView:
     def test_check_company_file(self, check_company_file, client, user, company, company_file_token, company_contact_rel):
         check_company_file.return_value = True
         company_file_id = company_file_token.company_file.cf_id
-        url = reverse('check_company_files', kwargs={'version': 'v2'})
+        url = reverse('check_company_files')
         payload = {
             'id': company_file_id,
             'username': '',
@@ -559,7 +559,7 @@ class TestRefreshMYOBAccountsView:
         initial_account_count = MYOBAccount.objects.count()
         myob_settings = company_file_token.company.myob_settings
         last_refreshed = myob_settings.payroll_accounts_last_refreshed
-        url = reverse('refresh_myob_accounts', kwargs={'version': 'v2'})
+        url = reverse('refresh_myob_accounts')
         client.force_login(user)
         client.get(url)
 
@@ -579,7 +579,7 @@ class TestMYOBSettingsView:
         company.myob_settings.timesheet_company_file = company_file
         company.myob_settings.save()
 
-        url = reverse('myob_settings', kwargs={'version': 'v2'})
+        url = reverse('myob_settings')
         client.force_login(user)
         response = client.get(url).json()
 
@@ -616,7 +616,7 @@ class TestMYOBSettingsView:
             'payroll_accounts_last_refreshed': str(now),
             'company_files_last_refreshed': str(now),
         }
-        url = reverse('myob_settings', kwargs={'version': 'v2'})
+        url = reverse('myob_settings')
         client.force_login(user)
         client.post(url, data=json.dumps(data), content_type='application/json')
         myob_settings = MYOBSettings.objects.get(id=company.myob_settings.id)
@@ -656,7 +656,7 @@ class TestMYOBAuthDataListView:
             company=company
         )
 
-        url = reverse('auth_data', kwargs={'version': 'v2'})
+        url = reverse('auth_data')
         client.force_login(user)
         response = client.get(url).json()
 
@@ -678,7 +678,7 @@ class TestMYOBAuthDataDeleteView:
             user=user
         )
 
-        url = reverse('auth_data_delete', kwargs={'version': 'v2', 'id': auth_data.id})
+        url = reverse('auth_data_delete', kwargs={'id': auth_data.id})
         client.force_login(user)
         response = client.delete(url)
 
@@ -688,7 +688,7 @@ class TestMYOBAuthDataDeleteView:
 
 class TestMYOBAPIKeyView:
     def test_get(self, client, user):
-        url = reverse('myob_api_key', kwargs={'version': 'v2'})
+        url = reverse('myob_api_key')
         client.force_login(user)
         response = client.get(url).json()
 

@@ -124,7 +124,7 @@ class InvoiceService(BasePaymentService):
             'master_company': invoice.provider_company,
             'master_company_logo': master_logo,
             'show_candidate': show_candidate,
-            'STATIC_URL': '%s/ecore/static' % domain,
+            'STATIC_URL': '%s/static' % domain,
             'DOMAIN': domain
         }
 

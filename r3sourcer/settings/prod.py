@@ -289,8 +289,6 @@ REST_FRAMEWORK = {
     'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'rest_framework_simplejwt.authentication.JWTAuthentication',
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -445,8 +443,10 @@ SMS_SEGMENT_SIZE = 160
 def CAN_LOGIN_AS(request, target_user): return request.user
 
 
-CORS_ORIGIN_WHITELIST = (
-    'r3sourcersoft.com',
+CORS_ORIGIN_REGEX_WHITELIST = (
+    r'^(https?://)?(\w+\.)?r3sourcer\.com$',
+    r'^(https?://)?r3sourcersoft.com$',
+    r'^(https?://)?localhost$',
 )
 
 SIMPLE_JWT = {

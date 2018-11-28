@@ -11,7 +11,7 @@ from r3sourcer.apps.core.models import SiteCompany, Contact, FormBuilder
 class TestTrialUserView:
 
     def make_post_request(self, client, data=None):
-        url = reverse('register_trial', kwargs={'version': 'v2'})
+        url = reverse('register_trial')
         return client.post(url, data=data)
 
     @mock.patch('r3sourcer.apps.core.api.views.send_trial_email')

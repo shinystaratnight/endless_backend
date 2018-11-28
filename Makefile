@@ -530,3 +530,9 @@ rebuild_web:
 	docker-compose rm -f web
 	docker-compose up --build -d web
 	make web_logs
+
+nginx_config_docker:
+	docker-compose exec web bin/app nginx_config --site_root=$(DOCKER_BASE_DIR) > conf/docker/nginx.conf
+	docker-compose stop nginx
+	docker-compose rm -f nginx
+	docker-compose up --build -d nginx

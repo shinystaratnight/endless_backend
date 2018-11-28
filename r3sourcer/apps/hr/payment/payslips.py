@@ -93,7 +93,7 @@ class PayslipService(BasePaymentService):
             'payslip': payslip,
             'company': payslip.company,
             'candidate': payslip.candidate,
-            'STATIC_URL': '%s/ecore/static' % domain,
+            'STATIC_URL': '%s/static' % domain,
             'DOMAIN': domain
         }
 

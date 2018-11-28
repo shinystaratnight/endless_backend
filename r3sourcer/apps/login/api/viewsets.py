@@ -8,10 +8,12 @@ from loginas.utils import login_as
 from rest_framework import viewsets, status, exceptions, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework_simplejwt.tokens import RefreshToken
 
 from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.core.utils.utils import get_host
 
 from ..models import TokenLogin
 from ..tasks import send_login_message
@@ -63,7 +65,7 @@ class AuthViewSet(BaseViewsetMixin,
         if not closest_company:
             closest_company = user.contact.get_closest_company()
 
-        host = request.get_host()
+        host = get_host(request)
         redirect_host = None
 
         try:
@@ -84,7 +86,7 @@ class AuthViewSet(BaseViewsetMixin,
                 cache.set('user_site_%s' % str(user.id), redirect_site.domain)
                 return False, redirect_host
         else:
-            cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
+            cache.set('user_site_%s' % str(user.id), host)
             return True, None
 
         return False, None
@@ -143,10 +145,14 @@ class AuthViewSet(BaseViewsetMixin,
         if not serializer.data['remember_me']:
             request.session.set_expiry(0)
 
+        jwt_token = RefreshToken.for_user(user)
+
         response_data = {
             'status': 'success',
             'data': {
-                'contact': ContactLoginSerializer(contact).data
+                'contact': ContactLoginSerializer(contact).data,
+                'access_token': str(jwt_token.access_token),
+                'refresh_token': str(jwt_token)
             }
         }
 
@@ -177,7 +183,15 @@ class AuthViewSet(BaseViewsetMixin,
 
         request.session.set_expiry(0)
 
-        return Response({'status': 'success', 'data': serializer.data})
+        jwt_token = RefreshToken.for_user(user)
+        data = {
+            'status': 'success',
+            'data': serializer.data,
+            'access_token': str(jwt_token.access_token),
+            'refresh_token': str(jwt_token)
+        }
+
+        return Response(data)
 
     @action(methods=['get'], detail=False)
     def restore_session(self, request, *args, **kwargs):
@@ -226,5 +240,11 @@ class AuthViewSet(BaseViewsetMixin,
 
         if redirect_host is not None:
             response_data['redirect_to'] = redirect_host
+        else:
+            jwt_token = RefreshToken.for_user(user)
+            response_data.update({
+                'access_token': str(jwt_token.access_token),
+                'refresh_token': str(jwt_token),
+            })
 
         return Response(response_data, status=status.HTTP_200_OK)
