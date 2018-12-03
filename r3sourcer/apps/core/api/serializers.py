@@ -1780,8 +1780,6 @@ class ContactForgotPasswordSerializer(serializers.Serializer):
 
     def validate_email(self, email):
         if not core_models.Contact.objects.filter(email=email).exists():
-            raise exceptions.ValidationError({
-                'email': _("User with this email doesn't exist"),
-            })
+            raise exceptions.ValidationError(_("User with this email doesn't exist"))
 
         return email
