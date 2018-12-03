@@ -30,7 +30,14 @@
             }
             return cookieValue;
         }
-        var csrftoken = getCookie('csrftoken');
+        var token = '';
+
+        location.search.split('&').forEach((params) => {
+            var param = params.split('=');
+            if (param[0] === 'token') {
+                token = param[1];
+            }
+        });
     </script>
     <script type="application/javascript">
         var messageType = "{{ message_type }}",
@@ -80,7 +87,7 @@
                     type: 'post',
                     headers: {
                         "Context-Type": "application/json",
-                        "X-CSRFToken": csrftoken
+                        "Authorization": "Bearer " + token
                     },
                     url: url + $.param($.extend(getData, {recipient: recipient})),
                     data: sendingData,
@@ -298,6 +305,9 @@
                         width: 200,
                         ajax: {
                             delay: 250,
+                            headers: {
+                                "Authorization": "Bearer " + token
+                            },
                             url: function () {
                                 return "/twilio/admin-api/find/objects/" + $(select).val() + "/"
                             },
@@ -333,6 +343,9 @@
                 ajax: {
                     url: '/core/contacts/',
                     dataType: 'json',
+                    headers: {
+                        "Authorization": "Bearer " + token
+                    },
                     data: function (params) {
                         var query = {
                             search: params.term,
