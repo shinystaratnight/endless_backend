@@ -260,7 +260,10 @@ class Contact(
 
     def get_role(self):
         if self.is_company_contact():
-            return self.company_contact.first().role
+            is_manager = self.company_contact.filter(
+                relationships__active=True, relationships__company__type=Company.COMPANY_TYPES.master
+            ).exists()
+            return MANAGER if is_manager else CLIENT
         elif self.is_candidate_contact():
             return CANDIDATE
         return None
