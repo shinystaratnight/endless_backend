@@ -168,6 +168,12 @@
          *
          */
         function loadMessageTemplates(obj) {
+            $.ajaxSetup({
+                headers: {
+                    // "Context-Type": "application/json",
+                    "Authorization": "Bearer " + token
+                },
+            });
             var url = (messageType == 'email') ? '/context.io/admin-api/templates/?format=json' : '{% url 'sms_interface:templates' %}';
             $.get('{% url 'sms_interface:find-contenttypes' %}', function (response) {
                 appModelsTmp = response;
