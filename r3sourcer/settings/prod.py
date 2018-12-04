@@ -72,8 +72,6 @@ INSTALLED_APPS = [
     'easy_select2',
     'polymorphic',
     'corsheaders',
-    'oauth2_provider',
-    'oauth2_provider_jwt',
 
     'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',
@@ -91,6 +89,8 @@ INSTALLED_APPS = [
     'r3sourcer.apps.company_settings',
     'r3sourcer.apps.billing',
 
+    'oauth2_provider',
+    'oauth2_provider_jwt',
     'compressor',
     'djangobower',
 ]
@@ -293,8 +293,6 @@ REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'r3sourcer.apps.core.api.authentication.JWTAuthentication',
         'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
-        'rest_framework.authentication.BasicAuthentication',
-        'rest_framework.authentication.SessionAuthentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -462,6 +460,10 @@ SIMPLE_JWT = {
 }
 
 JWT_ISSUER = 'R3sourcerIssuer'
+
+OAUTH2_PROVIDER = {
+    'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
+}
 
 try:
     with open(root(env('JWT_RS256_PRIVATE_KEY_PATH')), 'r') as jwt_secret:
