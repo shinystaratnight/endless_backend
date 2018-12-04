@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.http import HttpResponse
 from django.views.generic import FormView
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 from rest_framework.views import APIView
@@ -16,6 +17,7 @@ from r3sourcer.apps.twilio.services import TwilioSMSService
 logger = logging.getLogger(__name__)
 
 
+@method_decorator(xframe_options_exempt, name='dispatch')
 class SMSDialogTemplateView(MessageView, FormView):
 
     form_class = SMSForm
