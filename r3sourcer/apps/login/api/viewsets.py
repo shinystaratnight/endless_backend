@@ -1,19 +1,29 @@
+import json
+from datetime import timedelta
+
 from django.conf import settings
-from django.contrib.auth import authenticate, login, logout
+from django.contrib.auth import authenticate, logout
 from django.core.cache import cache
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-from loginas.utils import login_as
+from django.utils.decorators import method_decorator
+from django.views.decorators.csrf import csrf_exempt
+from oauth2_provider.views.mixins import OAuthLibMixin
+from oauth2_provider.settings import oauth2_settings
+from oauth2_provider_jwt.views import TokenView, WrongUsername
+from oauth2_provider.models import get_access_token_model
+from oauthlib.oauth2.rfc6749.tokens import BearerToken
+from oauthlib.common import Request
 from rest_framework import viewsets, status, exceptions, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
 
 from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.utils import get_host
+from r3sourcer.apps.core.views import OAuth2JWTTokenMixin
 
 from ..models import TokenLogin
 from ..tasks import send_login_message
@@ -21,14 +31,17 @@ from ..tasks import send_login_message
 from .serializers import LoginSerializer, ContactLoginSerializer, TokenLoginSerializer
 
 
-class AuthViewSet(BaseViewsetMixin,
-                  viewsets.GenericViewSet):
+@method_decorator(csrf_exempt, name='dispatch')
+class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets.GenericViewSet):
 
     lookup_field = 'auth_token'
     queryset = TokenLogin.objects.all()
     permission_classes = (permissions.AllowAny, )
     serializer_class = LoginSerializer
     auth_backend = 'r3sourcer.apps.core.backends.ContactBackend'
+    server_class = oauth2_settings.OAUTH2_SERVER_CLASS
+    validator_class = oauth2_settings.OAUTH2_VALIDATOR_CLASS
+    oauthlib_backend_class = oauth2_settings.OAUTH2_BACKEND_CLASS
 
     errors = {
         'logged_in': _('Please log out first.'),
@@ -66,7 +79,6 @@ class AuthViewSet(BaseViewsetMixin,
             closest_company = user.contact.get_closest_company()
 
         host = get_host(request)
-        redirect_host = None
 
         try:
             redirect_site = SiteCompany.objects.get(company=closest_company).site
@@ -78,18 +90,27 @@ class AuthViewSet(BaseViewsetMixin,
                 raise exceptions.PermissionDenied(self.errors['wrong_domain'])
             else:
                 host_url = 'http://{}'.format(redirect_site.domain)
-                token_login = TokenLogin.objects.create(
-                    contact=user.contact,
-                    redirect_to='/'
-                )
-                redirect_host = '{}{}'.format(host_url, token_login.auth_url)
                 cache.set('user_site_%s' % str(user.id), redirect_site.domain)
-                return False, redirect_host
+                return False, host_url
         else:
             cache.set('user_site_%s' % str(user.id), host)
             return True, None
 
         return False, None
+
+    def get_jwt_oauth2_token(self, request, token_content, status, host=None, username=None):
+        if TokenView._is_jwt_config_set():
+            try:
+                token_content['access_token_jwt'] = self._get_access_token_jwt(
+                    request, token_content, host, username=username
+                )
+                return token_content, status
+            except WrongUsername:
+                content = {
+                    "error": "invalid_request",
+                    "error_description": "Request username doesn't match username in original authorize",
+                }
+                return content, 400
 
     @action(methods=['post'], detail=False)
     def login(self, request, *args, **kwargs):
@@ -139,27 +160,49 @@ class AuthViewSet(BaseViewsetMixin,
 
         is_login, redirect_host = self.is_login_allowed(request, user)
 
-        if is_login:
-            login(request, user)
-
         if not serializer.data['remember_me']:
             request.session.set_expiry(0)
 
-        jwt_token = RefreshToken.for_user(user)
+        url, headers, body, resp_status = self.create_token_response(request)
+        token_content, resp_status = self.get_jwt_oauth2_token(request, json.loads(body), resp_status, redirect_host)
 
         response_data = {
             'status': 'success',
             'data': {
                 'contact': ContactLoginSerializer(contact).data,
-                'access_token': str(jwt_token.access_token),
-                'refresh_token': str(jwt_token)
+                **token_content,
             }
         }
 
         if redirect_host is not None:
             response_data['data']['redirect'] = redirect_host
 
-        return Response(response_data, status=status.HTTP_200_OK)
+        return Response(response_data, status=resp_status)
+
+    def _generate_token(self, request, user):
+        request_validator = self.get_validator_class()()
+        core = self.get_oauthlib_core()
+        uri, http_method, body, headers = core._extract_params(request)
+
+        token_request = Request(uri, http_method, body, headers)
+        bearer_token = BearerToken(request_validator)
+        token = bearer_token.create_token(token_request, save_token=False)
+
+        expires = timezone.now() + timedelta(seconds=oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
+        client = None
+        AccessToken = get_access_token_model()
+        access_token = AccessToken(
+            user=user,
+            scope='write read',
+            expires=expires,
+            token=token["access_token"],
+            application=client
+        )
+        access_token.save()
+
+        token['expires_in'] = oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS
+
+        return token
 
     @action(methods=['get'], detail=True)
     def login_by_token(self, request, *args, **kwargs):
@@ -170,12 +213,6 @@ class AuthViewSet(BaseViewsetMixin,
         if user is None:
             raise exceptions.NotFound()
 
-        if request.user != user:
-            logout(request)
-
-        if not request.user.is_authenticated:
-            login(request, user, backend=self.auth_backend)
-
         instance.loggedin_at = timezone.now()
         instance.save()
 
@@ -183,12 +220,15 @@ class AuthViewSet(BaseViewsetMixin,
 
         request.session.set_expiry(0)
 
-        jwt_token = RefreshToken.for_user(user)
+        token_body = self._generate_token(request, user)
+        token_content, resp_status = self.get_jwt_oauth2_token(
+            request, token_body, 200, username=user.contact.email or user.contact.phone_mobile
+        )
+
         data = {
             'status': 'success',
             'data': serializer.data,
-            'access_token': str(jwt_token.access_token),
-            'refresh_token': str(jwt_token)
+            **token_content,
         }
 
         return Response(data)
@@ -228,23 +268,15 @@ class AuthViewSet(BaseViewsetMixin,
 
         is_login, redirect_host = self.is_login_allowed(request, user)
 
-        logout(request)
-
-        if is_login:
-            login_as(user, request, store_original_user=False)
+        token_body = self._generate_token(request, user)
+        token_content, resp_status = self.get_jwt_oauth2_token(
+            request, token_body, 200, redirect_host, username=user.contact.email or user.contact.phone_mobile
+        )
 
         response_data = {
             'status': 'success',
-            'message': _('You are logged in as {user}').format(user=str(user.contact))
+            'message': _('You are logged in as {user}').format(user=str(user.contact)),
+            **token_content,
         }
-
-        if redirect_host is not None:
-            response_data['redirect_to'] = redirect_host
-        else:
-            jwt_token = RefreshToken.for_user(user)
-            response_data.update({
-                'access_token': str(jwt_token.access_token),
-                'refresh_token': str(jwt_token),
-            })
 
         return Response(response_data, status=status.HTTP_200_OK)
