@@ -298,7 +298,7 @@ class BaseSMSService(metaclass=ABCMeta):
 
         master_company = company.get_closest_master_company()
 
-        if master_company.company_settings.sms_enabled:
+        if not master_company.company_settings.sms_enabled:
             return None
 
         return company
