@@ -448,30 +448,26 @@ docker-start-all:
 
 
 var/make/webui-app:
-	@if test "$(DJANGO_STUFF_URL_PREFIX)"; then \
-		echo "WEB-UI installation..."; \
-		if ! ls $(WEBUI_APP_DIR); then \
-			git clone git@bitbucket.org:r3sourcer_1/endless_webui.git $(WEBUI_APP_DIR); \
-		else \
-			cd $(WEBUI_APP_DIR) && git pull && cd ..; \
-		fi; \
-		$(call nginx_root$(USE_NGINX_DOCKER)) \
-		mkdir -p $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
-		mkdir -p var/www/webui; \
-		sudo chmod -R 775 $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
-		if ! docker ps -a | grep "webui-$(DOCKER_APP_NAME)$$"; then \
-			docker build --tag webui-$(DOCKER_APP_NAME)-image $(WEBUI_APP_DIR); \
-			docker run -itd \
-                --name webui-$(DOCKER_APP_NAME) \
-                -v $(NGINX_SITE_VOLUME)$(WEBUI_APP_DIR):/www/ \
-                -v $(shell pwd)/$(WEBUI_APP_DIR)/:/code/ \
-                --env-file "env_defaults" --env-file ".env" \
-                webui-$(DOCKER_APP_NAME)-image; \
-		fi; \
-		echo "WEB-UI successfully installed."; \
-    else \
-        echo "The 'WEB-UI' wasn't installed because ENV 'DJANGO_STUFF_URL_PREFIX' disabled"; \
-	fi;
+	echo "WEB-UI installation..."; \
+	if ! ls $(WEBUI_APP_DIR); then \
+		git clone git@bitbucket.org:r3sourcer_1/endless_webui.git $(WEBUI_APP_DIR); \
+	else \
+		cd $(WEBUI_APP_DIR) && git pull && cd ..; \
+	fi; \
+	$(call nginx_root$(USE_NGINX_DOCKER)) \
+	mkdir -p $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
+	mkdir -p var/www/webui; \
+	sudo chmod -R 775 $(NGINX_VOLUME)/$(DOCKER_APP_NAME)/webui/; \
+	if ! docker ps -a | grep "webui-$(DOCKER_APP_NAME)$$"; then \
+		docker build --tag webui-$(DOCKER_APP_NAME)-image $(WEBUI_APP_DIR); \
+		docker run -itd \
+            --name webui-$(DOCKER_APP_NAME) \
+            -v $(NGINX_SITE_VOLUME)$(WEBUI_APP_DIR):/www/ \
+            -v $(shell pwd)/$(WEBUI_APP_DIR)/:/code/ \
+            --env-file "env_defaults" --env-file ".env" \
+            webui-$(DOCKER_APP_NAME)-image; \
+	fi; \
+	echo "WEB-UI successfully installed.";
 
 var/make/docker-clickhouse:
 	export LOGGER_PASSWORD="$(LOGGER_PASSWORD)" \
