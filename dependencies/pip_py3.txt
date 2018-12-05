@@ -28,7 +28,8 @@ django-redis==4.8.0
 django-loginas==0.3.1
 django-cors-headers==2.4.0
 djangorestframework==3.8.2
-djangorestframework_simplejwt==3.2.3
+django-oauth-toolkit==1.1.3
+git+https://github.com/Humanitec/django-oauth-toolkit-jwt
 
 dry-rest-permissions==0.1.8
 graphviz==0.5.1
@@ -51,6 +52,7 @@ twilio==6.10.3
 weasyprint==0.40
 stripe==1.80.0
 Inflector>=2.0.11
+idna<2.8
 
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light
 git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails

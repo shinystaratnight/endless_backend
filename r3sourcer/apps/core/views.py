@@ -1,15 +1,57 @@
+import json
+
+from django.conf import settings
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
+from django.utils.module_loading import import_string
 from django.views import generic
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from oauth2_provider_jwt.views import TokenView, WrongUsername
+from oauth2_provider_jwt.utils import generate_payload, encode_jwt
 
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.core.models import Form, Company, Invoice, Role, User, CompanyContact
-from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.core.models import Form, Company, Invoice, Role, User, CompanyContact, Contact
+from r3sourcer.apps.core.utils.companies import get_site_master_company, get_site_url
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.tasks import sync_invoice
+
+
+class OAuth2JWTTokenMixin():
+    def _get_access_token_jwt(self, request, content, domain=None, username=None):
+        extra_data = {}
+        issuer = settings.JWT_ISSUER
+        payload_enricher = getattr(settings, 'JWT_PAYLOAD_ENRICHER', None)
+        if payload_enricher:
+            fn = import_string(payload_enricher)
+            extra_data = fn(request)
+
+        if 'scope' in content:
+            extra_data['scope'] = content['scope']
+
+        if not username:
+            try:
+                username = json.loads(request.body.decode('utf-8'))['username']
+            except Exception:
+                username = request.data.get('username') if hasattr(request, 'data') else request.POST.get('username')
+
+        if username:
+            try:
+                contact = Contact.objects.get(Q(email=username) | Q(phone_mobile=username))
+                extra_data['user_id'] = str(contact.user.id)
+            except Exception:
+                raise WrongUsername
+
+            if not domain:
+                master_company = contact.get_closest_company()
+                domain = get_site_url(master_company=master_company)
+
+            extra_data['origin'] = domain
+
+        payload = generate_payload(issuer, content['expires_in'], **extra_data)
+        token = encode_jwt(payload)
+        return token
 
 
 class FormView(generic.TemplateView):
@@ -145,3 +187,7 @@ class RevokeRolesView(APIView):
 
         user.role.remove(*roles)
         return Response()
+
+
+class OAuthJWTToken(OAuth2JWTTokenMixin, TokenView):
+    pass

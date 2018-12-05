@@ -12,5 +12,9 @@ def get_thumbnail_picture(picture, alias):
 
 
 def get_host(request):
-    host_parts = urlparse(request.META.get('HTTP_ORIGIN', request.get_host()))
+    if 'jwt_origin' in request.session:
+        host_parts = urlparse(request.session['jwt_origin'])
+    else:
+        host_parts = urlparse(request.META.get('HTTP_ORIGIN', request.get_host()))
+
     return host_parts.netloc or host_parts.path

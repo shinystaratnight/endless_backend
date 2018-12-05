@@ -3,16 +3,13 @@ from django.conf.urls import url, include
 from django.conf.urls.static import static
 from django.contrib import admin
 
-from rest_framework_simplejwt.views import TokenRefreshView
-
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
-from r3sourcer.apps.core.views import FormView, RegisterFormView
+from r3sourcer.apps.core.views import FormView, RegisterFormView, OAuthJWTToken
 from r3sourcer.apps.core.forms import CoreAdminAuthenticationForm
 from r3sourcer.apps.logger.admin import admin_logger
 from r3sourcer.apps.logger.api.viewsets import journal_list, journal_detail
 from r3sourcer.apps.logger.main import autodiscover
-from r3sourcer.apps.login.api.views import JwtTokenPairView
 
 
 autodiscover()
@@ -33,8 +30,6 @@ _urlpatterns = [
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),
     url(r'^myob/', include('r3sourcer.apps.myob.urls', namespace='myob')),
     url(r'^admin/', admin_logger.urls),
-    url(r'^token/$', JwtTokenPairView.as_view(), name='token_obtain_pair'),
-    url(r'^token/refresh/$', TokenRefreshView.as_view(), name='token_refresh'),
     url(r'^journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/', journal_detail),
     url(r'^journal/(?P<app_path>.+)/(?P<model>.+)/', journal_list),
     url(r'^', include('r3sourcer.apps.billing.urls', namespace='billing')),
@@ -46,6 +41,8 @@ _urlpatterns = [
     url(r'^', include(router.urls, namespace='api')),
     url(r'^', include('filer.urls', namespace='filer')),
     url(r'^admin/', include('loginas.urls')),
+    url(r'^oauth2/token/$', OAuthJWTToken.as_view(), name='oauth2_token'),
+    url(r'^oauth2/', include('oauth2_provider_jwt.urls', namespace='oauth2_provider')),
 ]
 
 urlpatterns = [

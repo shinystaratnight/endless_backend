@@ -27,7 +27,8 @@ REST_FRAMEWORK = {
     'DATETIME_INPUT_FORMATS': ['iso-8601'],
     'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'r3sourcer.apps.core.api.authentication.JWTAuthentication',
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
         'rest_framework.authentication.BasicAuthentication',
         'rest_framework.authentication.SessionAuthentication',
     ),

@@ -89,6 +89,8 @@ INSTALLED_APPS = [
     'r3sourcer.apps.company_settings',
     'r3sourcer.apps.billing',
 
+    'oauth2_provider',
+    'oauth2_provider_jwt',
     'compressor',
     'djangobower',
 ]
@@ -110,6 +112,7 @@ if 'r3sourcer.apps.logger' in INSTALLED_APPS:
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    'oauth2_provider.middleware.OAuth2TokenMiddleware',
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -288,7 +291,8 @@ REST_FRAMEWORK = {
     'DATETIME_INPUT_FORMATS': ['iso-8601'],
     'EXCEPTION_HANDLER': 'r3sourcer.apps.core.api.views.core_exception_handler',
     'DEFAULT_AUTHENTICATION_CLASSES': (
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
+        'r3sourcer.apps.core.api.authentication.JWTAuthentication',
+        'oauth2_provider.contrib.rest_framework.OAuth2Authentication',
     ),
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
@@ -303,6 +307,7 @@ GOOGLE_DISTANCE_MATRIX_API_KEY = env('GOOGLE_DISTANCE_MATRIX_API_KEY', '')
 
 AUTH_USER_MODEL = 'core.User'
 AUTHENTICATION_BACKENDS = [
+    'oauth2_provider.backends.OAuth2Backend',
     'r3sourcer.apps.core.backends.ContactBackend',
     'guardian.backends.ObjectPermissionBackend',
 ]
@@ -453,3 +458,21 @@ SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
     'REFRESH_TOKEN_LIFETIME': timedelta(days=3),
 }
+
+JWT_ISSUER = 'R3sourcerIssuer'
+
+OAUTH2_PROVIDER = {
+    'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
+}
+
+try:
+    with open(root(env('JWT_RS256_PRIVATE_KEY_PATH')), 'r') as jwt_secret:
+        JWT_PRIVATE_KEY_RSA_R3SOURCERISSUER = jwt_secret.read()
+except FileNotFoundError:
+    print('Please specify path to JWT RSA256 private key')
+
+try:
+    with open(root(env('JWT_RS256_PUBLIC_KEY_PATH')), 'r') as jwt_public:
+        JWT_PUBLIC_KEY_RSA_R3SOURCERISSUER = jwt_public.read()
+except FileNotFoundError:
+    print('Please specify path to JWT RSA256 public key')
