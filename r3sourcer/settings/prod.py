@@ -449,10 +449,12 @@ def CAN_LOGIN_AS(request, target_user): return request.user
 
 
 CORS_ORIGIN_REGEX_WHITELIST = (
-    r'^(https?://)?(\w+\.)?r3sourcer\.com$',
-    r'^(https?://)?r3sourcersoft.com$',
-    r'^(https?://)?localhost$',
+    r'^(https?://)?(\w+\.)?r3sourcer(test)?\.com$',
+    r'^(https?://)?r3sourcersoft(test)?\.com$',
 )
+
+if DEBUG:
+    CORS_ORIGIN_REGEX_WHITELIST += (r'^(https?://)?localhost$', )
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
