@@ -83,4 +83,4 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
 
     def get_candidate_contact(self, obj):
         if obj.is_candidate_contact():
-            return obj.candidate_contacts.pk
+            return str(obj.candidate_contacts.pk)
