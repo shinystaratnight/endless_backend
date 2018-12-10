@@ -1101,6 +1101,20 @@ class TimeSheet(
         verbose_name=_("Candidate and Client Rate Overrides Approved at")
     )
 
+    SYNC_STATUS_CHOICES = Choices(
+        (0, 'not_synced', _('Not synced')),
+        (1, 'sync_scheduled', _('Sync scheduled')),
+        (2, 'syncing', _('Syncing...')),
+        (3, 'synced', _('Synced')),
+        (4, 'sync_failed', _('Sync failed')),
+    )
+
+    sync_status = models.PositiveSmallIntegerField(
+        verbose_name=_("Sync status"),
+        choices=SYNC_STATUS_CHOICES,
+        default=SYNC_STATUS_CHOICES.not_synced
+    )
+
     __original_supervisor_id = None
     __original_going_to_work_confirmation = None
     __original_candidate_submitted_at = None
@@ -1219,6 +1233,10 @@ class TimeSheet(
                 self.going_to_work_reply_sms = reply_sms
                 self.going_to_work_confirmation = positive
                 self.save()
+
+    def set_sync_status(self, status):
+        self.sync_status = status
+        self.save(update_fields=['sync_status'])
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
