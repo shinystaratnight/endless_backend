@@ -87,7 +87,7 @@
                     type: 'post',
                     headers: {
                         "Context-Type": "application/json",
-                        "Authorization": "Bearer " + token
+                        "Authorization": "JWT " + token
                     },
                     url: url + $.param($.extend(getData, {recipient: recipient})),
                     data: sendingData,
@@ -171,7 +171,7 @@
             $.ajaxSetup({
                 headers: {
                     // "Context-Type": "application/json",
-                    "Authorization": "Bearer " + token
+                    "Authorization": "JWT " + token
                 },
             });
             var url = (messageType == 'email') ? '/context.io/admin-api/templates/?format=json' : '{% url 'sms_interface:templates' %}';
@@ -312,7 +312,7 @@
                         ajax: {
                             delay: 250,
                             headers: {
-                                "Authorization": "Bearer " + token
+                                "Authorization": "JWT " + token
                             },
                             url: function () {
                                 return "/twilio/admin-api/find/objects/" + $(select).val() + "/"
@@ -350,7 +350,7 @@
                     url: '/core/contacts/',
                     dataType: 'json',
                     headers: {
-                        "Authorization": "Bearer " + token
+                        "Authorization": "JWT " + token
                     },
                     data: function (params) {
                         var query = {
