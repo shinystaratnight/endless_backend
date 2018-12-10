@@ -1,10 +1,5 @@
 FROM python:3.5.2
 
-RUN mkdir /root/.ssh/
-ADD conf/id_rsa /root/.ssh/id_rsa
-RUN chmod 400 /root/.ssh/id_rsa
-RUN ssh-keyscan -T 60 bitbucket.org >> /root/.ssh/known_hosts
-
 WORKDIR /app/
 ADD dependencies ./dependencies
 ADD helpers ./helpers
