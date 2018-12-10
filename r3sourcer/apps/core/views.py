@@ -20,6 +20,8 @@ from r3sourcer.apps.myob.tasks import sync_invoice
 
 class OAuth2JWTTokenMixin():
     def _get_access_token_jwt(self, request, content, domain=None, username=None):
+        from r3sourcer.apps.login.api.serializers import ContactLoginSerializer
+
         extra_data = {}
         issuer = settings.JWT_ISSUER
         payload_enricher = getattr(settings, 'JWT_PAYLOAD_ENRICHER', None)
@@ -48,6 +50,7 @@ class OAuth2JWTTokenMixin():
                 domain = get_site_url(master_company=master_company)
 
             extra_data['origin'] = domain
+            extra_data['contact'] = ContactLoginSerializer(contact).data,
 
         payload = generate_payload(issuer, content['expires_in'], **extra_data)
         token = encode_jwt(payload)
