@@ -142,7 +142,11 @@ class TimeSheetSync(
 
             # if object was synced then skip processing
             if sync_obj and self._is_synced(timesheet, sync_obj=sync_obj):
+                if timesheet.status != TimeSheet.SYNC_STATUS_CHOICES.synced:
+                    timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.synced)
                 continue
+
+            timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.syncing)
 
             # sync time sheet
             res = self._sync_to(timesheet, myob_employee, payroll_categories, sync_obj)
@@ -151,6 +155,10 @@ class TimeSheetSync(
                 is_synced = True
                 # update sync object in local db
                 self._update_sync_object(timesheet)
+
+                timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.synced)
+            else:
+                timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.sync_failed)
 
         if is_synced:
             self._put_standart_pay_info(myob_employee, candidate)

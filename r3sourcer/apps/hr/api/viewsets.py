@@ -251,6 +251,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @action(methods=['post'], detail=True)
     def sync(self, request, pk, *args, **kwargs):
         obj = self.get_object()
+        obj.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
 
         sync_timesheet.delay(obj.id)
 

@@ -81,7 +81,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
             'id', 'job_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
             'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
             'candidate_submitted_at', 'supervisor_approved_at', 'supervisor_approved_scheme', 'candidate_rate',
-            'rate_overrides_approved_by', 'rate_overrides_approved_at'
+            'rate_overrides_approved_by', 'rate_overrides_approved_at', 'sync_status',
         )
         related_fields = {
             'job_offer': ('id', {
@@ -175,8 +175,11 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
         return None
 
     def get_show_sync_button(self, obj):
-        is_synced = MYOBSyncObject.objects.filter(record=obj.id, synced_at__gte=obj.updated_at).exists()
-        return bool(not is_synced and obj.supervisor_approved_at and obj.candidate_submitted_at)
+        allowed_states = [
+            TimeSheet.SYNC_STATUS_CHOICES.not_synced,
+            TimeSheet.SYNC_STATUS_CHOICES.sync_failed,
+        ]
+        return bool(obj.sync_status in allowed_states and obj.supervisor_approved_at and obj.candidate_submitted_at)
 
     def _get_related_sms(self, obj, template):
         ct = ContentType.objects.get_for_model(TimeSheet)
