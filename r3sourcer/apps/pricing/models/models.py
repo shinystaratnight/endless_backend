@@ -18,7 +18,6 @@ class PriceListMixin(models.Model):
 
     valid_from = models.DateField(
         verbose_name=_('Valid From'),
-        auto_now_add=True,
     )
 
     valid_until = models.DateField(
