@@ -242,17 +242,17 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         phone = request.GET.get('phone', '').strip()
         phone = self.normalize_phone(phone)
 
-        message = {}
+        message = ''
 
         if email and models.Contact.objects.filter(email=email).exists():
-            message['email'] = _('User with this email already registered')
+            message = _('User with this email already registered')
         elif phone and models.Contact.objects.filter(phone_mobile=phone).exists():
-            message['phone_mobile'] = _('User with this phone number already registered')
+            message = _('User with this phone number already registered')
 
         if message:
-            return Response({
-                'status': 'error',
-                'errors': [message]
+            raise exceptions.ValidationError({
+                'valid': False,
+                'message': message
             })
 
         return Response({
