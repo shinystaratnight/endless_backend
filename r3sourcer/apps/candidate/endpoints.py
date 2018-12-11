@@ -60,6 +60,7 @@ class VisaTypeEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.VisaType
     serializer_fields = ('id', 'subclass', 'name', 'general_type', 'work_hours_allowed', 'is_available')
+    search_fields = ['name']
 
 
 class CandidateLocationEndpoint(core_endpoints.ApiEndpoint):
