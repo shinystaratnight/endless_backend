@@ -40,11 +40,12 @@ def get_master_companies_by_contact(contact):
 
 
 def get_site_url(request=None, user=None, master_company=None):
+    if user and not master_company:
+        master_company = user.contact.get_closest_company()
+
     if master_company is not None:
         site_company = master_company.site_companies.first()
         domain = site_company and site_company.site.domain
-    elif user:
-        domain = cache.get('user_site_%s' % str(user.id), domain)
     else:
         domain = get_current_site(request).domain
 
