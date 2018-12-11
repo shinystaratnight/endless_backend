@@ -278,8 +278,8 @@ class CompanySettingsView(APIView):
             serializer.is_valid(raise_exception=True)
             serializer.save()
 
-            if 'billing_email' in self.request.data['company_settings'].keys():
-                email = self.request.data['company_settings']['billing_email']
+            email = self.request.data['company_settings'].get('billing_email')
+            if email:
                 customer = stripe.Customer.retrieve(company.stripe_customer)
                 customer.email = email
                 customer.save()
