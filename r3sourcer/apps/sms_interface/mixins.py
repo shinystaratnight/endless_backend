@@ -1,4 +1,7 @@
 import json
+
+import jwt
+
 from django.apps import apps
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -10,8 +13,9 @@ from django.utils.translation import ugettext_lazy as _
 from django.shortcuts import get_list_or_404
 from django import forms
 from model_utils import Choices
+from oauth2_provider_jwt.utils import decode_jwt
 
-from r3sourcer.apps.core.models import Contact, TemplateMessage
+from r3sourcer.apps.core.models import Contact, TemplateMessage, User
 
 
 class DeadlineCheckingMixin(models.Model):
@@ -35,12 +39,19 @@ class DeadlineCheckingMixin(models.Model):
         abstract = True
 
 
-class SuperUserRequiredMixin(object):
+class TokenRequiredMixin(object):
     def dispatch(self, request, *args, **kwargs):
-        user = request.user
-        if not user.is_authenticated or not user.contact.is_company_contact():
+        token = request.GET.get('token')
+        if not token:
             raise PermissionDenied
-        return super(SuperUserRequiredMixin, self).dispatch(request, *args, **kwargs)
+
+        try:
+            payload = decode_jwt(token)
+            self.user = User.objects.get(id=payload['user_id'])
+        except (jwt.PyJWTError, User.DoesNotExist):
+            raise PermissionDenied
+
+        return super(TokenRequiredMixin, self).dispatch(request, *args, **kwargs)
 
 
 class MessageViewBase(object):
@@ -70,7 +81,7 @@ class MessageViewBase(object):
         """
         try:
             return apps.get_model(model_name).objects.get(id=object_id)
-        except:
+        except Exception:
             return object_id
 
     def get_extra_params(self, recipient):
@@ -114,13 +125,13 @@ class MessageViewBase(object):
         def parse_date(dt_str):
             try:
                 return timezone.datetime.strptime(dt_str, '%d/%m/%Y')
-            except:
+            except Exception:
                 pass
 
         def parse_datetime(dtm_str):
             try:
                 return timezone.datetime.strptime(dtm_str, '%d/%m/%Y %H:%M')
-            except:
+            except Exception:
                 pass
 
         base_types = {
@@ -199,7 +210,7 @@ class MessageViewBase(object):
         return value
 
 
-class MessageView(MessageViewBase, SuperUserRequiredMixin):
+class MessageView(MessageViewBase, TokenRequiredMixin):
     """
     Would be use in sms and email dialog views
     """

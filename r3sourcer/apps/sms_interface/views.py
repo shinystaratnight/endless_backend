@@ -14,8 +14,6 @@ from r3sourcer.apps.sms_interface.models import SMSMessage
 
 class TemplateCompileView(MessageViewBase, APIView):
 
-    permissions = (permissions.IsAdminUser, )
-
     recipient_field = 'phone_mobile'
     sender_value_field = 'get_phone'
     message_type = 'sms'
@@ -36,7 +34,6 @@ class TemplateCompileView(MessageViewBase, APIView):
 
 class ContentTypeListView(generics.ListAPIView):
 
-    permissions = (permissions.IsAdminUser, )
     pagination_class = None
     queryset = ContentType.objects.filter(app_label__in=[
         'core',
@@ -48,14 +45,12 @@ class ContentTypeListView(generics.ListAPIView):
 
 class TemplateSMSMessageListView(generics.ListAPIView):
 
-    permission_classes = (permissions.IsAdminUser, )
     pagination_class = None
     queryset = SMSTemplate.objects.filter(type=SMSTemplate.SMS)
     serializer_class = TemplateSerializer
 
 
 class SMSMessageListView(generics.ListAPIView):
-    permission_classes = (permissions.IsAdminUser,)
     serializer_class = SMSMessageSerializer
 
     def get_queryset(self):

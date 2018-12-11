@@ -30,7 +30,7 @@ class SMSDialogTemplateView(MessageView, FormView):
     @cached_property
     def get_sender_choices(self):
 
-        phones = TwilioSMSService.get_sender_phones(self.request.user.contact)
+        phones = TwilioSMSService.get_sender_phones(self.user.contact)
         choices = []
 
         for phone in phones:
@@ -43,7 +43,7 @@ class SMSDialogTemplateView(MessageView, FormView):
 
     def get_sender(self):
         sender = self.request.POST['sender_user']
-        return TwilioSMSService.get_sender_phones(self.request.user.contact).get(id=sender)
+        return TwilioSMSService.get_sender_phones(self.user.contact).get(id=sender)
 
     def form_valid(self, form):
 
@@ -57,7 +57,7 @@ class SMSDialogTemplateView(MessageView, FormView):
                         to_number=recipient.phone_mobile,
                         text=form.cleaned_data['body'],
                         from_number=sender_contact.phone_number,
-                        sender_contact=self.request.user.contact,
+                        sender_contact=self.user.contact,
                         **params
                 )
             except Exception as e:
