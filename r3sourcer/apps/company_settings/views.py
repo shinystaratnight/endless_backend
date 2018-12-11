@@ -479,7 +479,8 @@ class RefreshMYOBAccountsView(APIView):
         auth_data = request.user.auth_data.latest('created')
         client = MYOBClient(auth_data=auth_data)
         data = dict()
-        new_accounts = list()
+        myob_accounts = list()
+        refresh_only_one = 'id' in self.kwargs
 
         if 'id' in self.kwargs:
             company_files = [get_object_or_404(MYOBCompanyFile, cf_id=self.kwargs['id'])]
@@ -525,18 +526,16 @@ class RefreshMYOBAccountsView(APIView):
                     }
                 )
 
-                if created:
-                    new_accounts.append(account_object)
+                if refresh_only_one:
+                    myob_accounts.append(account_object)
+
+        if refresh_only_one:
+            myob_accounts = company_file.accounts.all()
+            data = serializers.MYOBAccountSerializer(myob_accounts, many=True).data
 
         myob_settings = request.user.company.myob_settings
         myob_settings.payroll_accounts_last_refreshed = timezone.now()
         myob_settings.save()
-
-        if new_accounts:
-            serializer = serializers.MYOBAccountSerializer(new_accounts, many=True)
-            data = {
-                'myob_accounts': serializer.data
-            }
 
         return Response(data)
 
