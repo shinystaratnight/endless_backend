@@ -76,12 +76,14 @@ class BaseTimeSheetViewsetMixin:
     def paginated(self, queryset):  # pragma: no cover
         queryset = self.filter_queryset(queryset)
 
+        fields = self.get_list_fields(self.request)
+
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = timesheet_serializers.TimeSheetSerializer(page, many=True)
+            serializer = timesheet_serializers.TimeSheetSerializer(page, many=True, fields=fields)
             return self.get_paginated_response(serializer.data)
 
-        serializer = timesheet_serializers.TimeSheetSerializer(queryset, many=True)
+        serializer = timesheet_serializers.TimeSheetSerializer(queryset, many=True, fields=fields)
         return Response(serializer.data)
 
 

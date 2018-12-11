@@ -73,6 +73,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
         'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms', 'invoice',
+        'shift',
     )
 
     class Meta:
@@ -99,7 +100,14 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
     def get_jobsite(self, obj):
         if obj:
             jobsite = obj.job_offer.job.jobsite
-            return {'id': jobsite.id, '__str__': str(jobsite)}
+            return {
+                'id': jobsite.id,
+                'address': {
+                    'id': jobsite.address.id,
+                    '__str__': str(jobsite.address),
+                },
+                '__str__': str(jobsite),
+            }
 
     def get_position(self, obj):
         if obj:
@@ -206,6 +214,18 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
         invoice_line = obj.invoice_lines.first()
         invoice = invoice_line and invoice_line.invoice
         return invoice and ApiBaseRelatedField.to_read_only_data(invoice)
+
+    def get_shift(self, obj):
+        if obj:
+            shift = obj.job_offer.shift
+            return {
+                'id': shift.id,
+                'date': {
+                    'id': shift.date.id,
+                    '__str__': str(shift.date),
+                },
+                '__str__': str(shift),
+            }
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):
