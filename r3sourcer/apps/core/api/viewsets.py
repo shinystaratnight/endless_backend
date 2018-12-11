@@ -477,13 +477,15 @@ class CompanyViewset(BaseApiViewset):
 
         try:
             models.Company.objects.get(name__iexact=company_name)
-
-            return Response({
-                'status': 'error',
-                'errors': [{'company_name': _('Company with this name alredy exists')}]
-            })
+            message = _('Company with this name alredy exists')
         except models.Company.DoesNotExist:
-            pass
+            message = ''
+
+        if message:
+            raise exceptions.ValidationError({
+                'valid': False,
+                'message': message
+            })
 
         return Response({
             'status': 'success'
@@ -604,13 +606,15 @@ class SiteViewset(BaseApiViewset):
 
         try:
             Site.objects.get(domain__iexact='{}.{}'.format(website, settings.REDIRECT_DOMAIN))
-
-            return Response({
-                'status': 'error',
-                'errors': [{'website': _('Website with this domain alredy exists')}]
-            })
+            message = _('Website with this domain alredy exists')
         except Site.DoesNotExist:
-            pass
+            message = _('Website with this domain is not available') if website == 'api' else ''
+
+        if message:
+            raise exceptions.ValidationError({
+                'valid': False,
+                'message': message
+            })
 
         return Response({
             'status': 'success'
