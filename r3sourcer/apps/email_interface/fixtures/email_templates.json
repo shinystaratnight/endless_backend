@@ -20,11 +20,11 @@
   "model": "email_interface.emailtemplate",
   "pk": "33fe06ba-9d36-4068-962a-6ca8f8797da9",
   "fields": {
-    "updated_at": "2018-11-26T08:01:02.674Z",
+    "updated_at": "2018-12-11T09:41:00.643Z",
     "created_at": "2018-11-26T07:45:38.198Z",
     "name": "E-mail verification success",
     "slug": "e-mail-verification-success",
-    "subject_template": "",
+    "subject_template": "Welcome to R3sourcer",
     "message_text_template": "Dear [[contact]],\r\n\r\nWelcome to R3sourcer - human resources automation framework!\r\n\r\nYour newly generated password is:\r\n\r\n[[password]]\r\n\r\nUsername: [[username]]\r\n\r\nYou can change this password after logging in!\r\n\r\nTo access our self-service portal please go to:\r\nAddress: [[master_company_url]]\r\n\r\nIf you have any questions about R3sourcer, please let us know. We would be happy to help!\r\n\r\nKind regards,\r\n[[manager]]\r\n[[master_company]]",
     "message_html_template": "",
     "reply_timeout": 0,
