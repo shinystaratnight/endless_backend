@@ -230,9 +230,29 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):
 
+    method_fields = ('jobsite', 'position')
+
     class Meta:
         model = CandidateEvaluation
-        fields = '__all__'
+        fields = (
+            '__all__',
+            {
+                'supervisor': ('id', 'contact', 'job_title'),
+                'reference_timesheet': ('id', 'shift_started_at', 'shift_ended_at'),
+            }
+        )
+
+    def get_jobsite(self, obj):
+        if not obj.reference_timesheet:
+            return
+
+        return ApiBaseRelatedField.to_read_only_data(obj.reference_timesheet.job_offer.job.jobsite)
+
+    def get_position(self, obj):
+        if not obj.reference_timesheet:
+            return
+
+        return ApiBaseRelatedField.to_read_only_data(obj.reference_timesheet.job_offer.job.position)
 
 
 class TimeSheetManualSerializer(ApiBaseModelSerializer):

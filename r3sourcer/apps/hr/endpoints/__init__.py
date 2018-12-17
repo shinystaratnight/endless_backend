@@ -2,7 +2,7 @@ from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.api import filters as hr_filters, viewsets as hr_viewsets
-from r3sourcer.apps.hr.api.serializers import job as job_serializers
+from r3sourcer.apps.hr.api.serializers import job as job_serializers, timesheet as timesheet_serializer
 from r3sourcer.apps.hr.endpoints.payment import InvoiceEndpoint
 from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint, ExtranetCandidateTimesheetEndpoint
 
@@ -64,6 +64,7 @@ class CandidateEvaluationEndpoint(ApiEndpoint):
 
     model = hr_models.CandidateEvaluation
     filter_class = hr_filters.CandidateEvaluationFilter
+    serializer = timesheet_serializer.CandidateEvaluationSerializer
 
 
 class ShiftEndpoint(ApiEndpoint):
