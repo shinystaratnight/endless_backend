@@ -15,14 +15,12 @@ from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
 
-from . import serializers, permissions
+from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
 from ..tasks import buy_candidate
 
 
 class CandidateContactViewset(BaseApiViewset):
-
-    permission_classes = (permissions.CandidateContactPermissions, SiteContactPermissions)
 
     def perform_create(self, serializer):
         instance = serializer.save()
