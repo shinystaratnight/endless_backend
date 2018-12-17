@@ -570,7 +570,7 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
                 'jobsite_address': ('__all__', ),
                 'shift': ['id', 'time', {
                     'date': ['shift_date', {
-                        'job': ['position', 'customer_company', 'notes', {
+                        'job': ['id', 'position', 'customer_company', 'notes', {
                             'jobsite': ['primary_contact'],
                         }],
                     }],
