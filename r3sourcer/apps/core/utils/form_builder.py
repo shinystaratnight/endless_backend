@@ -351,9 +351,11 @@ class CandidateFormMixin(ModelForm):
             contact=instance.contact,
             company=master_company
         )
-        return CandidateRel.objects.create(
+        CandidateRel.objects.create(
             master_company=master_company,
             candidate_contact=instance,
             owner=True,
             active=True,
         )
+
+        return instance

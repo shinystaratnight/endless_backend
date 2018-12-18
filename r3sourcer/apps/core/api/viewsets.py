@@ -2,7 +2,7 @@ from cities_light.loading import get_model
 from django.apps import apps
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Q, ForeignKey
 from django.contrib.auth import logout
 from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
@@ -873,15 +873,6 @@ class FormViewSet(BaseApiViewset):
     serializer_class = serializers.FormSerializer
     permission_classes = (IsAuthenticated,)
 
-    def get_queryset(self):
-        if self.request.user.is_superuser:
-            return models.Form.objects.all()
-        company = get_site_master_company(request=self.request)
-        return models.Form.objects.filter(
-            Q(company__isnull=True) |
-            Q(company=company)
-        )
-
     def create(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
 
@@ -906,10 +897,18 @@ class FormViewSet(BaseApiViewset):
     @action(methods=['post'], detail=True, permission_classes=(AllowAny,))
     def submit(self, request, pk, *args, **kwargs):
         form_obj = self.get_object()
+        extra_data = {}
+        data = {}
+
+        for key, val in request.data.items():
+            if form_obj.builder.extra_fields.filter(name=key).exists():
+                extra_data[key] = val['id'] if isinstance(val, dict) else val
+            else:
+                data[key] = val
 
         try:
-            data = models.Form.parse_api_data(request.data, form=form_obj)
-            files = models.Form.parse_api_files(request.data)
+            data = models.Form.parse_api_data(data, form=form_obj)
+            files = models.Form.parse_api_files(data)
         except ValidationError as e:
             raise exceptions.ValidationError({k.replace('__', '.'): v for k, v in e.message_dict.items()})
 
@@ -931,7 +930,42 @@ class FormViewSet(BaseApiViewset):
         if not storage_helper.validate():
             raise exceptions.ValidationError(storage_helper.errors)
 
-        storage_helper.create_instance()
+        instance = storage_helper.create_instance()
+
+        for extra_field in form_obj.builder.extra_fields.all():
+            if extra_field.name not in extra_data:
+                continue
+
+            related_model_ct = extra_field.related_through_content_type or extra_field.content_type
+            related_model = related_model_ct.model_class()
+
+            multiple_data = {}
+            single_data = {}
+
+            for field in related_model._meta.get_fields():
+                if not isinstance(field, ForeignKey):
+                    continue
+
+                if isinstance(instance, field.rel.model):
+                    single_data[field.name] = instance
+                    continue
+
+                if field.name in extra_data:
+                    values = extra_data[field.name]
+
+                    if not isinstance(values, list):
+                        values = [values]
+
+                    for val in values:
+                        multiple_data[field.name] = [field.rel.model.objects.get(id=id_val) for id_val in values]
+
+            for key, data in multiple_data.items():
+                for val in data:
+                    obj_values = {
+                        key: val,
+                        **single_data
+                    }
+                    related_model.objects.create(**obj_values)
 
         return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
 

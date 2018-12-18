@@ -201,6 +201,12 @@ class FileFormFieldEndpoint(BaseFormFieldEndpoint):
     serializer = serializers.FileFormFieldSerializer
 
 
+class RelatedFormFieldEndpoint(BaseFormFieldEndpoint):
+
+    model = models.RelatedFormField
+    serializer = serializers.RelatedFormFieldSerializer
+
+
 class FormFieldGroupEndpoint(ApiEndpoint):
 
     model = models.FormFieldGroup
@@ -365,6 +371,7 @@ router.register(endpoint=NumberFormFieldEndpoint())
 router.register(endpoint=ModelFormFieldEndpoint())
 router.register(endpoint=FileFormFieldEndpoint())
 router.register(endpoint=CheckBoxFormFieldEndpoint())
+router.register(endpoint=RelatedFormFieldEndpoint())
 router.register(endpoint=ContentTypeEndpoint())
 router.register(endpoint=InvoiceRuleEndpoint())
 router.register(endpoint=UserEndpoint())

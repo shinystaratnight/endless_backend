@@ -41,6 +41,8 @@ __all__ = [
     'ImageFormField',
     'CheckBoxFormField',
     'RadioButtonsFormField',
+    'RelatedFormField',
+    'FormBuilderExtraFields',
     'transform_ui_choices'
 ]
 
@@ -85,6 +87,64 @@ class FormBuilder(UUIDModel):
     class Meta:
         verbose_name = _("Form builder")
         verbose_name_plural = _("Form builders")
+
+
+class FormBuilderExtraFields(UUIDModel):
+
+    builder = models.ForeignKey(
+        FormBuilder,
+        related_name='extra_fields',
+        verbose_name=_("Form Builder")
+    )
+
+    content_type = models.ForeignKey(
+        'contenttypes.ContentType',
+        verbose_name=_("Content type for field"),
+        related_name='form_builder_fields'
+    )
+
+    name = models.SlugField(
+        verbose_name=_("Name"),
+    )
+
+    label = models.CharField(
+        verbose_name=_("Label"),
+        default='',
+        max_length=512,
+        blank=True
+    )
+
+    placeholder = models.CharField(
+        verbose_name=_("Placeholder"),
+        max_length=512,
+        blank=True
+    )
+
+    help_text = models.CharField(
+        verbose_name=_("Help text"),
+        max_length=512,
+        blank=True
+    )
+
+    required = models.BooleanField(
+        verbose_name=_("Required"),
+        default=True
+    )
+
+    related_through_content_type = models.ForeignKey(
+        'contenttypes.ContentType',
+        verbose_name=_("Content type of related model"),
+        related_name='form_builder_through_fields',
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = _('Form Builder Extra Field')
+        verbose_name_plural = _('Form Builder Extra Fields')
+
+    def __str__(self):
+        return '{} {}'.format(str(self.builder), self.name)
 
 
 class Form(UUIDModel):
@@ -325,7 +385,7 @@ class Form(UUIDModel):
                         else:
                             parsed_data[parent] = value
                     except Exception:
-                        if form_fields[parent].required:
+                        if form_fields[parent] and form_fields[parent].required:
                             errors[field_name] = _('This field is required.')
                 elif value:
                     parsed_data[field_name] = value
@@ -924,3 +984,45 @@ class TextAreaFormField(FormField):
     class Meta:
         verbose_name = _("TextArea field")
         verbose_name_plural = _("TextArea field")
+
+
+class RelatedFormField(FormField):
+    input_type = 'related'
+
+    extended_fields = ('is_multiple', 'content_type')
+
+    is_multiple = models.BooleanField(
+        verbose_name=_("Allow Multiple Selections"),
+        default=False
+    )
+
+    content_type = models.ForeignKey(
+        'contenttypes.ContentType',
+        verbose_name=_("Content type for field")
+    )
+
+    def get_ui_config(self):
+        inflector = Inflector(import_string(settings.INFLECTOR_LANGUAGE))
+
+        return {
+            'key': self.name,
+            'type': 'related',
+            'endpoint': api_reverse('{}/{}'.format(
+                self.content_type.app_label.lower(), inflector.pluralize(self.content_type.model.lower())
+            )),
+            'templateOptions': {
+                'placeholder': self.placeholder,
+                'description': self.help_text,
+                'required': self.required,
+                'label': self.label,
+                'type': self.input_type,
+                'multiple': self.is_multiple,
+            }
+        }
+
+    def get_form_field(self):
+        return
+
+    class Meta:
+        verbose_name = _("Related field")
+        verbose_name_plural = _("Related fields")
