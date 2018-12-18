@@ -290,7 +290,7 @@ class BaseSMSService(metaclass=ABCMeta):
         ).first()
         contact = Contact.objects.filter(phone_mobile=to_number).first()
 
-        if not company or not company.sms_enabled:
+        if not company or (not company.sms_enabled and company.sms_balance <= 0):
             return
 
         if contact and not contact.sms_enabled:
