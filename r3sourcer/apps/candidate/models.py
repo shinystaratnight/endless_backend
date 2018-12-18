@@ -686,6 +686,10 @@ class SkillRel(core_models.UUIDModel):
         return False
 
     def save(self, *args, **kwargs):
+        if self._state.adding:
+            if not self.hourly_rate:
+                self.hourly_rate = self.skill.default_rate or 0
+
         super().save(*args, **kwargs)
 
         self.candidate_contact.candidate_scores.recalc_scores()

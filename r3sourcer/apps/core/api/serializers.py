@@ -1470,7 +1470,7 @@ class FormFieldSerializer(ApiBaseModelSerializer):
 
 class FormSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('model_fields', 'groups', 'company_links')
+    method_fields = ('model_fields', 'groups', 'company_links', 'extra_fields')
 
     class Meta:
         model = core_models.Form
@@ -1508,10 +1508,16 @@ class FormSerializer(ApiBaseModelSerializer):
 
     def get_model_fields(self, obj):
         if obj.builder:
-            return core_models.ModelFormField.get_model_fields(
+            return list(core_models.ModelFormField.get_model_fields(
                 obj.builder.content_type.model_class(),
                 builder=obj.builder
-            )
+            ))
+
+        return []
+
+    def get_extra_fields(self, obj):
+        if obj.builder:
+            return obj.builder.extra_fields.values('name', 'required', 'help_text', 'label', 'content_type')
         return []
 
     def get_groups(self, obj):
@@ -1680,6 +1686,17 @@ class TextAreaFormFieldSerializer(BaseFormFieldSerializer):
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
             'required', 'position', 'help_text',
             'max_length', 'rows'
+        )
+
+
+class RelatedFormFieldSerializer(BaseFormFieldSerializer):
+
+    class Meta:
+        model = core_models.RelatedFormField
+        fields = (
+            'id', 'group', 'name', 'label', 'placeholder', 'class_name',
+            'required', 'position', 'help_text',
+            'content_type', 'is_multiple'
         )
 
 

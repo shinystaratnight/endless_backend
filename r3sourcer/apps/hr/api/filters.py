@@ -149,9 +149,11 @@ class FavouriteListFilter(FilterSet):
 
 class CarrierListFilter(FilterSet):
 
+    target_date = DateRangeFilter(distinct=True)
+
     class Meta:
         model = hr_models.CarrierList
-        fields = ['candidate_contact']
+        fields = ['candidate_contact', 'target_date']
 
 
 class BlackListFilter(FilterSet):

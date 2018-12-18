@@ -39,6 +39,9 @@ class FormFieldInline(StackedPolymorphicInline):
     class ImageFormFieldInline(StackedPolymorphicInline.Child):
         model = models.ImageFormField
 
+    class RelatedFormFieldInline(StackedPolymorphicInline.Child):
+        model = models.RelatedFormField
+
     model = models.FormField
 
     child_inlines = (
@@ -51,7 +54,8 @@ class FormFieldInline(StackedPolymorphicInline):
         FileFormFieldInline,
         CheckBoxFormFieldInline,
         RadioButtonsFormFieldInline,
-        ImageFormFieldInline
+        ImageFormFieldInline,
+        RelatedFormFieldInline
     )
 
 
@@ -94,3 +98,4 @@ class FormFieldGroupAdmin(PolymorphicInlineSupportMixin, admin.ModelAdmin):
 admin.site.register(models.FormBuilder, FormBuilderAdmin)
 admin.site.register(models.FormFieldGroup, FormFieldGroupAdmin)
 admin.site.register(models.Form, FormAdmin)
+admin.site.register(models.FormBuilderExtraFields, admin.ModelAdmin)
