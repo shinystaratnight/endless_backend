@@ -528,6 +528,9 @@ rebuild_web:
 	make web_logs
 
 nginx_config_docker:
+	if [ ! -d "/etc/letsencrypt" ]; then \
+		sudo mkdir /etc/letsencrypt; \
+	fi;
 	docker-compose exec web bin/app nginx_config --site_root=$(DOCKER_BASE_DIR) > conf/docker/nginx.conf
 	docker-compose stop nginx
 	docker-compose rm -f nginx
