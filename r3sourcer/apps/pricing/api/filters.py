@@ -43,6 +43,5 @@ class IndustryFilter(FilterSet):
             Q(skillname__skills__price_list_rates__price_list__company_id=value,
               skillname__skills__price_list_rates__price_list__effective=True,
               skillname__skills__price_list_rates__price_list__valid_from__lte=now,
-              skillname__skills__price_list_rates__price_list__valid_until__gte=now),
-            skillname__skills__active=True
+              skillname__skills__price_list_rates__price_list__valid_until__gte=now)
         ).distinct()
