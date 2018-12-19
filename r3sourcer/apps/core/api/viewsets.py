@@ -270,8 +270,16 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         contact.save(update_fields=['email_verified'])
 
         master_company = get_site_master_company(request=self.request)
+
+        trial_role = contact.user.role.filter(name=models.Role.ROLE_NAMES.trial).first()
+        if trial_role:
+            email_tamplate = 'trial-e-mail-verification-success'
+            contact.user.role.remove(trial_role)
+        else:
+            email_tamplate = 'e-mail-verification-success'
+
         tasks.send_verification_success_email.apply_async(
-            args=(contact.id, master_company.id), countdown=10
+            args=(contact.id, master_company.id, email_tamplate), countdown=10
         )
 
         return Response({

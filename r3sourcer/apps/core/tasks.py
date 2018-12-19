@@ -124,7 +124,7 @@ one_sms_task_at_the_same_time = one_task_at_the_same_time(True)
 
 @app.task(bind=True)
 @one_sms_task_at_the_same_time
-def send_trial_email(self, contact_id, auto_password):
+def send_trial_email(self, contact_id, master_company_id):
     try:
         contact = core_models.Contact.objects.get(id=contact_id)
     except core_models.Contact.DoesNotExist as e:
@@ -136,14 +136,25 @@ def send_trial_email(self, contact_id, auto_password):
             logger.exception('Cannot load Email service')
             return
 
-        site_url = core_companies_utils.get_site_url(user=contact.user)
+        if not contact.verification_token:
+            contact.verification_token = contact.generate_auth_token(
+                token_field_name='verification_token', length=64
+            )
+            contact.save(update_fields=['verification_token'])
+
+        extranet_login = TokenLogin.objects.create(
+            contact=contact,
+            redirect_to='/contacts/verify_email/?token={}'.format(contact.verification_token)
+        )
+        master_company = core_models.Company.objects.get(id=master_company_id)
+        site_url = core_companies_utils.get_site_url(master_company=master_company)
+
         data_dict = {
             'contact': contact,
-            'password': auto_password,
-            'site_url': site_url,
+            'verification_url': "%s%s" % (site_url, extranet_login.auth_url),
         }
 
-        email_interface.send_tpl(contact.email, tpl_name='trial-user-register', **data_dict)
+        email_interface.send_tpl(contact.email, tpl_name='trial-user-email-verification', **data_dict)
 
 
 @shared_task()
@@ -309,7 +320,7 @@ def send_generated_password_sms(contact_id, new_password=None):
 
 
 @shared_task()
-def send_verification_success_email(contact_id, master_company_id):
+def send_verification_success_email(contact_id, master_company_id, template='e-mail-verification-success'):
     from r3sourcer.apps.email_interface.utils import get_email_service
 
     try:
@@ -318,8 +329,6 @@ def send_verification_success_email(contact_id, master_company_id):
         logger.exception('Cannot load E-mail service')
         return
 
-    email_tpl = 'e-mail-verification-success'
-
     try:
         contact = core_models.Contact.objects.get(id=contact_id)
     except core_models.Contact.DoesNotExist as e:
@@ -327,6 +336,7 @@ def send_verification_success_email(contact_id, master_company_id):
     else:
         with transaction.atomic():
             master_company = core_models.Company.objects.get(id=master_company_id)
+            domain = core_companies_utils.get_company_domain(master_company)
             site_url = core_companies_utils.get_site_url(master_company=master_company)
             manager = master_company.manager or contact.get_closest_company().manager
             new_password = core_models.User.objects.make_random_password(20)
@@ -341,6 +351,7 @@ def send_verification_success_email(contact_id, master_company_id):
                 password=new_password,
                 master_company=master_company,
                 master_company_url=site_url,
+                subdomain=domain
             )
 
             contact.user.set_password(new_password)
@@ -348,4 +359,4 @@ def send_verification_success_email(contact_id, master_company_id):
 
             logger.info('Sending e-mail verification success to %s.', contact)
 
-            email_interface.send_tpl(contact.email, tpl_name=email_tpl, **data_dict)
+            email_interface.send_tpl(contact.email, tpl_name=template, **data_dict)
