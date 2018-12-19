@@ -57,12 +57,14 @@ class TrialUserView(APIView):
         email = serializer.validated_data['email']
         phone_mobile = serializer.validated_data['phone_mobile']
 
-        new_password = User.objects.make_random_password()
-        new_user = User.objects.create_user(password=new_password, email=email, phone_mobile=phone_mobile)
+        new_user = User.objects.create_user(email=email, phone_mobile=phone_mobile)
         contact = new_user.contact
         contact.first_name = serializer.validated_data['first_name']
         contact.last_name = serializer.validated_data['last_name']
         contact.save(update_fields=['first_name', 'last_name'])
+
+        trial_role, created = models.Role.objects.get_or_create(name=models.Role.ROLE_NAMES.trial)
+        new_user.role.add(trial_role)
 
         # set role and permissions
         permission_list = GlobalPermission.objects.all()
@@ -95,7 +97,7 @@ class TrialUserView(APIView):
             )
         )
 
-        send_trial_email.apply_async([contact.id, new_password], countdown=10)
+        send_trial_email.apply_async([contact.id, company.id], countdown=10)
         cancel_trial.apply_async([new_user.id], eta=timezone.now() + datetime.timedelta(days=30))
 
         return Response({

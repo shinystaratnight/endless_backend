@@ -18,6 +18,23 @@
 },
 {
   "model": "email_interface.emailtemplate",
+  "pk": "0db83a05-71ad-4f57-aefa-34d2810dd630",
+  "fields": {
+    "updated_at": "2018-12-19T09:30:54.711Z",
+    "created_at": "2018-12-19T09:16:04.640Z",
+    "name": "Trial E-mail verification success",
+    "slug": "trial-e-mail-verification-success",
+    "subject_template": "Welcome to R3sourcer",
+    "message_text_template": "",
+    "message_html_template": "Hi [[contact__first_name]],  \r\nGood news! Your free 30 day trial account is setup for [[master_company]]!\r\nYour username is [[contact__email]] and your password is [[password]].\r\nYour portal access is through [[subdomain]].r3sourcer.com.\r\n\r\nYou can start using it now! Our account manager will contact you in 1 business day. He/she will help you to finalize additional setup is needed and will organize online and onsite training for your company!\r\n\r\nBest Regards,\r\nR3sourcer Administrator",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
   "pk": "33fe06ba-9d36-4068-962a-6ca8f8797da9",
   "fields": {
     "updated_at": "2018-12-11T09:41:00.643Z",
@@ -122,13 +139,13 @@
   "model": "email_interface.emailtemplate",
   "pk": "d49d1e89-7af8-4153-8959-6c2b70e1a24b",
   "fields": {
-    "updated_at": "2018-04-27T08:53:03.525Z",
+    "updated_at": "2018-12-19T08:21:25.801Z",
     "created_at": "2018-04-18T12:30:12.244Z",
-    "name": "Trial User Register",
-    "slug": "trial-user-register",
+    "name": "Trial User Email Verification",
+    "slug": "trial-user-email-verification",
     "subject_template": "New user",
     "message_text_template": "",
-    "message_html_template": "Hi there,\r\n\r\nThanks for signing up! You\u2019re just one step away from fully activating your new R3SOURC3R trial account. Please hit the verification button below, enter your details and experience our cloud-based software!\r\n\r\nUsername: [[contact__email]]\r\nPassword: [[password]]\r\n\r\n<a href=\"[[site_url]]\"></a>",
+    "message_html_template": "Hi [[contact__first_name]], \r\nThanks for signing up! \r\nYou\u2019re just one step away from fully activating your new R3SOURC3R trial account. \r\nPlease hit the verification button below, enter your details and experience our cloud-based software! \r\nlink: [[verification_url]]\r\nOnce done, we will send you an email with your login details and further instructions.\r\n\r\nBest Regards,\r\nR3sourcer Administrator",
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,

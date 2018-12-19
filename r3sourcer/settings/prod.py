@@ -454,7 +454,7 @@ CORS_ORIGIN_REGEX_WHITELIST = (
 )
 
 if DEBUG:
-    CORS_ORIGIN_REGEX_WHITELIST += (r'^(https?://)?localhost$', )
+    CORS_ORIGIN_REGEX_WHITELIST += (r'^(https?://)?(\w+\.)?localhost$', )
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
