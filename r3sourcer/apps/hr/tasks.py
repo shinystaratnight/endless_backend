@@ -694,7 +694,7 @@ def send_going_to_work_sms(self, time_sheet_id):
         except hr_models.TimeSheet.DoesNotExist as e:
             logger.error(e)
         else:
-            if not time_sheet.master_company.company_settings.going_to_work_sms_enabled:
+            if not time_sheet.master_company.company_settings.pre_shift_sms_enabled:
                 return
 
             target_date_and_time = timezone.localtime(

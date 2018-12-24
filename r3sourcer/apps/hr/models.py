@@ -811,7 +811,7 @@ class JobOffer(core_models.UUIDModel):
             time_sheet = None
 
         if time_sheet is not None:
-            pre_shift_check_enabled = time_sheet.master_company.company_settings.going_to_work_sms_enabled
+            pre_shift_check_enabled = time_sheet.master_company.company_settings.pre_shift_sms_enabled
             if ((pre_shift_check_enabled and time_sheet.candidate_submitted_at is None) or
                     (time_sheet.shift_started_at - now).total_seconds() > 3600):
                 from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_sms
@@ -1164,7 +1164,7 @@ class TimeSheet(
         master_company = job_offer.shift.date.job.jobsite.master_company
         going_to_work_confirmation = None
 
-        if master_company.company_settings.going_to_work_sms_enabled:
+        if master_company.company_settings.pre_shift_sms_enabled:
             going_to_work_confirmation = True
 
         data = {
@@ -1261,8 +1261,10 @@ class TimeSheet(
 
             now = timezone.now()
             if now <= self.shift_started_at:
-                going_eta = self.shift_started_at - timedelta(minutes=settings.GOING_TO_WORK_SMS_DELAY_MINUTES)
-                if going_eta > now:
+                pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
+                pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
+                going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
+                if pre_shift_confirmation and going_eta > now:
                     self._send_going_to_work(going_eta)
                 else:
                     self.going_to_work_confirmation = True
