@@ -674,51 +674,6 @@ def send_placement_acceptance_sms(self, timesheet_id, job_offer_id):
     )
 
 
-def send_time_sheet_confirmation_sms(time_sheet_id, action_prefix, tpl=''):
-    """
-    Send time sheet notification with specific template.
-
-    :param time_sheet_id: UUID of TimeSheet
-    :param action_prefix: str Model field prefix
-    :param tpl: str or TemplateMessage instance
-    :return:
-    """
-    action_sent = '{}sent_sms'.format(action_prefix)
-
-    with transaction.atomic():
-        try:
-            time_sheet = hr_models.TimeSheet.objects.select_for_update().get(
-                **{'pk': time_sheet_id, action_sent: None}
-            )
-        except hr_models.TimeSheet.DoesNotExist as e:
-            logger.error(e)
-        else:
-            target_date_and_time = timezone.localtime(time_sheet.shift_started_at)
-            candidate_contact = time_sheet.job_offer.candidate_contact
-            data_dict = dict(
-                job=time_sheet.job_offer.job,
-                candidate_contact=candidate_contact,
-                target_date_and_time=formats.date_format(target_date_and_time, settings.DATETIME_FORMAT),
-                related_obj=time_sheet,
-                related_objs=[time_sheet.job_offer.job, candidate_contact],
-            )
-            check_reply = not getattr(time_sheet, '{}confirmation'.format(action_prefix), None)
-
-            try:
-                sms_interface = get_sms_service()
-            except ImportError:
-                logger.exception('Cannot load SMS service')
-                return
-
-            sent_message = sms_interface.send_tpl(
-                candidate_contact.contact.phone_mobile, tpl, check_reply=check_reply, **data_dict
-            )
-            setattr(time_sheet, action_sent, sent_message)
-            time_sheet.save(update_fields=[action_sent])
-            related_query_name = hr_models.TimeSheet._meta.get_field(action_sent).related_query_name()
-            cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
-
-
 @app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_going_to_work_sms(self, time_sheet_id):
@@ -729,7 +684,46 @@ def send_going_to_work_sms(self, time_sheet_id):
     :param time_sheet_id: UUID of TimeSheet instance
     :return:
     """
-    send_time_sheet_confirmation_sms(time_sheet_id, 'going_to_work_', 'candidate-going-to-work')
+    action_sent = 'going_to_work_sent_sms'
+
+    with transaction.atomic():
+        try:
+            time_sheet = hr_models.TimeSheet.objects.select_for_update().get(
+                **{'pk': time_sheet_id, action_sent: None}
+            )
+        except hr_models.TimeSheet.DoesNotExist as e:
+            logger.error(e)
+        else:
+            if not time_sheet.master_company.company_settings.going_to_work_sms_enabled:
+                return
+
+            target_date_and_time = timezone.localtime(
+                time_sheet.shift_started_at)
+            candidate_contact = time_sheet.job_offer.candidate_contact
+            data_dict = dict(
+                job=time_sheet.job_offer.job,
+                candidate_contact=candidate_contact,
+                target_date_and_time=formats.date_format(
+                    target_date_and_time, settings.DATETIME_FORMAT),
+                related_obj=time_sheet,
+                related_objs=[time_sheet.job_offer.job, candidate_contact],
+            )
+            check_reply = not getattr(time_sheet, 'going_to_work_confirmation', None)
+
+            try:
+                sms_interface = get_sms_service()
+            except ImportError:
+                logger.exception('Cannot load SMS service')
+                return
+
+            sent_message = sms_interface.send_tpl(
+                candidate_contact.contact.phone_mobile, 'candidate-going-to-work', check_reply=check_reply, **data_dict
+            )
+            setattr(time_sheet, action_sent, sent_message)
+            time_sheet.save(update_fields=[action_sent])
+            related_query_name = hr_models.TimeSheet._meta.get_field(
+                action_sent).related_query_name()
+            cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
 
 
 def get_confirmation_string(job):
