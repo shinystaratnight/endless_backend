@@ -5,6 +5,7 @@ import stripe
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
+from django.utils.formats import date_format
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import Company
@@ -124,6 +125,9 @@ class Payment(models.Model):
     status = models.CharField(max_length=255, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES.not_paid)
     stripe_id = models.CharField(max_length=255)
     invoice_url = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return '{} Payment at {}'.format(self.company, date_format(self.created, settings.DATETIME_MYOB_FORMAT))
 
 
 class Discount(models.Model):
