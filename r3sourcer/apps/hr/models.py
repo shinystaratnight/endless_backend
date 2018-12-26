@@ -811,7 +811,9 @@ class JobOffer(core_models.UUIDModel):
             time_sheet = None
 
         if time_sheet is not None:
-            if (time_sheet.shift_started_at - now).total_seconds() > 3600:
+            pre_shift_check_enabled = time_sheet.master_company.company_settings.pre_shift_sms_enabled
+            if ((pre_shift_check_enabled and time_sheet.candidate_submitted_at is None) or
+                    (time_sheet.shift_started_at - now).total_seconds() > 3600):
                 from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_sms
                 send_job_offer_cancelled_sms.delay(self.pk)
 
@@ -1159,6 +1161,12 @@ class TimeSheet(
     @classmethod
     def get_or_create_for_job_offer_accepted(cls, job_offer):
         start_time = job_offer.start_time
+        master_company = job_offer.shift.date.job.jobsite.master_company
+        going_to_work_confirmation = None
+
+        if master_company.company_settings.pre_shift_sms_enabled:
+            going_to_work_confirmation = True
+
         data = {
             'job_offer': job_offer,
             'shift_started_at': start_time,
@@ -1166,7 +1174,8 @@ class TimeSheet(
             'break_ended_at': start_time + timedelta(hours=5, minutes=30),
             'shift_ended_at': start_time + timedelta(hours=8, minutes=30),
             'supervisor': job_offer.job.jobsite.primary_contact,
-            'candidate_rate': job_offer.shift.hourly_rate
+            'candidate_rate': job_offer.shift.hourly_rate,
+            'going_to_work_confirmation': going_to_work_confirmation,
         }
 
         try:
@@ -1252,8 +1261,10 @@ class TimeSheet(
 
             now = timezone.now()
             if now <= self.shift_started_at:
-                going_eta = self.shift_started_at - timedelta(minutes=settings.GOING_TO_WORK_SMS_DELAY_MINUTES)
-                if going_eta > now:
+                pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
+                pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
+                going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
+                if pre_shift_confirmation and going_eta > now:
                     self._send_going_to_work(going_eta)
                 else:
                     self.going_to_work_confirmation = True

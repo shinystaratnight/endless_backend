@@ -14,6 +14,8 @@ class CompanySettings(UUIDModel):
     forwarding_number = models.CharField(null=True, blank=True, max_length=32)
     billing_email = models.CharField(max_length=255, blank=True, null=True)
     sms_enabled = models.BooleanField(default=True)
+    pre_shift_sms_enabled = models.BooleanField(default=True)
+    pre_shift_sms_delta = models.PositiveIntegerField(default=90)
 
     class Meta:
         verbose_name = "Company settings"
