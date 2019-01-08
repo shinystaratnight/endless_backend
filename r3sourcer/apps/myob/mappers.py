@@ -506,8 +506,8 @@ class CompanyMapper(ContactMapper):
             'CompanyName': company.name
         }
 
-        if company.manager:
-            data.update(self._map_contact_to_myob(company.manager.contact))
+        if company.primary_contact:
+            data.update(self._map_contact_to_myob(company.primary_contact.contact))
 
         data.update(self._map_extra_data_to_myob(company, tax_code=tax_code))
         if salesperson:

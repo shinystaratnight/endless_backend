@@ -137,7 +137,7 @@ def send_sms_payment_reminder():
     email_interface = get_email_service()
 
     for sms_balance in one_day_objects:
-        email_interface.send_tpl(sms_balance.company.manager.contact.email, tpl_name='sms_payment_reminder_24')
+        email_interface.send_tpl(sms_balance.company.primary_contact.contact.email, tpl_name='sms_payment_reminder_24')
 
     for sms_balance in two_days_objects:
-        email_interface.send_tpl(sms_balance.company.manager.contact.email, tpl_name='sms_payment_reminder_48')
+        email_interface.send_tpl(sms_balance.company.primary_contact.contact.email, tpl_name='sms_payment_reminder_48')

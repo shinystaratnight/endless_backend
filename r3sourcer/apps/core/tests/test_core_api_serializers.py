@@ -961,7 +961,7 @@ class TestCompanyAddressSerializer:
 
             portfolio_manager = serializer.get_portfolio_manager(company_address)
 
-            assert portfolio_manager['id'] == str(company_rel.primary_contact.id)
+            assert portfolio_manager['id'] == str(company_rel.manager.id)
 
     def test_get_portfolio_manager_obj_company_rel_none(self, company_address,
                                                         company_rel):
@@ -1302,15 +1302,15 @@ class TestCompanyContactRenderSerializer:
 
         assert serializer.get_company(staff_company_contact) is None
 
-    def test_get_manager(self, staff_company_contact, staff_relationship, company):
+    def test_get_primary_contact(self, staff_company_contact, staff_relationship, company):
         serializer = CompanyContactRenderSerializer()
 
-        assert serializer.get_manager(staff_company_contact)['id'] == str(company.manager.id)
+        assert serializer.get_primary_contact(staff_company_contact)['id'] == str(company.primary_contact.id)
 
-    def test_get_manager_none(self, staff_company_contact):
+    def test_get_primary_contact_none(self, staff_company_contact):
         serializer = CompanyContactRenderSerializer()
 
-        assert serializer.get_manager(staff_company_contact) is None
+        assert serializer.get_primary_contact(staff_company_contact) is None
 
     def test_create(self, company_contact_rel_data):
         serializer = CompanyContactRenderSerializer(data=company_contact_rel_data)

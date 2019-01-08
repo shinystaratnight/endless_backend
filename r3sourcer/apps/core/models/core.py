@@ -949,7 +949,7 @@ class Company(
         help_text=_("Visible for anyone with access")
     )
 
-    manager = models.ForeignKey(
+    primary_contact = models.ForeignKey(
         CompanyContact,
         on_delete=models.SET_NULL,
         related_name="companies",
@@ -1122,9 +1122,9 @@ class Company(
 
         return abn
 
-    def is_manager_assigned(self):
-        return self.manager is not None
-    is_manager_assigned.short_description = _("Bind manager")
+    def is_primary_contact_assigned(self):
+        return self.primary_contact is not None
+    is_primary_contact_assigned.short_description = _("Bind primary contact")
 
     def get_hq_address(self):
         if self.company_addresses.filter(hq=True).exists():
@@ -1136,7 +1136,7 @@ class Company(
     is_business_id_set.short_description = _("Business id didn't set")
 
     def get_contact(self):
-        return self.manager.contact if self.manager else None
+        return self.primary_contact.contact if self.primary_contact else None
 
     def get_user(self):
         contact = self.get_contact()
@@ -1194,7 +1194,7 @@ class Company(
 
     def get_portfolio_manager(self):
         company_rel = self.regular_companies.all().first()
-        return company_rel and company_rel.primary_contact
+        return company_rel and company_rel.manager
 
     @property
     def invoice_rule(self):
@@ -1300,7 +1300,7 @@ class CompanyRel(
         on_delete=models.CASCADE
     )
 
-    primary_contact = models.ForeignKey(
+    manager = models.ForeignKey(
         CompanyContact,
         related_name="company_accounts",
         verbose_name=_("Primary Contact"),
@@ -1318,14 +1318,14 @@ class CompanyRel(
         return "{}/{}".format(self.master_company, self.regular_company)
 
     @workflow_function
-    def is_primary_contact_identified(self):
-        return self.primary_contact is not None
-    is_primary_contact_identified.short_description = _("Identify portfolio manager")
+    def is_manager_identified(self):
+        return self.manager is not None
+    is_manager_identified.short_description = _("Identify portfolio manager")
 
     @workflow_function
-    def is_manager_assigned(self):
-        return self.regular_company.is_manager_assigned()
-    is_manager_assigned.short_description = _("Identify primary Contact")
+    def is_primary_contact_assigned(self):
+        return self.regular_company.is_primary_contact_assigned()
+    is_primary_contact_assigned.short_description = _("Identify primary Contact")
 
     @workflow_function
     def is_business_id_set(self):

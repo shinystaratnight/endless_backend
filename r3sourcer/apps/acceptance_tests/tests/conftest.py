@@ -21,18 +21,18 @@ def contact(db, user):
 
 
 @pytest.fixture
-def manager(db, contact):
+def primary_contact(db, contact):
     return core_models.CompanyContact.objects.create(contact=contact)
 
 
 @pytest.fixture
-def company(db, manager):
+def company(db, primary_contact):
     return core_models.Company.objects.create(
         name='Company',
         business_id='123',
         registered_for_gst=True,
         type=core_models.Company.COMPANY_TYPES.master,
-        manager=manager
+        primary_contact=primary_contact
     )
 
 

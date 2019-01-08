@@ -13,7 +13,6 @@ from rest_framework.test import force_authenticate
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import endpoints
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
-from r3sourcer.apps.core.api.viewsets import CompanyAddressViewset
 from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.models import Country, City, CompanyContact, DashboardModule, ExtranetNavigation
 from r3sourcer.apps.core.service import FactoryService
@@ -355,10 +354,10 @@ class TestCompanyContactResource(ResourceMixin):
         assert resource.is_approved_by_staff(staff_user)
         assert not resource.is_approved_by_staff(primary_user)
 
-    def test_is_approved_by_primary_contact(self, staff_user, primary_user, staff_relationship, company_rel):
+    def test_is_approved_by_manager(self, staff_user, primary_user, staff_relationship, company_rel):
         resource = endpoints.CompanyContactEndpoint().get_viewset()()
-        assert not resource.is_approved_by_primary_contact(staff_user)
-        assert resource.is_approved_by_primary_contact(primary_user)
+        assert not resource.is_approved_by_manager(staff_user)
+        assert resource.is_approved_by_manager(primary_user)
 
 
 @pytest.mark.django_db
@@ -589,10 +588,10 @@ class TestDashboardModules(ResourceMixin):
     }
 
     @pytest.fixture
-    def assigned_modules(self, dashboard_modules, primary_company_contact):
+    def assigned_modules(self, dashboard_modules, primary_manager):
         for m in dashboard_modules:
-            assign_perm('can_use_module', primary_company_contact.contact.user, m)
-        return dashboard_modules, primary_company_contact
+            assign_perm('can_use_module', primary_manager.contact.user, m)
+        return dashboard_modules, primary_manager
 
     def test_get_all_modules(self, user, rf, dashboard_modules):
         req = rf.get('/core/dashboardmodules/')

@@ -31,12 +31,12 @@ class TestSMSMessageListView:
         assert response['results'][0]['segments'] == sms_message.segments
         assert response['results'][0]['company'] == sms_message.company.name
 
-    def test_get_with_company_arg_empty(self, client, admin, company, sms_message, manager):
+    def test_get_with_company_arg_empty(self, client, admin, company, sms_message, primary_contact):
         new_company = Company.objects.create(
             name='Company2',
             business_id='222',
             registered_for_gst=True,
-            manager=manager,
+            primary_contact=primary_contact,
             type=Company.COMPANY_TYPES.master,
         )
 

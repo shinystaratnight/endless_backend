@@ -200,11 +200,11 @@ def send_contact_verify_sms(self, contact_id, manager_id):
         logger.exception(e)
     else:
         with transaction.atomic():
-            manager = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
+            primary_contact = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
 
             data_dict = dict(
                 contact=contact,
-                manager=manager or contact.get_closest_company().manager,
+                manager=primary_contact or contact.get_closest_company().primary_contact,
                 related_obj=contact
             )
 
@@ -231,9 +231,9 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
         logger.exception(e)
     else:
         with transaction.atomic():
-            manager = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
-            if manager is None:
-                manager = contact.get_closest_company().manager
+            primary_contact = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
+            if primary_contact is None:
+                primary_contact = contact.get_closest_company().primary_contact
 
             master_company = core_models.Company.objects.get(id=master_company_id)
 
@@ -252,7 +252,7 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
 
             data_dict = dict(
                 contact=contact,
-                manager=manager or contact.get_closest_company().manager,
+                manager=primary_contact,
                 related_obj=contact,
                 master_company=master_company,
                 email_verification_link="%s%s" % (site_url, extranet_login.auth_url),
@@ -338,7 +338,7 @@ def send_verification_success_email(contact_id, master_company_id, template='e-m
             master_company = core_models.Company.objects.get(id=master_company_id)
             domain = core_companies_utils.get_company_domain(master_company)
             site_url = core_companies_utils.get_site_url(master_company=master_company)
-            manager = master_company.manager or contact.get_closest_company().manager
+            primary_contact = master_company.primary_contact or contact.get_closest_company().primary_contact
             new_password = core_models.User.objects.make_random_password(20)
             username = contact.email
             if contact.phone_mobile:
@@ -346,7 +346,7 @@ def send_verification_success_email(contact_id, master_company_id, template='e-m
 
             data_dict = dict(
                 contact=contact,
-                manager=manager,
+                manager=primary_contact,
                 username=username,
                 password=new_password,
                 master_company=master_company,

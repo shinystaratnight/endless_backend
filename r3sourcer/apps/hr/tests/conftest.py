@@ -348,7 +348,7 @@ def company_rel(db, master_company, regular_company, company_contact):
     return core_models.CompanyRel.objects.create(
         master_company=master_company,
         regular_company=regular_company,
-        primary_contact=company_contact
+        manager=company_contact
     )
 
 
@@ -375,6 +375,7 @@ def picture(faker):
 def price_list(db, master_company):
     return pricing_models.PriceList.objects.create(
         company=master_company,
+        valid_from=timezone.datetime(2017, 1, 1, 12, 0)
     )
 
 

@@ -128,15 +128,15 @@ class TestCompanyLocalizationFilters:
 class TestCompanyAddressFilters:
 
     def test_filter_portfolio_manager(self, company, rf, company_address,
-                                      primary_company_contact, company_rel):
+                                      primary_manager, company_rel):
         request = rf.get('/?portfolio_manager={}'.format(
-            primary_company_contact.id
+            primary_manager.id
         ))
         filter_obj = CompanyAddressFilter(request=request)
 
         qs = filter_obj.filter_portfolio_manager(
             filter_obj.queryset, 'portfolio_manager',
-            primary_company_contact.id
+            primary_manager.id
         )
 
         assert qs.count() == 1
@@ -144,15 +144,15 @@ class TestCompanyAddressFilters:
 
     def test_filter_portfolio_manager_not_exists(self, company, rf,
                                                  company_address,
-                                                 primary_company_contact):
+                                                 primary_manager):
         request = rf.get('/?portfolio_manager={}'.format(
-            primary_company_contact.id
+            primary_manager.id
         ))
         filter_obj = CompanyAddressFilter(request=request)
 
         qs = filter_obj.filter_portfolio_manager(
             filter_obj.queryset, 'portfolio_manager',
-            primary_company_contact.id
+            primary_manager.id
         )
 
         assert qs.count() == 0

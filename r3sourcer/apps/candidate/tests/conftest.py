@@ -133,7 +133,7 @@ def visa_type(db):
 @pytest.fixture
 def superannuation_fund(db):
     return candidate_models.SuperannuationFund.objects.create(
-        name="Test fund",
+        fund_name="Test fund",
         abn='123',
         usi='123',
         product_name='Test fund',
@@ -340,6 +340,7 @@ def workflow_state(db, candidate, company):
 def price_list(db, company):
     return PriceList.objects.create(
         company=company,
+        valid_from=timezone.datetime(2017, 1, 1, 12, 0)
     )
 
 

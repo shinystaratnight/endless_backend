@@ -80,9 +80,9 @@ class TestCompanySettingsView:
 
         assert response.json()['errors']['detail'] == "Unknown user's role."
 
-    def test_get_company_settings_as_user_without_company(self, manager, client):
+    def test_get_company_settings_as_user_without_company(self, primary_contact, client):
         url = reverse('company_settings')
-        client.force_login(manager.contact.user)
+        client.force_login(primary_contact.contact.user)
         response = client.get(url)
 
         assert response.json()['errors']['detail'] == 'User has no relation to any company.'
@@ -456,7 +456,7 @@ class TestCompanyUserListView:
         CompanyContactRelationship.objects.create(company=company, company_contact=company_contact3)
 
         url = reverse('company_users_list')
-        client.force_login(company.manager.contact.user)
+        client.force_login(company.primary_contact.contact.user)
         response = client.get(url)
         id_list = [x['id'] for x in response.data['user_list']]
         name_list = [x['name'] for x in response.data['user_list']]
@@ -568,7 +568,7 @@ class TestRefreshMYOBAccountsView:
 
 
 class TestMYOBSettingsView:
-    def test_myob_settings_get(self, user, client, manager, company, myob_account, company_contact_rel):
+    def test_myob_settings_get(self, user, client, primary_contact, company, myob_account, company_contact_rel):
         company_file = MYOBCompanyFile.objects.create(
             cf_id='id',
             cf_uri='uri',
@@ -587,7 +587,7 @@ class TestMYOBSettingsView:
         assert response['myob_settings']['invoice_company_file']['id'] == str(company_file.id)
         assert response['myob_settings']['invoice_activity_account']['id'] == str(myob_account.id)
 
-    def test_myob_settings_post(self, user, client, manager, company, company_contact_rel):
+    def test_myob_settings_post(self, user, client, primary_contact, company, company_contact_rel):
         now = timezone.now()
         company_file = MYOBCompanyFile.objects.create(
             cf_id='d3edc1d7-7b31-437e-9fcd-000000000008',

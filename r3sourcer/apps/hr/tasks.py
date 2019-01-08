@@ -432,12 +432,12 @@ def send_supervisor_timesheet_message(
 
         company_rel = supervisor.relationships.all().first()
         if company_rel:
-            portfolio_manager = company_rel.company.manager
+            primary_contact = company_rel.company.primary_contact
 
         site_url = core_companies_utils.get_site_url(user=supervisor.contact.user)
         data_dict = dict(
             supervisor=supervisor,
-            portfolio_manager=portfolio_manager,
+            portfolio_manager=primary_contact,
             get_url="%s%s" % (site_url, extranet_login.auth_url),
             site_url=site_url,
             related_obj=supervisor,

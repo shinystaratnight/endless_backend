@@ -36,18 +36,18 @@ def contact_sec(db, user_sec):
 
 
 @pytest.fixture
-def manager(db, contact):
+def primary_contact(db, contact):
     return CompanyContact.objects.create(contact=contact)
 
 
 @pytest.fixture
-def company(db, manager):
+def company(db, primary_contact):
     return Company.objects.create(
         name='Company',
         business_id='123',
         registered_for_gst=True,
         type=Company.COMPANY_TYPES.master,
-        manager=manager
+        primary_contact=primary_contact
     )
 
 
@@ -176,26 +176,26 @@ def candidate_contact_sec(db, contact_sec):
 
 
 @pytest.fixture
-def candidate_rel(db, candidate_contact, company, manager):
+def candidate_rel(db, candidate_contact, company, primary_contact):
     return CandidateRel.objects.create(
         candidate_contact=candidate_contact,
         master_company=company,
-        company_contact=manager,
+        company_contact=primary_contact,
     )
 
 
 @pytest.fixture
-def candidate_rel_sec(db, candidate_contact_sec, company, manager):
+def candidate_rel_sec(db, candidate_contact_sec, company, primary_contact):
     return CandidateRel.objects.create(
         candidate_contact=candidate_contact_sec,
         master_company=company,
-        company_contact=manager,
+        company_contact=primary_contact,
     )
 
 
 @pytest.fixture
-def company_contact_rel(db, manager, company):
+def company_contact_rel(db, primary_contact, company):
     return CompanyContactRelationship.objects.create(
-        company_contact=manager,
+        company_contact=primary_contact,
         company=company
     )

@@ -153,7 +153,7 @@ class TestCompanyListView:
 
 
 class TestDiscountView:
-    def test_get(self, client, user, company, contact, manager, company_contact_rel):
+    def test_get(self, client, user, company, contact, primary_contact, company_contact_rel):
         Discount.objects.create(
             company=company,
             payment_type='sms',

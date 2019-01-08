@@ -106,12 +106,12 @@ def contact_sec(db, user_sec):
 
 
 @pytest.fixture
-def manager(db, contact):
+def primary_contact(db, contact):
     return models.CompanyContact.objects.create(contact=contact)
 
 
 @pytest.fixture
-def primary_company_contact(db, primary_user):
+def primary_manager(db, primary_user):
     return models.CompanyContact.objects.create(contact=primary_user.contact)
 
 
@@ -121,12 +121,12 @@ def staff_company_contact(db, staff_user):
 
 
 @pytest.fixture
-def company_other(db, manager, addresses):
+def company_other(db, primary_contact, addresses):
     comp = models.Company.objects.create(
         name='Company other',
         business_id='111',
         registered_for_gst=True,
-        manager=manager,
+        primary_contact=primary_contact,
         type=models.Company.COMPANY_TYPES.master,
     )
 
@@ -140,18 +140,18 @@ def company_other(db, manager, addresses):
 
 
 @pytest.fixture
-def company_regular(db, manager):
+def company_regular(db, primary_contact):
     return models.Company.objects.create(
         name='Company regular',
         business_id='222',
         registered_for_gst=True,
-        manager=manager,
+        primary_contact=primary_contact,
         type=models.Company.COMPANY_TYPES.regular,
     )
 
 
 @pytest.fixture
-def company_address_regular(db, manager, addresses, company_regular):
+def company_address_regular(db, addresses, company_regular):
     return models.CompanyAddress.objects.create(
         company=company_regular,
         address=addresses[1],
@@ -160,19 +160,19 @@ def company_address_regular(db, manager, addresses, company_regular):
 
 
 @pytest.fixture
-def company(db, manager):
+def company(db, primary_contact):
     return models.Company.objects.create(
         name='Company',
         business_id='111',
         registered_for_gst=True,
-        manager=manager,
+        primary_contact=primary_contact,
         website='test.company.tt',
         type=models.Company.COMPANY_TYPES.master,
     )
 
 
 @pytest.fixture
-def company_address(db, manager, addresses, company):
+def company_address(db, addresses, company):
     return models.CompanyAddress.objects.create(
         company=company,
         address=addresses[2],
@@ -233,11 +233,11 @@ def django_db_setup(django_db_setup, django_db_blocker):
 
 
 @pytest.fixture
-def company_rel(db, company, company_regular, primary_company_contact):
+def company_rel(db, company, company_regular, primary_manager):
     return models.CompanyRel.objects.create(
         master_company=company,
         regular_company=company_regular,
-        primary_contact=primary_company_contact
+        manager=primary_manager
     )
 
 
@@ -290,12 +290,12 @@ def contact_data(faker, contact_phone, picture):
 
 
 @pytest.fixture
-def order(db, company, manager):
+def order(db, company, primary_contact):
     customer_company = models.Company.objects.create(
         name='CustomerCompany',
         business_id='222',
         registered_for_gst=True,
-        manager=manager
+        primary_contact=primary_contact
     )
 
     return models.Order.objects.create(customer_company=customer_company, provider_company=company)
