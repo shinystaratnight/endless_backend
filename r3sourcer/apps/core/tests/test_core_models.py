@@ -84,7 +84,7 @@ class TestUser:
     def test_user_get_short_name(self, user):
         assert user.get_short_name() == str(user)
 
-    def test_get_company_as_manager(self, user, manager, company):
+    def test_get_company_as_manager(self, user, primary_contact, company):
         company_contact = user.contact.company_contact.first()
         company_contact.role = 'manager'
         company_contact.save()
@@ -228,12 +228,12 @@ class TestBankAccount:
 @pytest.mark.django_db
 class TestCompany:
 
-    def test_is_manager_assigned(self, company):
-        assert company.is_manager_assigned()
+    def test_is_primary_contact_assigned(self, company):
+        assert company.is_primary_contact_assigned()
 
-    def test_is_manager_not_assigned(self, company):
-        company.manager = None
-        assert not company.is_manager_assigned()
+    def test_is_primary_contact_not_assigned(self, company):
+        company.primary_contact = None
+        assert not company.is_primary_contact_assigned()
 
     def test_is_business_id_set(self, company):
         assert company.is_business_id_set()
@@ -251,7 +251,7 @@ class TestCompany:
         assert company_manager_contact == contact
 
     def test_get_contact_manager_does_not_set(self, company):
-        company.manager = None
+        company.primary_contact = None
         assert company.get_contact() is None
 
     def test_get_user(self, company, user):
@@ -260,7 +260,7 @@ class TestCompany:
         assert company_manager_user == user
 
     def test_get_user_manager_does_not_set(self, company):
-        company.manager = None
+        company.primary_contact = None
         assert company.get_user() is None
 
     def test_get_hq_address(self, company, address):
@@ -283,7 +283,7 @@ class TestCompany:
         assert len(company_rel.regular_company.get_master_company()) == 1
         assert company in company_rel.regular_company.get_master_company()
 
-    def test_get_master_company_for_regular_recursively(self, company, primary_company_contact, company_rel):
+    def test_get_master_company_for_regular_recursively(self, company, primary_manager, company_rel):
         regular_company = Company.objects.create(
             name='RegCompany2',
             business_id='222',
@@ -293,25 +293,25 @@ class TestCompany:
         CompanyRel.objects.create(
             master_company=company_rel.regular_company,
             regular_company=regular_company,
-            primary_contact=primary_company_contact
+            manager=primary_manager
         )
 
         assert len(regular_company.get_master_company()) == 1
         assert company in regular_company.get_master_company()
         assert company_rel.regular_company not in regular_company.get_master_company()
 
-    def test_get_master_company_for_regular_returns_multiple(self, company, primary_company_contact, company_rel):
+    def test_get_master_company_for_regular_returns_multiple(self, company, primary_manager, company_rel):
         master_company = Company.objects.create(
             name='MasterCompany2',
             business_id='222',
             registered_for_gst=True,
-            type = Company.COMPANY_TYPES.master
+            type=Company.COMPANY_TYPES.master
         )
 
         CompanyRel.objects.create(
             master_company=master_company,
             regular_company=company_rel.regular_company,
-            primary_contact=primary_company_contact
+            manager=primary_manager
         )
 
         master_companies = company_rel.regular_company.get_master_company()

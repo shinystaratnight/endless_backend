@@ -27,25 +27,25 @@ def contact(db, user):
 
 
 @pytest.fixture
-def manager(db, contact):
+def primary_contact(db, contact):
     return CompanyContact.objects.create(contact=contact)
 
 
 @pytest.fixture
-def company(db, manager):
+def company(db, primary_contact):
     return Company.objects.create(
         name='Company',
         business_id='123',
         registered_for_gst=True,
         type=Company.COMPANY_TYPES.master,
-        manager=manager
+        primary_contact=primary_contact
     )
 
 
 @pytest.fixture
-def relationship(db, company, manager):
+def relationship(db, company, primary_contact):
     return CompanyContactRelationship.objects.create(
-        company_contact=manager,
+        company_contact=primary_contact,
         company=company,
     )
 
@@ -178,8 +178,8 @@ def subscription(db, company):
 
 
 @pytest.fixture
-def company_contact_rel(db, manager, company):
+def company_contact_rel(db, primary_contact, company):
     return CompanyContactRelationship.objects.create(
-        company_contact=manager,
+        company_contact=primary_contact,
         company=company
     )

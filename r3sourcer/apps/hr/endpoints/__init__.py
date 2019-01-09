@@ -35,7 +35,7 @@ class FavouriteListEndpoint(ApiEndpoint):
     serializer_fields = [
         '__all__',
         {
-            'company': ['id', 'name', 'manager'],
+            'company': ['id', 'name', 'primary_contact'],
         }
     ]
 

@@ -38,7 +38,7 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
         with transaction.atomic():
             data_dict = dict(
                 contact=candidate.contact,
-                manager=candidate.recruitment_agent or candidate.get_closest_company().manager
+                manager=candidate.recruitment_agent or candidate.get_closest_company().primary_contact
             )
 
             if workflow_object_id is not None:

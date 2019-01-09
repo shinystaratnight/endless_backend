@@ -56,8 +56,8 @@ class CompanyFilter(FilterSet):
 
     def filter_portfolio_manager(self, queryset, name, value):
         return queryset.filter(
-            Q(regular_companies__primary_contact=value) |
-            Q(master_companies__primary_contact=value)
+            Q(regular_companies__manager=value) |
+            Q(master_companies__manager=value)
         ).distinct()
 
     def _fetch_workflow_objects(self, value):  # pragma: no cover
@@ -112,8 +112,8 @@ class CompanyAddressFilter(FilterSet):
 
     def filter_portfolio_manager(self, queryset, name, value):
         return queryset.filter(
-            Q(company__regular_companies__primary_contact=value) |
-            Q(company__master_companies__primary_contact=value)
+            Q(company__regular_companies__manager=value) |
+            Q(company__master_companies__manager=value)
         )
 
 
@@ -230,7 +230,7 @@ class DashboardModuleFilter(FilterSet):
 
 class CompanyContactFilter(FilterSet):
     company = UUIDFilter(method='filter_company')
-    manager = UUIDFilter(method='filter_manager')
+    primary_contact = UUIDFilter(method='filter_primary_contact')
     is_manager = BooleanFilter(method='filter_is_manager')
     jobsites = UUIDFilter(method='filter_jobsite')
     customer_company = UUIDFilter(method='filter_customer_company', distinct=True)
@@ -243,9 +243,9 @@ class CompanyContactFilter(FilterSet):
     def filter_company(self, queryset, name, value):
         return queryset.filter(relationships__company_id=value, relationships__active=True)
 
-    def filter_manager(self, queryset, name, value):
+    def filter_primary_contact(self, queryset, name, value):
         return queryset.filter(
-            relationships__company__manager_id=value
+            relationships__company__primary_contact_id=value
         )
 
     def filter_is_manager(self, queryset, name, value):

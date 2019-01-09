@@ -104,8 +104,8 @@ def secondary_user(db, faker):
 
 
 @pytest.fixture
-def primary_contact(db, primary_contact_data):
-    return Contact.objects.create(**primary_contact_data)
+def manager(db, manager_data):
+    return Contact.objects.create(**manager_data)
 
 
 @pytest.fixture
@@ -114,23 +114,23 @@ def secondary_contact(db, secondary_contact_data):
 
 
 @pytest.fixture
-def manager(db, primary_contact):
-    return CompanyContact.objects.create(contact=primary_contact)
+def primary_contact(db, manager):
+    return CompanyContact.objects.create(contact=manager)
 
 
 @pytest.fixture
-def company(db, manager):
+def company(db, primary_contact):
     return Company.objects.create(
         name='Company',
         business_id='111',
         registered_for_gst=True,
-        manager=manager,
+        primary_contact=primary_contact,
         type=Company.COMPANY_TYPES.master,
     )
 
 
 @pytest.fixture
-def primary_contact_data(faker, picture):
+def manager_data(faker, picture):
     return dict(
         title='Mr.',
         # user=primary_user,

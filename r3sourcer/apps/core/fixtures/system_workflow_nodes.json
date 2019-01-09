@@ -373,10 +373,10 @@
                 ],
                 "required_functions": [
                     "and",
-                    "is_primary_contact_identified",
+                    "is_manager_identified",
                     "is_address_valid",
                     "is_description_set",
-                    "is_manager_assigned",
+                    "is_primary_contact_assigned",
                     "is_industry_set"
                 ],
                 "required_states": [

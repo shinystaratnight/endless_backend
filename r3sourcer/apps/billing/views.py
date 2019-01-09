@@ -82,8 +82,8 @@ class StripeCustomerCreateView(APIView):
 
         if company.billing_email:
             email = company.billing_email
-        elif company.manager:
-            email = company.manager.contact.email
+        elif company.primary_contact:
+            email = company.primary_contact.contact.email
 
         customer = stripe.Customer.create(
             description=description,

@@ -1,4 +1,4 @@
-from datetime import timedelta, time
+from datetime import timedelta, time, date
 
 import pytest
 
@@ -136,6 +136,7 @@ def rate_coefficient_company_another(db, industry):
 def price_list(db, company):
     return PriceList.objects.create(
         company=company,
+        valid_from=date(2017, 1, 1)
     )
 
 

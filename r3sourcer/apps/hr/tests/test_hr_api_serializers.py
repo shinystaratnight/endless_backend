@@ -33,7 +33,14 @@ class TestTimeSheetSerializer:
     def test_get_jobsite(self, serializer, timesheet, jobsite):
         res = serializer.get_jobsite(timesheet)
 
-        assert res == {'id': jobsite.id, '__str__': str(jobsite)}
+        assert res == {
+            'id': jobsite.id,
+            'address': {
+                'id': jobsite.address.id,
+                '__str__': str(jobsite.address),
+            },
+            '__str__': str(jobsite),
+        }
 
     def test_get_jobsite_none(self, serializer, timesheet):
         res = serializer.get_jobsite(None)

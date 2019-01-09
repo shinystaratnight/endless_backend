@@ -1,3 +1,5 @@
+from datetime import date
+
 import pytest
 
 from r3sourcer.apps.core.models import Company
@@ -40,4 +42,5 @@ def skill(db, skill_name, company):
 def price_list(db, company):
     return PriceList.objects.create(
         company=company,
+        valid_from=date(2017, 1, 1)
     )

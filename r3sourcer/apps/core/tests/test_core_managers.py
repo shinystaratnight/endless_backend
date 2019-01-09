@@ -2,7 +2,7 @@ import mock
 
 from django.db.models import Q
 
-from r3sourcer.apps.core.managers import TagManager, AbstractObjectOwnerQuerySet
+from r3sourcer.apps.core.managers import TagManager
 from r3sourcer.apps.core.models import Tag, CompanyContact, Contact, Address
 
 
@@ -32,7 +32,7 @@ class TestAbstractObjectOwnerManager:
         result = Address.objects.owned_by(contact)
         assert result.count() == 1
 
-    def test_companycontact_owned_by_contact(self, contact, manager):
+    def test_companycontact_owned_by_contact(self, contact, primary_contact):
         result = CompanyContact.objects.owned_by(contact)
         assert result.count() == 1
 

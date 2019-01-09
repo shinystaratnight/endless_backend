@@ -27,7 +27,7 @@ class TestVisaType:
 @pytest.mark.django_db
 class TestSuperannuationFund:
     def test_superannuation_fund_str(self, superannuation_fund):
-        assert str(superannuation_fund) == superannuation_fund.name
+        assert str(superannuation_fund) == superannuation_fund.fund_name
 
 
 @pytest.mark.django_db

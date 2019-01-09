@@ -810,7 +810,7 @@ class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
 
 class CompanyContactRenderSerializer(CompanyContactSerializer):
 
-    method_fields = ('company', 'manager')
+    method_fields = ('company', 'primary_contact')
 
     active = serializers.BooleanField(required=False)
     termination_date = serializers.DateField(required=False, allow_null=True)
@@ -818,12 +818,12 @@ class CompanyContactRenderSerializer(CompanyContactSerializer):
     def get_company(self, instance):
         rel = instance.relationships.filter(active=True).first()
         if rel is not None:
-            return CompanyListSerializer(rel.company, fields=('id', '__str__', 'manager')).data
+            return CompanyListSerializer(rel.company, fields=('id', '__str__', 'primary_contact')).data
         return None
 
-    def get_manager(self, instance):
+    def get_primary_contact(self, instance):
         company = self.get_company(instance)
-        return company and company['manager']
+        return company and company['primary_contact']
 
     class Meta:
         model = core_models.CompanyContact
@@ -1019,7 +1019,7 @@ class CompanyAddressSerializer(core_mixins.WorkflowStatesColumnMixin, ApiBaseMod
             return
 
         if company_rel:
-            return CompanyContactSerializer(company_rel.primary_contact).data
+            return CompanyContactSerializer(company_rel.manager).data
 
     def get_active_states(self, obj):
         if obj:
@@ -1322,8 +1322,8 @@ class CompanyListSerializer(
     ApiBaseModelSerializer
 ):
     method_fields = (
-        'primary_contact', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
-        'address', 'primary_contact_phone',
+        'manager', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
+        'address', 'manager_phone',
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
@@ -1334,7 +1334,7 @@ class CompanyListSerializer(
             '__all__',
             {
                 'invoice_rule': '__all__',
-                'manager': (
+                'primary_contact': (
                     'id', '__str__', 'job_title',
                     {
                         'contact': ('id', 'email', 'phone_mobile')
@@ -1362,7 +1362,7 @@ class CompanyListSerializer(
     def get_company_rel(self, company):
         return company.regular_companies.last()
 
-    def get_primary_contact(self, obj):
+    def get_manager(self, obj):
         if not obj:
             return
 
@@ -1370,17 +1370,17 @@ class CompanyListSerializer(
         if not company_rel:
             return
 
-        if company_rel and company_rel.primary_contact:
+        if company_rel and company_rel.manager:
             return {
-                'job_title': company_rel.primary_contact.job_title,
-                '__str__': str(company_rel.primary_contact.contact),
-                'phone_mobile': str(company_rel.primary_contact.contact.phone_mobile),
-                'id': company_rel.primary_contact.id
+                'job_title': company_rel.manager.job_title,
+                '__str__': str(company_rel.manager.contact),
+                'phone_mobile': str(company_rel.manager.contact.phone_mobile),
+                'id': company_rel.manager.id
             }
 
-    def get_primary_contact_phone(self, obj):
-        primary_contact = self.get_primary_contact(obj)
-        return primary_contact and primary_contact['phone_mobile']
+    def get_manager_phone(self, obj):
+        manager = self.get_manager(obj)
+        return manager and manager['phone_mobile']
 
     def get_master_company(self, obj):
         if not obj:

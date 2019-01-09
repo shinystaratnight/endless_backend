@@ -395,26 +395,26 @@ class CompanyViewset(BaseApiViewset):
 
         master_company = self.request.data.get('master_company')
         master_company = master_company.get('id') if isinstance(master_company, dict) else master_company
-        primary_contact = self.request.data.get('primary_contact')
-        primary_contact = primary_contact.get('id') if isinstance(primary_contact, dict) else primary_contact
+        manager_obj = self.request.data.get('primary_contact')
+        manager_id = manager_obj.get('id') if isinstance(manager_obj, dict) else manager_obj
         company_rel = instance.regular_companies.first()
 
         if master_company:
             master_company_obj = models.Company.objects.get(id=master_company)
-            if primary_contact:
-                primary_contact_obj = models.CompanyContact.objects.get(id=primary_contact)
+            if manager_id:
+                manager = models.CompanyContact.objects.get(id=manager_id)
             else:
-                primary_contact_obj = None
+                manager = None
 
             if not company_rel and instance.type != models.Company.COMPANY_TYPES.master:
                 models.CompanyRel.objects.create(
                     master_company=master_company_obj,
                     regular_company=instance,
-                    primary_contact=primary_contact_obj
+                    manager=manager
                 )
             else:
                 company_rel.master_company = master_company_obj
-                company_rel.primary_contact = primary_contact_obj
+                company_rel.manager = manager
                 company_rel.save()
 
     def create(self, request, *args, **kwargs):
@@ -448,11 +448,11 @@ class CompanyViewset(BaseApiViewset):
             invoice_rule_serializer.save()
 
         master_company = get_site_master_company(request=request, user=request.user).id
-        primary_contact = request.user.contact.company_contact.first().id
+        manager = request.user.contact.company_contact.first()
         models.CompanyRel.objects.create(
             master_company_id=master_company,
             regular_company=instance_serializer.instance,
-            primary_contact_id=primary_contact
+            manager=manager
         )
 
         headers = self.get_success_headers(instance_serializer.data)
@@ -507,7 +507,7 @@ class CompanyContactViewset(BaseApiViewset):
         user = context['request'].user
         if user and user.is_authenticated:
             context['approved_by_staff'] = self.is_approved_by_staff(user)
-            context['approved_by_primary_contact'] = self.is_approved_by_primary_contact(user)
+            context['approved_by_primary_contact'] = self.is_approved_by_manager(user)
         return context
 
     def is_approved_by_staff(self, user):
@@ -515,8 +515,8 @@ class CompanyContactViewset(BaseApiViewset):
             company__type=models.Company.COMPANY_TYPES.master,
             company_contact__contact__user=user).exists()
 
-    def is_approved_by_primary_contact(self, user):
-        return models.CompanyRel.objects.filter(primary_contact__contact__user=user).exists()
+    def is_approved_by_manager(self, user):
+        return models.CompanyRel.objects.filter(manager__contact__user=user).exists()
 
     def get_object(self):
         obj = super().get_object()
