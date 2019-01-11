@@ -402,7 +402,9 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         model = hr_models.Shift
         fields = (
             '__all__', {
-                'date': ('__all__', ),
+                'date': ('__all__', {
+                    'job': ('id', 'jobsite', 'position'),
+                }),
             }
         )
 
