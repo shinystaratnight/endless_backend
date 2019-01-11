@@ -808,7 +808,7 @@ class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
         })
 
 
-class CompanyContactRenderSerializer(CompanyContactSerializer):
+class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, CompanyContactSerializer):
 
     method_fields = ('company', 'primary_contact')
 

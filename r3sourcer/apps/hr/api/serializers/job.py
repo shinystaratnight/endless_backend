@@ -635,7 +635,7 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
 class JobsiteSerializer(
     core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
-    core_serializers.ApiBaseModelSerializer
+    core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer
 ):
 
     class Meta:
