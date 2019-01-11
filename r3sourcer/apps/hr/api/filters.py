@@ -96,7 +96,9 @@ class JobFilter(ActiveStateFilterMixin, FilterSet):
 
 class ShiftFilter(FilterSet):
     job = UUIDFilter(method='filter_job')
-    date__shift_date = DateFilter()
+    date__shift_date = DateRangeFilter(distinct=True)
+    candidate = UUIDFilter(method='filter_candidate')
+    client = UUIDFilter(method='filter_client')
 
     class Meta:
         model = hr_models.Shift
@@ -104,6 +106,16 @@ class ShiftFilter(FilterSet):
 
     def filter_job(self, queryset, name, value):
         return queryset.filter(date__job_id=value)
+
+    def filter_candidate(self, queryset, name, value):
+        return queryset.filter(
+            job_offers__candidate_contact_id=value
+        ).distinct()
+
+    def filter_client(self, queryset, name, value):
+        return queryset.filter(
+            date__job__customer_company_id=value
+        ).distinct()
 
 
 class JobOfferFilter(FilterSet):
