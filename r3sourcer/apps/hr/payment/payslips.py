@@ -12,6 +12,7 @@ from filer.models import Folder, File
 from r3sourcer.apps.pricing.models import RateCoefficientModifier
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.candidate.models import CandidateContact, SkillRel
+from r3sourcer.apps.core.utils.companies import get_site_url
 
 from .base import BasePaymentService, calc_worked_delta
 from ..models import PayslipLine, Payslip, JobOffer, TimeSheet
@@ -86,7 +87,7 @@ class PayslipService(BasePaymentService):
     def generate_pdf(cls, payslip):
         template = get_template('payment/payslips.html')
 
-        domain = 'http://%s' % Site.objects.get_current().domain
+        domain = get_site_url(master_company=payslip.company)
 
         context = {
             'lines': payslip.payslip_lines.all(),

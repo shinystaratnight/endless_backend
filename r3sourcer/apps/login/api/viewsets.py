@@ -89,7 +89,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             if host != settings.REDIRECT_DOMAIN:
                 raise exceptions.PermissionDenied(self.errors['wrong_domain'])
             else:
-                host_url = 'http://{}'.format(redirect_site.domain)
+                host_url = 'https://{}'.format(redirect_site.domain)
                 token_login = TokenLogin.objects.create(
                     contact=user.contact,
                     redirect_to='/'
