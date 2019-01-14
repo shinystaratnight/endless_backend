@@ -161,6 +161,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
                     'primary_contact': ['id', {
                         'contact': ['id', 'phone_mobile']
                     }],
+                    'address': ['__all__'],
                 }],
                 'position': ['id', 'name', 'upper_rate_limit', 'lower_rate_limit', 'default_rate'],
             }
@@ -403,7 +404,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         fields = (
             '__all__', {
                 'date': ('__all__', {
-                    'job': ('id', 'jobsite', 'position'),
+                    'job': ('id', 'jobsite', 'position', 'notes'),
                 }),
             }
         )
