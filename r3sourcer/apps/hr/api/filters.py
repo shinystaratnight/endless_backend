@@ -99,6 +99,7 @@ class ShiftFilter(FilterSet):
     date__shift_date = DateRangeFilter(distinct=True)
     candidate = UUIDFilter(method='filter_candidate')
     client = UUIDFilter(method='filter_client')
+    client_contact = UUIDFilter(method='filter_client_contact')
 
     class Meta:
         model = hr_models.Shift
@@ -115,6 +116,11 @@ class ShiftFilter(FilterSet):
     def filter_client(self, queryset, name, value):
         return queryset.filter(
             date__job__customer_company_id=value
+        ).distinct()
+
+    def filter_client_contact(self, queryset, name, value):
+        return queryset.filter(
+            date__job__customer_representative_id=value
         ).distinct()
 
 

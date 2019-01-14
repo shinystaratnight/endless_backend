@@ -88,6 +88,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
             'job_offer': ('id', {
                 'candidate_contact': ('id', {
                     'contact': ('picture', ),
+                    'candidate_scores': ['average_score'],
                 }, ),
             }, ),
         }
