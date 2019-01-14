@@ -1164,7 +1164,7 @@ class TimeSheet(
         master_company = job_offer.shift.date.job.jobsite.master_company
         going_to_work_confirmation = None
 
-        if master_company.company_settings.pre_shift_sms_enabled:
+        if not master_company.company_settings.pre_shift_sms_enabled:
             going_to_work_confirmation = True
 
         data = {
