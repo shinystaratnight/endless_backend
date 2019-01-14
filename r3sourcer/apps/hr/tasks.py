@@ -358,7 +358,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 role = recipient.contact.user.role.get(name=core_models.Role.ROLE_NAMES.candidate)
                 extranet_login = TokenLogin.objects.create(
                     contact=recipient.contact,
-                    redirect_to='{}{}/submit/'.format(sign_navigation.url, time_sheet_id),
+                    redirect_to='{}{}/submit'.format(sign_navigation.url, time_sheet_id),
                     role=role
                 )
 
