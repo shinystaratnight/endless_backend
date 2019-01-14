@@ -143,6 +143,10 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                 'status': 'success',
                 'message': message,
             }, status=status.HTTP_200_OK)
+        elif not contact or not contact.user.role.exists():
+            raise exceptions.ValidationError({
+                'username': self.errors['email_not_found']
+            })
 
         user = authenticate(username=serializer.data['username'],
                             password=serializer.data.get('password'))
