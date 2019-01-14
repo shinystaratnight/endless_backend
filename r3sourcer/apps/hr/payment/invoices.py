@@ -1,11 +1,9 @@
 import math
 
-from datetime import datetime
 from decimal import Decimal
 
 from django.core.files.base import ContentFile
 from django.contrib.sites.models import Site
-from django.template import Context
 from django.template.loader import get_template
 from django.utils.formats import date_format
 from django.utils.timezone import localtime
@@ -13,6 +11,7 @@ from filer.models import Folder, File
 
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
 from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
+from r3sourcer.apps.core.utils.companies import get_site_url
 from r3sourcer.apps.pricing.services import PriceListCoefficientService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 
@@ -108,7 +107,7 @@ class InvoiceService(BasePaymentService):
                 'amount': '{0:.2f}'.format(invoice.total)
             }
 
-        domain = 'http://%s' % Site.objects.get_current().domain
+        domain = get_site_url(master_company=invoice.provider_company)
         master_company = invoice.provider_company
 
         if hasattr(master_company, 'company_settings') and master_company.company_settings.logo:

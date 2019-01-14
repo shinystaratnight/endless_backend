@@ -1759,7 +1759,7 @@ class TrialSerializer(serializers.Serializer):
 
         domain = '{}.{}'.format(data['website'].lower(), settings.REDIRECT_DOMAIN)
         try:
-            URLValidator()('http://{}'.format(domain))
+            URLValidator()('https://{}'.format(domain))
         except ValidationError:
             raise serializers.ValidationError({
                 'website': _('Website address is invalid')

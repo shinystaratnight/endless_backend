@@ -591,7 +591,7 @@ class SiteCompanySettingsView(APIView):
         if not company:
             return Response({
                 'status': 'error',
-                'redirect_to': 'http://{}'.format(settings.REDIRECT_DOMAIN)
+                'redirect_to': 'https://{}'.format(settings.REDIRECT_DOMAIN)
             })
         else:
             company_settings = company.company_settings
