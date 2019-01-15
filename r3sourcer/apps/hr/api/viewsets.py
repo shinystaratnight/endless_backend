@@ -761,6 +761,11 @@ class JobViewset(BaseApiViewset):
         ).values_list('candidate_contact_id', flat=True).distinct()
         candidate_contacts = candidate_models.CandidateContact.objects.filter(id__in=candidate_ids)
 
+        shifts = hr_models.Shift.objects.filter(
+           Q(job_offers__candidate_contact__in=candidate_ids) |
+           Q(date__job=job), date__shift_date__gte=today, date__cancelled=False
+        ).select_related('date').order_by('date__shift_date', 'time').distinct('date__shift_date', 'time')
+
         partially_available_candidates = job_utils.get_partially_available_candidates(
             candidate_contacts, shifts
         )
