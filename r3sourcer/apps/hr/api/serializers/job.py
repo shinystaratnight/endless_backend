@@ -134,12 +134,7 @@ class FillinAvailableMixin:
                 'shifts': dates,
             })
 
-        if len(unknown_dates) > 0:
-            response_data.append({
-                'text': _('Unknown shifts'),
-                'shifts': unknown_dates,
-            })
-        elif len(response_data) == 0:
+        if len(response_data) == 0:
             response_data = [{
                 'text': text,
                 'shifts': [],
