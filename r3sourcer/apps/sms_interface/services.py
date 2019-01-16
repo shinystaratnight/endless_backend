@@ -285,9 +285,7 @@ class BaseSMSService(metaclass=ABCMeta):
         return []
 
     def can_send_sms(self, from_number, to_number):
-        company = Company.objects.filter(
-            twilio_credentials__accounts_list__phone_numbers__phone_number=from_number
-        ).first()
+        company = Company.objects.filter(phone_numbers__phone_number=from_number).first()
         contact = Contact.objects.filter(phone_mobile=to_number).first()
 
         if not company or (not company.sms_enabled and company.sms_balance <= 0):

@@ -92,21 +92,30 @@ class TwilioPhoneNumber(sms_models.PhoneNumber):
 
     @classmethod
     def fetch_remote(cls, remote_phone, company):
+        values_phone = cls.dict_from_object(remote_phone, company)
+        phone, created = cls.objects.update_or_create(sid=remote_phone.sid, defaults=values_phone)
+        return phone
+
+    @classmethod
+    def dict_from_object(cls, remote_phone, company=None, is_new=False):
         values_phone = {
-            'sid': remote_phone.sid,
-            'company': company,
-            'account_sid': remote_phone.account_sid,
-            'created_at': sms_models.replace_timezone(remote_phone.date_created),
-            'updated_at': sms_models.replace_timezone(remote_phone.date_updated),
             'friendly_name': remote_phone.friendly_name,
             'phone_number': remote_phone.phone_number,
-            'sms_enabled': remote_phone.capabilities['sms'],
-            'mms_enabled': remote_phone.capabilities['mms'],
+            'sms_enabled': remote_phone.capabilities['SMS'],
+            'mms_enabled': remote_phone.capabilities['MMS'],
             'voice_enabled': remote_phone.capabilities['voice']
         }
 
-        phone, created = cls.objects.update_or_create(sid=remote_phone.sid, defaults=values_phone)
-        return phone
+        if not is_new:
+            values_phone.update({
+                'sid': remote_phone.sid,
+                'company': company,
+                'account_sid': remote_phone.account_sid,
+                'created_at': sms_models.replace_timezone(remote_phone.date_created),
+                'updated_at': sms_models.replace_timezone(remote_phone.date_updated),
+            })
+
+        return values_phone
 
     class Meta:
         verbose_name = _("Twilio phone number")
