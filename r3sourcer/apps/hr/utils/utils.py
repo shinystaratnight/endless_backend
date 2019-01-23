@@ -4,7 +4,6 @@ from datetime import datetime, date, time, timedelta
 from collections import defaultdict
 from functools import reduce
 
-from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone, formats
 
@@ -274,6 +273,11 @@ def send_supervisor_timesheet_approve(timesheet, force=False):
 def send_job_confirmation_sms(job):
     from r3sourcer.apps.hr.tasks import send_job_confirmation_sms
     send_job_confirmation_sms.apply_async(args=[job.id], countdown=10)
+
+
+def schedule_auto_approve_timesheet(timesheet):
+    from r3sourcer.apps.hr.tasks import auto_approve_timesheet
+    auto_approve_timesheet.apply_async(args=[timesheet.id], eta=timezone.localtime() + timedelta(hours=24))
 
 
 def format_dates_range(dates_list):

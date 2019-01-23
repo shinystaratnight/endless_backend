@@ -694,7 +694,8 @@ def send_going_to_work_sms(self, time_sheet_id):
         except hr_models.TimeSheet.DoesNotExist as e:
             logger.error(e)
         else:
-            if not time_sheet.master_company.company_settings.pre_shift_sms_enabled:
+            if (not time_sheet.master_company.company_settings.pre_shift_sms_enabled or
+                    time_sheet.going_to_work_confirmation is not None):
                 return
 
             target_date_and_time = timezone.localtime(
@@ -708,7 +709,7 @@ def send_going_to_work_sms(self, time_sheet_id):
                 related_obj=time_sheet,
                 related_objs=[time_sheet.job_offer.job, candidate_contact],
             )
-            check_reply = not getattr(time_sheet, 'going_to_work_confirmation', None)
+            check_reply = not time_sheet.going_to_work_confirmation
 
             try:
                 sms_interface = get_sms_service()
@@ -720,7 +721,8 @@ def send_going_to_work_sms(self, time_sheet_id):
                 candidate_contact.contact.phone_mobile, 'candidate-going-to-work', check_reply=check_reply, **data_dict
             )
             setattr(time_sheet, action_sent, sent_message)
-            time_sheet.save(update_fields=[action_sent])
+            time_sheet.update_status(False)
+            time_sheet.save(update_fields=[action_sent, 'status'])
             related_query_name = hr_models.TimeSheet._meta.get_field(
                 action_sent).related_query_name()
             cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
@@ -841,3 +843,10 @@ def close_not_active_jobsites(self):
 
         jobsite.is_available = False
         jobsite.save(update_fields=['is_available'])
+
+
+@shared_task
+def auto_approve_timesheet(timesheet_id):
+    hr_models.TimeSheet.objects.filter(
+        id=timesheet_id, status=hr_models.TimeSheet.STATUS_CHOICES.modified
+    ).update(status=hr_models.TimeSheet.STATUS_CHOICES.approved)

@@ -1081,6 +1081,11 @@ class TimeSheet(
         editable=False
     )
 
+    supervisor_modified = models.BooleanField(
+        verbose_name=_('Supervisor modified shift'),
+        default=False
+    )
+
     candidate_rate = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -1115,6 +1120,23 @@ class TimeSheet(
         verbose_name=_("Sync status"),
         choices=SYNC_STATUS_CHOICES,
         default=SYNC_STATUS_CHOICES.not_synced
+    )
+
+    STATUS_CHOICES = Choices(
+        (0, 'new', _('New')),
+        (1, 'check_pending', _('Check pending')),
+        (2, 'check_confirmed', _('Check confirmed')),
+        (3, 'check_failed', _('Check failed')),
+        (4, 'submit_pending', _('Submit pending')),
+        (5, 'approval_pending', _('Pending approval')),
+        (6, 'modified', _('Supervisor modified')),
+        (7, 'approved', _('Approved')),
+    )
+
+    status = models.PositiveSmallIntegerField(
+        verbose_name=_('Status'),
+        choices=STATUS_CHOICES,
+        default=STATUS_CHOICES.new
     )
 
     __original_supervisor_id = None
@@ -1163,9 +1185,11 @@ class TimeSheet(
         start_time = job_offer.start_time
         master_company = job_offer.shift.date.job.jobsite.master_company
         going_to_work_confirmation = None
+        status = cls.STATUS_CHOICES.new
 
         if not master_company.company_settings.pre_shift_sms_enabled:
             going_to_work_confirmation = True
+            status = cls.STATUS_CHOICES.check_confirmed
 
         data = {
             'job_offer': job_offer,
@@ -1176,6 +1200,7 @@ class TimeSheet(
             'supervisor': job_offer.job.jobsite.primary_contact,
             'candidate_rate': job_offer.shift.hourly_rate,
             'going_to_work_confirmation': going_to_work_confirmation,
+            'status': status,
         }
 
         try:
@@ -1225,6 +1250,7 @@ class TimeSheet(
         self.shift_ended_at = now + timedelta(hours=4)
         self.break_started_at = None
         self.break_ended_at = None
+        self.supervisor_modified = False
         self.save()
 
     def _send_going_to_work(self, going_eta):
@@ -1241,11 +1267,37 @@ class TimeSheet(
             if self.going_to_work_sent_sms == sent_sms:
                 self.going_to_work_reply_sms = reply_sms
                 self.going_to_work_confirmation = positive
+                self.update_status(False)
                 self.save()
 
     def set_sync_status(self, status):
         self.sync_status = status
         self.save(update_fields=['sync_status'])
+
+    def update_status(self, save=True):
+        if self.supervisor_approved_at is not None:
+            if self.supervisor_modified and self.status != self.STATUS_CHOICES.approved:
+                self.status = self.STATUS_CHOICES.modified
+                hr_utils.schedule_auto_approve_timesheet(self)
+            else:
+                self.status = self.STATUS_CHOICES.approved
+        elif self.candidate_submitted_at is not None:
+            self.status = self.STATUS_CHOICES.approval_pending
+        elif self.going_to_work_confirmation:
+            if self.shift_started_at <= timezone.localtime():
+                self.status = self.STATUS_CHOICES.submit_pending
+            else:
+                self.status = self.STATUS_CHOICES.check_confirmed
+        elif self.going_to_work_confirmation is None:
+            pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
+            going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
+            if going_eta <= timezone.localtime():
+                self.status = self.STATUS_CHOICES.check_pending
+        elif not self.going_to_work_confirmation:
+            self.status = self.STATUS_CHOICES.check_failed
+
+        if save:
+            self.save(update_fields=['status'])
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
@@ -1268,6 +1320,17 @@ class TimeSheet(
                     self._send_going_to_work(going_eta)
                 else:
                     self.going_to_work_confirmation = True
+        else:
+            if self.candidate_submitted_at is not None and self.is_allowed(30):
+                self.create_state(30)
+
+            if self.supervisor_approved_at is not None and self.is_allowed(40):
+                self.create_state(40)
+
+            if self.is_allowed(70):
+                self.create_state(70)
+
+        self.update_status(False)
 
         super(TimeSheet, self).save(*args, **kwargs)
 
@@ -1277,14 +1340,6 @@ class TimeSheet(
         if going_set and self.going_to_work_confirmation and self.is_allowed(20):
             self.create_state(20)
             self._send_submit_sms(self.shift_ended_at)
-
-        if not just_added:
-            if self.candidate_submitted_at is not None and self.is_allowed(30):
-                self.create_state(30)
-            if self.supervisor_approved_at is not None and self.is_allowed(40):
-                self.create_state(40)
-            if self.is_allowed(70):
-                self.create_state(70)
 
         # If accepted manually, disable reply checking.
         if self.going_to_work_confirmation and self.going_to_work_sent_sms and self.going_to_work_sent_sms.check_reply:

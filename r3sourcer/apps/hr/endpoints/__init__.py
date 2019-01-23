@@ -87,6 +87,7 @@ class CandidateJobOfferEndpoint(ApiEndpoint):
     model = hr_models.JobOffer
     serializer = job_serializers.CandidateJobOfferSerializer
     base_viewset = hr_viewsets.JobOffersCandidateViewset
+    filter_class = hr_filters.JobOfferCandidateFilter
 
 
 class JobTagEndpoint(ApiEndpoint):

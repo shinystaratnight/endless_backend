@@ -140,7 +140,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @action(methods=['put'], detail=True)
     def not_agree(self, request, pk, *args, **kwargs):  # pragma: no cover
         data = dict(request.data)
-        data.update(candidate_submitted_at=None)
+        data.update(candidate_submitted_at=None, supervisor_modified=True)
         return self.handle_request(request, pk, False, data=data,
                                    *args, **kwargs)
 
@@ -176,7 +176,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         obj = self.get_object()
 
         obj.going_to_work_confirmation = True
-        obj.save(update_fields=['going_to_work_confirmation'])
+        obj.update_status(False)
+        obj.save(update_fields=['going_to_work_confirmation', 'status'])
 
         return Response({
             'status': 'success'

@@ -200,3 +200,10 @@ class InvoiceFilter(FilterSet):
     class Meta:
         model = Invoice
         fields = ['customer_company']
+
+
+class JobOfferCandidateFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.JobOffer
+        fields = ['status']
