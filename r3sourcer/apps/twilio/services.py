@@ -2,7 +2,7 @@ import logging
 
 from django.utils import timezone
 
-from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact, get_site_master_company
+from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
 from r3sourcer.apps.sms_interface.services import BaseSMSService
 from r3sourcer.apps.twilio import models
 
@@ -11,7 +11,8 @@ logger = logging.getLogger(__name__)
 
 class TwilioSMSService(BaseSMSService):
     def process_sms_send(self, sms_message):
-        from_number = self.get_from_number(sms_message.from_number)
+        recipient = self._get_recipient(sms_message.to_number)
+        from_number = self.get_from_number(sms_message.from_number, recipient.get_closest_company())
 
         if from_number:
             sms_message.from_number = from_number
@@ -76,12 +77,11 @@ class TwilioSMSService(BaseSMSService):
         companies = get_master_companies_by_contact(contact)
         return models.TwilioPhoneNumber.objects.filter(company__in=companies)
 
-    def get_from_number(self, from_number):
+    def get_from_number(self, from_number, master_company):
         try:
             twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=from_number)
         except models.TwilioAccount.DoesNotExist:
-            site_company = get_site_master_company()
-            twilio_account = models.TwilioAccount.objects.filter(credential__company=site_company).last()
+            twilio_account = models.TwilioAccount.objects.filter(credential__company=master_company).last()
 
             if not twilio_account:
                 logger.warn('Cannot find Twilio number')
