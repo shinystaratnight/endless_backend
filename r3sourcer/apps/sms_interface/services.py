@@ -46,8 +46,10 @@ class BaseSMSService(metaclass=ABCMeta):
         if isinstance(from_number, PhoneNumber):
             from_number = from_number.as_e164
 
-        from_number = self.get_from_number(from_number)
-        company = self.can_send_sms(from_number, to_number)
+        recipient = self._get_recipient(to_number)
+        recipient_company = recipient.get_closest_company()
+        from_number = self.get_from_number(from_number, recipient_company)
+        company = self.can_send_sms(to_number, recipient_company)
 
         if not company:
             return
@@ -103,8 +105,9 @@ class BaseSMSService(metaclass=ABCMeta):
             logger.exception('Cannot find template with name %s', tpl_name)
         else:
             sms_message = self.send(to_number, message, from_number, related_obj, **kwargs)
-            sms_message.template = template
-            sms_message.save()
+            if sms_message is not None:
+                sms_message.template = template
+                sms_message.save()
 
             return sms_message
 
@@ -284,24 +287,30 @@ class BaseSMSService(metaclass=ABCMeta):
         """
         return []
 
-    def can_send_sms(self, from_number, to_number):
-        company = Company.objects.filter(phone_numbers__phone_number=from_number).first()
+    def _get_recipient(self, to_number):
         contact = Contact.objects.filter(phone_mobile=to_number).first()
 
+        if contact and not contact.sms_enabled:
+            return
+
+        return contact
+
+    def can_send_sms(self, to_number, company=None):
         if not company or (not company.sms_enabled and company.sms_balance <= 0):
             return
 
-        if contact and not contact.sms_enabled:
+        if self._get_recipient(to_number) is None:
             return
 
         master_company = company.get_closest_master_company()
 
         if not master_company.company_settings.sms_enabled:
+            logger.info('SMS sending is disabled for company {}'.format(master_company))
             return None
 
         return company
 
-    def get_from_number(self, from_number):
+    def get_from_number(self, from_number, master_company):
         return from_number
 
     def substract_sms_cost(self, company, sms_message):
@@ -334,6 +343,9 @@ class FakeSMSService(BaseSMSService):
     def substract_sms_cost(self, company, sms_message):
         pass
 
-    def can_send_sms(self, from_number, to_number):
+    def can_send_sms(self, to_number, company=None):
         company = get_site_master_company()
+        if self._get_recipient(to_number) is None:
+            return
+
         return company if company.company_settings.sms_enabled else None

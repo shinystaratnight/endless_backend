@@ -88,7 +88,7 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
         job_offer.candidate_contact.contact.phone_mobile, tpl_id, check_reply=bool(action_sent), **data_dict
     )
 
-    if action_sent:
+    if action_sent and sent_message:
         related_query_name = hr_models.JobOfferSMS._meta.get_field(action_sent).related_query_name()
         cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
 
@@ -720,6 +720,10 @@ def send_going_to_work_sms(self, time_sheet_id):
             sent_message = sms_interface.send_tpl(
                 candidate_contact.contact.phone_mobile, 'candidate-going-to-work', check_reply=check_reply, **data_dict
             )
+
+            if not sent_message:
+                return
+
             setattr(time_sheet, action_sent, sent_message)
             time_sheet.update_status(False)
             time_sheet.save(update_fields=[action_sent, 'status'])

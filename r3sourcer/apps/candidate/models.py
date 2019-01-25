@@ -490,7 +490,12 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
                     current_company = current_user.contact.get_closest_company()
                     company_qry = models.Q(master_company=current_company)
 
-            candidate_rel = self.candidate_rels.get(company_qry, owner=True, active=True)
+            candidate_rel = self.candidate_rels.filter(company_qry, owner=True, active=True).first()
+            if not candidate_rel:
+                candidate_rel = self.candidate_rels.filter(
+                    master_company__type=core_models.Company.COMPANY_TYPES.master
+                ).first()
+
             return candidate_rel.master_company
         except CandidateRel.DoesNotExist:
             return get_site_master_company()
