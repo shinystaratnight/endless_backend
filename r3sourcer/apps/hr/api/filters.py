@@ -229,6 +229,5 @@ class JobOfferCandidateFilter(FilterSet):
             shift__date__job=OuterRef('shift__date__job'),
             shift__date__shift_date__lt=OuterRef('shift__date__shift_date'),
             candidate_contact__contact=self.request.user.contact, **params).order_by()
-        subquery = subquery
         queryset = queryset.annotate(has_previous=Exists(subquery)).filter(has_previous=is_recurring)
         return queryset
