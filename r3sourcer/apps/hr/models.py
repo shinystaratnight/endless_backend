@@ -690,6 +690,12 @@ class JobOffer(core_models.UUIDModel):
             shift__date__shift_date__gt=self.shift.date.shift_date
         )
 
+    def get_previous_offers(self):
+        return self.job.get_job_offers().filter(
+            candidate_contact=self.candidate_contact,
+            shift__date__shift_date__lt=self.shift.date.shift_date
+        )
+
     def move_candidate_to_carrier_list(self, new_offer=False, confirmed_available=None):
         if not confirmed_available:
             confirmed_available = self.is_accepted()

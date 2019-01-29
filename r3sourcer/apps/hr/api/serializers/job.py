@@ -558,7 +558,10 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     jobsite_address = core_serializers.AddressSerializer(read_only=True)
 
-    method_fields = ('jobsite_address', 'hide_buttons', 'status', 'status_icon', 'hide_text', 'latitude', 'longitude')
+    method_fields = (
+        'jobsite_address', 'hide_buttons', 'status', 'status_icon',
+        'hide_text', 'latitude', 'longitude', 'jo_type'
+    )
 
     class Meta:
         model = hr_models.JobOffer
@@ -629,6 +632,15 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
     def get_longitude(self, obj):
         address = obj.job.jobsite.get_address()
         return address and address.longitude
+
+    def get_jo_type(self, obj):
+        statuses = obj.get_previous_offers().distinct('status').values_list('status', flat=True)
+
+        if not statuses:
+            return 'first'
+        if hr_models.JobOffer.STATUS_CHOICES.accepted in statuses:
+            return 'recurring'
+        raise TypeError('Unexpected previous job offers. Statuses: {}'.format(statuses))
 
 
 class JobsiteSerializer(
