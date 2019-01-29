@@ -101,7 +101,7 @@ class TwilioPhoneNumber(sms_models.PhoneNumber):
         values_phone = {
             'friendly_name': remote_phone.friendly_name,
             'phone_number': remote_phone.phone_number,
-            'sms_enabled': remote_phone.capabilities['SMS'],
+            'sms_enabled': remote_phone.capabilities['sms'],
             'mms_enabled': remote_phone.capabilities['MMS'],
             'voice_enabled': remote_phone.capabilities['voice']
         }
