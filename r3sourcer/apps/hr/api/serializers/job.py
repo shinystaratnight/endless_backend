@@ -636,11 +636,9 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
     def get_jo_type(self, obj):
         statuses = obj.get_previous_offers().distinct('status').values_list('status', flat=True)
 
-        if not statuses:
-            return 'first'
         if hr_models.JobOffer.STATUS_CHOICES.accepted in statuses:
             return 'recurring'
-        raise TypeError('Unexpected previous job offers. Statuses: {}'.format(statuses))
+        return 'first'
 
 
 class JobsiteSerializer(
