@@ -492,9 +492,8 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
             candidate_rel = self.candidate_rels.filter(company_qry, owner=True, active=True).first()
             if not candidate_rel:
-                candidate_rel = self.candidate_rels.filter(
-                    master_company__type=core_models.Company.COMPANY_TYPES.master
-                ).first()
+                candidate_rel = self.candidate_rels.get(
+                    master_company__type=core_models.Company.COMPANY_TYPES.master)
 
             return candidate_rel.master_company
         except CandidateRel.DoesNotExist:
