@@ -1,10 +1,13 @@
 import datetime
 
-from django.db.models import Q
+from django.db.models import Q, OuterRef, Exists
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 
-from django_filters import UUIDFilter, NumberFilter, BooleanFilter, DateFilter
+from django_filters import UUIDFilter, NumberFilter, BooleanFilter, ChoiceFilter
 from django_filters.rest_framework import FilterSet
+
+from model_utils import Choices
 
 from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Invoice
@@ -203,7 +206,28 @@ class InvoiceFilter(FilterSet):
 
 
 class JobOfferCandidateFilter(FilterSet):
+    JO_TYPE_CHOICES = Choices(
+        ('first', _('First')),
+        ('recurring', _('Recurring')),
+    )
+    jo_type = ChoiceFilter(choices=JO_TYPE_CHOICES, method='filter_jo_type')
 
     class Meta:
         model = hr_models.JobOffer
-        fields = ['status']
+        fields = ['status', 'jo_type']
+
+    def filter_jo_type(self, queryset, name, value):
+        # NOTE: Workaround for duplicate call.
+        if 'has_previous' in queryset.query.annotations:
+            return queryset
+
+        is_recurring = (value != JobOfferCandidateFilter.JO_TYPE_CHOICES.first)
+        params = dict()
+        if is_recurring:
+            params.update(status=hr_models.JobOffer.STATUS_CHOICES.accepted)
+        subquery = hr_models.JobOffer.objects.filter(
+            shift__date__job=OuterRef('shift__date__job'),
+            shift__date__shift_date__lt=OuterRef('shift__date__shift_date'),
+            candidate_contact__contact=self.request.user.contact, **params).order_by()
+        queryset = queryset.annotate(has_previous=Exists(subquery)).filter(has_previous=is_recurring)
+        return queryset
