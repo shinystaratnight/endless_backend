@@ -12,12 +12,12 @@ services:
 
   redis:
     restart: always
-    image: "redis:alpine"
+    image: "redis:4-alpine"
     ports:
       - "6379:6379"
 
   clickhouse:
-    image: yandex/clickhouse-server
+    image: "yandex/clickhouse-server:18"
     volumes:
       - ./users.xml:/etc/clickhouse-server/users.xml
       - ./clickhouse-entrypoint.sh:/var/lib/clickhouse/clickhouse-entrypoint.sh
@@ -33,7 +33,7 @@ services:
 
   nginx:
     restart: always
-    image: "nginx"
+    image: "nginx:1"
     ports:
       - "80:80"
       - "443:443"
