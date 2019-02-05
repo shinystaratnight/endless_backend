@@ -162,7 +162,7 @@ class ClickHouseLogger(EndlessLogger):
                                         db_url="http://{}:{}/".format(settings.LOGGER_HOST, settings.LOGGER_PORT),
                                         username=settings.LOGGER_USER,
                                         password=settings.LOGGER_PASSWORD)
-        self.logger_database.create_table(LogHistory)
+        self.logger_database.migrate('r3sourcer.apps.logger.clickhouse_migrations')
 
     @staticmethod
     def date_to_db_representation(date_value):
