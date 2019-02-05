@@ -259,7 +259,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
         'candidate_rate', 'client_rate', 'timesheets', 'has_accept_action', 'has_cancel_action', 'has_resend_action',
-        'has_send_action', 'offer_smses'
+        'has_send_action', 'offer_smses', 'jo_type'
     )
 
     class Meta:
@@ -376,6 +376,13 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
     def get_offer_smses(self, obj):
         return JobOfferSMSSimpleSerializer(obj.job_offer_smses.all(), many=True).data
+
+    def get_jo_type(self, obj):
+        statuses = obj.get_previous_offers().distinct('status').values_list('status', flat=True)
+
+        if hr_models.JobOffer.STATUS_CHOICES.accepted in statuses:
+            return 'recurring'
+        return 'first'
 
 
 class JobOfferSMSSimpleSerializer(core_serializers.ApiBaseModelSerializer):
