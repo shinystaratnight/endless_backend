@@ -24,6 +24,7 @@ from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.utils import get_host
 from r3sourcer.apps.core.views import OAuth2JWTTokenMixin
+from r3sourcer.apps.login.api.exceptions import TokenAlreadyUsed
 
 from ..models import TokenLogin
 from ..tasks import send_login_message
@@ -54,7 +55,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         obj = super(AuthViewSet, self).get_object()
 
         if obj.loggedin_at is not None:
-            raise exceptions.AuthenticationFailed()
+            raise TokenAlreadyUsed()
         return obj
 
     def list(self, request, *args, **kwargs):
