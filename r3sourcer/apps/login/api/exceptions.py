@@ -5,5 +5,5 @@ from rest_framework.exceptions import APIException
 
 class TokenAlreadyUsed(APIException):
     status_code = status.HTTP_401_UNAUTHORIZED
-    default_detail = _('Token was already used.')
+    default_detail = _('The link has already been used.')
     default_code = 'authentication_failed'
