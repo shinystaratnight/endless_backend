@@ -59,7 +59,7 @@ class SMSMessageSerializer(ApiBaseModelSerializer):
     def _get_company_by_number(self, phone_number):
         try:
             return Company.objects.filter(phone_numbers__phone_number=phone_number).latest('created_at')
-        except Contact.DoesNotExist:
+        except Company.DoesNotExist:
             return None
 
     def get_from(self, obj):
