@@ -72,7 +72,7 @@ beat_schedule = {
     },
     'charge_for_extra_workers': {
         'task': 'r3sourcer.apps.billing.tasks.charge_for_extra_workers',
-        'schedule': crontab(hour=3)
+        'schedule': crontab(hour=1)
     },
     'send_sms_payment_reminder': {
         'task': 'r3sourcer.apps.billing.tasks.send_sms_payment_reminder',
