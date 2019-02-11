@@ -1,13 +1,13 @@
-# class CredentialsAlreadyExists(Exception):
-#     pass
+class CredentialsAlreadyExists(Exception):
+    pass
 
 
-# class AccountHasNotPhoneNumbers(Exception):
-#     pass
+class AccountHasNotPhoneNumbers(Exception):
+    pass
 
 
-# class RecipientInvalidInstance(Exception):
-#     pass
+class RecipientInvalidInstance(Exception):
+    pass
 
 
 class SMSServiceError(Exception):

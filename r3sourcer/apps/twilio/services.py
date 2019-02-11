@@ -3,6 +3,7 @@ import logging
 from django.utils import timezone
 
 from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
+from r3sourcer.apps.sms_interface.exceptions import AccountHasNotPhoneNumbers
 from r3sourcer.apps.sms_interface.services import BaseSMSService
 from r3sourcer.apps.twilio import models
 
@@ -19,7 +20,7 @@ class TwilioSMSService(BaseSMSService):
             twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=from_number)
         else:
             logger.warn('Cannot find Twilio number')
-            return
+            raise AccountHasNotPhoneNumbers
 
         sms_message.sid = twilio_account.client.api.account.messages.create(
             body=sms_message.text, from_=from_number, to=sms_message.to_number
