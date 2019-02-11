@@ -56,8 +56,7 @@ class CompanyFilter(FilterSet):
 
     def filter_portfolio_manager(self, queryset, name, value):
         return queryset.filter(
-            Q(regular_companies__manager=value) |
-            Q(master_companies__manager=value)
+            regular_companies__manager=value
         ).distinct()
 
     def _fetch_workflow_objects(self, value):  # pragma: no cover
