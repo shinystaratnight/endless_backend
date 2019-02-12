@@ -395,7 +395,7 @@ class CompanyViewset(BaseApiViewset):
 
         master_company = self.request.data.get('master_company')
         master_company = master_company.get('id') if isinstance(master_company, dict) else master_company
-        manager_obj = self.request.data.get('primary_contact')
+        manager_obj = self.request.data.get('manager')
         manager_id = manager_obj.get('id') if isinstance(manager_obj, dict) else manager_obj
         company_rel = instance.regular_companies.first()
 
