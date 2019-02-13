@@ -11,6 +11,7 @@ from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestCandid
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
+from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
@@ -96,7 +97,7 @@ class CandidateContactViewset(BaseApiViewset):
 
         return self._paginate(request, serializers.CandidatePoolSerializer, self.filter_queryset(queryset))
 
-    @action(methods=['post'], detail=True)
+    @action(methods=['post'], detail=True, permission_classes=[SiteContactPermissions])
     def buy(self, request, pk, *args, **kwargs):
         master_company = request.user.contact.get_closest_company().get_closest_master_company()
         candidate_contact = self.get_object()

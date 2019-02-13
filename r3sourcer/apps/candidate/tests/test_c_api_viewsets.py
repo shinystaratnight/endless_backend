@@ -198,7 +198,7 @@ class TestBuyAPITestCase(BaseTestCase):
     def get_allowed_users(self):
         if self.request_user is not None:
             return [self.request_user]
-        return [core_models.User.objects.create_user(
+        return [core_models.User.objects.create_superuser(
             email='test@test.mm', phone_mobile='+32345678901',
             password='test1234'
             )]
