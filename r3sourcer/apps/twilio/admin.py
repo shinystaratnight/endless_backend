@@ -9,7 +9,7 @@ from django.utils.translation import ugettext_lazy as _
 from r3sourcer.apps.core_utils.filters import DatePeriodRangeAdminFilter
 from r3sourcer.apps.sms_interface.models import SMSMessage
 
-from .models import TwilioCredential, TwilioSMSMessage, TwilioPhoneNumber
+from .models import TwilioCredential, TwilioSMSMessage, TwilioPhoneNumber, TwilioAccount
 
 
 class AdminAllReadOnlyFields(admin.ModelAdmin):
@@ -137,3 +137,4 @@ class TwilioPhoneNumberAdmin(admin.ModelAdmin):
 admin.site.register(TwilioPhoneNumber, TwilioPhoneNumberAdmin)
 admin.site.register(TwilioCredential, TwilioCredentialAdmin)
 admin.site.register(TwilioSMSMessage, TwilioSMSMessageAdmin)
+admin.site.register(TwilioAccount)

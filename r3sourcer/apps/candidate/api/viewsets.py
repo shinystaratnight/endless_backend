@@ -1,5 +1,6 @@
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Exists
+from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 from rest_framework import status, exceptions, permissions as drf_permissions, viewsets, mixins
@@ -13,6 +14,7 @@ from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
+from r3sourcer.apps.hr.models import TimeSheet
 
 from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
@@ -224,7 +226,20 @@ class CandidateLocationViewset(
                 'longitude': _('Longitude is required')
             })
 
-        location_logger.log_instance_location(instance, float(latitude), float(longitude))
+        timesheet_id = request.data.get('timesheet_id')
+
+        if not timesheet_id:
+            now = timezone.localtime()
+            timesheet = TimeSheet.objects.filter(
+                job_offer__candidate_contact=instance,
+                shift_started_at__lte=now,
+                shift_ended_at__gte=now,
+                going_to_work_confirmation=True
+            ).first()
+
+            timesheet_id = timesheet and timesheet.pk
+
+        location_logger.log_instance_location(instance, float(latitude), float(longitude), timesheet_id)
 
         return Response({'status': 'success'})
 
@@ -232,11 +247,14 @@ class CandidateLocationViewset(
     def history(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        limit = request.data.get('limit', 10)
-        offset = request.data.get('offset', 0)
+        limit = request.query_params.get('limit', 10)
+        offset = request.query_params.get('offset', 0)
         page = offset // limit + 1
+        timesheet_id = request.query_params.get('timesheet')
 
-        data = location_logger.fetch_location_history(instance, page_num=page, page_size=limit)
+        data = location_logger.fetch_location_history(
+            instance, page_num=page, page_size=limit, timesheet_id=timesheet_id
+        )
 
         return Response(data)
 

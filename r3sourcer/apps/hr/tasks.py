@@ -240,6 +240,13 @@ def send_placement_rejection_sms(self, job_offer_id):
             send_job_offer_sms(job_offer, 'job-offer-rejection')
 
 
+def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
+    invoice = utils.get_invoice(company, date_from, date_to, timesheet)
+
+    if invoice is None and recreate:
+        invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
+
+
 @shared_task
 def generate_invoice(timesheet_id=None, recreate=False):
     """
@@ -258,10 +265,11 @@ def generate_invoice(timesheet_id=None, recreate=False):
     service = InvoiceService()
     invoice_rule = utils.get_invoice_rule(company)
     date_from, date_to = utils.get_invoice_dates(invoice_rule, timesheet)
-    invoice = utils.get_invoice(company, date_from, date_to, timesheet)
+    invoice = _get_invoice(company, date_from, date_to, timesheet, recreate)
 
-    if invoice is None and recreate:
-        invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
+    if invoice and invoice.approved:
+        new_date_from, new_date_to = utils.get_invoice_dates(invoice_rule)
+        invoice = _get_invoice(company, new_date_from, new_date_to, recreate=recreate)
 
     service.generate_invoice(date_from, date_to, company=company, invoice=invoice)
 

@@ -55,8 +55,8 @@ class SubscriptionCreateView(APIView):
                                           plan_id=plan.id,
                                           subscription_id=subscription.id,
                                           current_period_start=current_period_start,
-                                          current_period_end=current_period_end)
-
+                                          current_period_end=current_period_end,
+                                          status=subscription.status)
         serializer = SubscriptionSerializer(sub)
         data = {
             "subscription": serializer.data

@@ -40,6 +40,9 @@ class Subscription(models.Model):
     plan_id = models.CharField(max_length=255)
     subscription_id = models.CharField(max_length=255)
 
+    def __str__(self):
+        return "{} with {} workers. Status: {}".format(self.company.name, self.worker_count, self.status)
+
     def sync_status(self):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.status = subscription.status
@@ -51,7 +54,7 @@ class Subscription(models.Model):
 
     def deactivate(self):
         sub = stripe.Subscription.retrieve(self.subscription_id)
-        sub.delete(at_period_end=True)
+        sub.delete()
 
     @property
     def last_time_billed(self):
@@ -64,7 +67,7 @@ class Subscription(models.Model):
         super(Subscription, self).save(*args, **kwargs)
 
         if self.active:
-            subscriptions = Subscription.objects.filter(company=self.company) \
+            subscriptions = Subscription.objects.filter(company=self.company, active=True) \
                                                 .exclude(id=self.id)
 
             for subscription in subscriptions:

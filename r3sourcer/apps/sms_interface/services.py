@@ -8,11 +8,11 @@ from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.phonenumber import PhoneNumber
 
-from r3sourcer.apps.core.models import Contact, Company
+from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 
-from .exceptions import SMSServiceError
+from .exceptions import SMSServiceError, AccountHasNotPhoneNumbers
 from .helpers import get_sms, get_phone_number
 from .models import SMSMessage, SMSTemplate
 
@@ -90,6 +90,9 @@ class BaseSMSService(metaclass=ABCMeta):
                     sms_message.sent_at, timezone.now()
                 )
                 ac.save(update_fields=['activity_id'])
+        except AccountHasNotPhoneNumbers:
+            if sms_message and sms_message.pk:
+                sms_message.delete()
 
         return sms_message
 

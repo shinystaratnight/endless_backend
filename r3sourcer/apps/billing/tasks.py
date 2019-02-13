@@ -79,7 +79,7 @@ def charge_for_sms(company_id, amount, sms_balance_id):
 
 @shared_task
 def sync_subscriptions():
-    for subscription in Subscription.objects.all():
+    for subscription in Subscription.objects.filter(active=True):
         subscription.sync_status()
         subscription.sync_periods()
         subscription.save()

@@ -338,7 +338,9 @@ def send_verification_success_email(contact_id, master_company_id, template='e-m
         with transaction.atomic():
             master_company = core_models.Company.objects.get(id=master_company_id)
             domain = core_companies_utils.get_company_domain(master_company)
-            domain = domain and urlparse(domain).netloc.split('.')[0]
+            domain_parts = urlparse(domain)
+            domain = domain_parts.netloc or domain_parts.path
+            domain = domain.split('.')[0]
             site_url = core_companies_utils.get_site_url(master_company=master_company)
             primary_contact = master_company.primary_contact or contact.get_closest_company().primary_contact
             new_password = core_models.User.objects.make_random_password(20)
