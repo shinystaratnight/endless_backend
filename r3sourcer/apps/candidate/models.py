@@ -770,7 +770,7 @@ class CandidateRel(core_models.UUIDModel):
 
     owner = models.BooleanField(
         default=False,
-        verbose_name=_("Is woner")
+        verbose_name=_("Is owner")
     )
 
     active = models.BooleanField(

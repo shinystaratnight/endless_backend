@@ -1,5 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
+from django.db.models import Q, Exists
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
@@ -12,7 +12,7 @@ from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
-from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow
+from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
 from r3sourcer.apps.hr.models import TimeSheet
@@ -90,7 +90,11 @@ class CandidateContactViewset(BaseApiViewset):
             master_company = company.get_closest_master_company()
             queryset = CandidateContactAnonymous.objects.exclude(
                 Q(candidate_rels__master_company=master_company) | Q(profile_price__lte=0)
+                | Q(candidate_rels__owner=False)
             ).distinct()
+            queryset = queryset.annotate(a=Exists(WorkflowObject.objects.filter(object_id__in=[str(i.id) for i in queryset],
+                                                                        state__name_after_activation='Recruited - Available for Hire'))).filter(a=True)
+
         return self._paginate(request, serializers.CandidatePoolSerializer, self.filter_queryset(queryset))
 
     @action(methods=['post'], detail=True, permission_classes=[SiteContactPermissions])
@@ -100,7 +104,7 @@ class CandidateContactViewset(BaseApiViewset):
         company = request.data.get('company')
 
         is_owner = CandidateRel.objects.filter(
-            master_company=master_company, candidate_contact=candidate_contact, owner=True
+            candidate_contact=candidate_contact, owner=True
         ).exists()
         if not is_owner:
             raise exceptions.ValidationError({
