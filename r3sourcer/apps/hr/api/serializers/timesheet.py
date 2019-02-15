@@ -190,17 +190,17 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
         ]
         return bool(obj.sync_status in allowed_states and obj.supervisor_approved_at and obj.candidate_submitted_at)
 
-    def _get_related_sms(self, obj, template):
+    def _get_related_sms(self, obj, template_slug):
         ct = ContentType.objects.get_for_model(TimeSheet)
         timesheet_date = timezone.localtime(obj.shift_started_at).date()
         sms = sms_models.SMSMessage.objects.filter(
             related_objects__content_type=ct, related_objects__object_id=obj.id,
-            template__slug='supervisor-timesheet-sign', sent_at__date=timesheet_date
+            template__slug=template_slug, sent_at__date=timesheet_date
         ).first()
 
         if not sms:
             sms = sms_models.SMSMessage.objects.filter(
-                template__slug='supervisor-timesheet-sign', sent_at__date=timesheet_date
+                template__slug=template_slug, sent_at__date=timesheet_date
             ).first()
 
         return sms and sms_serializers.SMSMessageSerializer(sms, fields=['id', '__str__']).data
