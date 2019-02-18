@@ -8,8 +8,9 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from r3sourcer.apps.billing.models import Subscription, Payment, Discount
-from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer, DiscountSerializer
+from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance
+from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer, DiscountSerializer, SmsBalanceSerializer
+from r3sourcer.apps.billing.tasks import charge_for_sms
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company, Contact
 
@@ -160,3 +161,24 @@ class DisableSMSContactView(APIView):
         contact.sms_enabled = False
         contact.save()
         return Response()
+
+
+class TwilioFundCreateView(APIView):
+    def post(self, *args, **kwargs):
+        company = self.request.user.company
+
+        if not company.stripe_customer:
+            data = {'error': 'User didnt provide payment information.'}
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+
+        amount = self.request.data.get('amount')
+
+        sms_balance = SMSBalance.objects.get(company=company)
+        charge_for_sms.delay(company.id, amount, sms_balance.id)
+
+        serializer = SmsBalanceSerializer(sms_balance)
+
+        data = {
+            "subscription": serializer.data
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
