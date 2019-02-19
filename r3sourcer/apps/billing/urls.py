@@ -15,6 +15,7 @@ urlpatterns = [
     url(r'^billing/disable_sms/company/(?P<id>[\w\-]+)$', views.DisableSMSCompanyView.as_view(), name='disable_sms_company'),
     url(r'^billing/disable_sms/contact/(?P<id>[\w\-]+)$', views.DisableSMSContactView.as_view(), name='disable_sms_contact'),
     url(r'^billing/add_funds_twilio/$', views.TwilioFundCreateView.as_view(), name='add_funds_twilio'),
+    url(r'^billing/auto_charge_twilio/$', views.TwilioAutoChargeView.as_view(), name='auto_charge_twilio'),
 
     # subscription management page
     url(r'^billing/companies/$', views.CompanyListView.as_view(), name='company_list'),
