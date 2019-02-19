@@ -184,13 +184,12 @@ class TwilioFundCreateView(APIView):
         return Response(data, status=status.HTTP_201_CREATED)
 
 
-class TwilioAutoChargeView(GenericAPIView):
-    serializer_class = SmsAutoChargeSerializer
+class TwilioAutoChargeView(APIView):
 
     def get(self, *args, **kwargs):
         company = self.request.user.company
         sms_balance = SMSBalance.objects.get(company=company)
-        serializer = self.serializer_class(sms_balance)
+        serializer = SmsAutoChargeSerializer(sms_balance)
         data = {
             "sms_balance": serializer.data
             }
@@ -214,7 +213,7 @@ class TwilioAutoChargeView(GenericAPIView):
         sms_balance.auto_charge = self.request.data.get('auto_charge')
         sms_balance.save()
 
-        serializer = self.serializer_class(sms_balance)
+        serializer = SmsAutoChargeSerializer(sms_balance)
 
         data = {
             "sms_balance": serializer.data
