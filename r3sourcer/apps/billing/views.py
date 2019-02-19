@@ -4,12 +4,12 @@ from datetime import datetime
 
 from django.conf import settings
 from rest_framework import status
-from rest_framework.generics import ListAPIView, ListCreateAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance
-from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer, DiscountSerializer, SmsBalanceSerializer
+from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer
 from r3sourcer.apps.billing.tasks import charge_for_sms
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company, Contact
@@ -179,6 +179,44 @@ class TwilioFundCreateView(APIView):
         serializer = SmsBalanceSerializer(sms_balance)
 
         data = {
-            "subscription": serializer.data
+            "sms_balance": serializer.data
+        }
+        return Response(data, status=status.HTTP_201_CREATED)
+
+
+class TwilioAutoChargeView(GenericAPIView):
+    serializer_class = SmsAutoChargeSerializer
+
+    def get(self, *args, **kwargs):
+        company = self.request.user.company
+        sms_balance = SMSBalance.objects.get(company=company)
+        serializer = self.serializer_class(sms_balance)
+        data = {
+            "sms_balance": serializer.data
+            }
+        return Response(data, status=status.HTTP_200_OK)
+
+    def post(self, *args, **kwargs):
+        company = self.request.user.company
+
+        if not company.stripe_customer:
+            data = {'error': 'User didnt provide payment information.'}
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+
+        sms_balance = SMSBalance.objects.get(company=company)
+
+        if 'top_up_amount' not in self.request.data or 'top_up_limit' not in self.request.data:
+            data = {'error': 'Must provide top_up_amount and top_up_limit'}
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+
+        sms_balance.top_up_amount = self.request.data.get('top_up_amount')
+        sms_balance.top_up_limit = self.request.data.get('top_up_limit')
+        sms_balance.auto_charge = self.request.data.get('auto_charge')
+        sms_balance.save()
+
+        serializer = self.serializer_class(sms_balance)
+
+        data = {
+            "sms_balance": serializer.data
         }
         return Response(data, status=status.HTTP_201_CREATED)
