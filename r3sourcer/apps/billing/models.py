@@ -6,6 +6,7 @@ from decimal import Decimal
 from django.conf import settings
 from django.db import models
 from django.utils.formats import date_format
+from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import Company
@@ -83,6 +84,7 @@ class SMSBalance(models.Model):
     top_up_limit = models.IntegerField(default=10)
     last_payment = models.ForeignKey('Payment', blank=True, null=True)
     cost_of_segment = models.DecimalField(default=0, max_digits=8, decimal_places=2)
+    auto_charge = models.BooleanField(default=False, verbose_name=_('Auto Charge'))
 
     @property
     def segment_cost(self):
@@ -96,7 +98,7 @@ class SMSBalance(models.Model):
     def save(self, *args, **kwargs):
         from r3sourcer.apps.billing.tasks import charge_for_sms
 
-        if self.balance <= self.top_up_limit:
+        if self.balance <= self.top_up_limit and self.auto_charge == True:
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
 
         if Decimal(self.balance) - self.segment_cost < 0:
