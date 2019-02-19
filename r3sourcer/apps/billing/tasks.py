@@ -3,6 +3,8 @@ import datetime
 import stripe
 
 from celery import shared_task
+from celery.utils.log import get_task_logger
+
 from django.conf import settings
 
 from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance
@@ -11,6 +13,7 @@ from r3sourcer.apps.email_interface.utils import get_email_service
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
+logger = get_task_logger(__name__)
 
 
 @shared_task
@@ -69,10 +72,11 @@ def charge_for_sms(company_id, amount, sms_balance_id):
     invoice = stripe.Invoice.create(customer=company.stripe_customer)
     payment = Payment.objects.create(
         company=company,
-        type=Payment.PAYMENT_TYPES.extra_workers,
+        type=Payment.PAYMENT_TYPES.sms,
         amount=amount,
         stripe_id=invoice['id']
     )
+    sms_balance.balance += payment.amount
     sms_balance.last_payment = payment
     sms_balance.save()
 

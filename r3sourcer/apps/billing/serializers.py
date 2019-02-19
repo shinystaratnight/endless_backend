@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from r3sourcer.apps.billing.models import Subscription, Payment, Discount
+from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance
 from r3sourcer.apps.core.models.core import Company
 
 
@@ -51,3 +51,9 @@ class DiscountSerializer(serializers.ModelSerializer):
         company = Company.objects.get(id=company_data['id'])
         validated_data.update({'company': company})
         return super(DiscountSerializer, self).create(validated_data)
+
+
+class SmsBalanceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = SMSBalance
+        fields = ('id', 'company',)
