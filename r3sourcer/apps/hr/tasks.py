@@ -246,9 +246,11 @@ def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
     if invoice is None and recreate:
         invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
 
+    return invoice
+
 
 @shared_task
-def generate_invoice(timesheet_id=None, recreate=False):
+def generate_invoice(timesheet_id=None, recreate=False, delete_lines=False):
     """
     Generates new or updates existing invoice. Accepts regular(customer) company.
     """
@@ -270,6 +272,9 @@ def generate_invoice(timesheet_id=None, recreate=False):
     if invoice and invoice.approved:
         new_date_from, new_date_to = utils.get_invoice_dates(invoice_rule)
         invoice = _get_invoice(company, new_date_from, new_date_to, recreate=recreate)
+
+    if delete_lines:
+        timesheet.invoice_lines.filter(invoice__approved=False).delete()
 
     service.generate_invoice(date_from, date_to, company=company, invoice=invoice)
 

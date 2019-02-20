@@ -243,7 +243,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
             serializer.save()
 
-            generate_invoice.apply_async([obj.id], countdown=10)
+            generate_invoice.apply_async(args=[obj.id], countdown=10)
         else:
             if not obj.break_started_at or not obj.break_ended_at:
                 obj.no_break = True
@@ -322,12 +322,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @transaction.atomic
     @action(methods=['post'], detail=True)
     def recreate_invoice(self, request, pk, *args, **kwargs):
-        timesheet = self.get_object()
-
-        if timesheet.invoice_lines.filter(invoice__approved=False).exists():
-            timesheet.invoice_lines.all().delete()
-
-        generate_invoice.apply_async([timesheet.id], countdown=10)
+        generate_invoice.apply_async(kwargs={'timesheet_id': pk, 'delete_lines': True}, countdown=10)
 
         return Response({
             'status': 'success',
