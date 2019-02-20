@@ -135,6 +135,30 @@ class RateCoefficient(UUIDModel):
         return self.rate_coefficient_modifiers.filter(type=RateCoefficientModifier.TYPE_CHOICES.candidate).first()
 
 
+class RateCoefficientRel(UUIDModel):
+
+    rate_coefficient = models.ForeignKey(
+        RateCoefficient,
+        related_name='rate_coefficient_rels',
+        verbose_name=_('Rate Coefficient'),
+        on_delete=models.CASCADE
+    )
+
+    company = models.ForeignKey(
+        Company,
+        on_delete=models.CASCADE,
+        related_name='rate_coefficient_rels',
+        verbose_name=_('Company'),
+    )
+
+    class Meta:
+        verbose_name = _("Rate Coefficient Relation")
+        verbose_name_plural = _("Rate Coefficient Relations")
+
+    def __str__(self):
+        return '{}: {}'.format(str(self.company), str(self.rate_coefficient))
+
+
 class PriceList(PriceListMixin, UUIDModel):
 
     company = models.ForeignKey(
@@ -374,7 +398,7 @@ class DynamicCoefficientRule(UUIDModel):
 
 __all__ = [
     'PriceListMixin', 'PriceListRateMixin', 'Industry', 'RateCoefficientGroup',
-    'RateCoefficient', 'PriceList', 'PriceListRate',
+    'RateCoefficient', 'RateCoefficientRel', 'PriceList', 'PriceListRate',
     'PriceListRateCoefficient', 'RateCoefficientModifier',
     'DynamicCoefficientRule',
 ]
