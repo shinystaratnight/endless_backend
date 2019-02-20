@@ -1,6 +1,7 @@
 from django.contrib.contenttypes.models import ContentType
 
 from r3sourcer.apps.core.api import viewsets as core_viewsets
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.pricing import models as pricing_models
 
 
@@ -31,3 +32,12 @@ class RateCoefficientViewset(core_viewsets.BaseApiViewset):
             setattr(obj, extra, rule)
 
         return obj
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        master_company = get_site_master_company(request=self.request)
+        pricing_models.RateCoefficientRel.objects.create(
+            rate_coefficient=instance,
+            company=master_company
+        )

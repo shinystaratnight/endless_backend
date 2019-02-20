@@ -45,3 +45,10 @@ class IndustryFilter(FilterSet):
               skillname__skills__price_list_rates__price_list__valid_from__lte=now,
               skillname__skills__price_list_rates__price_list__valid_until__gte=now)
         ).distinct()
+
+
+class RateCoefficientFilter(FilterSet):
+
+    class Meta:
+        model = models.RateCoefficient
+        fields = ['industry']

@@ -25,6 +25,7 @@ class RateCoefficientEndpoint(ApiEndpoint):
     model = models.RateCoefficient
     base_viewset = viewsets.RateCoefficientViewset
     serializer = serializers.RateCoefficientSerializer
+    filter_class = filters.RateCoefficientFilter
 
 
 class PriceListRateEndpoint(ApiEndpoint):
