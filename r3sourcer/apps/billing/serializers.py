@@ -64,4 +64,4 @@ class SmsAutoChargeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = SMSBalance
-        fields = ('id', 'company', 'company_name', 'balance', 'top_up_amount', 'top_up_limit', 'last_payment', 'auto_charge')
+        fields = ('id', 'company', 'company_name', 'balance', 'top_up_amount', 'top_up_limit', 'last_payment', 'segment_cost', 'auto_charge')
