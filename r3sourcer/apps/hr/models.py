@@ -1092,6 +1092,12 @@ class TimeSheet(
         default=False
     )
 
+    supervisor_modified_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        verbose_name=_("Supervisor modified at")
+    )
+
     candidate_rate = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -1257,6 +1263,7 @@ class TimeSheet(
         self.break_started_at = None
         self.break_ended_at = None
         self.supervisor_modified = False
+        self.supervisor_modified_at = None
         self.save()
 
     def _send_going_to_work(self, going_eta):
@@ -1290,14 +1297,14 @@ class TimeSheet(
         elif self.candidate_submitted_at is not None:
             self.status = self.STATUS_CHOICES.approval_pending
         elif self.going_to_work_confirmation:
-            if self.shift_started_at <= timezone.localtime():
+            if self.shift_started_at <= timezone.now():
                 self.status = self.STATUS_CHOICES.submit_pending
             else:
                 self.status = self.STATUS_CHOICES.check_confirmed
         elif self.going_to_work_confirmation is None:
             pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
             going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
-            if going_eta <= timezone.localtime():
+            if going_eta <= timezone.now():
                 self.status = self.STATUS_CHOICES.check_pending
         elif not self.going_to_work_confirmation:
             self.status = self.STATUS_CHOICES.check_failed
