@@ -24,7 +24,7 @@ class TimesheetFilter(FilterSet):
 
     class Meta:
         model = hr_models.TimeSheet
-        fields = ['shift_started_at', 'supervisor']
+        fields = ['shift_started_at', 'supervisor', 'status']
 
     def filter_candidate(self, queryset, name, value):
         return queryset.filter(
@@ -59,7 +59,11 @@ class TimesheetFilter(FilterSet):
         if contact.company_contact.exists():
             qs_approved &= Q(supervisor_approved_at__isnull=False, supervisor__contact=contact)
         else:
-            qs_approved &= Q(candidate_submitted_at__isnull=False, job_offer__candidate_contact__contact=contact)
+            qs_approved &= Q(
+                candidate_submitted_at__isnull=False,
+                supervisor_approved_at__isnull=False,
+                job_offer__candidate_contact__contact=contact
+            )
         return qs_approved
 
     @staticmethod
@@ -79,7 +83,12 @@ class TimesheetFilter(FilterSet):
         ) & (
             Q(supervisor_approved_at__isnull=True) |
             Q(supervisor_approved_at__gte=signed_delta)
-        ) & Q(supervisor__contact=contact, going_to_work_confirmation=True)
+        ) & Q(going_to_work_confirmation=True)
+
+        if contact.company_contact.exists():
+            qs_unapproved &= Q(supervisor__contact=contact)
+        else:
+            qs_unapproved &= Q(job_offer__candidate_contact__contact=contact)
 
         return qs_unapproved
 
