@@ -140,7 +140,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @action(methods=['put'], detail=True)
     def not_agree(self, request, pk, *args, **kwargs):  # pragma: no cover
         data = dict(request.data)
-        data.update(candidate_submitted_at=None, supervisor_modified=True)
+        data.update(candidate_submitted_at=None, supervisor_modified=True, supervisor_modified_at=timezone.localtime())
         return self.handle_request(request, pk, False, data=data,
                                    *args, **kwargs)
 
