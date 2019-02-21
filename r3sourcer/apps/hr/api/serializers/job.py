@@ -426,7 +426,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         }
 
     def get_can_delete(self, obj):  # pragma: no cover
-        return not obj.date.shifts.filter(job_offers__isnull=False).exists()
+        return not obj.job_offers.exists()
 
     def validate(self, validated_data):
         shift_date = validated_data['date']
