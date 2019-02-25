@@ -8,8 +8,9 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIVi
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance
-from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer
+from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType
+from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, \
+    CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
 from r3sourcer.apps.billing.tasks import charge_for_sms
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company, Contact
@@ -217,5 +218,16 @@ class TwilioAutoChargeView(APIView):
 
         data = {
             "sms_balance": serializer.data
-        }
+            }
         return Response(data, status=status.HTTP_201_CREATED)
+
+
+class SubscriptionTypeView(APIView):
+
+    def get(self, *args, **kwargs):
+        subscription_types = SubscriptionType.objects.all()
+        serializer = SubscriptionTypeSerializer(subscription_types, many=True)
+        data = {
+            "subscription_types": serializer.data
+            }
+        return Response(data, status=status.HTTP_200_OK)
