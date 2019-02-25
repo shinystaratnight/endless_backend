@@ -231,7 +231,7 @@ class MessageView(MessageViewBase, TokenRequiredMixin):
     ]
 
     UNAVAILABLE_TEXT_MESSAGE = _("Service is not allowed")
-    SUCCESS_SENDING = _("Your messages successfully sent to %s: %s")
+    SUCCESS_SENDING = _("Your message was successfully sent to %s: %s")
 
     def get_form_class(self):
         """
