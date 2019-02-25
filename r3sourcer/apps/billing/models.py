@@ -10,16 +10,13 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import Company
+# from r3sourcer.apps.billing.tasks import charge_for_new_amount
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
 
 class Subscription(models.Model):
-    SUBSCRIPTION_TYPES = Choices(
-        ('annual', 'Annual'),
-        ('monthly', 'Monthly')
-    )
     SUBSCRIPTION_STATUSES = Choices(
         ('active', 'Active'),
         ('past_due', 'Past due'),
@@ -28,7 +25,7 @@ class Subscription(models.Model):
     )
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='subscriptions')
     name = models.CharField(max_length=255)
-    type = models.CharField(max_length=255, choices=SUBSCRIPTION_TYPES)
+    subscription_type = models.ForeignKey('billing.SubscriptionType', on_delete=models.DO_NOTHING, related_name='subscriptions')
     price = models.PositiveIntegerField()
     worker_count = models.PositiveIntegerField()
     created = models.DateTimeField(auto_now_add=True)
@@ -63,6 +60,10 @@ class Subscription(models.Model):
 
         if last_payment:
             return last_payment.created
+
+    @property
+    def sms_balance(self):
+        return self.company.sms_balance.balance
 
     def save(self, *args, **kwargs):
         super(Subscription, self).save(*args, **kwargs)
@@ -202,3 +203,29 @@ class Discount(models.Model):
             subscription.coupon = coupon.id
             subscription.save()
         super(Discount, self).save(*args, **kwargs)
+
+
+class SubscriptionType(models.Model):
+    SUBSCRIPTION_TYPES = Choices(
+        ('annual', 'Annual'),
+        ('monthly', 'Monthly')
+    )
+    type = models.CharField(max_length=255, choices=SUBSCRIPTION_TYPES)
+    employess_total_num = models.PositiveIntegerField(blank=True, null=True)
+    max_employess_num = models.PositiveIntegerField(blank=True, null=True)
+    start_range = models.PositiveIntegerField(blank=True, null=True)
+    start_range_price_monthly = models.PositiveIntegerField(blank=True, null=True)
+    start_range_price_annual = models.PositiveIntegerField(blank=True, null=True)
+    step_change_val = models.PositiveIntegerField(blank=True, null=True)
+    heading = models.CharField(max_length=255, blank=True, null=True)
+    amount = models.PositiveIntegerField(blank=True, null=True)
+    amount_tag_line = models.CharField(max_length=255, blank=True, null=True)
+    amount_annual = models.CharField(max_length=255, blank=True, null=True)
+    table_text = models.CharField(max_length=255, blank=True, null=True)
+
+    def __str__(self):
+        return self.type
+
+    def save(self, *args, **kwargs):
+        # charge_for_new_amount.delay()
+        super(SubscriptionType, self).save(*args, **kwargs)

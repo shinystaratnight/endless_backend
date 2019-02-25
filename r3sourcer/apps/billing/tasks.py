@@ -7,7 +7,7 @@ from celery.utils.log import get_task_logger
 
 from django.conf import settings
 
-from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance
+from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance, SubscriptionType
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.email_interface.utils import get_email_service
 
@@ -33,7 +33,7 @@ def charge_for_extra_workers():
         active_workers = company.active_workers(subscription.current_period_start)
 
         if active_workers > paid_workers:
-            if subscription.type == Subscription.SUBSCRIPTION_TYPES.annual:
+            if subscription.subscription_type.type == SubscriptionType.SUBSCRIPTION_TYPES.annual:
                 extra_worker_fee = settings.ANNUAL_EXTRA_WORKER_FEE
             else:
                 extra_worker_fee = settings.MONTHLY_EXTRA_WORKER_FEE
@@ -145,3 +145,25 @@ def send_sms_payment_reminder():
 
     for sms_balance in two_days_objects:
         email_interface.send_tpl(sms_balance.company.primary_contact.contact.email, tpl_name='sms_payment_reminder_48')
+
+
+@shared_task
+def charge_for_new_amount():
+    today = datetime.datetime.today().date()
+    company_list = Company.objects.filter(type=Company.COMPANY_TYPES.master) \
+                                  .filter(subscriptions__active=True) \
+                                  .filter(subscriptions__current_period_end=today)
+
+    for company in company_list:
+        subscription = company.active_subscription
+        active_workers = company.active_workers(subscription.current_period_start)
+        if subscription.subscription_type.amount > 6:
+            amount = (active_workers) * subscription.subscription_type.amount
+        else:
+            amount = subscription.subscription_type.amount
+
+        plan = stripe.Plan.retrieve(subscription.plan_id)
+        plan.amount = amount * 100
+        plan.save()
+        subscription.price = amount
+        subscription.save()
