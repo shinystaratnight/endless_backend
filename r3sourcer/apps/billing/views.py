@@ -28,6 +28,7 @@ class SubscriptionCreateView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
         plan_type = self.request.data.get('type', None)
+        sub_type = SubscriptionType.objects.get(type=plan_type)
         worker_count = self.request.data.get('worker_count', None)
         plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
         plan = stripe.Plan.create(
@@ -51,7 +52,7 @@ class SubscriptionCreateView(APIView):
 
         sub = Subscription.objects.create(company=company,
                                           name=plan_name,
-                                          type=plan_type,
+                                          subscription_type=sub_type,
                                           worker_count=worker_count,
                                           price=self.request.data.get('price', None),
                                           plan_id=plan.id,

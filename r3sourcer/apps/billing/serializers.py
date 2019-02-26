@@ -7,7 +7,7 @@ from r3sourcer.apps.core.models.core import Company
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
-        fields = ('company', 'name', 'type', 'price', 'worker_count', 'created', 'active', 'id', 'current_period_start',
+        fields = ('company', 'name', 'subscription_type', 'price', 'worker_count', 'created', 'active', 'id', 'current_period_start',
                   'current_period_end', 'last_time_billed')
 
 
