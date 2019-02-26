@@ -10,7 +10,6 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import Company
-# from r3sourcer.apps.billing.tasks import charge_for_new_amount
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -227,5 +226,6 @@ class SubscriptionType(models.Model):
         return self.type
 
     def save(self, *args, **kwargs):
-        # charge_for_new_amount.delay()
+        from r3sourcer.apps.billing.tasks import charge_for_new_amount
+        charge_for_new_amount.delay()
         super(SubscriptionType, self).save(*args, **kwargs)

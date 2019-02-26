@@ -16,7 +16,16 @@ class TSubscriptionAdmin(admin.ModelAdmin):
                        'created')
 
 
+class SubscriptionTypeAdmin(admin.ModelAdmin):
+
+    def get_readonly_fields(self, request, obj=None):
+        if obj and obj.type == models.SubscriptionType.SUBSCRIPTION_TYPES.annual:
+            return self.readonly_fields + ('start_range_price_monthly',)
+        else:
+            return self.readonly_fields + ('start_range_price_annual',)
+
+
 admin.site.register(models.SMSBalance, SMSBalanceAdmin)
 admin.site.register(models.Subscription, TSubscriptionAdmin)
-admin.site.register(models.SubscriptionType)
+admin.site.register(models.SubscriptionType, SubscriptionTypeAdmin)
 admin.site.register(models.Payment)

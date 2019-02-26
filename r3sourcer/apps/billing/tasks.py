@@ -149,21 +149,45 @@ def send_sms_payment_reminder():
 
 @shared_task
 def charge_for_new_amount():
-    today = datetime.datetime.today().date()
+    from r3sourcer.apps.billing import STRIPE_INTERVALS
     company_list = Company.objects.filter(type=Company.COMPANY_TYPES.master) \
-                                  .filter(subscriptions__active=True) \
-                                  .filter(subscriptions__current_period_end=today)
+                                  .filter(subscriptions__active=True)
 
     for company in company_list:
         subscription = company.active_subscription
         active_workers = company.active_workers(subscription.current_period_start)
-        if subscription.subscription_type.amount > 6:
-            amount = (active_workers) * subscription.subscription_type.amount
+        # active_workers = subscription.worker_count
+        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.monthly:
+            total_amount = subscription.subscription_type.start_range_price_monthly
         else:
-            amount = subscription.subscription_type.amount
-
-        plan = stripe.Plan.retrieve(subscription.plan_id)
-        plan.amount = amount * 100
-        plan.save()
-        subscription.price = amount
-        subscription.save()
+            total_amount = subscription.subscription_type.start_range_price_annual
+        start_workers = 5
+        if active_workers > start_workers:
+            total_amount += (active_workers - start_workers) * subscription.subscription_type.step_change_val
+        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.annual:
+            total_amount = total_amount * 12 * .75
+        amount = total_amount
+        if not subscription.price == amount:
+            plan_type = subscription.subscription_type.type
+            plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type,
+                                                                  subscription.worker_count)
+            plan = stripe.Plan.create(
+                product=settings.STRIPE_PRODUCT_ID,
+                nickname=plan_name,
+                interval=STRIPE_INTERVALS[plan_type],
+                currency=company.currency,
+                amount=int(amount) * 100,
+                )
+            subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
+            stripe.Subscription.modify(subscription_stripe.id,
+                                       cancel_at_period_end=False,
+                                       items=[{
+                                           'id': subscription_stripe['items']['data'][
+                                               0].id,
+                                           'plan': plan.id,
+                                           }]
+                                       )
+            subscription.price = amount
+            subscription.save()
+        else:
+            pass
