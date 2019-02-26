@@ -96,11 +96,13 @@ class TrialUserView(APIView):
                 submit_message="You've been registered!"
             )
         )
+        end_of_trial = timezone.now() + datetime.timedelta(days=30)
 
         send_trial_email.apply_async([contact.id, company.id], countdown=10)
-        cancel_trial.apply_async([new_user.id], eta=timezone.now() + datetime.timedelta(days=30))
+        cancel_trial.apply_async([new_user.id], eta=end_of_trial)
 
         return Response({
             'status': 'success',
-            'message': _('Trial User registered successfully')
+            'message': _('Trial User registered successfully'),
+            'end of trial': end_of_trial.strftime("%Y-%m-%d %H:%M:%S")
         })
