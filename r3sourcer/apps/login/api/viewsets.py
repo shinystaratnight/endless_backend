@@ -253,7 +253,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             'status': 'success',
             'data': {
                 'contact': serializer.data,
-                'user': str(request.user.id)
+                'user': str(request.user.id),
+                'end_trial_date': request.user.get_end_of_trial()
             }
         }, status=status.HTTP_200_OK)
 
