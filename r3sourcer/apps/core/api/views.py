@@ -69,6 +69,8 @@ class TrialUserView(APIView):
         # set role and permissions
         permission_list = GlobalPermission.objects.all()
         new_user.user_permissions.add(*permission_list)
+        new_user.trial_period_start = timezone.now()
+        new_user.save()
 
         company = models.Company.objects.create(
             name=serializer.validated_data['company_name'],
@@ -103,6 +105,5 @@ class TrialUserView(APIView):
 
         return Response({
             'status': 'success',
-            'message': _('Trial User registered successfully'),
-            'end of trial': end_of_trial.strftime("%Y-%m-%d %H:%M:%S")
+            'message': _('Trial User registered successfully')
         })

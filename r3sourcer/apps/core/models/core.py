@@ -460,6 +460,7 @@ class User(UUIDModel,
         ),
     )
     date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+    trial_period_start = models.DateTimeField(_('trial start'), null=True, blank=True)
     role = models.ManyToManyField('Role')
 
     USERNAME_FIELD = 'id'
@@ -486,6 +487,13 @@ class User(UUIDModel,
     def get_full_name(self):
         return '{} {}'.format(self.first_name(), self.last_name())
     get_full_name.short_description = _("Full name")
+
+    def get_end_of_trial(self):
+        if self.trial_period_start:
+            end_of_trial = self.trial_period_start + timedelta(days=30)
+            return end_of_trial.strftime("%Y-%m-%d %H:%M:%S")
+        else:
+            return {"user": "User have no trial period start date"}
 
     def clean(self):
         if self.is_superuser \
@@ -1221,7 +1229,7 @@ class Company(
         if not start_date:
             start_date = timezone.make_aware(datetime.combine(date.today(), time(0, 0))) - timedelta(days=31)
 
-        return CandidateContact.objects.filter(job_offers__time_sheets__shift_started_at__gt=start_date).count()
+        return CandidateContact.objects.filter(job_offers__time_sheets__shift_started_at__gt=start_date).filter(job_offers__time_sheets__status=7).count()
 
     def get_active_discounts(self, payment_type=None):
         discounts = self.discounts.filter(active=True)
