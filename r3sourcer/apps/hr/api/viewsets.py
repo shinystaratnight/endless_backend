@@ -898,6 +898,10 @@ class ShiftViewset(BaseApiViewset):
 
     def perform_destroy(self, instance):
         shift_date = instance.date
+        
+        if instance.job_offers.exists():
+            raise exceptions.ValidationError(_('Shift Date has job offers'))
+
         instance.delete()
 
         if not shift_date.shifts.exists():
