@@ -127,7 +127,7 @@
     "name": "Supervisor TimeSheet Sign Reminder",
     "slug": "supervisor-timesheet-sign-reminder",
     "subject_template": "Sign time sheets reminder",
-    "message_text_template": "Hi [[supervisor]] we have not yet received your approval for the hours worked on your jobsite today. Please approve or change the hours submitted by clicking the link [[get_url]] or open on your computer https://crm.labourking.com.au -> Customer access. Please note failure to do so, will result in workers not getting paid for today, and can affect the price of your next order. If you have any issues please contact [[portfolio_manager]] [[portfolio_manager__contact__phone_mobile]] immediately. Thank you",
+    "message_text_template": "Hi [[supervisor]] we have not yet received your approval for the hours worked on your jobsite today. Please approve or change the hours submitted by clicking the link [[get_url]] or open on your computer https://r3sourcer.com. Please note failure to do so, will result in workers not getting paid for today, and can affect the price of your next order. If you have any issues please contact [[portfolio_manager]] [[portfolio_manager__contact__phone_mobile]] immediately. Thank you",
     "message_html_template": "",
     "reply_timeout": 0,
     "delivery_timeout": 10,
