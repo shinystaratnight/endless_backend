@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+{% load static %}
+{% load i18n l10n static %}
+{% localize on %}
+<head>
+	<meta charset="UTF-8">
+	<title>Timesheet</title>
+
+	<style>
+		@page{size: 500mm 200mm}
+		body {
+			color: #333;
+			font-size: 16px;
+			line-height: 1.2;
+
+			padding: 5px;
+		}
+
+		.provided-logo {
+			float: right;
+
+			font-size: 14px;
+			line-height: 20px;
+
+			color: rgba(51, 51, 51, .8);
+		}
+
+		.provided-logo img {
+			margin-left: 10px;
+		}
+
+		h4 {
+			margin-top: 40px;
+
+			font-weight: 600;
+		}
+
+		table {
+			width: 100%;
+
+			border-collapse: collapse;
+			border: 1px solid #ddd;
+		}
+
+		caption {
+			font-size: 20px;
+			font-weight: 600;
+
+			margin-bottom: 10px;
+		}
+
+		thead th {
+			background-color: #eee;
+		}
+
+		tbody td:first-child {
+			background-color: #eee;
+		}
+
+		th, td {
+			padding: 5px;
+			text-align: center;
+			border: 1px solid #cdcdcd;
+		}
+	</style>
+</head>
+<body>
+	<header>
+		<div class="logo">
+			<img src="Labourking_logo.jpg" alt="Logo" height="100px">
+			<span class="provided-logo">Timesheet provided by <img class="provided-logo" src="new-software.svg" alt="R3sourcer" height="20px"></span>
+		</div>
+	</header>
+	<body>
+		<h4>Timesheet</h4>
+{% for timesheet in timesheets %}
+		<table>
+			<caption>Rise Construction - Mascot ( expires 01/07/2017 )</caption>
+			<thead>
+				<tr>
+					<th>Rectuitee</th>
+					<th>Position</th>
+					<th>Date</th>
+					<th>Start</th>
+					<th>End</th>
+					<th>Break</th>
+					<th>Base hrs</th>
+					<th>x1.5</th>
+					<th>x2</th>
+					<th>Total</th>
+					<th>Travel</th>
+					<th>Meal</th>
+					<th>Electronic timesheet confirmed by supervicor</th>
+					<th>Electronic timesheet confirmed by recruitee</th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>{{ timesheet.candidate_contact }}</td>
+					<td>{{ timesheet.job_offer.job.position }}</td>
+					<td>{{ timesheet.shift_started_at|date:'d/m/Y' }}</td>
+					<td>{{ timesheet.shift_started_at|time:'h:i A' }}</td>
+					<td>{{ timesheet.shift_ended_at|time:'h:i A' }}</td>
+					<td>{{ timesheet.break_delta|time:'h:i A' }}</td>
+					<td>0</td>
+					<td>2.00</td>
+					<td>4.00</td>
+					<td>6.00</td>
+					<td>1</td>
+					<td>0</td>
+					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{ timesheet.supervisor_approved_at|date:'d/m/Y h:i A' }}</td>
+                    <td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{ timesheet.candidate_submitted_at|date:'d/m/Y h:i A' }}</td>
+				</tr>
+			</tbody>
+		</table>
+	<p style="page-break-before: always" ></p>
+	{% endfor %}
+	</body>
+</body>
+{% endlocalize %}
+</html>
