@@ -867,3 +867,47 @@ def auto_approve_timesheet(timesheet_id):
     hr_models.TimeSheet.objects.filter(
         id=timesheet_id, status=hr_models.TimeSheet.STATUS_CHOICES.modified
     ).update(status=hr_models.TimeSheet.STATUS_CHOICES.approved)
+
+
+def get_file_from_str(str):
+    from io import BytesIO
+    import weasyprint
+    pdf = weasyprint.HTML(string=str)
+    pdf_file = BytesIO()
+    pdf_file.write(pdf.write_pdf())
+    pdf_file.seek(0)
+
+    return pdf_file
+
+
+def generate_pdf(timesheet_ids):
+    from filer.models import File, Folder
+    from django.core.files.base import ContentFile
+    from django.template.loader import get_template
+    from django.utils.formats import date_format
+    from r3sourcer.apps.hr.models import TimeSheet
+
+    template = get_template('timesheet/timesheet.html')
+    timesheets = [TimeSheet.objects.get(id=t_id) for t_id in timesheet_ids]
+    context = {
+        'timesheets': timesheets,
+    }
+
+    pdf_file = get_file_from_str(str(template.render(context)))
+
+    folder, created = Folder.objects.get_or_create(
+        parent=timesheets[0].master_company.files,
+        name='timesheet',
+    )
+    file_name = 'timesheet_{}_{}_{}.pdf'.format(
+        str(timesheets[0].id),
+        date_format(timesheets[0].shift_started_at, 'Y_m_d'),
+        date_format(timesheets[0].shift_ended_at, 'Y_m_d')
+    )
+    file_obj, created = File.objects.get_or_create(
+        folder=folder,
+        name=file_name,
+        file=ContentFile(pdf_file.read(), name=file_name)
+    )
+
+    return file_obj
