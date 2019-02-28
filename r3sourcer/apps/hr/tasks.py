@@ -880,7 +880,7 @@ def get_file_from_str(str):
     return pdf_file
 
 
-def generate_pdf(timesheet_ids):
+def generate_pdf(timesheet_ids, request):
     from filer.models import File, Folder
     from django.core.files.base import ContentFile
     from django.template.loader import get_template
@@ -889,8 +889,10 @@ def generate_pdf(timesheet_ids):
 
     template = get_template('timesheet/timesheet.html')
     timesheets = [TimeSheet.objects.get(id=t_id) for t_id in timesheet_ids]
+
     context = {
         'timesheets': timesheets,
+        'request': request
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))
