@@ -66,15 +66,16 @@
 	</style>
 </head>
 <body>
+{% for timesheet in timesheets %}
 	<header>
 		<div class="logo">
-			<img src="Labourking_logo.jpg" alt="Logo" height="100px">
-			<span class="provided-logo">Timesheet provided by <img class="provided-logo" src="new-software.svg" alt="R3sourcer" height="20px"></span>
+			<img src="{% absstatic 'logo_mark.svg' %}" alt="Logo" style="height: 50px;">
+			<span class="provided-logo"><span style="height: 50px; line-height: 50px;">Timesheet provided by</span> <img class="provided-logo" src="{% absstatic 'new-software.svg' %}" alt="R3sourcer" style="height: 50px;"></span>
 		</div>
 	</header>
 	<body>
+		<h4 class="title">{{ timesheet.regular_company }}</h4>
 		<h4>Timesheet</h4>
-{% for timesheet in timesheets %}
 		<table>
 			<caption>Rise Construction - Mascot ( expires 01/07/2017 )</caption>
 			<thead>
@@ -115,8 +116,8 @@
 			</tbody>
 		</table>
 	<p style="page-break-before: always" ></p>
-	{% endfor %}
 	</body>
+{% endfor %}
 </body>
 {% endlocalize %}
 </html>

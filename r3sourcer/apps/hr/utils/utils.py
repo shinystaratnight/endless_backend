@@ -3,9 +3,12 @@ import logging
 from datetime import datetime, date, time, timedelta
 from collections import defaultdict
 from functools import reduce
+from urllib.parse import urlparse
 
 from django.db.models import Q
 from django.utils import timezone, formats
+from django.template.defaulttags import register
+from django.templatetags.static import static
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import InvoiceRule, Invoice
@@ -303,3 +306,12 @@ def format_dates_range(dates_list):
             results.extend([formats.date_format(fulldate, 'd/m') for fulldate in dates])
 
     return results
+
+@register.simple_tag(takes_context=True)
+def absstatic(context, path):
+    static_url = static(path)
+    parsed_url = urlparse(static_url)
+    if not parsed_url.netloc:
+        request = context['request']
+        return request.build_absolute_uri(static_url)
+    return static_url
