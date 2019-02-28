@@ -872,7 +872,6 @@ def auto_approve_timesheet(timesheet_id):
 def get_file_from_str(str):
     from io import BytesIO
     import weasyprint
-    print(str)
     pdf = weasyprint.HTML(string=str)
     pdf_file = BytesIO()
     pdf_file.write(pdf.write_pdf())
