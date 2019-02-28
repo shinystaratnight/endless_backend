@@ -328,6 +328,12 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             'status': 'success',
         })
 
+    @action(methods=['post'], detail=False)
+    def generate_pdf_timesheet(self, request, *args, **kwargs):
+        from r3sourcer.apps.hr.tasks import generate_pdf
+        pdf_file = generate_pdf(request.data.get("timesheets"))
+        return Response({'pdf_url': pdf_file.url})
+
 
 class InvoiceViewset(BaseApiViewset):
 
