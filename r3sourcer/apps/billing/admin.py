@@ -25,7 +25,12 @@ class SubscriptionTypeAdmin(admin.ModelAdmin):
             return self.readonly_fields + ('start_range_price_annual',)
 
 
+class PaymentAdmin(admin.ModelAdmin):
+    list_display = ('company', 'type', 'created')
+    search_fields = ('company__name',)
+
+
 admin.site.register(models.SMSBalance, SMSBalanceAdmin)
 admin.site.register(models.Subscription, TSubscriptionAdmin)
 admin.site.register(models.SubscriptionType, SubscriptionTypeAdmin)
-admin.site.register(models.Payment)
+admin.site.register(models.Payment, PaymentAdmin)
