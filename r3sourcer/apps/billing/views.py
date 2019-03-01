@@ -135,6 +135,7 @@ class SubscriptionCancelView(APIView):
         subscription = Subscription.objects.get(company=self.request.user.company, active=True)
         subscription.deactivate()
         subscription.active = False
+        subscription.status = 'canceled'
         subscription.save()
         return Response()
 
