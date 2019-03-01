@@ -86,7 +86,7 @@ class CandidateContactSerializer(
     core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer
 ):
 
-    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score')
+    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company')
 
     def create(self, validated_data):
         contact = validated_data.get('contact', None)
@@ -177,6 +177,10 @@ class CandidateContactSerializer(
 
     def get_workflow_score(self, obj):
         return obj.get_active_states().aggregate(score=Avg('score'))['score']
+
+    def get_master_company(self, obj):
+        master_company = obj.get_closest_company()
+        return master_company and core_fields.ApiBaseRelatedField.to_read_only_data(master_company)
 
 
 class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):

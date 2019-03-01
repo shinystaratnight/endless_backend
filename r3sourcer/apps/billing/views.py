@@ -80,7 +80,7 @@ class SubscriptionListView(ListAPIView):
 class StripeCustomerCreateView(APIView):
     def post(self, *args, **kwargs):
         company = self.request.user.company
-        description = 'Customer for {} company'.format(company.name)
+        description = '{}'.format(company.name)
         email = ''
 
         if company.billing_email:
@@ -175,7 +175,7 @@ class TwilioFundCreateView(APIView):
 
         amount = self.request.data.get('amount')
 
-        sms_balance = SMSBalance.objects.get(company=company)
+        sms_balance, created = SMSBalance.objects.get_or_create(company=company)
         charge_for_sms.delay(company.id, amount, sms_balance.id)
 
         serializer = SmsBalanceSerializer(sms_balance)

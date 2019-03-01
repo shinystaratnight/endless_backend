@@ -11,7 +11,7 @@ class SMSBalanceAdmin(admin.ModelAdmin):
 class TSubscriptionAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'status')
     list_filter = ('company',)
-    readonly_fields = ('company', 'last_time_billed', 'sms_balance', 'current_period_start',
+    readonly_fields = ('last_time_billed', 'sms_balance', 'current_period_start',
                        'current_period_end', 'worker_count', 'price', 'subscription_type',
                        'created')
 
