@@ -99,7 +99,11 @@ def fetch_payments():
             continue
 
         customer = company.stripe_customer
-        invoices = stripe.Invoice.list(customer=customer)['data']
+        try:
+            invoices = stripe.Invoice.list(customer=customer)['data']
+        except:
+            continue
+
         payments = Payment.objects.filter(invoice_url__isnull=True)
         not_paid_payments = Payment.objects.filter(status=Payment.PAYMENT_STATUSES.not_paid)
 
