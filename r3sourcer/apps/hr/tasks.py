@@ -880,19 +880,28 @@ def get_file_from_str(str):
     return pdf_file
 
 
+def timesheets_group_by_job_site(timesheets):
+    from itertools import groupby
+    for grouper, group in groupby(timesheets, key=lambda x: x.job_offer.shift.date.job.jobsite):
+        yield grouper, list(group)
+
+
 def generate_pdf(timesheet_ids, request):
     from filer.models import File, Folder
     from django.core.files.base import ContentFile
     from django.template.loader import get_template
     from django.utils.formats import date_format
     from r3sourcer.apps.hr.models import TimeSheet
+    from r3sourcer.apps.core.utils.companies import get_site_url
 
     template = get_template('timesheet/timesheet.html')
-    timesheets = [TimeSheet.objects.get(id=t_id) for t_id in timesheet_ids]
+    timesheets = TimeSheet.objects.filter(id__in=timesheet_ids).order_by('job_offer__shift__date__job__jobsite', 'shift_started_at')
+    domain = get_site_url(user=request.user)
 
     context = {
-        'timesheets': timesheets,
-        'request': request
+        'timesheets': timesheets_group_by_job_site(timesheets),
+        'request': request,
+        'domain': domain
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))

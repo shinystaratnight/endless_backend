@@ -2,12 +2,17 @@ from django.contrib import admin
 
 from . import models
 
+
+class TimeSheetAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'regular_company')
+
+
 admin.site.register(models.Jobsite)
 admin.site.register(models.JobsiteUnavailability)
 admin.site.register(models.Job)
 admin.site.register(models.ShiftDate)
 admin.site.register(models.Shift)
-admin.site.register(models.TimeSheet)
+admin.site.register(models.TimeSheet, TimeSheetAdmin)
 admin.site.register(models.TimeSheetIssue)
 admin.site.register(models.JobOffer)
 admin.site.register(models.CandidateEvaluation)
