@@ -8,7 +8,6 @@
 	<title>Timesheet</title>
 
 	<style>
-		@page{size: 500mm 200mm}
 		body {
 			color: #333;
 			font-size: 16px;
@@ -59,28 +58,33 @@
 		}
 
 		th, td {
-			padding: 5px;
+			font-size: 10px;
+			padding: 5px 2px;
 			text-align: center;
 			border: 1px solid #cdcdcd;
+		}
+		.provided-logo {
+			position: relative;
+			right: -20px;
 		}
 	</style>
 </head>
 <body>
-{% for timesheet in timesheets %}
+{% for group, t_s in timesheets %}
 	<header>
 		<div class="logo">
-			<img src="{% absstatic 'logo_mark.svg' %}" alt="Logo" style="height: 50px;">
+			<img src="{{ domain }}{{ group.get_closest_company.company_settings.logo.url }}" alt="Logo" style="height: 50px;">
 			<span class="provided-logo"><span style="height: 50px; line-height: 50px;">Timesheet provided by</span> <img class="provided-logo" src="{% absstatic 'new-software.svg' %}" alt="R3sourcer" style="height: 50px;"></span>
 		</div>
 	</header>
 	<body>
-		<h4 class="title">{{ timesheet.regular_company }}</h4>
+		<h4 class="title">{{ group }}</h4>
 		<h4>Timesheet</h4>
 		<table>
-			<caption>Rise Construction - Mascot ( expires 01/07/2017 )</caption>
+			<caption>{{ group }} ( expires {{ group.end_date|date:'d/m/Y' }} )</caption>
 			<thead>
 				<tr>
-					<th>Rectuitee</th>
+					<th>Candidate</th>
 					<th>Position</th>
 					<th>Date</th>
 					<th>Start</th>
@@ -97,6 +101,8 @@
 				</tr>
 			</thead>
 			<tbody>
+
+			{% for timesheet in t_s %}
 				<tr>
 					<td>{{ timesheet.candidate_contact }}</td>
 					<td>{{ timesheet.job_offer.job.position }}</td>
@@ -110,13 +116,18 @@
 					<td>6.00</td>
 					<td>1</td>
 					<td>0</td>
-					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{ timesheet.supervisor_approved_at|date:'d/m/Y h:i A' }}</td>
-                    <td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{ timesheet.candidate_submitted_at|date:'d/m/Y h:i A' }}</td>
+					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|date:'d/m/Y h:i A' }}
+					</td>
+					<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|date:'d/m/Y h:i A' }}
+					</td>
 				</tr>
+			{% endfor %}
 			</tbody>
 		</table>
-	<p style="page-break-before: always" ></p>
 	</body>
+	{% if not forloop.last %}
+		<p style="page-break-before: always" ></p>
+	{% endif %}
 {% endfor %}
 </body>
 {% endlocalize %}
