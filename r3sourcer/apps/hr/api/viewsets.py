@@ -58,6 +58,12 @@ class BaseTimeSheetViewsetMixin:
         serializer.save()
         generate_invoice.delay(time_sheet.id)
 
+        now = timezone.localtime(timezone.now())
+
+        if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
+                                                  supervisor=time_sheet.supervisor).exists():
+            hr_utils.send_supervisor_timesheet_approve(time_sheet, True)
+
         return Response(serializer.data)
 
     def handle_request(self, request, pk, is_candidate=True, *args, **kwargs):
@@ -904,7 +910,7 @@ class ShiftViewset(BaseApiViewset):
 
     def perform_destroy(self, instance):
         shift_date = instance.date
-        
+
         if instance.job_offers.exists():
             raise exceptions.ValidationError(_('Shift Date has job offers'))
 
