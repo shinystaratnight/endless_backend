@@ -354,6 +354,13 @@ class RateCoefficientModifier(UUIDModel):
         else:
             return hourly_rate * self.multiplier + self.fixed_addition
 
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                Q(rate_coefficient__rate_coefficient_rels__company=owner),
+            ]
+
 
 class DynamicCoefficientRule(UUIDModel):
 
