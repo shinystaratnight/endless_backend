@@ -60,9 +60,9 @@ class BaseTimeSheetViewsetMixin:
 
         now = timezone.localtime(timezone.now())
 
-        if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
-                                                  supervisor=time_sheet.supervisor).exists():
-            hr_utils.send_supervisor_timesheet_approve(time_sheet, True)
+        # if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
+        #                                           supervisor=time_sheet.supervisor).exists():
+        #     hr_utils.send_supervisor_timesheet_approve(time_sheet, True)
 
         return Response(serializer.data)
 
