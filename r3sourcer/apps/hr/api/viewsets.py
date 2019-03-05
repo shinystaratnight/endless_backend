@@ -58,7 +58,7 @@ class BaseTimeSheetViewsetMixin:
         serializer.save()
         generate_invoice.delay(time_sheet.id)
 
-        now = timezone.localtime(timezone.now())
+        # now = timezone.localtime(timezone.now())
 
         # if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
         #                                           supervisor=time_sheet.supervisor).exists():
