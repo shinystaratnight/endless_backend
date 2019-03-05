@@ -27,13 +27,21 @@ class CandidateContactFilter(ActiveStateFilterMixin, FilterSet):
         if not value:
             return queryset
 
-        return queryset.filter(candidate_skills__skill__in=value)
+        for skill in value:
+            queryset = queryset.filter(candidate_skills__skill=skill)
+
+        return queryset
+
+        return queryset
 
     def filter_tag(self, queryset, name, value):
         if not value:
             return queryset
 
-        return queryset.filter(tag_rels__tag__in=value)
+        for tag in value:
+            queryset = queryset.filter(tag_rels__tag=tag)
+
+        return queryset
 
 
 class SkillRelFilter(FilterSet):
