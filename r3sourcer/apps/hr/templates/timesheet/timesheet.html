@@ -58,7 +58,7 @@
 		}
 
 		th, td {
-			font-size: 10px;
+			font-size: 9px;
 			padding: 5px 2px;
 			text-align: center;
 			border: 1px solid #cdcdcd;
@@ -109,13 +109,13 @@
 					<td>{{ timesheet.shift_started_at|date:'d/m/Y' }}</td>
 					<td>{{ timesheet.shift_started_at|time:'h:i A' }}</td>
 					<td>{{ timesheet.shift_ended_at|time:'h:i A' }}</td>
-					<td>{{ timesheet.break_delta|time:'h:i A' }}</td>
-					<td>0</td>
-					<td>2.00</td>
-					<td>4.00</td>
-					<td>6.00</td>
-					<td>1</td>
-					<td>0</td>
+					<td>{{ timesheet.break_delta }}</td>
+					<td>{{ timesheet.base }}</td>
+					<td>{{ timesheet.c_1_5x }}</td>
+					<td>{{ timesheet.c_2x }}</td>
+					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x }}</td>
+					<td>{{ timesheet.travel }}</td>
+					<td>{{ timesheet.meal }}</td>
 					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|date:'d/m/Y h:i A' }}
 					</td>
 					<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|date:'d/m/Y h:i A' }}

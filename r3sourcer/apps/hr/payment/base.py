@@ -45,7 +45,7 @@ def calc_worked_delta(timesheet):
                 break_ended += hours_12
 
             if break_started > ended or break_ended > ended:
-                break_delta = timedelta()
+                break_delta = timesheet.break_ended_at - timesheet.break_started_at
             elif break_ended >= break_started:
                 break_delta = break_ended - break_started
                 timesheet.break_started_at = break_started
