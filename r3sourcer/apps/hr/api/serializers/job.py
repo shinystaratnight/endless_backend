@@ -606,9 +606,10 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
         updated_by_id = last_change['updated_by']
         system_user = get_default_user()
-        reply_sms = obj.job_offer_smses.filter(
+        reply_jo_sms = obj.job_offer_smses.filter(
             reply_received_by_sms__isnull=False
         ).order_by('-reply_received_by_sms__sent_at').first()
+        reply_sms = reply_jo_sms and reply_jo_sms.reply_received_by_sms
         jobsite_contact = obj.job.jobsite.primary_contact
 
         if obj.is_quota_filled() or (reply_sms and reply_sms.is_positive_answer() and not obj.is_accepted()):
