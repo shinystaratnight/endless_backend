@@ -73,7 +73,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
         'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms', 'invoice',
-        'shift',
+        'shift', 'evaluation',
     )
 
     class Meta:
@@ -171,6 +171,10 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
     def get_evaluated(self, obj):
         return obj.candidate_evaluations.exists()
+
+    def get_evaluation(self, obj):
+        if obj.candidate_evaluations.exists():
+            return CandidateEvaluationSerializer(obj.candidate_evaluations.first())
 
     def get_myob_status(self, obj):
         if obj.supervisor_approved_at and obj.candidate_submitted_at:
