@@ -307,6 +307,7 @@ def format_dates_range(dates_list):
 
     return results
 
+
 @register.simple_tag(takes_context=True)
 def absstatic(context, path):
     static_url = static(path)
@@ -315,3 +316,11 @@ def absstatic(context, path):
         request = context['request']
         return request.build_absolute_uri(static_url)
     return static_url
+
+
+@register.filter
+def get_hours(time_delta):
+    if not time_delta:
+        return '0'
+    hours = time_delta.total_seconds() / 3600
+    return '{0:.2f}'.format(hours)
