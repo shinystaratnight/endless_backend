@@ -8,6 +8,12 @@
 	<title>Timesheet</title>
 
 	<style>
+		@page {
+            size: A4 landscape;
+            /*margin: 4cm 2.2cm 1.8cm;*/
+            /*margin: 2cm 1.1cm 0.9cm;*/
+            margin: 1cm;
+        }
 		body {
 			color: #333;
 			font-size: 16px;
@@ -58,13 +64,12 @@
 		}
 
 		th, td {
-			font-size: 9px;
+			font-size: 15px;
 			padding: 5px 2px;
 			text-align: center;
 			border: 1px solid #cdcdcd;
 		}
 		.provided-logo {
-			position: relative;
 			right: -20px;
 		}
 	</style>
@@ -78,10 +83,9 @@
 		</div>
 	</header>
 	<body>
-		<h4 class="title">{{ group }}</h4>
-		<h4>Timesheet</h4>
+		<h4 class="title">{{ group.master_company }}</h4>
 		<table>
-			<caption>{{ group }} ( expires {{ group.end_date|date:'d/m/Y' }} )</caption>
+			<caption>{{ group }} {% if group.end_date  %} ( expires {{ group.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
 			<thead>
 				<tr>
 					<th>Candidate</th>
@@ -96,8 +100,8 @@
 					<th>Total</th>
 					<th>Travel</th>
 					<th>Meal</th>
-					<th>Electronic timesheet confirmed by supervicor</th>
-					<th>Electronic timesheet confirmed by recruitee</th>
+					<th>Electronic timesheet confirmed by supervisor</th>
+					<th>Electronic timesheet confirmed by candidate</th>
 				</tr>
 			</thead>
 			<tbody>
