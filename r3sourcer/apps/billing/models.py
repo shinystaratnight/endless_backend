@@ -46,8 +46,8 @@ class Subscription(models.Model):
 
     def sync_periods(self):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
-        self.current_period_start = datetime.datetime.fromtimestamp(subscription.current_period_start)
-        self.current_period_end = datetime.datetime.fromtimestamp(subscription.current_period_end)
+        self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
+        self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
 
     def deactivate(self):
         sub = stripe.Subscription.retrieve(self.subscription_id)
