@@ -71,9 +71,11 @@ class CandidateContactViewset(BaseApiViewset):
         if not id_list or not isinstance(id_list, list):
             raise exceptions.ParseError(_('You should select Company addresses'))
 
-        phone_numbers = set(self.model.objects.filter(
-            id__in=id_list, contact__phone_mobile__isnull=False).values_list(
-            'contact__phone_mobile', flat=True))
+        phone_numbers = CandidateContact.objects.filter(
+            id__in=id_list, contact__phone_mobile__isnull=False
+        ).values_list(
+            'contact__phone_mobile', flat=True
+        ).distinct()
 
         return Response({
             'status': 'success',
