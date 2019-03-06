@@ -3,6 +3,7 @@ import stripe
 from datetime import datetime
 
 from django.conf import settings
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
 from rest_framework.response import Response
@@ -47,8 +48,9 @@ class SubscriptionCreateView(APIView):
         current_period_end = None
 
         if isinstance(subscription.current_period_start, int):
-            current_period_start = datetime.fromtimestamp(subscription.current_period_start)
-            current_period_end = datetime.fromtimestamp(subscription.current_period_end)
+            # TODO change it to fromtimestamp if necessery 
+            current_period_start = datetime.utcfromtimestamp(subscription.current_period_start)
+            current_period_end = datetime.utcfromtimestamp(subscription.current_period_end)
 
         sub = Subscription.objects.create(company=company,
                                           name=plan_name,
