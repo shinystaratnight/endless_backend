@@ -331,7 +331,10 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @action(methods=['post'], detail=False)
     def generate_pdf_timesheet(self, request, *args, **kwargs):
         from r3sourcer.apps.hr.tasks import generate_pdf
-        pdf_file = generate_pdf(request.data.get("timesheets"), request)
+        try:
+            pdf_file = generate_pdf(request.data.get("timesheets"), request)
+        except:
+            return Response({"error": "No timesheets"})
         return Response({'pdf_url': pdf_file.url})
 
 
