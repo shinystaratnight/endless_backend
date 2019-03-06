@@ -32,8 +32,6 @@ class CandidateContactFilter(ActiveStateFilterMixin, FilterSet):
 
         return queryset
 
-        return queryset
-
     def filter_tag(self, queryset, name, value):
         if not value:
             return queryset

@@ -198,7 +198,7 @@ class CandidateSync(
 
             if not resp:
                 resp = self._get_object_by_field(
-                    super_fund.name.lower(),
+                    super_fund.fund_name.lower(),
                     resource=self.client.api.Payroll.SuperannuationFund,
                     myob_field='tolower(Name)',
                     single=True
