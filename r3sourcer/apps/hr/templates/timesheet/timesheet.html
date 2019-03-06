@@ -103,18 +103,17 @@
 			<tbody>
 
 			{% for timesheet in t_s %}
-			Industry : {{ timesheet.job_offer.job.jobsite.industry }}
 				<tr>
 					<td>{{ timesheet.candidate_contact }}</td>
 					<td>{{ timesheet.job_offer.job.position }}</td>
 					<td>{{ timesheet.shift_started_at|date:'d/m/Y' }}</td>
 					<td>{{ timesheet.shift_started_at|time:'h:i A' }}</td>
 					<td>{{ timesheet.shift_ended_at|time:'h:i A' }}</td>
-					<td>{{ timesheet.break_delta }}</td>
-					<td>{{ timesheet.base }}</td>
-					<td>{{ timesheet.c_1_5x }}</td>
-					<td>{{ timesheet.c_2x }}</td>
-					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x }}</td>
+					<td>{{ timesheet.break_delta|get_hours }}</td>
+					<td>{{ timesheet.base|get_hours }}</td>
+					<td>{{ timesheet.c_1_5x|get_hours }}</td>
+					<td>{{ timesheet.c_2x|get_hours }}</td>
+					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
 					<td>{{ timesheet.travel }}</td>
 					<td>{{ timesheet.meal }}</td>
 					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|date:'d/m/Y h:i A' }}
