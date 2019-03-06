@@ -1,5 +1,6 @@
 import operator
 from datetime import timedelta, date, time, datetime
+from filer.models import File, Folder
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -9,9 +10,12 @@ from r3sourcer.celeryapp import app
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
+from django.core.files.base import ContentFile
 from django.db import transaction, models
 from django.utils import timezone, formats
+from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
+from django.template.loader import get_template
 import pytz
 
 from r3sourcer.apps.core import models as core_models
@@ -20,12 +24,14 @@ from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.payment import InvoiceService
+from r3sourcer.apps.hr.payment import InvoiceService, calc_worked_delta
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
 from r3sourcer.apps.myob.api.wrapper import MYOBClient
 from r3sourcer.apps.myob.models import MYOBCompanyFileToken
+from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
+from r3sourcer.apps.pricing.services import PriceListCoefficientService
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 
@@ -886,22 +892,65 @@ def timesheets_group_by_job_site(timesheets):
         yield grouper, list(group)
 
 
-def generate_pdf(timesheet_ids, request):
-    from filer.models import File, Folder
-    from django.core.files.base import ContentFile
-    from django.template.loader import get_template
-    from django.utils.formats import date_format
-    from r3sourcer.apps.hr.models import TimeSheet
-    from r3sourcer.apps.core.utils.companies import get_site_url
+def get_price_list_rate(skill, customer_company):
+    price_list_rate = PriceListRate.objects.filter(
+        skill=skill,
+        price_list__company=customer_company,
+    ).last()
 
+    return price_list_rate
+
+
+def get_value_for_rate_type(coeffs_hours, rate_type):
+    for coeff in coeffs_hours:
+        rate = coeff['coefficient']
+        if rate is None:
+            return 'base'
+        try:
+            rate = rate.name.lower()
+        except:
+            pass
+
+        if rate_type in rate:
+            return coeff['hours']
+    return timedelta()
+
+
+def generate_pdf(timesheet_ids, request):
     template = get_template('timesheet/timesheet.html')
-    timesheets = TimeSheet.objects.filter(id__in=timesheet_ids).order_by('job_offer__shift__date__job__jobsite', 'shift_started_at')
-    domain = get_site_url(user=request.user)
+    timesheets = hr_models.TimeSheet.objects.filter(id__in=timesheet_ids).order_by('job_offer__shift__date__job__jobsite', 'shift_started_at')
+    domain = core_companies_utils.get_site_url(user=request.user)
+    coefficient_service = PriceListCoefficientService()
+    for timesheet in timesheets:
+        jobsite = timesheet.job_offer.job.jobsite
+        industry = jobsite.industry
+        skill = timesheet.job_offer.job.position
+        started_at = timesheet.shift_started_at
+        worked_hours = calc_worked_delta(timesheet)
+        coeffs_hours = coefficient_service.calc_company(
+            timesheet.master_company, industry, skill,
+            RateCoefficientModifier.TYPE_CHOICES.candidate,
+            started_at,
+            worked_hours,
+            break_started=timesheet.break_started_at,
+            break_ended=timesheet.break_ended_at,
+            )
+        timesheet.coeffs_hours = coeffs_hours
+        for rate_type in ['base', 'c_1_5x', 'c_2x', 'meal', 'travel']:
+            setattr(timesheet, rate_type, get_value_for_rate_type(coeffs_hours, rate_type))
+        if str(timesheet.travel) == '1:00:00':
+            timesheet.travel = 1
+        else:
+            timesheet.travel = 0
+        if str(timesheet.meal) == '1:00:00':
+            timesheet.meal = 1
+        else:
+            timesheet.meal = 0
 
     context = {
         'timesheets': timesheets_group_by_job_site(timesheets),
         'request': request,
-        'domain': domain
+        'domain': domain,
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))

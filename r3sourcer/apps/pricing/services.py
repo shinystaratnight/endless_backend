@@ -3,20 +3,20 @@ from itertools import chain
 
 from .models import RateCoefficient, PriceList, RateCoefficientModifier, PriceListRateCoefficient
 from .exceptions import RateNotApplicable
+from django.db import models
 
 
 class CoefficientService:
 
     def get_industry_rate_coefficient(self, industry, modifier_type,
                                       start_datetime, skill=None):
-        rate_coefficients = RateCoefficient.objects.filter(
-            industry=industry,
-            rate_coefficient_modifiers__type=modifier_type,
-            active=True
-        )
+        query = models.Q(industry=industry,
+                         rate_coefficient_modifiers__type=modifier_type,
+                         active=True)
+        # if skill:
+        #     query &= models.Q(price_lists__price_list_rates__skill=skill)
 
-        if skill:
-            rate_coefficients = rate_coefficients.filter(price_lists__price_list_rates__skill=skill)
+        rate_coefficients = RateCoefficient.objects.filter(query)
 
         return rate_coefficients.order_by('-priority').distinct()
 
