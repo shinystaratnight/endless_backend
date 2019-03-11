@@ -53,8 +53,10 @@ def charge_for_extra_workers():
                 company=company,
                 type=Payment.PAYMENT_TYPES.extra_workers,
                 amount=amount,
-                stripe_id=invoice['id']
-            )
+                stripe_id=invoice['id'],
+                invoice_url=invoice['invoice_pdf'],
+                status=invoice['status']
+                )
 
 
 @shared_task
@@ -76,7 +78,9 @@ def charge_for_sms(company_id, amount, sms_balance_id):
         company=company,
         type=Payment.PAYMENT_TYPES.sms,
         amount=amount,
-        stripe_id=invoice['id']
+        stripe_id=invoice['id'],
+        invoice_url=invoice['invoice_pdf'],
+        status=invoice['status']
     )
     sms_balance.balance += payment.amount
     sms_balance.last_payment = payment
