@@ -12,7 +12,7 @@ from rest_framework.views import APIView
 from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType
 from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, \
     CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
-from r3sourcer.apps.billing.tasks import charge_for_sms
+from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company, Contact
 
@@ -63,6 +63,18 @@ class SubscriptionCreateView(APIView):
                                           current_period_end=current_period_end,
                                           status=subscription.status)
         serializer = SubscriptionSerializer(sub)
+        customer = company.stripe_customer
+        invoices = stripe.Invoice.list(customer=customer)['data']
+        for invoice in invoices:
+            if not Payment.objects.filter(stripe_id=invoice['id']).exists():
+                Payment.objects.create(
+                    company=company,
+                    type=Payment.PAYMENT_TYPES.subscription,
+                    amount=invoice['total'] / 100,
+                    stripe_id=invoice['id'],
+                    invoice_url=invoice['invoice_pdf'],
+                    status=invoice['status']
+                )
         data = {
             "subscription": serializer.data
         }
