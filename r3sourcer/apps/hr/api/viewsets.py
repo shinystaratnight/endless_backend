@@ -922,6 +922,27 @@ class ShiftViewset(BaseApiViewset):
         if not shift_date.shifts.exists():
             shift_date.delete()
 
+    def get_queryset(self):
+        return super().get_queryset().annotate_is_fulfilled()
+
+    def list(self, request, *args, **kwargs):
+        response = super(ShiftViewset, self).list(request, args, kwargs)
+        ordering = request.query_params.get('ordering')
+        response.data['results'] = sorted(response.data['results'],
+                                          key=operator.itemgetter(
+                                              ordering.replace('-', ''), ))
+
+        if "-" in ordering:
+            response.data['results'] = sorted(response.data['results'],
+                                              key=lambda k: (
+                                              k[ordering.replace('-', '')],),
+                                              reverse=True)
+        else:
+            response.data['results'] = sorted(response.data['results'],
+                                              key=lambda k: (k[ordering],))
+
+        return response
+
 
 class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
 
