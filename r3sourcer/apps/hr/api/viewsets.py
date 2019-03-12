@@ -928,18 +928,19 @@ class ShiftViewset(BaseApiViewset):
     def list(self, request, *args, **kwargs):
         response = super(ShiftViewset, self).list(request, args, kwargs)
         ordering = request.query_params.get('ordering')
-        response.data['results'] = sorted(response.data['results'],
-                                          key=operator.itemgetter(
-                                              ordering.replace('-', ''), ))
+        if ordering:
+            response.data['results'] = sorted(response.data['results'],
+                                              key=operator.itemgetter(
+                                                  ordering.replace('-', ''), ))
 
-        if "-" in ordering:
-            response.data['results'] = sorted(response.data['results'],
-                                              key=lambda k: (
-                                              k[ordering.replace('-', '')],),
-                                              reverse=True)
-        else:
-            response.data['results'] = sorted(response.data['results'],
-                                              key=lambda k: (k[ordering],))
+            if "-" in ordering:
+                response.data['results'] = sorted(response.data['results'],
+                                                  key=lambda k: (
+                                                  k[ordering.replace('-', '')],),
+                                                  reverse=True)
+            else:
+                response.data['results'] = sorted(response.data['results'],
+                                                  key=lambda k: (k[ordering],))
 
         return response
 
