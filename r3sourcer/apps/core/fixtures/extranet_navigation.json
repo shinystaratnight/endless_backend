@@ -11,7 +11,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 62,
+    "rght": 60,
     "tree_id": 4,
     "level": 0
   }
@@ -20,16 +20,16 @@
   "model": "core.extranetnavigation",
   "pk": 2,
   "fields": {
-    "updated_at": "2017-10-13T06:36:48.461Z",
+    "updated_at": "2019-03-11T10:12:19.737Z",
     "created_at": "2017-10-13T06:36:48.461Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Activity",
     "url": "/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 12,
-    "rght": 15,
-    "tree_id": 4,
+    "lft": 24,
+    "rght": 27,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -37,16 +37,16 @@
   "model": "core.extranetnavigation",
   "pk": 3,
   "fields": {
-    "updated_at": "2017-10-13T06:38:19.871Z",
+    "updated_at": "2019-03-11T09:57:20.095Z",
     "created_at": "2017-10-13T06:38:19.871Z",
     "parent": 2,
     "name": "Activities",
     "url": "/activity/activities/",
     "endpoint": "/activity/activities/",
-    "access_level": "manager",
-    "lft": 13,
-    "rght": 14,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 25,
+    "rght": 26,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -105,16 +105,16 @@
   "model": "core.extranetnavigation",
   "pk": 7,
   "fields": {
-    "updated_at": "2017-10-13T06:46:50.694Z",
+    "updated_at": "2019-03-11T10:12:37.641Z",
     "created_at": "2017-10-13T06:44:46.207Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Address",
     "url": "/",
     "endpoint": "/",
-    "access_level": "manager",
-    "lft": 16,
-    "rght": 25,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 28,
+    "rght": 37,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -129,9 +129,9 @@
     "url": "/core/cities/",
     "endpoint": "/core/cities/",
     "access_level": "manager",
-    "lft": 19,
-    "rght": 20,
-    "tree_id": 4,
+    "lft": 31,
+    "rght": 32,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -146,9 +146,9 @@
     "url": "/core/addresses/",
     "endpoint": "/core/addresses/",
     "access_level": "manager",
-    "lft": 17,
-    "rght": 18,
-    "tree_id": 4,
+    "lft": 29,
+    "rght": 30,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -163,9 +163,9 @@
     "url": "/core/countries/",
     "endpoint": "/core/countries/",
     "access_level": "manager",
-    "lft": 21,
-    "rght": 22,
-    "tree_id": 4,
+    "lft": 33,
+    "rght": 34,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -180,9 +180,9 @@
     "url": "/core/regions/",
     "endpoint": "/core/regions/",
     "access_level": "manager",
-    "lft": 23,
-    "rght": 24,
-    "tree_id": 4,
+    "lft": 35,
+    "rght": 36,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -190,16 +190,16 @@
   "model": "core.extranetnavigation",
   "pk": 12,
   "fields": {
-    "updated_at": "2017-10-13T06:49:28.136Z",
+    "updated_at": "2019-03-11T10:12:56.461Z",
     "created_at": "2017-10-13T06:49:28.136Z",
-    "parent": 1,
+    "parent": 140,
     "name": "File storage",
     "url": "/core/filestorages/",
     "endpoint": "/core/filestorages/",
-    "access_level": "manager",
-    "lft": 26,
-    "rght": 27,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 38,
+    "rght": 39,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -224,16 +224,16 @@
   "model": "core.extranetnavigation",
   "pk": 14,
   "fields": {
-    "updated_at": "2017-10-13T06:50:47.133Z",
+    "updated_at": "2019-03-11T10:13:30.010Z",
     "created_at": "2017-10-13T06:50:38.356Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Workflow",
     "url": "/",
     "endpoint": "/",
-    "access_level": "manager",
-    "lft": 28,
-    "rght": 35,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 40,
+    "rght": 47,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -241,16 +241,16 @@
   "model": "core.extranetnavigation",
   "pk": 15,
   "fields": {
-    "updated_at": "2017-10-13T06:51:06.593Z",
+    "updated_at": "2019-03-11T09:58:09.530Z",
     "created_at": "2017-10-13T06:51:06.593Z",
     "parent": 14,
     "name": "Workflows",
     "url": "/core/workflows/",
     "endpoint": "/core/workflows/",
-    "access_level": "manager",
-    "lft": 29,
-    "rght": 30,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 41,
+    "rght": 42,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -265,9 +265,9 @@
     "url": "/core/workflownodes/",
     "endpoint": "/core/workflownodes/",
     "access_level": "manager",
-    "lft": 31,
-    "rght": 32,
-    "tree_id": 4,
+    "lft": 43,
+    "rght": 44,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -282,128 +282,43 @@
     "url": "/core/workflowobjects/",
     "endpoint": "/core/workflowobjects/",
     "access_level": "manager",
-    "lft": 33,
-    "rght": 34,
-    "tree_id": 4,
+    "lft": 45,
+    "rght": 46,
+    "tree_id": 14,
     "level": 2
-  }
-},
-{
-  "model": "core.extranetnavigation",
-  "pk": 18,
-  "fields": {
-    "updated_at": "2017-10-13T06:52:37.452Z",
-    "created_at": "2017-10-13T06:52:37.452Z",
-    "parent": 1,
-    "name": "Web Form",
-    "url": "/",
-    "endpoint": "/",
-    "access_level": "manager",
-    "lft": 36,
-    "rght": 47,
-    "tree_id": 4,
-    "level": 1
   }
 },
 {
   "model": "core.extranetnavigation",
   "pk": 19,
   "fields": {
-    "updated_at": "2017-10-13T06:55:13.258Z",
+    "updated_at": "2019-03-11T09:59:06.609Z",
     "created_at": "2017-10-13T06:55:13.258Z",
-    "parent": 18,
-    "name": "Forms",
+    "parent": 1,
+    "name": "Application Form",
     "url": "/core/forms/",
     "endpoint": "/core/forms/",
     "access_level": "manager",
-    "lft": 37,
-    "rght": 38,
+    "lft": 12,
+    "rght": 13,
     "tree_id": 4,
-    "level": 2
-  }
-},
-{
-  "model": "core.extranetnavigation",
-  "pk": 20,
-  "fields": {
-    "updated_at": "2017-10-13T06:56:22.928Z",
-    "created_at": "2017-10-13T06:56:15.868Z",
-    "parent": 18,
-    "name": "Form builders",
-    "url": "/core/formbuilders/",
-    "endpoint": "/core/formbuilders/",
-    "access_level": "manager",
-    "lft": 39,
-    "rght": 46,
-    "tree_id": 4,
-    "level": 2
-  }
-},
-{
-  "model": "core.extranetnavigation",
-  "pk": 21,
-  "fields": {
-    "updated_at": "2017-10-13T06:59:33.852Z",
-    "created_at": "2017-10-13T06:59:33.852Z",
-    "parent": 20,
-    "name": "Form fields",
-    "url": "/core/formfields/",
-    "endpoint": "/core/formfields/",
-    "access_level": "manager",
-    "lft": 40,
-    "rght": 41,
-    "tree_id": 4,
-    "level": 3
-  }
-},
-{
-  "model": "core.extranetnavigation",
-  "pk": 22,
-  "fields": {
-    "updated_at": "2017-10-13T07:00:18.775Z",
-    "created_at": "2017-10-13T07:00:18.776Z",
-    "parent": 20,
-    "name": "Form fields groups",
-    "url": "/core/formfieldgroups/",
-    "endpoint": "/core/formfieldgroups/",
-    "access_level": "manager",
-    "lft": 42,
-    "rght": 43,
-    "tree_id": 4,
-    "level": 3
-  }
-},
-{
-  "model": "core.extranetnavigation",
-  "pk": 23,
-  "fields": {
-    "updated_at": "2017-10-13T07:06:55.889Z",
-    "created_at": "2017-10-13T07:06:55.889Z",
-    "parent": 20,
-    "name": "Form storage",
-    "url": "/core/formstorages/",
-    "endpoint": "/core/formstorages/",
-    "access_level": "manager",
-    "lft": 44,
-    "rght": 45,
-    "tree_id": 4,
-    "level": 3
+    "level": 1
   }
 },
 {
   "model": "core.extranetnavigation",
   "pk": 24,
   "fields": {
-    "updated_at": "2017-10-13T07:07:14.239Z",
+    "updated_at": "2019-03-11T10:13:55.987Z",
     "created_at": "2017-10-13T07:07:14.239Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Tests",
     "url": "/",
     "endpoint": "/",
-    "access_level": "manager",
+    "access_level": "admin",
     "lft": 48,
     "rght": 57,
-    "tree_id": 4,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -420,7 +335,7 @@
     "access_level": "manager",
     "lft": 49,
     "rght": 56,
-    "tree_id": 4,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -437,7 +352,7 @@
     "access_level": "manager",
     "lft": 50,
     "rght": 51,
-    "tree_id": 4,
+    "tree_id": 14,
     "level": 3
   }
 },
@@ -454,7 +369,7 @@
     "access_level": "manager",
     "lft": 52,
     "rght": 53,
-    "tree_id": 4,
+    "tree_id": 14,
     "level": 3
   }
 },
@@ -471,7 +386,7 @@
     "access_level": "manager",
     "lft": 54,
     "rght": 55,
-    "tree_id": 4,
+    "tree_id": 14,
     "level": 3
   }
 },
@@ -479,16 +394,16 @@
   "model": "core.extranetnavigation",
   "pk": 29,
   "fields": {
-    "updated_at": "2017-10-13T07:13:35.869Z",
+    "updated_at": "2019-03-11T10:14:14.102Z",
     "created_at": "2017-10-13T07:12:29.278Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Interview schedules",
     "url": "/candidate/interviewschedules/",
     "endpoint": "/candidate/interviewschedules/",
-    "access_level": "manager",
+    "access_level": "admin",
     "lft": 58,
     "rght": 59,
-    "tree_id": 4,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -504,7 +419,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 12,
+    "rght": 8,
     "tree_id": 3,
     "level": 0
   }
@@ -768,16 +683,16 @@
   "model": "core.extranetnavigation",
   "pk": 57,
   "fields": {
-    "updated_at": "2017-10-13T07:31:06.035Z",
+    "updated_at": "2019-03-11T10:10:53.923Z",
     "created_at": "2017-10-13T07:31:06.035Z",
-    "parent": 30,
+    "parent": 140,
     "name": "Superannuation funds",
     "url": "/candidate/superannuationfunds/",
     "endpoint": "/candidate/superannuationfunds/",
-    "access_level": "manager",
-    "lft": 6,
-    "rght": 7,
-    "tree_id": 3,
+    "access_level": "admin",
+    "lft": 18,
+    "rght": 19,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -809,8 +724,8 @@
     "url": "/core/invoices/",
     "endpoint": "/core/invoices/",
     "access_level": "manager",
-    "lft": 8,
-    "rght": 9,
+    "lft": 6,
+    "rght": 7,
     "tree_id": 3,
     "level": 1
   }
@@ -904,16 +819,16 @@
   "model": "core.extranetnavigation",
   "pk": 65,
   "fields": {
-    "updated_at": "2017-10-13T07:34:40.877Z",
+    "updated_at": "2019-03-11T10:11:15.860Z",
     "created_at": "2017-10-13T07:34:40.877Z",
-    "parent": 30,
+    "parent": 140,
     "name": "Employment classifications",
     "url": "/skills/employmentclassifications/",
     "endpoint": "/skills/employmentclassifications/",
-    "access_level": "manager",
-    "lft": 10,
-    "rght": 11,
-    "tree_id": 3,
+    "access_level": "admin",
+    "lft": 20,
+    "rght": 21,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -989,16 +904,16 @@
   "model": "core.extranetnavigation",
   "pk": 74,
   "fields": {
-    "updated_at": "2018-03-26T08:02:02.256Z",
+    "updated_at": "2019-03-11T10:11:53.044Z",
     "created_at": "2017-10-13T07:38:55.973Z",
-    "parent": 1,
+    "parent": 140,
     "name": "Visa types",
     "url": "/candidate/visatypes/",
     "endpoint": "/candidate/visatypes/",
-    "access_level": "manager",
-    "lft": 10,
-    "rght": 11,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 22,
+    "rght": 23,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -1788,16 +1703,16 @@
   "model": "core.extranetnavigation",
   "pk": 125,
   "fields": {
-    "updated_at": "2018-02-15T10:59:59.120Z",
+    "updated_at": "2019-03-11T10:14:41.853Z",
     "created_at": "2018-02-15T10:59:59.121Z",
-    "parent": 1,
+    "parent": 140,
     "name": "SMS",
     "url": "/",
     "endpoint": "/",
-    "access_level": "manager",
-    "lft": 62,
-    "rght": 69,
-    "tree_id": 4,
+    "access_level": "admin",
+    "lft": 60,
+    "rght": 65,
+    "tree_id": 14,
     "level": 1
   }
 },
@@ -1805,17 +1720,17 @@
   "model": "core.extranetnavigation",
   "pk": 126,
   "fields": {
-    "updated_at": "2018-02-15T11:06:46.874Z",
+    "updated_at": "2019-03-11T10:01:18.902Z",
     "created_at": "2018-02-15T11:00:52.915Z",
-    "parent": 125,
+    "parent": 1,
     "name": "SMS Messages",
     "url": "/sms-interface/messages/",
     "endpoint": "/sms-interface/smsmessages/",
     "access_level": "manager",
-    "lft": 63,
-    "rght": 64,
+    "lft": 14,
+    "rght": 15,
     "tree_id": 4,
-    "level": 2
+    "level": 1
   }
 },
 {
@@ -1829,9 +1744,9 @@
     "url": "/sms-interface/relatedobjects/",
     "endpoint": "/sms-interface/smsrelatedobjects/",
     "access_level": "manager",
-    "lft": 65,
-    "rght": 66,
-    "tree_id": 4,
+    "lft": 61,
+    "rght": 62,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -1846,9 +1761,9 @@
     "url": "/sms-interface/templates/",
     "endpoint": "/sms-interface/smstemplates/",
     "access_level": "manager",
-    "lft": 67,
-    "rght": 68,
-    "tree_id": 4,
+    "lft": 63,
+    "rght": 64,
+    "tree_id": 14,
     "level": 2
   }
 },
@@ -1965,8 +1880,8 @@
     "url": "/billing/",
     "endpoint": "/",
     "access_level": "manager",
-    "lft": 60,
-    "rght": 61,
+    "lft": 10,
+    "rght": 11,
     "tree_id": 4,
     "level": 1
   }
@@ -2017,7 +1932,7 @@
     "endpoint": "/",
     "access_level": "admin",
     "lft": 1,
-    "rght": 18,
+    "rght": 66,
     "tree_id": 14,
     "level": 0
   }
