@@ -929,7 +929,7 @@ class ShiftViewset(BaseApiViewset):
         queryset = super().filter_queryset(queryset)
         # ordering by custom field; TODO: rework it
         if self.request.query_params.get('ordering'):
-            ordering = self.request.query_params.get('ordering').replace('is_fulfilled', 'is_fulfilled_annotated')
+            ordering = self.request.query_params.get('ordering').replace('is_fulfilled', 'is_fulfilled_annotated').replace(".", "__")
             ord_list = ordering.split(',')
             return queryset.order_by(*ord_list)
         else:
