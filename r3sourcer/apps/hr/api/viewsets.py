@@ -925,24 +925,15 @@ class ShiftViewset(BaseApiViewset):
     def get_queryset(self):
         return super().get_queryset().annotate_is_fulfilled()
 
-    def list(self, request, *args, **kwargs):
-        response = super(ShiftViewset, self).list(request, args, kwargs)
-        ordering = request.query_params.get('ordering')
-        if ordering:
-            response.data['results'] = sorted(response.data['results'],
-                                              key=operator.itemgetter(
-                                                  ordering.replace('-', ''), ))
-
-            if "-" in ordering:
-                response.data['results'] = sorted(response.data['results'],
-                                                  key=lambda k: (
-                                                  k[ordering.replace('-', '')],),
-                                                  reverse=True)
-            else:
-                response.data['results'] = sorted(response.data['results'],
-                                                  key=lambda k: (k[ordering],))
-
-        return response
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        # ordering by custom field; TODO: rework it
+        if self.request.query_params.get('ordering'):
+            ordering = self.request.query_params.get('ordering').replace('is_fulfilled', 'is_fulfilled_annotated')
+            ord_list = ordering.split(',')
+            return queryset.order_by(*ord_list)
+        else:
+            return queryset
 
 
 class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
