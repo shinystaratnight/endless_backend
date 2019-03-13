@@ -605,7 +605,7 @@ class Shift(core_models.UUIDModel):
         null=True
     )
 
-    objects = ShiftQuerySet.as_manager()
+    # objects = ShiftQuerySet.as_manager()
 
     class Meta:
         verbose_name = _("Shift")
