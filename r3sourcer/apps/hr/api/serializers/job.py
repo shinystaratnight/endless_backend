@@ -412,7 +412,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         )
 
     def get_is_fulfilled(self, obj):  # pragma: no cover
-        return obj and obj.is_fulfilled_annotated
+        return obj and obj.is_fulfilled()
 
     def get_workers_details(self, obj):
         accepted = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.accepted).distinct()
