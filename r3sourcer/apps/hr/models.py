@@ -565,6 +565,23 @@ class ShiftDate(core_models.UUIDModel):
     is_fulfilled.short_description = _('Fulfilled')
 
 
+class SQCount(models.Subquery):
+    template = "(SELECT count(*) FROM (%(subquery)s) _count)"
+    output_field = models.IntegerField()
+
+
+class ShiftQuerySet(models.QuerySet):
+    def annotate_is_fulfilled(self):
+        return self.annotate(accepted_jos=SQCount(JobOffer.objects.filter(shift_id=models.OuterRef('id'))),
+                             workers_count=models.Count('workers')).annotate(
+                             is_fulfilled_annotated=models.Case(
+                                 models.When(condition=models.Q(
+                                        accepted_jos__gt=models.F('workers_count')),
+                                     then=models.Value(FULFILLED)),
+                                 default=models.Value(NOT_FULFILLED),
+                                 output_field=models.IntegerField()))
+
+
 class Shift(core_models.UUIDModel):
     time = models.TimeField(verbose_name=_("Time"))
 
@@ -587,6 +604,8 @@ class Shift(core_models.UUIDModel):
         blank=True,
         null=True
     )
+
+    # objects = ShiftQuerySet.as_manager()
 
     class Meta:
         verbose_name = _("Shift")

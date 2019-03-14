@@ -922,6 +922,19 @@ class ShiftViewset(BaseApiViewset):
         if not shift_date.shifts.exists():
             shift_date.delete()
 
+    # def get_queryset(self):
+    #     return super().get_queryset().annotate_is_fulfilled()
+
+    # def filter_queryset(self, queryset):
+    #     queryset = super().filter_queryset(queryset)
+    #     # ordering by custom field; TODO: rework it
+    #     if self.request.query_params.get('ordering'):
+    #         ordering = self.request.query_params.get('ordering').replace('is_fulfilled', 'is_fulfilled_annotated').replace(".", "__")
+    #         ord_list = ordering.split(',')
+    #         return queryset.order_by(*ord_list)
+    #     else:
+    #         return queryset
+
 
 class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
 
