@@ -222,6 +222,7 @@ class SubscriptionType(models.Model):
     amount_annual = models.CharField(max_length=255, blank=True, null=True)
     table_text = models.CharField(max_length=255, blank=True, null=True)
     discount_comment = models.CharField(max_length=255, blank=True, null=True)
+    percentage_discount = models.PositiveIntegerField(blank=True, null=True)
     amount_comment = models.CharField(max_length=255, blank=True, null=True)
     heading_tag_line = models.CharField(max_length=255, blank=True, null=True)
 
