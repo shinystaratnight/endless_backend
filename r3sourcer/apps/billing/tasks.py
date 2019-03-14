@@ -45,7 +45,7 @@ def charge_for_extra_workers():
                 amount = discount.apply_discount(amount)
 
             stripe.InvoiceItem.create(customer=company.stripe_customer,
-                                      amount=amount * 100,
+                                      amount=round((amount * 100) / 1.1),
                                       currency=company.currency,
                                       description='%s extra workers fee' % extra_workers)
             invoice = stripe.Invoice.create(customer=company.stripe_customer,
@@ -69,7 +69,7 @@ def charge_for_sms(company_id, amount, sms_balance_id):
         amount = discount.apply_discount(amount)
 
     stripe.InvoiceItem.create(customer=company.stripe_customer,
-                              amount=amount * 100,
+                              amount=round((amount * 100) / 1.1),
                               currency=company.currency,
                               description='Topping up sms balance')
     invoice = stripe.Invoice.create(customer=company.stripe_customer,
@@ -188,7 +188,7 @@ def charge_for_new_amount():
                 nickname=plan_name,
                 interval=STRIPE_INTERVALS[plan_type],
                 currency=company.currency,
-                amount=int(amount) * 100,
+                amount=round((int(amount) * 100) / 1.1),
                 )
             subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
             stripe.Subscription.modify(subscription_stripe.id,
