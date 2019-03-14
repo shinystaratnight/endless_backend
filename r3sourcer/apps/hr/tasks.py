@@ -442,10 +442,11 @@ def send_supervisor_timesheet_message(
         role = supervisor.contact.user.role.filter(name=core_models.Role.ROLE_NAMES.client).first()
         if not role:
             role = supervisor.contact.user.role.filter(name=core_models.Role.ROLE_NAMES.manager).first()
+        new_url_for_redirect = sign_navigation.url[:-1]
 
         extranet_login = TokenLogin.objects.create(
             contact=supervisor.contact,
-            redirect_to=sign_navigation.url,
+            redirect_to=new_url_for_redirect,
             role=role
         )
 
