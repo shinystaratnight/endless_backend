@@ -250,8 +250,8 @@ class CandidateLocationViewset(
     def history(self, request, *args, **kwargs):
         instance = self.get_object()
 
-        limit = request.query_params.get('limit', 10)
-        offset = request.query_params.get('offset', 0)
+        limit = int(request.query_params.get('limit', 10))
+        offset = int(request.query_params.get('offset', 0))
         page = offset // limit + 1
         timesheet_id = request.query_params.get('timesheet')
 

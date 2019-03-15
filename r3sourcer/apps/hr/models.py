@@ -14,6 +14,7 @@ from model_utils import Choices
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
+from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.mixins import CategoryFolderMixin
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.logger.main import endless_logger
@@ -570,13 +571,14 @@ class SQCount(models.Subquery):
     output_field = models.IntegerField()
 
 
-class ShiftQuerySet(models.QuerySet):
+class ShiftQuerySet(AbstractObjectOwnerQuerySet):
     def annotate_is_fulfilled(self):
-        return self.annotate(accepted_jos=SQCount(JobOffer.objects.filter(shift_id=models.OuterRef('id'))),
-                             workers_count=models.Count('workers')).annotate(
+
+        return self.annotate(accepted_jos=SQCount(JobOffer.objects.filter(shift_id=models.OuterRef('id'),
+                                                                          status=JobOffer.STATUS_CHOICES.accepted))).annotate(
                              is_fulfilled_annotated=models.Case(
                                  models.When(condition=models.Q(
-                                        accepted_jos__gt=models.F('workers_count')),
+                                        accepted_jos__gte=models.F('workers')),
                                      then=models.Value(FULFILLED)),
                                  default=models.Value(NOT_FULFILLED),
                                  output_field=models.IntegerField()))
@@ -605,7 +607,7 @@ class Shift(core_models.UUIDModel):
         null=True
     )
 
-    # objects = ShiftQuerySet.as_manager()
+    objects = ShiftQuerySet.as_manager()
 
     class Meta:
         verbose_name = _("Shift")
