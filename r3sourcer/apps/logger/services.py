@@ -50,15 +50,16 @@ class LocationLogger():
         if 'timesheet_id' in kwargs and kwargs.get('timesheet_id') is None:
             del kwargs['timesheet_id']
 
+        qs = self.get_location_queryset().filter(**kwargs).order_by(
+            '-log_at')
+
         if page_size < 0:
-            qs = self.get_location_queryset().filter(**kwargs).order_by(
-                '-log_at').paginate(
-                page_num=page_num
-                )
-        else:
-            qs = self.get_location_queryset().filter(**kwargs).order_by('-log_at').paginate(
-                page_num=page_num, page_size=page_size
-            )
+            page_size = qs.count()
+            if not page_size:
+                page_size = 10
+        qs = qs.paginate(
+            page_num=page_num, page_size=page_size
+        )
 
         return {
             'results': [self._map_location_log(log) for log in qs.objects],
