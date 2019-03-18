@@ -1,5 +1,8 @@
 from django.contrib.contenttypes.models import ContentType
 
+from rest_framework import status
+from rest_framework.response import Response
+
 from r3sourcer.apps.core.api import viewsets as core_viewsets
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.pricing import models as pricing_models
@@ -41,3 +44,7 @@ class RateCoefficientViewset(core_viewsets.BaseApiViewset):
             rate_coefficient=instance,
             company=master_company
         )
+
+    def destroy(self, request, *args, **kwargs):
+        return Response({'error': 'Unable to delete due relation to calculation'},
+                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
