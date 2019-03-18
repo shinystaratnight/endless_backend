@@ -1,7 +1,7 @@
 from django.contrib.contenttypes.models import ContentType
+from django.utils.translation import ugettext_lazy as _
 
-from rest_framework import status
-from rest_framework.response import Response
+from rest_framework.exceptions import ValidationError
 
 from r3sourcer.apps.core.api import viewsets as core_viewsets
 from r3sourcer.apps.core.utils.companies import get_site_master_company
@@ -45,6 +45,9 @@ class RateCoefficientViewset(core_viewsets.BaseApiViewset):
             company=master_company
         )
 
-    def destroy(self, request, *args, **kwargs):
-        return Response({'error': 'Unable to delete due relation to calculation'},
-                        status=status.HTTP_405_METHOD_NOT_ALLOWED)
+    def perform_destroy(self, instance):
+        if instance.rate_coefficient_rules.all() or instance.rate_coefficient_modifiers.all():
+            raise ValidationError({
+                    'error': _('Unable to delete due relation to calculation')
+                })
+        instance.delete()
