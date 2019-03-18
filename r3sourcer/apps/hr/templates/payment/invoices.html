@@ -5,36 +5,37 @@
 {% localize on %}
   <h2 class="document-title">{{ master_company.name }}</h2>
   <div class="group">
-    <div class="left">
-      <div class="group">
-        <div class="left">
-          <span>{{ master_company.get_hq_address.address.street_address }}</span><br>
-          <span>{{ master_company.get_hq_address.address.get_city_address }}</span><br>
-          <span>A.B.N. {{ master_company.get_formatted_abn }}</span><br>
-        </div>
-        <div class="right" style="text-align: left">
-          <span>PH {{ master_company.primary_contact.contact.phone_mobile }}</span><br>
-          <span>F {{ master_company.get_hq_address.phone_fax }}</span><br>
-          <span>{{ master_company.primary_contact.contact.email }}</span><br>
-          <span>{{ master_company.website }}</span>
-        </div>
-      </div>
+    <div class="left text">
+      <span>{{ master_company.get_hq_address.address.street_address }}</span><br>
+      <span>{{ master_company.get_hq_address.address.get_city_address }}</span><br>
+      <span>A.B.N. {{ master_company.get_formatted_abn }}</span><br>
+      <span>PH {{ master_company.primary_contact.contact.phone_mobile }}</span><br>
+      <span>F {{ master_company.get_hq_address.phone_fax }}</span><br>
+      <span>{{ master_company.primary_contact.contact.email }}</span><br>
+      <span>{{ master_company.website }}</span>
     </div>
     <div class="right">
       <img src="{% if master_company_logo %}{{ DOMAIN }}{{ master_company_logo }}{% else %}{{ DOMAIN }}/assets/img/logo.svg{% endif %}"
            alt="Logo" width="100" style="width: 100px"><br>
     </div>
   </div>
-  <h3 align="center">Tax Invoices</h3>
+
+  <div class="delim"></div>
+
+  <h3 align="document-name">Tax Invoices</h3>
 
   <p class="inner-block">
-    <span class="title">Bill To:&nbsp;</span><br>
-    <span>{{ company.name }}</span><br>
-    <span>{{ company.get_hq_address.address.street_address }}</span><br>
+    <span class="title sm">Bill To:&nbsp;</span>
+    <span>{{ company.name }}</span>
+    <br>
+    <span class="title sm">&nbsp;</span>
+    <span>{{ company.get_hq_address.address.street_address }}</span>
+    <br>
+    <span class="title sm">&nbsp;</span>
     <span>{{ company.get_hq_address.address.get_city_address }}</span>
   </p>
   <p class="inner-block">
-    <span class="title">Invoices No:&nbsp;</span>
+    <span class="title">Invoices Nos:&nbsp;</span>
     <span class="value">{{ invoice.number }}</span>
     <br>
     <span class="title">Date:&nbsp;</span>
@@ -44,15 +45,15 @@
     <span class="value">{{ invoice.order_number }}</span>
   </p>
 
-  <table>
+  <table class="list">
     <thead>
       <tr>
         <th>Date</th>
         <th>Units</th>
         <th>Notes</th>
+        <th>Code</th>
         <th>Rate</th>
         <th>Amount</th>
-        <th>Code</th>
       </tr>
     </thead>
     <tbody>
@@ -65,95 +66,52 @@
         {% else %}
             <td>{{ line.notes }}</td>
         {% endif %}
+        <td>{{ line.vat.name }}</td>
         <td>${{ line.unit_price }}</td>
         <td>${{ line.amount }}</td>
-        <td>{{ line.vat.name }}</td>
       </tr>
       {% endfor %}
     </tbody>
   </table>
 
-  <table class="invoice">
-    <thead></thead>
-    <tbody>
-      <tr>
-        <td rowspan="3" class="left-table">
-          <span class="inner-block">
-            <span class="title" style="width: auto">Terms:&nbsp;</span>
+  <div class="group">
+      <div class="left" style="width: 50%; margin-right: 0">
+          <span class="inner-block lg">
+            <span class="title" style="width: 10em">Terms:&nbsp;</span>
             <span class="value wrap">{{ company.get_terms_of_payment }}</span>
-          </span>
+          </span><br>
 
-          <span class="inner-block">
-            <span class="title" style="width: auto">Customer ABN:&nbsp;</span>
+          <span class="inner-block lg">
+            <span class="title" style="width: 10em">Customer ABN:&nbsp;</span>
             <span class="value wrap">{{ company.get_formatted_abn }}</span>
+          </span><br>
+
+          <span class="inner-block lg">
+            <span class="title" style="width: 10em">Comment:&nbsp;</span>
+            <span class="value wrap">All accounts overdue will accrue interest at the rate of 0,13% per day</span>
           </span>
+      </div>
+      <div class="right" style="width: 40%;">
+          <table class="price" border="0">
+              <tr>
+                  <td class="padding">Subtotal:<br> GST(10%):</td>
+                  <td class="padding">${{ invoice.total }}<br> ${{ invoice.tax }}</td>
+              </tr>
+              <tr>
+                  <td class="padding border" style="font-size: 14px; line-height: 14px; font-weight: 600">Total:<br> <span style="font-size: 8px; line-height: 10px; opacity: 0.4">Include GST</span></td>
+                  <td class="padding border" style="font-size: 14px; font-weight: 600">${{ invoice.total_with_tax }}</td>
+              </tr>
+              <tr>
+                  <td>Balance Due:</td>
+                  <td>${{ invoice.total_with_tax }}</td>
+              </tr>
+          </table>
+      </div>
+  </div>
 
-          <span class="inner-block">
-            <span class="period">Comment:&nbsp;</span><br>
-            <span>All accounts overdue will accrue interest at the rate of 0,13% per day</span>
-          </span>
-          <span class="inner-block">
-            <table>
-              <thead>
-                <tr>
-                  <th>Code</th>
-                  <th>Rate</th>
-                  <th>GST</th>
-                  <th>Sale Amount</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td>{{ code_data.code }}</td>
-                  <td>{{ code_data.rate }}%</td>
-                  <td>${{ code_data.tax }}</td>
-                  <td>${{ code_data.amount }}</td>
-                </tr>
-              </tbody>
-            </table>
-          </span>
-        </td>
-        <td style="text-align: left">
-          Subtotal:<br>
-          GST:
-        </td>
-        <td style="text-align: right">
-          ${{ invoice.total }}<br>
-          ${{ invoice.tax }}
-        </td>
-      </tr>
-      <tr>
-        <td style="text-align: left">Total(inc-GST):</td>
-        <td style="text-align: right">${{ invoice.total_with_tax }}</td>
-      </tr>
-      <tr>
-        <td style="text-align: left">Balance Due:</td>
-        <td style="text-align: right">${{ invoice.total_with_tax }}</td>
-      </tr>
-    </tbody>
-  </table>
+  <div class="delim"></div>
 
-  <span class="notice">Notice of assignment</span>
-
-  <p class="notice">
-    <b>This invoice has been assigned to 180 Capital Funding Pty Limited. No Offsets are allowed under this agreement. All payments must be made payable and sent to 180 Capital Funding Pty Ltd at Licked Bag 3000, Australia Squere, NSW 1215. All EFT payments must be sent to the bank account below:</b>
-  </p>
-
-  <p class="notice">
-    <span class="period" style="padding-left: 0">{{ company.bank_account.bank_name }}</span>
-    <span class="period">BSB:&nbsp;{{ company.bank_account.bsb }}</span>
-    <span class="period">Account no:&nbsp;{{ company.bank_account.account_number }}</span>
-  </p>
-
-  <p align="center">
-    <img src="" alt="creditor watch member">
-  </p>
-  <p align="center" style="font-style: normal">
-    This is a payment claim made under the Building and Construction Industry Security of Payment Act 1999 NSW
-  </p>
-  <p align="center" style="font-style: normal">
-    Invoice Template: {{ master_company.company_settings.invoice_template }}
-  </p>
+  <div>{{ master_company.company_settings.invoice_template | safe }}</div>
 
 {% endlocalize %}
 {% endblock %}
