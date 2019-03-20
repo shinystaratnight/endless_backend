@@ -557,7 +557,7 @@ class CompanyMapper(ContactMapper):
 
         if addresses:
             data['Addresses'] = addresses
-
+        # GST hardcoded
         if tax_code:
             data['SellingDetails'].update({
                 'TaxCode': {
