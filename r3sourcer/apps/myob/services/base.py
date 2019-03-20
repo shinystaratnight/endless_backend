@@ -290,7 +290,7 @@ class BaseSync:
             return
 
         sync_obj = self._get_sync_object(instance)
-        if sync_obj and self._is_synced(instance, sync_obj=sync_obj) and not partial:
+        if sync_obj and self._is_synced(instance, sync_obj=sync_obj) and partial:
             return
 
         res = self._sync_to(instance, sync_obj, partial)
