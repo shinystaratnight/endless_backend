@@ -27,7 +27,8 @@ def sync_candidate_contacts_to_myob(myob_client=None, account=None):
     candidate_contacts = CandidateContact.objects.filter(id__in=candidates_with_signed_timesheets).distinct()
 
     for candidate_contact in candidate_contacts:
-        sync.sync_to_myob(candidate_contact)
+        if candidate_contact.get_closest_company() == account:
+            sync.sync_to_myob(candidate_contact)
 
 
 def sync_companies_to_myob(myob_client=None, account=None):
@@ -36,4 +37,5 @@ def sync_companies_to_myob(myob_client=None, account=None):
     companies = Company.objects.filter()
 
     for company in companies:
-        sync.sync_to_myob(company)
+        if company == account:
+            sync.sync_to_myob(company)

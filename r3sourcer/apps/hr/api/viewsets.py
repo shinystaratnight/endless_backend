@@ -232,6 +232,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['get', 'put'], detail=True)
     def supervisor_approve(self, request, pk, *args, **kwargs):
+        from r3sourcer.apps.myob.tasks import sync_company_to_myob
         obj = self.get_object()
 
         if request.method == 'PUT':
@@ -248,6 +249,9 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
 
             serializer.save()
+
+            sync_company_to_myob.delay(
+                company_id=request.user.contact.get_closest_company().id)
 
             generate_invoice.apply_async(args=[obj.id], countdown=10)
         else:
