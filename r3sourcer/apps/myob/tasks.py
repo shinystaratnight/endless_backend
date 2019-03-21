@@ -42,6 +42,22 @@ def get_myob_client_for_account(company):
 
 
 @app.task(bind=True)
+def sync_company_to_myob(self, company_id):
+    company = Company.objects.get(id=company_id)
+    company_settings = getattr(company, 'myob_settings', None)
+
+    if company_settings and company_settings.timesheet_company_file:
+        myob_client = get_myob_client(
+            cf_id=company_settings.timesheet_company_file.cf_id)
+        sync_candidate_contacts_to_myob(myob_client, company)
+
+    if company_settings and company_settings.invoice_company_file:
+        myob_client = get_myob_client(
+            cf_id=company_settings.invoice_company_file.cf_id)
+        sync_companies_to_myob(myob_client, company)
+
+
+@app.task(bind=True)
 @one_task_at_the_same_time()
 @retry_on_myob_error
 def sync_to_myob(self):
@@ -52,17 +68,9 @@ def sync_to_myob(self):
     companies = Company.objects.filter(
         Q(myob_settings__invoice_company_file__isnull=False) |
         Q(myob_settings__timesheet_company_file__isnull=False)
-    )
-    for company in companies:
-        company_settings = getattr(company, 'myob_settings', None)
-
-        if company_settings and company_settings.timesheet_company_file:
-            myob_client = get_myob_client(cf_id=company_settings.timesheet_company_file.cf_id)
-            sync_candidate_contacts_to_myob(myob_client, company)
-
-        if company_settings and company_settings.invoice_company_file:
-            myob_client = get_myob_client(cf_id=company_settings.invoice_company_file.cf_id)
-            sync_companies_to_myob(myob_client, company)
+    ).values_list('id', flat=True)
+    for company_id in companies:
+        sync_company_to_myob(company_id)
 
 
 @app.task(bind=True)
