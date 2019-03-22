@@ -49,10 +49,6 @@ class TimeOfDayRuleSerializer(ApiBaseModelSerializer):
         model = pricing_models.TimeOfDayWorkRule
         fields = ('id', 'time_start', 'time_end', 'used')
 
-    def update(self, obj, validated_data):
-        print("validated_data", validated_data)
-        return super(TimeOfDayRuleSerializer, self).update(obj, validated_data)
-
 
 class AllowanceRuleSerializer(ApiBaseModelSerializer):
 
