@@ -49,6 +49,10 @@ class TimeOfDayRuleSerializer(ApiBaseModelSerializer):
         model = pricing_models.TimeOfDayWorkRule
         fields = ('id', 'time_start', 'time_end', 'used')
 
+    def update(self, obj, validated_data):
+        print("validated_data", validated_data)
+        return super(TimeOfDayRuleSerializer, self).update(obj, validated_data)
+
 
 class AllowanceRuleSerializer(ApiBaseModelSerializer):
 
@@ -72,7 +76,7 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
 
     overtime = OvertimeRuleSerializer(required=False)
     weekdays = WeekdaysRuleSerializer(required=False)
-    timeofday = TimeOfDayRuleSerializer(required=False)
+    timeofday = TimeOfDayRuleSerializer(required=False, read_only=False)
     allowance = AllowanceRuleSerializer(required=False)
 
     class Meta:
@@ -97,10 +101,12 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
             model = field.Meta.model
             data = validated_data.pop(field_name, None)
 
+            # TODO check if used is False - delete object
+            # used = data.pop('used', False)
             if isinstance(field, WeekdaysRuleSerializer):
                 save = any(data.values())
             else:
-                save = data and data.pop('used', False)
+                save = data
 
             if save:
                 if obj:
