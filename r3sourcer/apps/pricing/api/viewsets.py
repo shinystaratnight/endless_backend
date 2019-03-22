@@ -30,8 +30,9 @@ class RateCoefficientViewset(core_viewsets.BaseApiViewset):
                 rule_type=ContentType.objects.get_for_model(extra_class)
             ).first()
             rule = extra_obj and extra_obj.rule
-            if rule:
-                setattr(rule, 'used', rule is not None)
+            # added migrations to used field
+            # if rule:
+            #     setattr(rule, 'used', rule is not None)
             setattr(obj, extra, rule)
 
         return obj
