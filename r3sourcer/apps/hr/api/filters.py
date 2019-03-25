@@ -208,10 +208,11 @@ class JobTagFilter(FilterSet):
 
 
 class InvoiceFilter(FilterSet):
+    date = DateRangeFilter()
 
     class Meta:
         model = Invoice
-        fields = ['customer_company']
+        fields = ['customer_company', 'date']
 
 
 class JobOfferCandidateFilter(FilterSet):
