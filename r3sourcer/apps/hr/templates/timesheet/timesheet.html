@@ -97,6 +97,7 @@
 		<h4 class="title">{{ group.master_company }}</h4>
 		<table>
 			<caption>{{ group }} {% if group.end_date  %} ( expires {{ group.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
+			{% for timesheet in t_s %}
 			<thead>
 				<tr>
 					<th>Candidate</th>
@@ -106,18 +107,24 @@
 					<th>End</th>
 					<th>Break</th>
 					<th>Base hrs</th>
+					{% if timesheet.c_1_5x %}
 					<th>x1.5</th>
+					{% else %}{% endif %}
+					{% if timesheet.c_2x %}
 					<th>x2</th>
+					{% else %}{% endif %}
 					<th>Total</th>
+					{% if timesheet.travel %}
 					<th>Travel</th>
+					{% else %}{% endif %}
+					{% if timesheet.meal %}
 					<th>Meal</th>
+					{% else %}{% endif %}
 					<th>Electronic timesheet confirmed by supervisor</th>
 					<th>Electronic timesheet confirmed by candidate</th>
 				</tr>
 			</thead>
 			<tbody>
-
-			{% for timesheet in t_s %}
 				<tr>
 					<td>{{ timesheet.candidate_contact }}</td>
 					<td>{{ timesheet.job_offer.job.position }}</td>
@@ -126,11 +133,19 @@
 					<td>{{ timesheet.shift_ended_at|time:'h:i A' }}</td>
 					<td>{{ timesheet.break_delta|get_hours }}</td>
 					<td>{{ timesheet.base|get_hours }}</td>
+					{% if timesheet.c_1_5x %}
 					<td>{{ timesheet.c_1_5x|get_hours }}</td>
+					{% else %}{% endif %}
+					{% if timesheet.c_2x %}
 					<td>{{ timesheet.c_2x|get_hours }}</td>
+					{% else %}{% endif %}
 					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
+					{% if timesheet.travel %}
 					<td>{{ timesheet.travel }}</td>
+					{% else %}{% endif %}
+					{% if timesheet.meal %}
 					<td>{{ timesheet.meal }}</td>
+					{% else %}{% endif %}
 					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|date:'d/m/Y h:i A' }}
 					</td>
 					<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|date:'d/m/Y h:i A' }}
