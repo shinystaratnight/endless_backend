@@ -908,7 +908,7 @@ class JobOffersCandidateViewset(
         contact = self.request.user.contact
         return super().get_queryset().filter(
             candidate_contact__contact=contact
-        )
+        ).order_by('shift__date__shift_date')
 
 
 class ShiftViewset(BaseApiViewset):
