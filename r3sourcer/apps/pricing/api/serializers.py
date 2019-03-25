@@ -72,7 +72,7 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
 
     overtime = OvertimeRuleSerializer(required=False)
     weekdays = WeekdaysRuleSerializer(required=False)
-    timeofday = TimeOfDayRuleSerializer(required=False, read_only=False)
+    timeofday = TimeOfDayRuleSerializer(required=False)
     allowance = AllowanceRuleSerializer(required=False)
 
     class Meta:
@@ -97,12 +97,10 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
             model = field.Meta.model
             data = validated_data.pop(field_name, None)
 
-            # TODO check if used is False - delete object
-            # used = data.pop('used', False)
             if isinstance(field, WeekdaysRuleSerializer):
                 save = any(data.values())
             else:
-                save = data
+                save = data and data.pop('used', False)
 
             if save:
                 if obj:
