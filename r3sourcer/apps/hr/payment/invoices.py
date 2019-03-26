@@ -56,7 +56,7 @@ class InvoiceService(BasePaymentService):
             started_at = localtime(timesheet.shift_started_at)
             worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc_company(
-                company, industry, skill,
+                timesheet.master_company, industry, skill,
                 RateCoefficientModifier.TYPE_CHOICES.company,
                 started_at,
                 worked_hours,

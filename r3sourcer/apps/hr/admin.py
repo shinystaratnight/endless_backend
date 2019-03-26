@@ -7,7 +7,12 @@ class TimeSheetAdmin(admin.ModelAdmin):
     list_display = ('__str__', 'regular_company')
 
 
-admin.site.register(models.Jobsite)
+class JobsiteAdmin(admin.ModelAdmin):
+    list_display = ('__str__', 'industry')
+    search_fields = ('short_name',)
+
+
+admin.site.register(models.Jobsite, JobsiteAdmin)
 admin.site.register(models.JobsiteUnavailability)
 admin.site.register(models.Job)
 admin.site.register(models.ShiftDate)
