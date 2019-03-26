@@ -139,6 +139,8 @@ class OvertimeWorkRule(WorkRuleMixin, UUIDModel):
         help_text=_('Format: (HH:MM:SS)')
     )
 
+    used = models.BooleanField(default=False)
+
     class Meta:
         verbose_name = _('Overtime Work Rule')
         verbose_name_plural = _('Overtime Work Rules')
@@ -183,6 +185,8 @@ class TimeOfDayWorkRule(WorkRuleMixin, UUIDModel):
         verbose_name=_("Time To"),
         default=time(hour=6)
     )
+
+    used = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = _('Time of Day Work Rule')
@@ -274,6 +278,8 @@ class AllowanceWorkRule(AllowanceMixin, UUIDModel):
         verbose_name=_("Allowance Description"),
         help_text=_("Examples: Travel Allowance, Waiting Hours, etc.")
     )
+
+    used = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = _('Allowance Work Rule')
