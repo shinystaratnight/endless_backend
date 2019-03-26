@@ -937,7 +937,7 @@ def generate_pdf(timesheet_ids, request):
             break_ended=timesheet.break_ended_at,
             )
         timesheet.coeffs_hours = coeffs_hours
-        for rate_type, value in {'base': 'base', '1.5x': 'c_1_5x', '2x': 'c_2x', 'meal': 'meal', 'travel': 'travel'}.items():
+        for rate_type, value in {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}.items():
             setattr(timesheet, value, get_value_for_rate_type(coeffs_hours, rate_type))
         if str(timesheet.travel) == '1:00:00':
             timesheet.travel = 1
