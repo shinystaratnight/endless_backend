@@ -112,6 +112,10 @@ class UserAdmin(BaseUserAdmin):
 
 
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
+
+    list_display = ('name', 'industry')
+    search_fields = ('name',)
+
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
         if obj:

@@ -11,21 +11,25 @@ class RulesInline(GenericTabularInline):
     model = models.DynamicCoefficientRule
 
 
-class RateCoefficientAdmin(admin.ModelAdmin):
+class RateCoefficientForRulesAdmin(admin.ModelAdmin):
     inlines = [RulesInline]
+
+
+class RateCoefficientAdmin(admin.ModelAdmin):
+    list_display = ('name', 'industry')
 
 
 admin.site.register(models.Industry)
 
 admin.site.register(models.RateCoefficientGroup)
-admin.site.register(models.RateCoefficient)
+admin.site.register(models.RateCoefficient, RateCoefficientAdmin)
 admin.site.register(models.PriceList)
 admin.site.register(models.PriceListRate)
 admin.site.register(models.PriceListRateCoefficient)
 admin.site.register(models.RateCoefficientModifier)
 admin.site.register(models.DynamicCoefficientRule)
 
-admin.site.register(models.WeekdayWorkRule, RateCoefficientAdmin)
-admin.site.register(models.OvertimeWorkRule, RateCoefficientAdmin)
-admin.site.register(models.TimeOfDayWorkRule, RateCoefficientAdmin)
-admin.site.register(models.AllowanceWorkRule, RateCoefficientAdmin)
+admin.site.register(models.WeekdayWorkRule, RateCoefficientForRulesAdmin)
+admin.site.register(models.OvertimeWorkRule, RateCoefficientForRulesAdmin)
+admin.site.register(models.TimeOfDayWorkRule, RateCoefficientForRulesAdmin)
+admin.site.register(models.AllowanceWorkRule, RateCoefficientForRulesAdmin)
