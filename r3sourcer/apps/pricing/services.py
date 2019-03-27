@@ -1,7 +1,7 @@
 from datetime import timedelta
 from itertools import chain
 
-from .models import RateCoefficient, PriceList, RateCoefficientModifier, PriceListRateCoefficient
+from .models import RateCoefficient, PriceList, RateCoefficientModifier, PriceListRateCoefficient, WeekdayWorkRule
 from .exceptions import RateNotApplicable
 from django.db import models
 
@@ -27,12 +27,19 @@ class CoefficientService:
         for rate_coefficient in rate_coefficients:
             rules = rate_coefficient.rate_coefficient_rules.order_by(
                 '-priority'
-            )
+            ).distinct()
 
             try:
                 used_hours = worked_hours
                 is_allowance = False
                 for rule in rules:
+                    # TODO use 'used' field in rule
+                    # if isinstance(rule.rule, WeekdayWorkRule):
+                    #     pass
+                    # elif rule.rule.used:
+                    #     pass
+                    if not rule.rule:
+                        continue
                     hours = rule.rule.calc_hours(
                         start_datetime, worked_hours, break_started,
                         break_ended
