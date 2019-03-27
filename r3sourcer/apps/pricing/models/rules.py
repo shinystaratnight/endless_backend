@@ -117,7 +117,7 @@ class WeekdayWorkRule(WorkRuleMixin, UUIDModel):
         if not getattr(self, 'weekday_' + weekday):
             raise RateNotApplicable()
 
-        return worked_hours
+        return timedelta()
 
 
 class OvertimeWorkRule(WorkRuleMixin, UUIDModel):
