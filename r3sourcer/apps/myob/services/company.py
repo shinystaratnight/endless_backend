@@ -35,7 +35,7 @@ class CompanySync(SalespersonMixin, BaseSync):
         )
 
         tax_code = 'GST' if company.registered_for_gst else 'GNR'
-        tax_code_resp = self._get_tax_code(tax_code)
+        tax_code_resp = self._get_tax_code('GST')
         if not tax_code_resp:
             log.warning('[MYOB API] tax code %s: not found', tax_code)
             return

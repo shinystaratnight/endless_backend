@@ -367,7 +367,7 @@ class InvoiceFilter(FilterSet):
 
     class Meta:
         model = models.Invoice
-        fields = ['customer_company']
+        fields = ['customer_company', 'date', ]
 
 
 class InvoiceLineFilter(FilterSet):

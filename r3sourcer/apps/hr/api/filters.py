@@ -208,10 +208,11 @@ class JobTagFilter(FilterSet):
 
 
 class InvoiceFilter(FilterSet):
+    date = DateRangeFilter()
 
     class Meta:
         model = Invoice
-        fields = ['customer_company']
+        fields = ['customer_company', 'date']
 
 
 class JobOfferCandidateFilter(FilterSet):
@@ -220,6 +221,7 @@ class JobOfferCandidateFilter(FilterSet):
         ('recurring', _('Recurring')),
     )
     jo_type = ChoiceFilter(choices=JO_TYPE_CHOICES, method='filter_jo_type')
+    shift_dates__shift_date = DateRangeFilter(distinct=True)
 
     class Meta:
         model = hr_models.JobOffer
