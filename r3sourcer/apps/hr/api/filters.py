@@ -220,7 +220,7 @@ class JobOfferCandidateFilter(FilterSet):
         ('recurring', _('Recurring')),
     )
     jo_type = ChoiceFilter(choices=JO_TYPE_CHOICES, method='filter_jo_type')
-    shift_dates__shift_date = DateRangeFilter(distinct=True)
+    shift__date__shift_date = DateRangeFilter(distinct=True)
 
     class Meta:
         model = hr_models.JobOffer
