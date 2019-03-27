@@ -26,19 +26,16 @@ class CoefficientService:
         res = []
         for rate_coefficient in rate_coefficients:
             rules = rate_coefficient.rate_coefficient_rules.order_by(
-                '-priority'
+                'priority'
             ).distinct()
 
             try:
                 used_hours = worked_hours
                 is_allowance = False
                 for rule in rules:
-                    # TODO use 'used' field in rule
-                    # if isinstance(rule.rule, WeekdayWorkRule):
-                    #     pass
-                    # elif rule.rule.used:
-                    #     pass
                     if not rule.rule:
+                        continue
+                    if not isinstance(rule.rule, WeekdayWorkRule) and not rule.rule.used:
                         continue
                     hours = rule.rule.calc_hours(
                         start_datetime, worked_hours, break_started,
@@ -71,7 +68,6 @@ class CoefficientService:
                 'coefficient': 'base',
                 'hours': worked_hours
             })
-
         return res
 
     def calc(self, industry, modifier_type, start_datetime, worked_hours,
