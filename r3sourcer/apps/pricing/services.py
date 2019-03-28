@@ -1,3 +1,5 @@
+import re
+
 from datetime import timedelta
 from itertools import chain
 
@@ -24,9 +26,10 @@ class CoefficientService:
                                   worked_hours, break_started=None,
                                   break_ended=None):
         res = []
-        for rate_coefficient in rate_coefficients:
+        r = re.compile("\d+(\.\d+)?")
+        for rate_coefficient in sorted(rate_coefficients, key=lambda x: float(r.search(x.name).group() if r.search(x.name) else 0), reverse=True):
             rules = rate_coefficient.rate_coefficient_rules.order_by(
-                'priority'
+                '-priority'
             ).distinct()
 
             try:
@@ -46,20 +49,26 @@ class CoefficientService:
 
                     used_hours = min(hours, used_hours)
 
-                    if used_hours.total_seconds() <= 0:
-                        break
-
-                if used_hours.total_seconds() > 0 or is_allowance:
                     if is_allowance:
                         used_hours = timedelta(hours=1)
 
-                    res.append({
-                        'coefficient': rate_coefficient,
-                        'hours': used_hours
-                    })
+                        res.append({
+                            'coefficient': rate_coefficient,
+                            'hours': used_hours
+                            })
 
-                    if not is_allowance:
-                        worked_hours -= used_hours
+                    if used_hours.total_seconds() <= 0:
+                        break
+
+                    if used_hours.total_seconds() > 0 or is_allowance:
+
+                        res.append({
+                            'coefficient': rate_coefficient,
+                            'hours': used_hours
+                        })
+
+                        if not is_allowance:
+                            worked_hours -= used_hours
             except RateNotApplicable:
                 pass
 
