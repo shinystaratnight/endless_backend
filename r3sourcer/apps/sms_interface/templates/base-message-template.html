@@ -3,10 +3,18 @@
 <html>
 <head>
 
+    <link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:400,600,700" rel="stylesheet">
     {% include "admin/select2_mixin.html" %}
-{#    <link href="{% static 'jquery-ui/themes/base/theme.css' %}" type="text/css" media="screen" rel="stylesheet"/>#}
-{#    <link href="{% static 'jquery-ui/themes/base/datepicker.css' %}" rel="stylesheet"/>#}
+    <link href="{% static 'jquery-ui/themes/base/theme.css' %}" type="text/css" media="screen" rel="stylesheet"/>
+    <link href="{% static 'jquery-ui/themes/base/datepicker.css' %}" rel="stylesheet"/>
 {#    <link href="{% static 'jt.timepicker/jquery.timepicker.css' %}" rel="stylesheet"/>#}
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.10.0/jquery.timepicker.min.css">
+
+    <script src="{% static 'jquery-ui/ui/widgets/datepicker.js' %}"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-timepicker/1.10.0/jquery.timepicker.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/5.0.3/jquery.tinymce.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/5.0.3/tinymce.min.js"></script>
 
 {#    <script src="{% static 'jt.timepicker/jquery.timepicker.min.js' %}" type="application/javascript"></script>#}
 {#    <script type="text/javascript" src="{% static 'tinymce/jquery.tinymce.js' %}"></script>#}
@@ -55,7 +63,6 @@
             // get all form fields
                 for (var i = 0; i < formElement.elements.length; i++)
                     if (formElement.elements[i].id.indexOf('id_') == 0 && formElement.elements[i].name) {
-                        console.log(formElement.elements[i].value, formElement.elements[i].values)
                         sendingData[formElement.elements[i].name] = $(formElement.elements[i]).val();
                         if (!formElement.elements[i].value && formElement.elements[i].name != 'params') {
                             if (formElement.elements[i].name == 'body' && messageType == 'email')
@@ -81,7 +88,7 @@
                     sendingData.body = tinyMCE.activeEditor.getContent();
                 sendingData.params = JSON.stringify(getExtraParams());
                 var recipient = $("#id_recipient").val();
-                $(obj).val("Edit");
+                $(obj).val("Close preview");
                 $(obj).parent().append("<span class='extra-loading-span'>Loading..</span>");
                 $.ajax({
                     type: 'post',
@@ -257,17 +264,19 @@
             var typeList = [
                 'row', 'datetime', 'date', 'object'
             ];
-            var label = $('<label style="display: inline-block;"></label>').attr({'for': 'required-param-' + i.toString()}).html(name),
-                select = $('<select style="margin-left: 15px"></select>'),
+            var label = $('<label class="item-label" style="display: inline-block; float: right"></label>').attr({'for': 'required-param-' + i.toString()}).html(name),
+                select = $('<select style="text-transform: capitalize"></select>'),
                 input = $('<input type="text" value=""/>'),
+                triangle = $('<span class="triangle"></span>')
                 inputWrapper = $("<div class='data-wrapper'></div>").append(input).attr('id', 'id-control-param-' + i.toString());
             select.change(onChangeParamType);
             for (var i = 0; i < typeList.length; i++) {
                 select.append(
-                    $("<option value='" + typeList[i] + "'>" + typeList[i] + "</option>")
+                    $("<option style='text-transform: capitalize' value='" + typeList[i] + "'>" + typeList[i] + "</option>")
                 );
             }
-            var result = $('<div class="wrapper-item-param"></div>').append(label).append(': ').append(select).append(inputWrapper);
+
+            var result = $('<div class="wrapper-item-param"></div>').append(select).append(triangle).append(label).append(inputWrapper);
             result.data('name', name);
             return result;
         }
@@ -286,7 +295,7 @@
                     break;
                 case 'date':
                     wrapper.append('<input type="text" value""/>');
-                    wrapper.parent().find('input').datepicker({dateFormat: "yy-mm-dd"});
+                    wrapper.parent().find('input').datepicker({dateFormat: "dd/mm/yy"});
                     break;
                 case 'row':
                     wrapper.append('<input type="text" value=""/>');
@@ -388,16 +397,38 @@
     <!-- end styles -->
 
     <style>
-        body {
+        body,
+        select {
+            font-family: 'Source Sans Pro', sans-serif;
             color: #333;
         }
+
+        select {
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        select:focus {
+            outline: none;
+        }
+
+        .triangle {
+            position: relative;
+            top: 14px;
+            width: 0;
+            height: 0;
+            border-left: 4px solid transparent;
+            border-right: 4px solid transparent;
+
+            border-top: 5px solid rgba(51, 51, 51, .6);
+        }
         h1 {
-            height: 40px;
-            line-height: 40px;
-            font-size: 16px;
-            background-color: #555;
-            color: white;
-            text-align: center;
+            padding: 10px 15px;
+            border-bottom: 2px solid #e5e5e5;
+            line-height: 36px;
+            font-size: 32px;
+            color: #333;
         }
         label {
             display: block;
@@ -405,9 +436,6 @@
         }
         textarea {
             width: 100%;
-        }
-        input[type="button"] {
-            background-color: #555;
         }
         #id_body {
             padding: 1rem;
@@ -419,9 +447,11 @@
             margin-bottom: 10px;
         }
         .load-template {
-            display: inline-block;
-            text-decoration: underline;
+            color: #28a3fc;
+        }
+        .load-template:hover {
             cursor: pointer;
+            text-decoration: underline;
         }
         .required-fields{
             display: none;
@@ -440,6 +470,194 @@
         .hide-placeholders{
             cursor: pointer;
         }
+
+        /* New styles */
+
+        .errors {
+            padding: 0 15px;
+        }
+
+        .error {
+            color: #fa5c46;
+        }
+
+        #id_sender_user {
+            width: 100%;
+            height: auto;
+            padding: 11px 15px;
+            border-color: rgba(51, 51, 51, .6);
+            font-size: 14px;
+            line-height: 16px;
+            background-color: transparent;
+        }
+
+        input {
+            font-family: 'Source Sans Pro', sans-serif;
+        }
+
+        label {
+            margin: 0 0 4px;
+            font-size: 12px;
+            line-height: 16px;
+            font-weight: bold;
+            text-transform: uppercase;
+            opacity: .4;
+        }
+
+        .row-submit {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .row-submit input[type="button"] {
+            padding: 9px 24px 10px;
+            font-size: 16px;
+            line-height: 21px;
+            border-radius: 50px;
+        }
+
+        .row-submit input[type="button"].submit {
+            background-color: #28a3fc;
+            box-shadow: 0 4px 6px 0 rgba(0,0,0, .1);
+            color: #fdfdfd;
+        }
+
+        .row-submit input[type="button"].preview-button {
+            border: 1px solid rgba(0, 0, 0, .3);
+            color: black;
+            background-color: #fdfdfd;
+            opacity: .6;
+        }
+
+        .row-submit input[type="button"].preview-button:focus {
+            box-shadow: none;
+            outline: none;
+        }
+
+        .row-submit input[type="button"].preview:hover {
+            background-color: rgba(0, 0, 0, .3);
+        }
+
+        .select2.select2-container.select2-container--default {
+            min-height: 44px;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__rendered {
+            padding: 2px 5px 7px;
+        }
+
+        .select2-container .select2-selection--single {
+            height: auto;
+        }
+
+        .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 42px;
+            right: 10px;
+        }
+
+        .select2-container .select2-selection--single .select2-selection__rendered {
+            padding: 7px 15px;
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice {
+            display: flex;
+            align-items: center;
+            padding: 4px 10px;
+            border: none;
+            border-radius: 15px;
+            line-height: 16px;
+            color: rgba(51, 51, 51, .6);
+            background-color: rgba(51, 51, 51, .06);
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice:hover {
+            background-color: rgba(51, 51, 51, .1);
+        }
+
+        .select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+            margin-right: 7px;
+        }
+
+        .wrapper-item-param {
+            position: relative;
+            margin-bottom: 16px;
+            border-radius: 4px;
+            border: none;
+            background-color: rgba(51, 51, 51, 0.04);
+        }
+
+        .wrapper-item-param select {
+            font-size: 14px;
+            line-height: 16px;
+            background-color: transparent;
+            border: none;
+        }
+
+        .data-wrapper {
+            display: flex;
+            align-items: center;
+        }
+
+        .data-wrapper input {
+            padding: 10px 16px;
+            font-size: 14px;
+            line-height: 16px;
+        }
+
+        .data-wrapper .select2-container--default .select2-selection--single .select2-selection__rendered {
+            line-height: 16px;
+            padding: 10px 16px;
+        }
+
+        .data-wrapper .select2-container--default .select2-selection--single .select2-selection__arrow {
+            height: 36px;
+        }
+
+        .data-wrapper input[type="text"] {
+            flex: 1;
+        }
+
+        .data-wrapper input[type="text"]:nth-child(2) {
+            margin-left: 20px;
+        }
+
+        .data-wrapper .select2-selection__rendered {
+            min-height: 16px;
+        }
+
+        .item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .item-label {
+            font-size: 12px;
+            line-height: 16px;
+            font-weight: 400;
+            text-transform: lowercase;
+            color: #098cea;
+            opacity: .8;
+        }
+
+        .item-label::before {
+            display: inline;
+            content: '[[';
+        }
+
+        .item-label::after {
+            display: inline;
+            content: ']]';
+        }
+
+        .preview-block .help-text {
+            font-size: 12px;
+            line-height: 14px;
+            opacity: .4;
+        }
+
     </style>
 </head>
 <body>
@@ -478,8 +696,6 @@
 
                     {% if field.name == 'body' %}
                         <div class="required-fields">
-                            <span>Placeholders: (<span class='hide-placeholders'
-                                                       onclick="$('#id-required-fields').toggle()">hide</span>)</span>
                             <div id="id-required-fields"></div>
                         </div>
                     {% endif %}
@@ -499,14 +715,15 @@
                         <div class="preview-block">
                             <span class="preview-placeholder">Preview:</span>
                             <div id="id_preview"></div>
+                            <span class="help-text">Check the spelling of text, correct errors and  only then send</span>
                         </div>
                     {% endif %}
                     {{ field }}
                     {% if field.name == 'body' %}
-                        <div>
+                        <!-- <div>
                             <input type="button" id='preview-button' value="{% trans 'Preview' %}"
                                    onclick="showPreview(this)">
-                        </div>
+                        </div> -->
                     {% endif %}
                     {% if field.help_text %}
                         <p class="help">{{ field.help_text }}</p>
@@ -514,7 +731,9 @@
                 </div>
             {% endfor %}
             <div class="row-submit">
-                <input type="button" onclick="onSubmitForm(this)" value="{% trans 'Send' %}">
+                <input class="preview-button" type="button" id='preview-button' value="{% trans 'Preview' %}"
+                                   onclick="showPreview(this)">
+                <input class="submit" type="button" onclick="onSubmitForm(this)" value="{% trans 'Send message' %}">
             </div>
         </form>
     {% else %}
