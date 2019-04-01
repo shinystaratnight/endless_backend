@@ -68,7 +68,10 @@
                             if (formElement.elements[i].name == 'body' && messageType == 'email')
                                 if ((sendingData[formElement.elements[i].name] = tinyMCE.activeEditor.getContent()) != "")
                                     continue;
-                            alert('Enter all fields');
+                            $('.error-message').css('display', 'block');
+                            setTimeout(() => {
+                                $('.error-message').css('display', 'none');
+                            }, 4000);
                             $(obj).toggleClass('preview');
                             throw new Error("Enter all fields");
                         }
@@ -324,7 +327,7 @@
                                 "Authorization": "JWT " + token
                             },
                             url: function () {
-                                return "/twilio/admin-api/find/objects/" + $(select).val() + "/"
+                                return "/sms_interface/api/find/objects/" + $(select).val() + "/"
                             },
                             processResults: function (data) {
                                 return {
@@ -477,8 +480,14 @@
             padding: 0 15px;
         }
 
-        .error {
+        .error,
+        .error-message {
             color: #fa5c46;
+        }
+
+        .error-message {
+            display: none;
+            padding-bottom: 15px;
         }
 
         #id_sender_user {
@@ -662,13 +671,13 @@
 </head>
 <body>
 <div class="container modal-dialogs">
-    <h1>
+    <!-- <h1>
         {% if extra_title %}
             {{ extra_title }}
         {% else %}
             {% trans "Send message" %}: {{ message_type }}
         {% endif %}
-    </h1>
+    </h1> -->
     <div class="errors">
         {% for message in messages %}
             <p class="{{ message.tags }}">{{ message }}</p>
@@ -730,6 +739,7 @@
                     {% endif %}
                 </div>
             {% endfor %}
+            <div class="error-message">Please fill all fields!</div>
             <div class="row-submit">
                 <input class="preview-button" type="button" id='preview-button' value="{% trans 'Preview' %}"
                                    onclick="showPreview(this)">

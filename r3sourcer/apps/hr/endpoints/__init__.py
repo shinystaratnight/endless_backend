@@ -32,12 +32,7 @@ class FavouriteListEndpoint(ApiEndpoint):
 
     model = hr_models.FavouriteList
     filter_class = hr_filters.FavouriteListFilter
-    serializer_fields = [
-        '__all__',
-        {
-            'company': ['id', 'name', 'primary_contact'],
-        }
-    ]
+    serializer = job_serializers.FavouriteListSerializer
 
 
 class JobOfferEndpoint(ApiEndpoint):
