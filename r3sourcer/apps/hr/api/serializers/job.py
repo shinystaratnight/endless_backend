@@ -812,3 +812,21 @@ class JobsiteMapFilterSerializer(serializers.Serializer):
     portfolio_manager = serializers.UUIDField(required=False)
     filter_by = serializers.CharField(required=False)
     show_all = serializers.BooleanField(required=False, default=False)
+
+
+class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
+
+    class Meta:
+        model = hr_models.FavouriteList
+
+        fields = [
+            '__all__',
+            {
+                'company': ['id', 'name', 'primary_contact'],
+                },
+            {
+                'jobsite': ['primary_contact'],
+                }
+            ]
+
+        extra_kwargs = {'job': {'required': False}}
