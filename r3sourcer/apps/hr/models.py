@@ -1,3 +1,5 @@
+from pytz import timezone as pytz_timezone
+
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
@@ -929,12 +931,23 @@ class JobOffer(core_models.UUIDModel):
             task = hr_utils.get_jo_sms_sending_task(self)
 
             if task:
-                now = timezone.localtime(timezone.now())
-                tomorrow = now + timedelta(days=1)
-                tomorrow_end = timezone.make_aware(datetime.combine(
-                    tomorrow.date() + timedelta(days=1), time(5, 0, 0)
-                ))
-                target_date_and_time = timezone.localtime(self.start_time)
+                j_o = JobOffer.objects.get(pk=self.pk)
+                master_company = j_o.candidate_contact.get_closest_company()
+                if not master_company.get_hq_address() or not master_company.get_hq_address().address.country.country_timezone:
+                    now = timezone.localtime(timezone.now())
+                    tomorrow = now + timedelta(days=1)
+                    tomorrow_end = timezone.make_aware(datetime.combine(
+                        tomorrow.date() + timedelta(days=1), time(5, 0, 0)
+                    ))
+                    target_date_and_time = timezone.localtime(self.start_time)
+                else:
+                    company_timezone = pytz_timezone(master_company.get_hq_address().address.country.country_timezone)
+                    now = datetime.now(company_timezone)
+                    tomorrow = now + timedelta(days=1)
+                    tomorrow_end = timezone.make_aware(datetime.combine(
+                        tomorrow.date() + timedelta(days=1), time(5, 0, 0)
+                        ))
+                    target_date_and_time = timezone.localtime(self.start_time)
 
                 # TODO: maybe need to rethink, but it should work
                 # compute eta to schedule SMS sending
