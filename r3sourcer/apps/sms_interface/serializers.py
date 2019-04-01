@@ -21,6 +21,15 @@ class ContentTypeSerializer(serializers.ModelSerializer):
         fields = ('id', 'app_label', 'model')
 
 
+class ModelObjectSerializer(serializers.Serializer):
+
+    def to_representation(self, instance):
+        return {
+            'id': instance.id,
+            'text': str(instance),
+        }
+
+
 class TemplateSerializer(serializers.ModelSerializer):
 
     required_params = serializers.SerializerMethodField()

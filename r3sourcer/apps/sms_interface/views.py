@@ -1,4 +1,5 @@
 from django.contrib.contenttypes.models import ContentType
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
 from rest_framework import permissions
@@ -10,7 +11,7 @@ from .mixins import MessageViewBase
 from .serializers import TemplateBodySerializer, ContentTypeSerializer, TemplateSerializer, SMSMessageSerializer
 from r3sourcer.apps.core.models.core import Company
 from r3sourcer.apps.sms_interface.models import SMSMessage
-
+from r3sourcer.apps.sms_interface.serializers import ModelObjectSerializer
 
 class TemplateCompileView(MessageViewBase, APIView):
 
@@ -38,9 +39,26 @@ class ContentTypeListView(generics.ListAPIView):
     queryset = ContentType.objects.filter(app_label__in=[
         'core',
         'crm_core',
-        'crm_hr'
+        'crm_hr',
+        'candidate'
     ])
     serializer_class = ContentTypeSerializer
+
+
+class SearchObjects(generics.ListAPIView):
+
+    serializer_class = ModelObjectSerializer
+
+    def get_queryset(self):
+        model_class= ContentType.objects.get(pk=self.kwargs['ct']).model_class()
+
+        data = self.request.GET.get('q', '')
+        if hasattr(model_class, 'get_search_lookup'):
+            lookup = model_class.get_search_lookup(data)
+        else:
+            lookup = Q(pk__icontains=data)
+
+        return model_class.objects.filter(lookup)
 
 
 class TemplateSMSMessageListView(generics.ListAPIView):
