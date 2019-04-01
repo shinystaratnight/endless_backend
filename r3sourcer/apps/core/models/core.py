@@ -591,6 +591,7 @@ class User(UUIDModel,
 
 class Country(UUIDModel, AbstractCountry):
     currency = CurrencyField(default='USD', choices=CURRENCY_CHOICES)
+    country_timezone = models.CharField(blank=True, null=False, max_length=255, verbose_name='Country Timezone')
 
     class Meta:
         verbose_name = _("Country")
