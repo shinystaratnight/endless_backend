@@ -324,7 +324,7 @@
                                 "Authorization": "JWT " + token
                             },
                             url: function () {
-                                return "/twilio/admin-api/find/objects/" + $(select).val() + "/"
+                                return "/sms_interface/api/find/objects/" + $(select).val() + "/"
                             },
                             processResults: function (data) {
                                 return {
