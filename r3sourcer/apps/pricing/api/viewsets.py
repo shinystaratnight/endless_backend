@@ -46,8 +46,14 @@ class RateCoefficientViewset(core_viewsets.BaseApiViewset):
         )
 
     def perform_destroy(self, instance):
-        if instance.rate_coefficient_rules.all() or instance.rate_coefficient_modifiers.all():
+        if instance.price_lists.all().exists():
             raise ValidationError({
                     'error': _('Unable to delete due relation to calculation')
                 })
+
+        for dynamic_coeff in instance.rate_coefficient_rules.all():
+            dynamic_coeff.rule_type.get_object_for_this_type(id=dynamic_coeff.rule_id).delete()
+            dynamic_coeff.delete()
+
+        instance.rate_coefficient_modifiers.all().delete()
         instance.delete()
