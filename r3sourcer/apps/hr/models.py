@@ -1481,6 +1481,16 @@ class BlackList(core_models.UUIDModel):
         on_delete=models.PROTECT
     )
 
+    client_contact = models.ForeignKey(
+        core_models.CompanyContact,
+        related_name='blacklists_client',
+        verbose_name=_('Company Client'),
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE
+    )
+
+
     class Meta:
         verbose_name = _("Black list")
         verbose_name_plural = _("Black lists")
@@ -1555,6 +1565,15 @@ class FavouriteList(core_models.UUIDModel):
         Job,
         verbose_name=_('Job'),
         related_name='favouritelists',
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE
+    )
+
+    client_contact = models.ForeignKey(
+        core_models.CompanyContact,
+        related_name='favouritelist_client',
+        verbose_name=_('Favourite list client'),
         blank=True,
         null=True,
         on_delete=models.CASCADE

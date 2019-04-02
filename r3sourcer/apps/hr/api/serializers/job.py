@@ -830,3 +830,16 @@ class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
             ]
 
         extra_kwargs = {'job': {'required': False}}
+
+
+    def validate(self, validated_data):
+        client_contact = validated_data.get('client_contact')
+        jobsite = validated_data.get('jobsite')
+        company = validated_data.get('company')
+
+        if not any([company, jobsite, client_contact]):
+            raise exceptions.ValidationError({
+                'error': _('client_contact, jobsite or company are required.')
+            })
+
+        return validated_data
