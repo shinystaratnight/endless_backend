@@ -825,7 +825,7 @@ class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
                 'company': ['id', 'name', 'primary_contact'],
                 },
             {
-                'jobsite': ['primary_contact'],
+                'jobsite': ['id', 'short_name', 'primary_contact'],
                 }
             ]
 
