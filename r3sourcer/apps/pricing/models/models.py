@@ -385,6 +385,8 @@ class DynamicCoefficientRule(UUIDModel):
     rule_id = models.UUIDField()
     rule = GenericForeignKey('rule_type', 'rule_id')
 
+    used = models.BooleanField(default=False)
+
     class Meta:
         verbose_name = _("Dynamic Coefficient Rule")
         verbose_name_plural = _("Dynamic Coefficient Rules")

@@ -1,3 +1,4 @@
+from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from inflector import Inflector, English
 from rest_framework import serializers, exceptions
@@ -13,7 +14,7 @@ class DynamicCoefficientRuleSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = pricing_models.DynamicCoefficientRule
-        fields = ('rate_coefficient', 'priority', 'id')
+        fields = ('rate_coefficient', 'priority', 'id', 'used')
 
     def get_rule(self, obj):
         if obj is None:
@@ -84,43 +85,33 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
             return []
 
         return [rule['rule'] for rule in DynamicCoefficientRuleSerializer(
-            obj.rate_coefficient_rules.order_by('-priority'),
+            obj.rate_coefficient_rules.filter(used=True).order_by('-priority'),
             many=True, fields=['priority', 'rule', 'rule_endpoint']
         ).data]
 
-    def _get_rule_objects(self, validated_data, obj=None):
+    def _get_rule_objects(self, validated_data):
         rules = []
         for field_name, field in self.fields.items():
             if not isinstance(field, ApiBaseModelSerializer):
                 continue
 
             model = field.Meta.model
-            data = validated_data.pop(field_name, None)
+            data = validated_data.pop(field_name, {})
+            data_id = data.pop('id', None) or None
 
-            # TODO check if used is False - delete object
-            # used = data.pop('used', False)
             if isinstance(field, WeekdaysRuleSerializer):
-                save = any(data.values())
+                save = used = any(data.values())
             else:
+                used = data.pop('used', False)
                 save = data
 
-            if save:
-                if obj:
-                    rule_obj, created = model.objects.update_or_create(
-                        id=data.get('id'),
-                        defaults=data
-                    )
+            if save or used:
+                rule_obj, created = model.objects.update_or_create(
+                    id=data_id,
+                    defaults=data
+                )
 
-                    setattr(obj, field_name, rule_obj)
-
-                    if created:
-                        pricing_models.DynamicCoefficientRule.objects.create(
-                            rate_coefficient=obj, rule=rule_obj
-                        )
-                else:
-                    rule_obj = model.objects.create(**data)
-
-                rules.append(rule_obj)
+                rules.append((rule_obj, used, model))
 
         return rules
 
@@ -129,15 +120,21 @@ class RateCoefficientSerializer(ApiBaseModelSerializer):
 
         obj = super(RateCoefficientSerializer, self).create(validated_data)
 
-        for rule_obj in rules:
+        for rule_obj, used, model in rules:
             pricing_models.DynamicCoefficientRule.objects.create(
-                rate_coefficient=obj, rule=rule_obj
+                rate_coefficient=obj, rule=rule_obj, used=used
             )
 
         return obj
 
     def update(self, obj, validated_data):
-        self._get_rule_objects(validated_data, obj)
+        rules = self._get_rule_objects(validated_data)
+
+        for rule_obj, used, model in rules:
+            rule_ct = ContentType.objects.get_for_model(model)
+            pricing_models.DynamicCoefficientRule.objects.update_or_create(
+                rate_coefficient=obj, rule_type=rule_ct, rule_id=rule_obj.id, defaults={'used': used}
+            )
 
         return super(RateCoefficientSerializer, self).update(obj, validated_data)
 
