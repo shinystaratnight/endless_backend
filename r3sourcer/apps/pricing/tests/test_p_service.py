@@ -24,6 +24,7 @@ class TestCoefficientRates:
         DynamicCoefficientRule.objects.create(
             rate_coefficient=rate_coefficient,
             rule=rule,
+            used=True,
         )
 
     def calc_res(self, worked_hours=None):
@@ -172,7 +173,7 @@ class TestCoefficientRates:
         assert res[1]['hours'] == timedelta(hours=8)
 
     @freeze_time(datetime(2017, 1, 2, 9, 30))
-    def test_calc_allowance_for_night_time( self, settings, rate_coefficient, overtime_rule, night_time_rule):
+    def test_calc_allowance_for_night_time(self, settings, rate_coefficient, overtime_rule, night_time_rule):
         settings.TIME_ZONE = 'UTC'
 
         self.add_rule(rate_coefficient, overtime_rule)
@@ -224,12 +225,12 @@ class TestCoefficientRates:
         res = self.calc_res()
 
         assert len(res) == 3
-        assert res[0]['coefficient'] == rate_coefficient_another
-        assert res[0]['hours'] == timedelta(hours=1, minutes=30)
-        assert res[1]['coefficient'] == rate_coefficient
-        assert res[1]['hours'] == timedelta(hours=1)
+        assert res[0]['coefficient'] == rate_coefficient
+        assert res[0]['hours'] == timedelta(hours=1)
+        assert res[1]['coefficient'] == rate_coefficient_another
+        assert res[1]['hours'] == timedelta(minutes=30)
         assert res[2]['coefficient'] == 'base'
-        assert res[2]['hours'] == timedelta(hours=5, minutes=30)
+        assert res[2]['hours'] == timedelta(hours=6, minutes=30)
 
     @freeze_time(datetime(2017, 1, 2, 8, 30))
     def test_calc_two_coeff_night_not_applied(
