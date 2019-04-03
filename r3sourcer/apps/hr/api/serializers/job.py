@@ -839,7 +839,7 @@ class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
 
         if not any([company, jobsite, client_contact]):
             raise exceptions.ValidationError({
-                'error': _('client_contact, jobsite or company are required.')
+                'non_field_errors': _('Client Contact, Jobsite or Client are required.')
             })
 
         return validated_data
