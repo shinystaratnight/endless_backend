@@ -825,8 +825,21 @@ class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
                 'company': ['id', 'name', 'primary_contact'],
                 },
             {
-                'jobsite': ['primary_contact'],
+                'jobsite': ['id', 'short_name', 'primary_contact'],
                 }
             ]
 
         extra_kwargs = {'job': {'required': False}}
+
+
+    def validate(self, validated_data):
+        client_contact = validated_data.get('client_contact')
+        jobsite = validated_data.get('jobsite')
+        company = validated_data.get('company')
+
+        if not any([company, jobsite, client_contact]):
+            raise exceptions.ValidationError({
+                'error': _('client_contact, jobsite or company are required.')
+            })
+
+        return validated_data
