@@ -305,8 +305,7 @@ class Job(core_models.AbstractBaseOrder):
         return self.get_title()
 
     def get_title(self):
-        return _('{} {}s at {}').format(
-            str(self.workers),
+        return _('{} at {}').format(
             str(self.position),
             str(self.jobsite),
         )
