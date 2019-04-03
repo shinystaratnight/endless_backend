@@ -53,6 +53,7 @@ class BlackListEndpoint(ApiEndpoint):
 
     model = hr_models.BlackList
     filter_class = hr_filters.BlackListFilter
+    serializer = job_serializers.BlackListSerializer
 
 
 class CandidateEvaluationEndpoint(ApiEndpoint):
