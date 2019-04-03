@@ -845,13 +845,12 @@ class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
-    recruitment_agent = serializers.SerializerMethodField('get_alternate_name')
 
     class Meta:
         model = hr_models.BlackList
 
         fields = [
-            'company', 'candidate_contact', 'jobsite', 'company_contact', 'recruitment_agent',
+            'id', 'company', 'candidate_contact', 'jobsite', 'company_contact', 'client_contact',
             {
                 'company': ['id', 'name', 'primary_contact'],
                 },
@@ -861,9 +860,6 @@ class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
             ]
 
         extra_kwargs = {'job': {'required': False},}
-
-    def get_alternate_name(self, obj):
-        return obj.client_contact
 
     def validate(self, validated_data):
         company_contact = validated_data.get('company_contact')
