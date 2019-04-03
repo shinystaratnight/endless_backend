@@ -8,7 +8,7 @@ from .utils import get_sms_service
 logger = get_task_logger(__name__)
 
 
-@shared_task(bind=True)
+# @shared_task(bind=True)
 def fetch_remote_sms(self):
     try:
         sms_service = get_sms_service()
