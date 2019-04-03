@@ -3,7 +3,6 @@ import math
 from decimal import Decimal
 
 from django.core.files.base import ContentFile
-from django.contrib.sites.models import Site
 from django.template.loader import get_template
 from django.utils.formats import date_format
 from django.utils.timezone import localtime
@@ -12,7 +11,7 @@ from filer.models import Folder, File
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
 from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.core.utils.companies import get_site_url
-from r3sourcer.apps.pricing.services import PriceListCoefficientService
+from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 
 from .base import BasePaymentService, calc_worked_delta
@@ -44,7 +43,7 @@ class InvoiceService(BasePaymentService):
 
     def calculate(self, company, date_from=None, date_to=None, timesheets=None):
         timesheets = self._get_timesheets(timesheets, date_from, date_to, company=company)
-        coefficient_service = PriceListCoefficientService()
+        coefficient_service = CoefficientService()
         lines = []
 
         for timesheet in timesheets:
@@ -55,8 +54,8 @@ class InvoiceService(BasePaymentService):
             price_list_rate = self._get_price_list_rate(skill, customer_company)
             started_at = localtime(timesheet.shift_started_at)
             worked_hours = calc_worked_delta(timesheet)
-            coeffs_hours = coefficient_service.calc_company(
-                timesheet.master_company, industry, skill,
+            coeffs_hours = coefficient_service.calc(
+                timesheet.master_company, industry,
                 RateCoefficientModifier.TYPE_CHOICES.company,
                 started_at,
                 worked_hours,

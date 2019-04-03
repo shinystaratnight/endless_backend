@@ -1,21 +1,18 @@
 from datetime import timedelta
 
-from .models import RateCoefficient, PriceList, RateCoefficientModifier, PriceListRateCoefficient, WeekdayWorkRule
+from .models import RateCoefficient, WeekdayWorkRule
 from .exceptions import RateNotApplicable
 from django.db import models
 
 
 class CoefficientService:
 
-    def get_industry_rate_coefficient(self, industry, modifier_type,
-                                      start_datetime, skill=None):
+    def get_industry_rate_coefficient(self, company, industry, modifier_type, start_datetime):
         query = models.Q(industry=industry,
                          rate_coefficient_modifiers__type=modifier_type,
                          active=True)
-        if skill:
-            query &= models.Q(price_lists__price_list_rates__skill=skill)
 
-        rate_coefficients = RateCoefficient.objects.filter(query)
+        rate_coefficients = RateCoefficient.objects.owned_by(company).filter(query)
 
         return rate_coefficients.order_by(
             '-rate_coefficient_modifiers__multiplier',
@@ -72,50 +69,10 @@ class CoefficientService:
             })
         return res
 
-    def calc(self, industry, modifier_type, start_datetime, worked_hours,
+    def calc(self, company, industry, modifier_type, start_datetime, worked_hours,
              break_started=None, break_ended=None):
         rate_coefficients = self.get_industry_rate_coefficient(
-            industry, modifier_type, start_datetime
-        )
-
-        return self.process_rate_coefficients(
-            rate_coefficients, start_datetime, worked_hours,
-            break_started, break_ended
-        )
-
-
-class PriceListCoefficientService(CoefficientService):
-
-    def get_rate_coefficients_for_company(self, company, industry, skill,
-                                          start_datetime):
-        price_lists = PriceList.objects.filter(
-            company=company,
-            price_list_rates__skill=skill,
-        )
-        rate_coeff_ids = PriceListRateCoefficient.objects.filter(
-            price_list__in=price_lists
-        ).values_list('rate_coefficient', flat=True).distinct()
-
-        company_type = RateCoefficientModifier.TYPE_CHOICES.company
-        rate_coefficients = RateCoefficient.objects.filter(
-            id__in=rate_coeff_ids,
-            rate_coefficient_modifiers__type=company_type,
-            active=True,
-        ).order_by('-priority')
-
-        industry_rate_coeff = self.get_industry_rate_coefficient(
-            industry, company_type, start_datetime, skill=skill
-        ).exclude(name__in=rate_coefficients.values_list('name', flat=True)).distinct()
-        rate_coefficients = list(set(list(rate_coefficients) + list(industry_rate_coeff)))
-        rate_coefficients.sort(key=lambda x: x.priority, reverse=True)
-
-        return rate_coefficients
-
-    def calc_company(self, company, industry, skill, modifier_type,
-                     start_datetime, worked_hours, break_started=None,
-                     break_ended=None):
-        rate_coefficients = self.get_rate_coefficients_for_company(
-            company, industry, skill, modifier_type
+            company, industry, modifier_type, start_datetime
         )
 
         return self.process_rate_coefficients(
