@@ -117,7 +117,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         if company_contact_rel:
             queryset = queryset.filter(job_offer__shift__date__job__customer_company=company_contact_rel.company)
 
-        return queryset.distinct()
+        return queryset.distinct().order_by('-shift_started_at')
 
     def handle_history(self, request):
         if request.user.is_authenticated:
@@ -130,7 +130,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         else:
             queryset = hr_models.TimeSheet.objects.none()
 
-        return self.paginated(queryset.distinct())
+        return self.paginated(queryset.distinct().order_by('-shift_started_at'))
 
     @action(methods=['get'], detail=False)
     def unapproved(self, request, *args, **kwargs):  # pragma: no cover

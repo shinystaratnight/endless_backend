@@ -831,13 +831,46 @@ class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
 
         extra_kwargs = {'job': {'required': False}}
 
-
     def validate(self, validated_data):
-        client_contact = validated_data.get('client_contact')
+        company_contact = validated_data.get('company_contact')
         jobsite = validated_data.get('jobsite')
         company = validated_data.get('company')
 
-        if not any([company, jobsite, client_contact]):
+        if not any([company, jobsite, company_contact]):
+            raise exceptions.ValidationError({
+                'non_field_errors': _('Client Contact, Jobsite or Client are required.')
+            })
+
+        return validated_data
+
+
+class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
+    recruitment_agent = serializers.SerializerMethodField('get_alternate_name')
+
+    class Meta:
+        model = hr_models.BlackList
+
+        fields = [
+            'company', 'candidate_contact', 'jobsite', 'company_contact', 'recruitment_agent',
+            {
+                'company': ['id', 'name', 'primary_contact'],
+                },
+            {
+                'jobsite': ['id', 'short_name', 'primary_contact'],
+                }
+            ]
+
+        extra_kwargs = {'job': {'required': False},}
+
+    def get_alternate_name(self, obj):
+        return obj.client_contact
+
+    def validate(self, validated_data):
+        company_contact = validated_data.get('company_contact')
+        jobsite = validated_data.get('jobsite')
+        company = validated_data.get('company')
+
+        if not any([company, jobsite, company_contact]):
             raise exceptions.ValidationError({
                 'non_field_errors': _('Client Contact, Jobsite or Client are required.')
             })
