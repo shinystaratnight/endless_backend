@@ -48,7 +48,7 @@ class PayslipService(BasePaymentService):
             started_at = localtime(timesheet.shift_started_at)
             worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc(
-                industry,
+                timesheet.master_company, industry,
                 RateCoefficientModifier.TYPE_CHOICES.company,
                 started_at,
                 worked_hours,

@@ -31,7 +31,7 @@ from r3sourcer.apps.myob.api.wrapper import MYOBClient
 from r3sourcer.apps.myob.models import MYOBCompanyFileToken
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
-from r3sourcer.apps.pricing.services import PriceListCoefficientService
+from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 
@@ -909,7 +909,7 @@ def get_value_for_rate_type(coeffs_hours, rate_type):
             return 'base'
         try:
             rate = rate.name.lower()
-        except:
+        except Exception:
             pass
 
         if rate_type in rate:
@@ -919,25 +919,27 @@ def get_value_for_rate_type(coeffs_hours, rate_type):
 
 def generate_pdf(timesheet_ids, request):
     template = get_template('timesheet/timesheet.html')
-    timesheets = hr_models.TimeSheet.objects.filter(id__in=timesheet_ids).order_by('job_offer__shift__date__job__jobsite', 'shift_started_at')
+    timesheets = hr_models.TimeSheet.objects.filter(id__in=timesheet_ids).order_by(
+        'job_offer__shift__date__job__jobsite', 'shift_started_at')
     domain = core_companies_utils.get_site_url(user=request.user)
-    coefficient_service = PriceListCoefficientService()
+    coefficient_service = CoefficientService()
     for timesheet in timesheets:
         jobsite = timesheet.job_offer.job.jobsite
         industry = jobsite.industry
-        skill = timesheet.job_offer.job.position
         started_at = timesheet.shift_started_at
         worked_hours = calc_worked_delta(timesheet)
-        coeffs_hours = coefficient_service.calc_company(
-            timesheet.master_company, industry, skill,
+        coeffs_hours = coefficient_service.calc(
+            timesheet.master_company, industry,
             RateCoefficientModifier.TYPE_CHOICES.candidate,
             started_at,
             worked_hours,
             break_started=timesheet.break_started_at,
             break_ended=timesheet.break_ended_at,
-            )
+        )
         timesheet.coeffs_hours = coeffs_hours
-        for rate_type, value in {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}.items():
+        name_mapping = {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}
+
+        for rate_type, value in name_mapping.items():
             setattr(timesheet, value, get_value_for_rate_type(coeffs_hours, rate_type))
         if str(timesheet.travel) == '1:00:00':
             timesheet.travel = 1

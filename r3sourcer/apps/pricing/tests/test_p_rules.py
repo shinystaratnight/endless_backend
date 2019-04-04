@@ -52,7 +52,7 @@ class TestWeekdayWorkRule:
 
         res = obj.calc_hours(timezone.now(), timedelta(hours=1))
 
-        assert res == timedelta(hours=1)
+        assert res == timedelta()
 
     @freeze_time(date(2017, 1, 1))
     def test_get_hours_not_applied(self):

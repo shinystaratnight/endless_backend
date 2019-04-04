@@ -282,11 +282,11 @@ class TimeSheetSync(
         """
 
         job = timesheet.job_offer.job
-        position = job.position  # type: Position
+        position = job.position
         started_at = timezone.localtime(timesheet.shift_started_at)
         worked_hours = calc_worked_delta(timesheet)
         timesheets_with_rates = self.timesheet_rates_calc.calc(
-            job.jobsite.industry,
+            timesheet.master_company, job.jobsite.industry,
             RateCoefficientModifier.TYPE_CHOICES.candidate,
             started_at,
             worked_hours,

@@ -6,7 +6,7 @@ from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.pricing.models import (
     WeekdayWorkRule, OvertimeWorkRule, TimeOfDayWorkRule, AllowanceWorkRule,
     RateCoefficient, RateCoefficientModifier, Industry, PriceList, PriceListRateCoefficient,
-    PriceListRate,
+    PriceListRate, RateCoefficientRel
 )
 from r3sourcer.apps.skills.models import Skill, SkillName
 
@@ -85,49 +85,53 @@ def allowance_rule(db):
 
 
 @pytest.fixture
-def rate_coefficient(db, industry):
+def rate_coefficient(db, industry, company):
     coeff = RateCoefficient.objects.create(name='test', industry=industry)
     RateCoefficientModifier.objects.create(
         type=RateCoefficientModifier.TYPE_CHOICES.candidate,
         rate_coefficient=coeff,
         multiplier=2,
     )
+    RateCoefficientRel.objects.create(rate_coefficient=coeff, company=company)
 
     return coeff
 
 
 @pytest.fixture
-def rate_coefficient_another(db, industry):
+def rate_coefficient_another(db, industry, company):
     coeff = RateCoefficient.objects.create(name='test 1', industry=industry)
     RateCoefficientModifier.objects.create(
         type=RateCoefficientModifier.TYPE_CHOICES.candidate,
         rate_coefficient=coeff,
         multiplier=1.5,
     )
+    RateCoefficientRel.objects.create(rate_coefficient=coeff, company=company)
 
     return coeff
 
 
 @pytest.fixture
-def rate_coefficient_company(db, industry):
+def rate_coefficient_company(db, industry, company):
     coeff = RateCoefficient.objects.create(name='test company', industry=industry)
     RateCoefficientModifier.objects.create(
         type=RateCoefficientModifier.TYPE_CHOICES.company,
         rate_coefficient=coeff,
         multiplier=2,
     )
+    RateCoefficientRel.objects.create(rate_coefficient=coeff, company=company)
 
     return coeff
 
 
 @pytest.fixture
-def rate_coefficient_company_another(db, industry):
+def rate_coefficient_company_another(db, industry, company):
     coeff = RateCoefficient.objects.create(name='test company 1.5', industry=industry)
     RateCoefficientModifier.objects.create(
         type=RateCoefficientModifier.TYPE_CHOICES.company,
         rate_coefficient=coeff,
         multiplier=1.5,
     )
+    RateCoefficientRel.objects.create(rate_coefficient=coeff, company=company)
 
     return coeff
 
