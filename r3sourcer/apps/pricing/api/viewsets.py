@@ -30,9 +30,8 @@ class RateCoefficientViewset(core_viewsets.BaseApiViewset):
                 rule_type=ContentType.objects.get_for_model(extra_class)
             ).first()
             rule = extra_obj and extra_obj.rule
-            # added migrations to used field
-            # if rule:
-            #     setattr(rule, 'used', rule is not None)
+            if rule:
+                setattr(rule, 'used', extra_obj.used)
             setattr(obj, extra, rule)
 
         return obj
@@ -47,8 +46,18 @@ class RateCoefficientViewset(core_viewsets.BaseApiViewset):
         )
 
     def perform_destroy(self, instance):
-        if instance.rate_coefficient_rules.all() or instance.rate_coefficient_modifiers.all():
+        if instance.rate_coefficient_modifiers.exists():
             raise ValidationError({
-                    'error': _('Unable to delete due relation to calculation')
-                })
+                'error': _('Unable to delete due to relation to modifier')
+            })
+
+        if instance.price_lists.all().exists():
+            raise ValidationError({
+                'error': _('Unable to delete due relation to price list')
+            })
+
+        for dynamic_coeff in instance.rate_coefficient_rules.all():
+            dynamic_coeff.rule_type.get_object_for_this_type(id=dynamic_coeff.rule_id).delete()
+            dynamic_coeff.delete()
+
         instance.delete()

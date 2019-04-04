@@ -13,7 +13,7 @@ from r3sourcer.apps.core.models import InvoiceRule, Invoice, InvoiceLine
 from r3sourcer.apps.hr.payment import InvoiceService
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.utils import utils
-from r3sourcer.apps.pricing.services import PriceListCoefficientService
+from r3sourcer.apps.pricing.services import CoefficientService
 
 
 tz = pytz.timezone(settings.TIME_ZONE)
@@ -41,7 +41,7 @@ class TestInvoiceService:
 
         assert res is None
 
-    @mock.patch.object(PriceListCoefficientService, 'calc_company')
+    @mock.patch.object(CoefficientService, 'calc')
     @mock.patch('r3sourcer.apps.hr.payment.invoices.calc_worked_delta')
     @mock.patch.object(InvoiceService, '_get_price_list_rate')
     @mock.patch.object(InvoiceService, '_get_timesheets')

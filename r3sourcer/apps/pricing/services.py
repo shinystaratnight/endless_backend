@@ -1,74 +1,64 @@
-import re
-
 from datetime import timedelta
-from itertools import chain
 
-from .models import RateCoefficient, PriceList, RateCoefficientModifier, PriceListRateCoefficient, WeekdayWorkRule
+from .models import RateCoefficient, WeekdayWorkRule
 from .exceptions import RateNotApplicable
 from django.db import models
 
 
 class CoefficientService:
 
-    def get_industry_rate_coefficient(self, industry, modifier_type,
-                                      start_datetime, skill=None):
+    def get_industry_rate_coefficient(self, company, industry, modifier_type, start_datetime):
         query = models.Q(industry=industry,
                          rate_coefficient_modifiers__type=modifier_type,
                          active=True)
-        # if skill:
-        #     query &= models.Q(price_lists__price_list_rates__skill=skill)
 
-        rate_coefficients = RateCoefficient.objects.filter(query)
+        rate_coefficients = RateCoefficient.objects.owned_by(company).filter(query)
 
-        return rate_coefficients.order_by('-priority').distinct()
+        return rate_coefficients.order_by(
+            '-rate_coefficient_modifiers__multiplier',
+            '-rate_coefficient_modifiers__fixed_addition',
+            '-rate_coefficient_modifiers__fixed_override',
+            '-priority'
+        ).distinct()
 
     def process_rate_coefficients(self, rate_coefficients, start_datetime,
-                                  worked_hours, break_started=None,
+                                  origin_hours, break_started=None,
                                   break_ended=None):
         res = []
-        r = re.compile("\d+(\.\d+)?")
-        for rate_coefficient in sorted(rate_coefficients, key=lambda x: float(r.search(x.name).group() if r.search(x.name) else 0), reverse=True):
-            rules = rate_coefficient.rate_coefficient_rules.order_by(
-                '-priority'
-            ).distinct()
+        worked_hours = origin_hours
+        for rate_coefficient in rate_coefficients:
+            rules = rate_coefficient.rate_coefficient_rules.filter(used=True).order_by('-priority').distinct()
 
             try:
                 used_hours = worked_hours
                 is_allowance = False
+
                 for rule in rules:
-                    if not rule.rule:
-                        continue
-                    if not isinstance(rule.rule, WeekdayWorkRule) and not rule.rule.used:
-                        continue
+                    calc_hours = origin_hours if is_allowance else worked_hours
                     hours = rule.rule.calc_hours(
-                        start_datetime, worked_hours, break_started,
+                        start_datetime, calc_hours, break_started,
                         break_ended
                     )
+
                     if hours == timedelta(hours=-1):
                         is_allowance = True
+                        hours = timedelta(hours=1)
+                    elif isinstance(rule.rule, WeekdayWorkRule):
+                        break
 
                     used_hours = min(hours, used_hours)
-
-                    if is_allowance:
-                        used_hours = timedelta(hours=1)
-
-                        res.append({
-                            'coefficient': rate_coefficient,
-                            'hours': used_hours
-                            })
 
                     if used_hours.total_seconds() <= 0:
                         break
 
-                    if used_hours.total_seconds() > 0 or is_allowance:
+                if used_hours.total_seconds() > 0:
+                    res.append({
+                        'coefficient': rate_coefficient,
+                        'hours': used_hours
+                    })
 
-                        res.append({
-                            'coefficient': rate_coefficient,
-                            'hours': used_hours
-                        })
-
-                        if not is_allowance:
-                            worked_hours -= used_hours
+                    if not is_allowance:
+                        worked_hours -= used_hours
             except RateNotApplicable:
                 pass
 
@@ -79,50 +69,10 @@ class CoefficientService:
             })
         return res
 
-    def calc(self, industry, modifier_type, start_datetime, worked_hours,
+    def calc(self, company, industry, modifier_type, start_datetime, worked_hours,
              break_started=None, break_ended=None):
         rate_coefficients = self.get_industry_rate_coefficient(
-            industry, modifier_type, start_datetime
-        )
-
-        return self.process_rate_coefficients(
-            rate_coefficients, start_datetime, worked_hours,
-            break_started, break_ended
-        )
-
-
-class PriceListCoefficientService(CoefficientService):
-
-    def get_rate_coefficients_for_company(self, company, industry, skill,
-                                          start_datetime):
-        price_lists = PriceList.objects.filter(
-            company=company,
-            price_list_rates__skill=skill,
-        )
-        rate_coeff_ids = PriceListRateCoefficient.objects.filter(
-            price_list__in=price_lists
-        ).values_list('rate_coefficient', flat=True).distinct()
-
-        company_type = RateCoefficientModifier.TYPE_CHOICES.company
-        rate_coefficients = RateCoefficient.objects.filter(
-            id__in=rate_coeff_ids,
-            rate_coefficient_modifiers__type=company_type,
-            active=True,
-        ).order_by('-priority')
-
-        industry_rate_coeff = self.get_industry_rate_coefficient(
-            industry, company_type, start_datetime, skill=skill
-        ).exclude(name__in=rate_coefficients.values_list('name', flat=True)).distinct()
-        rate_coefficients = list(set(list(rate_coefficients) + list(industry_rate_coeff)))
-        rate_coefficients.sort(key=lambda x: x.priority, reverse=True)
-
-        return rate_coefficients
-
-    def calc_company(self, company, industry, skill, modifier_type,
-                     start_datetime, worked_hours, break_started=None,
-                     break_ended=None):
-        rate_coefficients = self.get_rate_coefficients_for_company(
-            company, industry, skill, modifier_type
+            company, industry, modifier_type, start_datetime
         )
 
         return self.process_rate_coefficients(

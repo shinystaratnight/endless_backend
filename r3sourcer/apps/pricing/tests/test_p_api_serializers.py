@@ -52,6 +52,7 @@ class TestRateCoefficientSerializer:
         return DynamicCoefficientRule.objects.create(
             rate_coefficient=rate_coefficient,
             rule=monday_rule,
+            used=True,
         )
 
     @pytest.fixture
