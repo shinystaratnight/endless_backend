@@ -266,26 +266,19 @@ class CandidateLocationViewset(
 
     @action(methods=['get'], detail=False)
     def candidates_location(self, request, *args, **kwargs):
-        timesheets = []
         job_id = request.query_params.get('job_id')
         try:
             job = Job.objects.get(id=job_id)
         except Job.DoesNotExist:
             job = None
-        shift_dates = ShiftDate.objects.filter(job=job_id)
-        for s_d in shift_dates:
-            if (timezone.now() - timezone.timedelta(hours=8)) <= timezone.make_aware(datetime.datetime.combine(s_d.shift_date,
-                                                                                           s_d.shifts.first().time)) <= timezone.now():
-                job_offers = job.get_job_offers()
-                now = timezone.now()
-                for job_offer in job_offers:
-                    timesheet = job_offer.time_sheets.filter(
-                                going_to_work_confirmation=True,
-                                shift_started_at__lte=now,
-                                shift_ended_at__gte=now + timezone.timedelta(hours=1),
-                            )
-                    timesheets.append(timesheet)
-                    # candidates.append(job_offer.candidate_contact)
+        now = timezone.now()
+
+        timesheets = list(TimeSheet.objects.filter(
+            Q(shift_ended_at__gte=now - timezone.timedelta(hours=8)) | Q(shift_ended_at=None),
+            ~Q(shift_started_at=None),
+            job_offer_id__in=job.get_job_offers().values('id'),
+                    going_to_work_confirmation=True,
+                ).values_list('id', flat=True))
 
         data = location_logger.fetch_location_candidates(
             timesheets,
