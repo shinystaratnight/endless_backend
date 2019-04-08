@@ -66,3 +66,18 @@ class LocationLogger():
             'count': qs.number_of_objects,
         }
 
+    def fetch_location_candidates(self, instances, **kwargs):
+        new_qs = []
+
+        for instance in instances:
+            kwargs['timesheet_id'] = str(instance.pk)
+
+            qs = self.get_location_queryset().filter(timesheet_id=kwargs['timesheet_id']).order_by(
+                '-log_at')
+            if qs:
+                new_qs.append(qs)
+
+        return {
+            'results': new_qs,
+            'count': len(new_qs),
+        }
