@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Exists
 from django.utils import timezone
@@ -13,9 +15,10 @@ from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
+from r3sourcer.apps.hr.models import Job
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
-from r3sourcer.apps.hr.models import TimeSheet
+from r3sourcer.apps.hr.models import TimeSheet, ShiftDate
 
 from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
@@ -259,6 +262,34 @@ class CandidateLocationViewset(
             instance, page_num=page, page_size=limit, timesheet_id=timesheet_id
         )
 
+        return Response(data)
+
+    @action(methods=['get'], detail=False)
+    def candidates_location(self, request, *args, **kwargs):
+        timesheets = []
+        job_id = request.query_params.get('job_id')
+        try:
+            job = Job.objects.get(id=job_id)
+        except Job.DoesNotExist:
+            job = None
+        shift_dates = ShiftDate.objects.filter(job=job_id)
+        for s_d in shift_dates:
+            if (timezone.now() - timezone.timedelta(hours=8)) <= timezone.make_aware(datetime.datetime.combine(s_d.shift_date,
+                                                                                           s_d.shifts.first().time)) <= timezone.now():
+                job_offers = job.get_job_offers()
+                now = timezone.now()
+                for job_offer in job_offers:
+                    timesheet = job_offer.time_sheets.filter(
+                                going_to_work_confirmation=True,
+                                shift_started_at__lte=now,
+                                shift_ended_at__gte=now + timezone.timedelta(hours=1),
+                            )
+                    timesheets.append(timesheet)
+                    # candidates.append(job_offer.candidate_contact)
+
+        data = location_logger.fetch_location_candidates(
+            timesheets,
+        )
         return Response(data)
 
 
