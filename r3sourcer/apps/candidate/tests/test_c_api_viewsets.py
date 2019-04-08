@@ -1,10 +1,13 @@
+import datetime
 import json
 
 import mock
 import pytest
+from unittest.mock import patch
 
 from django.core.urlresolvers import reverse
 from django.contrib.sites.models import Site
+from django.utils import timezone
 
 from rest_framework.test import force_authenticate
 
@@ -14,6 +17,9 @@ from r3sourcer.apps.candidate.endpoints import (
 from r3sourcer.apps.candidate.models import CandidateContact, Subcontractor, CandidateRel
 from r3sourcer.apps.candidate.tests.utils import BaseTestCase, AnonymousUser
 from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.pricing.models import Industry
+from r3sourcer.apps.skills.models import Skill, SkillName
 
 class CandidateContactEndpointTest(CandidateContactEndpoint):
 
@@ -319,3 +325,135 @@ class TestBuyAPITestCase(BaseTestCase):
         self.assertEqual(resp.data['status'], 'error')
         self.assertIn("Company has no billing information",
                       resp.data['errors']['company'])
+
+@patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address',
+       return_value=(42, 42))
+def address(db):
+    country, _ = core_models.Country.objects.get_or_create(name='Australia', code2='AU')
+    state = core_models.Region.objects.create(name='test', country=country)
+    city = core_models.City.objects.create(name='city', country=country)
+    return core_models.Address.objects.create(
+        street_address="test street",
+        postal_code="123456",
+        city=city,
+        state=state
+    )
+
+@pytest.fixture
+@patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
+def job_offer(mock_check, db, shift, candidate_contact):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift,
+        candidate_contact=candidate_contact,
+        status=hr_models.JobOffer.STATUS_CHOICES.accepted,
+    )
+
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+
+    return job_offer
+
+
+class TestCandidatesLocationAPITestCase(BaseTestCase):
+    view_name = 'api:candidate/location-candidates-location'
+
+    def get_url(self, view_name=None, args=None, kwargs=None):
+        return reverse(view_name or self.view_name,
+                       kwargs=kwargs or self.get_view_kwargs())
+
+    def get_allowed_users(self):
+        if self.request_user is not None:
+            return [self.request_user]
+        return [core_models.User.objects.create_superuser(
+            email='test@test.mm', phone_mobile='+32345678901',
+            password='test1234'
+            )]
+
+    def get_data(self):
+        user = core_models.User.objects.create_user(
+            email='test@test.vt', phone_mobile='+12345678801',
+            password='test1234'
+            )
+        industry = Industry.objects.create(type='test')
+        skill_name = SkillName.objects.create(name="Driver", industry=industry)
+        candidate_contact = CandidateContact.objects.create(
+            contact=user.contact
+            )
+        company_contact = core_models.CompanyContact.objects.create(
+            contact=user.contact
+            )
+        master_company = core_models.Company.objects.create(
+            name='Master',
+            business_id='123',
+            registered_for_gst=True,
+            type=core_models.Company.COMPANY_TYPES.master,
+            timesheet_approval_scheme=core_models.Company.TIMESHEET_APPROVAL_SCHEME.PIN
+        )
+        skill = Skill.objects.create(
+            name=skill_name,
+            carrier_list_reserve=2,
+            short_name="Drv",
+            active=False,
+            company=master_company
+            )
+        regular_company = core_models.Company.objects.create(
+            name='Regular',
+            business_id='321',
+            registered_for_gst=True,
+            type=core_models.Company.COMPANY_TYPES.regular
+            )
+        jobsite = hr_models.Jobsite.objects.create(
+            industry=industry,
+            master_company=master_company,
+            start_date=datetime.date.today(),
+            end_date=datetime.date.today() + datetime.timedelta(days=7),
+            address=address(),
+            regular_company=regular_company,
+            )
+        candidate_rel = CandidateRel.objects.create(
+            candidate_contact=candidate_contact,
+            master_company=master_company,
+            company_contact=company_contact,
+            owner=True,
+            active=True
+            )
+        job = hr_models.Job.objects.create(
+            provider_company=master_company,
+            customer_company=regular_company,
+            jobsite=jobsite,
+            position=skill,
+            published=True
+            )
+        shift_date = hr_models.ShiftDate.objects.create(
+            job=job,
+            shift_date=timezone.now() - timezone.timedelta(hours=10)
+            )
+
+        shift = hr_models.Shift.objects.create(
+                date=shift_date,
+                time=datetime.time(hour=7, minute=00)
+            )
+        job_offer_obj = job_offer(shift=shift, candidate_contact=candidate_contact, db=None)
+        timesheet = hr_models.TimeSheet.objects.create(
+                going_to_work_confirmation=True,
+                job_offer=job_offer_obj,
+                supervisor=company_contact,
+                shift_started_at=timezone.now().replace(hour=8, minute=0),
+                shift_ended_at=timezone.now().replace(hour=8, minute=0) + timezone.timedelta(hours=8),
+                supervisor_approved_at=timezone.now(),
+                candidate_submitted_at=timezone.now(),
+            )
+        return {'job': job,  'job_offer': job_offer_obj,
+                'shift_date': shift_date, "timesheet": timesheet}
+
+    def setUp(self):
+        super().setUp()
+        self.request_user = None
+
+    def test_success(self):
+        with mock.patch(
+                'r3sourcer.apps.logger.services.LocationLogger.fetch_location_candidates',
+                return_value={"results": [{"test": "test-something"}]}) as location_mock:
+            data = self.get_data()
+            resp = self.make_request(data={"job_id": data['job'].id})
+            location_mock.assert_called_with([data['timesheet'].id])
+            self.assertEqual(resp.status_code, 200)
