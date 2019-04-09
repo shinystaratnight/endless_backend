@@ -4,7 +4,8 @@ from . import models
 
 
 class TimeSheetAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'regular_company')
+    list_display = ('__str__', 'regular_company', 'shift_started_at')
+    ordering = ['-shift_started_at']
 
 
 class JobsiteAdmin(admin.ModelAdmin):
