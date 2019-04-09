@@ -75,14 +75,12 @@ class TimesheetFilter(FilterSet):
         """
         now = timezone.now()
         ended_at = now - datetime.timedelta(hours=4)
-        signed_delta = now - datetime.timedelta(hours=1)
 
         qs_unapproved = (
             Q(candidate_submitted_at__isnull=False) |
             Q(shift_ended_at__lt=ended_at)
         ) & (
-            Q(supervisor_approved_at__isnull=True) |
-            Q(supervisor_approved_at__gte=signed_delta)
+            Q(supervisor_approved_at__isnull=True)
         ) & Q(going_to_work_confirmation=True)
 
         if contact.company_contact.exists():
