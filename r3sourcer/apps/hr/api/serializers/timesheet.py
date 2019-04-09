@@ -218,7 +218,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
         return self._get_related_sms(obj, 'supervisor-timesheet-sign')
 
     def get_candidate_sms(self, obj):
-        return self._get_related_sms(obj, 'candidate-timesheet-agree')
+        return self._get_related_sms(obj, 'candidate-timesheet-hours')
 
     def get_invoice(self, obj):
         invoice_line = obj.invoice_lines.first()
