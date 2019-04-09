@@ -1,3 +1,5 @@
+import datetime
+
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Exists
 from django.utils import timezone
@@ -13,9 +15,10 @@ from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
+from r3sourcer.apps.hr.models import Job
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
-from r3sourcer.apps.hr.models import TimeSheet
+from r3sourcer.apps.hr.models import TimeSheet, ShiftDate
 
 from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
@@ -259,6 +262,27 @@ class CandidateLocationViewset(
             instance, page_num=page, page_size=limit, timesheet_id=timesheet_id
         )
 
+        return Response(data)
+
+    @action(methods=['get'], detail=False)
+    def candidates_location(self, request, *args, **kwargs):
+        job_id = request.query_params.get('job_id')
+        try:
+            job = Job.objects.get(id=job_id)
+        except Job.DoesNotExist:
+            job = None
+        now = timezone.now()
+
+        timesheets = list(TimeSheet.objects.filter(
+            Q(shift_ended_at__gte=now - timezone.timedelta(hours=8)) | Q(shift_ended_at=None),
+            ~Q(shift_started_at=None),
+            job_offer_id__in=job.get_job_offers().values('id'),
+                    going_to_work_confirmation=True,
+                ).values_list('id', flat=True))
+
+        data = location_logger.fetch_location_candidates(
+            timesheets,
+        )
         return Response(data)
 
 
