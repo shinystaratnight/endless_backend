@@ -66,7 +66,7 @@ class LocationLogger():
             'count': qs.number_of_objects,
         }
 
-    def fetch_location_candidates(self, instances, **kwargs):
+    def fetch_location_candidates(self, instances=None, **kwargs):
         page_num = kwargs.pop('page_num', 1)
         page_size = kwargs.pop('page_size', 100)
 
@@ -83,7 +83,20 @@ class LocationLogger():
                 'count': qs.number_of_objects,
             }
         else:
-            return {
-                'results': [],
-                'count': 0,
-                }
+            if kwargs['return_all']:
+                qs = self.get_location_queryset().order_by(
+                    '-log_at')
+
+                qs = qs.paginate(
+                    page_num=page_num, page_size=page_size
+                    )
+
+                return {
+                    'results': [self._map_location_log(log) for log in qs.objects],
+                    'count': qs.number_of_objects,
+                    }
+            else:
+                return {
+                    'results': [],
+                    'count': 0,
+                    }

@@ -267,10 +267,13 @@ class CandidateLocationViewset(
     @action(methods=['get'], detail=False)
     def candidates_location(self, request, *args, **kwargs):
         job_id = request.query_params.get('job_id')
+        if not job_id:
+            data = location_logger.fetch_location_candidates(return_all=True)
+            return Response(data)
         try:
             job = Job.objects.get(id=job_id)
         except Job.DoesNotExist:
-            job = None
+            exceptions.ValidationError({'job': _('Cannot find job')})
         now = timezone.now()
 
         timesheets = list(TimeSheet.objects.filter(
@@ -281,7 +284,7 @@ class CandidateLocationViewset(
                 ).values_list('id', flat=True))
 
         data = location_logger.fetch_location_candidates(
-            timesheets,
+            instances=timesheets,
         )
         return Response(data)
 
