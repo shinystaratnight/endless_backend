@@ -715,7 +715,7 @@ def send_going_to_work_sms(self, time_sheet_id):
             logger.error(e)
         else:
             if (not time_sheet.master_company.company_settings.pre_shift_sms_enabled or
-                    time_sheet.going_to_work_confirmation is not None):
+                    time_sheet.going_to_work_confirmation):
                 return
 
             target_date_and_time = timezone.localtime(
