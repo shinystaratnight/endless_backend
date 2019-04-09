@@ -7,7 +7,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
-from rest_framework.views import APIView
 
 from r3sourcer.apps.sms_interface.mixins import MessageView
 from r3sourcer.apps.twilio.forms import SMSForm
@@ -69,9 +68,7 @@ class SMSDialogTemplateView(MessageView, FormView):
         return super(SMSDialogTemplateView, self).form_valid(form)
 
 
-class IncomingSMSView(APIView):
-
-    @method_decorator(csrf_exempt)
-    def post(self, request, **kwargs):
-        logger.info('Twilio request data: {}'.format(request.data))
-        return HttpResponse('<Response></Response>', content_type='application/xml')
+@csrf_exempt
+def callback(request, **kwargs):
+    logger.info('Twilio request data: {}'.format(request.POST))
+    return HttpResponse('<Response></Response>', content_type='application/xml')
