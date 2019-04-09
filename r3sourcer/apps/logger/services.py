@@ -67,9 +67,20 @@ class LocationLogger():
         }
 
     def fetch_location_candidates(self, instances, **kwargs):
+        page_num = kwargs.pop('page_num', 1)
+        page_size = kwargs.pop('page_size', 10)
 
         qs = self.get_location_queryset().filter(timesheet_id__in=instances).order_by(
             '-log_at')
+
+        if page_size < 0:
+            page_size = qs.count()
+            if not page_size:
+                page_size = 10
+
+        qs = qs.paginate(
+            page_num=page_num, page_size=page_size
+            )
 
         return {
             'results': [self._map_location_log(log) for log in qs.objects],
