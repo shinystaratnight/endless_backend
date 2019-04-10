@@ -103,6 +103,15 @@ class ApproveInvoiceView(APIView):
         return Response()
 
 
+class SyncInvoiceView(APIView):
+    def post(self, request, *args, **kwargs):
+        invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
+        if invoice.approved:
+            sync_invoice.delay(invoice.id)
+            return Response({"status": "success"})
+        return Response({"error": "Invoice is not approved"})
+
+
 class SyncInvoicesView(APIView):
     """
     Fetches unsynced invoices and triggers delayed task to sync them to MYOB

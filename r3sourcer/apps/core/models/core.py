@@ -2130,6 +2130,13 @@ class Invoice(AbstractOrder):
     myob_number = models.CharField(
         max_length=8,
         verbose_name=_("MYOB Number"),
+        null=True,
+        blank=True
+    )
+
+    synced_at = models.DateTimeField(
+        verbose_name=_("Synced to MYOB at"),
+        blank=True,
         null=True
     )
 

@@ -4,6 +4,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from django.db.models import Q
+from django.utils import timezone
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import Company, Invoice
@@ -107,6 +108,7 @@ def clean_myob_request_log(self):
 
 
 @shared_task
+@retry_on_myob_error
 def sync_invoice(invoice_id):
     invoice = Invoice.objects.get(id=invoice_id)
     company = invoice.provider_company
@@ -131,8 +133,13 @@ def sync_invoice(invoice_id):
 
         if len(synced_invoice_lines) < invoice.invoice_lines.count():
             service.sync_to_myob(invoice, partial=True)
+            invoice.synced_at = timezone.now()
+            invoice.save(update_fields=['synced_at'])
     else:
         service.sync_to_myob(invoice)
+        invoice.synced_at = timezone.now()
+        invoice.save(update_fields=['synced_at'])
+
 
 
 @app.task(bind=True)
