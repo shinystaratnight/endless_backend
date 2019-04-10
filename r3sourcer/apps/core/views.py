@@ -5,7 +5,10 @@ from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.module_loading import import_string
+from django.utils.translation import ugettext_lazy as _
 from django.views import generic
+
+from rest_framework import exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from oauth2_provider_jwt.views import TokenView, WrongUsername
@@ -96,8 +99,12 @@ class RegisterFormView(generic.TemplateView):
 
 class ApproveInvoiceView(APIView):
     def post(self, *args, **kwargs):
+        company_contact = self.request.user.contact.company_contact.last()
+        if company_contact is None:
+            raise exceptions.ValidationError({'error': _('User has no company contact!')})
         invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
         invoice.approved = True
+        invoice.provider_representative = company_contact
         invoice.save()
         sync_invoice.delay(invoice.id)
         return Response()
