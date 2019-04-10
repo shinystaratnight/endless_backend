@@ -83,7 +83,7 @@ class LocationLogger():
                 'count': qs.number_of_objects,
             }
         else:
-            if kwargs['return_all']:
+            if kwargs.get('return_all'):
                 qs = self.get_location_queryset().order_by(
                     '-log_at')
 
