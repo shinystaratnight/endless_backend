@@ -71,7 +71,7 @@ class LocationLogger():
         page_size = kwargs.pop('page_size', 100)
 
         if instances:
-            qs = self.get_location_queryset().filter(timesheet_id__in=instances).order_by(
+            qs = self.get_location_queryset().filter(timesheet_id__in=[str(i) for i in instances]).order_by(
                 '-log_at')
 
             qs = qs.paginate(
