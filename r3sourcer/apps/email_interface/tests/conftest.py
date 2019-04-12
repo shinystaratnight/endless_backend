@@ -44,5 +44,5 @@ def fake_email_html_body(fake_email):
     return models.EmailBody.objects.create(
         content='test',
         message=fake_email,
-        type=models.EmailMessage.HTML_CONTENT_TYPE
+        type=models.HTML_CONTENT_TYPE
     )
