@@ -984,7 +984,7 @@ def send_invoice_email(invoice_id):
         logger.warn('Invoice with id=%s does not exist', invoice_id)
         return
 
-    master_company = invoice.customer_company
+    client_company = invoice.customer_company
 
     try:
         email_interface = get_email_service()
@@ -1007,5 +1007,10 @@ def send_invoice_email(invoice_id):
     timesheet_ids = invoice.invoice_lines.values_list('timesheet_id', flat=True).distinct()
     timesheets_pdf = generate_pdf(timesheet_ids, master_company=invoice.provider_company)
 
-    files = [pdf_file_obj, timesheets_pdf]
-    email_interface.send(master_company.billing_email, _('Invoice'), '', files=files)
+    context = {
+        'files': [pdf_file_obj, timesheets_pdf],
+        'master_company': invoice.provider_company.name,
+        'master_company_contact': str(invoice.provider_representative),
+        'client': client_company.name,
+    }
+    email_interface.send_tpl(client_company.billing_email, tpl_name='client-invoice', **context)
