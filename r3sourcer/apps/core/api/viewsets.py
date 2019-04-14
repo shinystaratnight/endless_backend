@@ -996,7 +996,7 @@ class AddressViewset(GoogleAddressMixin, BaseApiViewset):
         try:
             address_data = request.data
             data = parse_google_address(address_data)
-        except Exception as e:
+        except Exception:
             raise exceptions.ValidationError(_('Address is invalid!'))
 
         return Response(data)
