@@ -44,7 +44,10 @@ class PayslipRuleSerializer(serializers.ModelSerializer):
 class InvoiceRuleSerializer(serializers.ModelSerializer):
     class Meta:
         model = InvoiceRule
-        fields = ('id', 'period', 'separation_rule', 'show_candidate_name', 'serial_number', 'starting_number')
+        fields = (
+            'id', 'period', 'separation_rule', 'show_candidate_name', 'serial_number', 'starting_number',
+            'period_zero_reference'
+        )
 
 
 class MYOBAccountSerializer(serializers.ModelSerializer):

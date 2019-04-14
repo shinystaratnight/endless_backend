@@ -8,7 +8,7 @@ from django.utils.module_loading import import_string
 from django.views import generic
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from oauth2_provider_jwt.views import TokenView, WrongUsername
+from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
 from oauth2_provider_jwt.utils import generate_payload, encode_jwt
 
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -43,7 +43,7 @@ class OAuth2JWTTokenMixin():
                 contact = Contact.objects.get(Q(email=username) | Q(phone_mobile=username))
                 extra_data['user_id'] = str(contact.user.id)
             except Exception:
-                raise WrongUsername
+                raise MissingIdAttribute
 
             if not domain:
                 master_company = contact.get_closest_company()
@@ -95,11 +95,15 @@ class RegisterFormView(generic.TemplateView):
 
 
 class ApproveInvoiceView(APIView):
-    def post(self, *args, **kwargs):
+    def post(self, request, *args, **kwargs):
+        from r3sourcer.apps.hr.tasks import send_invoice_email
         invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
         invoice.approved = True
+        invoice.provider_representative = request.user.contact.get_company_contact_by_company(
+            invoice.provider_company)
         invoice.save()
         sync_invoice.delay(invoice.id)
+        send_invoice_email.delay(invoice.id)
         return Response()
 
 

@@ -2185,7 +2185,7 @@ class Invoice(AbstractOrder):
         invoice_number = ''
 
         if rule.serial_number:
-            invoice_number += rule.serial_number
+            invoice_number += rule.serial_number[:12]
 
         starting_number = format(rule.starting_number, '08')
         invoice_number += starting_number
@@ -2209,7 +2209,7 @@ class InvoiceLine(AbstractOrderLine):
     invoice = models.ForeignKey(
         Invoice,
         related_name="invoice_lines",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Invoice"),
     )
 

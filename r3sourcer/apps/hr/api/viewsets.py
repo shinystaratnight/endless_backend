@@ -350,8 +350,6 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
 class InvoiceViewset(BaseApiViewset):
 
-    http_method_names = ['get', 'options']
-
     @action(methods=['get'], detail=True)
     def pdf(self, request, *args, **kwargs):
         invoice = self.get_object()
@@ -377,6 +375,12 @@ class InvoiceViewset(BaseApiViewset):
             'status': 'success',
             'pdf': pdf_url,
         })
+
+    def perform_destroy(self, instance):
+        if instance.approved:
+            raise exceptions.ValidationError({'non_field_errors': _('Cannot delete approved invoice')})
+
+        instance.delete()
 
 
 class JobOfferViewset(BaseApiViewset):

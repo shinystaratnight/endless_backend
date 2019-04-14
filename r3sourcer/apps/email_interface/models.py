@@ -1,9 +1,19 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from filer.models import File
 
 from model_utils import Choices
 
 from r3sourcer.apps.core import models as core_models
+
+
+TEXT_CONTENT_TYPE = 'text/plain'
+HTML_CONTENT_TYPE = 'text/html'
+PDF_CONTENT_TYPE = 'application/pdf'
+
+FILE_MIME_MAPPING = {
+    '.pdf': PDF_CONTENT_TYPE,
+}
 
 
 class EmailTemplate(core_models.TemplateMessage):
@@ -25,8 +35,6 @@ class EmailTemplate(core_models.TemplateMessage):
 
 
 class EmailMessage(core_models.UUIDModel, models.Model):
-    TEXT_CONTENT_TYPE = 'text/plain'
-    HTML_CONTENT_TYPE = 'text/html'
 
     STATE_CHOICES = Choices(
         ('CREATED', _("Created")),
@@ -144,23 +152,23 @@ class EmailMessage(core_models.UUIDModel, models.Model):
 
     def has_text_message(self):
         """ Check exists palin TEXT body """
-        return self.bodies.filter(type=self.TEXT_CONTENT_TYPE).exists()
+        return self.bodies.filter(type=TEXT_CONTENT_TYPE).exists()
 
     def has_html_message(self):
         """ Check exists HTML body """
-        return self.bodies.filter(type=self.HTML_CONTENT_TYPE).exists()
+        return self.bodies.filter(type=HTML_CONTENT_TYPE).exists()
 
     def get_text_body(self):
         """ Return TEXT-body or None """
         try:
-            return self.bodies.get(type=self.TEXT_CONTENT_TYPE).content
+            return self.bodies.get(type=TEXT_CONTENT_TYPE).content
         except EmailBody.DoesNotExist:
             return None
 
     def get_html_body(self):
         """ Return HTML-body or None """
         try:
-            return self.bodies.get(type=self.HTML_CONTENT_TYPE).content
+            return self.bodies.get(type=HTML_CONTENT_TYPE).content
         except EmailBody.DoesNotExist:
             return None
 
@@ -183,7 +191,9 @@ class EmailBody(core_models.UUIDModel, models.Model):
     )
 
     content = models.TextField(
-        verbose_name=_("Mail message body")
+        verbose_name=_("Mail message body"),
+        blank=True,
+        null=True
     )
 
     encoding = models.CharField(
@@ -209,7 +219,7 @@ class EmailBody(core_models.UUIDModel, models.Model):
 
     type = models.CharField(
         max_length=32,
-        default=EmailMessage.TEXT_CONTENT_TYPE,
+        default=TEXT_CONTENT_TYPE,
         verbose_name=_("Type")
     )
 
@@ -218,6 +228,14 @@ class EmailBody(core_models.UUIDModel, models.Model):
         related_name='bodies',
         verbose_name=_("Email message"),
         on_delete=models.PROTECT
+    )
+
+    file = models.ForeignKey(
+        File,
+        related_name='bodies',
+        verbose_name=_('File'),
+        on_delete=models.CASCADE,
+        null=True
     )
 
     class Meta:

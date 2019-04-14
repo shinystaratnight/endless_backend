@@ -462,6 +462,7 @@ SIMPLE_JWT = {
 }
 
 JWT_ISSUER = 'R3sourcerIssuer'
+JWT_ID_ATTRIBUTE = 'username'
 
 OAUTH2_PROVIDER = {
     'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',

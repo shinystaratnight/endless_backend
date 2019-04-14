@@ -18,6 +18,23 @@
 },
 {
   "model": "email_interface.emailtemplate",
+  "pk": "0be556c6-78eb-41a0-a6c1-472c907d8073",
+  "fields": {
+    "updated_at": "2019-04-13T07:24:54.651Z",
+    "created_at": "2019-04-13T07:21:56.079Z",
+    "name": "Client invoice",
+    "slug": "client-invoice",
+    "subject_template": "Invoice from [[master_company]]",
+    "message_text_template": "Dear Client, please find your invoice and timesheets attached!\r\n\r\nBest Regards,\r\n[[master_company_contact]]\r\n[[master_company]]",
+    "message_html_template": "",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
   "pk": "0db83a05-71ad-4f57-aefa-34d2810dd630",
   "fields": {
     "updated_at": "2018-12-19T09:30:54.711Z",

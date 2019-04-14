@@ -11,7 +11,7 @@ from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import csrf_exempt
 from oauth2_provider.views.mixins import OAuthLibMixin
 from oauth2_provider.settings import oauth2_settings
-from oauth2_provider_jwt.views import TokenView, WrongUsername
+from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
 from oauth2_provider.models import get_access_token_model
 from oauthlib.oauth2.rfc6749.tokens import BearerToken
 from oauthlib.common import Request
@@ -111,7 +111,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                     request, token_content, host, username=username
                 )
                 return token_content, status
-            except WrongUsername:
+            except MissingIdAttribute:
                 content = {
                     "error": "invalid_request",
                     "error_description": "Request username doesn't match username in original authorize",

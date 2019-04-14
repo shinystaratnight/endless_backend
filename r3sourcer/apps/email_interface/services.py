@@ -1,14 +1,14 @@
 import logging
+import os
 import smtplib
 from abc import ABCMeta, abstractmethod
+from email.message import EmailMessage
+
 
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
-
-from email.mime.multipart import MIMEMultipart
-from email.mime.text import MIMEText
 
 from r3sourcer.apps.email_interface import models as email_models
 from r3sourcer.apps.email_interface.exceptions import RecipientsInvalidInstance, EmailBaseServiceError
@@ -50,13 +50,22 @@ class BaseEmailService(metaclass=ABCMeta):
 
             if text_message:
                 email_models.EmailBody.objects.create(
-                    content=text_message, type=email_models.EmailMessage.TEXT_CONTENT_TYPE, message=email_message
+                    content=text_message, type=email_models.TEXT_CONTENT_TYPE, message=email_message
                 )
 
             if html_message:
                 email_models.EmailBody.objects.create(
-                    content=html_message, type=email_models.EmailMessage.HTML_CONTENT_TYPE, message=email_message
+                    content=html_message, type=email_models.HTML_CONTENT_TYPE, message=email_message
                 )
+
+            files = kwargs.get('files', [])
+            for f in files:
+                root, ext = os.path.splitext(f.name)
+
+                if ext in email_models.FILE_MIME_MAPPING:
+                    email_models.EmailBody.objects.create(
+                        file=f, type=email_models.FILE_MIME_MAPPING[ext], message=email_message
+                    )
 
             self.process_email_send(email_message)
 
@@ -111,22 +120,26 @@ class SMTPEmailService(BaseEmailService):
 
         is_no_reply_email = email_message.from_email == settings.DEFAULT_SMTP_EMAIL
 
-        # conf message
-        msg = MIMEMultipart('related')
+        msg = EmailMessage()
         msg['From'] = email_message.from_email
         msg['To'] = email_message.to_addresses
-        msg['Subject'] = email_message.subject
+        msg['Subject'] = str(email_message.subject)
         if not is_no_reply_email:
             msg.add_header('Reply-To', email_message.from_email)
 
-        msg_alternative = MIMEMultipart('alternative')
-        msg.attach(msg_alternative)
-
         if email_message.has_text_message():
-            msg_alternative.attach(MIMEText(email_message.get_text_body(), 'plain'))
+            msg.set_content(email_message.get_text_body())
 
         if email_message.has_html_message():
-            msg_alternative.attach(MIMEText(email_message.get_html_body(), 'html'))
+            msg.add_alternative(email_message.get_html_body(), subtype='html')
+
+        body_files = email_message.bodies.filter(type__in=email_models.FILE_MIME_MAPPING.values())
+
+        for body_file in body_files:
+            maintype, subtype = body_file.type.split('/')
+            msg._add_multipart(
+                'mixed', body_file.file.file.read(),
+                _disp='attachment; filename=' + body_file.file.name, maintype=maintype, subtype=subtype)
 
         smtp_server_args = {
             'host': settings.DEFAULT_SMTP_SERVER,
@@ -146,7 +159,7 @@ class SMTPEmailService(BaseEmailService):
                 smtp_conn.ehlo()
 
             smtp_conn.login(**smpt_auth_args)
-            smtp_conn.sendmail(email_message.from_email, email_message.to_addresses.split(','), msg.as_string())
+            smtp_conn.send_message(msg, email_message.from_email, email_message.to_addresses.split(','))
             smtp_conn.close()
 
             email_message.state = email_models.EmailMessage.STATE_CHOICES.SENT
