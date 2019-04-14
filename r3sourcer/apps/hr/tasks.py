@@ -917,12 +917,13 @@ def get_value_for_rate_type(coeffs_hours, rate_type):
     return timedelta()
 
 
-def generate_pdf(timesheet_ids, request):
+def generate_pdf(timesheet_ids, request=None, master_company=None):
     template = get_template('timesheet/timesheet.html')
     timesheets = hr_models.TimeSheet.objects.filter(id__in=timesheet_ids).order_by(
         'job_offer__shift__date__job__jobsite', 'shift_started_at')
-    domain = core_companies_utils.get_site_url(user=request.user)
+    domain = core_companies_utils.get_site_url(user=request and request.user, master_company=master_company)
     coefficient_service = CoefficientService()
+
     for timesheet in timesheets:
         jobsite = timesheet.job_offer.job.jobsite
         industry = jobsite.industry
@@ -957,7 +958,6 @@ def generate_pdf(timesheet_ids, request):
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))
-
     folder, created = Folder.objects.get_or_create(
         parent=timesheets[0].master_company.files,
         name='timesheet',
@@ -974,3 +974,43 @@ def generate_pdf(timesheet_ids, request):
     )
 
     return file_obj
+
+
+@shared_task
+def send_invoice_email(invoice_id):
+    try:
+        invoice = core_models.Invoice.objects.get(pk=invoice_id)
+    except core_models.Invoice.DoesNotExist:
+        logger.warn('Invoice with id=%s does not exist', invoice_id)
+        return
+
+    client_company = invoice.customer_company
+
+    try:
+        email_interface = get_email_service()
+    except ImportError:
+        logger.exception('Cannot load SMS service')
+        return
+
+    try:
+        pdf_file_obj = File.objects.get(
+            name='invoice_{}_{}.pdf'.format(
+                invoice.number,
+                date_format(invoice.date, 'Y_m_d')
+            )
+        )
+    except Exception:
+        rule = invoice.provider_company.invoice_rules.first()
+        show_candidate = rule.show_candidate_name if rule else False
+        pdf_file_obj = InvoiceService.generate_pdf(invoice, show_candidate)
+
+    timesheet_ids = invoice.invoice_lines.values_list('timesheet_id', flat=True).distinct()
+    timesheets_pdf = generate_pdf(timesheet_ids, master_company=invoice.provider_company)
+
+    context = {
+        'files': [pdf_file_obj, timesheets_pdf],
+        'master_company': invoice.provider_company.name,
+        'master_company_contact': str(invoice.provider_representative),
+        'client': client_company.name,
+    }
+    email_interface.send_tpl(client_company.billing_email, tpl_name='client-invoice', **context)
