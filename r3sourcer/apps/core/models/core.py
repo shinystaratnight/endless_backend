@@ -1088,13 +1088,14 @@ class Company(
     )
 
     TIMESHEET_APPROVAL_SCHEME = Choices(
+        ('BASIC', _("Basic")),
         ('PIN', _("PIN")),
         ('SIGNATURE', _("Signature"))
     )
 
     timesheet_approval_scheme = models.CharField(
         verbose_name=_("TimeSheet approval scheme"),
-        default=TIMESHEET_APPROVAL_SCHEME.PIN,
+        default=TIMESHEET_APPROVAL_SCHEME.BASIC,
         choices=TIMESHEET_APPROVAL_SCHEME,
         max_length=16
     )
