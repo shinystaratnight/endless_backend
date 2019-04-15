@@ -5,7 +5,10 @@ from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.module_loading import import_string
+from django.utils.translation import ugettext_lazy as _
 from django.views import generic
+
+from rest_framework import exceptions
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
@@ -105,6 +108,15 @@ class ApproveInvoiceView(APIView):
         sync_invoice.delay(invoice.id)
         send_invoice_email.delay(invoice.id)
         return Response()
+
+
+class SyncInvoiceView(APIView):
+    def post(self, request, *args, **kwargs):
+        invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
+        if invoice.approved:
+            sync_invoice.delay(invoice.id)
+            return Response({"status": "success"})
+        return Response({"error": "Invoice is not approved"})
 
 
 class SyncInvoicesView(APIView):
