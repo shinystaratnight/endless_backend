@@ -2,6 +2,7 @@ from pytz import timezone as pytz_timezone
 
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
+from easy_thumbnails.fields import ThumbnailerImageField
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
@@ -1093,7 +1094,7 @@ class TimeSheet(
             ext=ext
         )
 
-    supervisor_signature = models.ImageField(
+    supervisor_signature = ThumbnailerImageField(
         _("Supervisor signature"),
         upload_to=supervisor_signature_path,
         blank=True,
