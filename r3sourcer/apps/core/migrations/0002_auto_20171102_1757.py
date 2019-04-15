@@ -476,7 +476,7 @@ class Migration(migrations.Migration):
                 ('is_paid', models.BooleanField(default=False, verbose_name='Is paid')),
                 ('paid', models.DecimalField(decimal_places=2, default=0.0, max_digits=16, verbose_name='Paid sum')),
                 ('paid_at', models.DateField(editable=False, null=True, verbose_name='Paid at')),
-                ('myob_number', models.CharField(max_length=8, null=True, verbose_name='MYOB Number')),
+                ('myob_number', models.CharField(max_length=8, null=True, blank=True, verbose_name='MYOB Number')),
                 ('date', models.DateField(auto_now_add=True, null=True, verbose_name='Creation date')),
                 ('number', models.CharField(max_length=20, null=True, verbose_name='Number')),
                 ('order_number', models.CharField(max_length=255, null=True, verbose_name='Order Number')),

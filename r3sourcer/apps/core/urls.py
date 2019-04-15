@@ -6,6 +6,7 @@ from r3sourcer.apps.core.api import views as api_views
 
 urlpatterns = [
     url(r'^core/invoices/(?P<id>[\w\-]+)/approve/$', views.ApproveInvoiceView.as_view(), name='approve_invoice'),
+    url(r'^core/invoices/(?P<id>[\w\-]+)/sync/$', views.SyncInvoiceView.as_view(), name='sync_invoice'),
     url(r'^core/invoices/sync/$', views.SyncInvoicesView.as_view(), name='sync_invoices'),
     url(r'^core/users/trial/$', api_views.TrialUserView.as_view(), name='register_trial'),
     url(r'^core/users/roles/$', views.UserRolesView.as_view(), name='user_roles'),
