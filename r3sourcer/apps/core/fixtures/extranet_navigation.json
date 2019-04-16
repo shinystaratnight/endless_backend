@@ -844,7 +844,7 @@
     "endpoint": "/",
     "access_level": "manager",
     "lft": 1,
-    "rght": 18,
+    "rght": 20,
     "tree_id": 2,
     "level": 0
   }
@@ -894,8 +894,8 @@
     "url": "/core/tags/",
     "endpoint": "/core/tags/",
     "access_level": "manager",
-    "lft": 6,
-    "rght": 7,
+    "lft": 8,
+    "rght": 9,
     "tree_id": 2,
     "level": 1
   }
@@ -1115,8 +1115,8 @@
     "url": "/skills/skills/",
     "endpoint": "/skills/skills/",
     "access_level": "manager",
-    "lft": 8,
-    "rght": 9,
+    "lft": 10,
+    "rght": 11,
     "tree_id": 2,
     "level": 1
   }
@@ -1146,11 +1146,11 @@
     "created_at": "2017-10-13T07:46:16.378Z",
     "parent": 66,
     "name": "Acceptance tests",
-    "url": "/acceptance-tests/acceptancetests/",
-    "endpoint": "/acceptance-tests/acceptancetests/",
+    "url": "/acceptance-tests/acceptancetests",
+    "endpoint": "/acceptance-tests/acceptancetests",
     "access_level": "manager",
-    "lft": 10,
-    "rght": 11,
+    "lft": 12,
+    "rght": 13,
     "tree_id": 2,
     "level": 1
   }
@@ -1166,8 +1166,8 @@
     "url": "/hr/blacklists/",
     "endpoint": "/hr/blacklists/",
     "access_level": "manager",
-    "lft": 12,
-    "rght": 13,
+    "lft": 14,
+    "rght": 15,
     "tree_id": 2,
     "level": 1
   }
@@ -1183,8 +1183,8 @@
     "url": "/hr/favouritelists/",
     "endpoint": "/hr/favouritelists/",
     "access_level": "manager",
-    "lft": 14,
-    "rght": 15,
+    "lft": 16,
+    "rght": 17,
     "tree_id": 2,
     "level": 1
   }
@@ -1200,8 +1200,8 @@
     "url": "/hr/carrierlists/",
     "endpoint": "/hr/carrierlists/",
     "access_level": "manager",
-    "lft": 16,
-    "rght": 17,
+    "lft": 18,
+    "rght": 19,
     "tree_id": 2,
     "level": 1
   }
@@ -1951,6 +1951,23 @@
     "lft": 2,
     "rght": 3,
     "tree_id": 14,
+    "level": 1
+  }
+},
+{
+  "model": "core.extranetnavigation",
+  "pk": 143,
+  "fields": {
+    "updated_at": "2019-04-16T07:31:14.621Z",
+    "created_at": "2019-04-16T07:31:14.621Z",
+    "parent": 66,
+    "name": "Candidate Pool",
+    "url": "/candidate/candidatecontacts/pool/",
+    "endpoint": "/candidate/candidatecontacts/pool/",
+    "access_level": "manager",
+    "lft": 6,
+    "rght": 7,
+    "tree_id": 2,
     "level": 1
   }
 }
