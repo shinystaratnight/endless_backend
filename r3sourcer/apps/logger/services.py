@@ -71,29 +71,33 @@ class LocationLogger():
         page_size = kwargs.pop('page_size', 100)
 
         if instances:
-            qs = self.get_location_queryset().filter(timesheet_id__in=[str(i) for i in instances]).order_by(
-                '-log_at')
-
-            qs = qs.paginate(
-                page_num=page_num, page_size=page_size
-                )
+            final_qs = []
+            qs_ids = [i.object_id for i in self.get_location_queryset().filter(timesheet_id__in=[str(i) for i in instances]).only('object_id').distinct()]
+            for id in qs_ids:
+                qs = self.get_location_queryset().filter(object_id=id, timesheet_id__in=[str(i) for i in instances]).order_by('-log_at')
+                qs = qs.paginate(
+                    page_num=1, page_size=1
+                    )
+                final_qs.extend(qs.objects)
 
             return {
-                'results': [self._map_location_log(log) for log in qs.objects],
-                'count': qs.number_of_objects,
+                'results': [self._map_location_log(log) for log in final_qs],
+                'count': len(final_qs),
             }
         else:
             if kwargs.get('return_all'):
-                qs = self.get_location_queryset().order_by(
-                    '-log_at')
-
-                qs = qs.paginate(
-                    page_num=page_num, page_size=page_size
-                    )
+                final_qs = []
+                qs_ids = [i.object_id for i in self.get_location_queryset().only('object_id').distinct()]
+                for id in qs_ids:
+                    qs = self.get_location_queryset().filter(object_id=id).order_by('-log_at')
+                    qs = qs.paginate(
+                        page_num=1, page_size=1
+                        )
+                    final_qs.extend(qs.objects)
 
                 return {
-                    'results': [self._map_location_log(log) for log in qs.objects],
-                    'count': qs.number_of_objects,
+                    'results': [self._map_location_log(log) for log in final_qs],
+                    'count': len(final_qs),
                     }
             else:
                 return {
