@@ -118,7 +118,7 @@ class SubscriptionInline(admin.TabularInline):
 
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
 
-    list_display = ('name', 'industry')
+    list_display = ('name', 'industry', 'active_subscription')
     search_fields = ('name',)
     list_filter = ('type',)
     inlines = (SubscriptionInline,)
@@ -141,6 +141,9 @@ class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
                         form.base_fields[key].label = value["verbose_value"]
                         form.base_fields[key].help_text = value["help_text"]
         return form
+
+    def active_subscription(self, obj):
+        return obj.active_subscription
 
 
 class BaseAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
