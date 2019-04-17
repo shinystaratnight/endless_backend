@@ -17,6 +17,7 @@ from mptt.admin import MPTTModelAdmin
 # Register your models here.
 from r3sourcer.apps.core_utils.filters import RelatedDropDownFilter
 from r3sourcer.apps.core_utils.mixins import ExtendedDraggableMPTTAdmin
+from r3sourcer.apps.billing.models import Subscription
 
 from .. import forms
 from .. import models
@@ -111,10 +112,16 @@ class UserAdmin(BaseUserAdmin):
         ) + fieldsets
 
 
+class SubscriptionInline(admin.TabularInline):
+    model = Subscription
+
+
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
 
-    list_display = ('name', 'industry')
+    list_display = ('name', 'industry', 'active_subscription')
     search_fields = ('name',)
+    list_filter = ('type',)
+    inlines = (SubscriptionInline,)
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -134,6 +141,9 @@ class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
                         form.base_fields[key].label = value["verbose_value"]
                         form.base_fields[key].help_text = value["help_text"]
         return form
+
+    def active_subscription(self, obj):
+        return obj.active_subscription
 
 
 class BaseAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):

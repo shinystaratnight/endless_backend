@@ -1,4 +1,5 @@
 from django.contrib import admin
+from django.contrib.admin import SimpleListFilter
 
 from . import models
 
@@ -6,10 +7,16 @@ from . import models
 class SMSBalanceAdmin(admin.ModelAdmin):
     list_display = ('company', 'balance',)
     search_fields = ('company__name',)
+    readonly_fields = ('actual_segment_cost',)
+    fields = ('company', 'balance', 'top_up_amount', 'top_up_limit', 'last_payment', 'cost_of_segment',
+              'auto_charge', 'actual_segment_cost',)
+
+    def actual_segment_cost(self, obj):
+        return obj.segment_cost
 
 
 class TSubscriptionAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'status')
+    list_display = ('__str__', 'active',)
     list_filter = ('company',)
     readonly_fields = ('last_time_billed', 'sms_balance', 'current_period_start',
                        'current_period_end', 'worker_count', 'price', 'subscription_type',
@@ -34,3 +41,4 @@ admin.site.register(models.SMSBalance, SMSBalanceAdmin)
 admin.site.register(models.Subscription, TSubscriptionAdmin)
 admin.site.register(models.SubscriptionType, SubscriptionTypeAdmin)
 admin.site.register(models.Payment, PaymentAdmin)
+admin.site.register(models.Discount)

@@ -177,7 +177,16 @@ def charge_for_new_amount():
         if active_workers > start_workers:
             total_amount += (active_workers - start_workers) * subscription.subscription_type.step_change_val
         if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.annual:
-            total_amount = total_amount * 12 * .75
+            if subscription.subscription_type.percentage_discount:
+                total_amount = (total_amount * 12) - (total_amount * 12 / 100 * subscription.subscription_type.percentage_discount)
+            else:
+                total_amount = total_amount * 12 * .75
+        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.monthly:
+            if subscription.subscription_type.percentage_discount:
+                total_amount = total_amount - (
+                total_amount / 100 * subscription.subscription_type.percentage_discount)
+            else:
+                total_amount = total_amount
         amount = total_amount
         if not subscription.price == amount:
             plan_type = subscription.subscription_type.type
