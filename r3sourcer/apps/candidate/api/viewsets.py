@@ -245,6 +245,7 @@ class CandidateLocationViewset(
             })
 
         timesheet_id = request.data.get('timesheet_id')
+        name = request.data.get('name')
 
         if not timesheet_id:
             now = timezone.localtime()
@@ -257,7 +258,7 @@ class CandidateLocationViewset(
 
             timesheet_id = timesheet and timesheet.pk
 
-        location_logger.log_instance_location(instance, float(latitude), float(longitude), timesheet_id)
+        location_logger.log_instance_location(instance, float(latitude), float(longitude), timesheet_id, name)
 
         return Response({'status': 'success'})
 
