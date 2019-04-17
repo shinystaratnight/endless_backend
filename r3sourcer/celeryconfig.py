@@ -38,10 +38,6 @@ task_routes = {
 }
 
 beat_schedule = {
-    'fetch_twilio_accounts': {
-        'task': 'r3sourcer.apps.sms_interface.tasks.fetch_remote_sms',
-        'schedule': crontab(minute=30),
-    },
     'check_unpaid_invoices': {
         'task': 'r3sourcer.apps.hr.tasks.check_unpaid_invoices',
         'schedule': crontab(hour=5, minute=00),
