@@ -3,7 +3,9 @@ import stripe
 from datetime import datetime
 
 from django.conf import settings
+from django.core.exceptions import ValidationError
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
 from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
 from rest_framework.response import Response
@@ -111,6 +113,17 @@ class StripeCustomerCreateView(APIView):
         company.stripe_customer = customer.id
         company.save()
         return Response(status=status.HTTP_201_CREATED)
+
+    def put(self, *args, **kwargs):
+        company = self.request.user.company
+        if not company.stripe_customer:
+            raise ValidationError({"error": _("Company has no stripe account")})
+
+        stripe.Customer.modify(
+            company.stripe_customer,
+            source=self.request.data.get('source'),
+        )
+        return Response(status=status.HTTP_200_OK)
 
 
 class SubscriptionStatusView(APIView):
