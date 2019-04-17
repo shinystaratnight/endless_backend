@@ -9,6 +9,7 @@ from django.utils.decorators import method_decorator
 from django.utils.functional import cached_property
 
 from r3sourcer.apps.sms_interface.mixins import MessageView
+from r3sourcer.apps.sms_interface.tasks import fetch_remote_sms
 from r3sourcer.apps.twilio.forms import SMSForm
 from r3sourcer.apps.twilio.services import TwilioSMSService
 
@@ -71,4 +72,5 @@ class SMSDialogTemplateView(MessageView, FormView):
 @csrf_exempt
 def callback(request, **kwargs):
     logger.info('Twilio request data: {}'.format(request.POST))
-    return HttpResponse('<Response></Response>', content_type='application/xml')
+    fetch_remote_sms.delay()
+    return HttpResponse('<Response></Response>', content_type='text/xml')
