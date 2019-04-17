@@ -130,7 +130,7 @@ class SubscriptionStatusView(APIView):
 
 class PaymentListView(APIView):
     def get(self, *args, **kwargs):
-        payments = Payment.objects.filter(company=self.request.user.company)
+        payments = Payment.objects.filter(company=self.request.user.company).order_by('-created')
         serializer = PaymentSerializer(payments, many=True)
         data = {
             "payments": serializer.data,

@@ -46,10 +46,11 @@ class CandidateContactViewset(BaseApiViewset):
 
         if has_joboffers:
             raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
-        # TODO add deletion of user
-        # instance.contact.user.delete()
-
-        super().perform_destroy(instance)
+        # delete all releted models to client contact
+        instance.bank_account = None
+        instance.save()
+        instance.contact.bank_accounts.all().delete()
+        instance.contact.user.delete()
 
     @action(methods=['post'], detail=False, permission_classes=[drf_permissions.AllowAny])
     def register(self, request, *args, **kwargs):
@@ -245,6 +246,7 @@ class CandidateLocationViewset(
             })
 
         timesheet_id = request.data.get('timesheet_id')
+        name = request.data.get('name')
 
         if not timesheet_id:
             now = timezone.localtime()
@@ -257,7 +259,7 @@ class CandidateLocationViewset(
 
             timesheet_id = timesheet and timesheet.pk
 
-        location_logger.log_instance_location(instance, float(latitude), float(longitude), timesheet_id)
+        location_logger.log_instance_location(instance, float(latitude), float(longitude), timesheet_id, name)
 
         return Response({'status': 'success'})
 

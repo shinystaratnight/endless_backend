@@ -51,7 +51,7 @@ class Subscription(models.Model):
 
     def deactivate(self):
         sub = stripe.Subscription.retrieve(self.subscription_id)
-        sub.delete()
+        sub.modify(self.subscription_id, cancel_at_period_end=True)
 
     @property
     def last_time_billed(self):

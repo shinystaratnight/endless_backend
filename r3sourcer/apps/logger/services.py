@@ -18,6 +18,7 @@ class LocationLogger():
         return {
             'model': log_instance.model,
             'object_id': log_instance.object_id,
+            'name': log_instance.name,
             'latitude': log_instance.latitude,
             'longitude': log_instance.longitude,
             'log_at': log_instance.log_at,
@@ -27,11 +28,12 @@ class LocationLogger():
     def get_location_queryset(self):
         return LocationHistory.objects_in(self.logger_database)
 
-    def log_instance_location(self, instance, latitude, longitude, timesheet_id=None):
+    def log_instance_location(self, instance, latitude, longitude, timesheet_id=None, name=None):
         now = timezone.now()
 
         log = LocationHistory(
             model=instance._meta.label,
+            name=name,
             object_id=str(instance.pk),
             timesheet_id=timesheet_id and str(timesheet_id),
             latitude=latitude,
@@ -94,6 +96,7 @@ class LocationLogger():
                         page_num=1, page_size=1
                         )
                     final_qs.extend(qs.objects)
+                    print("final_qs", [i.name for i in final_qs])
 
                 return {
                     'results': [self._map_location_log(log) for log in final_qs],
