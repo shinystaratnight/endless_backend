@@ -46,8 +46,11 @@ class CandidateContactViewset(BaseApiViewset):
 
         if has_joboffers:
             raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
-
-        super().perform_destroy(instance)
+        # delete all releted models to client contact
+        instance.bank_account = None
+        instance.save()
+        instance.contact.bank_accounts.all().delete()
+        instance.contact.user.delete()
 
     @action(methods=['post'], detail=False, permission_classes=[drf_permissions.AllowAny])
     def register(self, request, *args, **kwargs):
