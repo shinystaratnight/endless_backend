@@ -251,19 +251,81 @@ class SubcontractorCandidateRelationSerializer(core_serializers.ApiBaseModelSeri
         model = candidate_models.SubcontractorCandidateRelation
 
 
-class CandidatePoolSerializer(core_serializers.ApiBaseModelSerializer):
+class CandidatePoolSerializer(core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
+                              core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('average_score', 'owned_by')
+    method_fields = ('average_score', 'owned_by', 'bmi', 'tag_list', 'skill_list')
 
     class Meta:
         model = candidate_models.CandidateContactAnonymous
-        fields = ('profile_price', 'id')
+        fields = ('profile_price', 'id', 'transportation_to_work', 'height',
+                  'weight', 'nationality',
+                  {
+                      'candidate_scores': (
+                            'id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score', 'skill_score'
+                          ),
+                      'contact': (
+                          '__str__', 'is_available', 'picture', 'gender'
+                          ),
+                  }
+                  )
+        related = core_serializers.RELATED_DIRECT
 
     def get_average_score(self, obj):
         return obj.candidate_scores.get_average_score()
 
     def get_owned_by(self, obj):
         return core_fields.ApiBaseRelatedField.to_read_only_data(obj.candidate_rels.get(owner=True).master_company)
+
+    def get_bmi(self, obj):
+        if not obj:
+            return
+
+        return obj.get_bmi()
+
+    def get_tag_list(self, obj):
+        if not obj:
+            return
+
+        return TagRelSerializer(obj.tag_rels.all(), many=True, fields=['id', 'tag']).data
+
+    def get_skill_list(self, obj):
+        if not obj:
+            return
+
+        return SkillRelSerializer(obj.candidate_skills.all(), many=True, fields=['score', 'skill', 'id']).data
+
+
+class CandidatePoolDetailSerializer(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = ('average_score', 'owned_by', 'bmi')
+
+    class Meta:
+        model = candidate_models.CandidateContactAnonymous
+        fields = ('profile_price', 'id', 'updated_at', 'created_at', 'transportation_to_work', 'height',
+                  'weight', 'residency', 'visa_type', 'visa_expiry_date', 'nationality',
+                  'vevo_checked_at',
+                  {
+                      'candidate_scores': (
+                            'id', 'client_feedback', 'reliability', 'loyalty', 'recruitment_score', 'skill_score'
+                          ),
+                      'contact': (
+                          '__str__', 'is_available', 'picture',
+                          ),
+                  }
+                  )
+
+    def get_average_score(self, obj):
+        return obj.candidate_scores.get_average_score()
+
+    def get_owned_by(self, obj):
+        return core_fields.ApiBaseRelatedField.to_read_only_data(obj.candidate_rels.get(owner=True).master_company)
+
+    def get_bmi(self, obj):
+        if not obj:
+            return
+
+        return obj.get_bmi()
 
 
 class CandidateRelSerializer(core_serializers.ApiBaseModelSerializer):

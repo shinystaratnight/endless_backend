@@ -46,6 +46,8 @@ class CandidateContactViewset(BaseApiViewset):
 
         if has_joboffers:
             raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
+        # TODO add deletion of user
+        # instance.contact.user.delete()
 
         super().perform_destroy(instance)
 
@@ -100,7 +102,17 @@ class CandidateContactViewset(BaseApiViewset):
             queryset = queryset.annotate(a=Exists(WorkflowObject.objects.filter(object_id__in=[str(i.id) for i in queryset],
                                                                         state__name_after_activation='Recruited - Available for Hire'))).filter(a=True)
 
-        return self._paginate(request, serializers.CandidatePoolSerializer, self.filter_queryset(queryset))
+        return self._paginate(request, serializers.CandidatePoolSerializer, queryset)
+
+    @action(methods=['get'], detail=True)
+    def pool_detail(self, request, pk, *args, **kwargs):
+        if not request.user.is_authenticated():
+            instance = CandidateContactAnonymous.objects.none()
+        else:
+            instance = self.get_object()
+        serializer = serializers.CandidatePoolDetailSerializer(instance)
+
+        return Response(serializer.data)
 
     @action(methods=['post'], detail=True, permission_classes=[SiteContactPermissions])
     def buy(self, request, pk, *args, **kwargs):
