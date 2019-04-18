@@ -118,6 +118,11 @@ class RateCoefficient(UUIDModel):
         editable=False,
     )
 
+    overlaps = models.BooleanField(
+        verbose_name=_('Overlaps'),
+        default=False,
+    )
+
     class Meta:
         verbose_name = _("Rate Coefficient")
         verbose_name_plural = _("Rate Coefficients")
