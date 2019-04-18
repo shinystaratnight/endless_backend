@@ -7,10 +7,13 @@ from django.db import models
 
 class CoefficientService:
 
-    def get_industry_rate_coefficient(self, company, industry, modifier_type, start_datetime):
+    def get_industry_rate_coefficient(self, company, industry, modifier_type, start_datetime, overlaps=False):
         query = models.Q(industry=industry,
                          rate_coefficient_modifiers__type=modifier_type,
                          active=True)
+
+        if not overlaps:
+            query &= models.Q(overlaps=False)
 
         rate_coefficients = RateCoefficient.objects.owned_by(company).filter(query)
 
@@ -23,7 +26,7 @@ class CoefficientService:
 
     def process_rate_coefficients(self, rate_coefficients, start_datetime,
                                   origin_hours, break_started=None,
-                                  break_ended=None):
+                                  break_ended=None, overlaps=False):
         res = []
         worked_hours = origin_hours
         for rate_coefficient in rate_coefficients:
@@ -57,7 +60,7 @@ class CoefficientService:
                         'hours': used_hours
                     })
 
-                    if not is_allowance:
+                    if not is_allowance and not overlaps:
                         worked_hours -= used_hours
             except RateNotApplicable:
                 pass
@@ -70,12 +73,12 @@ class CoefficientService:
         return res
 
     def calc(self, company, industry, modifier_type, start_datetime, worked_hours,
-             break_started=None, break_ended=None):
+             break_started=None, break_ended=None, overlaps=False):
         rate_coefficients = self.get_industry_rate_coefficient(
-            company, industry, modifier_type, start_datetime
+            company, industry, modifier_type, start_datetime, overlaps=overlaps
         )
 
         return self.process_rate_coefficients(
             rate_coefficients, start_datetime, worked_hours,
-            break_started, break_ended
+            break_started, break_ended, overlaps=overlaps
         )

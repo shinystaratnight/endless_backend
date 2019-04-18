@@ -292,6 +292,7 @@ class TimeSheetSync(
             worked_hours,
             break_started=timesheet.break_started_at,
             break_ended=timesheet.break_ended_at,
+            overlaps=True
         )
 
         result = defaultdict(dict)
