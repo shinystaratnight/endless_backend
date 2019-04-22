@@ -25,6 +25,26 @@ class AcceptanceTestSerializer(ApiBaseModelSerializer):
         )
 
 
+class AcceptanceTestSerializerAll(ApiBaseModelSerializer):
+
+    class Meta:
+        model = models.AcceptanceTest
+        fields = (
+            'test_name', 'description', 'id',
+            {
+                'acceptance_test_questions': (
+                    'id', 'question', 'details', 'order', 'type',
+                    {
+                        'acceptance_test_answers': ('id',  'answer', 'order', 'score', ),
+                    },
+                ),
+                'acceptance_tests_skills': ({'skill': ('id',)},),
+                'acceptance_tests_tags': ({'tag': ('id',)},),
+                'acceptance_tests_industries': ({'industry': ('id',)},),
+            }
+        )
+
+
 class AcceptanceTestWorkflowNodeSerializer(ApiBaseModelSerializer):
 
     method_fields = ('score', )
