@@ -135,6 +135,10 @@ def sync_invoice(invoice_id):
             service.sync_to_myob(invoice, partial=True)
             invoice.synced_at = timezone.now()
             invoice.save(update_fields=['synced_at'])
+        if len(synced_invoice_lines) == invoice.invoice_lines.count():
+            # update old invoices with sync field
+            invoice.synced_at = timezone.now()
+            invoice.save(update_fields=['synced_at'])
     else:
         service.sync_to_myob(invoice)
         invoice.synced_at = timezone.now()
