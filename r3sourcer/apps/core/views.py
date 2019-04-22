@@ -101,6 +101,10 @@ class ApproveInvoiceView(APIView):
     def post(self, request, *args, **kwargs):
         from r3sourcer.apps.hr.tasks import send_invoice_email
         invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
+
+        if not invoice.customer_company.billing_email:
+            raise exceptions.ValidationError(_('Please set billing email address for company'))
+
         invoice.approved = True
         invoice.provider_representative = request.user.contact.get_company_contact_by_company(
             invoice.provider_company)
