@@ -1457,7 +1457,9 @@ class BlackList(core_models.UUIDModel):
         core_models.Company,
         related_name="blacklists",
         on_delete=models.CASCADE,
-        verbose_name=_("Company")
+        verbose_name=_("Company"),
+        blank=True,
+        null=True,
     )
 
     candidate_contact = models.ForeignKey(
