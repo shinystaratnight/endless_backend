@@ -10,10 +10,8 @@ class CoefficientService:
     def get_industry_rate_coefficient(self, company, industry, modifier_type, start_datetime, overlaps=False):
         query = models.Q(industry=industry,
                          rate_coefficient_modifiers__type=modifier_type,
-                         active=True)
-
-        if not overlaps:
-            query &= models.Q(overlaps=False)
+                         active=True,
+                         overlaps=overlaps)
 
         rate_coefficients = RateCoefficient.objects.owned_by(company).filter(query)
 
@@ -60,12 +58,12 @@ class CoefficientService:
                         'hours': used_hours
                     })
 
-                    if not is_allowance and not overlaps:
+                    if not is_allowance:
                         worked_hours -= used_hours
             except RateNotApplicable:
                 pass
 
-        if worked_hours.total_seconds() > 0:
+        if worked_hours.total_seconds() > 0 and not overlaps:
             res.append({
                 'coefficient': 'base',
                 'hours': worked_hours
@@ -74,11 +72,23 @@ class CoefficientService:
 
     def calc(self, company, industry, modifier_type, start_datetime, worked_hours,
              break_started=None, break_ended=None, overlaps=False):
-        rate_coefficients = self.get_industry_rate_coefficient(
-            company, industry, modifier_type, start_datetime, overlaps=overlaps
-        )
+        if overlaps:
+            rate_coefficients = self.get_industry_rate_coefficient(
+                company, industry, modifier_type, start_datetime, overlaps=True
+            )
+            res = self.process_rate_coefficients(
+                rate_coefficients, start_datetime, worked_hours,
+                break_started, break_ended, overlaps=True
+            )
+        else:
+            res = []
 
-        return self.process_rate_coefficients(
-            rate_coefficients, start_datetime, worked_hours,
-            break_started, break_ended, overlaps=overlaps
+        rate_coefficients = self.get_industry_rate_coefficient(
+            company, industry, modifier_type, start_datetime, overlaps=False
         )
+        res.extend(self.process_rate_coefficients(
+            rate_coefficients, start_datetime, worked_hours,
+            break_started, break_ended
+        ))
+
+        return res

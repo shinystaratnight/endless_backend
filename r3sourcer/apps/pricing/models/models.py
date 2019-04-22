@@ -115,7 +115,6 @@ class RateCoefficient(UUIDModel):
     priority = models.PositiveIntegerField(
         verbose_name=_('Priority'),
         default=0,
-        editable=False,
     )
 
     overlaps = models.BooleanField(
