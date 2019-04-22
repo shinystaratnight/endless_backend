@@ -142,6 +142,7 @@ class InvoiceMapper(ContactMapper):
             "Status": "Open",
             "Number": invoice.number[-8:],
             "CustomerPurchaseOrderNumber": invoice.number[:20],
+            "IsTaxInclusive": False,
             "Terms": {
                 "PaymentIsDue": CompanyMapper.PAYMENT_IS_DUE_MAP.get(invoice.customer_company.terms_of_payment),
                 "BalanceDueDate": invoice.customer_company.payment_due_date
