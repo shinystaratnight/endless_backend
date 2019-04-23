@@ -16,7 +16,7 @@ from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSe
     CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
 from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
-from r3sourcer.apps.core.models.core import Company, Contact
+from r3sourcer.apps.core.models.core import Company, Contact, VAT
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -29,6 +29,14 @@ class SubscriptionCreateView(APIView):
         if not company.stripe_customer:
             data = {'error': 'User didnt provide payment information.'}
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+
+        # for country taxes
+        tax_percent = 10.0
+        if company.get_hq_address():
+            country_code = company.get_hq_address().address.country.code2
+            vat_object = VAT.objects.filter(country=country_code)
+            if vat_object:
+                tax_percent = vat_object.first().rate
 
         plan_type = self.request.data.get('type', None)
         sub_type = SubscriptionType.objects.get(type=plan_type)
@@ -45,7 +53,7 @@ class SubscriptionCreateView(APIView):
         subscription = stripe.Subscription.create(
             customer=company.stripe_customer,
             items=[{"plan": plan.id},],
-            tax_percent=10.0,
+            tax_percent=tax_percent,
         )
         current_period_start = None
         current_period_end = None
@@ -70,6 +78,7 @@ class SubscriptionCreateView(APIView):
         invoices = stripe.Invoice.list(customer=customer)['data']
         for invoice in invoices:
             if not Payment.objects.filter(stripe_id=invoice['id']).exists():
+                invoice['description'] = plan_name
                 Payment.objects.create(
                     company=company,
                     type=Payment.PAYMENT_TYPES.subscription,
@@ -86,7 +95,7 @@ class SubscriptionCreateView(APIView):
 
 class SubscriptionListView(ListAPIView):
     def get(self, *args, **kwargs):
-        subscriptions = Subscription.objects.filter(company=self.request.user.company)
+        subscriptions = Subscription.objects.filter(company=self.request.user.company).order_by('-created')
         serializer = SubscriptionSerializer(subscriptions, many=True)
         data = {
             "subscriptions": serializer.data
