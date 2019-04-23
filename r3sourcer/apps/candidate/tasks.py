@@ -58,6 +58,13 @@ def buy_candidate(candidate_rel_id):
         candidate_rel = candidate_models.CandidateRel.objects.get(pk=candidate_rel_id)
         candidate_contact = candidate_rel.candidate_contact
         company = candidate_rel.master_company
+        # for country taxes
+        tax_percent = 10.0
+        if company.get_hq_address():
+            country_code = company.get_hq_address().address.country.code2
+            vat_object = core_models.VAT.objects.filter(country=country_code)
+            if vat_object:
+                tax_percent = vat_object.first().rate
     except core_models.Company.DoesNotExist as e:
         logger.exception(e)
 
@@ -65,11 +72,11 @@ def buy_candidate(candidate_rel_id):
         amount = int(candidate_contact.profile_price * 100)
         stripe.InvoiceItem.create(
             customer=company.stripe_customer,
-            amount=amount,
+            amount=round(amount / 1.1),
             currency=company.currency,
             description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
         )
-        invoice = stripe.Invoice.create(customer=company.stripe_customer)
+        invoice = stripe.Invoice.create(customer=company.stripe_customer, tax_percent=tax_percent)
         billing_models.Payment.objects.create(
             company=company,
             type=billing_models.Payment.PAYMENT_TYPES.candidate,
