@@ -82,6 +82,10 @@ beat_schedule = {
         'task': 'r3sourcer.apps.candidate.tasks.update_superannuation_fund_list',
         'schedule': crontab(minute=0, hour=0, day_of_month=2)
     },
+    'generate_invoices': {
+        'task': 'r3sourcer.apps.hr.tasks.generate_invoices',
+        'schedule': crontab(minute=0, hour=3)
+    },
 }
 
 task_ignore_result = True
