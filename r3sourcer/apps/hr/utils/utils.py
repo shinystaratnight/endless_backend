@@ -212,7 +212,7 @@ def get_invoice_dates(invoice_rule, timesheet=None):
             date_to = date_from + timedelta(days=14)
 
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.monthly:
-        date_to = today.replace(day=1)
+        date_to = today.replace(day=1) - timedelta(1)
         date_from = date_to.replace(day=1)
 
     if not date_from:
