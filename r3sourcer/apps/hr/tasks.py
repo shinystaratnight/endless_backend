@@ -1014,3 +1014,51 @@ def send_invoice_email(invoice_id):
         'client': client_company.name,
     }
     email_interface.send_tpl(client_company.billing_email, tpl_name='client-invoice', **context)
+
+
+@shared_task
+def generate_invoices():
+    today = date.today()
+    invoice_rules = core_models.InvoiceRule.objects.filter(
+        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.weekly, period_zero_reference=today.isoweekday()) |
+        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.monthly, period_zero_reference=today.day) |
+        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.daily)
+    )
+
+    service = InvoiceService()
+
+    for invoice_rule in invoice_rules:
+        company = invoice_rule.company
+
+        if invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.weekly:
+            date_to = today - timedelta(today.isoweekday())
+            date_from = date_to - timedelta(days=6)
+        elif invoice_rule.period == core_models.InvoiceRule.PERIOD_CHOICES.monthly:
+            date_to = today - timedelta(today.day)
+            date_from = date_to.replace(day=1)
+        else:
+            date_to = today
+            date_from = today - timedelta(days=1)
+
+        existing_invoices = core_models.Invoice.objects.filter(
+            invoice_lines__date__gte=date_from, invoice_lines__date__lte=date_to)
+
+        if not existing_invoices:
+            service.generate_invoice(date_from, date_to, company=company)
+
+    fortnightly = core_models.InvoiceRule.objects.filter(period=core_models.InvoiceRule.PERIOD_CHOICES.fortnightly)
+
+    for invoice_rule in fortnightly:
+        if invoice_rule.last_invoice_created:
+            last_invoice_date = invoice_rule.last_invoice_created
+            date_from = last_invoice_date - timedelta(days=invoice_rule.period_zero_reference)
+            date_to = date_from + timedelta(14)
+        else:
+            date_to = today - timedelta(invoice_rule.period_zero_reference)
+            date_from = date_to - timedelta(days=14)
+
+        if date_from.isoweekday() != 1 or today != date_to + timedelta(days=invoice_rule.period_zero_reference):
+            continue
+
+        company = invoice_rule.company
+        service.generate_invoice(date_from, date_to, company=company)
