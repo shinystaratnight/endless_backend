@@ -1,4 +1,5 @@
 import logging
+from calendar import monthrange
 
 from datetime import datetime, date, time, timedelta
 from collections import defaultdict
@@ -207,20 +208,12 @@ def get_invoice_dates(invoice_rule, timesheet=None):
 
             date_to = date_from + timedelta(days=14)
         else:
-            date_from = today - timedelta(datetime.now().date().weekday())
+            date_from = today - timedelta(today.weekday())
             date_to = date_from + timedelta(days=14)
 
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.monthly:
-        date_from = today.replace(day=1) - timedelta(today.replace(day=1).weekday())
-
-        month_end = date_from + timedelta(days=28)
-        month = (date_from + timedelta(days=15)).month
-        last_week_overlapped = (month_end + timedelta(days=6-month_end.weekday())).month != month
-
-        if last_week_overlapped:
-            date_to = month_end
-        else:
-            date_to = month_end + timedelta(days=7)
+        date_to = today.replace(day=1) - timedelta(1)
+        date_from = date_to.replace(day=1)
 
     if not date_from:
         raise Exception("Wrong invoice rule period.")

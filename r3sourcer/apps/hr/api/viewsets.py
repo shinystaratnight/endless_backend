@@ -56,7 +56,6 @@ class BaseTimeSheetViewsetMixin:
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        generate_invoice.delay(time_sheet.id)
 
         now = timezone.localtime(timezone.now())
 
@@ -252,8 +251,6 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
             sync_company_to_myob.delay(
                 company_id=request.user.contact.get_closest_company().id)
-
-            generate_invoice.apply_async(args=[obj.id], countdown=10)
         else:
             if not obj.break_started_at or not obj.break_ended_at:
                 obj.no_break = True
