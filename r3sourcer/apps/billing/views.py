@@ -17,6 +17,7 @@ from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSe
 from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company, Contact, VAT
+from r3sourcer.apps.company_settings.models import GlobalPermission
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -87,6 +88,12 @@ class SubscriptionCreateView(APIView):
                     invoice_url=invoice['invoice_pdf'],
                     status=invoice['status']
                 )
+        # get full access to a site
+        user = self.request.user
+        # set permissions
+        permission_list = GlobalPermission.objects.all()
+        user.user_permissions.add(*permission_list)
+        user.save()
         data = {
             "subscription": serializer.data
         }
