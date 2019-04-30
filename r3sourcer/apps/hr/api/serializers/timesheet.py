@@ -29,12 +29,12 @@ class ValidateApprovalScheme(serializers.Serializer):
 
     def validate(self, attrs):
         # get master companies and check existing
+        client_company =  self.instance.job_offer.job.customer_company
         companies = self.instance.supervisor.get_master_company()
         if len(companies) == 0:
             raise serializers.ValidationError(_("Supervisor has not master company"))
 
-        company = companies[0]
-        if company.timesheet_approval_scheme != self.APPROVAL_SCHEME:
+        if client_company.timesheet_approval_scheme != self.APPROVAL_SCHEME:
             raise serializers.ValidationError(_("Incorrect approval scheme"))
         return attrs
 
