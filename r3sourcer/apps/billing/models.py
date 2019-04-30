@@ -10,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import Company
+from r3sourcer.apps.core import tasks
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
@@ -52,6 +53,8 @@ class Subscription(models.Model):
     def deactivate(self):
         sub = stripe.Subscription.retrieve(self.subscription_id)
         sub.modify(self.subscription_id, cancel_at_period_end=True)
+        user = self.company.get_user()
+        tasks.cancel_subscription_access.apply_async([user.id], eta=self.current_period_end)
 
     @property
     def last_time_billed(self):

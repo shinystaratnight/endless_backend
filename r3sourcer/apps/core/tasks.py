@@ -12,7 +12,6 @@ from django.utils import timezone
 
 from r3sourcer.celeryapp import app
 
-from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.open_exchange.client import client as openexchange_client
 from r3sourcer.apps.core.utils import companies as core_companies_utils
@@ -166,10 +165,21 @@ def cancel_trial(user_id):
     except core_models.User.DoesNotExist:
         logger.exception('Cannot find trial user')
     else:
-        permission_list = GlobalPermission.objects.all()
-        user.user_permissions.remove(*permission_list)
+        perms = user.user_permissions.exclude(codename__icontains='_get')
+        user.user_permissions.remove(*perms)
         user.save()
-        # user.user_permissions.exclude(codename__icontains='_get').delete()
+
+
+@shared_task()
+def cancel_subscription_access(user_id):
+    try:
+        user = core_models.User.objects.get(id=user_id)
+    except core_models.User.DoesNotExist:
+        logger.exception('Cannot find trial user')
+    else:
+        perms = user.user_permissions.exclude(codename__icontains='_get')
+        user.user_permissions.remove(*perms)
+        user.save()
 
 
 @shared_task()
