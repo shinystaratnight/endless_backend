@@ -135,8 +135,12 @@
 					<td>{{ timesheet.meal }}</td>
 					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|date:'d/m/Y h:i A' }}
 					</td>
+					{% if timesheet.supervisor_signature %}
++					<td><img src="{{ domain }}{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto"; margin:0 auto; vertical-allign:middle></td>
++					{% else %}
 					<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|date:'d/m/Y h:i A' }}
 					</td>
+					{% endif %}
 				</tr>
 			{% endfor %}
 			</tbody>
