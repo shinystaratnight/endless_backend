@@ -38,7 +38,7 @@ class SubscriptionCreateView(APIView):
             country_code = company.get_hq_address().address.country.code2
             stripe_account = StripeCountryAccount.objects.get(country=country_code)
             stripe.api_key = stripe_account.stripe_secret_key
-            stripe_product_id = stripe_account.product_id
+            stripe_product_id = stripe_account.stripe_product_id
             vat_object = VAT.objects.filter(country=country_code)
             if vat_object:
                 tax_percent = vat_object.first().rate
