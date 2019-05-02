@@ -300,7 +300,8 @@ class StripeCountryAccountView(APIView):
                 "public_key": stripe_account.stripe_public_key
                 }
         else:
+            stripe_account = StripeCountryAccount.objects.get(country="AU")
             data = {
-                "error": "Company has no address"
+                "public_key": stripe_account.stripe_public_key
                 }
         return Response(data, status=status.HTTP_200_OK)
