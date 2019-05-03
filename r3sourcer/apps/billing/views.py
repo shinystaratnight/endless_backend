@@ -84,7 +84,6 @@ class SubscriptionCreateView(APIView):
         invoices = stripe.Invoice.list(customer=customer)['data']
         for invoice in invoices:
             if not Payment.objects.filter(stripe_id=invoice['id']).exists():
-                invoice['description'] = plan_name
                 Payment.objects.create(
                     company=company,
                     type=Payment.PAYMENT_TYPES.subscription,
