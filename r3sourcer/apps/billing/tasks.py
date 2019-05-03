@@ -58,7 +58,8 @@ def charge_for_extra_workers():
                                       currency=company.currency,
                                       description='%s extra workers fee' % extra_workers)
             invoice = stripe.Invoice.create(customer=company.stripe_customer,
-                                            tax_percent=tax_percent,)
+                                            tax_percent=tax_percent,
+                                            description='%s extra workers fee' % extra_workers)
             Payment.objects.create(
                 company=company,
                 type=Payment.PAYMENT_TYPES.extra_workers,
@@ -91,7 +92,8 @@ def charge_for_sms(company_id, amount, sms_balance_id):
                               description='Topping up sms balance')
     invoice = stripe.Invoice.create(customer=company.stripe_customer,
                                     billing="charge_automatically",
-                                    tax_percent=tax_percent,)
+                                    tax_percent=tax_percent,
+                                    description='Topping up sms balance')
     invoice.pay()
     payment = Payment.objects.create(
         company=company,
