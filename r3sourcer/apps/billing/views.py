@@ -11,7 +11,8 @@ from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIVi
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType
+from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType, \
+    StripeCountryAccount
 from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, \
     CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
 from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
@@ -35,6 +36,9 @@ class SubscriptionCreateView(APIView):
         tax_percent = 10.0
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
+            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            stripe.api_key = stripe_account.stripe_secret_key
+            stripe_product_id = stripe_account.stripe_product_id
             vat_object = VAT.objects.filter(country=country_code)
             if vat_object:
                 tax_percent = vat_object.first().rate
@@ -44,7 +48,7 @@ class SubscriptionCreateView(APIView):
         worker_count = self.request.data.get('worker_count', None)
         plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
         plan = stripe.Plan.create(
-            product=settings.STRIPE_PRODUCT_ID,
+            product=stripe_product_id or settings.STRIPE_PRODUCT_ID,
             nickname=plan_name,
             interval=STRIPE_INTERVALS[plan_type],
             currency=company.currency,
@@ -115,7 +119,11 @@ class StripeCustomerCreateView(APIView):
         company = self.request.user.company
         description = '{}'.format(company.name)
         email = ''
-
+        if company.get_hq_address():
+            country_code = company.get_hq_address().address.country.code2
+            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            if stripe_account:
+                stripe.api_key = stripe_account.stripe_secret_key
         if company.billing_email:
             email = company.billing_email
         elif company.primary_contact:
@@ -132,6 +140,11 @@ class StripeCustomerCreateView(APIView):
 
     def put(self, *args, **kwargs):
         company = self.request.user.company
+        if company.get_hq_address():
+            country_code = company.get_hq_address().address.country.code2
+            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            if stripe_account:
+                stripe.api_key = stripe_account.stripe_secret_key
         if not company.stripe_customer:
             raise ValidationError({"error": _("Company has no stripe account")})
 
@@ -232,7 +245,6 @@ class TwilioFundCreateView(APIView):
 
 
 class TwilioAutoChargeView(APIView):
-
     def get(self, *args, **kwargs):
         company = self.request.user.company
         sms_balance = SMSBalance.objects.get(company=company)
@@ -269,11 +281,27 @@ class TwilioAutoChargeView(APIView):
 
 
 class SubscriptionTypeView(APIView):
-
     def get(self, *args, **kwargs):
         subscription_types = SubscriptionType.objects.all()
         serializer = SubscriptionTypeSerializer(subscription_types, many=True)
         data = {
             "subscription_types": serializer.data
             }
+        return Response(data, status=status.HTTP_200_OK)
+
+
+class StripeCountryAccountView(APIView):
+    def get(self, *args, **kwargs):
+        company = self.request.user.company
+        if company.get_hq_address():
+            country_code = company.get_hq_address().address.country.code2
+            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            data = {
+                "public_key": stripe_account.stripe_public_key
+                }
+        else:
+            stripe_account = StripeCountryAccount.objects.get(country="AU")
+            data = {
+                "public_key": stripe_account.stripe_public_key
+                }
         return Response(data, status=status.HTTP_200_OK)
