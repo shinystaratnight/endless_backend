@@ -38,7 +38,7 @@ class SubscriptionCreateView(APIView):
             country_code = company.get_hq_address().address.country.code2
             stripe_account = StripeCountryAccount.objects.get(country=country_code)
             stripe.api_key = stripe_account.stripe_secret_key
-            stripe_product_id = stripe_account.stripe_product_id
+            # stripe_product_id = stripe_account.stripe_product_id
             vat_object = VAT.objects.filter(country=country_code)
             if vat_object:
                 tax_percent = vat_object.first().rate
@@ -47,8 +47,9 @@ class SubscriptionCreateView(APIView):
         sub_type = SubscriptionType.objects.get(type=plan_type)
         worker_count = self.request.data.get('worker_count', None)
         plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
+        product = stripe.Product.create(name=plan_name, type='service')
         plan = stripe.Plan.create(
-            product=stripe_product_id or settings.STRIPE_PRODUCT_ID,
+            product=product.id,
             nickname=plan_name,
             interval=STRIPE_INTERVALS[plan_type],
             currency=company.currency,
@@ -83,7 +84,6 @@ class SubscriptionCreateView(APIView):
         invoices = stripe.Invoice.list(customer=customer)['data']
         for invoice in invoices:
             if not Payment.objects.filter(stripe_id=invoice['id']).exists():
-                invoice['description'] = plan_name
                 Payment.objects.create(
                     company=company,
                     type=Payment.PAYMENT_TYPES.subscription,
