@@ -368,20 +368,17 @@ class TimeSheetSync(
             if fixed <= 0:
                 return
 
-            data = self.mapper.map_rate_to_myob_wage_category(name, fixed=fixed)
+            data = self.mapper.map_rate_to_myob_wage_category(name, fixed=fixed, coefficient=rate)
         elif base_rate:
             data = self.mapper.map_rate_to_myob_wage_category(name, fixed=base_rate)
-        elif myob_wage_category is None:
-            return
         else:
-            data = myob_wage_category
+            return myob_wage_category
 
         # create wage if category was not found from remote or update it by ID
         if myob_wage_category is None:
             resp = self.client.api.Payroll.PayrollCategory.Wage.post(json=data, raw_resp=True)
         else:
-            data['UID'] = myob_wage_category['UID']
-            data['RowVersion'] = myob_wage_category['RowVersion']
+            data = self._get_data_to_update(myob_wage_category, data)
             resp = self.client.api.Payroll.PayrollCategory.Wage.put(
                 uid=myob_wage_category['UID'], json=data, raw_resp=True
             )

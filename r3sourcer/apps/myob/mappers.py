@@ -312,11 +312,12 @@ class TimeSheetMapper(StandardPayMapMixin):
 
         return data
 
-    def map_rate_to_myob_wage_category(self, name, fixed=None, mult=None):
+    def map_rate_to_myob_wage_category(self, name, fixed=None, mult=None, coefficient=None):
         data = {
             'Name': name[:31].strip(),
             'WageType': 'Hourly',
-            'HourlyDetails': {}
+            'HourlyDetails': {},
+            'StpCategory': 'GrossPayments',
         }
 
         if fixed and fixed > 0:
@@ -331,6 +332,9 @@ class TimeSheetMapper(StandardPayMapMixin):
             }
         else:
             return {}
+
+        if coefficient and coefficient.is_allowance:
+            data['StpCategory'] = 'AllowanceOther'
 
         return data
 
