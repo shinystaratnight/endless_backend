@@ -531,14 +531,20 @@ class CompanyMapper(ContactMapper):
     def _map_extra_data_to_myob(self, company, tax_code):
         addresses = []
         primary_address = company.get_hq_address()
+        addresses_qs = company.company_addresses.filter(active=True)
         if primary_address:
             addresses.append(self._map_address_to_myob(primary_address.address))
-            addresses_qs = company.company_addresses.exclude(id=primary_address.id)
-        else:
-            addresses_qs = company.company_addresses.all()
+            addresses_qs = addresses_qs.exclude(id=primary_address.id)
 
         for address in addresses_qs:
-            addresses.append(self._map_address_to_myob(address.address, idx=len(addresses) + 1))
+            address_data = self._map_address_to_myob(address.address, idx=len(addresses) + 1)
+            if address.phone_landline:
+                address_data['Phone1'] = address.phone_landline
+            if address.phone_fax:
+                address_data['Fax'] = address.phone_fax
+            if address.primary_contact:
+                address_data['ContactName'] = address.primary_contact.contact.first_name
+            addresses.append(address_data)
 
         if addresses:
             addresses[0]['Email'] = company.billing_email
@@ -551,7 +557,6 @@ class CompanyMapper(ContactMapper):
         data = {
             'SellingDetails': {
                 'SaleLayout': 'TimeBilling',
-                'PrintedForm': 'TimeBilling - Capital Funding 180',
                 'InvoiceDelivery': 'Print',
                 'ItemPriceLevel': 'Base Selling Price',
                 'Terms': {
