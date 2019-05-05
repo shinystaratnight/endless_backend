@@ -9,7 +9,7 @@ from django.utils import timezone
 from r3sourcer.apps.candidate.models import SkillRel
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment import calc_worked_delta
-from r3sourcer.apps.myob.mappers import TimeSheetMapper, format_date_to_myob
+from r3sourcer.apps.myob.mappers import TimeSheetMapper, JobsiteMapper, format_date_to_myob
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.candidate import CandidateSync
@@ -82,11 +82,13 @@ class TimeSheetSync(
             # self._switch_client(company_file_token=company_file_token)
             self._sync_timesheets_to_myob(candidate, timesheet_qs)
 
-    @method_decorator(myob_enabled_mode)
+    # @method_decorator(myob_enabled_mode)
     def sync_single_to_myob(self, timesheet):
         timesheets_q = (Q(candidate_submitted_at__isnull=True) | Q(candidate_submitted_at=None) |
                         Q(supervisor_approved_at__isnull=True) | Q(supervisor_approved_at=None))
         timesheet_qs = TimeSheet.objects.filter(id=timesheet.id).exclude(timesheets_q)
+
+        print('!!!')
 
         self._sync_timesheets_to_myob(timesheet.job_offer.candidate_contact, timesheet_qs)
 
@@ -267,8 +269,15 @@ class TimeSheetSync(
         wage_categories = timesheets_with_rates.keys()
         self._update_employee_payroll_categories(myob_employee, wage_categories)
 
+        jobsite = timesheet.job_offer.shift.date.job.jobsite
+        if jobsite:
+            myob_job = self._get_myob_job(jobsite)
+        else:
+            myob_job = None
+
         data = self.mapper.map_to_myob(
-            timesheets_with_rates, myob_employee['UID'], timesheet.shift_started_at, timesheet.shift_started_at
+            timesheets_with_rates, myob_employee['UID'], timesheet.shift_started_at, timesheet.shift_started_at,
+            myob_job=myob_job
         )
 
         return data
@@ -431,3 +440,34 @@ class TimeSheetSync(
                     found_cnt += 1
                     break
         return found_cnt == len(new_categories)
+
+    def _get_myob_job(self, jobsite):
+        # jobsite = timesheet.job_offer.shift.date.job.jobsite
+        number = jobsite.get_myob_card_number()
+        myob_job = self._get_object_by_field(
+            number.lower(),
+            resource=self.client.api.GeneralLedger.Job,
+            myob_field='tolower(Number)',
+            single=True
+        )
+        data = JobsiteMapper().map_to_myob(jobsite)
+
+        if myob_job is None:
+            resp = self.client.api.GeneralLedger.Job.post(json=data, raw_resp=True)
+        else:
+            data = self._get_data_to_update(myob_job, data)
+            resp = self.client.api.GeneralLedger.Job.put(
+                uid=myob_job['UID'], json=data, raw_resp=True
+            )
+
+        if resp.status_code >= 400:
+            log.warning(resp.text)
+        elif myob_job is None:
+            myob_job = self._get_object_by_field(
+                number.lower(),
+                resource=self.client.api.GeneralLedger.Job,
+                myob_field='tolower(Number)',
+                single=True
+            )
+
+        return myob_job

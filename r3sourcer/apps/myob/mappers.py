@@ -270,7 +270,7 @@ class ActivityMapper:
 
 class TimeSheetMapper(StandardPayMapMixin):
 
-    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date):
+    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date, myob_job=None):
         data = {
             'StartDate': format_date_to_myob(start_date),
             'EndDate': format_date_to_myob(end_date),
@@ -305,6 +305,11 @@ class TimeSheetMapper(StandardPayMapMixin):
                 },
                 'Entries': entries
             }
+
+            if myob_job:
+                line['Job'] = {
+                    'UID': myob_job['UID']
+                }
 
             lines.append(line)
 
@@ -587,5 +592,30 @@ class CompanyMapper(ContactMapper):
             data['SellingDetails']['Credit'] = {
                 'Limit': str(company.approved_credit_limit),
             }
+
+        return data
+
+
+class JobsiteMapper:
+
+    def map_to_myob(self, jobsite):
+        data = {
+            'Number': jobsite.get_myob_card_number(),
+            'Name': jobsite.get_myob_name(),
+            'IsHeader': False,
+            'Description': jobsite.notes or jobsite.notes[:255],
+        }
+
+        if jobsite.primary_contact:
+            data['Contact'] = jobsite.primary_contact.contact.first_name[:25]
+
+        if jobsite.portfolio_manager:
+            data['Manager'] = jobsite.portfolio_manager.contact.first_name[:25]
+
+        if jobsite.start_date:
+            data['StartDate'] = format_date_to_myob(jobsite.start_date)
+
+        if jobsite.end_date:
+            data['FinishDate'] = format_date_to_myob(jobsite.end_date)
 
         return data
