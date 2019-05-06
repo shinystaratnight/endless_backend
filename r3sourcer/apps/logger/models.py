@@ -22,7 +22,7 @@ class LogHistory(Model):
 
 class LocationHistory(Model):
     model = fields.StringField()
-    name = fields.StringField()
+    name = fields.NullableField(fields.StringField())
     object_id = fields.StringField()
     timesheet_id = fields.NullableField(fields.StringField())
     latitude = fields.Float32Field()
