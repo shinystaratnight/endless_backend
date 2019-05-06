@@ -1,4 +1,6 @@
 import stripe
+from itertools import chain
+from uuid import UUID
 
 from datetime import datetime
 
@@ -19,13 +21,7 @@ from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company, Contact, VAT
 from r3sourcer.apps.company_settings.models import GlobalPermission
-
-from celery.task.control import inspect
 from r3sourcer.celeryapp import app
-from itertools import chain
-from uuid import UUID
-import json
-from celery.task.control import revoke
 
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
