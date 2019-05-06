@@ -144,6 +144,7 @@ class CandidateContactViewset(BaseApiViewset):
     @action(methods=['post'], detail=True, permission_classes=[SiteContactPermissions])
     def buy(self, request, pk, *args, **kwargs):
         master_company = request.user.contact.get_closest_company().get_closest_master_company()
+        manager = request.user.contact.company_contact.first()
         candidate_contact = self.get_object()
         company = request.data.get('company')
 
@@ -174,7 +175,8 @@ class CandidateContactViewset(BaseApiViewset):
 
         if candidate_contact.profile_price:
             rel = CandidateRel.objects.create(
-                master_company=company, candidate_contact=candidate_contact, owner=False, active=False
+                master_company=company, candidate_contact=candidate_contact, owner=False, active=False,
+                company_contact=manager
             )
 
             buy_candidate.apply_async([rel.id], countdown=10)

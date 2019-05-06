@@ -79,15 +79,18 @@ def buy_candidate(candidate_rel_id):
             description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
         )
         invoice = stripe.Invoice.create(customer=company.stripe_customer, tax_percent=tax_percent)
+        invoice.pay()
         billing_models.Payment.objects.create(
             company=company,
             type=billing_models.Payment.PAYMENT_TYPES.candidate,
-            amount=amount,
+            amount=int(float(candidate_contact.profile_price)),
             stripe_id=invoice['id']
         )
 
         candidate_rel.active = True
         candidate_rel.save()
+        candidate_contact.recruitment_agent = candidate_rel.company_contact
+        candidate_contact.save(update_fields=['recruitment_agent'])
     except stripe.StripeError as e:
         logger.exception(e)
 
