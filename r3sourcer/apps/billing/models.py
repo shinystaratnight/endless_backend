@@ -50,11 +50,11 @@ class Subscription(models.Model):
         self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
         self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
 
-    def deactivate(self):
+    def deactivate(self, user_id=None):
         sub = stripe.Subscription.retrieve(self.subscription_id)
         sub.modify(self.subscription_id, cancel_at_period_end=True)
-        user = self.company.get_user()
-        tasks.cancel_subscription_access.apply_async([user.id], eta=self.current_period_end)
+        if user_id:
+            tasks.cancel_subscription_access.apply_async([user_id], eta=self.current_period_end)
 
     @property
     def last_time_billed(self):

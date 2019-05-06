@@ -24,6 +24,7 @@ redbeat_redis_url = 'redis://{host}:{port}/{db}'.format(
 timezone = env('TIME_ZONE')
 accept_content = ['json', 'application/text']
 broker_transport_options = {'visibility_timeout': 2 * 60 * 60}
+broker_pool_limit = None
 
 task_queues = (
     Queue('celery', Exchange('celery'), routing_key='celery'),
