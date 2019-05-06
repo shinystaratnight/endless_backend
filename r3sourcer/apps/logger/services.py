@@ -33,7 +33,7 @@ class LocationLogger():
 
         log = LocationHistory(
             model=instance._meta.label,
-            name=name,
+            name=name and str(name),
             object_id=str(instance.pk),
             timesheet_id=timesheet_id and str(timesheet_id),
             latitude=latitude,
@@ -91,12 +91,11 @@ class LocationLogger():
                 final_qs = []
                 qs_ids = [i.object_id for i in self.get_location_queryset().only('object_id').distinct()]
                 for id in qs_ids:
-                    qs = self.get_location_queryset().filter(object_id=id).order_by('-log_at')
+                    qs = self.get_location_queryset().filter(object_id=id).exclude(timesheet_id='').order_by('-log_at')
                     qs = qs.paginate(
                         page_num=1, page_size=1
                         )
                     final_qs.extend(qs.objects)
-                    print("final_qs", [i.name for i in final_qs])
 
                 return {
                     'results': [self._map_location_log(log) for log in final_qs],
