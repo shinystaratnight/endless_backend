@@ -212,7 +212,8 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
 
         if not sms:
             sms = sms_models.SMSMessage.objects.filter(
-                template__slug=template_slug, sent_at__date=timesheet_date
+                template__slug=template_slug, sent_at__date=timesheet_date,
+                company=obj.master_company
             ).first()
 
         return sms and sms_serializers.SMSMessageSerializer(sms, fields=['id', '__str__']).data

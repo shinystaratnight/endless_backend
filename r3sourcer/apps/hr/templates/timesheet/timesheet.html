@@ -91,7 +91,7 @@
 				Timesheet
 			</h4>
 			<div style="display: inline-block; width: 33%; height: 50px; vertical-align: top;">
-				 <span class="provided-logo"><span style="height: 50px; line-height: 50px;">Provided by</span> <img class="provided-logo" src="{{ DOMAIN }}/static/new-software.svg" alt="R3sourcer" style="height: 50px;"></span>
+				 <span class="provided-logo"><span style="height: 50px; line-height: 50px;">Provided by</span> <img class="provided-logo" src="{{ domain }}/static/new-software.png" alt="R3sourcer" style="height: 50px;"></span>
 			</div>
 		</div>
 	</header>
@@ -136,8 +136,8 @@
 					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|date:'d/m/Y h:i A' }}
 					</td>
 					{% if timesheet.supervisor_signature %}
-+					<td><img src="{{ domain }}{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto"; margin:0 auto; vertical-allign:middle></td>
-+					{% else %}
+					<td><img src="{{ domain }}{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
+					{% else %}
 					<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|date:'d/m/Y h:i A' }}
 					</td>
 					{% endif %}
