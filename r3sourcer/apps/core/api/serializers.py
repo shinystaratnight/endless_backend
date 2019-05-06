@@ -28,6 +28,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from r3sourcer.apps.core import models as core_models, tasks as core_tasks
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, NOT_ALLOWED)
 from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
+from r3sourcer.apps.myob.models import MYOBSyncObject
 
 rest_settings = settings.REST_FRAMEWORK
 
@@ -1067,6 +1068,11 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
 
     def validate(self, data):
         if 'number' in data:
+            if self.instance and self.instance.hardlock and self.instance.number != data["number"]:
+                raise ValidationError({
+                    'number': _("Number cannot be changed.")
+                })
+
             company = data.get('company')
             core_models.WorkflowNode.validate_node(
                 data["number"], data.get("workflow"), company, data.get("active"), data.get("rules"),
@@ -1323,7 +1329,7 @@ class CompanyListSerializer(
 ):
     method_fields = (
         'manager', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
-        'address', 'manager_phone',
+        'address', 'manager_phone', 'myob_name',
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
@@ -1442,6 +1448,10 @@ class CompanyListSerializer(
             obj = self.get_company_rel(obj)
 
         return super().get_latest_state(obj)
+
+    def get_myob_name(self, obj):
+        sync_obj = MYOBSyncObject.objects.filter(record=obj.pk).first()
+        return sync_obj and sync_obj.legacy_myob_card_number
 
 
 class FormFieldSerializer(ApiBaseModelSerializer):

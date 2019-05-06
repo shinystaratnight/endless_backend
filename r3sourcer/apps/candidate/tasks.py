@@ -62,6 +62,8 @@ def buy_candidate(candidate_rel_id):
         tax_percent = 10.0
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
+            stripe_account = billing_models.StripeCountryAccount.objects.get(country=country_code)
+            stripe.api_key = stripe_account.stripe_secret_key
             vat_object = core_models.VAT.objects.filter(country=country_code)
             if vat_object:
                 tax_percent = vat_object.first().rate

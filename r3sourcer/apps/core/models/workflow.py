@@ -334,7 +334,8 @@ class WorkflowObject(UUIDModel):
             tag_ids = model_object.tag_rels.values_list('tag', flat=True)
             qry |= models.Q(acceptance_test__acceptance_tests_tags__tag_id__in=tag_ids)
 
-        tests = AcceptanceTestWorkflowNode.objects.filter(qry, company_workflow_node__workflow_node=state).distinct()
+        tests = AcceptanceTestWorkflowNode.objects.filter(
+            qry, company_workflow_node__company=closest_company, company_workflow_node__workflow_node=state).distinct()
         is_answers_exist = tests.filter(
             acceptance_test__acceptance_test_questions__workflow_object_answers__workflow_object__object_id=object_id
         ).distinct().count() >= tests.count()

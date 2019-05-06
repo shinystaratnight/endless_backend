@@ -68,6 +68,6 @@ class CompanySync(SalespersonMixin, BaseSync):
         if 200 <= resp.status_code < 400:
             log.info('Company %s synced' % company.id)
 
-            self._update_sync_object(company, old_myob_card_number)
+            self._update_sync_object(company, myob_card_number or old_myob_card_number)
         else:
             log.warning("[MYOB API] Company %s: %s", company.id, resp.text)

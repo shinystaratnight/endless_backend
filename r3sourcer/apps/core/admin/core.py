@@ -116,6 +116,11 @@ class SubscriptionInline(admin.TabularInline):
     model = Subscription
 
 
+class ContactAdmin(admin.ModelAdmin):
+
+    search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
+
+
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
 
     list_display = ('name', 'industry', 'active_subscription')
@@ -276,7 +281,7 @@ if admin.site.is_registered(Site):
 
 
 admin.site.site_header = "Core Administration"
-admin.site.register(models.Contact, search_fields=('email', 'phone_mobile', 'first_name', 'last_name'))
+admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)

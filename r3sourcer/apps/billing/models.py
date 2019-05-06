@@ -9,7 +9,7 @@ from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import Company
+from r3sourcer.apps.core.models import Company, Country
 from r3sourcer.apps.core import tasks
 
 
@@ -236,3 +236,22 @@ class SubscriptionType(models.Model):
         from r3sourcer.apps.billing.tasks import charge_for_new_amount
         charge_for_new_amount.delay()
         super(SubscriptionType, self).save(*args, **kwargs)
+
+
+class StripeCountryAccount(models.Model):
+    country = models.ForeignKey(
+        Country,
+        to_field='code2',
+        null=True,
+        blank=True,
+    )
+    stripe_public_key = models.CharField(max_length=255, blank=True, null=True)
+    stripe_secret_key = models.CharField(max_length=255, blank=True, null=True)
+    stripe_product_id = models.CharField(max_length=255, blank=True, null=True)
+
+    class Meta:
+        verbose_name = _("Stripe Country Account")
+        verbose_name_plural = _("Stripe Country Accounts")
+
+    def __str__(self):
+        return self.country.name
