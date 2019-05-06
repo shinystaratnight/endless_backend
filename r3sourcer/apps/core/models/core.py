@@ -1272,7 +1272,7 @@ class Company(
         if just_added and self.type == self.COMPANY_TYPES.master:
             bulk_objects = [
                 CompanyWorkflowNode(company=self, workflow_node=wf_node)
-                for wf_node in WorkflowNode.objects.all()
+                for wf_node in WorkflowNode.objects.filter(hardlock=True)
             ]
 
             CompanyWorkflowNode.objects.bulk_create(bulk_objects)

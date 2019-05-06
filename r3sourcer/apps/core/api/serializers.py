@@ -1068,6 +1068,11 @@ class WorkflowNodeSerializer(ApiBaseModelSerializer):
 
     def validate(self, data):
         if 'number' in data:
+            if self.instance and self.instance.hardlock and self.instance.number != data["number"]:
+                raise ValidationError({
+                    'number': _("Number cannot be changed.")
+                })
+
             company = data.get('company')
             core_models.WorkflowNode.validate_node(
                 data["number"], data.get("workflow"), company, data.get("active"), data.get("rules"),
