@@ -102,9 +102,12 @@ class SubscriptionCreateView(APIView):
         # get full access to a site
         user = self.request.user
         # set permissions
-        for task in chain.from_iterable(app.control.inspect().scheduled().values()):
-            if str(eval(task['request']['args'])[0]) == str(user.id):
-                app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
+        try:
+            for task in chain.from_iterable(app.control.inspect().scheduled().values()):
+                if str(eval(task['request']['args'])[0]) == str(user.id):
+                    app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
+        except:
+            pass
         permission_list = GlobalPermission.objects.all()
         user.user_permissions.add(*permission_list)
         user.save()
