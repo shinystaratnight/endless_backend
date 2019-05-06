@@ -32,6 +32,7 @@ from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.address import parse_google_address
+from r3sourcer.apps.myob.models import MYOBSyncObject
 
 
 class BaseViewsetMixin():
@@ -376,6 +377,31 @@ class CompanyViewset(BaseApiViewset):
                     'results': data
                 }
         return data
+
+    def update(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        myob_name = data.pop('myob_name', None)
+        if myob_name:
+            master_company = get_site_master_company(request=self.request)
+            MYOBSyncObject.objects.update_or_create(
+                record=instance.pk, app='core', model='Company',
+                company=master_company, defaults={
+                    'legacy_confirmed': True,
+                    'legacy_myob_card_number': myob_name
+                }
+            )
+
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(self.get_serializer(self.get_object()).data)
 
     def perform_update(self, serializer):
         instance = self.get_object()

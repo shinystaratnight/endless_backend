@@ -18,7 +18,7 @@ from model_utils import Choices
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
-from r3sourcer.apps.core.mixins import CategoryFolderMixin
+from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -33,6 +33,7 @@ NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
 class Jobsite(
     CategoryFolderMixin,
+    MYOBMixin,
     core_models.UUIDModel,
     WorkflowProcess
 ):
@@ -190,6 +191,9 @@ class Jobsite(
 
     def get_closest_company(self):
         return self.master_company
+
+    def get_myob_name(self):
+        return self.get_site_name()[:30]
 
 
 class JobsiteUnavailability(core_models.UUIDModel):
