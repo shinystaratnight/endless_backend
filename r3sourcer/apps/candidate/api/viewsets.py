@@ -18,6 +18,7 @@ from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowO
 from r3sourcer.apps.hr.models import Job
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
+from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.hr.models import TimeSheet, ShiftDate
 
 from . import serializers
@@ -51,6 +52,31 @@ class CandidateContactViewset(BaseApiViewset):
         instance.save()
         instance.contact.bank_accounts.all().delete()
         instance.contact.user.delete()
+
+    def update(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+
+        myob_name = data.pop('myob_name', None)
+        if myob_name:
+            master_company = get_site_master_company(request=self.request)
+            MYOBSyncObject.objects.update_or_create(
+                record=instance.pk, app='candidate', model='CandidateContact',
+                company=master_company, defaults={
+                    'legacy_confirmed': True,
+                    'legacy_myob_card_number': myob_name
+                }
+            )
+
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        if getattr(instance, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(self.get_serializer(self.get_object()).data)
 
     @action(methods=['post'], detail=False, permission_classes=[drf_permissions.AllowAny])
     def register(self, request, *args, **kwargs):

@@ -270,7 +270,7 @@ class ActivityMapper:
 
 class TimeSheetMapper(StandardPayMapMixin):
 
-    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date):
+    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date, myob_job=None):
         data = {
             'StartDate': format_date_to_myob(start_date),
             'EndDate': format_date_to_myob(end_date),
@@ -306,17 +306,23 @@ class TimeSheetMapper(StandardPayMapMixin):
                 'Entries': entries
             }
 
+            if myob_job:
+                line['Job'] = {
+                    'UID': myob_job['UID']
+                }
+
             lines.append(line)
 
         data['Lines'] = lines
 
         return data
 
-    def map_rate_to_myob_wage_category(self, name, fixed=None, mult=None):
+    def map_rate_to_myob_wage_category(self, name, fixed=None, mult=None, coefficient=None):
         data = {
             'Name': name[:31].strip(),
             'WageType': 'Hourly',
-            'HourlyDetails': {}
+            'HourlyDetails': {},
+            'StpCategory': 'GrossPayments',
         }
 
         if fixed and fixed > 0:
@@ -331,6 +337,9 @@ class TimeSheetMapper(StandardPayMapMixin):
             }
         else:
             return {}
+
+        if coefficient and coefficient.is_allowance:
+            data['StpCategory'] = 'AllowanceOther'
 
         return data
 
@@ -527,14 +536,20 @@ class CompanyMapper(ContactMapper):
     def _map_extra_data_to_myob(self, company, tax_code):
         addresses = []
         primary_address = company.get_hq_address()
+        addresses_qs = company.company_addresses.filter(active=True)
         if primary_address:
             addresses.append(self._map_address_to_myob(primary_address.address))
-            addresses_qs = company.company_addresses.exclude(id=primary_address.id)
-        else:
-            addresses_qs = company.company_addresses.all()
+            addresses_qs = addresses_qs.exclude(id=primary_address.id)
 
         for address in addresses_qs:
-            addresses.append(self._map_address_to_myob(address.address, idx=len(addresses) + 1))
+            address_data = self._map_address_to_myob(address.address, idx=len(addresses) + 1)
+            if address.phone_landline:
+                address_data['Phone1'] = address.phone_landline
+            if address.phone_fax:
+                address_data['Fax'] = address.phone_fax
+            if address.primary_contact:
+                address_data['ContactName'] = address.primary_contact.contact.first_name
+            addresses.append(address_data)
 
         if addresses:
             addresses[0]['Email'] = company.billing_email
@@ -547,7 +562,6 @@ class CompanyMapper(ContactMapper):
         data = {
             'SellingDetails': {
                 'SaleLayout': 'TimeBilling',
-                'PrintedForm': 'TimeBilling - Capital Funding 180',
                 'InvoiceDelivery': 'Print',
                 'ItemPriceLevel': 'Base Selling Price',
                 'Terms': {
@@ -578,5 +592,30 @@ class CompanyMapper(ContactMapper):
             data['SellingDetails']['Credit'] = {
                 'Limit': str(company.approved_credit_limit),
             }
+
+        return data
+
+
+class JobsiteMapper:
+
+    def map_to_myob(self, jobsite):
+        data = {
+            'Number': jobsite.get_myob_card_number(),
+            'Name': jobsite.get_myob_name(),
+            'IsHeader': False,
+            'Description': jobsite.notes or jobsite.notes[:255],
+        }
+
+        if jobsite.primary_contact:
+            data['Contact'] = jobsite.primary_contact.contact.first_name[:25]
+
+        if jobsite.portfolio_manager:
+            data['Manager'] = jobsite.portfolio_manager.contact.first_name[:25]
+
+        if jobsite.start_date:
+            data['StartDate'] = format_date_to_myob(jobsite.start_date)
+
+        if jobsite.end_date:
+            data['FinishDate'] = format_date_to_myob(jobsite.end_date)
 
         return data

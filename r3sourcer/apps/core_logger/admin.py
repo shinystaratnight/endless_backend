@@ -3,13 +3,13 @@ from django.contrib.admin.sites import NotRegistered
 
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.admin import (
-    BaseAdmin, UserAdmin, CompanyAdmin, SuperuserAdmin
+    BaseAdmin, UserAdmin, CompanyAdmin, SuperuserAdmin, ContactAdmin
 )
 
 from r3sourcer.apps.logger.admin import LoggerMixin
 
 
-DEFAULT_MODELS_LIST = [models.Contact, models.BankAccount, models.Address,
+DEFAULT_MODELS_LIST = [models.BankAccount, models.Address,
                        models.WorkflowObject, models.CompanyLocalization,
                        models.InvoiceLine, models.Note, models.VAT,
                        models.InvoiceRule]
@@ -37,7 +37,7 @@ except NotRegistered:
     pass
 
 try:
-    admin.site.unregister([models.User, models.Company])
+    admin.site.unregister([models.User, models.Company, models.Contact])
 except NotRegistered:
     pass
 
@@ -58,12 +58,17 @@ class CompanyLoggerAdmin(LoggerMixin, CompanyAdmin):
     pass
 
 
+class ContactLoggerAdmin(LoggerMixin, ContactAdmin):
+    pass
+
+
 class SuperuserLoggerAdmin(LoggerMixin, SuperuserAdmin):
     pass
 
 
 admin.site.register(models.User, UserLoggerAdmin)
 admin.site.register(models.Company, CompanyLoggerAdmin)
+admin.site.register(models.Contact, ContactLoggerAdmin)
 admin.site.register(DEFAULT_MODELS_LIST, LoggerAdmin)
 admin.site.register(BASE_MODELS_LIST, LoggerBaseAdmin)
 admin.site.register(SUPERUSER_MODELS_LIST, SuperuserLoggerAdmin)

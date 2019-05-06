@@ -8,6 +8,7 @@ from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_fields
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.skills import models as skill_models
 
 
@@ -86,7 +87,7 @@ class CandidateContactSerializer(
     core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer
 ):
 
-    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company')
+    method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company', 'myob_name')
 
     def create(self, validated_data):
         contact = validated_data.get('contact', None)
@@ -181,6 +182,13 @@ class CandidateContactSerializer(
     def get_master_company(self, obj):
         master_company = obj.get_closest_company()
         return master_company and core_fields.ApiBaseRelatedField.to_read_only_data(master_company)
+
+    def get_myob_name(self, obj):
+        sync_obj = self._get_sync_object(obj)
+        return sync_obj and sync_obj.legacy_myob_card_number
+
+    def _get_sync_object(self, obj):
+        return MYOBSyncObject.objects.filter(record=obj.id).first()
 
 
 class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):

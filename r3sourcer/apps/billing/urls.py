@@ -17,6 +17,7 @@ urlpatterns = [
     url(r'^billing/add_funds_twilio/$', views.TwilioFundCreateView.as_view(), name='add_funds_twilio'),
     url(r'^billing/auto_charge_twilio/$', views.TwilioAutoChargeView.as_view(), name='auto_charge_twilio'),
     url(r'^billing/subscription_type/$', views.SubscriptionTypeView.as_view(), name='subscription_type'),
+    url(r'^billing/country_account/$', views.StripeCountryAccountView.as_view(), name='stripe_country_account'),
 
     # subscription management page
     url(r'^billing/companies/$', views.CompanyListView.as_view(), name='company_list'),
