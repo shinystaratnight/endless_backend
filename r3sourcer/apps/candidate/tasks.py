@@ -53,7 +53,8 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
 
 
 @shared_task()
-def buy_candidate(candidate_rel_id):
+def buy_candidate(candidate_rel_id, user=None):
+    from r3sourcer.apps.logger.main import endless_logger
     try:
         candidate_rel = candidate_models.CandidateRel.objects.get(pk=candidate_rel_id)
         candidate_contact = candidate_rel.candidate_contact
@@ -91,6 +92,9 @@ def buy_candidate(candidate_rel_id):
         candidate_rel.save()
         candidate_contact.recruitment_agent = candidate_rel.company_contact
         candidate_contact.save(update_fields=['recruitment_agent'])
+        for skill in candidate_contact.candidate_skills.all():
+            endless_logger.log_instance_change(instance=skill, old_instance=skill, transaction_type='update', user=user)
+            endless_logger.log_instance_change(instance=skill, transaction_type='create', user=user)
     except stripe.StripeError as e:
         logger.exception(e)
 
