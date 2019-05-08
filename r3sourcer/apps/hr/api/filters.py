@@ -78,7 +78,8 @@ class TimesheetFilter(FilterSet):
 
         qs_unapproved = (
             Q(candidate_submitted_at__isnull=False) |
-            Q(shift_ended_at__lt=ended_at)
+            Q(shift_ended_at__lt=ended_at) |
+            Q(status=5)
         ) & (
             Q(supervisor_approved_at__isnull=True)
         ) & Q(going_to_work_confirmation=True)
