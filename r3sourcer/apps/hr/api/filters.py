@@ -81,7 +81,7 @@ class TimesheetFilter(FilterSet):
             Q(shift_ended_at__lt=ended_at)
         ) & (
             Q(supervisor_approved_at__isnull=True)
-        ) & Q(going_to_work_confirmation=True)
+        ) & Q(going_to_work_confirmation=True) & Q(status=5)
 
         if contact.company_contact.exists():
             qs_unapproved &= Q(supervisor__contact=contact)
