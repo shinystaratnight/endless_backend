@@ -384,7 +384,12 @@ class JobOfferViewset(BaseApiViewset):
 
     @action(methods=['get'], detail=False)
     def candidate(self, request, *args, **kwargs):  # pragma: no cover
-        return self.list(request, *args, **kwargs)
+        candidate_contact_id = self.request.query_params.get("candidate_contact")
+        candidate_contact = candidate_models.CandidateContact.objects.get(id=candidate_contact_id)
+        if candidate_contact.get_closest_company() == request.user.company:
+            return self.list(request, *args, **kwargs)
+        else:
+            return Response({"results": []}, status=status.HTTP_200_OK)
 
     @action(methods=['post'], detail=True)
     def accept(self, request, *args, **kwargs):  # pragma: no cover

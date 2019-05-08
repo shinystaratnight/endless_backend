@@ -16,7 +16,7 @@ def get_endless_logger():
 
 
 class EndlessLogger(object):
-    def log_instance_change(self, instance, old_instance=None, transaction_type='update'):
+    def log_instance_change(self, instance, old_instance=None, user=None, transaction_type='update'):
         """
         Logs changes of the instance
         :param instance: instance
@@ -26,7 +26,7 @@ class EndlessLogger(object):
         if transaction_type == 'create' and isinstance(instance, get_user_model())\
                 and instance.email == settings.SYSTEM_USER:
             return
-        general_logger_fields = self.get_general_fields(instance, transaction_type)
+        general_logger_fields = self.get_general_fields(instance, transaction_type, user)
         method_name = "log_{}_instance".format(transaction_type)
         getattr(self, method_name)(instance, general_logger_fields, old_instance)
 
@@ -49,13 +49,13 @@ class EndlessLogger(object):
          """
         raise NotImplementedError
 
-    def get_general_fields(self, instance, transaction_type):
+    def get_general_fields(self, instance, transaction_type, user=None):
         """
         Generates dictionary with general fields for instance logging
         """
         current_user = get_current_user()
         general_logger_fields = {
-            'updated_by': str(current_user.id if current_user else None),
+            'updated_by': user if user else str(current_user.id if current_user else None),
             'date': date.today(),
             'updated_at': int(round(timezone.now().timestamp() * 1000)),
             'model': "{}.{}".format(instance.__class__.__module__, instance.__class__.__name__),

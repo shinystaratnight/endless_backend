@@ -179,7 +179,7 @@ class CandidateContactViewset(BaseApiViewset):
                 company_contact=manager
             )
 
-            buy_candidate.apply_async([rel.id])
+            buy_candidate.apply_async([rel.id, str(request.user.id)])
 
         return Response({'status': 'success', 'message': _('Please wait for payment to complete')})
 
