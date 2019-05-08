@@ -85,7 +85,8 @@ def buy_candidate(candidate_rel_id, user=None):
             company=company,
             type=billing_models.Payment.PAYMENT_TYPES.candidate,
             amount=int(float(candidate_contact.profile_price)),
-            stripe_id=invoice['id']
+            stripe_id=invoice['id'],
+            invoice_url=invoice['invoice_pdf'],
         )
 
         candidate_rel.active = True
