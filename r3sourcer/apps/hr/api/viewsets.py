@@ -96,6 +96,12 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets', 'met_expectations', 'representation')
 
+    def get_queryset(self):
+        query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.company,
+                         job_offer__candidate_contact__candidate_rels__owner=True)
+        return super().get_queryset().filter(query)
+
+
     def get_contact(self):
         role_id = self.request.query_params.get('role')
 

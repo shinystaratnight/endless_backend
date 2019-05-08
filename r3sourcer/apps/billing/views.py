@@ -90,7 +90,7 @@ class SubscriptionCreateView(APIView):
                 Payment.objects.create(
                     company=company,
                     type=Payment.PAYMENT_TYPES.subscription,
-                    amount=invoice['total'] / 100,
+                    amount=(int(self.request.data.get('price', None))),
                     stripe_id=invoice['id'],
                     invoice_url=invoice['invoice_pdf'],
                     status=invoice['status']
