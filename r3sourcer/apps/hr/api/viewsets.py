@@ -127,8 +127,17 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     def handle_history(self, request):
         if request.user.is_authenticated:
             contact, company_contact_rel = self.get_contact()
-            qs_approved = TimesheetFilter.get_filter_for_approved(contact)
-            queryset = hr_models.TimeSheet.objects.filter(qs_approved)
+            queryset = hr_models.TimeSheet.objects.filter(
+                going_to_work_confirmation=True,
+                supervisor_approved_at__isnull=False,
+                supervisor__contact=contact,
+                status__in=[
+                    hr_models.TimeSheet.STATUS_CHOICES.submit_pending,
+                    hr_models.TimeSheet.STATUS_CHOICES.approval_pending,
+                    hr_models.TimeSheet.STATUS_CHOICES.modified,
+                    hr_models.TimeSheet.STATUS_CHOICES.approved
+                ]
+            )
 
             if company_contact_rel:
                 queryset = queryset.filter(job_offer__shift__date__job__customer_company=company_contact_rel.company)
@@ -180,7 +189,17 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['get'], detail=False)
     def approved(self, request, *args, **kwargs):  # pragma: no cover
-        return self.handle_history(request)
+        if request.user.is_authenticated:
+            contact, company_contact_rel = self.get_contact()
+            qs_approved = TimesheetFilter.get_filter_for_approved(contact)
+            queryset = hr_models.TimeSheet.objects.filter(qs_approved)
+
+            if company_contact_rel:
+                queryset = queryset.filter(job_offer__shift__date__job__customer_company=company_contact_rel.company)
+        else:
+            queryset = hr_models.TimeSheet.objects.none()
+
+        return self.paginated(queryset.distinct().order_by('-shift_started_at'))
 
     @action(methods=['post'], detail=True)
     def confirm(self, request, pk, *args, **kwargs):
