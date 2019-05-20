@@ -46,7 +46,7 @@ class BaseTimeSheetViewsetMixin:
         'fields': ('shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at')
     }
 
-    def submit_hours(self, data, time_sheet, is_candidate=True):
+    def submit_hours(self, data, time_sheet, is_candidate=True, not_agree=False):
         if is_candidate:
             data.update(candidate_submitted_at=timezone.now())
         else:
@@ -61,18 +61,18 @@ class BaseTimeSheetViewsetMixin:
 
         if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
                                                   supervisor=time_sheet.supervisor).exists():
-            hr_utils.send_supervisor_timesheet_approve(time_sheet, True)
+            hr_utils.send_supervisor_timesheet_approve(time_sheet, True, not_agree)
 
         return Response(serializer.data)
 
-    def handle_request(self, request, pk, is_candidate=True, *args, **kwargs):
+    def handle_request(self, request, pk, is_candidate=True, not_agree=False, *args, **kwargs):
         time_sheet = get_object_or_404(
             hr_models.TimeSheet.objects.select_for_update(), pk=pk
         )
 
         if request.method == 'PUT':
             return self.submit_hours(
-                kwargs.get('data', request.data), time_sheet, is_candidate
+                kwargs.get('data', request.data), time_sheet, is_candidate, not_agree
             )
 
         serializer = timesheet_serializers.TimeSheetSerializer(time_sheet)
@@ -151,8 +151,9 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @action(methods=['put'], detail=True)
     def not_agree(self, request, pk, *args, **kwargs):  # pragma: no cover
         data = dict(request.data)
-        data.update(candidate_submitted_at=None, supervisor_modified=True, supervisor_modified_at=timezone.localtime())
-        return self.handle_request(request, pk, False, data=data,
+        data.update(supervisor_modified=True, supervisor_modified_at=timezone.localtime(),
+                    status=hr_models.TimeSheet.STATUS_CHOICES.modified)
+        return self.handle_request(request, pk, False, data=data, not_agree=True,
                                    *args, **kwargs)
 
     @transaction.atomic

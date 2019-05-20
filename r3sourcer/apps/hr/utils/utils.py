@@ -261,9 +261,13 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
     return invoice
 
 
-def send_supervisor_timesheet_approve(timesheet, force=False):
+def send_supervisor_timesheet_approve(timesheet, force=False, not_agree=False):
     from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
-    send_supervisor_timesheet_sign.apply_async(args=[timesheet.supervisor.id, timesheet.id, force], countdown=10)
+    if not_agree:
+        send_supervisor_timesheet_sign.apply_async(
+            args=[timesheet.supervisor.id, timesheet.id, force], eta=timezone.localtime() + timedelta(hours=4))
+    else:
+        send_supervisor_timesheet_sign.apply_async(args=[timesheet.supervisor.id, timesheet.id, force], countdown=10)
 
 
 def send_job_confirmation_sms(job):

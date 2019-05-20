@@ -79,7 +79,8 @@ class PinCodeSerializer(ValidateApprovalScheme):
         return attrs
 
 
-class TimeSheetSerializer(ApiBaseModelSerializer):
+class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
+    image_fields = ('supervisor_signature',)
 
     method_fields = (
         'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
