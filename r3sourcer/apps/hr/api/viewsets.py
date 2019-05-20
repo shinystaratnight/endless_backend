@@ -128,8 +128,6 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         if request.user.is_authenticated:
             contact, company_contact_rel = self.get_contact()
             queryset = hr_models.TimeSheet.objects.filter(
-                going_to_work_confirmation=True,
-                supervisor_approved_at__isnull=False,
                 supervisor__contact=contact,
                 status__in=[
                     hr_models.TimeSheet.STATUS_CHOICES.submit_pending,
