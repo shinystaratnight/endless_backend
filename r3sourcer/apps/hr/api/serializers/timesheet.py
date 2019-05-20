@@ -149,7 +149,7 @@ class TimeSheetSerializer(ApiBaseModelSerializer):
             related_objects__content_type=ct, related_objects__object_id=obj.id
         )
         if smses.exists():
-            return sms_serializers.SMSMessageSerializer(smses, many=True, fields=['id', '__str__']).data
+            return sms_serializers.SMSMessageSerializer(smses, many=True, fields=['id', '__str__', 'type']).data
 
     def get_candidate_filled(self, obj):
         return obj.candidate_submitted_at is not None
