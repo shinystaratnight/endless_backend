@@ -6,7 +6,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
+from r3sourcer.apps.core.api.fields import ApiBaseRelatedField, ApiContactPictureField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
@@ -39,8 +39,20 @@ class ValidateApprovalScheme(serializers.Serializer):
         return attrs
 
 
-class TimeSheetSignatureSerializer(ValidateApprovalScheme, serializers.ModelSerializer):
+class ApiTimesheetImageFieldsMixin():
+    image_fields = ()
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        image_fields = self.image_fields or []
+        for image_field in image_fields:
+            self.fields[image_field] = ApiContactPictureField(required=False)
+
+
+class TimeSheetSignatureSerializer(ValidateApprovalScheme, ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
+
+    image_fields = ('supervisor_signature',)
     APPROVAL_SCHEME = Company.TIMESHEET_APPROVAL_SCHEME.SIGNATURE
 
     class Meta:
