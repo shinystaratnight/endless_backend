@@ -97,7 +97,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets', 'met_expectations', 'representation')
 
     def get_queryset(self):
-        query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.company,
+        query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.contact.get_closest_company(),
                          job_offer__candidate_contact__candidate_rels__owner=True)
         return super().get_queryset().filter(query)
 
@@ -348,7 +348,10 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             supervisor_approved_scheme=serializer.APPROVAL_SCHEME
         )
 
-        return Response(status=status.HTTP_200_OK)
+        return Response({
+            'status': 'success',
+            'message': _('Timesheet approved')
+        }, status=status.HTTP_200_OK)
 
     @transaction.atomic
     @action(methods=['post'], detail=True)
