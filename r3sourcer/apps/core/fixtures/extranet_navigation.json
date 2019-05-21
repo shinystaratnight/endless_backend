@@ -1210,7 +1210,7 @@
   "model": "core.extranetnavigation",
   "pk": 94,
   "fields": {
-    "updated_at": "2017-10-13T07:48:59.009Z",
+    "updated_at": "2019-04-30T12:25:05.400Z",
     "created_at": "2017-10-13T07:48:59.009Z",
     "parent": null,
     "name": "Allocations",
@@ -1578,23 +1578,6 @@
     "rght": 99,
     "tree_id": 14,
     "level": 3
-  }
-},
-{
-  "model": "core.extranetnavigation",
-  "pk": 117,
-  "fields": {
-    "updated_at": "2017-11-09T20:54:18.577Z",
-    "created_at": "2017-10-27T11:41:04.512Z",
-    "parent": null,
-    "name": "Approved timesheets",
-    "url": "/hr/timesheets/approved/",
-    "endpoint": "/hr/timesheets/approved/",
-    "access_level": "client",
-    "lft": 1,
-    "rght": 2,
-    "tree_id": 5,
-    "level": 0
   }
 },
 {
