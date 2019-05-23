@@ -1,4 +1,5 @@
 import datetime
+from decimal import Decimal
 
 import stripe
 
@@ -103,7 +104,7 @@ def charge_for_sms(company_id, amount, sms_balance_id):
         invoice_url=invoice['invoice_pdf'],
         status=invoice['status']
     )
-    sms_balance.balance += payment.amount
+    sms_balance.balance += Decimal(payment.amount)
     sms_balance.last_payment = payment
     sms_balance.save()
 
