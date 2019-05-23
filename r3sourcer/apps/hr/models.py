@@ -1326,14 +1326,12 @@ class TimeSheet(
         self.save(update_fields=['sync_status'])
 
     def update_status(self, save=True):
-        if self.supervisor_modified and self.supervisor_approved_at is None:
+        if self.supervisor_approved_at is not None:
+            self.status = self.STATUS_CHOICES.approved
+        elif self.supervisor_modified and self.supervisor_approved_at is None:
             if self.status != self.STATUS_CHOICES.approved:
                 self.status = self.STATUS_CHOICES.modified
                 hr_utils.schedule_auto_approve_timesheet(self)
-            else:
-                self.status = self.STATUS_CHOICES.approved
-        elif self.supervisor_approved_at is not None:
-            self.status = self.STATUS_CHOICES.approved
         elif self.candidate_submitted_at is not None:
             self.status = self.STATUS_CHOICES.approval_pending
         elif self.going_to_work_confirmation:
