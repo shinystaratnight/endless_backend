@@ -277,7 +277,7 @@ def send_job_confirmation_sms(job):
 
 def schedule_auto_approve_timesheet(timesheet):
     from r3sourcer.apps.hr.tasks import auto_approve_timesheet
-    auto_approve_timesheet.apply_async(args=[timesheet.id], eta=timezone.localtime() + timedelta(hours=24))
+    auto_approve_timesheet.apply_async(args=[timesheet.id], eta=timezone.localtime() + timedelta(hours=4))
 
 
 def format_dates_range(dates_list):

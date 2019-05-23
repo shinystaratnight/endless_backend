@@ -49,6 +49,8 @@ class BaseTimeSheetViewsetMixin:
     def submit_hours(self, data, time_sheet, is_candidate=True, not_agree=False):
         if is_candidate:
             data.update(candidate_submitted_at=timezone.now())
+        elif not_agree:
+            data.update(supervisor_approved_at=None)
         else:
             data.update(supervisor_approved_at=timezone.now())
         serializer = timesheet_serializers.TimeSheetSerializer(
