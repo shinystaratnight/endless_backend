@@ -230,7 +230,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             ).first()
             if not sms:
                 sms = sms_models.SMSMessage.objects.filter(
-                    template__slug=template_slug, related_objects__id=obj.id,
+                    template__slug=template_slug, related_objects__object_id=obj.id,
                     company=obj.master_company
                     ).first()
 
