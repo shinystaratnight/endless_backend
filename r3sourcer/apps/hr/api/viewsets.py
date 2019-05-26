@@ -64,6 +64,8 @@ class BaseTimeSheetViewsetMixin:
         if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
                                                   supervisor=time_sheet.supervisor).exists():
             hr_utils.send_supervisor_timesheet_approve(time_sheet, True, not_agree)
+            if not_agree:
+                hr_utils.schedule_auto_approve_timesheet(time_sheet)
 
         return Response(serializer.data)
 
