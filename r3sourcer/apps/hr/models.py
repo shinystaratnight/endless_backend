@@ -1767,7 +1767,7 @@ class CandidateEvaluation(core_models.UUIDModel):
         (5, 'excellent', _("Excellent")),
     )
 
-    level_of_communication = models.PositiveSmallIntegerField(
+    evaluation_score = models.PositiveSmallIntegerField(
         verbose_name=_("Level of Communication"),
         choices=LEVEL_OF_COMMUNICATION_CHOICES,
         default=LEVEL_OF_COMMUNICATION_CHOICES.unrated
@@ -1793,29 +1793,8 @@ class CandidateEvaluation(core_models.UUIDModel):
         verbose_name = _("Candidate Evaluation")
         verbose_name_plural = _("Candidate Evaluations")
 
-    def _calc_rating(self):
-        rating = 0
-        if self.was_on_time:
-            rating += 1
-        if self.was_motivated:
-            rating += 1
-        if self.had_ppe_and_tickets:
-            rating += 1
-        if self.met_expectations:
-            rating += 1
-        if self.representation:
-            rating += 1
-        return rating
-
-    def get_rating(self):
-        rating = self._calc_rating()
-        if rating > 0:
-            rating = (rating + self.level_of_communication) / 2
-        return rating
-    get_rating.short_description = _('Rating')
-
     def single_evaluation_average(self):
-        return (self._calc_rating() + self.level_of_communication) / 2
+        return self.evaluation_score
     single_evaluation_average.short_description = _("Jobsite Feedback")
 
 

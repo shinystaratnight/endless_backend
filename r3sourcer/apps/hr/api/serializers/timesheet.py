@@ -192,8 +192,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         if obj.candidate_evaluations.exists():
             return CandidateEvaluationSerializer(
                 obj.candidate_evaluations.all().first(),
-                fields=['id', 'level_of_communication', 'evaluated_at', 'was_on_time', 'was_motivated',
-                        'had_ppe_and_tickets', 'met_expectations', 'representation']
+                fields=['id', 'evaluation_score', 'evaluated_at',]
             ).data
 
     def get_myob_status(self, obj):
@@ -267,7 +266,7 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
     class Meta:
         model = CandidateEvaluation
         fields = (
-            '__all__',
+            'candidate_contact', 'supervisor', 'evaluated_at', 'reference_timesheet', 'evaluation_score',
             {
                 'supervisor': ('id', 'contact', 'job_title'),
                 'reference_timesheet': ('id', 'shift_started_at', 'shift_ended_at'),
