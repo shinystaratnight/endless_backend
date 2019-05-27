@@ -1338,7 +1338,7 @@ class TimeSheet(
         if self.supervisor_approved_at is not None:
             self.status = self.STATUS_CHOICES.approved
         elif self.supervisor_modified:
-            if self.status != self.STATUS_CHOICES.approved:
+            if self.status != self.STATUS_CHOICES.approved or self.supervisor_approved_at is None:
                 self.status = self.STATUS_CHOICES.modified
         elif self.candidate_submitted_at is not None:
             self.status = self.STATUS_CHOICES.approval_pending
