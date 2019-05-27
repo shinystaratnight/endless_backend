@@ -98,8 +98,6 @@ class BaseTimeSheetViewsetMixin:
 
 class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
-    EVAL_FIELDS = ('was_on_time', 'was_motivated', 'had_ppe_and_tickets', 'met_expectations', 'representation')
-
     def get_queryset(self):
         query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.contact.get_closest_company(),
                          job_offer__candidate_contact__candidate_rels__owner=True)
