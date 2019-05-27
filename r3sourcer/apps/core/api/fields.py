@@ -5,6 +5,7 @@ import six
 import uuid
 from datetime import timedelta
 
+from django.contrib.sites.models import Site
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from imghdr import what
@@ -18,8 +19,9 @@ class ApiAbsoluteUrlMixin():
         if not value:
             return value
         request = self.context.get('request', None)
+        domain = Site.objects.get_current().domain
         if request is not None:
-            return request.build_absolute_uri(value)
+            return 'https://{domain}{path}'.format(domain=domain, path=value) #request.build_absolute_uri(value)
         return value
 
 
