@@ -1,4 +1,6 @@
 from pytz import timezone as pytz_timezone
+from itertools import chain
+from uuid import UUID # not remove
 
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
@@ -26,6 +28,7 @@ from r3sourcer.apps.skills.models import Skill, SkillBaseRate
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
+from r3sourcer.celeryapp import app
 
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
@@ -1310,6 +1313,12 @@ class TimeSheet(
 
     def _send_submit_sms(self, going_eta):
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
+        for task in chain.from_iterable(app.control.inspect().scheduled().values()):
+            if str(eval(task['request']['args'])[0]) == str(self.id) and task['request'][
+                'name'] == \
+                    'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
+                if str(eval(task['request']['args'])[1]) == '1':
+                    app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
         process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
