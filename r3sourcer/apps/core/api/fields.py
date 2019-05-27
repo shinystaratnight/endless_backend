@@ -104,8 +104,6 @@ class ApiBase64ImageField(ApiBase64FileField, serializers.ImageField):
 class ApiContactPictureField(ApiAbsoluteUrlMixin, ApiBase64ImageField):
 
     def to_representation(self, value):
-        print("self.get_absolute(get_thumbnail_picture(value, 'micro'))", self.get_absolute(get_thumbnail_picture(value, 'micro')))
-        print("self.get_absolute(get_thumbnail_picture(value, 'micro'))", get_thumbnail_picture(value, 'micro'))
         data = {
             'thumb': self.get_absolute(get_thumbnail_picture(value, 'micro')),
             'origin': self.get_absolute(get_thumbnail_picture(value, 'large')),
