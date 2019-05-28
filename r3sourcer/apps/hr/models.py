@@ -1767,7 +1767,7 @@ class CandidateEvaluation(core_models.UUIDModel):
         null=True
     )
 
-    LEVEL_OF_COMMUNICATION_CHOICES = Choices(
+    EVALUATION_SCORE_CHOICES = Choices(
         (0, 'unrated', _("Not Rated")),
         (1, 'impossible', _("Impossible")),
         (2, 'hard', _("Hard")),
@@ -1778,8 +1778,8 @@ class CandidateEvaluation(core_models.UUIDModel):
 
     evaluation_score = models.PositiveSmallIntegerField(
         verbose_name=_("Level of Communication"),
-        choices=LEVEL_OF_COMMUNICATION_CHOICES,
-        default=LEVEL_OF_COMMUNICATION_CHOICES.unrated
+        choices=EVALUATION_SCORE_CHOICES,
+        default=EVALUATION_SCORE_CHOICES.unrated
     )
 
     was_on_time = models.NullBooleanField(
