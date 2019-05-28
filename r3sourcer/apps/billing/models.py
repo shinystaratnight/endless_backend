@@ -52,7 +52,7 @@ class Subscription(models.Model):
 
     def deactivate(self, user_id=None):
         sub = stripe.Subscription.retrieve(self.subscription_id)
-        sub.modify(self.subscription_id, cancel_at_period_end=True)
+        sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
         if user_id:
             tasks.cancel_subscription_access.apply_async([user_id], eta=self.current_period_end)
 
