@@ -80,3 +80,17 @@ class SMSMessageListView(generics.ListAPIView):
             queryset = queryset.filter(company=company)
 
         return queryset
+
+
+class ErrorSMSMessageListView(generics.ListAPIView):
+    serializer_class = SMSMessageSerializer
+
+    def get_queryset(self):
+        queryset = SMSMessage.objects.filter(error_code='No funds')
+        company_id = self.request.GET.get('company_id', None)
+
+        if company_id:
+            company = get_object_or_404(Company, id=company_id)
+            queryset = queryset.filter(company=company)
+
+        return queryset

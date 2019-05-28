@@ -12,3 +12,7 @@ class RecipientInvalidInstance(Exception):
 
 class SMSServiceError(Exception):
     pass
+
+
+class SMSBalanceError(Exception):
+    pass
