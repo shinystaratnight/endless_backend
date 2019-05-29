@@ -8,7 +8,8 @@ from rest_framework.views import APIView
 
 from .models import SMSTemplate
 from .mixins import MessageViewBase
-from .serializers import TemplateBodySerializer, ContentTypeSerializer, TemplateSerializer, SMSMessageSerializer
+from .serializers import TemplateBodySerializer, ContentTypeSerializer, TemplateSerializer, \
+    SMSMessageSerializer, SMSErrorSerializer
 from r3sourcer.apps.core.models.core import Company
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.serializers import ModelObjectSerializer
@@ -83,10 +84,10 @@ class SMSMessageListView(generics.ListAPIView):
 
 
 class ErrorSMSMessageListView(generics.ListAPIView):
-    serializer_class = SMSMessageSerializer
+    serializer_class = SMSErrorSerializer
 
     def get_queryset(self):
-        queryset = SMSMessage.objects.filter(error_code='No funds')
+        queryset = SMSMessage.objects.filter(error_code__in=["No Funds", "SMS disabled"])
         company_id = self.request.GET.get('company_id', None)
 
         if company_id:
