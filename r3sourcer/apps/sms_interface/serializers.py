@@ -48,3 +48,11 @@ class SMSMessageSerializer(serializers.ModelSerializer):
     class Meta:
         model = SMSMessage
         fields = ('company', 'segments', 'sent_at')
+
+
+class SMSErrorSerializer(serializers.ModelSerializer):
+    company = serializers.CharField(source='company.name')
+
+    class Meta:
+        model = SMSMessage
+        fields = ('company', 'error_code', 'error_message', 'sent_at')

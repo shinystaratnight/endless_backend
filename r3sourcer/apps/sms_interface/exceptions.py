@@ -16,3 +16,7 @@ class SMSServiceError(Exception):
 
 class SMSBalanceError(Exception):
     pass
+
+
+class SMSDisableError(Exception):
+    pass
