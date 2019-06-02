@@ -136,7 +136,10 @@ class RateCoefficient(UUIDModel):
 
     @property
     def candidate_modifier(self):
-        return self.rate_coefficient_modifiers.filter(type=RateCoefficientModifier.TYPE_CHOICES.candidate).first()
+        return self.rate_coefficient_modifiers.filter(
+            type=RateCoefficientModifier.TYPE_CHOICES.candidate,
+            default=True
+        ).first()
 
 
 class RateCoefficientRel(UUIDModel):
@@ -337,6 +340,11 @@ class RateCoefficientModifier(UUIDModel):
         max_digits=16,
         default=0,
         verbose_name=_("Fixed Rate Override"),
+    )
+
+    default = models.BooleanField(
+        default=False,
+        verbose_name=_("Default")
     )
 
     class Meta:

@@ -40,6 +40,7 @@ class RateCoefficientModifierEndpoint(ApiEndpoint):
 
     model = models.RateCoefficientModifier
     filter_class = filters.RateCoefficientModifierFilter
+    base_viewset = viewsets.RateCoefficientModifierViewset
 
 
 class PriceListEndpoint(ApiEndpoint):

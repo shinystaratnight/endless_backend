@@ -61,3 +61,35 @@ class RateCoefficientViewset(core_viewsets.BaseApiViewset):
             dynamic_coeff.delete()
 
         instance.delete()
+
+
+class RateCoefficientModifierViewset(core_viewsets.BaseApiViewset):
+
+    def perform_create(self, serializer):
+        default = serializer.data['default']
+
+        if default:
+            rate_coefficient = serializer.data['rate_coefficient']
+            rcm_type = serializer.data['type']
+            rate_coefficient.rate_coefficient_modifiers.filter(
+                type=rcm_type, default=True
+            ).update(default=False)
+
+        serializer.save()
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        default = serializer.data['default']
+        old_default = instance.default
+
+        instance = serializer.save()
+
+        if default and not old_default:
+            rate_coefficient = serializer.data['rate_coefficient']
+            rcm_type = serializer.data['type']
+            rate_coefficient.rate_coefficient_modifiers.filter(
+                type=rcm_type, default=True
+            ).exclude(pk=instance.pk).update(default=False)
+        elif not default and old_default:
+            instance.default = True
+            instance.save()

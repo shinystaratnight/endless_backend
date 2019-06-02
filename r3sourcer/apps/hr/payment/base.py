@@ -111,7 +111,7 @@ class BasePaymentService:
             notes = str(skill)
             if coefficient != 'base':
                 modifier = coefficient.rate_coefficient_modifiers.filter(
-                    type=self.modifier_type
+                    type=self.modifier_type, default=True,
                 ).first()
 
                 is_allowance = any([
