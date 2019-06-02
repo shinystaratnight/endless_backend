@@ -417,6 +417,32 @@ class DynamicCoefficientRule(UUIDModel):
         super().save(*args, **kwargs)
 
 
+class PriceListRateModifier(UUIDModel):
+    price_list_rate = models.ForeignKey(
+        PriceListRate,
+        related_name='price_list_rate_modifiers',
+        on_delete=models.PROTECT,
+        verbose_name=_('Price List Rate'),
+    )
+
+    rate_coefficient = models.ForeignKey(
+        RateCoefficient,
+        related_name="price_list_rate_modifiers",
+        verbose_name=_("Rate coefficient")
+    )
+
+    rate_coefficient_modifier = models.ForeignKey(
+        RateCoefficientModifier,
+        related_name="price_list_rate_modifiers",
+        verbose_name=_("Rate coefficient modifier")
+    )
+
+    class Meta:
+        verbose_name = _("Price List Rate Coefficient Relation")
+        verbose_name_plural = _("Price List Rate Coefficient Relations")
+        unique_together = ("price_list_rate", "rate_coefficient", "rate_coefficient_modifier")
+
+
 __all__ = [
     'PriceListMixin', 'PriceListRateMixin', 'Industry', 'RateCoefficientGroup',
     'RateCoefficient', 'RateCoefficientRel', 'PriceList', 'PriceListRate',

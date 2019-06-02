@@ -318,9 +318,11 @@ class TimeSheetSync(
             coefficient = coeff_hours['coefficient']
 
             if coefficient == 'base':
-                myob_rate = self._get_base_rate_wage_category(rate_myob_id, base_rate=base_rate)
+                myob_rate = self._get_base_rate_wage_category(rate_myob_id, timesheet, base_rate=base_rate)
             else:
-                myob_rate = self._get_rate_wage_category(job, coefficient, base_rate, skill_name=rate_myob_id)
+                myob_rate = self._get_rate_wage_category(
+                    job, coefficient, base_rate, timesheet, skill_name=rate_myob_id
+                )
 
             if myob_rate:
                 timesheets_rate = result[myob_rate['UID']]
@@ -369,7 +371,7 @@ class TimeSheetSync(
             base_rate = candidate_skill_rate.hourly_rate if candidate_skill_rate else 0
         return name, base_rate
 
-    def _get_base_rate_wage_category(self, name, rate=None, base_rate=None):
+    def _get_base_rate_wage_category(self, name, timesheet, rate=None, base_rate=None):
         myob_wage_category = self._get_object_by_field(
             name[:31].strip().lower(),
             resource=self.client.api.Payroll.PayrollCategory.Wage,
@@ -378,7 +380,16 @@ class TimeSheetSync(
         )
 
         if rate:
-            fixed = rate.candidate_modifier.calc(base_rate) if rate.candidate_modifier else 0
+            modifier_rel = rate.candidate_skill_coefficient_rels.filter(
+                skill_rel__candidate_contact=timesheet.candidate_contact,
+            ).first()
+
+            if modifier_rel:
+                modifier = modifier_rel.rate_coefficient_modifier
+            else:
+                modifier = rate.candidate_modifier
+
+            fixed = modifier.calc(base_rate) if modifier else 0
             if fixed <= 0:
                 return
 
@@ -409,13 +420,13 @@ class TimeSheetSync(
 
         return myob_wage_category
 
-    def _get_rate_wage_category(self, job, rate, base_rate, name=None, skill_name=''):
+    def _get_rate_wage_category(self, job, rate, base_rate, timesheet, name=None, skill_name=''):
         if rate.is_allowance:
             industry = job.jobsite.industry
             name = '{} {}'.format(''.join([line[0] for line in industry.type.split(' ')]), rate.name)
         if not name:
             name = format_short_wage_category_name(skill_name, rate.name)
-        return self._get_base_rate_wage_category(name[:31].strip(), rate=rate, base_rate=base_rate)
+        return self._get_base_rate_wage_category(name[:31].strip(), timesheet, rate=rate, base_rate=base_rate)
 
     def _update_employee_payroll_categories(self, employee, categories):
         uid = employee['EmployeePayrollDetails']['UID']
