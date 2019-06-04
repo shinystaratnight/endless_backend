@@ -96,7 +96,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
             'candidate_submitted_at', 'supervisor_approved_at', 'supervisor_approved_scheme', 'candidate_rate',
             'rate_overrides_approved_by', 'rate_overrides_approved_at', 'sync_status', 'status', 'supervisor_modified',
-            'supervisor_modified_at', 'supervisor_signature',
+            'supervisor_modified_at', 'supervisor_signature', 'process_status'
         )
         related_fields = {
             'job_offer': ('id', {
