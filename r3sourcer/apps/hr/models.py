@@ -1335,11 +1335,10 @@ class TimeSheet(
         self.save(update_fields=['sync_status'])
 
     def process_status(self):
-        if self.going_to_work_confirmation:
-            if self.shift_started_at <= timezone.now() <= self.shift_ended_at:
+        if self.status == self.STATUS_CHOICES.check_confirmed:
+            if self.shift_started_at <= timezone.now():
                 self.status = self.STATUS_CHOICES.submit_pending
-            else:
-                self.status = self.STATUS_CHOICES.check_confirmed
+                self.save(update_fields=['status'])
 
     def update_status(self, save=True):
         if self.supervisor_approved_at is not None:
