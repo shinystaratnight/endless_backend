@@ -307,7 +307,6 @@ class TimeSheetMapper(StandardPayMapMixin):
             }
 
             if myob_job:
-                #here check UID
                 line['Job'] = {
                     'UID': myob_job['UID']
                 }
