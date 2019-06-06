@@ -156,7 +156,7 @@ class InvoiceMapper(ContactMapper):
                 "Hours": invoice_line.units,
                 "Rate": invoice_line.unit_price,
                 "Total": invoice_line.amount,
-                "Description": invoice_line.notes,
+                "Description":'{} {}'.format(invoice_line.notes, invoice_line.timesheet.job_offer.candidate_contact if invoice.show_candidate else ''),
                 "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
                 "Activity": {"UID": activities[invoice_line.id]}
             })
@@ -307,6 +307,7 @@ class TimeSheetMapper(StandardPayMapMixin):
             }
 
             if myob_job:
+                #here check UID
                 line['Job'] = {
                     'UID': myob_job['UID']
                 }

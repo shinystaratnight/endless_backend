@@ -389,8 +389,8 @@ class InvoiceViewset(BaseApiViewset):
             )
 
         except Exception:
-            master_company = get_site_master_company(request=request)
-            rule = master_company.invoice_rules.first()
+            client_company = invoice.customer_company
+            rule = client_company.invoice_rules.first()
             show_candidate = rule.show_candidate_name if rule else False
 
             pdf_file_obj = payment.InvoiceService.generate_pdf(invoice, show_candidate)
