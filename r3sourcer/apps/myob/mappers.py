@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 
 from r3sourcer.apps.core.models import WorkflowObject, Company
+from r3sourcer.apps.hr.utils.utils import get_invoice_rule
 
 
 class BSBNumberError(ValueError):
@@ -134,6 +135,7 @@ class ContactMapper:
 
 class InvoiceMapper(ContactMapper):
     def map_to_myob(self, invoice, customer_uid, tax_codes, activities, salesperson=None):
+        invoice_rule = get_invoice_rule(invoice.customer_company)
         data = {
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
@@ -156,7 +158,7 @@ class InvoiceMapper(ContactMapper):
                 "Hours": invoice_line.units,
                 "Rate": invoice_line.unit_price,
                 "Total": invoice_line.amount,
-                "Description":'{} {}'.format(invoice_line.notes, invoice_line.timesheet.job_offer.candidate_contact if invoice.show_candidate else ''),
+                "Description":'{} {}'.format(invoice_line.notes, invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''),
                 "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
                 "Activity": {"UID": activities[invoice_line.id]}
             })
