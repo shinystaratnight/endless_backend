@@ -63,9 +63,9 @@
         <td>{{ line.units }}</td>
         {% if show_candidate %}
             <td>{{ line.notes }}<br>
-                {{ line.timesheet.job_offer.job.position.short_name }} - {{ line.timesheet.job_offer.candidate_contact }}</td>
+                {{ line.timesheet.job_offer.candidate_contact }}</td>
         {% else %}
-            <td>{{ line.notes }}<br></td>
+            <td>{{ line.notes }}</td>
         {% endif %}
         <td>{{ line.vat.name }}</td>
         <td>${{ line.unit_price }}</td>
