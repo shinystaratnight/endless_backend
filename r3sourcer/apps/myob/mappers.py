@@ -272,7 +272,7 @@ class ActivityMapper:
 
 class TimeSheetMapper(StandardPayMapMixin):
 
-    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date, myob_job=None, customer_uid=None):
+    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date, myob_job=None):
         data = {
             'StartDate': format_date_to_myob(start_date),
             'EndDate': format_date_to_myob(end_date),
@@ -305,10 +305,7 @@ class TimeSheetMapper(StandardPayMapMixin):
                 'PayrollCategory': {
                     'UID': payroll_cat_uid
                 },
-                'Entries': entries,
-                'Customer': {
-                    'UID': customer_uid
-                }
+                'Entries': entries
             }
 
             if myob_job:
