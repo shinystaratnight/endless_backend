@@ -275,9 +275,11 @@ class TimeSheetSync(
         else:
             myob_job = None
 
+        customer_uid = self._get_myob_customer(timesheet)
+
         data = self.mapper.map_to_myob(
             timesheets_with_rates, myob_employee['UID'], timesheet.shift_started_at, timesheet.shift_started_at,
-            myob_job=myob_job
+            myob_job=myob_job, customer_uid=customer_uid, notes=str(jobsite.address)
         )
 
         return data
@@ -471,3 +473,14 @@ class TimeSheetSync(
             )
 
         return myob_job
+
+    def _get_myob_customer(self, timesheet):
+        params = {"$filter": "CompanyName eq '%s'" % timesheet.regular_company.name}
+        customer_data = self.client.api.Contact.Customer.get(params=params)
+
+        if not customer_data['Items']:
+            raise Exception("Cant find customer in MYOB with company name: %s" % timesheet.regular_company.name)
+
+        customer_uid = customer_data['Items'][0]['UID']
+
+        return customer_uid
