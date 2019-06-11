@@ -1340,6 +1340,14 @@ class TimeSheet(
                 self.status = self.STATUS_CHOICES.submit_pending
                 self.save(update_fields=['status'])
 
+    def process_pending_status(self):
+        if self.going_to_work_confirmation is None:
+            pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
+            going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
+            if going_eta <= timezone.now():
+                self.status = self.STATUS_CHOICES.check_pending
+                self.save(update_fields=['status'])
+
     def update_status(self, save=True):
         if self.supervisor_approved_at is not None:
             self.status = self.STATUS_CHOICES.approved
