@@ -114,6 +114,7 @@ class UserAdmin(BaseUserAdmin):
 
 class SubscriptionInline(admin.TabularInline):
     model = Subscription
+    extra = 0
 
 
 class ContactAdmin(admin.ModelAdmin):
