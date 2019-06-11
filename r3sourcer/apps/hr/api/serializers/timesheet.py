@@ -183,7 +183,10 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         )
 
     def get_candidate_submit_hidden(self, obj):
-        return not self.get_resend_sms_candidate(obj)
+        return not (
+            obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
+            obj.supervisor_approved_at is None and obj.shift_started_at <= timezone.now()
+        )
 
     def get_evaluated(self, obj):
         return obj.candidate_evaluations.exists()
