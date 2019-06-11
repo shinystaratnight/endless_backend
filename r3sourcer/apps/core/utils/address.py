@@ -31,17 +31,25 @@ def parse_google_address(address_data):
     country = Country.objects.get(code2=address_parts['country']['short_name'])
 
     region_part = address_parts.get('administrative_area_level_1')
-    region = Region.objects.get(
-        Q(name=region_part['long_name']) | Q(alternate_names__contains=region_part['short_name']),
-        country=country
-    ) if region_part else None
+    try:
+        region = Region.objects.get(
+            Q(name=region_part['long_name']) | Q(alternate_names__contains=region_part['short_name']),
+            country=country
+        ) if region_part else None
+    except Region.DoesNotExist:
+        region = None
 
     city_part = address_parts.get('locality') or address_parts.get('sublocality')
-    city_search = ' %s%s' % (city_part['long_name'].replace(' ', ''), country.name.replace(' ', ''))
-    city = City.objects.filter(
-        Q(search_names__icontains=city_search) | Q(name=city_part['long_name']),
-        country=country, region=region,
-    )
+    city_search = '%s%s' % (city_part['long_name'].replace(' ', ''), country.name.replace(' ', ''))
+    if region:
+        city = City.objects.filter(
+            Q(search_names__icontains=city_search) | Q(name=city_part['long_name']),
+            country=country, region=region,
+        )
+    else:
+        city = City.objects.filter(
+            Q(search_names__icontains=city_search), country=country,
+        )
     if city.count() > 1:
         city = city.filter(
             Q(alternate_names__contains=city_part['long_name']) | Q(slug=slugify(city_part['long_name']))
@@ -52,7 +60,7 @@ def parse_google_address(address_data):
     postal_code = address_parts.get('postal_code', {}).get('long_name')
     address = {
         'country': str(country.id),
-        'state': str(region.id),
+        'state': str(region.id) if region else None,
         'city': str(city.id),
         'postal_code': postal_code,
         'street_address': get_street_address(address_parts),
