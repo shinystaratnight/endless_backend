@@ -198,6 +198,10 @@ class Jobsite(
     def get_myob_name(self):
         return self.get_site_name()[:30]
 
+    def get_myob_card_number(self):
+        # Check on myob
+        return self.address.state.name if self.address.state else self.address[-15:]
+
 
 class JobsiteUnavailability(core_models.UUIDModel):
 
@@ -1338,6 +1342,14 @@ class TimeSheet(
         if self.status == self.STATUS_CHOICES.check_confirmed:
             if self.shift_started_at <= timezone.now():
                 self.status = self.STATUS_CHOICES.submit_pending
+                self.save(update_fields=['status'])
+
+    def process_pending_status(self):
+        if self.going_to_work_confirmation is None:
+            pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
+            going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
+            if going_eta <= timezone.now():
+                self.status = self.STATUS_CHOICES.check_pending
                 self.save(update_fields=['status'])
 
     def update_status(self, save=True):
