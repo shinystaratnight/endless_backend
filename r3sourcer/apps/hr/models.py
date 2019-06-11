@@ -198,10 +198,6 @@ class Jobsite(
     def get_myob_name(self):
         return self.get_site_name()[:30]
 
-    def get_myob_card_number(self):
-        # Check on myob
-        return self.address.state.name if self.address.state else self.address[-15:]
-
 
 class JobsiteUnavailability(core_models.UUIDModel):
 
