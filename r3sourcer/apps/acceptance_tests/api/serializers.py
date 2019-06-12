@@ -112,6 +112,53 @@ class AcceptanceTestCandidateWorkflowSerializer(ApiBaseModelSerializer):
         }).data
 
 
+class FormAcceptanceTestCandidateQuestionSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('answer', )
+
+    class Meta:
+        model = models.AcceptanceTestQuestion
+        fields = ('id', 'question', 'details')
+
+    def get_answer(self, obj):
+        object_id = self.context['object_id']
+        workflow_node = self.context['workflow_node']
+        object_answer = obj.workflow_object_answers.filter(
+            workflow_object__object_id=object_id,
+            workflow_object__state=workflow_node
+        ).first()
+
+        return object_answer and {
+            'answer': object_answer.answer_text or object_answer.answer.answer,
+        }
+
+
+class FormAcceptanceTestCandidateWorkflowSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('questions',)
+
+    class Meta:
+        model = models.AcceptanceTestWorkflowNode
+        fields = ('id', 'company_workflow_node', {'acceptance_test': ('id', '__str__', 'test_name', {
+            'acceptance_tests_skills': ({'skill': ('id',)},),
+        },), }
+                  )
+
+    def __init__(self, *args, **kwargs):
+        self.object_id = kwargs.pop('object_id', None)
+
+        super().__init__(*args, **kwargs)
+
+
+    def get_questions(self, obj):
+        all_questions = obj.get_all_questions().order_by('order')
+
+        return FormAcceptanceTestCandidateQuestionSerializer(all_questions, many=True, context={
+            'object_id': self.object_id,
+            'workflow_node': obj.company_workflow_node.workflow_node
+        }).data
+
+
 class WorkflowObjectAnswerSerializer(ApiBaseModelSerializer):
 
     class Meta:
