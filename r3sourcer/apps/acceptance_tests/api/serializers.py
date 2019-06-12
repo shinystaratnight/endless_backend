@@ -80,6 +80,7 @@ class AcceptanceTestCandidateQuestionSerializer(ApiBaseModelSerializer):
 
         return object_answer and {
             'answer': object_answer.answer_text or object_answer.answer.answer,
+            'score': object_answer.score
         }
 
 
@@ -96,6 +97,11 @@ class AcceptanceTestCandidateWorkflowSerializer(ApiBaseModelSerializer):
 
         super().__init__(*args, **kwargs)
 
+    def get_score(self, obj):
+        return obj.get_all_questions().filter(
+            workflow_object_answers__workflow_object__object_id=self.object_id,
+            workflow_object_answers__workflow_object__state=obj.company_workflow_node.workflow_node
+        ).aggregate(score_avg=Avg('workflow_object_answers__score'))['score_avg'] or 0
 
     def get_questions(self, obj):
         all_questions = obj.get_all_questions().order_by('order')
