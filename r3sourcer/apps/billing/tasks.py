@@ -40,7 +40,7 @@ def charge_for_extra_workers():
             stripe.api_key = stripe_account.stripe_secret_key
             vat_object = VAT.objects.filter(country=country_code)
             if vat_object:
-                tax_percent = vat_object.first().rate
+                tax_percent = vat_object.first().stripe_rate
 
         if active_workers > paid_workers:
             if subscription.subscription_type.type == SubscriptionType.SUBSCRIPTION_TYPES.annual:
@@ -83,7 +83,7 @@ def charge_for_sms(company_id, amount, sms_balance_id):
         stripe.api_key = stripe_account.stripe_secret_key
         vat_object = VAT.objects.filter(country=country_code)
         if vat_object:
-            tax_percent = vat_object.first().rate
+            tax_percent = vat_object.first().stripe_rate
     for discount in company.get_active_discounts('sms'):
         amount = discount.apply_discount(amount)
 

@@ -1832,6 +1832,13 @@ class VAT(UUIDModel):
         verbose_name=_("Rate"),
         default=0.00
     )
+    stripe_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        verbose_name=_("Stripe Rate"),
+        default=10.00,
+        help_text=_("Stripe Tax percentage"),
+    )
     start_date = models.DateField(verbose_name=_("Start Date"))
     end_date = models.DateField(verbose_name=_("End Date"), blank=True, null=True)
 
