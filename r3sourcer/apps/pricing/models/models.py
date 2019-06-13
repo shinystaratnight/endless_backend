@@ -447,7 +447,7 @@ __all__ = [
     'PriceListMixin', 'PriceListRateMixin', 'Industry', 'RateCoefficientGroup',
     'RateCoefficient', 'RateCoefficientRel', 'PriceList', 'PriceListRate',
     'PriceListRateCoefficient', 'RateCoefficientModifier',
-    'DynamicCoefficientRule',
+    'DynamicCoefficientRule', 'PriceListRateModifier',
 ]
 
 
