@@ -1555,8 +1555,8 @@ class FormRenderSerializer(ApiBaseModelSerializer):
         return obj.get_ui_config()
 
     def get_tests(self, obj):
-        from r3sourcer.apps.acceptance_tests.api.serializers import \
-            FormAcceptanceTestCandidateWorkflowSerializer
+        from r3sourcer.apps.acceptance_tests.api.serializers import  AcceptanceTestSerializer
+        from r3sourcer.apps.acceptance_tests.models import AcceptanceTest
         qry = models.Q(
             acceptance_test__acceptance_tests_skills__isnull=True,
             acceptance_test__acceptance_tests_industries__isnull=True,
@@ -1572,13 +1572,15 @@ class FormRenderSerializer(ApiBaseModelSerializer):
 
         workflow = Workflow.objects.get(model=ContentType.objects.get_for_model(CandidateContact))
 
-        tests = AcceptanceTestWorkflowNode.objects.filter(
+        tests_node = AcceptanceTestWorkflowNode.objects.filter(
             qry, company_workflow_node__workflow_node__workflow=workflow,
             company_workflow_node__workflow_node__name_before_activation="Register New Candidate",
             company_workflow_node__company=company
             ).distinct()
+        test_ids = [i.acceptance_test.id for i in tests_node]
+        tests = AcceptanceTest.objects.filter(id__in=test_ids).distinct()
 
-        return FormAcceptanceTestCandidateWorkflowSerializer(tests, many=True).data
+        return AcceptanceTestSerializer(tests, many=True).data
 
 
 class FormFieldGroupSerializer(ApiBaseModelSerializer):
