@@ -105,14 +105,26 @@ class BasePaymentService:
 
         return pdf_file
 
-    def lines_iter(self, coeffs_hours, skill, hourly_rate):
+    def lines_iter(self, coeffs_hours, skill, hourly_rate, timesheet):
         for coeff_hours in coeffs_hours:
             coefficient = coeff_hours['coefficient']
             notes = str(skill)
             if coefficient != 'base':
-                modifier = coefficient.rate_coefficient_modifiers.filter(
-                    type=self.modifier_type
-                ).first()
+                if self.modifier_type == RateCoefficientModifier.TYPE_CHOICES.company:
+                    modifier_rel = coefficient.price_list_rate_modifiers.filter(
+                        price_list_rate__price_list__company=timesheet.regular_company,
+                    ).first()
+                elif self.modifier_type == RateCoefficientModifier.TYPE_CHOICES.candidate:
+                    modifier_rel = coefficient.candidate_skill_coefficient_rels.filter(
+                        skill_rel__candidate_contact=timesheet.candidate_contact,
+                    ).first()
+
+                modifier = modifier_rel and modifier_rel.rate_coefficient_modifier
+
+                if not modifier:
+                    modifier = coefficient.rate_coefficient_modifiers.filter(
+                        type=self.modifier_type, default=True,
+                    ).first()
 
                 is_allowance = any([
                     isinstance(rule.rule, AllowanceMixin)

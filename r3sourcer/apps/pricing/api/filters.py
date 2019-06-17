@@ -17,7 +17,7 @@ class RateCoefficientModifierFilter(FilterSet):
 
     class Meta:
         model = models.RateCoefficientModifier
-        fields = ['rate_coefficient', 'type']
+        fields = ['rate_coefficient', 'type', 'default']
 
 
 class PriceListFilter(FilterSet):

@@ -40,6 +40,7 @@ class RateCoefficientModifierEndpoint(ApiEndpoint):
 
     model = models.RateCoefficientModifier
     filter_class = filters.RateCoefficientModifierFilter
+    base_viewset = viewsets.RateCoefficientModifierViewset
 
 
 class PriceListEndpoint(ApiEndpoint):
@@ -47,6 +48,11 @@ class PriceListEndpoint(ApiEndpoint):
     model = models.PriceList
     filter_class = filters.PriceListFilter
     serializer_fields = ('id', 'company', 'valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at')
+
+
+class PriceListRateModifierEndpoint(ApiEndpoint):
+
+    model = models.PriceListRateModifier
 
 
 router.register(endpoint=RateCoefficientEndpoint())
@@ -57,6 +63,7 @@ router.register(endpoint=PriceListEndpoint())
 router.register(endpoint=PriceListRateEndpoint())
 router.register(models.PriceListRateCoefficient)
 router.register(endpoint=DynamicCoefficientRuleEndpoint())
+router.register(endpoint=PriceListRateModifierEndpoint())
 
 router.register(models.WeekdayWorkRule)
 router.register(models.OvertimeWorkRule)
