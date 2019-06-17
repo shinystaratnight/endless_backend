@@ -383,7 +383,7 @@ class CandidateMapper(StandardPayMapMixin, ContactMapper):
                 'BSBNumber': '{}-{}'.format(bank_acc.bsb[:3],
                                             bank_acc.bsb[3:]),
                 'BankAccountName': bank_acc.bank_account_name[:32].strip(),
-                'BankAccountNumber': bank_acc.account_number,
+                'BankAccountNumber': bank_acc.account_number[:9],
                 'Value': 100,
                 'Unit': 'Percent'
             }]
