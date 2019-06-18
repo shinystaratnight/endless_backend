@@ -153,12 +153,13 @@ class InvoiceMapper(ContactMapper):
         lines = list()
 
         for invoice_line in invoice.invoice_lines.all():
+            address = "{} {}".format(invoice_line.job_offer.job.jobsite.address.street_address, invoice_line.job_offer.job.jobsite.address.city)
             lines.append({
                 "Date": format_date_to_myob(invoice_line.date),
                 "Hours": invoice_line.units,
                 "Rate": invoice_line.unit_price,
                 "Total": invoice_line.amount,
-                "Description":'{}\n{}'.format(invoice_line.notes, invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''),
+                "Description":'{}\n{}\n{}'.format(invoice_line.notes, address, invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''),
                 "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
                 "Activity": {"UID": activities[invoice_line.id]}
             })
@@ -317,8 +318,6 @@ class TimeSheetMapper(StandardPayMapMixin):
                 line['Customer'] = {
                     'UID': customer_uid
                 }
-            if candidate:
-                line['Notes'] = "{}\n-{}\n-{}".format(candidate, position, address)
 
             lines.append(line)
 
