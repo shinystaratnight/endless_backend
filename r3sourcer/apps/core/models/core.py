@@ -883,6 +883,10 @@ class BankAccount(UUIDModel):
     def __str__(self):
         return '{}: {}'.format(self.bank_name, self.bank_account_name)
 
+    def clean(self):
+        if len(self.account_number) > 9:
+            raise ValidationError(_('Bank account number must not exceed 9 digits!'))
+
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
