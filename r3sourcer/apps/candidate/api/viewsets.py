@@ -11,15 +11,15 @@ from rest_framework.response import Response
 
 from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestCandidateWorkflowSerializer
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
+from r3sourcer.apps.candidate.api.filters import CandidateContactFilter
 from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
-from r3sourcer.apps.hr.models import Job
+from r3sourcer.apps.hr.models import Job, TimeSheet, ShiftDate
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.logger.main import location_logger
 from r3sourcer.apps.myob.models import MYOBSyncObject
-from r3sourcer.apps.hr.models import TimeSheet, ShiftDate
 
 from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
@@ -128,8 +128,10 @@ class CandidateContactViewset(BaseApiViewset):
             ).distinct()
             queryset = queryset.annotate(a=Exists(WorkflowObject.objects.filter(object_id__in=[str(i.id) for i in queryset],
                                                                         state__name_after_activation='Recruited - Available for Hire'))).filter(a=True)
+        filtered_data = CandidateContactFilter(request.GET, queryset=queryset)
+        filtered_qs = filtered_data.qs
 
-        return self._paginate(request, serializers.CandidatePoolSerializer, queryset)
+        return self._paginate(request, serializers.CandidatePoolSerializer, filtered_qs)
 
     @action(methods=['get'], detail=True)
     def pool_detail(self, request, pk, *args, **kwargs):
