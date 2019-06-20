@@ -276,10 +276,11 @@ class TimeSheetSync(
             myob_job = None
 
         customer_uid = self._get_myob_customer(timesheet)
+        address = "{} {}".format(jobsite.address.street_address, jobsite.address.city)
 
         data = self.mapper.map_to_myob(
             timesheets_with_rates, myob_employee['UID'], timesheet.shift_started_at, timesheet.shift_started_at,
-            myob_job=myob_job, customer_uid=customer_uid)
+            myob_job=myob_job, customer_uid=customer_uid, address=address)
 
         return data
 
