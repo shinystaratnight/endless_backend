@@ -16,7 +16,7 @@ from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
-from rest_framework.viewsets import GenericViewSet
+from rest_framework.viewsets import GenericViewSet, ModelViewSet
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
@@ -26,10 +26,10 @@ from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.api.permissions import SiteMasterCompanyFilterBackend
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
-from r3sourcer.apps.core.models import Role, Address
+from r3sourcer.apps.core.models import Role, Address, CompanyContact
 from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.hr import models as hr_models, payment
-from r3sourcer.apps.hr.api.filters import TimesheetFilter
+from r3sourcer.apps.hr.api.filters import TimesheetFilter, ShiftFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
 from r3sourcer.apps.hr.tasks import generate_invoice
 from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
@@ -972,6 +972,39 @@ class ShiftViewset(BaseApiViewset):
             ord_list = ordering.split(',')
             return queryset.order_by(*ord_list)
         return queryset
+
+    def get_contact(self):
+        role_id = self.request.query_params.get('role')
+
+        try:
+            role = Role.objects.get(id=role_id)
+            company_contact_rel = role.company_contact_rel
+            contact = company_contact_rel.company_contact.contact, company_contact_rel
+        except Exception:
+            contact = self.request.user.contact, None
+
+        return contact
+
+    @action(methods=['get'], detail=False)
+    def client_contact_shifts(self, request, *args, **kwargs):
+        contact, company_contact_rel = self.get_contact()
+        client_company = contact.company_contact.last()
+        shift_data = self.queryset.filter(date__job__customer_company_id=client_company).distinct()
+        filtered_data = ShiftFilter(request.GET, queryset=shift_data)
+        filtered_qs = filtered_data.qs
+        serializer = job_serializers.ShiftSerializer(filtered_qs, many=True)
+        return Response(serializer.data)
+
+    @action(methods=['get'], detail=False)
+    def candidate_contact_shifts(self, request, *args, **kwargs):
+        if self.request.user.contact.is_candidate_contact():
+            shift_data = self.queryset.filter(job_offers__candidate_contact_id=self.request.user.contact.candidate_contacts.id).distinct()
+        else:
+            raise Response({"error": "User is not candidate"})
+        filtered_data = ShiftFilter(request.GET, queryset=shift_data)
+        filtered_qs = filtered_data.qs
+        serializer = job_serializers.ShiftSerializer(filtered_qs, many=True)
+        return Response(serializer.data)
 
 
 class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
