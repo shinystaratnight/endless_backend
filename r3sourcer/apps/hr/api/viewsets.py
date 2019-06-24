@@ -989,7 +989,8 @@ class ShiftViewset(BaseApiViewset):
     def client_contact_shifts(self, request, *args, **kwargs):
         contact, company_contact_rel = self.get_contact()
         client_company = contact.company_contact.last()
-        shift_data = self.queryset.filter(date__job__customer_company_id=client_company).distinct()
+        client = client_company.companies.first()
+        shift_data = self.queryset.filter(date__job__customer_company_id=client).distinct()
         filtered_data = ShiftFilter(request.GET, queryset=shift_data)
         filtered_qs = filtered_data.qs
         serializer = job_serializers.ShiftSerializer(filtered_qs, many=True)
