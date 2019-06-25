@@ -28,7 +28,7 @@ def sync_candidate_contacts_to_myob(myob_client=None, account=None):
 
     for candidate_contact in candidate_contacts:
         if candidate_contact.get_closest_company() == account:
-            sync.sync_to_myob(candidate_contact)
+            sync.sync_to_myob(candidate_contact, partial=True)
 
 
 def get_latest_state(obj):
@@ -58,4 +58,4 @@ def sync_companies_to_myob(myob_client=None, account=None):
 
     for company in companies:
         if company in [i for i in Company.objects.owned_by(account) if (get_latest_state_new(i)) == 'Active']:
-            sync.sync_to_myob(company)
+            sync.sync_to_myob(company, partial=True)
