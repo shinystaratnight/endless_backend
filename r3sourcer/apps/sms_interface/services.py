@@ -94,10 +94,12 @@ class BaseSMSService(metaclass=ABCMeta):
             sms_message.error_code = "No Funds"
             sms_message.error_message = "SMS balance should be positive, your is: {}".format(company.sms_balance.balance)
             sms_message.save()
+            raise SMSBalanceError(sms_message.error_message)
         except SMSDisableError:
             sms_message.error_code = "SMS disabled"
             sms_message.error_message = "SMS sending is disabled for company {}, your SMS balance is: {}".format(company, company.sms_balance.balance)
             sms_message.save()
+            raise SMSDisableError(sms_message.error_message)
         except AccountHasNotPhoneNumbers:
             if sms_message and sms_message.pk:
                 sms_message.delete()
