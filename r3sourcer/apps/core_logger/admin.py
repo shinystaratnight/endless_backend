@@ -3,7 +3,7 @@ from django.contrib.admin.sites import NotRegistered
 
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.admin import (
-    BaseAdmin, UserAdmin, CompanyAdmin, SuperuserAdmin, ContactAdmin
+    BaseAdmin, UserAdmin, CompanyAdmin, SuperuserAdmin, ContactAdmin, WorkflowNodeAdmin, CompanyWorkflowNodeAdmin
 )
 
 from r3sourcer.apps.logger.admin import LoggerMixin
@@ -19,7 +19,7 @@ BASE_MODELS_LIST = [models.CompanyRel, models.CompanyAddress,
                     models.CompanyContactRelationship, models.Invoice,
                     models.SiteCompany]
 
-SUPERUSER_MODELS_LIST = [models.WorkflowNode, models.Workflow]
+SUPERUSER_MODELS_LIST = [models.Workflow]
 
 try:
     admin.site.unregister(DEFAULT_MODELS_LIST)
@@ -37,7 +37,7 @@ except NotRegistered:
     pass
 
 try:
-    admin.site.unregister([models.User, models.Company, models.Contact])
+    admin.site.unregister([models.User, models.Company, models.Contact, models.WorkflowNode, models.CompanyWorkflowNode])
 except NotRegistered:
     pass
 
@@ -62,6 +62,14 @@ class ContactLoggerAdmin(LoggerMixin, ContactAdmin):
     pass
 
 
+class WorkflowNodeLoggerAdmin(LoggerMixin, WorkflowNodeAdmin):
+    pass
+
+
+class CompanyWorkflowNodeLoggerAdmin(LoggerMixin, CompanyWorkflowNodeAdmin):
+    pass
+
+
 class SuperuserLoggerAdmin(LoggerMixin, SuperuserAdmin):
     pass
 
@@ -69,6 +77,8 @@ class SuperuserLoggerAdmin(LoggerMixin, SuperuserAdmin):
 admin.site.register(models.User, UserLoggerAdmin)
 admin.site.register(models.Company, CompanyLoggerAdmin)
 admin.site.register(models.Contact, ContactLoggerAdmin)
+admin.site.register(models.WorkflowNode, WorkflowNodeLoggerAdmin)
+admin.site.register(models.CompanyWorkflowNode, CompanyWorkflowNodeLoggerAdmin)
 admin.site.register(DEFAULT_MODELS_LIST, LoggerAdmin)
 admin.site.register(BASE_MODELS_LIST, LoggerBaseAdmin)
 admin.site.register(SUPERUSER_MODELS_LIST, SuperuserLoggerAdmin)
