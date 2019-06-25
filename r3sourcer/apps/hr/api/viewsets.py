@@ -275,8 +275,6 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
             serializer.save()
 
-            sync_company_to_myob.delay(
-                company_id=request.user.contact.get_closest_company().id)
         else:
             if not obj.break_started_at or not obj.break_ended_at:
                 obj.no_break = True
