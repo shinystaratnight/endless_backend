@@ -173,7 +173,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     def get_resend_sms_candidate(self, obj):
         return (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_started_at <= timezone.now()
+            obj.supervisor_approved_at is None and obj.shift_ended_at <= timezone.now()
         )
 
     def get_resend_sms_supervisor(self, obj):
