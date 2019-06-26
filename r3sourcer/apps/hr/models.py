@@ -1334,6 +1334,20 @@ class TimeSheet(
         self.sync_status = status
         self.save(update_fields=['sync_status'])
 
+    def process_status(self):
+        if self.status == self.STATUS_CHOICES.check_confirmed:
+            if self.shift_started_at <= timezone.now():
+                self.status = self.STATUS_CHOICES.submit_pending
+                self.save(update_fields=['status'])
+
+    def process_pending_status(self):
+        if self.going_to_work_confirmation is None:
+            pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
+            going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
+            if going_eta <= timezone.now():
+                self.status = self.STATUS_CHOICES.check_pending
+                self.save(update_fields=['status'])
+
     def update_status(self, save=True):
         if self.supervisor_approved_at is not None:
             self.status = self.STATUS_CHOICES.approved
@@ -1767,7 +1781,7 @@ class CandidateEvaluation(core_models.UUIDModel):
         null=True
     )
 
-    LEVEL_OF_COMMUNICATION_CHOICES = Choices(
+    EVALUATION_SCORE_CHOICES = Choices(
         (0, 'unrated', _("Not Rated")),
         (1, 'impossible', _("Impossible")),
         (2, 'hard', _("Hard")),
@@ -1778,8 +1792,8 @@ class CandidateEvaluation(core_models.UUIDModel):
 
     evaluation_score = models.PositiveSmallIntegerField(
         verbose_name=_("Level of Communication"),
-        choices=LEVEL_OF_COMMUNICATION_CHOICES,
-        default=LEVEL_OF_COMMUNICATION_CHOICES.unrated
+        choices=EVALUATION_SCORE_CHOICES,
+        default=EVALUATION_SCORE_CHOICES.unrated
     )
 
     was_on_time = models.NullBooleanField(

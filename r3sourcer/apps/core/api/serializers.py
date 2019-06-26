@@ -8,6 +8,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.password_validation import validate_password
 from django.contrib.contenttypes.fields import GenericForeignKey
+from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.shortcuts import get_current_site
 from django.contrib.sites.models import Site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
@@ -25,9 +26,12 @@ from django.db.models.fields.related import (
 )
 from django.contrib.contenttypes.fields import GenericRelation
 
+from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import models as core_models, tasks as core_tasks
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, NOT_ALLOWED)
 from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
+from r3sourcer.apps.core.models import Workflow
 from r3sourcer.apps.myob.models import MYOBSyncObject
 
 rest_settings = settings.REST_FRAMEWORK
@@ -1539,7 +1543,7 @@ class FormSerializer(ApiBaseModelSerializer):
 
 class FormRenderSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('ui_config', )
+    method_fields = ('ui_config', 'tests')
 
     class Meta:
         model = core_models.Form
@@ -1549,6 +1553,34 @@ class FormRenderSerializer(ApiBaseModelSerializer):
 
     def get_ui_config(self, obj):
         return obj.get_ui_config()
+
+    def get_tests(self, obj):
+        from r3sourcer.apps.acceptance_tests.api.serializers import  AcceptanceTestSerializer
+        from r3sourcer.apps.acceptance_tests.models import AcceptanceTest
+        qry = models.Q(
+            acceptance_test__acceptance_tests_skills__isnull=True,
+            acceptance_test__acceptance_tests_industries__isnull=True,
+            )
+
+        company = obj.company
+        if company.industry is not None:
+            qry |= models.Q(
+                acceptance_test__acceptance_tests_industries__industry=company.industry)
+
+        skill_ids = company.skills.values_list('id', flat=True)
+        qry |= models.Q(acceptance_test__acceptance_tests_skills__skill_id__in=skill_ids)
+
+        workflow = Workflow.objects.get(model=ContentType.objects.get_for_model(CandidateContact))
+
+        tests_node = AcceptanceTestWorkflowNode.objects.filter(
+            qry, company_workflow_node__workflow_node__workflow=workflow,
+            company_workflow_node__workflow_node__name_before_activation="Register New Candidate",
+            company_workflow_node__company=company
+            ).distinct()
+        test_ids = [i.acceptance_test.id for i in tests_node]
+        tests = AcceptanceTest.objects.filter(id__in=test_ids).distinct()
+
+        return AcceptanceTestSerializer(tests, many=True).data
 
 
 class FormFieldGroupSerializer(ApiBaseModelSerializer):

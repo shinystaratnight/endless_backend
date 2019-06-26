@@ -12,7 +12,7 @@ from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 
-from .exceptions import SMSServiceError, AccountHasNotPhoneNumbers
+from .exceptions import SMSServiceError, AccountHasNotPhoneNumbers, SMSBalanceError, SMSDisableError
 from .helpers import get_sms, get_phone_number
 from .models import SMSMessage, SMSTemplate
 
@@ -56,9 +56,9 @@ class BaseSMSService(metaclass=ABCMeta):
 
         sms_message = get_sms(from_number=from_number, to_number=to_number, text=text, company=company, **kwargs)
 
-        self.substract_sms_cost(company, sms_message)
-
         try:
+            self.sms_disable(company)
+            self.substract_sms_cost(company, sms_message)
 
             sms_message.related_object = related_obj
             sms_message.save()
@@ -90,6 +90,16 @@ class BaseSMSService(metaclass=ABCMeta):
                     sms_message.sent_at, timezone.now()
                 )
                 ac.save(update_fields=['activity_id'])
+        except SMSBalanceError:
+            sms_message.error_code = "No Funds"
+            sms_message.error_message = "SMS balance should be positive, your is: {}".format(company.sms_balance.balance)
+            sms_message.save()
+            raise SMSBalanceError(sms_message.error_message)
+        except SMSDisableError:
+            sms_message.error_code = "SMS disabled"
+            sms_message.error_message = "SMS sending is disabled for company {}, your SMS balance is: {}".format(company, company.sms_balance.balance)
+            sms_message.save()
+            raise SMSDisableError(sms_message.error_message)
         except AccountHasNotPhoneNumbers:
             if sms_message and sms_message.pk:
                 sms_message.delete()
@@ -299,7 +309,7 @@ class BaseSMSService(metaclass=ABCMeta):
         return contact
 
     def can_send_sms(self, to_number, company=None):
-        if not company or (not company.sms_enabled and company.sms_balance <= 0):
+        if not company:
             return
 
         if self._get_recipient(to_number) is None:
@@ -320,7 +330,11 @@ class BaseSMSService(metaclass=ABCMeta):
         if company.sms_balance.balance > 0:
             company.sms_balance.substract_sms_cost(sms_message.segments)
         else:
-            raise ValueError("SMS balance should be positive, your is: {}".format(company.sms_balance.balance))
+            raise SMSBalanceError()
+
+    def sms_disable(self, company):
+        if not company.sms_enabled:
+            raise SMSDisableError()
 
 
 

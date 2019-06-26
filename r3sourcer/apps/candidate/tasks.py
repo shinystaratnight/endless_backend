@@ -67,7 +67,7 @@ def buy_candidate(candidate_rel_id, user=None):
             stripe.api_key = stripe_account.stripe_secret_key
             vat_object = core_models.VAT.objects.filter(country=country_code)
             if vat_object:
-                tax_percent = vat_object.first().rate
+                tax_percent = vat_object.first().stripe_rate
     except core_models.Company.DoesNotExist as e:
         logger.exception(e)
 

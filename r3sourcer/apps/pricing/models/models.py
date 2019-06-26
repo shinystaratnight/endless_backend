@@ -136,7 +136,10 @@ class RateCoefficient(UUIDModel):
 
     @property
     def candidate_modifier(self):
-        return self.rate_coefficient_modifiers.filter(type=RateCoefficientModifier.TYPE_CHOICES.candidate).first()
+        return self.rate_coefficient_modifiers.filter(
+            type=RateCoefficientModifier.TYPE_CHOICES.candidate,
+            default=True
+        ).first()
 
 
 class RateCoefficientRel(UUIDModel):
@@ -339,6 +342,11 @@ class RateCoefficientModifier(UUIDModel):
         verbose_name=_("Fixed Rate Override"),
     )
 
+    default = models.BooleanField(
+        default=False,
+        verbose_name=_("Default")
+    )
+
     class Meta:
         verbose_name = _('Rate Coefficient Modifier')
         verbose_name_plural = _('Rate Coefficient Modifiers')
@@ -409,11 +417,37 @@ class DynamicCoefficientRule(UUIDModel):
         super().save(*args, **kwargs)
 
 
+class PriceListRateModifier(UUIDModel):
+    price_list_rate = models.ForeignKey(
+        PriceListRate,
+        related_name='price_list_rate_modifiers',
+        on_delete=models.PROTECT,
+        verbose_name=_('Price List Rate'),
+    )
+
+    rate_coefficient = models.ForeignKey(
+        RateCoefficient,
+        related_name="price_list_rate_modifiers",
+        verbose_name=_("Rate coefficient")
+    )
+
+    rate_coefficient_modifier = models.ForeignKey(
+        RateCoefficientModifier,
+        related_name="price_list_rate_modifiers",
+        verbose_name=_("Rate coefficient modifier")
+    )
+
+    class Meta:
+        verbose_name = _("Price List Rate Coefficient Relation")
+        verbose_name_plural = _("Price List Rate Coefficient Relations")
+        unique_together = ("price_list_rate", "rate_coefficient", "rate_coefficient_modifier")
+
+
 __all__ = [
     'PriceListMixin', 'PriceListRateMixin', 'Industry', 'RateCoefficientGroup',
     'RateCoefficient', 'RateCoefficientRel', 'PriceList', 'PriceListRate',
     'PriceListRateCoefficient', 'RateCoefficientModifier',
-    'DynamicCoefficientRule',
+    'DynamicCoefficientRule', 'PriceListRateModifier',
 ]
 
 

@@ -114,6 +114,7 @@ class UserAdmin(BaseUserAdmin):
 
 class SubscriptionInline(admin.TabularInline):
     model = Subscription
+    extra = 0
 
 
 class ContactAdmin(admin.ModelAdmin):
@@ -276,6 +277,19 @@ class PublicHolidayAdmin(admin.ModelAdmin):
         return redirect(reverse('admin:%s_%s_changelist' % (self.model._meta.app_label, self.model._meta.model_name)))
 
 
+class WorkflowNodeAdmin(SuperuserAdmin):
+
+    search_fields = ('name_before_activation', 'name_after_activation', 'workflow__name')
+    list_display = ('workflow', 'active',)
+
+
+class CompanyWorkflowNodeAdmin(SuperuserAdmin):
+
+    search_fields = ('company__name', 'workflow_node__workflow__name', 'workflow_node__name_before_activation',
+                     'workflow_node__name_after_activation')
+    list_display = ('company', 'workflow_node', 'active',)
+
+
 if admin.site.is_registered(Site):
     admin.site.unregister(Site)
 
@@ -302,9 +316,9 @@ admin.site.register(models.VAT)
 admin.site.register(models.InvoiceRule)
 admin.site.register(models.ExtranetNavigation, ExtranetNavigationAdmin)
 admin.site.register(models.Workflow)
-admin.site.register(models.WorkflowNode, SuperuserAdmin)
+admin.site.register(models.WorkflowNode, WorkflowNodeAdmin)
 admin.site.register(models.WorkflowObject, SuperuserAdmin)
-admin.site.register(models.CompanyWorkflowNode, SuperuserAdmin)
+admin.site.register(models.CompanyWorkflowNode, CompanyWorkflowNodeAdmin)
 admin.site.register(models.PublicHoliday, PublicHolidayAdmin)
 admin.site.register(models.ContactUnavailability)
 admin.site.register(Site, SiteAdmin)

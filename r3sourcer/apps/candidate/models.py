@@ -15,6 +15,7 @@ from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.activity import models as activity_models
 from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
 from r3sourcer.apps.core.utils.user import get_default_user
+from r3sourcer.apps.pricing import models as pricing_models
 
 
 class VisaType(core_models.UUIDModel):
@@ -697,6 +698,31 @@ class SkillRel(core_models.UUIDModel):
         super().save(*args, **kwargs)
 
         self.candidate_contact.candidate_scores.recalc_scores()
+
+
+class SkillRateCoefficientRel(core_models.UUIDModel):
+    skill_rel = models.ForeignKey(
+        SkillRel,
+        related_name="candidate_skill_coefficient_rels",
+        verbose_name=_("Candidate skill")
+    )
+
+    rate_coefficient = models.ForeignKey(
+        pricing_models.RateCoefficient,
+        related_name="candidate_skill_coefficient_rels",
+        verbose_name=_("Rate coefficient")
+    )
+
+    rate_coefficient_modifier = models.ForeignKey(
+        pricing_models.RateCoefficientModifier,
+        related_name="candidate_skill_coefficient_rels",
+        verbose_name=_("Rate coefficient modifier")
+    )
+
+    class Meta:
+        verbose_name = _("Candidate Skill Rate Coefficient Relation")
+        verbose_name_plural = _("Candidate Skill Rate Coefficient Relations")
+        unique_together = ("skill_rel", "rate_coefficient", "rate_coefficient_modifier")
 
 
 class InterviewSchedule(core_models.UUIDModel):

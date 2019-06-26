@@ -883,6 +883,10 @@ class BankAccount(UUIDModel):
     def __str__(self):
         return '{}: {}'.format(self.bank_name, self.bank_account_name)
 
+    def clean(self):
+        if len(self.account_number) > 9:
+            raise ValidationError(_('Bank account number must not exceed 9 digits!'))
+
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
@@ -1831,6 +1835,13 @@ class VAT(UUIDModel):
         max_digits=16,
         verbose_name=_("Rate"),
         default=0.00
+    )
+    stripe_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        verbose_name=_("Stripe Rate"),
+        default=10.00,
+        help_text=_("Stripe Tax percentage"),
     )
     start_date = models.DateField(verbose_name=_("Start Date"))
     end_date = models.DateField(verbose_name=_("End Date"), blank=True, null=True)

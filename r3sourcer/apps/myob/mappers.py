@@ -5,6 +5,7 @@ from django.utils import timezone
 from django.utils.formats import date_format
 
 from r3sourcer.apps.core.models import WorkflowObject, Company
+from r3sourcer.apps.hr.utils.utils import get_invoice_rule
 
 
 class BSBNumberError(ValueError):
@@ -134,6 +135,7 @@ class ContactMapper:
 
 class InvoiceMapper(ContactMapper):
     def map_to_myob(self, invoice, customer_uid, tax_codes, activities, salesperson=None):
+        invoice_rule = get_invoice_rule(invoice.customer_company)
         data = {
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
@@ -151,12 +153,13 @@ class InvoiceMapper(ContactMapper):
         lines = list()
 
         for invoice_line in invoice.invoice_lines.all():
+            address = "{} {}".format(invoice_line.job_offer.job.jobsite.address.street_address, invoice_line.job_offer.job.jobsite.address.city)
             lines.append({
                 "Date": format_date_to_myob(invoice_line.date),
                 "Hours": invoice_line.units,
                 "Rate": invoice_line.unit_price,
                 "Total": invoice_line.amount,
-                "Description": invoice_line.notes,
+                "Description":'{}\n{}\n{}'.format(invoice_line.notes, address, invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''),
                 "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
                 "Activity": {"UID": activities[invoice_line.id]}
             })
@@ -270,7 +273,8 @@ class ActivityMapper:
 
 class TimeSheetMapper(StandardPayMapMixin):
 
-    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date, myob_job=None):
+    def map_to_myob(self, timesheets_with_rates, employee_uid, start_date, end_date, myob_job=None, customer_uid=None,
+                    address=None, candidate=None):
         data = {
             'StartDate': format_date_to_myob(start_date),
             'EndDate': format_date_to_myob(end_date),
@@ -310,6 +314,12 @@ class TimeSheetMapper(StandardPayMapMixin):
                 line['Job'] = {
                     'UID': myob_job['UID']
                 }
+            if customer_uid:
+                line['Customer'] = {
+                    'UID': customer_uid
+                }
+            if address:
+                line['Notes'] = address
 
             lines.append(line)
 
@@ -374,7 +384,7 @@ class CandidateMapper(StandardPayMapMixin, ContactMapper):
                 'BSBNumber': '{}-{}'.format(bank_acc.bsb[:3],
                                             bank_acc.bsb[3:]),
                 'BankAccountName': bank_acc.bank_account_name[:32].strip(),
-                'BankAccountNumber': bank_acc.account_number,
+                'BankAccountNumber': bank_acc.account_number[:9],
                 'Value': 100,
                 'Unit': 'Percent'
             }]

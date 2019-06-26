@@ -96,7 +96,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
             'candidate_submitted_at', 'supervisor_approved_at', 'supervisor_approved_scheme', 'candidate_rate',
             'rate_overrides_approved_by', 'rate_overrides_approved_at', 'sync_status', 'status', 'supervisor_modified',
-            'supervisor_modified_at', 'supervisor_signature',
+            'supervisor_modified_at', 'supervisor_signature', 'process_status', 'process_pending_status'
         )
         related_fields = {
             'job_offer': ('id', {
@@ -183,7 +183,10 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         )
 
     def get_candidate_submit_hidden(self, obj):
-        return not self.get_resend_sms_candidate(obj)
+        return not (
+            obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
+            obj.supervisor_approved_at is None and obj.shift_started_at <= timezone.now()
+        )
 
     def get_evaluated(self, obj):
         return obj.candidate_evaluations.exists()

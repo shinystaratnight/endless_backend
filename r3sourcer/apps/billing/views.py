@@ -44,7 +44,7 @@ class SubscriptionCreateView(APIView):
             # stripe_product_id = stripe_account.stripe_product_id
             vat_object = VAT.objects.filter(country=country_code)
             if vat_object:
-                tax_percent = vat_object.first().rate
+                tax_percent = vat_object.first().stripe_rate
 
         plan_type = self.request.data.get('type', None)
         sub_type = SubscriptionType.objects.get(type=plan_type)
