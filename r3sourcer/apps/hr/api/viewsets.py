@@ -215,6 +215,18 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         })
 
     @action(methods=['post'], detail=True)
+    def decline(self, request, pk, *args, **kwargs):
+        obj = self.get_object()
+
+        obj.going_to_work_confirmation = False
+        obj.update_status(False)
+        obj.save(update_fields=['going_to_work_confirmation', 'status'])
+
+        return Response({
+            'status': 'success'
+        })
+
+    @action(methods=['post'], detail=True)
     def resend_sms(self, request, pk, *args, **kwargs):
         obj = self.get_object()
 
