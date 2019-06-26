@@ -986,8 +986,7 @@ class ShiftViewset(BaseApiViewset):
     @action(methods=['get'], detail=False)
     def client_contact_shifts(self, request, *args, **kwargs):
         contact, company_contact_rel = self.get_contact()
-        client_company = contact.company_contact.last()
-        client = client_company.companies.first()
+        client = company_contact_rel.company
         shift_data = self.queryset.filter(date__job__customer_company_id=client).distinct()
         filtered_data = ShiftFilter(request.GET, queryset=shift_data)
         filtered_qs = filtered_data.qs
