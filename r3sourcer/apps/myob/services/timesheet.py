@@ -276,6 +276,14 @@ class TimeSheetSync(
             myob_job = None
 
         customer_uid = self._get_myob_customer(timesheet)
+        if not customer_uid:
+            rs = CandidateSync(self.client, self.company)
+            rs.sync_to_myob(candidate, partial=True)
+
+            myob_employee = self._get_myob_employee_data(candidate)
+
+        if not myob_employee:
+            return
         address = "{} {}".format(jobsite.address.street_address, jobsite.address.city)
 
         data = self.mapper.map_to_myob(
@@ -486,12 +494,18 @@ class TimeSheetSync(
         return myob_job
 
     def _get_myob_customer(self, timesheet):
+        from r3sourcer.apps.myob.services.company import CompanySync
         params = {"$filter": "CompanyName eq '%s'" % timesheet.regular_company.name}
         customer_data = self.client.api.Contact.Customer.get(params=params)
 
-        if not customer_data['Items']:
-            raise Exception("Cant find customer in MYOB with company name: %s" % timesheet.regular_company.name)
+        company = timesheet.regular_company
 
-        customer_uid = customer_data['Items'][0]['UID']
+        if not customer_data['Items']:
+            rs = CompanySync(self.client, company)
+            rs.sync_to_myob(company)
+
+            customer_uid = self._get_myob_customer(timesheet)
+        else:
+            customer_uid = customer_data['Items'][0]['UID']
 
         return customer_uid
