@@ -156,5 +156,7 @@ def sync_timesheet(self, timesheet_id):
         logger.warn('TimeSheet with id=%s does not exist')
         return
 
+    regular_company = str(timesheet.regular_company.id)
+    sync_company_to_myob(regular_company)
     service = TimeSheetSync.from_candidate(timesheet.job_offer.candidate_contact)
     service.sync_single_to_myob(timesheet)
