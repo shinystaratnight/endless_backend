@@ -1402,6 +1402,10 @@ class TimeSheet(
 
             if self.is_allowed(70):
                 self.create_state(70)
+        if not self.supervisor_modified_at:
+            self.supervisor_modified = False
+        if self.supervisor_modified_at:
+            self.supervisor_modified = True
 
         self.update_status(False)
 
