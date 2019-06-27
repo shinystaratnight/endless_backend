@@ -276,14 +276,6 @@ class TimeSheetSync(
             myob_job = None
 
         customer_uid = self._get_myob_customer(timesheet)
-        if not customer_uid:
-            rs = CandidateSync(self.client, self.company)
-            rs.sync_to_myob(candidate, partial=True)
-
-            myob_employee = self._get_myob_employee_data(candidate)
-
-        if not myob_employee:
-            return
         address = "{} {}".format(jobsite.address.street_address, jobsite.address.city)
 
         data = self.mapper.map_to_myob(
