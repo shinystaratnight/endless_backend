@@ -280,7 +280,7 @@ class PublicHolidayAdmin(admin.ModelAdmin):
 class WorkflowNodeAdmin(SuperuserAdmin):
 
     search_fields = ('name_before_activation', 'name_after_activation', 'workflow__name')
-    list_display = ('workflow', 'active',)
+    list_display = ('workflow', 'name_before_activation', 'active',)
 
 
 class CompanyWorkflowNodeAdmin(SuperuserAdmin):
@@ -288,6 +288,7 @@ class CompanyWorkflowNodeAdmin(SuperuserAdmin):
     search_fields = ('company__name', 'workflow_node__workflow__name', 'workflow_node__name_before_activation',
                      'workflow_node__name_after_activation')
     list_display = ('company', 'workflow_node', 'active',)
+    raw_id_fields = ('company', 'workflow_node')
 
 
 if admin.site.is_registered(Site):
