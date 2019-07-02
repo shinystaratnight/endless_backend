@@ -873,7 +873,7 @@ def close_not_active_jobsites(self):
 def auto_approve_timesheet(timesheet_id):
     hr_models.TimeSheet.objects.filter(
         id=timesheet_id, status=hr_models.TimeSheet.STATUS_CHOICES.modified
-    ).update(status=hr_models.TimeSheet.STATUS_CHOICES.approved, supervisor_approved_at=timezone.timezone.now())
+    ).update(status=hr_models.TimeSheet.STATUS_CHOICES.approved, supervisor_approved_at=timezone.now())
 
 
 def get_file_from_str(str):
