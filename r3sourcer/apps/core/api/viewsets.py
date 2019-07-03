@@ -215,6 +215,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
                     'message': e.message
                 })
         elif phone is not None:
+            phone = self.normalize_phone(phone)
             phone_number = phonenumber.to_python(phone)
             if not phone_number or not phone_number.is_valid():
                 raise exceptions.ValidationError({
