@@ -405,7 +405,7 @@ MYOB_APP = {
 EMAIL_SERVICE_ENABLED = env('EMAIL_SERVICE_ENABLED', '0') == '1'
 EMAIL_SERVICE_CLASS = env('EMAIL_SERVICE_CLASS', 'r3sourcer.apps.email_interface.services.SMTPEmailService')
 
-NO_REPLY_EMAIL = 'noreply@r3sourcer.com'
+NO_REPLY_EMAIL = 'R3soucer Software'
 
 DEFAULT_SMTP_SERVER = env('DEFAULT_SMTP_SERVER', 'smtp.gmail.com')
 DEFAULT_SMTP_PORT = env('DEFAULT_SMTP_PORT', 587)
