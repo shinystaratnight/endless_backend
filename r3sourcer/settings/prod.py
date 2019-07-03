@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 from datetime import timedelta
 from decimal import Decimal
@@ -470,6 +472,11 @@ JWT_ID_ATTRIBUTE = 'username'
 OAUTH2_PROVIDER = {
     'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
 }
+
+sentry_sdk.init(
+    dsn="{}".format(env('SENTRY_DSN')),
+    integrations=[DjangoIntegration()]
+)
 
 try:
     with open(root(env('JWT_RS256_PRIVATE_KEY_PATH')), 'r') as jwt_secret:
