@@ -11,6 +11,8 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 """
 
 import os
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
 
 from datetime import timedelta
 from decimal import Decimal
@@ -405,7 +407,7 @@ MYOB_APP = {
 EMAIL_SERVICE_ENABLED = env('EMAIL_SERVICE_ENABLED', '0') == '1'
 EMAIL_SERVICE_CLASS = env('EMAIL_SERVICE_CLASS', 'r3sourcer.apps.email_interface.services.SMTPEmailService')
 
-NO_REPLY_EMAIL = 'noreply@r3sourcer.com'
+NO_REPLY_EMAIL = 'R3soucer Software'
 
 DEFAULT_SMTP_SERVER = env('DEFAULT_SMTP_SERVER', 'smtp.gmail.com')
 DEFAULT_SMTP_PORT = env('DEFAULT_SMTP_PORT', 587)
@@ -470,6 +472,11 @@ JWT_ID_ATTRIBUTE = 'username'
 OAUTH2_PROVIDER = {
     'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
 }
+
+sentry_sdk.init(
+    dsn="{}".format(env('SENTRY_DSN')),
+    integrations=[DjangoIntegration()]
+)
 
 try:
     with open(root(env('JWT_RS256_PRIVATE_KEY_PATH')), 'r') as jwt_secret:
