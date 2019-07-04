@@ -109,7 +109,6 @@ class SubscriptionCreateView(APIView):
         permission_list = GlobalPermission.objects.all()
         user.user_permissions.add(*permission_list)
         user.save()
-        cancel_subscription_access.apply_async([str(user.id)], eta=sub.current_period_end)
         data = {
             "subscription": serializer.data
         }
@@ -202,7 +201,7 @@ class CheckPaymentInformationView(APIView):
 class SubscriptionCancelView(APIView):
     def get(self, *args, **kwargs):
         subscription = Subscription.objects.get(company=self.request.user.company, active=True)
-        subscription.deactivate(user_id=str(self.request.user.id))
+        subscription.deactivate()
         subscription.active = False
         subscription.status = 'canceled'
         subscription.save()
