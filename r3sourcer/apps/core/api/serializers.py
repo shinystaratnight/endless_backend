@@ -799,7 +799,7 @@ class CompanySerializer(serializers.ModelSerializer):
                  'date_of_incorporation', 'description', 'notes', 'bank_account',\
                  'credit_check', 'credit_check_date', 'terms_of_payment',\
                  'payment_due_date', 'available', 'billing_email', 'credit_check_proof',\
-                 'type', 'company_rating'
+                 'type', 'purpose'
 
 
 class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
