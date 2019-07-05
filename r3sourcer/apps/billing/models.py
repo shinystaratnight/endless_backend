@@ -50,7 +50,7 @@ class Subscription(models.Model):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
         self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
-        if self.current_period_end <= timezone.now() and self.company.get_user():
+        if self.current_period_end <= timezone.now().replace(tzinfo=None) and self.company.get_user():
             self.deactivate(user_id=(str(self.company.get_user().id)))
 
     def deactivate(self, user_id=None):

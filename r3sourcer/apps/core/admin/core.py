@@ -122,6 +122,11 @@ class ContactAdmin(admin.ModelAdmin):
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
 
 
+class AddressAdmin(admin.ModelAdmin):
+
+    search_fields = ('city__name', 'country__name', 'street_address', 'state__name',)
+    list_display = ('__str__', 'country', 'city', 'state')
+
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
 
     list_display = ('name', 'industry', 'active_subscription')
@@ -299,7 +304,7 @@ admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
-admin.site.register(models.Address)
+admin.site.register(models.Address, AddressAdmin)
 admin.site.register(models.CompanyRel, BaseAdmin)
 admin.site.register(models.CompanyAddress, BaseAdmin)
 admin.site.register(models.CompanyLocalization)

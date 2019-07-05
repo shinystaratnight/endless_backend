@@ -32,8 +32,10 @@ def parse_google_address(address_data):
 
     region_part = address_parts.get('administrative_area_level_1')
     try:
+        region = region_part['long_name'].split(' ', 1)[0] if region_part['long_name'].split(' ', 1)[0] else region_part[
+            'long_name']
         region = Region.objects.get(
-            Q(name=region_part['long_name']) | Q(alternate_names__contains=region_part['short_name']),
+            Q(name__icontains=region) | Q(alternate_names__contains=region_part['short_name']),
             country=country
         ) if region_part else None
     except Region.DoesNotExist:
