@@ -1,6 +1,6 @@
 import stripe
 from itertools import chain
-from uuid import UUID
+from uuid import UUID # do not delete
 
 from datetime import datetime
 
@@ -20,6 +20,7 @@ from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSe
 from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company, Contact, VAT
+from r3sourcer.apps.core.tasks import cancel_subscription_access
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.celeryapp import app
 
@@ -98,6 +99,7 @@ class SubscriptionCreateView(APIView):
         # get full access to a site
         user = self.request.user
         # set permissions
+        # revoke task with cancel subscription with request.user
         try:
             for task in chain.from_iterable(app.control.inspect().scheduled().values()):
                 if str(eval(task['request']['args'])[0]) == str(user.id):
@@ -199,7 +201,7 @@ class CheckPaymentInformationView(APIView):
 class SubscriptionCancelView(APIView):
     def get(self, *args, **kwargs):
         subscription = Subscription.objects.get(company=self.request.user.company, active=True)
-        subscription.deactivate(user_id=str(self.request.user.id))
+        subscription.deactivate()
         subscription.active = False
         subscription.status = 'canceled'
         subscription.save()
