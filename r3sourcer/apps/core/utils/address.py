@@ -27,6 +27,7 @@ def get_street_address(address_parts):
 
 def parse_google_address(address_data):
     address_parts = get_address_parts(address_data)
+    location = address_data.get('geometry', {}).get('location')
 
     country = Country.objects.get(code2=address_parts['country']['short_name'])
 
@@ -39,25 +40,31 @@ def parse_google_address(address_data):
             country=country
         ) if region_part else None
     except Region.DoesNotExist:
-        region = None
+        region = Region.objects.create(name=region_part['long_name'], country=country, display_name=region_part['short_name'])
 
     city_part = address_parts.get('locality') or address_parts.get('sublocality')
     city_search = '%s%s' % (city_part['long_name'].replace(' ', ''), country.name.replace(' ', ''))
     if region:
         city = City.objects.filter(
-            Q(search_names__icontains=city_search) | Q(name=city_part['long_name']),
-            country=country, region=region,
-        )
+                Q(search_names__icontains=city_search) | Q(name=city_part['long_name']),
+                country=country, region=region,
+            )
+        if not city:
+            city = City.objects.create(country=country, region=region, name=city_part['long_name'], search_names=city_part['long_name'],
+                                       latitude=location.get('lat', 0), longitude=location.get('lng', 0))
     else:
         city = City.objects.filter(
             Q(search_names__icontains=city_search), country=country,
         )
-    if city.count() > 1:
-        city = city.filter(
-            Q(alternate_names__contains=city_part['long_name']) | Q(slug=slugify(city_part['long_name']))
-        ).first()
-    else:
-        city = city.first()
+    try:
+        if city.count() > 1:
+            city = city.filter(
+                Q(alternate_names__contains=city_part['long_name']) | Q(slug=slugify(city_part['long_name']))
+            ).first()
+        else:
+            city = city.first()
+    except AttributeError:
+        pass
 
     postal_code = address_parts.get('postal_code', {}).get('long_name')
     address = {
@@ -68,7 +75,6 @@ def parse_google_address(address_data):
         'street_address': get_street_address(address_parts),
     }
 
-    location = address_data.get('geometry', {}).get('location')
     if location:
         address.update({
             'latitude': location.get('lat', 0),
