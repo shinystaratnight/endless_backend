@@ -1070,18 +1070,17 @@ class Company(
         max_length=20
     )
 
-    COMPANY_RATING = Choices(
-        ('aa', _('AA')),
-        ('ab', _('AB')),
-        ('ba', _('BA')),
-        ('bb', _('BB'))
+    PURPOSE_CHOICES = Choices(
+        ('hire', _('Hire')),
+        ('self_use', _('Self Use')),
+        ('recruitment', _('Recruitment'))
     )
 
-    company_rating = models.CharField(
-        verbose_name=_("Company rating"),
-        choices=COMPANY_RATING,
-        default=COMPANY_RATING.aa,
-        max_length=2
+    purpose = models.CharField(
+        verbose_name=_("Porpose"),
+        choices=PURPOSE_CHOICES,
+        default=PURPOSE_CHOICES.hire,
+        max_length=20
     )
 
     files = models.ForeignKey(
