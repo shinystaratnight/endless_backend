@@ -35,7 +35,7 @@ def parse_google_address(address_data):
     try:
         region = region_part['long_name'].split(' ', 1)[0] if region_part['long_name'].split(' ', 1)[0] else region_part[
             'long_name']
-        region = Region.objects.get(
+        region = Region.objects.filter(
             Q(name__icontains=region) | Q(alternate_names__contains=region_part['short_name']),
             country=country
         ) if region_part else None
@@ -47,7 +47,7 @@ def parse_google_address(address_data):
     if region:
         city = City.objects.filter(
                 Q(search_names__icontains=city_search) | Q(name=city_part['long_name']),
-                country=country, region=region,
+                country=country, region=region.first(),
             )
         if not city:
             city = City.objects.create(country=country, region=region, name=city_part['long_name'], search_names=city_part['long_name'],
@@ -69,7 +69,7 @@ def parse_google_address(address_data):
     postal_code = address_parts.get('postal_code', {}).get('long_name')
     address = {
         'country': str(country.id),
-        'state': str(region.id) if region else None,
+        'state': str(region.first().id) if region else None,
         'city': str(city.id),
         'postal_code': postal_code,
         'street_address': get_street_address(address_parts),
