@@ -533,7 +533,6 @@ class CompanyViewset(BaseApiViewset):
         clients = company.__class__.objects.owned_by(company.get_master_company()[0]).exclude(id=company.id)
 
         return Response({
-            'is_primary': company.primary_contact == self.request.user.contact.get_company_contact_by_company(company),
             'purpose': company.purpose,
             'has_industry': bool(company.industry),
             'has_company_address': company.company_addresses.filter(active=True).exists(),
@@ -541,6 +540,8 @@ class CompanyViewset(BaseApiViewset):
             'has_company_contact': bool(CompanyContact.objects.owned_by(company.get_master_company()[0])),
             'has_client': bool(clients),
             'has_candidate': bool(company.candidate_rels.all()),
+            'myob_connected': bool(company.myob_settings.timesheet_company_file),
+            'has_skills': bool(company.skills.all())
         })
 
 
