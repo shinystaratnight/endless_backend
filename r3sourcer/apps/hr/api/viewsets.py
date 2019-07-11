@@ -1092,9 +1092,7 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
         if not client_contact:
             raise exceptions.ValidationError({'client_contact': _('User has no company_contact!')})
         queryset = self.queryset.filter(primary_contact=client_contact)
-        serializer = job_serializers.JobsiteSerializer(queryset, many=True)
 
-        # return self.paginated(serializer.data)
         return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
 
 
