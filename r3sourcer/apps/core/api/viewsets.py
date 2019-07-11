@@ -528,19 +528,19 @@ class CompanyViewset(BaseApiViewset):
 
     @action(methods=['get'], detail=False,)
     def guide(self, request, *args, **kwargs):
-        from r3sourcer.apps.core.models.core import CompanyContact
         company = self.request.user.company
         clients = company.__class__.objects.owned_by(company.get_master_company()[0]).exclude(id=company.id)
 
         return Response({
-            'is_primary': company.primary_contact == self.request.user.contact.get_company_contact_by_company(company),
             'purpose': company.purpose,
             'has_industry': bool(company.industry),
             'has_company_address': company.company_addresses.filter(active=True).exists(),
             'has_jobsite': bool(company.jobsites.all()),
-            'has_company_contact': bool(CompanyContact.objects.owned_by(company.get_master_company()[0])),
+            'has_company_contact': bool(models.CompanyContact.objects.owned_by(company.get_master_company()[0])),
             'has_client': bool(clients),
             'has_candidate': bool(company.candidate_rels.all()),
+            'myob_connected': bool(company.myob_settings.timesheet_company_file),
+            'has_skills': bool(company.skills.all())
         })
 
 
