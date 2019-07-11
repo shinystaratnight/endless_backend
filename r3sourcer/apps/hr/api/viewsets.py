@@ -1086,7 +1086,7 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
     def client_contact_jobsite(self, request, *args, **kwargs):
         role_id = request.query_params.get('role')
         if not role_id:
-            raise exceptions.ValidationError({'role_id': _('role_id is required!')})
+            raise exceptions.ValidationError({'role': _('role is required!')})
         role = Role.objects.get(id=role_id)
         client_contact = role.company_contact_rel.company_contact
         if not client_contact:
