@@ -149,6 +149,8 @@ class UserRolesView(APIView):
             roles = [
                 {
                     'id': x.id,
+                    '{} company_id'.format(
+                        x.company_contact_rel.company.short_name if x.company_contact_rel else x.name): x.company_contact_rel.company.id if x.company_contact_rel else x.name,
                     '__str__': '{} - {}'.format(
                         x.name, x.company_contact_rel.company.short_name or x.company_contact_rel.company.name
                     ) if x.company_contact_rel else x.name
