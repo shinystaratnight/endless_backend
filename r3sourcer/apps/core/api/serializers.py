@@ -799,7 +799,7 @@ class CompanySerializer(serializers.ModelSerializer):
                  'date_of_incorporation', 'description', 'notes', 'bank_account',\
                  'credit_check', 'credit_check_date', 'terms_of_payment',\
                  'payment_due_date', 'available', 'billing_email', 'credit_check_proof',\
-                 'type', 'purpose'
+                 'type', 'purpose', 'industries'
 
 
 class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
@@ -1196,8 +1196,8 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         )
 
         closest_company = self.target.get_closest_company()
-        if closest_company.industry is not None:
-            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry=closest_company.industry)
+        if closest_company.industries is not None:
+            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry__in=closest_company.industries.all())
 
         if hasattr(self.target, 'candidate_skills'):
             skill_ids = self.target.candidate_skills.values_list('skill', flat=True)

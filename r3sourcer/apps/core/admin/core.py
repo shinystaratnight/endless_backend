@@ -117,6 +117,12 @@ class SubscriptionInline(admin.TabularInline):
     extra = 0
 
 
+class CompanyIndustryRel(admin.TabularInline):
+    model = models.CompanyIndustryRel
+    extra = 0
+
+
+
 class ContactAdmin(admin.ModelAdmin):
 
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
@@ -129,10 +135,10 @@ class AddressAdmin(admin.ModelAdmin):
 
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
 
-    list_display = ('name', 'industry', 'active_subscription')
+    list_display = ('name', 'get_industries', 'active_subscription')
     search_fields = ('name',)
     list_filter = ('type',)
-    inlines = (SubscriptionInline,)
+    inlines = (SubscriptionInline, CompanyIndustryRel)
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -152,6 +158,9 @@ class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
                         form.base_fields[key].label = value["verbose_value"]
                         form.base_fields[key].help_text = value["help_text"]
         return form
+
+    def get_industries(self, obj):
+        return ", ".join([str(p) for p in obj.industries.all()])
 
     def active_subscription(self, obj):
         return obj.active_subscription
@@ -326,4 +335,5 @@ admin.site.register(models.WorkflowObject, SuperuserAdmin)
 admin.site.register(models.CompanyWorkflowNode, CompanyWorkflowNodeAdmin)
 admin.site.register(models.PublicHoliday, PublicHolidayAdmin)
 admin.site.register(models.ContactUnavailability)
+admin.site.register(models.CompanyIndustryRel)
 admin.site.register(Site, SiteAdmin)
