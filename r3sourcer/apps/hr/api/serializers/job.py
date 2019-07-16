@@ -667,7 +667,7 @@ class JobsiteSerializer(
                     }
                 ),
                 'master_company': ('id', ),
-                'regular_company': ('id', 'industry', 'short_name', 'logo'),
+                'regular_company': ('id', 'industries', 'short_name', 'logo'),
                 'portfolio_manager': (
                     'id', 'job_title',
                     {
