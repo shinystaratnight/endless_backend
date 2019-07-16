@@ -1512,6 +1512,15 @@ class CompanyIndustryRel(UUIDModel):
     def __str__(self):
         return '{}, {}'.format(str(self.company), str(self.industry))
 
+    def save(self, *args, **kwargs):
+        # only one can be default
+        if self.default:
+            qs = type(self).objects.filter(default=True)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            qs.update(default=False)
+        super(CompanyIndustryRel, self).save(*args, **kwargs)
+
 
 class CompanyAddress(
         UUIDModel,
