@@ -34,6 +34,7 @@ from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.address import parse_google_address
 from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.apps.pricing.models import Industry
 
 
 class BaseViewsetMixin():
@@ -394,6 +395,12 @@ class CompanyViewset(BaseApiViewset):
                     'legacy_myob_card_number': myob_name
                 }
             )
+        industries = data.pop('industries', None)
+        if industries:
+            company = models.Company.objects.get(pk=kwargs['pk'])
+            for industry_id in industries:
+                industry = Industry.objects.get(pk=industry_id)
+                models.CompanyIndustryRel.objects.get_or_create(company=company, industry=industry)
 
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -535,7 +542,7 @@ class CompanyViewset(BaseApiViewset):
         return Response({
             'is_primary': company.primary_contact == self.request.user.contact.get_company_contact_by_company(company),
             'purpose': company.purpose,
-            'has_industry': bool(company.industry),
+            'has_industry': bool(company.industries.all()),
             'has_company_address': company.company_addresses.filter(active=True).exists(),
             'has_jobsite': bool(company.jobsites.all()),
             'has_company_contact': bool(CompanyContact.objects.owned_by(company.get_master_company()[0])),
