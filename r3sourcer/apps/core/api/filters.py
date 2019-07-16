@@ -79,7 +79,7 @@ class CompanyFilter(FilterSet):
 
     def filter_has_industry(self, queryset, name, value):
         if value:
-            return queryset.filter(industry__isnull=False).distinct()
+            return queryset.filter(industries__isnull=False).distinct()
         return queryset
 
 
