@@ -48,7 +48,8 @@ class CompanyFilter(FilterSet):
         objects = self._fetch_workflow_objects(value)
         return queryset.filter(
             Q(regular_companies__id__in=objects) |
-            Q(master_companies__id__in=objects)
+            Q(master_companies__id__in=objects) |
+            Q(master_companies__master_company__id=self.request.user.company.get_closest_master_company().id)
         ).distinct()
 
     def filter_regular_company(self, queryset, name, value):
