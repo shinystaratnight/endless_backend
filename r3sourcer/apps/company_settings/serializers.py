@@ -19,7 +19,7 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
         model = CompanySettings
         fields = (
             'id', 'logo', 'color_scheme', 'font', 'forwarding_number', 'company', 'billing_email', 'register_form_id',
-            'company_name', 'sms_enabled', 'pre_shift_sms_enabled', 'pre_shift_sms_delta', 'invoice_template',
+            'company_name', 'sms_enabled', 'pre_shift_sms_enabled', 'pre_shift_sms_delta', 'invoice_template', 'advance_state_saving'
         )
         read_only_fields = ('company',)
 

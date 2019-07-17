@@ -196,8 +196,8 @@ class CandidateContactViewset(BaseApiViewset):
         )
 
         closest_company = candidate.get_closest_company()
-        if closest_company.industry is not None:
-            qry |= Q(acceptance_test__acceptance_tests_industries__industry=closest_company.industry)
+        if closest_company.industries.all() is not None:
+            qry |= Q(acceptance_test__acceptance_tests_industries__industry_id__in=closest_company.industries.all().values_list('id'))
 
         if hasattr(candidate, 'candidate_skills'):
             skill_ids = candidate.candidate_skills.values_list('skill', flat=True)

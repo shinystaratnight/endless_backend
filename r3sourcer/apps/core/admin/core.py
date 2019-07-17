@@ -117,17 +117,28 @@ class SubscriptionInline(admin.TabularInline):
     extra = 0
 
 
+class CompanyIndustryRel(admin.TabularInline):
+    model = models.CompanyIndustryRel
+    extra = 0
+
+
+
 class ContactAdmin(admin.ModelAdmin):
 
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
 
 
+class AddressAdmin(admin.ModelAdmin):
+
+    search_fields = ('city__name', 'country__name', 'street_address', 'state__name',)
+    list_display = ('__str__', 'country', 'city', 'state')
+
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
 
-    list_display = ('name', 'industry', 'active_subscription')
+    list_display = ('name', 'get_industries', 'active_subscription')
     search_fields = ('name',)
     list_filter = ('type',)
-    inlines = (SubscriptionInline,)
+    inlines = (SubscriptionInline, CompanyIndustryRel)
 
     def get_form(self, request, obj=None, **kwargs):
         form = super().get_form(request, obj, **kwargs)
@@ -147,6 +158,9 @@ class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
                         form.base_fields[key].label = value["verbose_value"]
                         form.base_fields[key].help_text = value["help_text"]
         return form
+
+    def get_industries(self, obj):
+        return ", ".join([str(p) for p in obj.industries.all()])
 
     def active_subscription(self, obj):
         return obj.active_subscription
@@ -300,7 +314,7 @@ admin.site.register(models.Contact, ContactAdmin)
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
-admin.site.register(models.Address)
+admin.site.register(models.Address, AddressAdmin)
 admin.site.register(models.CompanyRel, BaseAdmin)
 admin.site.register(models.CompanyAddress, BaseAdmin)
 admin.site.register(models.CompanyLocalization)
@@ -322,4 +336,5 @@ admin.site.register(models.WorkflowObject, SuperuserAdmin)
 admin.site.register(models.CompanyWorkflowNode, CompanyWorkflowNodeAdmin)
 admin.site.register(models.PublicHoliday, PublicHolidayAdmin)
 admin.site.register(models.ContactUnavailability)
+admin.site.register(models.CompanyIndustryRel)
 admin.site.register(Site, SiteAdmin)

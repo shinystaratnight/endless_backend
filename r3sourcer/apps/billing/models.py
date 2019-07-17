@@ -5,6 +5,7 @@ import stripe
 from decimal import Decimal
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
@@ -49,12 +50,14 @@ class Subscription(models.Model):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
         self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
+        if self.current_period_end <= timezone.now().replace(tzinfo=None) and self.company.get_user():
+            self.deactivate(user_id=(str(self.company.get_user().id)))
 
     def deactivate(self, user_id=None):
         sub = stripe.Subscription.retrieve(self.subscription_id)
         sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
         if user_id:
-            tasks.cancel_subscription_access.apply_async([user_id], eta=self.current_period_end)
+            tasks.cancel_subscription_access.apply_async([user_id])
 
     @property
     def last_time_billed(self):

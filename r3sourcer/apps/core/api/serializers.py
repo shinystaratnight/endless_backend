@@ -799,7 +799,7 @@ class CompanySerializer(serializers.ModelSerializer):
                  'date_of_incorporation', 'description', 'notes', 'bank_account',\
                  'credit_check', 'credit_check_date', 'terms_of_payment',\
                  'payment_due_date', 'available', 'billing_email', 'credit_check_proof',\
-                 'type', 'company_rating'
+                 'type', 'purpose',
 
 
 class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
@@ -1196,8 +1196,8 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
         )
 
         closest_company = self.target.get_closest_company()
-        if closest_company.industry is not None:
-            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry=closest_company.industry)
+        if closest_company.industries is not None:
+            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry_id__in=closest_company.industries.all().values_list('id'))
 
         if hasattr(self.target, 'candidate_skills'):
             skill_ids = self.target.candidate_skills.values_list('skill', flat=True)
@@ -1327,13 +1327,23 @@ class GroupSerializer(ApiBaseModelSerializer):
         fields = ('__all__', )
 
 
+class CompanyIndustrySerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='industry.id')
+    __str__ = serializers.ReadOnlyField(source='industry.__str__')
+
+    class Meta:
+        model = core_models.CompanyIndustryRel
+        fields = ('id', '__str__', 'default', 'industry' )
+
+
+
 class CompanyListSerializer(
     core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin, core_mixins.ApiContentTypeFieldMixin,
     ApiBaseModelSerializer
 ):
     method_fields = (
         'manager', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
-        'address', 'manager_phone', 'myob_name',
+        'address', 'manager_phone', 'myob_name', 'industries'
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
@@ -1457,6 +1467,11 @@ class CompanyListSerializer(
         sync_obj = MYOBSyncObject.objects.filter(record=obj.pk).first()
         return sync_obj and sync_obj.legacy_myob_card_number
 
+    def get_industries(self, obj):
+        queryset = core_models.CompanyIndustryRel.objects.filter(company=obj)
+        return [CompanyIndustrySerializer(q).data for q in queryset]
+
+
 
 class FormFieldSerializer(ApiBaseModelSerializer):
 
@@ -1563,9 +1578,9 @@ class FormRenderSerializer(ApiBaseModelSerializer):
             )
 
         company = obj.company
-        if company.industry is not None:
+        if company.industries.all() is not None:
             qry |= models.Q(
-                acceptance_test__acceptance_tests_industries__industry=company.industry)
+                acceptance_test__acceptance_tests_industries__industry_id__in=company.industries.all().values_list('id'))
 
         skill_ids = company.skills.values_list('id', flat=True)
         qry |= models.Q(acceptance_test__acceptance_tests_skills__skill_id__in=skill_ids)
@@ -1772,10 +1787,19 @@ class TrialSerializer(serializers.Serializer):
     company_name = serializers.CharField(max_length=127)
     website = serializers.CharField()
 
+    def normalize_phone(self, phone):
+        if phone.startswith('0'):
+            phone = '+61{}'.format(phone[1:])
+        elif not phone.startswith('+'):
+            phone = '+{}'.format(phone)
+
+        return phone
+
     def validate(self, data):
         email = data['email']
         company_name = data['company_name']
-        phone_mobile = phonenumber.to_python(data['phone_mobile'])
+        phone = self.normalize_phone(data['phone_mobile'])
+        phone_mobile = phonenumber.to_python(phone)
 
         if not phone_mobile or not phone_mobile.is_valid():
             raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})

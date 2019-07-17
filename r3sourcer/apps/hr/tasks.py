@@ -718,9 +718,6 @@ def send_going_to_work_sms(self, time_sheet_id):
                     time_sheet.going_to_work_confirmation):
                 return
 
-            time_sheet.update_status(False)
-            time_sheet.save(update_fields=[action_sent, 'status'])
-
             target_date_and_time = timezone.localtime(
                 time_sheet.shift_started_at)
             candidate_contact = time_sheet.job_offer.candidate_contact
@@ -748,6 +745,8 @@ def send_going_to_work_sms(self, time_sheet_id):
                 return
 
             setattr(time_sheet, action_sent, sent_message)
+            time_sheet.update_status(False)
+            time_sheet.save(update_fields=[action_sent, 'status'])
             related_query_name = hr_models.TimeSheet._meta.get_field(
                 action_sent).related_query_name()
             cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
@@ -874,7 +873,7 @@ def close_not_active_jobsites(self):
 def auto_approve_timesheet(timesheet_id):
     hr_models.TimeSheet.objects.filter(
         id=timesheet_id, status=hr_models.TimeSheet.STATUS_CHOICES.modified
-    ).update(status=hr_models.TimeSheet.STATUS_CHOICES.approved, supervisor_approved_at=timezone.timezone.now())
+    ).update(status=hr_models.TimeSheet.STATUS_CHOICES.approved, supervisor_approved_at=timezone.now())
 
 
 def get_file_from_str(str):

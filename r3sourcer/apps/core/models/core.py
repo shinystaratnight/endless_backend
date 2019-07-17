@@ -979,12 +979,10 @@ class Company(
         verbose_name=_("Parent Company")
     )
 
-    industry = models.ForeignKey(
+    industries = models.ManyToManyField(
         'pricing.Industry',
-        on_delete=models.PROTECT,
-        related_name="companies",
-        verbose_name=_("Industry"),
-        null=True,
+        through='core.CompanyIndustryRel',
+        verbose_name=_("Industries"),
         blank=True,
     )
 
@@ -1070,18 +1068,17 @@ class Company(
         max_length=20
     )
 
-    COMPANY_RATING = Choices(
-        ('aa', _('AA')),
-        ('ab', _('AB')),
-        ('ba', _('BA')),
-        ('bb', _('BB'))
+    PURPOSE_CHOICES = Choices(
+        ('hire', _('Hire')),
+        ('self_use', _('Self Use')),
+        ('recruitment', _('Recruitment'))
     )
 
-    company_rating = models.CharField(
-        verbose_name=_("Company rating"),
-        choices=COMPANY_RATING,
-        default=COMPANY_RATING.aa,
-        max_length=2
+    purpose = models.CharField(
+        verbose_name=_("Porpose"),
+        choices=PURPOSE_CHOICES,
+        default=PURPOSE_CHOICES.hire,
+        max_length=20
     )
 
     files = models.ForeignKey(
@@ -1362,8 +1359,8 @@ class CompanyRel(
 
     @workflow_function
     def is_industry_set(self):
-        return bool(self.regular_company.industry)
-    is_industry_set.short_description = _("Industry")
+        return bool(self.regular_company.industries.all())
+    is_industry_set.short_description = _("Industries")
 
     def get_master_company(self):
         return self.master_company.get_master_company()
@@ -1490,6 +1487,39 @@ class CompanyContactRelationship(
                     )
 
             self.company_contact.contact.user.role.add(Role.objects.create(name=role, company_contact_rel=self))
+
+
+class CompanyIndustryRel(UUIDModel):
+
+    company = models.ForeignKey(
+        'core.Company',
+        related_name='company_industry_rels',
+        verbose_name=_("Company")
+    )
+
+    industry = models.ForeignKey(
+        'pricing.Industry',
+        related_name='company_industry_rels',
+        verbose_name=_("Industry")
+    )
+
+    default = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _("Company Industry Relation")
+        verbose_name_plural = _("Company Industries Relation")
+
+    def __str__(self):
+        return '{}, {}'.format(str(self.company), str(self.industry))
+
+    def save(self, *args, **kwargs):
+        # only one can be default
+        if self.default:
+            qs = type(self).objects.filter(default=True)
+            if self.pk:
+                qs = qs.exclude(pk=self.pk)
+            qs.update(default=False)
+        super(CompanyIndustryRel, self).save(*args, **kwargs)
 
 
 class CompanyAddress(
@@ -2761,7 +2791,7 @@ connect_default_signals(City)
 
 __all__ = [
     'UUIDModel',
-    'Contact', 'ContactRelationship', 'ContactUnavailability',
+    'Contact', 'ContactRelationship', 'ContactUnavailability', 'CompanyIndustryRel',
     'User', 'UserManager',
     'Country', 'Region', 'City',
     'Company', 'CompanyContact', 'CompanyRel', 'CompanyContactRelationship', 'CompanyContactAddress',

@@ -323,8 +323,8 @@ class WorkflowObject(UUIDModel):
         )
 
         closest_company = model_object.get_closest_company()
-        if closest_company.industry is not None:
-            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry=closest_company.industry)
+        if closest_company.industries is not None:
+            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry__in=closest_company.industries.all())
 
         if hasattr(model_object, 'candidate_skills'):
             skill_ids = model_object.candidate_skills.values_list('skill', flat=True)
