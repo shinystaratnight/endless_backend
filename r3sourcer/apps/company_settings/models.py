@@ -17,6 +17,7 @@ class CompanySettings(UUIDModel):
     pre_shift_sms_enabled = models.BooleanField(default=True)
     pre_shift_sms_delta = models.PositiveIntegerField(default=90)
     invoice_template = models.TextField(null=True, blank=True, default='')
+    advance_state_saving = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = "Company settings"
