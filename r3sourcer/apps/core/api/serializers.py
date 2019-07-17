@@ -1197,7 +1197,7 @@ class WorkflowTimelineSerializer(ApiBaseModelSerializer):
 
         closest_company = self.target.get_closest_company()
         if closest_company.industries is not None:
-            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry__in=closest_company.industries.all())
+            qry |= models.Q(acceptance_test__acceptance_tests_industries__industry_id__in=closest_company.industries.all().values_list('id'))
 
         if hasattr(self.target, 'candidate_skills'):
             skill_ids = self.target.candidate_skills.values_list('skill', flat=True)
@@ -1578,9 +1578,9 @@ class FormRenderSerializer(ApiBaseModelSerializer):
             )
 
         company = obj.company
-        if company.industry is not None:
+        if company.industries.all() is not None:
             qry |= models.Q(
-                acceptance_test__acceptance_tests_industries__industry=company.industry)
+                acceptance_test__acceptance_tests_industries__industry_id__in=company.industries.all().values_list('id'))
 
         skill_ids = company.skills.values_list('id', flat=True)
         qry |= models.Q(acceptance_test__acceptance_tests_skills__skill_id__in=skill_ids)
