@@ -799,7 +799,7 @@ class CompanySerializer(serializers.ModelSerializer):
                  'date_of_incorporation', 'description', 'notes', 'bank_account',\
                  'credit_check', 'credit_check_date', 'terms_of_payment',\
                  'payment_due_date', 'available', 'billing_email', 'credit_check_proof',\
-                 'type', 'purpose', 'industries'
+                 'type', 'purpose',
 
 
 class CompanyContactRelationshipSerializer(ApiBaseModelSerializer):
@@ -1327,13 +1327,23 @@ class GroupSerializer(ApiBaseModelSerializer):
         fields = ('__all__', )
 
 
+class CompanyIndustrySerializer(serializers.ModelSerializer):
+    id = serializers.ReadOnlyField(source='industry.id')
+    __str__ = serializers.ReadOnlyField(source='industry.__str__')
+
+    class Meta:
+        model = core_models.CompanyIndustryRel
+        fields = ('id', '__str__', 'default', 'industry' )
+
+
+
 class CompanyListSerializer(
     core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin, core_mixins.ApiContentTypeFieldMixin,
     ApiBaseModelSerializer
 ):
     method_fields = (
         'manager', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
-        'address', 'manager_phone', 'myob_name',
+        'address', 'manager_phone', 'myob_name', 'industries'
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
@@ -1456,6 +1466,11 @@ class CompanyListSerializer(
     def get_myob_name(self, obj):
         sync_obj = MYOBSyncObject.objects.filter(record=obj.pk).first()
         return sync_obj and sync_obj.legacy_myob_card_number
+
+    def get_industries(self, obj):
+        queryset = core_models.CompanyIndustryRel.objects.filter(company=obj)
+        return [CompanyIndustrySerializer(q).data for q in queryset]
+
 
 
 class FormFieldSerializer(ApiBaseModelSerializer):
