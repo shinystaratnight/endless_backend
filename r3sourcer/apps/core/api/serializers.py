@@ -1866,3 +1866,11 @@ class ContactForgotPasswordSerializer(serializers.Serializer):
             raise exceptions.ValidationError(_("User with this email doesn't exist"))
 
         return email
+
+
+class CompanyPurposeSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.Company
+        fields = ('purpose', )
+
