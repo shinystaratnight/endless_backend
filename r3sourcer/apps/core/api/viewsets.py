@@ -395,13 +395,14 @@ class CompanyViewset(BaseApiViewset):
                     'legacy_myob_card_number': myob_name
                 }
             )
-        industries = data.pop('industries', None)
-        if industries:
+        industries_objects = data.pop('industries_objects', None)
+        if industries_objects:
             company = models.Company.objects.get(pk=kwargs['pk'])
-            for industry_id in industries:
-                industry = Industry.objects.get(pk=industry_id)
-                models.CompanyIndustryRel.objects.get_or_create(company=company, industry=industry)
-
+            for industry in industries_objects:
+                industry_instance = Industry.objects.get(pk=industry['id'])
+                company_industry, _ = models.CompanyIndustryRel.objects.get_or_create(company=company, industry=industry_instance)
+                company_industry.default = industry['default']
+                company_industry.save()
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
@@ -549,6 +550,20 @@ class CompanyViewset(BaseApiViewset):
             'myob_connected': bool(company.myob_settings.timesheet_company_file),
             'has_skills': bool(company.skills.all())
         })
+
+    @action(methods=['put'], detail=True)
+    def change_purpose(self, request, pk, *args, **kwargs):
+
+        company = get_object_or_404(models.Company, pk=pk)
+
+        serializer = serializers.CompanyPurposeSerializer(instance=company, data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        return Response({
+            'status': 'success',
+            'message': _('Company purpose changed')
+        }, status=status.HTTP_200_OK)
 
 
 class CompanyContactViewset(BaseApiViewset):
