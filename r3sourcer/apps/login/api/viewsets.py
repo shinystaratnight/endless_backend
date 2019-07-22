@@ -248,6 +248,17 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         if not request.user.is_authenticated:
             raise exceptions.AuthenticationFailed()
         serializer = ContactLoginSerializer(request.user.contact)
+        roles = [
+            {
+                'id': x.id,
+                'company_id': x.company_contact_rel.company.id if x.company_contact_rel else x.name,
+                'client_contact_id': x.company_contact_rel.company_contact.id if x.company_contact_rel else x.name,
+                '__str__': '{} - {}'.format(
+                    x.name, x.company_contact_rel.company.short_name or x.company_contact_rel.company.name
+                ) if x.company_contact_rel else x.name
+            }
+            for x in self.request.user.role.all().order_by('name')
+        ]
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
         return Response({
             'status': 'success',
@@ -257,6 +268,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                 'end_trial_date': request.user.get_end_of_trial(),
                 'is_primary': request.user.company.primary_contact == request.user.contact.get_company_contact_by_company(
                     request.user.company),
+                'roles': roles
             }
         }, status=status.HTTP_200_OK)
 
