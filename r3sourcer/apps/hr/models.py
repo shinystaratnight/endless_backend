@@ -1568,7 +1568,8 @@ class BlackList(core_models.UUIDModel):
         if isinstance(owner, core_models.Company):
             return [
                 models.Q(company=owner),
-                models.Q(company__regular_companies__master_company=owner)
+                models.Q(company__regular_companies__master_company=owner),
+                models.Q(jobsite__master_company=owner),
             ]
 
 
@@ -1661,7 +1662,8 @@ class FavouriteList(core_models.UUIDModel):
         if isinstance(owner, core_models.Company):
             return [
                 models.Q(company=owner),
-                models.Q(company__regular_companies__master_company=owner)
+                models.Q(company__regular_companies__master_company=owner),
+                models.Q(jobsite__master_company=owner),
             ]
 
 
