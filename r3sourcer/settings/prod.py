@@ -122,6 +122,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'crum.CurrentRequestUserMiddleware',
+    'r3sourcer.apps.core.timezone_middleware.TimezoneMiddleware'
 ]
 
 ROOT_URLCONF = 'r3sourcer.urls'
@@ -422,8 +423,10 @@ ENABLED_MYOB_WORKING = env('ENABLED_MYOB_WORKING', '0') == '1'
 
 
 CITIES_LIGHT_CITY_SOURCES = [
-    'http://download.geonames.org/export/dump/cities15000.zip',
+    # 'http://download.geonames.org/export/dump/cities15000.zip',
+    'http://download.geonames.org/export/dump/cities500.zip',
     'http://download.geonames.org/export/dump/AU.zip',
+    # 'http://download.geonames.org/export/dump/allCountries.zip',
 ]
 
 CITIES_LIGHT_INCLUDE_CITY_TYPES = [
@@ -456,10 +459,11 @@ def CAN_LOGIN_AS(request, target_user): return request.user
 CORS_ORIGIN_REGEX_WHITELIST = (
     r'^(https?://)?(\w+\.)?r3sourcer(test)?\.com$',
     r'^(https?://)?r3sourcersoft(test)?\.com$',
+    r'^(http?://)?localhost:?\:4200$',
 )
 
 if DEBUG:
-    CORS_ORIGIN_REGEX_WHITELIST += (r'^(https?://)?(\w+\.)?localhost$', )
+    CORS_ORIGIN_REGEX_WHITELIST += ('http://localhost:4200',) #(r'^(http?://)?(\w+\.)?localhost*$', )
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
@@ -473,10 +477,10 @@ OAUTH2_PROVIDER = {
     'OAUTH2_BACKEND_CLASS': 'oauth2_provider.oauth2_backends.JSONOAuthLibCore',
 }
 
-sentry_sdk.init(
-    dsn="{}".format(env('SENTRY_DSN')),
-    integrations=[DjangoIntegration()]
-)
+# sentry_sdk.init(
+#     dsn="{}".format(env('SENTRY_DSN')),
+#     integrations=[DjangoIntegration()]
+# )
 
 try:
     with open(root(env('JWT_RS256_PRIVATE_KEY_PATH')), 'r') as jwt_secret:

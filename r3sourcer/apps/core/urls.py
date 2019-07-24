@@ -12,4 +12,5 @@ urlpatterns = [
     url(r'^core/users/roles/$', views.UserRolesView.as_view(), name='user_roles'),
     url(r'^core/users/(?P<id>[\w\-]+)/set_roles/$', views.SetRolesView.as_view(), name='set_roles'),
     url(r'^core/users/(?P<id>[\w\-]+)/revoke_roles/$', views.RevokeRolesView.as_view(), name='revoke_roles'),
+    url(r'^core/users/timezone/$', views.UserTimezone.as_view(), name='user_timezone'),
 ]

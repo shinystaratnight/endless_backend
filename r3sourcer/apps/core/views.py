@@ -216,3 +216,13 @@ class RevokeRolesView(APIView):
 
 class OAuthJWTToken(OAuth2JWTTokenMixin, TokenView):
     pass
+
+
+class UserTimezone(APIView):
+    """
+    Get user timezone
+    """
+    def post(self, *args, **kwargs):
+        self.request.session['user_timezone'] = self.request.data.get('user_timezone')
+
+        return Response()
