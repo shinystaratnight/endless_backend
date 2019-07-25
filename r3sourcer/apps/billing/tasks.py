@@ -36,7 +36,10 @@ def charge_for_extra_workers():
         tax_percent = 10.0
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            try:
+                stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            except StripeCountryAccount.DoesNotExist:
+                stripe_account = StripeCountryAccount.objects.get(country="AU")
             stripe.api_key = stripe_account.stripe_secret_key
             vat_object = VAT.objects.filter(country=country_code)
             if vat_object:
@@ -79,7 +82,10 @@ def charge_for_sms(company_id, amount, sms_balance_id):
     tax_percent = 10.0
     if company.get_hq_address():
         country_code = company.get_hq_address().address.country.code2
-        stripe_account = StripeCountryAccount.objects.get(country=country_code)
+        try:
+            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+        except StripeCountryAccount.DoesNotExist:
+            stripe_account = StripeCountryAccount.objects.get(country="AU")
         stripe.api_key = stripe_account.stripe_secret_key
         vat_object = VAT.objects.filter(country=country_code)
         if vat_object:
@@ -188,7 +194,10 @@ def charge_for_new_amount():
     for company in company_list:
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            try:
+                stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            except StripeCountryAccount.DoesNotExist:
+                stripe_account = StripeCountryAccount.objects.get(country="AU")
             if stripe_account:
                 stripe.api_key = stripe_account.stripe_secret_key
         subscription = company.active_subscription

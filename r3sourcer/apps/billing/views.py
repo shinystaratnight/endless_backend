@@ -40,7 +40,10 @@ class SubscriptionCreateView(APIView):
         tax_percent = 10.0
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            try:
+                stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            except StripeCountryAccount.DoesNotExist:
+                stripe_account = StripeCountryAccount.objects.get(country="AU")
             stripe.api_key = stripe_account.stripe_secret_key
             # stripe_product_id = stripe_account.stripe_product_id
             vat_object = VAT.objects.filter(country=country_code)
@@ -132,9 +135,11 @@ class StripeCustomerCreateView(APIView):
         email = ''
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            if stripe_account:
-                stripe.api_key = stripe_account.stripe_secret_key
+            try:
+                stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            except StripeCountryAccount.DoesNotExist:
+                stripe_account = StripeCountryAccount.objects.get(country="AU")
+        stripe.api_key = stripe_account.stripe_secret_key
         if company.billing_email:
             email = company.billing_email
         elif company.primary_contact:
@@ -153,7 +158,10 @@ class StripeCustomerCreateView(APIView):
         company = self.request.user.company
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            try:
+                stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            except StripeCountryAccount.DoesNotExist:
+                stripe_account = StripeCountryAccount.objects.get(country="AU")
             if stripe_account:
                 stripe.api_key = stripe_account.stripe_secret_key
         if not company.stripe_customer:
