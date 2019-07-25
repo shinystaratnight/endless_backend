@@ -509,7 +509,12 @@ load_fixtures:
 	$(call docker_compose_exec, bin/django loaddata r3sourcer/apps/sms_interface/fixtures/sms_templates.json)
 	$(call docker_compose_exec, bin/django loaddata r3sourcer/apps/email_interface/fixtures/email_templates.json)
 
-update_web:
+update_web_staging:
+	docker-compose stop web
+	git pull origin develop
+	docker-compose start web
+
+update_web_production:
 	docker-compose stop web
 	git pull origin master
 	docker-compose start web
