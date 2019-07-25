@@ -306,13 +306,13 @@ class StripeCountryAccountView(APIView):
         company = self.request.user.company
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            data = {
-                "public_key": stripe_account.stripe_public_key
-                }
+            try:
+                stripe_account = StripeCountryAccount.objects.get(country=country_code)
+            except StripeCountryAccount.DoesNotExist:
+                stripe_account = StripeCountryAccount.objects.get(country="AU")
         else:
             stripe_account = StripeCountryAccount.objects.get(country="AU")
-            data = {
-                "public_key": stripe_account.stripe_public_key
-                }
+        data = {
+            "public_key": stripe_account.stripe_public_key
+            }
         return Response(data, status=status.HTTP_200_OK)
