@@ -32,7 +32,7 @@ def get_user_jwt(request):
 
 class TimezoneMiddleware(MiddlewareMixin):
     def process_request(self, request):
-        if not request.path.startswith('/django/admin'):
+        if not request.path.startswith('/admin'):
             request.user = SimpleLazyObject(lambda: get_user_jwt(request))
             if request.user:
                 tzname = request.user.company.company_timezone
