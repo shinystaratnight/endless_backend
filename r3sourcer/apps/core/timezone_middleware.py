@@ -35,11 +35,10 @@ class TimezoneMiddleware(MiddlewareMixin):
         if not request.path.startswith('/admin'):
             request.user = SimpleLazyObject(lambda: get_user_jwt(request))
             if request.user != AnonymousUser():
-                if request.user:
-                    tzname = request.user.company.company_timezone
-                    if tzname:
-                        try:
-                            timezone.activate(tzname)
-                            print('Time zone "%s" activated' % str(tzname))
-                        except Exception as e:
-                            print('Unable to set timezone: %s' % str(e))
+                tzname = request.user.company.company_timezone
+                if tzname:
+                    try:
+                        timezone.activate(tzname)
+                        print('Time zone "%s" activated' % str(tzname))
+                    except Exception as e:
+                        print('Unable to set timezone: %s' % str(e))
