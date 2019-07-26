@@ -34,7 +34,7 @@ class TimezoneMiddleware(MiddlewareMixin):
     def process_request(self, request):
         if not request.path.startswith('/admin'):
             request.user = SimpleLazyObject(lambda: get_user_jwt(request))
-            if request.user:
+            if request.user != AnonymousUser():
                 tzname = request.user.company.company_timezone
                 if tzname:
                     try:
