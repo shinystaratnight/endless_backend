@@ -1119,6 +1119,8 @@ class Company(
 
     sms_enabled = models.BooleanField(default=True)
 
+    company_timezone = models.CharField(max_length=126, blank=True, null=True)
+
     class Meta:
         verbose_name = _("Company")
         verbose_name_plural = _("Companies")

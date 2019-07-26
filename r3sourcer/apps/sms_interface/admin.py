@@ -8,7 +8,7 @@ class SMSTemplateAdmin(admin.ModelAdmin):
 
 
 class SMSMessageAdmin(admin.ModelAdmin):
-    list_display = ['sent_at', '__str__', 'company', 'related_content_type']
+    list_display = ['sent_at', '__str__', 'company', 'related_content_type', 'text']
 
 
 admin.site.register(models.SMSMessage, SMSMessageAdmin)
