@@ -396,13 +396,15 @@ class CompanyViewset(BaseApiViewset):
                 }
             )
         industries_objects = data.pop('industries_objects', None)
+        company = models.Company.objects.get(pk=kwargs['pk'])
         if industries_objects:
-            company = models.Company.objects.get(pk=kwargs['pk'])
             for industry in industries_objects:
                 industry_instance = Industry.objects.get(pk=industry['id'])
                 company_industry, _ = models.CompanyIndustryRel.objects.get_or_create(company=company, industry=industry_instance)
                 company_industry.default = industry['default']
                 company_industry.save()
+        else:
+            models.CompanyIndustryRel.objects.filter(company=company).delete()
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
