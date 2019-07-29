@@ -1516,11 +1516,15 @@ class CompanyIndustryRel(UUIDModel):
 
     def save(self, *args, **kwargs):
         # only one can be default
-        if self.default:
-            qs = type(self).objects.filter(default=True)
-            if self.pk:
-                qs = qs.exclude(pk=self.pk)
-            qs.update(default=False)
+        # first should be default
+        qs = type(self).objects.filter(default=True)
+        if qs:
+            if self.default:
+                if self.pk:
+                    qs = qs.exclude(pk=self.pk)
+                qs.update(default=False)
+        else:
+            self.default = True
         super(CompanyIndustryRel, self).save(*args, **kwargs)
 
 
