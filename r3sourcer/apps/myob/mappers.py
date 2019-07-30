@@ -153,7 +153,8 @@ class InvoiceMapper(ContactMapper):
         lines = list()
 
         for invoice_line in invoice.invoice_lines.all():
-            address = "{} {}".format(invoice_line.job_offer.job.jobsite.address.street_address, invoice_line.job_offer.job.jobsite.address.city)
+            address = "{} {}".format(invoice_line.timesheet.job_offer.job.jobsite.address.street_address,
+                                     invoice_line.timesheet.job_offer.job.jobsite.address.city)
             lines.append({
                 "Date": format_date_to_myob(invoice_line.date),
                 "Hours": invoice_line.units,
