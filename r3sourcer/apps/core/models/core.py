@@ -1119,6 +1119,8 @@ class Company(
 
     sms_enabled = models.BooleanField(default=True)
 
+    company_timezone = models.CharField(max_length=126, blank=True, null=True)
+
     class Meta:
         verbose_name = _("Company")
         verbose_name_plural = _("Companies")
@@ -1514,11 +1516,15 @@ class CompanyIndustryRel(UUIDModel):
 
     def save(self, *args, **kwargs):
         # only one can be default
-        if self.default:
-            qs = type(self).objects.filter(default=True)
-            if self.pk:
-                qs = qs.exclude(pk=self.pk)
-            qs.update(default=False)
+        # first should be default
+        qs = type(self).objects.filter(default=True)
+        if qs:
+            if self.default:
+                if self.pk:
+                    qs = qs.exclude(pk=self.pk)
+                qs.update(default=False)
+        else:
+            self.default = True
         super(CompanyIndustryRel, self).save(*args, **kwargs)
 
 
