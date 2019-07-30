@@ -159,7 +159,7 @@ class InvoiceMapper(ContactMapper):
                 "Date": format_date_to_myob(invoice_line.date),
                 "Hours": invoice_line.units,
                 "Rate": invoice_line.unit_price,
-                "Total": invoice_line.amount,
+                "Total": round(invoice_line.amount, 1),
                 "Description":'{}\n{}\n{}'.format(invoice_line.notes, address, invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''),
                 "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
                 "Activity": {"UID": activities[invoice_line.id]}
