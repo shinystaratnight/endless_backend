@@ -1,6 +1,6 @@
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
-from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoiceFilter
+from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoiceFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, TagRel, CandidateContactAnonymous
@@ -19,6 +19,7 @@ class CandidateContactFilter(ActiveStateFilterMixin, FilterSet):
     transportation_to_work = MultipleChoiceFilter(choices=CandidateContact.TRANSPORTATION_CHOICES)
     created_at = DateRangeFilter()
     candidate_scores__average_score = RangeNumberFilter()
+    candidate_price = BooleanFilter(method='filter_candidate_price')
 
     class Meta:
         model = CandidateContact
@@ -41,6 +42,12 @@ class CandidateContactFilter(ActiveStateFilterMixin, FilterSet):
             queryset = queryset.filter(tag_rels__tag=tag)
 
         return queryset
+
+    def filter_candidate_price(self, queryset, name, value):
+        if value:
+            return queryset.exclude(profile_price=0.00)
+        else:
+            return queryset.filter(profile_price=0.00)
 
 
 class CandidateContactAnonymousFilter(ActiveStateFilterMixin, FilterSet):
