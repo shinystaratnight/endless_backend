@@ -83,7 +83,7 @@
 	<header>
 		<div class="logo">
 			<div style="display: inline-block; width: 33%; height: 50px; vertical-align: top;">
-				{% if group.get_closest_company.company_settings.logo.url %}
+				{% if group.get_closest_company.company_settings.logo %}
 				<img src="{{ domain }}{{ group.get_closest_company.company_settings.logo.url }}" alt="Logo" style="height: 50px;">
 				{% else %}{% endif %}
 			</div>
