@@ -54,6 +54,8 @@ stripe==1.80.0
 Inflector>=2.0.11
 idna<2.8
 sentry-sdk==0.9.5
+timezonefinder==4.1.0
+
 
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light
 git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails
