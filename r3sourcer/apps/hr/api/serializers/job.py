@@ -1,4 +1,6 @@
+import pytz
 from datetime import date, datetime, timedelta
+from timezonefinder import TimezoneFinder
 
 from django.db.models import Max, Q
 from django.conf import settings
@@ -145,7 +147,8 @@ class FillinAvailableMixin:
 
 class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'title', 'extend', 'tags')
+    method_fields = ('is_fulfilled_today', 'is_fulfilled', 'no_sds', 'hide_fillin', 'title', 'extend', 'tags',
+                     'jobsite_provider_signed_at',)
 
     class Meta:
         model = hr_models.Job
@@ -253,6 +256,12 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
     def get_tags(self, obj):
         tags = core_models.Tag.objects.filter(job_tags__job=obj).distinct()
         return core_serializers.TagSerializer(tags, many=True, read_only=True, fields=['id', 'name']).data
+
+    def get_jobsite_provider_signed_at(self, obj):
+        tf = TimezoneFinder(in_memory=True)
+        time_zone = pytz.timezone(tf.timezone_at(lng=obj.jobsite.address.longitude, lat=obj.jobsite.address.latitude))
+        start_time = obj.provider_signed_at.replace(tzinfo=time_zone)
+        return start_time
 
 
 class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
