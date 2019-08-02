@@ -1,6 +1,8 @@
 import operator
+import pytz
 from datetime import timedelta, date, time, datetime
 from filer.models import File, Folder
+from timezonefinder import TimezoneFinder
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -16,7 +18,6 @@ from django.utils import timezone, formats
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from django.template.loader import get_template
-import pytz
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.utils import companies as core_companies_utils
@@ -75,8 +76,8 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
 
     target_date_and_time = formats.date_format(job_offer.start_time, settings.DATETIME_FORMAT)
 
-    now = timezone.localtime(timezone.now())
-    if now >= timezone.localtime(job_offer.start_time):
+    now = utils.get_jobsite_date_time(job_offer.job, timezone.localtime(timezone.now()))
+    if now >= utils.get_jobsite_date_time(job_offer.job, timezone.localtime(job_offer.start_time)):
         target_date_and_time = "ASAP"
 
     master_company = core_companies_utils.get_site_master_company(user=job_offer.candidate_contact.contact.user)
@@ -128,10 +129,10 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                 logger.info(log_message, str(job_offer_id))
                 return
 
-            now = timezone.localtime(timezone.now())
-            today = now.date()
-            jo_target_datetime = job_offer.start_time
-            jo_target_date = jo_target_datetime.date()
+            now = utils.get_jobsite_date_time(job_offer.job, timezone.localtime(timezone.now()))
+            today = utils.get_jobsite_date_time(job_offer.job, now.date())
+            jo_target_datetime = utils.get_jobsite_date_time(job_offer.job, job_offer.start_time)
+            jo_target_date = utils.get_jobsite_date_time(job_offer.job, jo_target_datetime.date())
             jo_tz = jo_target_datetime.tzinfo
             if jo_target_date > today and job_offer.has_timesheets_with_going_work_unset_or_timeout():
                 eta = now + timedelta(hours=2)
@@ -502,8 +503,8 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         return
 
     try:
-        now = timezone.localtime(timezone.now())
-        today = now.date()
+        now = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.localtime(timezone.now()))
+        today = utils.get_jobsite_date_time(timesheet.job_offer.job, now.date())
         sms_tpl = 'supervisor-timesheet-sign'
         email_tpl = 'supervisor-timesheet-sign'
 
@@ -576,9 +577,9 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
             is_today_reminder = True
             if eta.time() > time(19, 0):
                 is_today_reminder = False
-                eta = timezone.make_aware(datetime.combine(date.today(), time(19, 0)))
+                eta = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.make_aware(datetime.combine(date.today(), time(19, 0))))
             elif eta.time() < time(7, 0) or eta.date() > today:
-                eta = timezone.make_aware(datetime.combine(eta.today(), time(7, 0)))
+                eta = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.make_aware(datetime.combine(eta.today(), time(7, 0))))
 
             if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
                 send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder], eta=eta)
@@ -662,7 +663,7 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
             )
             if needs_target_dt:
                 try:
-                    target_date_and_time = timezone.localtime(jo.start_time)
+                    target_date_and_time = utils.get_jobsite_date_time(timesheet.job_offer.job, jo.start_time)
                     target_date_and_time = formats.date_format(target_date_and_time, settings.DATETIME_FORMAT)
                 except AttributeError as e:
                     logger.error(e)
@@ -718,8 +719,7 @@ def send_going_to_work_sms(self, time_sheet_id):
                     time_sheet.going_to_work_confirmation):
                 return
 
-            target_date_and_time = timezone.localtime(
-                time_sheet.shift_started_at)
+            target_date_and_time = utils.get_jobsite_date_time(time_sheet.job_offer.job, time_sheet.shift_started_at)
             candidate_contact = time_sheet.job_offer.candidate_contact
             data_dict = dict(
                 job=time_sheet.job_offer.job,
@@ -755,9 +755,10 @@ def send_going_to_work_sms(self, time_sheet_id):
 def get_confirmation_string(job):
     dates = formats.date_format(job.work_start_date, settings.DATE_FORMAT)
     if job.shift_dates.exists():
-        settingstime_zone = pytz.timezone(settings.TIME_ZONE)
+        tf = TimezoneFinder(in_memory=True)
+        settingstime_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
         shift_dates_list = job.shift_dates.filter(
-            shift_date__gte=date.today()
+            shift_date__gte=utils.get_jobsite_date_time(job, date.today())
         ).order_by('shift_date').values_list('shift_date', flat=True)
 
         if len(shift_dates_list) > 0:

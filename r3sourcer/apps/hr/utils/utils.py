@@ -1,7 +1,9 @@
 import logging
+import pytz
 from calendar import monthrange
 from itertools import chain
 from uuid import UUID # not remove
+from timezonefinder import TimezoneFinder
 
 from datetime import datetime, date, time, timedelta
 from collections import defaultdict
@@ -141,7 +143,7 @@ def calculate_distances_for_jobsite(contacts, jobsite):
     return True
 
 
-def get_jo_sms_sending_task(job_offer):  # pragme: no cover
+def get_jo_sms_sending_task(job_offer):  # pragma: no cover
     if job_offer.is_first() and not job_offer.is_accepted():
         from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms as task
     elif job_offer.is_recurring():
@@ -267,8 +269,9 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
 def send_supervisor_timesheet_approve(timesheet, force=False, not_agree=False):
     from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
     if not_agree:
+        date_time = get_jobsite_date_time(job=timesheet.job_offer.job, date_time=timezone.localtime()) + timedelta(hours=4)
         send_supervisor_timesheet_sign.apply_async(
-            args=[timesheet.supervisor.id, timesheet.id, force], eta=timezone.localtime() + timedelta(hours=4))
+            args=[timesheet.supervisor.id, timesheet.id, force], eta=date_time)
     else:
         send_supervisor_timesheet_sign.apply_async(args=[timesheet.supervisor.id, timesheet.id, force], countdown=10)
 
@@ -284,8 +287,9 @@ def schedule_auto_approve_timesheet(timesheet):
         if str(eval(task['request']['args'])[0]) == str(timesheet.id) and task['request']['name'] == \
                 'r3sourcer.apps.hr.tasks.auto_approve_timesheet':
             app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
+    date_time = get_jobsite_date_time(job=timesheet.job_offer.job, date_time=timezone.localtime()) + timedelta(hours=4)
     auto_approve_timesheet.apply_async(args=[timesheet.id],
-                                       eta=timezone.localtime() + timedelta(hours=4))
+                                       eta=date_time)
 
 
 def format_dates_range(dates_list):
@@ -329,3 +333,10 @@ def get_hours(time_delta):
         return '0'
     hours = time_delta.total_seconds() / 3600
     return '{0:.2f}'.format(hours)
+
+
+def get_jobsite_date_time(job, date_time):
+    tf = TimezoneFinder(in_memory=True)
+    time_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
+    jobsite_time = date_time.replace(tzinfo=time_zone)
+    return jobsite_time
