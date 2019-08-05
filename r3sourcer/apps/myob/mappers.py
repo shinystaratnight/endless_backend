@@ -1,6 +1,7 @@
 from datetime import datetime
-from django.conf import settings
+from decimal import Decimal
 
+from django.conf import settings
 from django.utils import timezone
 from django.utils.formats import date_format
 
@@ -158,8 +159,8 @@ class InvoiceMapper(ContactMapper):
             lines.append({
                 "Date": format_date_to_myob(invoice_line.date),
                 "Hours": invoice_line.units,
-                "Rate": invoice_line.unit_price,
-                "Total": round(invoice_line.amount, 1),
+                "Rate": round(Decimal(invoice_line.unit_price), 1),
+                "Total": round(Decimal(invoice_line.amount), 1),
                 "Description":'{}\n{}\n{}'.format(invoice_line.notes, address, invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''),
                 "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
                 "Activity": {"UID": activities[invoice_line.id]}
