@@ -141,7 +141,7 @@ class InvoiceMapper(ContactMapper):
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
             "TotalTax": invoice.tax,
-            "TotalAmount": invoice.total_with_tax,
+            "TotalAmount": round(invoice.total_with_tax, 1),
             "Status": "Open",
             "Number": invoice.number[-8:],
             "CustomerPurchaseOrderNumber": invoice.number[:20],
