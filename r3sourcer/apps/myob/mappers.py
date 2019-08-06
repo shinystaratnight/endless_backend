@@ -140,12 +140,12 @@ class InvoiceMapper(ContactMapper):
         data = {
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
-            "TotalTax": invoice.tax,
+            "TotalTax": round(invoice.tax, 1),
             "TotalAmount": round(invoice.total_with_tax, 1),
             "Status": "Open",
             "Number": invoice.number[-8:],
             "CustomerPurchaseOrderNumber": invoice.number[:20],
-            "IsTaxInclusive": False,
+            "IsTaxInclusive": True,
             "Terms": {
                 "PaymentIsDue": CompanyMapper.PAYMENT_IS_DUE_MAP.get(invoice.customer_company.terms_of_payment),
                 "BalanceDueDate": invoice.customer_company.payment_due_date
