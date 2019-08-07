@@ -125,25 +125,29 @@ def sync_invoice(invoice_id):
     params = {"$filter": "Number eq '%s'" % invoice.number}
     synced_invoice = client.api.Sale.Invoice.TimeBilling.get(params=params)
 
-    if synced_invoice['Count']:
-        if synced_invoice['Count'] > 1:
-            raise Exception("Got 2 or more invoices with id %s from MYOB." % invoice.id)
+    synced = False
+    try:
+        if synced_invoice['Count']:
+            if synced_invoice['Count'] > 1:
+                raise Exception("Got 2 or more invoices with id %s from MYOB." % invoice.id)
 
-        synced_invoice_lines = synced_invoice['Items'][0]['Lines']
+            synced_invoice_lines = synced_invoice['Items'][0]['Lines']
 
-        if len(synced_invoice_lines) < invoice.invoice_lines.count():
-            service.sync_to_myob(invoice, partial=True)
-            invoice.synced_at = timezone.now()
-            invoice.save(update_fields=['synced_at'])
-        if len(synced_invoice_lines) == invoice.invoice_lines.count():
-            # update old invoices with sync field
-            invoice.synced_at = timezone.now()
-            invoice.save(update_fields=['synced_at'])
+            if len(synced_invoice_lines) < invoice.invoice_lines.count():
+                service.sync_to_myob(invoice, partial=True)
+                synced = True
+            if len(synced_invoice_lines) == invoice.invoice_lines.count():
+                # update old invoices with sync field
+                synced = True
+        else:
+            service.sync_to_myob(invoice)
+            synced = True
+    except ValueError:
+        logger.warn('Sync to MYOB failed')
     else:
-        service.sync_to_myob(invoice)
-        invoice.synced_at = timezone.now()
-        invoice.save(update_fields=['synced_at'])
-
+        if synced:
+            invoice.synced_at = timezone.now()
+            invoice.save(update_fields=['synced_at'])
 
 
 @app.task(bind=True)

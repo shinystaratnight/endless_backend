@@ -112,7 +112,7 @@ class InvoiceSync(SalespersonMixin, BaseSync):
             log.info('Invoice %s synced' % invoice.id)
         else:
             log.warning("[MYOB API] Invoice %s: %s", invoice.id, resp.text)
-            return False
+            raise ValueError
 
         return True
 
