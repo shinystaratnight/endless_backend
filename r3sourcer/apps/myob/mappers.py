@@ -1,5 +1,5 @@
+import math
 from datetime import datetime
-from decimal import Decimal
 
 from django.conf import settings
 from django.utils import timezone
@@ -140,12 +140,12 @@ class InvoiceMapper(ContactMapper):
         data = {
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
-            "TotalTax": round(invoice.tax, 1),
-            "TotalAmount": round(invoice.total_with_tax, 1),
+            "TotalTax": invoice.tax,
+            "TotalAmount": invoice.total_with_tax,
             "Status": "Open",
             "Number": invoice.number[-8:],
             "CustomerPurchaseOrderNumber": invoice.number[:20],
-            "IsTaxInclusive": True,
+            "IsTaxInclusive": False,
             "Terms": {
                 "PaymentIsDue": CompanyMapper.PAYMENT_IS_DUE_MAP.get(invoice.customer_company.terms_of_payment),
                 "BalanceDueDate": invoice.customer_company.payment_due_date
@@ -159,9 +159,12 @@ class InvoiceMapper(ContactMapper):
             lines.append({
                 "Date": format_date_to_myob(invoice_line.date),
                 "Hours": invoice_line.units,
-                "Rate": round(float(invoice_line.unit_price), 1),
-                "Total": round(float(invoice_line.amount), 1),
-                "Description":'{}\n{}\n{}'.format(invoice_line.notes, address, invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''),
+                "Rate": invoice_line.unit_price,
+                "Total": math.ceil(invoice_line.unit_price * invoice_line.units * 100) / 100,
+                "Description": '{}\n{}\n{}'.format(
+                    invoice_line.notes, address,
+                    invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''
+                ),
                 "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
                 "Activity": {"UID": activities[invoice_line.id]}
             })
