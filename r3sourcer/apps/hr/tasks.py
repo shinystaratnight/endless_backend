@@ -130,7 +130,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                 return
 
             now = utils.get_jobsite_date_time(job_offer.job, timezone.localtime(timezone.now()))
-            today = utils.get_jobsite_date_time(job_offer.job, now.date())
+            today = now.date()
             jo_target_datetime = utils.get_jobsite_date_time(job_offer.job, job_offer.start_time)
             jo_target_date = utils.get_jobsite_date_time(job_offer.job, jo_target_datetime.date())
             jo_tz = jo_target_datetime.tzinfo
@@ -320,8 +320,8 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
         logger.error(e)
     else:
         candidate = time_sheet.candidate_contact
-        target_date_and_time = timezone.localtime(time_sheet.shift_started_at)
-        end_date_and_time = timezone.localtime(time_sheet.shift_ended_at)
+        target_date_and_time = utils.get_jobsite_date_time(time_sheet.job_offer.job, time_sheet.shift_started_at)
+        end_date_and_time = utils.get_jobsite_date_time(time_sheet.job_offer.job, time_sheet.shift_ended_at)
         contacts = {
             'candidate_contact': candidate,
             'company_contact': time_sheet.supervisor
@@ -342,7 +342,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
             )
 
             if event == SUPERVISOR_DECLINED:
-                end_date_and_time = timezone.localtime(time_sheet.shift_ended_at)
+                end_date_and_time = utils.get_jobsite_date_time(time_sheet.job_offer.job, time_sheet.shift_ended_at)
 
                 if time_sheet.break_started_at and time_sheet.break_ended_at:
                     break_delta = time_sheet.break_ended_at - time_sheet.break_started_at
