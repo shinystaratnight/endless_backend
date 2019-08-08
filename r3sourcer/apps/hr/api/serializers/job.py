@@ -662,6 +662,7 @@ class JobsiteSerializer(
     core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
     core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer
 ):
+    method_fields = ('timezone', )
 
     class Meta:
         model = hr_models.Jobsite
@@ -709,6 +710,9 @@ class JobsiteSerializer(
                 })
 
         return validated_data
+
+    def get_timezone(self, obj):
+        return obj.get_timezone()
 
 
 class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSerializer):

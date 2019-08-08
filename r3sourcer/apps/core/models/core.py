@@ -2,6 +2,7 @@ import math
 import os
 import uuid
 from datetime import date, datetime, timedelta, time
+from timezonefinder import TimezoneFinder
 
 import collections
 import re
@@ -17,6 +18,7 @@ from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
+from django.db.models.signals import post_save
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.text import slugify
@@ -327,6 +329,21 @@ class Contact(
         super().save(*args, **kwargs)
 
     @classmethod
+    def contact_registration_email_send(cls, sender, instance, created, **kwargs):
+        from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
+        if created:
+            master_company = instance.get_master_companies()
+            manager = instance.get_closest_company().primary_contact
+
+            if not instance.phone_mobile_verified:
+                send_contact_verify_sms.apply_async(args=(instance.id, manager.id), countdown=10)
+
+            if not instance.email_verified:
+                send_contact_verify_email.apply_async(
+                    args=(instance.id, manager.id,  master_company.id), countdown=10
+                )
+
+    @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
             return [
@@ -335,6 +352,9 @@ class Contact(
                 Q(company_contact__relationships__company__regular_companies__master_company=owner),
                 Q(contact_relations__company=owner),
             ]
+
+
+post_save.connect(Contact.contact_registration_email_send, sender=Contact)
 
 
 class ContactRelationship(UUIDModel):
@@ -862,6 +882,24 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
                 Q(relationships__company__regular_companies__master_company=owner)
             ]
 
+    @classmethod
+    def contact_registration_email_send(cls, sender, instance, created, **kwargs):
+        from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
+        if created:
+            master_company = instance.get_master_companies()
+            manager = instance.get_closest_company().primary_contact
+
+            if not instance.phone_mobile_verified:
+                send_contact_verify_sms.apply_async(args=(instance.contact.id, manager.id), countdown=10)
+
+            if not instance.email_verified:
+                send_contact_verify_email.apply_async(
+                    args=(instance.contact.id, manager.id, master_company.id), countdown=10
+                )
+
+
+post_save.connect(CompanyContact.contact_registration_email_send, sender=CompanyContact)
+
 
 class BankAccount(UUIDModel):
     bank_name = models.CharField(max_length=63, verbose_name=_("Bank Name"))
@@ -1284,6 +1322,15 @@ class Company(
 
     def get_closest_company(self):
         return self.get_closest_master_company()
+
+    def get_timezone(self):
+        time_zone = None
+        master_company = self.get_master_company()[0]
+        address = master_company.get_hq_address().address
+        if address:
+            tf = TimezoneFinder()
+            time_zone = tf.timezone_at(lng=address.longitude, lat=address.latitude)
+        return time_zone
 
     @classmethod
     def owned_by_lookups(cls, owner):

@@ -147,6 +147,7 @@ class WorkflowNodeFilter(FilterSet):
     system = BooleanFilter(method='filter_system')
     workflow = UUIDFilter(method='filter_workflow')
     content_type = CharFilter(method='filter_content_type')
+    hardlock = BooleanFilter(method='filter_hardlock', field_name='hardlock')
 
     _company = None
     _workflow = None
@@ -204,6 +205,11 @@ class WorkflowNodeFilter(FilterSet):
             return queryset.none()
 
         return queryset.filter(workflow=self._workflow)
+
+    def filter_hardlock(self, queryset, name, value):
+        if value:
+            return queryset.filter(hardlock=True)
+        return queryset.filter(hardlock=False)
 
 
 class CompanyWorkflowNodeFilter(FilterSet):
