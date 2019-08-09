@@ -201,9 +201,11 @@ class Jobsite(
         return self.get_site_name()[:30]
 
     def get_timezone(self):
-        tf = TimezoneFinder()
-        time_zone = tf.timezone_at(lng=self.address.longitude, lat=self.address.latitude)
-        return time_zone
+        if self.address:
+            tf = TimezoneFinder()
+            time_zone = tf.timezone_at(lng=self.address.longitude, lat=self.address.latitude)
+            return time_zone
+        return settings.TIME_ZONE
 
 
 class JobsiteUnavailability(core_models.UUIDModel):

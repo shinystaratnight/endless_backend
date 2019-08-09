@@ -1324,13 +1324,13 @@ class Company(
         return self.get_closest_master_company()
 
     def get_timezone(self):
-        time_zone = None
         master_company = self.get_master_company()[0]
         address = master_company.get_hq_address().address
         if address:
             tf = TimezoneFinder()
             time_zone = tf.timezone_at(lng=address.longitude, lat=address.latitude)
-        return time_zone
+            return time_zone
+        return settings.TIME_ZONE
 
     @classmethod
     def owned_by_lookups(cls, owner):
