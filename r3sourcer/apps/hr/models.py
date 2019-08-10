@@ -1,5 +1,6 @@
 from pytz import timezone as pytz_timezone
 from itertools import chain
+from timezonefinder import TimezoneFinder
 from uuid import UUID # not remove
 
 from datetime import timedelta, date, time, datetime
@@ -11,6 +12,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.db import models, IntegrityError, transaction
+from django.db.models.signals import post_save, pre_save
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -197,6 +199,13 @@ class Jobsite(
 
     def get_myob_name(self):
         return self.get_site_name()[:30]
+
+    def get_timezone(self):
+        if self.address:
+            tf = TimezoneFinder()
+            time_zone = tf.timezone_at(lng=self.address.longitude, lat=self.address.latitude)
+            return time_zone
+        return settings.TIME_ZONE
 
 
 class JobsiteUnavailability(core_models.UUIDModel):

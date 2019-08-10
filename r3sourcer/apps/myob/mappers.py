@@ -1,7 +1,7 @@
 import math
 from datetime import datetime
-from django.conf import settings
 
+from django.conf import settings
 from django.utils import timezone
 from django.utils.formats import date_format
 
