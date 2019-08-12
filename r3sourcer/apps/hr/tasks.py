@@ -132,7 +132,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
             now = utils.get_jobsite_date_time(job_offer.job, timezone.localtime(timezone.now()))
             today = now.date()
             jo_target_datetime = utils.get_jobsite_date_time(job_offer.job, job_offer.start_time)
-            jo_target_date = utils.get_jobsite_date_time(job_offer.job, jo_target_datetime.date())
+            jo_target_date = jo_target_datetime.date()
             jo_tz = jo_target_datetime.tzinfo
             if jo_target_date > today and job_offer.has_timesheets_with_going_work_unset_or_timeout():
                 eta = now + timedelta(hours=2)
@@ -504,7 +504,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 
     try:
         now = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.localtime(timezone.now()))
-        today = utils.get_jobsite_date_time(timesheet.job_offer.job, now.date())
+        today = now.date()
         sms_tpl = 'supervisor-timesheet-sign'
         email_tpl = 'supervisor-timesheet-sign'
 
