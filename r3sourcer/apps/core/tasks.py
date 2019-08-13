@@ -220,7 +220,8 @@ def send_contact_verify_sms(self, contact_id, manager_id):
             data_dict = dict(
                 contact=contact,
                 manager=primary_contact or contact.get_closest_company().primary_contact,
-                related_obj=contact
+                related_obj=contact,
+                master_company=contact.get_master_companies()
             )
 
             logger.info('Sending phone verify SMS to %s.', contact)
