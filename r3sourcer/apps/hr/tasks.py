@@ -758,7 +758,7 @@ def get_confirmation_string(job):
         tf = TimezoneFinder(in_memory=True)
         settingstime_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
         shift_dates_list = job.shift_dates.filter(
-            shift_date__gte=utils.get_jobsite_date_time(job, date.today())
+            shift_date__gte=date.today()
         ).order_by('shift_date').values_list('shift_date', flat=True)
 
         if len(shift_dates_list) > 0:

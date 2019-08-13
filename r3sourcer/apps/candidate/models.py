@@ -533,9 +533,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 11:  # Phone verify
-            from r3sourcer.apps.candidate.tasks import send_verify_sms
-
-            send_verify_sms.apply_async(args=(self.id, workflow_object.id), countdown=10)
+            workflow_object.active = True
 
         self.candidate_scores.recalc_scores()
 

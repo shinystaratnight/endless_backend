@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/1.10/ref/settings/
 import os
 import sentry_sdk
 from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
 
 from datetime import timedelta
 from decimal import Decimal
@@ -476,7 +477,7 @@ OAUTH2_PROVIDER = {
 
 sentry_sdk.init(
     dsn="{}".format(env('SENTRY_DSN')),
-    integrations=[DjangoIntegration()]
+    integrations=[DjangoIntegration(), CeleryIntegration()]
 )
 
 try:
