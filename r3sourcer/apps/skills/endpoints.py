@@ -3,7 +3,7 @@ from rest_framework import permissions
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.skills import models
-from r3sourcer.apps.skills.api import filters as skills_filters, serializers as skill_serializer
+from r3sourcer.apps.skills.api import filters as skills_filters, serializers as skill_serializer, viewsets as skill_viewset
 
 
 class SkillEndpoint(ApiEndpoint):
@@ -40,6 +40,7 @@ class SkillTagEndpoint(ApiEndpoint):
 class SkillNameEndpoint(ApiEndpoint):
 
     model = models.SkillName
+    base_viewset = skill_viewset.SkillNameViewSet
     filter_class = skills_filters.SkillNameFilter
     serializer = skill_serializer.SkillNameSerializer
 

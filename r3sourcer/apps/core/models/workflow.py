@@ -336,12 +336,17 @@ class WorkflowObject(UUIDModel):
 
         tests = AcceptanceTestWorkflowNode.objects.filter(
             qry, company_workflow_node__company=closest_company, company_workflow_node__workflow_node=state).distinct()
+        print("tests", tests)
+        print("object_id", object_id)
         is_answers_exist = tests.filter(
             acceptance_test__acceptance_test_questions__workflow_object_answers__workflow_object__object_id=object_id
         ).distinct().count() >= tests.count()
+        print("is_answers", tests.filter(
+            acceptance_test__acceptance_test_questions__workflow_object_answers__workflow_object__object_id=object_id
+        ))
 
-        if not is_answers_exist and raise_exception:
-            raise ValidationError('Please fill all tests')
+        # if not is_answers_exist and raise_exception:
+        #     raise ValidationError('Please fill all tests')
 
         return is_answers_exist
 

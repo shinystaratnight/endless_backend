@@ -2,7 +2,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from r3sourcer.apps.skills.models import SkillBaseRate
+from r3sourcer.apps.skills.models import SkillBaseRate, Skill
 
 
 class MakeSkillBaseRateDefaultView(APIView):
@@ -11,4 +11,14 @@ class MakeSkillBaseRateDefaultView(APIView):
         SkillBaseRate.objects.all().update(default_rate=False)
         rate.default_rate = True
         rate.save()
+        return Response()
+
+
+class SkillDefaultRateView(APIView):
+    def post(self, *args, **kwargs):
+        skill = get_object_or_404(Skill, id=self.kwargs['id'])
+        skill.price_list_default_rate = self.request.data.get("price_list_default_rate")
+        skill.default_rate = self.request.data.get("default_rate")
+        skill.active = self.request.data.get("active")
+        skill.save()
         return Response()

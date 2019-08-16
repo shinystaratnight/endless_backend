@@ -1,5 +1,5 @@
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import exceptions
+from rest_framework import exceptions, serializers
 
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.skills.models import SkillBaseRate, Skill, SkillTag, SkillName
@@ -67,8 +67,34 @@ class SkillTagSerializer(ApiBaseModelSerializer):
 
 class SkillNameSerializer(ApiBaseModelSerializer):
 
+    method_fields = ('active', 'default_rate', 'price_list_default_rate', 'skill_id')
+
     class Meta:
         model = SkillName
         fields = ('id', 'name', {
             'industry': ('id', 'type')
         })
+
+    def get_active(self, obj):
+        try:
+            return self.context['view']._filter_list()[obj.name].active
+        except KeyError:
+            return False
+
+    def get_default_rate(self, obj):
+        try:
+            return self.context['view']._filter_list()[obj.name].default_rate
+        except KeyError:
+            return None
+
+    def get_price_list_default_rate(self, obj):
+        try:
+            return self.context['view']._filter_list()[obj.name].price_list_default_rate
+        except KeyError:
+            return None
+
+    def get_skill_id(self, obj):
+        try:
+            return self.context['view']._filter_list()[obj.name].id
+        except KeyError:
+            return None
