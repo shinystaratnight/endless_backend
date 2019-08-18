@@ -45,8 +45,11 @@ class SkillName(UUIDModel):
         return self.name
 
     @classmethod
-    def is_owned(cls):
-        return False
+    def owned_by_lookups(cls, owner):
+        if isinstance(owner, Company):
+            return [
+                models.Q(industry__in=owner.industries.all())
+            ]
 
 
 class Skill(MYOBMixin, UUIDModel):

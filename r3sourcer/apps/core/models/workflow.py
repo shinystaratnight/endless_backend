@@ -340,9 +340,6 @@ class WorkflowObject(UUIDModel):
             acceptance_test__acceptance_test_questions__workflow_object_answers__workflow_object__object_id=object_id
         ).distinct().count() >= tests.count()
 
-        if not is_answers_exist and raise_exception:
-            raise ValidationError('Please fill all tests')
-
         return is_answers_exist
 
     def get_score(self, related_obj, company):
