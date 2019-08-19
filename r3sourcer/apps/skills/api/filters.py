@@ -1,5 +1,5 @@
 from django.utils import timezone
-from django_filters import UUIDFilter
+from django_filters import UUIDFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.core import models as core_models
@@ -64,6 +64,7 @@ class SkillTagFilter(FilterSet):
 
 class SkillNameFilter(FilterSet):
     exclude_company = UUIDFilter(method='exclude_by_company')
+    active = BooleanFilter(method='filter_by_active')
 
     class Meta:
         model = skills_models.SkillName
@@ -72,4 +73,10 @@ class SkillNameFilter(FilterSet):
     def exclude_by_company(self, queryset, name, value):
         return queryset.exclude(
             skills__company=value
+        )
+
+    def filter_by_active(self, queryset, name, value):
+        return queryset.filter(
+            skills__active=value,
+            skills__company=self.request.user.company
         )
