@@ -76,7 +76,12 @@ class SkillNameFilter(FilterSet):
         )
 
     def filter_by_active(self, queryset, name, value):
-        return queryset.filter(
-            skills__active=value,
-            skills__company=self.request.user.company
-        )
+        if value:
+            return queryset.filter(
+                skills__active=value,
+                skills__company=self.request.user.company
+            )
+        else:
+            return queryset.filter(
+                skills__active=value,
+            )
