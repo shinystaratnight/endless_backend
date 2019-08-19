@@ -67,7 +67,7 @@ class SkillTagSerializer(ApiBaseModelSerializer):
 
 class SkillNameSerializer(ApiBaseModelSerializer):
 
-    method_fields = ('active', 'default_rate', 'price_list_default_rate', 'skill_id')
+    method_fields = ('active', 'default_rate', 'price_list_default_rate', 'skill_id', 'carrier_list_reserve')
 
     class Meta:
         model = SkillName
@@ -96,5 +96,11 @@ class SkillNameSerializer(ApiBaseModelSerializer):
     def get_skill_id(self, obj):
         try:
             return self.context['view']._filter_list()[obj.name].id
+        except KeyError:
+            return None
+
+    def get_carrier_list_reserve(self, obj):
+        try:
+            return self.context['view']._filter_list()[obj.name].carrier_list_reserve
         except KeyError:
             return None
