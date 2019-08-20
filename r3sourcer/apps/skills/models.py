@@ -160,8 +160,6 @@ class Skill(MYOBMixin, UUIDModel):
                 raise ValidationError("Skill can't be active. It doesn't have default base rate.")
             elif not have_default_price_list_rate and self.company.purpose == 'hire':
                 raise ValidationError("Skill can't be active. It doesn't have default price list rate.")
-            elif not is_limits_set:
-                raise ValidationError("Skill can't be active. It doesn't have limits.")
 
         super(Skill, self).clean(*args, **kwargs)
 
