@@ -20,11 +20,13 @@ class SkillDefaultRateView(APIView):
         price_list_default_rate = self.request.data.get("price_list_default_rate")
         if price_list_default_rate:
             skill.price_list_default_rate = price_list_default_rate
+            skill.save(update_fields=['price_list_default_rate'])
         default_rate = self.request.data.get("default_rate")
         if default_rate:
-            skill.default_rate = self.request.data.get("default_rate")
+            skill.default_rate = default_rate
+            skill.save(update_fields=['default_rate'])
         active = self.request.data.get("active")
-        if active:
-            skill.active = self.request.data.get("active")
-        skill.save()
+        if active is not None:
+            skill.active = active
+            skill.save(update_fields=['active'])
         return Response()
