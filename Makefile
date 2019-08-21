@@ -69,7 +69,7 @@ define create_backup
 	mkdir -p var/backups/$(1)
 	touch var/backups/$(1)/$(2)
 	docker exec -it $(DOCKER_POSTGRES_NAME) pg_dump -U $(POSTGRES_USER) $(POSTGRES_DB) | gzip > var/backups/$(1)/$(2)
-	aws s3 cp var/backups/$(1)/$(2).tar.gz $(S3_BACKUP_FOLDER)$(1)/$(2).tar.gz
+	aws s3 cp var/backups/$(1)/$(2) $(S3_BACKUP_FOLDER)$(1)/$(2)
     rm -rf var/backups/$(1)/
 endef
 
@@ -567,7 +567,7 @@ regular_backup:
 
 media_backup:
 	mkdir -p var/media_backups/
-# 	make media_backup_clean
+	make media_backup_clean
 	tar -czf var/media_backups/media.tar.gz var/www/media/
 	aws s3 cp var/media_backups/media.tar.gz $(S3_BACKUP_FOLDER)Media/media_$(CURRENT_DATETIME).tar.gz
 
