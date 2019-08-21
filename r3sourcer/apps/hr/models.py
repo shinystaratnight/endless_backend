@@ -1219,13 +1219,13 @@ class TimeSheet(
 
     def __str__(self):
         return '{} {} {}'.format(
-            date_format(timezone.localtime(self.shift_started_at),
+            date_format(hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at),
                         settings.DATETIME_FORMAT)
             if self.shift_started_at else '',
-            date_format(timezone.localtime(self.candidate_submitted_at),
+            date_format(hr_utils.get_jobsite_date_time(self.job_offer.job, self.candidate_submitted_at),
                         settings.DATETIME_FORMAT)
             if self.candidate_submitted_at else '',
-            date_format(timezone.localtime(self.supervisor_approved_at),
+            date_format(hr_utils.get_jobsite_date_time(self.job_offer.job, self.supervisor_approved_at),
                         settings.DATETIME_FORMAT)
             if self.supervisor_approved_at else ''
         )
@@ -1274,7 +1274,7 @@ class TimeSheet(
                 defaults=data
             )
 
-        now = timezone.now()
+        now = hr_utils.get_jobsite_date_time(job_offer.job, timezone.now())
         if now <= job_offer.start_time + timedelta(hours=2):
             cls._send_placement_acceptance_sms(time_sheet, job_offer)
 
@@ -1305,7 +1305,7 @@ class TimeSheet(
         return timedelta()
 
     def auto_fill_four_hours(self):
-        now = timezone.now()
+        now = hr_utils.get_jobsite_date_time(self.job_offer.job, timezone.now())
         self.candidate_submitted_at = now
         self.supervisor_approved_at = now
         self.shift_started_at = now
@@ -1345,7 +1345,9 @@ class TimeSheet(
 
     def process_status(self):
         if self.status == self.STATUS_CHOICES.check_confirmed:
-            if self.shift_started_at <= timezone.now():
+            if hr_utils.get_jobsite_date_time(self.job_offer.job,
+                                              self.shift_started_at) <= hr_utils.get_jobsite_date_time(
+                    self.job_offer.job, timezone.now()):
                 self.status = self.STATUS_CHOICES.submit_pending
                 self.save(update_fields=['status'])
 
@@ -1372,8 +1374,8 @@ class TimeSheet(
                 self.status = self.STATUS_CHOICES.check_confirmed
         elif self.going_to_work_confirmation is None:
             pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
-            going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
-            if going_eta <= timezone.now():
+            going_eta = hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at) - timedelta(minutes=pre_shift_confirmation_delta)
+            if going_eta <= hr_utils.get_jobsite_date_time(self.job_offer.job, timezone.now()):
                 self.status = self.STATUS_CHOICES.check_pending
         elif not self.going_to_work_confirmation:
             self.status = self.STATUS_CHOICES.check_failed
@@ -1393,11 +1395,11 @@ class TimeSheet(
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
 
-            now = timezone.now()
-            if now <= self.shift_started_at:
+            now = hr_utils.get_jobsite_date_time(self.job_offer.job, timezone.now())
+            if now <= hr_utils.get_jobsite_date_time(self.job_offer.job,self.shift_started_at):
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
                 pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
-                going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
+                going_eta = hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at) - timedelta(minutes=pre_shift_confirmation_delta)
                 if pre_shift_confirmation and going_eta > now:
                     self._send_going_to_work(going_eta)
                 else:
@@ -1425,7 +1427,7 @@ class TimeSheet(
 
         if going_set and self.going_to_work_confirmation and self.is_allowed(20):
             self.create_state(20)
-            self._send_submit_sms(self.shift_ended_at)
+            self._send_submit_sms(hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_ended_at))
 
         # If accepted manually, disable reply checking.
         if self.going_to_work_confirmation and self.going_to_work_sent_sms and self.going_to_work_sent_sms.check_reply:
