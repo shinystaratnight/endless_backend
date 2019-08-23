@@ -18,6 +18,7 @@ from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.core.utils.public_holidays import EnricoApi, EnricoApiException
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.login.models import TokenLogin
+from r3sourcer.apps.sms_interface.models import SMSTemplate
 
 
 LOCK_EXPIRE = 5 * 60
@@ -223,10 +224,14 @@ def send_contact_verify_sms(self, contact_id, manager_id):
                 related_obj=contact,
                 master_company=contact.get_master_companies()
             )
+            try:
+                sms_template = SMSTemplate.objects.get(company=contact.get_master_companies(), slug=sms_tpl)
+            except SMSTemplate.DoesNotExist:
+                sms_template = SMSTemplate.objects.get(company=None, slug='trial-user-email-verification')
 
             logger.info('Sending phone verify SMS to %s.', contact)
 
-            sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_name=sms_tpl, **data_dict)
+            sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_id=sms_template.id, **data_dict)
 
 
 @shared_task(bind=True)
@@ -328,8 +333,14 @@ def send_generated_password_sms(contact_id, new_password=None):
         'contact': contact,
         'password': new_password,
     }
+    master_company = contact.get_closest_company()
 
-    sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_name='generated-password', **data_dict)
+    try:
+        sms_template = SMSTemplate.objects.get(company=master_company, slug='generated-password')
+    except SMSTemplate.DoesNotExist:
+        sms_template = SMSTemplate.objects.get(company=None, slug='generated-password')
+
+    sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_id=sms_template.id, **data_dict)
 
     contact.user.set_password(new_password)
     contact.user.save()

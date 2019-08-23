@@ -107,15 +107,13 @@ class BaseSMSService(metaclass=ABCMeta):
         return sms_message
 
     @transaction.atomic
-    def send_tpl(self, to_number, tpl_name, from_number=None, related_obj=None,
+    def send_tpl(self, to_number, tpl_id, from_number=None, related_obj=None,
                  **kwargs):
         try:
-            template = SMSTemplate.objects.get(
-                Q(name=tpl_name) | Q(slug=tpl_name)
-            )
+            template = SMSTemplate.objects.get(id=tpl_id)
             message = template.compile(**kwargs)['text']
         except SMSTemplate.DoesNotExist:
-            logger.exception('Cannot find template with name %s', tpl_name)
+            logger.exception('Cannot find template with id %s', tpl_id)
         else:
             sms_message = self.send(to_number, message, from_number, related_obj, **kwargs)
             if sms_message is not None:

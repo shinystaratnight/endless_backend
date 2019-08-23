@@ -4,6 +4,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset
+from r3sourcer.apps.sms_interface.models import SMSTemplate
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 
 
@@ -39,3 +40,27 @@ class SMSMessageViewset(BaseApiViewset):
             )
 
         return Response({'status': 'success'})
+
+
+class SMSMessageTemplateViewset(BaseApiViewset):
+
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        return queryset.filter(company=None)
+
+    def get_object(self):
+        obj = super().get_object()
+        try:
+            obj = self.queryset.get(name=obj.name, company=self.request.user.company)
+            return obj
+        except obj.DoesNotExist:
+            obj = super().get_object()
+            return obj
+
+    def perform_update(self, serializer):
+        if not serializer.validated_data.get('company'):
+            self.request.data['company'] = self.request.user.company
+            self.request.data.pop('id')
+            SMSTemplate.objects.create(**self.request.data)
+        else:
+            serializer.save()

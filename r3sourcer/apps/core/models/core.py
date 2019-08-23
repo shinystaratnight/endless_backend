@@ -886,8 +886,8 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     def contact_registration_email_send(cls, sender, instance, created, **kwargs):
         from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
         if created:
-            master_company = instance.get_master_companies()
-            manager = instance.get_closest_company().primary_contact
+            master_company = instance.get_master_company()[0]
+            manager = master_company.primary_contact
 
             if not instance.phone_mobile_verified:
                 send_contact_verify_sms.apply_async(args=(instance.contact.id, manager.id), countdown=10)
