@@ -166,7 +166,6 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
 @shared_task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_jo_confirmation_sms(self, job_offer_id):
-    #
     send_or_schedule_job_offer_sms(
         job_offer_id, send_jo_confirmation_sms,
         tpl_id='job-offer-1st', action_sent='offer_sent_by_sms'

@@ -227,7 +227,7 @@ def send_contact_verify_sms(self, contact_id, manager_id):
             try:
                 sms_template = SMSTemplate.objects.get(company=contact.get_master_companies(), slug=sms_tpl)
             except SMSTemplate.DoesNotExist:
-                sms_template = SMSTemplate.objects.get(company=None, slug='trial-user-email-verification')
+                sms_template = SMSTemplate.objects.get(company=None, slug=sms_tpl)
 
             logger.info('Sending phone verify SMS to %s.', contact)
 
