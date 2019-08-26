@@ -3,6 +3,7 @@ SHELL := /bin/bash
 WEBUI_APP_DIR = webui-app
 NGINX_SITE_VOLUME = ""
 CURRENT_PATH = $(shell pwd)
+CURRENT_DATETIME = $(shell date +%Y_%m_%d__%H_%M)
 
 NGINX_DOCKER_VOLUME = /Users/nginx_docker
 
@@ -17,6 +18,8 @@ LANG = 'en-au'
 include env_defaults
 -include .env
 
+PG_LOGIN = -h $(POSTGRES_HOST) -p $(POSTGRES_PORT) -U $(POSTGRES_USERNAME)
+PG_LOGIN_POSTGRES = -h $(POSTGRES_HOST) -p $(POSTGRES_PORT) -U endless
 
 RESTORE_DB_FILE_PATH = var/backups/$(RESTORE_DB_FILE)
 RESTORE_DB_FOR_DEV_FILE_PATH = var/backups/$(RESTORE_DB_FOR_DEV_FILE)
@@ -60,6 +63,14 @@ define docker_run
         docker run -itd $(3) --name $(2) $(1); \
         $(call docker_connect,$(2), $(4)); \
     fi;
+endef
+
+define create_backup
+	mkdir -p var/backups/$(1)
+	touch var/backups/$(1)/$(2)
+	docker exec -it $(DOCKER_POSTGRES_NAME) pg_dump -U $(POSTGRES_USER) $(POSTGRES_DB) | gzip > var/backups/$(1)/$(2)
+	aws s3 cp var/backups/$(1)/$(2) $(S3_BACKUP_FOLDER)$(1)/$(2)
+    rm -rf var/backups/$(1)/
 endef
 
 all: \
@@ -550,3 +561,19 @@ generate_jwt_rsa:
 	if ! grep -q "JWT_RS256_PUBLIC_KEY_PATH" .env; then \
 		echo "JWT_RS256_PUBLIC_KEY_PATH=conf/jwtRS256.key.pub" >> .env; \
 	fi;
+
+regular_backup:
+	$(call create_backup,regular,$(CURRENT_DATETIME).tar.gz)
+
+media_backup:
+	mkdir -p var/media_backups/
+	make media_backup_clean
+	tar -czf var/media_backups/media.tar.gz var/www/media/
+	aws s3 cp var/media_backups/media.tar.gz $(S3_BACKUP_FOLDER)Media/media_$(CURRENT_DATETIME).tar.gz
+
+media_backup_clean:
+	rm var/media_backups/media.tar.gz
+
+get_backups_from_remote:
+	mkdir -p var/backups/from_remote
+	aws s3 sync $(S3_BACKUP_FOLDER) var/backups/from_remote
