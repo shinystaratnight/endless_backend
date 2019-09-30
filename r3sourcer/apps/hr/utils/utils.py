@@ -341,6 +341,6 @@ def get_jobsite_date_time(job, date_time):
     try:
         time_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
     except UnknownTimeZoneError:
-        time_zone = 'Australia/Sydney'
+        time_zone = pytz.timezone('Australia/Sydney')
     jobsite_time = date_time.replace(tzinfo=time_zone)
     return jobsite_time
