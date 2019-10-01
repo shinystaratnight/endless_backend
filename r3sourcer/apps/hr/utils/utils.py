@@ -1,5 +1,6 @@
 import logging
 import pytz
+from pytz.exceptions import UnknownTimeZoneError
 from calendar import monthrange
 from itertools import chain
 from uuid import UUID # not remove
@@ -337,6 +338,9 @@ def get_hours(time_delta):
 
 def get_jobsite_date_time(job, date_time):
     tf = TimezoneFinder(in_memory=True)
-    time_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
+    try:
+        time_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
+    except UnknownTimeZoneError:
+        time_zone = pytz.timezone('Australia/Sydney')
     jobsite_time = date_time.replace(tzinfo=time_zone)
     return jobsite_time
