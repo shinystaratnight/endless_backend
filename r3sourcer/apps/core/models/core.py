@@ -1290,10 +1290,10 @@ class Company(
 
     def get_timezone(self):
         master_company = self.get_master_company()[0]
-        address = master_company.get_hq_address().address
-        if address:
+        hq_address = master_company.get_hq_address()
+        if hq_address:
             tf = TimezoneFinder()
-            time_zone = tf.timezone_at(lng=address.longitude, lat=address.latitude)
+            time_zone = tf.timezone_at(lng=hq_address.address.longitude, lat=hq_address.address.latitude)
             return time_zone
         return settings.TIME_ZONE
 

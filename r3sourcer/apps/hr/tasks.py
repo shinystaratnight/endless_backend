@@ -368,8 +368,9 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 autoconfirm_rejected_timesheet.apply_async(
                     args=[time_sheet_id], countdown=settings.SUPERVISOR_DECLINE_TIMEOUT
                 )
+            jobs_today = utils.get_jobsite_date_time(time_sheet.job_offer.job, datetime.now())
 
-            today = date.today()
+            today = jobs_today.today()
 
             if event == SHIFT_ENDING:
                 recipient = time_sheet.candidate_contact
