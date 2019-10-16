@@ -1,5 +1,5 @@
 Django==1.11.16
-psycopg2==2.6.2
+psycopg2==2.8.3
 django-money==0.10.2
 django-money-rates==0.3.1
 py-moneyed==0.6.0
@@ -55,7 +55,7 @@ Inflector>=2.0.11
 idna<2.8
 sentry-sdk==0.9.5
 timezonefinder==4.1.0
-
+django-rest-swagger==2.2.0
 
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light
 git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails
@@ -63,3 +63,5 @@ git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails
 # TODO: uncomment this after redbeat support timezones
 # celery-redbeat==0.11.0
 git+https://github.com/sempr/redbeat#egg=celery-redbeat
+
+
