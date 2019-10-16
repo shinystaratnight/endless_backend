@@ -96,6 +96,7 @@ INSTALLED_APPS = [
     'oauth2_provider_jwt',
     'compressor',
     'djangobower',
+    'rest_framework_swagger',
 ]
 
 if 'r3sourcer.apps.logger' in INSTALLED_APPS:

@@ -2,6 +2,7 @@ from django.conf import settings
 from django.conf.urls import url, include
 from django.conf.urls.static import static
 from django.contrib import admin
+from rest_framework_swagger.views import get_swagger_view
 
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
@@ -19,6 +20,7 @@ router.registry.append(('models', ModelsList, 'models'))
 router.registry.append(('functions', FunctionsList, 'functions'))
 
 admin.site.login_form = CoreAdminAuthenticationForm
+swagger_view = get_swagger_view(title='Endless API')
 
 _urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -43,6 +45,7 @@ _urlpatterns = [
     url(r'^admin/', include('loginas.urls')),
     url(r'^oauth2/token/$', OAuthJWTToken.as_view(), name='oauth2_token'),
     url(r'^oauth2/', include('oauth2_provider_jwt.urls', namespace='oauth2_provider')),
+    url(r'^swagger/', swagger_view),
 ]
 
 urlpatterns = [
