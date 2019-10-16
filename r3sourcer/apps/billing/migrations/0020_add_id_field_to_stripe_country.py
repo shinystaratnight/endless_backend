@@ -15,10 +15,10 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='stripecountryaccount',
-            name='id',
-            field=models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
-            preserve_default=False,
-        ),
+        # migrations.AddField(
+        #     model_name='stripecountryaccount',
+        #     name='id',
+        #     field=models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID'),
+        #     preserve_default=False,
+        # ),
     ]

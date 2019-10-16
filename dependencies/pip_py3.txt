@@ -1,5 +1,5 @@
 Django==1.11.16
-psycopg2==2.6.2
+psycopg2==2.8.3
 django-money==0.10.2
 django-money-rates==0.3.1
 py-moneyed==0.6.0
