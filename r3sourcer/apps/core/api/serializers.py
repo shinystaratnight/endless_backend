@@ -1798,9 +1798,8 @@ class TrialSerializer(serializers.Serializer):
     def validate(self, data):
         email = data['email']
         company_name = data['company_name']
-        phone = self.normalize_phone(data['phone_mobile'])
-        phone_mobile = phonenumber.to_python(phone)
-
+        data['phone_mobile'] = self.normalize_phone(data['phone_mobile'])
+        phone_mobile = phonenumber.to_python(data['phone_mobile'])
         if not phone_mobile or not phone_mobile.is_valid():
             raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})
 
@@ -1838,7 +1837,6 @@ class TrialSerializer(serializers.Serializer):
             })
         except Site.DoesNotExist:
             pass
-
         return data
 
 
