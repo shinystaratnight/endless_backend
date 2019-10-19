@@ -1,15 +1,12 @@
+from celery import shared_task
+from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db import transaction
 
-from celery import shared_task
-from celery.utils.log import get_task_logger
-from phonenumber_field import phonenumber
-
-from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.models import Contact
-
+from r3sourcer.apps.core.service import factory
+from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from .models import TokenLogin
-
 
 logger = get_task_logger(__name__)
 
@@ -75,8 +72,11 @@ def send_login_email(self, contact_id):
 
 
 def send_login_message(username, contact):
-    phone_number = phonenumber.to_python(username)
-    if not phone_number or not phone_number.is_valid():
+    email_username = is_valid_email(username)
+    mobile_phone_username = is_valid_phone_number(username)
+    if email_username is False and mobile_phone_username is False:
+        raise Exception('Invalid email or phone number')
+    elif mobile_phone_username is False:
         send_login_email.delay(contact.id)
-    else:
+    elif email_username is False:
         send_login_sms.delay(contact.id)

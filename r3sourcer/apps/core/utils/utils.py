@@ -1,5 +1,7 @@
 from urllib.parse import urlparse
 
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from easy_thumbnails.alias import aliases
 from phonenumbers import parse, NumberParseException, is_valid_number
 
@@ -35,3 +37,16 @@ def validate_phone_number(phone_number):
     except NumberParseException:
         return False
     return is_valid_number(parsed)
+
+
+def is_valid_email(email):
+    try:
+        validate_email(email)
+    except ValidationError:
+        return False
+    return True
+
+
+def is_valid_phone_number(phone_number):
+    phone = normalize_phone_number(phone_number)
+    return validate_phone_number(phone)

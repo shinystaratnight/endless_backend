@@ -18,7 +18,6 @@ from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum
-from django.db.models.signals import post_save
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.text import slugify
@@ -38,6 +37,7 @@ from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core.utils.user import get_default_company
+from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
