@@ -2,8 +2,16 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.backends import ModelBackend
 from django.db.models import Q
 
+from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
+
 
 class ContactBackend(ModelBackend):
+    @property
+    def required_fields_validator(self):
+        return {
+            'email': is_valid_email,
+            'phone_mobile': is_valid_phone_number
+        }
 
     def get_login_value(self, model, **kwargs):
         value = None
@@ -24,7 +32,9 @@ class ContactBackend(ModelBackend):
         params = Q()
         for field in UserModel.REQUIRED_FIELDS:
             field_name = 'contact__{}'.format(field)
-            params |= Q(**{field_name: username})
+            validator = self.required_fields_validator.get(field)
+            if validator(username) is True:
+                params |= Q(**{field_name: username})
 
         try:
             user = UserModel._default_manager.get(params)
