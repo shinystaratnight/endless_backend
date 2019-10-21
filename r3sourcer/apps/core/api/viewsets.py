@@ -233,14 +233,16 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def exists(self, request, *args, **kwargs):
         email = request.GET.get('email')
-        phone = normalize_phone_number(request.GET.get('phone', '').strip())
+        phone = request.GET.get('phone', '').strip()
         message = ''
         if email and models.Contact.objects.filter(email=email).exists():
             message = _('User with this email already registered')
-        elif phone and validate_phone_number(phone) is False:
-            message = _('Invalid phone number %s' % phone)
-        elif phone and models.Contact.objects.filter(phone_mobile=phone).exists():
-            message = _('User with this phone number already registered')
+        elif phone:
+            _phone = normalize_phone_number(phone)
+            if validate_phone_number(_phone) is False:
+                message = _('Invalid phone number %s' % phone)
+            if validate_phone_number(_phone) is True and models.Contact.objects.filter(phone_mobile=_phone).exists():
+                message = _('User with this phone number already registered')
 
         if message:
             return Response({
