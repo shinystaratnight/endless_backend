@@ -1,22 +1,21 @@
 import json
 
 from django.conf import settings
-from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.utils.module_loading import import_string
 from django.utils.translation import ugettext_lazy as _
 from django.views import generic
-
-from rest_framework import exceptions
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
 from oauth2_provider_jwt.utils import generate_payload, encode_jwt
+from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
+from rest_framework import exceptions
+from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import Form, Company, Invoice, Role, User, CompanyContact, Contact
 from r3sourcer.apps.core.utils.companies import get_site_master_company, get_site_url
+from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.tasks import sync_invoice
 
@@ -42,8 +41,14 @@ class OAuth2JWTTokenMixin():
                 username = request.data.get('username') if hasattr(request, 'data') else request.POST.get('username')
 
         if username:
+            if is_valid_email(username) is True:
+                contact_qs = Contact.objects.filter(email=username)
+            elif is_valid_phone_number(username) is True:
+                contact_qs = Contact.objects.filter(phone_mobile=username)
+            else:
+                raise ValueError('Invalid username')
             try:
-                contact = Contact.objects.get(Q(email=username) | Q(phone_mobile=username))
+                contact = contact_qs.first()
                 extra_data['user_id'] = str(contact.user.id)
             except Exception:
                 raise MissingIdAttribute
