@@ -4,6 +4,7 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import authenticate, logout
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db.models import Q
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
@@ -22,7 +23,7 @@ from rest_framework.response import Response
 from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
-from r3sourcer.apps.core.utils.utils import get_host
+from r3sourcer.apps.core.utils.utils import get_host, is_valid_email, is_valid_phone_number
 from r3sourcer.apps.core.views import OAuth2JWTTokenMixin
 from r3sourcer.apps.login.api.exceptions import TokenAlreadyUsed
 
@@ -126,20 +127,31 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        is_email = '@' in serializer.data['username']
+        email_username = is_valid_email(serializer.data['username'])
+        mobile_phone_username = is_valid_phone_number(serializer.data['username'])
+        if email_username is True:
+            contact_qs = Contact.objects.filter(email=serializer.data['username'])
+        elif mobile_phone_username is True:
+            contact_qs = Contact.objects.filter(phone_mobile=serializer.data['username'])
+        else:
+            raise ValidationError(
+                _(
+                    "Please enter a correct email or mobile phone number and password. "
+                    "Note that both fields may be case-sensitive."
+                ),
+                code='invalid_login',
+            )
 
-        contact = Contact.objects.filter(
-            Q(email=serializer.data['username']) |
-            Q(phone_mobile=serializer.data['username'])
-        ).first()
+        contact = contact_qs.first()
         if contact and ('password' not in serializer.data or
                         not serializer.data['password']):
             send_login_message(serializer.data['username'], contact)
-            if is_email:
+            if email_username is True:
                 message = _('E-mail with login token was sent.')
-            else:
+            elif mobile_phone_username is True:
                 message = _('SMS with login token was sent.')
-
+            else:
+                raise ValueError('Invalid token transport')
             return Response({
                 'status': 'success',
                 'message': message,
@@ -153,7 +165,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                             password=serializer.data.get('password'))
         if user is None:
             if contact is not None:
-                if is_email:
+                if email_username:
                     message = {
                         'username': self.errors['email_not_found'],
                     }
@@ -163,7 +175,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                     }
             else:
                 message = {
-                    'username': self.errors['email_not_found'] if is_email else self.errors['phone_not_found'],
+                    'username': self.errors['email_not_found'] if email_username else self.errors['phone_not_found'],
                 }
 
             raise exceptions.ValidationError(message)
