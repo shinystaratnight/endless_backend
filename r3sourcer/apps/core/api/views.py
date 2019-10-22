@@ -17,6 +17,7 @@ from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.api import serializers
 from r3sourcer.apps.core.tasks import send_trial_email, cancel_trial
+from r3sourcer.apps.core.utils.utils import tz_time2utc_time
 
 User = get_user_model()
 
@@ -100,7 +101,8 @@ class TrialUserView(viewsets.GenericViewSet):
         end_of_trial = timezone.now() + datetime.timedelta(days=30)
 
         send_trial_email.apply_async([contact.id, company.id], countdown=10)
-        cancel_trial.apply_async([new_user.id], eta=end_of_trial)
+        utc_end_of_trial = tz_time2utc_time(end_of_trial)
+        cancel_trial.apply_async([new_user.id], eta=utc_end_of_trial)
 
         return Response({
             'status': 'success',

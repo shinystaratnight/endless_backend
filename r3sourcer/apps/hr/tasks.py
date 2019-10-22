@@ -7,6 +7,7 @@ from timezonefinder import TimezoneFinder
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
+from r3sourcer.apps.core.utils.utils import tz_time2utc_time
 from r3sourcer.celeryapp import app
 
 from django.conf import settings
@@ -143,14 +144,17 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                     return
 
                 if task:
-                    task.apply_async(args=[job_offer_id], eta=eta)
+                    utc_eta = tz_time2utc_time(eta)
+                    task.apply_async(args=[job_offer_id], eta=utc_eta)
 
                     job_offer.scheduled_sms_datetime = eta
                     job_offer.save(update_fields=['scheduled_sms_datetime'])
 
                     logger.info('JO SMS sending will be rescheduled for Job Offer: %s', str(job_offer_id))
             elif jo_target_date > today and jo_target_datetime.timetz() >= time(16, 0, 0, tzinfo=jo_tz):
-                task.apply_async(args=[job_offer_id], eta=jo_target_datetime - timedelta(hours=8))
+                eta = jo_target_datetime - timedelta(hours=8)
+                utc_eta = tz_time2utc_time(eta)
+                task.apply_async(args=[job_offer_id], eta=utc_eta)
                 job_offer.scheduled_sms_datetime = jo_target_datetime - timedelta(hours=8)
                 job_offer.save(update_fields=['scheduled_sms_datetime'])
             else:
@@ -326,7 +330,6 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
             'candidate_contact': candidate,
             'company_contact': time_sheet.supervisor
         }
-
         with transaction.atomic():
             site_url = core_companies_utils.get_site_url(user=contacts['candidate_contact'].contact.user)
             data_dict = dict(
@@ -583,7 +586,8 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
                 eta = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.make_aware(datetime.combine(eta.today(), time(7, 0))))
 
             if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
-                send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder], eta=eta)
+                utc_eta = tz_time2utc_time(eta)
+                send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder], eta=utc_eta)
     except Exception as e:
         logger.error(e)
 

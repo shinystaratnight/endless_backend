@@ -19,6 +19,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.utils.translation import ugettext_lazy as _
+from timezonefinder import TimezoneFinder
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -492,3 +493,5 @@ try:
         JWT_PUBLIC_KEY_RSA_R3SOURCERISSUER = jwt_public.read()
 except FileNotFoundError:
     print('Please specify path to JWT RSA256 public key')
+
+TIME_ZONE_FINDER = TimezoneFinder(in_memory=True)
