@@ -3,7 +3,7 @@ from urllib.parse import urlparse
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from easy_thumbnails.alias import aliases
-from phonenumbers import parse, NumberParseException, is_valid_number
+from phonenumbers import parse, NumberParseException, is_valid_number, format_number, PhoneNumberFormat
 
 
 def get_thumbnail_picture(picture, alias):
@@ -25,10 +25,15 @@ def get_host(request):
 
 def normalize_phone_number(phone_number):
     if phone_number.startswith('0'):
-        return '+61{}'.format(phone_number[1:])
+        phone_number = '+61{}'.format(phone_number[1:])
     elif not phone_number.startswith('+'):
-        return '+{}'.format(phone_number)
-    return phone_number
+        phone_number = '+{}'.format(phone_number)
+
+    try:
+        _phone_number = format_number(parse(phone_number), PhoneNumberFormat.E164)
+    except NumberParseException:
+        _phone_number = None
+    return _phone_number
 
 
 def validate_phone_number(phone_number):
