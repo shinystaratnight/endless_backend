@@ -11,13 +11,13 @@ from django.core.validators import validate_email
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 
-from phonenumber_field import phonenumber
 from rest_framework import viewsets, exceptions, status, fields
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from r3sourcer.apps.core.utils.utils import normalize_phone_number, validate_phone_number
 from .. import models, mixins
 from ..decorators import get_model_workflow_functions
 from ..service import factory
@@ -184,14 +184,6 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     phone_fields = ['phone_mobile']
     raise_invalid_address = False
 
-    def normalize_phone(self, phone):
-        if phone.startswith('0'):
-            phone = '+61{}'.format(phone[1:])
-        elif not phone.startswith('+'):
-            phone = '+{}'.format(phone)
-
-        return phone
-
     def perform_create(self, serializer):
         instance = serializer.save()
 
@@ -204,7 +196,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def validate(self, request, *args, **kwargs):
         email = request.GET.get('email')
-        phone = request.GET.get('phone')
+        phone = request.GET.get('phone', '').strip()
 
         if email is not None:
             try:
@@ -216,9 +208,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
                     'message': e.message
                 })
         elif phone is not None:
-            phone = self.normalize_phone(phone)
-            phone_number = phonenumber.to_python(phone)
-            if not phone_number or not phone_number.is_valid():
+            phone = normalize_phone_number(phone)
+            if not phone or validate_phone_number(phone) is False:
                 raise exceptions.ValidationError({
                     'valid': False,
                     'message': _('Enter a valid Phone Number')
@@ -243,19 +234,23 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def exists(self, request, *args, **kwargs):
         email = request.GET.get('email')
         phone = request.GET.get('phone', '').strip()
-        phone = self.normalize_phone(phone)
-
         message = ''
-
         if email and models.Contact.objects.filter(email=email).exists():
             message = _('User with this email already registered')
-        elif phone and models.Contact.objects.filter(phone_mobile=phone).exists():
-            message = _('User with this phone number already registered')
+        elif phone:
+            _phone = normalize_phone_number(phone)
+            if validate_phone_number(_phone) is False:
+                message = _('Invalid phone number %s' % phone)
+            if validate_phone_number(_phone) is True and models.Contact.objects.filter(phone_mobile=_phone).exists():
+                message = _('User with this phone number already registered')
 
         if message:
-            raise exceptions.ValidationError({
-                'valid': False,
-                'message': message
+            return Response({
+                'errors': {
+                    'valid': False,
+                    'message': message
+                },
+                'status': 'error'
             })
 
         return Response({

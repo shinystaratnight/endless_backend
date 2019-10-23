@@ -1,14 +1,9 @@
-from rest_framework import serializers
-
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
 from django.utils.translation import ugettext_lazy as _
-
-from phonenumber_field import phonenumber
+from rest_framework import serializers
 
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer, ApiContactImageFieldsMixin
 from r3sourcer.apps.core.models import Contact
-
+from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from .. import models
 
 
@@ -39,20 +34,16 @@ class LoginSerializer(serializers.Serializer):
     def validate(self, data):
         username = data['username']
 
-        phone_number = phonenumber.to_python(username)
-        if not phone_number or not phone_number.is_valid():
-            try:
-                if '@' not in username:
-                    raise ValidationError(_('invalid email'))
-                validate_email(username)
-            except ValidationError:
-                raise serializers.ValidationError(
-                    _(
-                        "Please enter a correct email or mobile phone number and password. "
-                        "Note that both fields may be case-sensitive."
-                    ),
-                    code='invalid_login',
-                )
+        email_username = is_valid_email(username)
+        mobile_phone_username = is_valid_phone_number(username)
+        if email_username is False and mobile_phone_username is False:
+            raise serializers.ValidationError(
+                _(
+                    "Please enter a correct email or mobile phone number and password. "
+                    "Note that both fields may be case-sensitive."
+                ),
+                code='invalid_login',
+            )
 
         return data
 

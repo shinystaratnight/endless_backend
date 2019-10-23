@@ -3,22 +3,20 @@ import datetime
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
-
-from rest_framework import status, permissions
+from rest_framework import status, permissions, viewsets
 from rest_framework.response import Response
-from rest_framework.views import exception_handler, APIView
+from rest_framework.views import exception_handler
 
 from r3sourcer.apps.company_settings.models import GlobalPermission
-from r3sourcer.apps.core.api import serializers
 from r3sourcer.apps.core import models
+from r3sourcer.apps.core.api import serializers
 from r3sourcer.apps.core.tasks import send_trial_email, cancel_trial
-
 
 User = get_user_model()
 
@@ -42,12 +40,13 @@ def core_exception_handler(exc, context):
     return response
 
 
-class TrialUserView(APIView):
+class TrialUserView(viewsets.GenericViewSet):
 
     permission_classes = [permissions.AllowAny]
+    serializer_class = serializers.TrialSerializer
 
     @method_decorator(csrf_exempt)
-    def post(self, request, **kwargs):
+    def create(self, request, *args, **kwargs):
         data = copy.copy(request.data)
         data['website'] = '{}.{}'.format(data['website'], settings.REDIRECT_DOMAIN)
 

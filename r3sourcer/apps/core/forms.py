@@ -3,15 +3,13 @@ from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.core.validators import validate_email
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-
 from easy_select2 import Select2
 from phonenumber_field.formfields import PhoneNumberField
 
-from phonenumber_field import phonenumber
-
+from r3sourcer.apps.core.utils.utils import is_valid_email, \
+    is_valid_phone_number
 from . import models
 
 
@@ -29,16 +27,14 @@ class CoreAdminAuthenticationForm(AdminAuthenticationForm):
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
 
-        phone_number = phonenumber.to_python(username)
-        if not phone_number or not phone_number.is_valid():
-            try:
-                validate_email(username)
-            except forms.ValidationError:
-                raise forms.ValidationError(
-                    self.error_messages['invalid_login'],
-                    code='invalid_login',
-                    params={'username': _('email or mobile phone number')},
-                )
+        email_username = is_valid_email(username)
+        mobile_phone_username = is_valid_phone_number(username)
+        if email_username is False and mobile_phone_username is False:
+            raise forms.ValidationError(
+                self.error_messages['invalid_login'],
+                code='invalid_login',
+                params={'username': _('email or mobile phone number')},
+            )
 
         if username and password:
             self.user_cache = authenticate(username=username, password=password)

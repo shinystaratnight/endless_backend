@@ -29,6 +29,7 @@ from django.contrib.contenttypes.fields import GenericRelation
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import models as core_models, tasks as core_tasks
+from r3sourcer.apps.core.utils.utils import normalize_phone_number, validate_phone_number
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, NOT_ALLOWED)
 from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 from r3sourcer.apps.core.models import Workflow
@@ -1787,21 +1788,12 @@ class TrialSerializer(serializers.Serializer):
     company_name = serializers.CharField(max_length=127)
     website = serializers.CharField()
 
-    def normalize_phone(self, phone):
-        if phone.startswith('0'):
-            phone = '+61{}'.format(phone[1:])
-        elif not phone.startswith('+'):
-            phone = '+{}'.format(phone)
-
-        return phone
-
     def validate(self, data):
         email = data['email']
         company_name = data['company_name']
-        phone = self.normalize_phone(data['phone_mobile'])
-        phone_mobile = phonenumber.to_python(phone)
+        data['phone_mobile'] = normalize_phone_number(data.get('phone_mobile', ''))
 
-        if not phone_mobile or not phone_mobile.is_valid():
+        if not data['phone_mobile'] or validate_phone_number(data['phone_mobile']) is False:
             raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})
 
         messages = {}
@@ -1809,7 +1801,7 @@ class TrialSerializer(serializers.Serializer):
         if core_models.Contact.objects.filter(email=email).exists():
             messages['email'] = _('User with this email already registered')
 
-        if core_models.Contact.objects.filter(phone_mobile=phone_mobile).exists():
+        if core_models.Contact.objects.filter(phone_mobile=data['phone_mobile']).exists():
             messages['phone_mobile'] = _('User with this phone number already registered')
 
         if messages:
@@ -1838,7 +1830,6 @@ class TrialSerializer(serializers.Serializer):
             })
         except Site.DoesNotExist:
             pass
-
         return data
 
 
