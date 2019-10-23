@@ -934,7 +934,8 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
 
         if termination_date and termination_date > today:
             eta = timezone.make_aware(datetime.combine(termination_date, time(2)))
-            core_tasks.terminate_company_contact.apply_async(args=[rel.id], eta=eta)
+            utc_eta = tz_time2utc_time(eta)
+            core_tasks.terminate_company_contact.apply_async(args=[rel.id], eta=utc_eta)
 
         return instance
 

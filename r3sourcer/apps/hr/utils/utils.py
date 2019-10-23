@@ -1,10 +1,9 @@
 import logging
 import pytz
+from django.conf import settings
 from pytz.exceptions import UnknownTimeZoneError
-from calendar import monthrange
 from itertools import chain
 from uuid import UUID # not remove
-from timezonefinder import TimezoneFinder
 
 from datetime import datetime, date, time, timedelta
 from collections import defaultdict
@@ -337,7 +336,7 @@ def get_hours(time_delta):
 
 
 def get_jobsite_date_time(job, date_time):
-    tf = TimezoneFinder(in_memory=True)
+    tf = settings.TIME_ZONE_FINDER
     try:
         time_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
     except UnknownTimeZoneError:
