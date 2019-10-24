@@ -993,7 +993,8 @@ class JobOffer(core_models.UUIDModel):
                 if eta:
                     self.scheduled_sms_datetime = eta
                     self.save(update_fields=['scheduled_sms_datetime'])
-                    task.apply_async(args=[self.id], eta=eta)
+                    utc_eta = tz_time2utc_time(eta)
+                    task.apply_async(args=[self.id], eta=utc_eta)
 
 
 class JobOfferSMS(core_models.UUIDModel):
