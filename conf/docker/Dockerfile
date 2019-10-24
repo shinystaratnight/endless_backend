@@ -3,14 +3,12 @@ FROM python:3.5-buster
 WORKDIR /app/
 COPY dependencies ./dependencies
 COPY helpers ./helpers
-COPY ["docker-entrypoint.sh", "Procfile", "README.md", "setup.py", "pytest.ini", ".coveragerc", "./"]
+COPY ["docker-entrypoint.sh", "Procfile", "README.md", "setup.py", "pytest.ini", ".coveragerc", ".env", "manage.py", "./"]
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash -
 RUN apt-get update && apt-get install -y nodejs
 RUN npm i -g bower
 RUN mkdir -p r3sourcer var/log var/run var/www var/tmp
-RUN pip install virtualenv
-RUN virtualenv -p python3 venv/py3 && ln -s venv/py3/bin bin
-RUN bin/pip install -r dependencies/pip_pytest.txt
+RUN pip install -r dependencies/pip_pytest.txt
 
 # available only uwsgi port
 EXPOSE 8081

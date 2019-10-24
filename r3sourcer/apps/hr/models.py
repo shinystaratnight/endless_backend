@@ -993,7 +993,8 @@ class JobOffer(core_models.UUIDModel):
                 if eta:
                     self.scheduled_sms_datetime = eta
                     self.save(update_fields=['scheduled_sms_datetime'])
-                    task.apply_async(args=[self.id], eta=eta)
+                    utc_eta = tz_time2utc_time(eta)
+                    task.apply_async(args=[self.id], eta=utc_eta)
 
 
 class JobOfferSMS(core_models.UUIDModel):
@@ -1322,6 +1323,9 @@ class TimeSheet(
             raise ValueError('Invalid eta, datetime without timezone')
         from r3sourcer.apps.hr.tasks import send_going_to_work_sms
         utc_going_eta = tz_time2utc_time(going_eta)
+        print('DEBUG IN: _send_going_to_work')
+        print('INPUT going_eta', going_eta)
+        print('UTC converted going_eta', utc_going_eta)
         send_going_to_work_sms.apply_async(args=[self.pk], eta=utc_going_eta)
 
     def _send_submit_sms(self, going_eta):
