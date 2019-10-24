@@ -51,7 +51,7 @@ def app():
 @app.command()
 def start():
     os.chdir(BASE_DIR)
-    run('bin/honcho start', warn=True, pty=True)
+    run('honcho start', warn=True, pty=True)
 
 
 @app.command()
@@ -64,7 +64,7 @@ def test(app):
     if app:
         app = os.path.join('apps', app)
 
-    run('bin/pytest --cov={app} --cov-report=term-missing --cov-config .coveragerc {app}'.format(
+    run('pytest --cov={app} --cov-report=term-missing --cov-config .coveragerc {app}'.format(
         app=os.path.join('r3sourcer', app)), warn=True, pty=True)
 
 
@@ -72,7 +72,7 @@ def test(app):
 def py_test():
     os.chdir(BASE_DIR)
     set_env('env_defaults', '.env', '.env_test')
-    run('bin/pytest')
+    run('pytest')
 
 
 @app.command()

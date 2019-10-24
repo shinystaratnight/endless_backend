@@ -1334,6 +1334,9 @@ class TimeSheet(
                     'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
                 if str(eval(task['request']['args'])[1]) == '1':
                     app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
+        print('DEBUG IN: _send_going_to_work')
+        print('INPUT going_eta', going_eta)
+        print('UTC converted going_eta', utc_going_eta)
         utc_going_eta = tz_time2utc_time(going_eta)
         process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=utc_going_eta)
 

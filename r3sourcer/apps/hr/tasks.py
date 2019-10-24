@@ -711,7 +711,6 @@ def send_going_to_work_sms(self, time_sheet_id):
     :return:
     """
     action_sent = 'going_to_work_sent_sms'
-
     with transaction.atomic():
         try:
             time_sheet = hr_models.TimeSheet.objects.select_for_update().get(
