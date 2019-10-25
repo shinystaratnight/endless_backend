@@ -1,9 +1,11 @@
+from functools import reduce
 from urllib.parse import urlparse
 
+import pytz
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from easy_thumbnails.alias import aliases
-from phonenumbers import parse, NumberParseException, is_valid_number, format_number, PhoneNumberFormat
+from phonenumbers import parse, NumberParseException, is_valid_number, format_number, PhoneNumberFormat, PhoneNumber
 
 
 def get_thumbnail_picture(picture, alias):
@@ -23,25 +25,46 @@ def get_host(request):
     return host_parts.netloc or host_parts.path
 
 
-def normalize_phone_number(phone_number):
-    if phone_number.startswith('0'):
-        phone_number = '+61{}'.format(phone_number[1:])
-    elif not phone_number.startswith('+'):
-        phone_number = '+{}'.format(phone_number)
-
+def parse_phone_number(phone_number):
     try:
-        _phone_number = format_number(parse(phone_number), PhoneNumberFormat.E164)
+        parsed_phone_number = parse(phone_number)
     except NumberParseException:
-        _phone_number = None
-    return _phone_number
+        parsed_phone_number = PhoneNumber()
+    return parsed_phone_number
+
+
+def process_phone_number_leading_zero(phone_number):
+    if phone_number.startswith('0'):
+        return '+61{}'.format(phone_number[1:])
+    return phone_number
+
+
+def process_phone_number_leading_plus(phone_number):
+    if not phone_number.startswith('+'):
+        return '+{}'.format(phone_number)
+    return phone_number
+
+
+PHONE_NUMBER_VALIDATION_CHAIN = (
+    process_phone_number_leading_zero,
+    process_phone_number_leading_plus,
+    parse_phone_number,
+)
+
+
+def normalize_phone_number(phone_number):
+    __phone_number = reduce(lambda r, f: f(r),
+                            PHONE_NUMBER_VALIDATION_CHAIN,
+                            phone_number)
+
+    if is_valid_number(__phone_number) is False:
+        return phone_number
+
+    return format_number(__phone_number, PhoneNumberFormat.E164)
 
 
 def validate_phone_number(phone_number):
-    try:
-        parsed = parse(phone_number)
-    except NumberParseException:
-        return False
-    return is_valid_number(parsed)
+    return is_valid_number(parse_phone_number(phone_number))
 
 
 def is_valid_email(email):
@@ -55,3 +78,22 @@ def is_valid_email(email):
 def is_valid_phone_number(phone_number):
     phone = normalize_phone_number(phone_number)
     return validate_phone_number(phone)
+
+
+def tz_time2utc_time(dt):
+    """convert time with timezone to utc time
+    :param dt: datetime.datetime with tz obj
+    """
+    return dt.astimezone(pytz.utc)
+
+
+def local_time2utc_time(dt, timezone):
+    """
+    convert local time to utc
+    :param dt: datetime.datetime obj
+    :param timezone: string
+    :return: datetime
+    """
+    local_tz = pytz.timezone(timezone)
+    datetime_with_tz = local_tz.localize(dt, is_dst=None)
+    return tz_time2utc_time(datetime_with_tz)

@@ -3,13 +3,13 @@
 rm -f celerybeat.pid
 
 echo "Bower install starting..."
-bin/django bower_install --allow-root
+django bower_install --allow-root
 
 echo "Collect static starting..."
-bin/django collectstatic --noinput
+django collectstatic --noinput
 
 echo "Migrate starting..."
-bin/django migrate --noinput
+django migrate --noinput
 
 echo "App starting..."
-bin/app start
+app start

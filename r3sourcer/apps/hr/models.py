@@ -23,6 +23,7 @@ from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
+from r3sourcer.apps.core.utils.utils import tz_time2utc_time
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -992,7 +993,8 @@ class JobOffer(core_models.UUIDModel):
                 if eta:
                     self.scheduled_sms_datetime = eta
                     self.save(update_fields=['scheduled_sms_datetime'])
-                    task.apply_async(args=[self.id], eta=eta)
+                    utc_eta = tz_time2utc_time(eta)
+                    task.apply_async(args=[self.id], eta=utc_eta)
 
 
 class JobOfferSMS(core_models.UUIDModel):
@@ -1317,10 +1319,18 @@ class TimeSheet(
         self.save()
 
     def _send_going_to_work(self, going_eta):
+        if going_eta.tzinfo is None:
+            raise ValueError('Invalid eta, datetime without timezone')
         from r3sourcer.apps.hr.tasks import send_going_to_work_sms
-        send_going_to_work_sms.apply_async(args=[self.pk], eta=going_eta)
+        utc_going_eta = tz_time2utc_time(going_eta)
+        print('DEBUG IN: _send_going_to_work')
+        print('INPUT going_eta', going_eta)
+        print('UTC converted going_eta', utc_going_eta)
+        send_going_to_work_sms.apply_async(args=[self.pk], eta=utc_going_eta)
 
     def _send_submit_sms(self, going_eta):
+        if going_eta.tzinfo is None:
+            raise ValueError('Invalid eta, datetime without timezone')
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
         for task in chain.from_iterable(app.control.inspect().scheduled().values()):
             if str(eval(task['request']['args'])[0]) == str(self.id) and task['request'][
@@ -1328,7 +1338,8 @@ class TimeSheet(
                     'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
                 if str(eval(task['request']['args'])[1]) == '1':
                     app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
-        process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
+        utc_going_eta = tz_time2utc_time(going_eta)
+        process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=utc_going_eta)
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         if self.going_to_work_confirmation is None:
@@ -1396,7 +1407,7 @@ class TimeSheet(
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
 
             now = hr_utils.get_jobsite_date_time(self.job_offer.job, timezone.now())
-            if now <= hr_utils.get_jobsite_date_time(self.job_offer.job,self.shift_started_at):
+            if now <= hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at):
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
                 pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
                 going_eta = hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at) - timedelta(minutes=pre_shift_confirmation_delta)
