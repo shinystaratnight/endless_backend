@@ -424,14 +424,24 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         return obj and (obj.is_fulfilled_annotated if hasattr(obj, 'is_fulfilled_annotated') else obj.is_fulfilled())
 
     def get_workers_details(self, obj):
-        accepted = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.accepted).distinct()
-        cancelled = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.cancelled).distinct()
-        undefined = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.undefined).distinct()
+        qs = obj.job_offers.filter(
+            status__in=[
+                hr_models.JobOffer.STATUS_CHOICES.accepted,
+                hr_models.JobOffer.STATUS_CHOICES.cancelled,
+                hr_models.JobOffer.STATUS_CHOICES.undefined,
+            ]
+        ).select_related('candidate_contact').distinct()
+        result = {}
+        for x in qs:
+            storage = result.setdefault(x.status, [])
+            storage.append({
+                'id': x.id,
+                'name': str(x.candidate_contact)})
 
         return {
-            'accepted': [str(jo.candidate_contact) for jo in accepted],
-            'cancelled': [str(jo.candidate_contact) for jo in cancelled],
-            'undefined': [str(jo.candidate_contact) for jo in undefined],
+            'accepted': result.get(hr_models.JobOffer.STATUS_CHOICES.accepted, []),
+            'cancelled': result.get(hr_models.JobOffer.STATUS_CHOICES.cancelled, []),
+            'undefined': result.get(hr_models.JobOffer.STATUS_CHOICES.undefined, []),
         }
 
     def get_can_delete(self, obj):  # pragma: no cover

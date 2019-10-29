@@ -337,9 +337,11 @@ def get_hours(time_delta):
 
 def get_jobsite_date_time(job, date_time):
     tf = settings.TIME_ZONE_FINDER
+    naive_dt = date_time.replace(tzinfo=None)
     try:
         time_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
     except UnknownTimeZoneError:
         time_zone = pytz.timezone('Australia/Sydney')
-    jobsite_time = date_time.replace(tzinfo=time_zone)
-    return jobsite_time
+
+    datetime_with_tz = time_zone.localize(naive_dt, is_dst=None)
+    return datetime_with_tz
