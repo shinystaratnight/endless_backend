@@ -1,0 +1,2 @@
+class MyOBCredentialException(Exception):
+    pass
