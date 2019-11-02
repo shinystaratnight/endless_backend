@@ -8,6 +8,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from r3sourcer.apps.core.utils.utils import tz_time2utc_time
+from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.celeryapp import app
 
 from django.conf import settings
@@ -29,8 +30,6 @@ from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.payment import InvoiceService, calc_worked_delta
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
-from r3sourcer.apps.myob.api.wrapper import MYOBClient
-from r3sourcer.apps.myob.models import MYOBCompanyFileToken
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.pricing.services import CoefficientService
@@ -629,8 +628,7 @@ def check_unpaid_invoices():
     for company in master_companies:
         unpaid_invoices = core_models.Invoice.objects.filter(provider_company=company, is_paid=False)
         date_from = unpaid_invoices.order_by('-date')[0].date - timedelta(days=32)
-        cf_token = MYOBCompanyFileToken.objects.filter(company=company).latest('created')
-        client = MYOBClient(cf_data=cf_token)
+        client = get_myob_client(company.id)
         initialized = client.init_api(timeout=True)
 
         if not initialized:
