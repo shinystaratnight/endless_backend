@@ -15,7 +15,7 @@ def sync_candidate_contacts_to_myob(myob_client=None, account=None):
     :return:
     """
 
-    sync = CandidateSync(myob_client, account)
+    sync = CandidateSync(myob_client)
 
     # get ids only signed time sheets
     candidates_with_signed_timesheets = TimeSheet.objects.filter(
@@ -33,10 +33,9 @@ def sync_candidate_contacts_to_myob(myob_client=None, account=None):
 
 def get_latest_state(obj):
     if not obj:
-        return []
+        return None
 
     state = obj.get_active_states().first()
-
     return state.state.name_after_activation or state.state.name_before_activation if state else None
 
 
@@ -51,11 +50,12 @@ def get_latest_state_new(obj):
     return get_latest_state(obj)
 
 
-def sync_companies_to_myob(myob_client=None, account=None):
-    sync = CompanySync(myob_client, account)
+def sync_companies_to_myob(api_client, company_id):
+    comp = Company.objects.get(pk=company_id)
 
-    companies = Company.objects.filter()
-
-    for company in companies:
-        if company in [i for i in Company.objects.owned_by(account) if (get_latest_state_new(i)) == 'Active']:
-            sync.sync_to_myob(company, partial=True)
+    sync = CompanySync(api_client)
+    # TODO: refactor this, bcs state 'Active' is hardcoded
+    # TODO: Find more elegant solution, bcs <get_latest_state_new(x)> fired queries for each company,
+    #       it is potential bottleneck
+    for company in [x for x in Company.objects.owned_by(comp) if get_latest_state_new(x) == 'Active']:
+        sync.sync_to_myob(company, partial=True)

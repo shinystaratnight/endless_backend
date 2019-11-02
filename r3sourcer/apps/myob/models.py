@@ -220,16 +220,12 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
     Contains all information needed for authorization and fetching information related to a specific company file
     """
     company_file = models.ForeignKey(MYOBCompanyFile, related_name='tokens')
-
     auth_data = models.ForeignKey(MYOBAuthData)
-
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, related_name='company_file_tokens')
-
+    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company_file_tokens')
     cf_token = models.CharField(
         verbose_name=_(u"Company File Token"),
         max_length=32,
     )
-
     enable_from = models.DateField(
         null=True,
         blank=True,

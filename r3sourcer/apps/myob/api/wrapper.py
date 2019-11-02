@@ -17,12 +17,12 @@ from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.exceptions import APIException
 
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBCompanyFileToken, MYOBCompanyFile
 from r3sourcer.apps.myob.api.utils import get_myob_app_info
-from r3sourcer.apps.myob.services.exceptions import MyOBCredentialException
+from r3sourcer.apps.myob.services.exceptions import MyOBCredentialException, MYOBException, MYOBProgrammingException, \
+    MYOBImplementationException, MYOBServerException
 
 log = logging.getLogger(__name__)
 
@@ -31,32 +31,6 @@ def check_account_id(url1, url2):
     pattern = '^(?P<protocol>\w+)\:\/\/(?P<domain_name>[\w,\d,\.]+)\/' \
               'accountright\/(?P<account_id>[\d,\w\-]+)(?P<path>.+)?'
     return re.match(pattern, url1).groupdict()['account_id'] == re.match(pattern, url2).groupdict()['account_id']
-
-
-class MYOBException(APIException):
-    """
-    General MYOB related Exception
-    """
-    status_code = status.HTTP_400_BAD_REQUEST
-
-
-class MYOBProgrammingException(MYOBException):
-    """
-    MYOB Exception raised when API wrapper is used improperly.
-    """
-
-
-class MYOBImplementationException(MYOBException):
-    """
-    MYOB Exception raised when current API implementation
-    encounters unexpected and unhandled situation.
-    """
-
-
-class MYOBServerException(MYOBException):
-    """
-    MYOB Server Exception (5xx) raised after retries.
-    """
 
 
 def decimal_default(obj):
@@ -638,7 +612,7 @@ class MYOBAccountRightV2Resource(object):
         self._check_method(self._allow_get)
         uri = self._get_uri()
         if uid:
-            uri = uri.rstrip('/') + '/' + uid
+            uri = '/'.join([uri.rstrip('/'), uid])
         resp = self._client.api_call('get', uri, **kwargs)
         return self._get_response(resp, raw_resp)
 
@@ -653,7 +627,7 @@ class MYOBAccountRightV2Resource(object):
         self._check_method(self._allow_put)
         uri = self._get_uri()
         if uid:
-            uri = uri.rstrip('/') + '/' + uid
+            uri = '/'.join([uri.rstrip('/'), uid])
         resp = self._client.api_call('put', uri, **kwargs)
         return self._get_response(resp, raw_resp)
 
@@ -670,7 +644,7 @@ class MYOBAccountRightV2Resource(object):
         self._check_method(self._allow_delete)
         uri = self._get_uri()
         if uid:
-            uri = uri.rstrip('/') + '/' + uid
+            uri = '/'.join([uri.rstrip('/'), uid])
         resp = self._client.api_call('delete', uri, **kwargs)
         return self._get_response(resp, raw_resp)
 
