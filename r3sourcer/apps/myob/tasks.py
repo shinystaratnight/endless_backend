@@ -69,15 +69,18 @@ def sync_timesheets(self):
     companies = Company.objects.filter(type=Company.COMPANY_TYPES.master)
 
     for company in companies:
-        candidates = CandidateContact.objects.owned_by(company)
+        settings = get_myob_settings(company.id)
 
-        company_settings = getattr(company, 'myob_settings', None)
-        if not company_settings or not company_settings.timesheet_company_file:
+        if not settings.get('time_sheet_company_file_id'):
             logger.warn('Company %s has no TimeSheet Company Files configured', str(company))
             continue
 
-        sync_service = TimeSheetSync(cf_id=company_settings.timesheet_company_file.cf_id, company=company)
+        myob_client = get_myob_client(company_id=company.id,
+                                      myob_company_file_id=settings['time_sheet_company_file_id'])
 
+        sync_service = TimeSheetSync(myob_client)
+
+        candidates = CandidateContact.objects.owned_by(company)
         for candidate in candidates:
             sync_service.sync_to_myob(candidate)
 
