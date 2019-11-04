@@ -435,7 +435,7 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         for x in qs:
             storage = result.setdefault(x.status, [])
             storage.append({
-                'id': x.candidate_contact.contact_id,
+                'id': x.candidate_contact.id,
                 'name': str(x.candidate_contact)})
 
         return {
