@@ -63,7 +63,6 @@ def sync_to_myob(self):
 
 
 @app.task(bind=True)
-@one_task_at_the_same_time()
 @retry_on_myob_error
 def sync_timesheets(self):
     companies = Company.objects.filter(type=Company.COMPANY_TYPES.master)
