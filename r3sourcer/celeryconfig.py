@@ -53,7 +53,7 @@ beat_schedule = {
     },
     'sync_timesheets': {
         'task': 'r3sourcer.apps.myob.tasks.sync_timesheets',
-        'schedule': crontab(minute=0, hour='2-23'),
+        'schedule': crontab(hour='*'),
     },
     'update_all_distances': {
         'task': 'r3sourcer.apps.hr.tasks.update_all_distances',
