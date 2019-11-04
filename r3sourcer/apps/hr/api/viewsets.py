@@ -297,7 +297,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         obj = self.get_object()
         obj.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
 
-        sync_time_sheet.apply_async(obj.id)
+        sync_time_sheet.apply_async(args=[obj.id])
 
         return Response({'status': 'success'})
 
