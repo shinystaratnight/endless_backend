@@ -36,14 +36,33 @@ def retry_on_myob_error(origin_task):
 @app.task(bind=True)
 def sync_company_to_myob(self, settings, regular_company_id, master_company_id):
     if settings.get('time_sheet_company_file_id'):
-        myob_client = get_myob_client(company_id=master_company_id,
-                                      myob_company_file_id=settings['time_sheet_company_file_id'])
-        sync_candidate_contacts_to_myob(myob_client, regular_company_id)
+        sync_candidate_contacts_myob(settings['time_sheet_company_file_id'],
+                                     regular_company_id,
+                                     master_company_id)
 
     if settings.get('invoice_company_file_id'):
-        myob_client = get_myob_client(company_id=master_company_id,
-                                      myob_company_file_id=settings['invoice_company_file_id'])
-        sync_companies_to_myob(myob_client, master_company_id)
+        sync_active_companies_to_myob(settings['invoice_company_file_id'],
+                                      master_company_id)
+
+
+@app.task(bind=True)
+def sync_active_companies_to_myob(self, company_file_id, master_company_id):
+    """Pay attention company file id should have been associated
+       with time invoice company file id
+    """
+    myob_client = get_myob_client(company_id=master_company_id,
+                                  myob_company_file_id=company_file_id)
+    sync_companies_to_myob(myob_client, master_company_id)
+
+
+@app.task(bind=True)
+def sync_candidate_contacts_myob(self, company_file_id, regular_company_id, master_company_id):
+    """Pay attention company file id should have been associated
+       with time sheet company file id
+    """
+    myob_client = get_myob_client(company_id=master_company_id,
+                                  myob_company_file_id=company_file_id)
+    sync_candidate_contacts_to_myob(myob_client, regular_company_id)
 
 
 @app.task(bind=True)
@@ -161,7 +180,9 @@ def sync_time_sheet(self, time_sheet_id):
 
     settings = get_myob_settings(master_company_id)
 
-    sync_company_to_myob(settings, regular_company_id, master_company_id)
+    sync_candidate_contacts_myob(settings['time_sheet_company_file_id'],
+                                 regular_company_id,
+                                 master_company_id)
 
     candidate_contact = CandidateContact.objects.get(pk=candidate_contact_id)
     service = TimeSheetSync.from_candidate(settings, master_company_id)

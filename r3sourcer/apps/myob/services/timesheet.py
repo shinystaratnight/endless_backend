@@ -111,7 +111,7 @@ class TimeSheetSync(BaseCategoryMixin,
         timesheets = timesheet_qs.exclude(timesheets_exclude)
         # done;
 
-        # exit if times heets not found after excluding
+        # exit if times sheets not found after excluding
         if not timesheets.exists():
             return
 
