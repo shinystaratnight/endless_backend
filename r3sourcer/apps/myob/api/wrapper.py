@@ -413,7 +413,9 @@ class MYOBClient(object):
         raise MYOBProgrammingException('cf name not set')
 
     def get_cf_token(self):
-        if self.request and 'myob_cf_token' in self.request.session:
+        if self.auth:
+            token = self.auth.get_access_token()
+        elif self.request and 'myob_cf_token' in self.request.session:
             token = self.request.session.get('myob_cf_token')
 
         elif self.cf_vars.get('cf_token') is not None:
