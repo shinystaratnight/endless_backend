@@ -415,12 +415,11 @@ class RefreshCompanyFilesView(APIView):
     def get(self, request, *args, **kwargs):
         company = request.user.company
         auth_data_list = request.user.auth_data.all()
-        new_company_files = list()
+        company_files = list()
 
         for auth_data in auth_data_list:
             client = MYOBClient(auth_data=auth_data)
             raw_company_files = client.get_company_files()
-
             for raw_company_file in raw_company_files:
                 company_file, created = MYOBCompanyFile.objects.update_or_create(
                     cf_id=raw_company_file['Id'],
@@ -437,10 +436,9 @@ class RefreshCompanyFilesView(APIView):
                         'auth_data': auth_data,
                     }
                 )
-                if created:
-                    new_company_files.append(company_file)
+                company_files.append(company_file)
 
-        serialzer = MYOBCompanyFileSerializer(new_company_files, many=True)
+        serialzer = MYOBCompanyFileSerializer(company_files, many=True)
         data = {
             "company_files": serialzer.data
         }
