@@ -29,7 +29,6 @@ class CoefficientService:
         worked_hours = origin_hours
         for rate_coefficient in rate_coefficients:
             rules = rate_coefficient.rate_coefficient_rules.filter(used=True).order_by('-priority').distinct()
-
             try:
                 used_hours = worked_hours
                 is_allowance = False
@@ -53,6 +52,12 @@ class CoefficientService:
                         break
 
                 if used_hours.total_seconds() > 0:
+                    # Dmitry F.
+                    # it is not best solution! but it needed to prevent
+                    # bad time calculation for allowance rules
+                    if is_allowance is True and used_hours.total_seconds() < 60 * 60:
+                        used_hours = timedelta(hours=1)
+
                     res.append({
                         'coefficient': rate_coefficient,
                         'hours': used_hours
@@ -61,7 +66,8 @@ class CoefficientService:
                     if not is_allowance:
                         worked_hours -= used_hours
             except RateNotApplicable:
-                pass
+                # TODO: Add logger here with info level
+                print('Rate not applicable')
 
         if worked_hours.total_seconds() > 0 and not overlaps:
             res.append({
@@ -90,5 +96,4 @@ class CoefficientService:
             rate_coefficients, start_datetime, worked_hours,
             break_started, break_ended
         ))
-
         return res

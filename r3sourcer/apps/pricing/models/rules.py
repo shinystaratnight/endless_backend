@@ -154,8 +154,6 @@ class OvertimeWorkRule(WorkRuleMixin, UUIDModel):
 
     def calc_hours(self, start_datetime, worked_hours, break_started=None,
                    break_ended=None):
-        worked_delta = timedelta()
-
         # if overtime in available range
         if self.overtime_hours_from < worked_hours <= self.overtime_hours_to:
             worked_delta = worked_hours - self.overtime_hours_from
@@ -165,7 +163,6 @@ class OvertimeWorkRule(WorkRuleMixin, UUIDModel):
             worked_delta = self.overtime_hours_to - self.overtime_hours_from
         else:
             worked_delta = timedelta()
-
         return worked_delta
 
 
