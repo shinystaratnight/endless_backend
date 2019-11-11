@@ -16,7 +16,7 @@ from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import GenericViewSet
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
@@ -33,7 +33,7 @@ from r3sourcer.apps.hr.api.filters import TimesheetFilter, ShiftFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
 from r3sourcer.apps.hr.tasks import generate_invoice
 from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
-from r3sourcer.apps.myob.tasks import sync_timesheet
+from r3sourcer.apps.myob.tasks import sync_time_sheet
 
 
 logger = logging.getLogger(__name__)
@@ -297,7 +297,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         obj = self.get_object()
         obj.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
 
-        sync_timesheet.delay(obj.id)
+        sync_time_sheet.apply_async(args=[obj.id])
 
         return Response({'status': 'success'})
 
@@ -421,12 +421,7 @@ class JobOfferViewset(BaseApiViewset):
 
     @action(methods=['get'], detail=False)
     def candidate(self, request, *args, **kwargs):  # pragma: no cover
-        candidate_contact_id = self.request.query_params.get("candidate_contact")
-        candidate_contact = candidate_models.CandidateContact.objects.get(id=candidate_contact_id)
-        if candidate_contact.get_closest_company() == request.user.company:
-            return self.list(request, *args, **kwargs)
-        else:
-            return Response({"results": []}, status=status.HTTP_200_OK)
+        return self.list(request, *args, **kwargs)
 
     @action(methods=['post'], detail=True)
     def accept(self, request, *args, **kwargs):  # pragma: no cover

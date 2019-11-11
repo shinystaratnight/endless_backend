@@ -9,11 +9,13 @@ from django.utils import timezone
 from r3sourcer.apps.candidate.models import SkillRel
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment import calc_worked_delta
+from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.myob.mappers import TimeSheetMapper, JobsiteMapper, format_date_to_myob
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.candidate import CandidateSync
 from r3sourcer.apps.myob.services.decorators import myob_enabled_mode
+from r3sourcer.apps.myob.services.exceptions import MYOBClientException
 from r3sourcer.apps.myob.services.mixins import BaseCategoryMixin, StandardPayMixin, CandidateCardFinderMixin
 from r3sourcer.apps.pricing.models import RateCoefficientModifier
 from r3sourcer.apps.pricing.services import CoefficientService
@@ -26,12 +28,11 @@ def format_short_wage_category_name(skill_name, rate_name):
     return '{} {}'.format(skill_name, rate_name)[:31]
 
 
-class TimeSheetSync(
-    BaseCategoryMixin,
-    StandardPayMixin,
-    CandidateCardFinderMixin,
-    BaseSync
-):
+class TimeSheetSync(BaseCategoryMixin,
+                    StandardPayMixin,
+                    CandidateCardFinderMixin,
+                    BaseSync):
+
     app = "crm_hr"
     model = "TimeSheet"
 
@@ -40,21 +41,24 @@ class TimeSheetSync(
 
     rates_cache = {}
 
-    def __init__(self, myob_client=None, company=None, cf_id=None):
-        super().__init__(myob_client=myob_client, company=company, cf_id=cf_id)
+    def __init__(self, client, *args, **kwargs):
+        super().__init__(client)
 
         self._existing_timesheets_dates = None
         self._customer_cache = {}
         self._employee_cache = {}
 
-    @classmethod
-    def from_candidate(cls, candidate):
-        company = candidate.get_closest_company()
-        company_settings = getattr(company, 'myob_settings', None)
-        if company_settings and company_settings.timesheet_company_file:
-            return cls(cf_id=company_settings.timesheet_company_file.cf_id)
+    def sync_from_myob(self):
+        raise NotImplementedError
 
-        return None
+    @classmethod
+    def from_candidate(cls, settings, company_id):
+        if settings.get('time_sheet_company_file_id'):
+            myob_client = get_myob_client(company_id=company_id,
+                                          myob_company_file_id=settings['time_sheet_company_file_id'])
+            return cls(myob_client)
+
+        raise MYOBClientException('Could not get MYOB client')
 
     @method_decorator(myob_enabled_mode)
     def sync_to_myob(self, candidate):
@@ -83,14 +87,13 @@ class TimeSheetSync(
             self._sync_timesheets_to_myob(candidate, timesheet_qs)
 
     # @method_decorator(myob_enabled_mode)
-    def sync_single_to_myob(self, timesheet):
-        timesheets_q = (Q(candidate_submitted_at__isnull=True) | Q(candidate_submitted_at=None) |
-                        Q(supervisor_approved_at__isnull=True) | Q(supervisor_approved_at=None))
-        timesheet_qs = TimeSheet.objects.filter(id=timesheet.id).exclude(timesheets_q)
-
-        print('!!!')
-
-        self._sync_timesheets_to_myob(timesheet.job_offer.candidate_contact, timesheet_qs)
+    def sync_single_to_myob(self, time_sheet_id, candidate_contact):
+        time_sheets_q = (Q(candidate_submitted_at__isnull=True) |
+                         Q(candidate_submitted_at=None) |
+                         Q(supervisor_approved_at__isnull=True) |
+                         Q(supervisor_approved_at=None))
+        time_sheet_qs = TimeSheet.objects.filter(id=time_sheet_id).exclude(time_sheets_q)
+        self._sync_timesheets_to_myob(candidate_contact, time_sheet_qs)
 
     def _sync_timesheets_to_myob(self, candidate, timesheet_qs):
         if self.client is None:
@@ -108,7 +111,7 @@ class TimeSheetSync(
         timesheets = timesheet_qs.exclude(timesheets_exclude)
         # done;
 
-        # exit if times heets not found after excluding
+        # exit if times sheets not found after excluding
         if not timesheets.exists():
             return
 
@@ -118,7 +121,7 @@ class TimeSheetSync(
         # TODO: fix this when candidate sync will be done
         # if resource was not exists then stop processing
         if not myob_employee:
-            rs = CandidateSync(self.client, self.company)
+            rs = CandidateSync(self.client)
             rs.sync_to_myob(candidate, partial=True)
 
             myob_employee = self._get_myob_employee_data(candidate)
@@ -177,9 +180,10 @@ class TimeSheetSync(
         :param candidate: CandidateContact instance
         :return: dict MYOB response
         """
+        cache_key = (candidate.id, self.client.cf_data.company_file.id)
         # check if candidate already was cached and return value
-        if self._employee_cache.get((candidate.id, self.client.cf_data.company_file.id)):
-            return self._employee_cache[(candidate.id, self.client.cf_data.company_file.id)]
+        if self._employee_cache.get(cache_key):
+            return self._employee_cache[cache_key]
 
         # get latest sync instance for concrete candidate
         model_parts = ['hr', 'candidatecontact']
@@ -205,7 +209,7 @@ class TimeSheetSync(
 
         # set to cache
         if myob_employee is not None:
-            self._employee_cache[(candidate.id, self.client.cf_data.company_file.id)] = myob_employee
+            self._employee_cache[cache_key] = myob_employee
 
         return myob_employee
 
@@ -493,7 +497,7 @@ class TimeSheetSync(
         company = timesheet.regular_company
 
         if not customer_data['Items']:
-            rs = CompanySync(self.client, company)
+            rs = CompanySync(self.client)
             rs.sync_to_myob(company)
 
             customer_uid = self._get_myob_customer(timesheet)

@@ -9,19 +9,17 @@ from r3sourcer.apps.myob.services.mixins import BaseCategoryMixin, StandardPayMi
 log = logging.getLogger(__name__)
 
 
-class CandidateSync(
-    BaseCategoryMixin,
-    StandardPayMixin,
-    CandidateCardFinderMixin,
-    BaseSync
-):
+class CandidateSync(BaseCategoryMixin,
+                    StandardPayMixin,
+                    CandidateCardFinderMixin,
+                    BaseSync):
     app = "candidate"
     model = "CandidateContact"
 
     mapper_class = CandidateMapper
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+    def __init__(self, client, *args, **kwargs):
+        super().__init__(client)
 
         self._superannuation_fund = {}
         self._expense_account = None

@@ -24,22 +24,19 @@ class BaseSync:
 
     required_put_keys = ('UID', 'RowVersion', 'DisplayID')
 
-    def __init__(self, myob_client=None, company=None, cf_id=None):
-        self.client = myob_client or get_myob_client(cf_id=cf_id, company=company)
-        if self.client is None:
-            return
+    def __init__(self, client):
+        self.client = client
+        self.cf_data = self.client.cf_data
+        self.company = self.cf_data.company
+        self._clients[self.cf_data.id] = self.client
 
         self.client.init_api()
-        self._clients[self.client.cf_data.id] = self.client
-
-        self.company = company or self.client.cf_data.company
-
         if not self.mapper:
             self.mapper = self.mapper_class and self.mapper_class()
-
         self.resource = self._get_resource()
 
     def _switch_client(self, date=None, company_file_token=None):
+        """ Did not use maybe deprecated"""
         kwargs = {
             'company': self.company,
             'date': date,
@@ -296,6 +293,3 @@ class BaseSync:
         res = self._sync_to(instance, sync_obj, partial)
         if res:
             self._update_sync_object(instance)
-
-    def sync_from_myob(self):
-        raise NotImplementedError()

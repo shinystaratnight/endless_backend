@@ -901,14 +901,12 @@ class BankAccount(UUIDModel):
             ]
 
 
-class Company(
-    CategoryFolderMixin,
-    MYOBMixin,
-    WorkflowProcess,
-    CompanyLookupMixin,
-    UUIDModel,
-    MasterCompanyLookupMixin
-):
+class Company(CategoryFolderMixin,
+              MYOBMixin,
+              WorkflowProcess,
+              CompanyLookupMixin,
+              UUIDModel,
+              MasterCompanyLookupMixin):
 
     name = models.CharField(max_length=127, verbose_name=_("Company Name"), unique=True)
 

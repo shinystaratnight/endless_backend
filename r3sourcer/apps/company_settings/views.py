@@ -347,19 +347,23 @@ class MYOBAuthorizationView(APIView):
         if not company and self.request.user.is_authenticated:
             company = self.request.user.company.get_closest_master_company()
 
-        MYOBAuthData.objects.get_or_create(
-            user=request.user,
-            company=company,
+        auth_data_ = dict(
+            user_id=request.user.id,
+            company_id=company.id,
             myob_user_username=response['user']['username'],
-            defaults=dict(
-                client_id=data['client_id'],
-                client_secret=data['client_secret'],
-                access_token=response['access_token'],
-                refresh_token=response['refresh_token'],
-                myob_user_uid=response['user']['uid'],
-                expires_in=response['expires_in'],
-            )
+            client_id=data['client_id'],
+            client_secret=data['client_secret'],
+            access_token=response['access_token'],
+            refresh_token=response['refresh_token'],
+            myob_user_uid=response['user']['uid'],
+            expires_in=response['expires_in'],
         )
+        auth_data_filter = dict(user_id=request.user.id, company_id=company.id)
+        auth_data = MYOBAuthData.objects.filter(**auth_data_filter)
+        if auth_data:
+            MYOBAuthData.objects.filter(**auth_data_filter).update(**auth_data_)
+        else:
+            MYOBAuthData.objects.filter(**auth_data_filter).create(**auth_data_)
 
         return Response()
 
