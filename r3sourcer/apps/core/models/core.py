@@ -2794,7 +2794,7 @@ class Role(UUIDModel):
     )
 
     def __str__(self):
-        return self.name
+        return '{}: {}'.format(self.company_contact_rel, self.name)
 
     @classmethod
     def is_owned(cls):
