@@ -1,7 +1,12 @@
 import logging
 
+from django.db.models import F
+from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
+
+from r3sourcer.apps.core.models import InvoiceLine
+from r3sourcer.apps.myob.services.timesheet import TimeSheetSync
 from r3sourcer.apps.pricing.models import PriceListRate
-from r3sourcer.apps.myob.mappers import InvoiceMapper, ActivityMapper
+from r3sourcer.apps.myob.mappers import InvoiceMapper, ActivityMapper, format_date_to_myob
 from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.mixins import SalespersonMixin
 
@@ -41,10 +46,9 @@ class InvoiceSync(SalespersonMixin, BaseSync):
             rate = PriceListRate.objects.filter(price_list=price_list, skill=skill).first()
             name = ' '.join([part[:4] for part in position_parts])
 
-            if invoice.provider_company.myob_settings.invoice_activity_account:
-                account_id = invoice.provider_company.myob_settings.invoice_activity_account.display_id
-            else:
-                account_id = '4-1000'
+            account_id = invoice.provider_company.myob_settings.invoice_activity_account.display_id
+            if account_id is None:
+                raise Exception('Account id not provided')
 
             income_account_resp = self._get_object_by_field(
                 account_id,
@@ -65,18 +69,32 @@ class InvoiceSync(SalespersonMixin, BaseSync):
             activity_response = self._get_object_by_field(activity_display_id,
                                                           self.client.api.TimeBilling.Activity,
                                                           single=True)
-
             if not activity_response:
-                self.client.api.TimeBilling.Activity.post(json=data, raw_resp=True)
+                resp = self.client.api.TimeBilling.Activity.post(json=data, raw_resp=True)
+                if resp.status_code not in (HTTP_201_CREATED, HTTP_200_OK):
+                    raise Exception('Error response: %s. Request: %s. Response: %s'
+                                    % (resp.status_code, data, resp.json()))
                 activity_response = self._get_object_by_field(activity_display_id,
                                                               self.client.api.TimeBilling.Activity,
                                                               single=True)
-
-            activities.update({invoice_line.id: activity_response['UID']})
+            if activity_response:
+                activities.update({invoice_line.id: activity_response['UID']})
+            else:
+                logging.warning('Empty activity response')
 
         return activities
 
     def _sync_to(self, invoice, sync_obj=None, partial=False):
+        invoice_lines = InvoiceLine.objects.filter(
+            invoice_id=invoice.id,
+        ).annotate(
+            street_address=F('timesheet__job_offer__shift__date__job__jobsite__address__street_address'),
+            city=F('timesheet__job_offer__shift__date__job__jobsite__address__city'),
+            candidate_contact=F('timesheet__job_offer__candidate_contact'),
+            vat_name=F('vat__name'),
+            start_date=F('timesheet__shift_started_at')
+        )
+
         tax_codes = self._get_tax_codes()
         params = {"$filter": "CompanyName eq '%s'" % invoice.customer_company.name}
         customer_data = self.client.api.Contact.Customer.get(params=params)
@@ -92,7 +110,13 @@ class InvoiceSync(SalespersonMixin, BaseSync):
         if portfolio_manager:
             salesperson = self._get_salesperson(portfolio_manager)
 
-        data = self.mapper.map_to_myob(invoice, customer_uid, tax_codes, activities, salesperson=salesperson)
+        lines = []
+        for line in invoice_lines:
+            lines.append(self.mapper.invoice_line(invoice,
+                                                  line,
+                                                  tax_codes,
+                                                  activities[line.id]))
+        data = self.mapper.map_to_myob(invoice, lines, customer_uid, salesperson=salesperson)
 
         if partial:
             params = {"$filter": "Number eq '%s'" % invoice.number}

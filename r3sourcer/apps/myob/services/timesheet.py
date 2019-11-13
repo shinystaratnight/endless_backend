@@ -116,7 +116,8 @@ class TimeSheetSync(BaseCategoryMixin,
             return
 
         # find existing remote resource
-        myob_employee = self._get_myob_employee_data(candidate)
+        card_number = candidate.contact.get_myob_card_number
+        myob_employee = self.get_myob_employee_data(candidate.id, card_number)
 
         # TODO: fix this when candidate sync will be done
         # if resource was not exists then stop processing
@@ -124,7 +125,7 @@ class TimeSheetSync(BaseCategoryMixin,
             rs = CandidateSync(self.client)
             rs.sync_to_myob(candidate, partial=True)
 
-            myob_employee = self._get_myob_employee_data(candidate)
+            myob_employee = self.get_myob_employee_data(candidate.id, card_number)
 
         if not myob_employee:
             return
@@ -132,8 +133,9 @@ class TimeSheetSync(BaseCategoryMixin,
         # get existing remote time sheets in date range by job id
         start_date = timezone.make_naive(timesheets.earliest('shift_started_at').shift_started_at)
         end_date = timezone.make_naive(timesheets.latest('shift_started_at').shift_started_at)
+        myob_employee_uid = myob_employee['UID']
         self._existing_timesheets_dates, payroll_categories = self._get_existing_timesheets_data(
-            myob_employee, start_date, end_date
+            myob_employee_uid, start_date, end_date
         )
 
         is_synced = False
@@ -172,15 +174,16 @@ class TimeSheetSync(BaseCategoryMixin,
     def _get_resource(self):
         return self.client.api.Payroll.Timesheet
 
-    def _get_myob_employee_data(self, candidate):
+    def get_myob_employee_data(self, candidate_id, card_number=None):
         """
         Return myob candidate response if it exists in remote service.
         Find Employee card from remote resources.
 
-        :param candidate: CandidateContact instance
+        :param candidate_id: CandidateContactID
+        :param card_number: card number
         :return: dict MYOB response
         """
-        cache_key = (candidate.id, self.client.cf_data.company_file.id)
+        cache_key = (candidate_id, self.client.cf_data.company_file.id)
         # check if candidate already was cached and return value
         if self._employee_cache.get(cache_key):
             return self._employee_cache[cache_key]
@@ -190,15 +193,15 @@ class TimeSheetSync(BaseCategoryMixin,
         sync_obj = MYOBSyncObject.objects.filter(
             app=model_parts[0],
             model=model_parts[1],
-            record=candidate.id,
+            record=candidate_id,
             company=self.company,
             direction=MYOBSyncObject.SYNC_DIRECTION_CHOICES.myob
         ).first()
 
         # find candidate resource by `DisplayID`
         _, _, myob_employee_resp = self._get_myob_existing_resp(
-            candidate,
-            candidate.contact.get_myob_card_number(),
+            candidate_id,
+            card_number,
             sync_obj, resource=self.client.api.Contact.Employee
         )
 
@@ -213,7 +216,7 @@ class TimeSheetSync(BaseCategoryMixin,
 
         return myob_employee
 
-    def _get_existing_timesheets_data(self, myob_employee, start_date, end_date):
+    def _get_existing_timesheets_data(self, myob_employee_uid, start_date, end_date):
         """
         Returns existing MYOB timesheets dates and payroll categories
         """
@@ -221,7 +224,7 @@ class TimeSheetSync(BaseCategoryMixin,
             'StartDate': format_date_to_myob(start_date),
             'EndDate': format_date_to_myob(end_date),
             '$filter': "Employee/UID eq guid'{}'".format(
-                myob_employee['UID']
+                myob_employee_uid
             )
         }
         timesheet_obj = self._get_object(params, resource=self.client.api.Payroll.Timesheet, single=True)

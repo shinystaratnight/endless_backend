@@ -26,7 +26,7 @@ class BaseSync:
 
     def __init__(self, client):
         self.client = client
-        self.cf_data = self.client.cf_data
+        self.cf_data = client.cf_data
         self.company = self.cf_data.company
         self._clients[self.cf_data.id] = self.client
 
