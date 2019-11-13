@@ -70,6 +70,10 @@ class UserAdmin(BaseUserAdmin):
     filter_horizontal = ('groups',)
 
     fieldsets = (
+        (_("Roles"), {
+            'classes': ['collapse'],
+            'fields': ['role']
+        }),
         (_("Permissions"), {
             'classes': ['collapse'],
             'fields': ['is_active', ('is_staff', 'is_superuser'), 'groups', 'user_permissions']
@@ -338,3 +342,4 @@ admin.site.register(models.PublicHoliday, PublicHolidayAdmin)
 admin.site.register(models.ContactUnavailability)
 admin.site.register(models.CompanyIndustryRel)
 admin.site.register(Site, SiteAdmin)
+admin.site.register(models.Role)
