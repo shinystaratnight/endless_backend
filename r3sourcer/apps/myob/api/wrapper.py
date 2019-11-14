@@ -10,17 +10,15 @@ import time
 
 import pytz
 import requests
-
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.utils.formats import date_format
-from django.utils.translation import ugettext_lazy as _
 from django.utils import timezone
+from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
 
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBCompanyFileToken, MYOBCompanyFile
 from r3sourcer.apps.myob.api.utils import get_myob_app_info
+from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBCompanyFileToken, MYOBCompanyFile
 from r3sourcer.apps.myob.services.exceptions import MyOBCredentialException, MYOBException, MYOBProgrammingException, \
     MYOBImplementationException, MYOBServerException
 
@@ -305,8 +303,6 @@ class MYOBAuth(object):
         resp_data = resp.json(parse_float=decimal.Decimal)
         expires_at = int(resp_data['expires_in'])  # value in seconds
         expires_at = now + datetime.timedelta(seconds=expires_at)
-        expires_at = date_format(expires_at, settings.DATETIME_MYOB_FORMAT)
-
         self.auth_data.access_token = resp_data['access_token']
         self.auth_data.refresh_token = resp_data['refresh_token']
         self.auth_data.expires_in = resp_data['expires_in']
@@ -327,6 +323,9 @@ class MYOBClient(object):
 
         if not auth_data:
             auth_data = cf_data.auth_data if cf_data else None
+
+        if not cf_data:
+            cf_data = auth_data.company_file_token.first()
 
         self.request = request
         self.cftoken = None
@@ -413,9 +412,7 @@ class MYOBClient(object):
         raise MYOBProgrammingException('cf name not set')
 
     def get_cf_token(self):
-        if self.auth:
-            token = self.auth.get_access_token()
-        elif self.request and 'myob_cf_token' in self.request.session:
+        if self.request and 'myob_cf_token' in self.request.session:
             token = self.request.session.get('myob_cf_token')
 
         elif self.cf_vars.get('cf_token') is not None:

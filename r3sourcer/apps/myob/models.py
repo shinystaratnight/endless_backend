@@ -181,7 +181,10 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
     )
 
     authenticated = models.BooleanField(default=False)
-    auth_data = models.ForeignKey('MYOBAuthData', blank=True, null=True)
+    auth_data = models.ForeignKey(
+        'myob.MYOBAuthData',
+        related_name='company_file',
+        blank=True, null=True)
 
     class Meta:
         verbose_name = _("MYOB Company File")
@@ -219,7 +222,9 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
     Contains all information needed for authorization and fetching information related to a specific company file
     """
     company_file = models.ForeignKey(MYOBCompanyFile, related_name='tokens')
-    auth_data = models.ForeignKey(MYOBAuthData)
+    auth_data = models.ForeignKey(
+        'myob.MYOBAuthData',
+        related_name='company_file_token')
     company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company_file_tokens')
     cf_token = models.CharField(
         verbose_name=_(u"Company File Token"),
