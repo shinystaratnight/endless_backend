@@ -117,8 +117,7 @@ def clean_myob_request_log(self):
 
 
 @shared_task
-@retry_on_myob_error
-def sync_invoice(invoice_id):
+def sync_invoice(self, invoice_id):
     invoice = Invoice.objects.get(id=invoice_id)
     company = invoice.provider_company
 

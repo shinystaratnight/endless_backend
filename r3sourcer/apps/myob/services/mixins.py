@@ -4,6 +4,7 @@ import logging
 from django.utils import timezone
 
 from r3sourcer.apps.activity.models import Activity
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.myob.models import MYOBSyncObject
 
 
@@ -78,7 +79,8 @@ class StandardPayMixin:
 
 
 class CandidateCardFinderMixin:
-    def _find_old_myob_card(self, candidate_contact, resource=None):
+    def _find_old_myob_card(self, candidate_contact_id, resource=None):
+        candidate_contact = CandidateContact.objects.select_related('contact').get(pk=candidate_contact_id)
         contact = candidate_contact.contact
         resp = self.client.api.Contact.Employee.get(params={
             '$filter':

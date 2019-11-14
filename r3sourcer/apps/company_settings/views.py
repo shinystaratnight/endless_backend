@@ -502,12 +502,11 @@ class RefreshMYOBAccountsView(APIView):
 
             account_response = client.get_accounts(company_file.cf_id, company_file_token).json()
 
-            if 'Items' not in account_response:
-                continue
+            for account in account_response.get('Items', []):
+                # Header accounts haven't allowed for attach activity
+                if account.get('IsHeader', False) is True:
+                    continue
 
-            accounts = account_response['Items']
-
-            for account in accounts:
                 account_object, created = MYOBAccount.objects.update_or_create(
                     uid=account['UID'],
                     defaults={

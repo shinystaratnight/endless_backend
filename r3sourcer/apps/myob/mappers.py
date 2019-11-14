@@ -124,7 +124,7 @@ class ContactMapper:
     def _map_extra_data_to_myob(self, contact):
         return {}
 
-    def map_to_myob(self, contact):
+    def map_to_myob(self, contact, *args, **kwargs):
         data = {
             'IsIndividual': True,
         }
@@ -135,8 +135,26 @@ class ContactMapper:
 
 
 class InvoiceMapper(ContactMapper):
-    def map_to_myob(self, invoice, customer_uid, tax_codes, activities, salesperson=None):
+
+    @classmethod
+    def invoice_line(cls, invoice, line, tax_codes, activity_uid):
         invoice_rule = get_invoice_rule(invoice.customer_company)
+        address = "{} {}".format(line.street_address, line.city)
+        return {
+            "Date": format_date_to_myob(line.date),
+            "Hours": line.units,
+            "Rate": line.unit_price,
+            "Total": math.ceil(line.unit_price * line.units * 100) / 100,
+            "Description": '{}\n{}\n{}'.format(
+                line.notes, address,
+                line.candidate_contact if invoice_rule.show_candidate_name else ''
+            ),
+            "TaxCode": {"UID": tax_codes[line.vat_name]},
+            "Units": line.units,
+            "Activity": {"UID": activity_uid}
+        }
+
+    def map_to_myob(self, invoice, lines, customer_uid, salesperson=None):
         data = {
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
@@ -150,26 +168,7 @@ class InvoiceMapper(ContactMapper):
                 "PaymentIsDue": CompanyMapper.PAYMENT_IS_DUE_MAP.get(invoice.customer_company.terms_of_payment),
                 "BalanceDueDate": invoice.customer_company.payment_due_date
             },
-        }
-        lines = list()
-
-        for invoice_line in invoice.invoice_lines.all():
-            address = "{} {}".format(invoice_line.timesheet.job_offer.job.jobsite.address.street_address,
-                                     invoice_line.timesheet.job_offer.job.jobsite.address.city)
-            lines.append({
-                "Date": format_date_to_myob(invoice_line.date),
-                "Hours": invoice_line.units,
-                "Rate": invoice_line.unit_price,
-                "Total": math.ceil(invoice_line.unit_price * invoice_line.units * 100) / 100,
-                "Description": '{}\n{}\n{}'.format(
-                    invoice_line.notes, address,
-                    invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''
-                ),
-                "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
-                "Activity": {"UID": activities[invoice_line.id]}
-            })
-
-        data['Lines'] = lines
+            'Lines': lines}
 
         if salesperson:
             data["SalesPerson"] = {
