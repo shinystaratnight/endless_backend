@@ -117,7 +117,7 @@ def clean_myob_request_log(self):
 
 
 @shared_task
-def sync_invoice(self, invoice_id):
+def sync_invoice(invoice_id):
     invoice = Invoice.objects.get(id=invoice_id)
     company = invoice.provider_company
 
