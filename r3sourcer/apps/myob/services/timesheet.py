@@ -116,7 +116,7 @@ class TimeSheetSync(BaseCategoryMixin,
             return
 
         # find existing remote resource
-        card_number = candidate.contact.get_myob_card_number
+        card_number = candidate.contact.get_myob_card_number()
         myob_employee = self.get_myob_employee_data(candidate.id, card_number)
 
         # TODO: fix this when candidate sync will be done
