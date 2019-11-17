@@ -78,7 +78,8 @@ def sync_to_myob(self):
         Q(myob_settings__timesheet_company_file__isnull=False)
     ).values_list('id', flat=True)
     for company_id in companies:
-        sync_company_to_myob(company_id)
+        settings = get_myob_settings(company_id)
+        sync_company_to_myob(settings, company_id, company_id)
 
 
 @app.task(bind=True)
@@ -129,7 +130,7 @@ def sync_invoice(invoice_id):
     client = get_myob_client(company_id=company.id, myob_company_file_id=cf_id)
     service = InvoiceSync(client)
 
-    params = {"$filter": "Number eq '%s'" % invoice.number}
+    params = {"$filter": "CustomerPurchaseOrderNumber eq '%s'" % invoice.number}
     synced_invoice = client.api.Sale.Invoice.TimeBilling.get(params=params)
 
     synced = False

@@ -4,12 +4,10 @@ from django.db.models import F
 from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 
 from r3sourcer.apps.core.models import InvoiceLine
-from r3sourcer.apps.myob.services.timesheet import TimeSheetSync
-from r3sourcer.apps.pricing.models import PriceListRate
-from r3sourcer.apps.myob.mappers import InvoiceMapper, ActivityMapper, format_date_to_myob
+from r3sourcer.apps.myob.mappers import InvoiceMapper, ActivityMapper
 from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.mixins import SalespersonMixin
-
+from r3sourcer.apps.pricing.models import PriceListRate
 
 log = logging.getLogger(__name__)
 
@@ -89,8 +87,10 @@ class InvoiceSync(SalespersonMixin, BaseSync):
             invoice_id=invoice.id,
         ).annotate(
             street_address=F('timesheet__job_offer__shift__date__job__jobsite__address__street_address'),
-            city=F('timesheet__job_offer__shift__date__job__jobsite__address__city'),
-            candidate_contact=F('timesheet__job_offer__candidate_contact'),
+            city=F('timesheet__job_offer__shift__date__job__jobsite__address__city__name'),
+            candidate_first_name=F('timesheet__job_offer__candidate_contact__contact__first_name'),
+            candidate_last_name=F('timesheet__job_offer__candidate_contact__contact__last_name'),
+            candidate_title=F('timesheet__job_offer__candidate_contact__contact__title'),
             vat_name=F('vat__name'),
             start_date=F('timesheet__shift_started_at')
         )
@@ -119,7 +119,7 @@ class InvoiceSync(SalespersonMixin, BaseSync):
         data = self.mapper.map_to_myob(invoice, lines, customer_uid, salesperson=salesperson)
 
         if partial:
-            params = {"$filter": "Number eq '%s'" % invoice.number}
+            params = {"$filter": "CustomerPurchaseOrderNumber eq '%s'" % invoice.number}
             myob_invoice = self.client.api.Sale.Invoice.TimeBilling.get(params=params)['Items'][0]
             myob_id = myob_invoice['UID']
             row_version = myob_invoice['RowVersion']
