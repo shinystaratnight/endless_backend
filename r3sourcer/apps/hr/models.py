@@ -12,7 +12,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.validators import MinValueValidator
 from django.core.exceptions import ValidationError
 from django.db import models, IntegrityError, transaction
-from django.db.models.signals import post_save, pre_save
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -25,6 +24,7 @@ from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
 from r3sourcer.apps.core.utils.utils import tz_time2utc_time
 from r3sourcer.apps.core.workflow import WorkflowProcess
+from r3sourcer.apps.hr.utils.utils import get_jobsite_date_time
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.skills.models import Skill, SkillBaseRate
@@ -948,48 +948,35 @@ class JobOffer(core_models.UUIDModel):
             task = hr_utils.get_jo_sms_sending_task(self)
 
             if task:
-                j_o = JobOffer.objects.get(pk=self.pk)
-                master_company = j_o.candidate_contact.get_closest_company()
-                if not master_company.get_hq_address() or not master_company.get_hq_address().address.country.country_timezone:
-                    now = timezone.localtime(timezone.now())
-                    tomorrow = now + timedelta(days=1)
-                    tomorrow_end = timezone.make_aware(datetime.combine(
-                        tomorrow.date() + timedelta(days=1), time(5, 0, 0)
-                    ))
-                    target_date_and_time = timezone.localtime(self.start_time)
-                else:
-                    company_timezone = pytz_timezone(master_company.get_hq_address().address.country.country_timezone)
-                    now = datetime.now(company_timezone)
-                    tomorrow = now + timedelta(days=1)
-                    tomorrow_end = timezone.make_aware(datetime.combine(
-                        tomorrow.date() + timedelta(days=1), time(5, 0, 0)
-                        ))
-                    target_date_and_time = timezone.localtime(self.start_time)
-
+                offer = JobOffer.objects.get(pk=self.pk)
+                _now = get_jobsite_date_time(offer.job, timezone.now())
+                tomorrow = _now + timedelta(days=1)
+                tomorrow_end = tomorrow.replace(hour=5, minute=0, second=0, microsecond=0) + timedelta(days=1)
+                target_date_and_time = get_jobsite_date_time(offer.job, offer.start_time)
                 # TODO: maybe need to rethink, but it should work
                 # compute eta to schedule SMS sending
                 if is_resend:
-                    eta = now + timedelta(seconds=10)
+                    eta = _now + timedelta(seconds=10)
                 elif target_date_and_time <= tomorrow_end:
                     # today and tomorrow day and night shifts
-                    eta = datetime.combine(now.date(), time(10, 0, 0, tzinfo=now.tzinfo))
+                    eta = _now.replace(hour=10, minute=0, second=0, microsecond=0)
 
-                    if now >= target_date_and_time - timedelta(hours=1):
-                        if now >= target_date_and_time + timedelta(hours=2):
+                    if _now >= target_date_and_time - timedelta(hours=1):
+                        if _now >= target_date_and_time + timedelta(hours=2):
                             eta = None
                         else:
-                            eta = now + timedelta(seconds=10)
-                    elif eta <= now or eta >= target_date_and_time - timedelta(hours=1, minutes=30):
-                        eta = now + timedelta(seconds=10)
+                            eta = _now + timedelta(seconds=10)
+                    elif eta <= _now or eta >= target_date_and_time - timedelta(hours=1, minutes=30):
+                        eta = _now + timedelta(seconds=10)
                 else:
-                    if not self.has_future_accepted_jo() and not self.has_previous_jo()\
-                            and target_date_and_time <= now + timedelta(days=4):
-                        eta = now + timedelta(seconds=10)
+                    if not self.has_future_accepted_jo() \
+                            and not self.has_previous_jo() \
+                            and target_date_and_time <= _now + timedelta(days=4):
+                        eta = _now + timedelta(seconds=10)
                     else:
                         # future date day shift
-                        eta = datetime.combine(
-                            target_date_and_time.date() - timedelta(days=1), time(10, 0, 0, tzinfo=now.tzinfo)
-                        )
+                        __target = target_date_and_time.replace(hour=10, minute=0, second=0, microsecond=0)
+                        eta = __target - timedelta(days=1)
                 if eta:
                     self.scheduled_sms_datetime = eta
                     self.save(update_fields=['scheduled_sms_datetime'])
