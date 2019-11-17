@@ -287,8 +287,9 @@ class BaseSync:
             return
 
         sync_obj = self._get_sync_object(instance)
-        if sync_obj and self._is_synced(instance, sync_obj=sync_obj) and partial:
-            return
+        # WARNING: If uncomment this line re-sync should not work
+        # if sync_obj and self._is_synced(instance, sync_obj=sync_obj) and partial:
+        #     return
 
         res = self._sync_to(instance, sync_obj, partial)
         if res:

@@ -135,20 +135,31 @@ class ContactMapper:
 
 
 class InvoiceMapper(ContactMapper):
+    @classmethod
+    def address(cls, line):
+        return "{} {}".format(line.street_address, line.city)
 
     @classmethod
-    def invoice_line(cls, invoice, line, tax_codes, activity_uid):
+    def candidate_contact(cls, line):
+        name = '{} {}'.format(line.candidate_first_name, line.candidate_last_name)
+        if line.candidate_title:
+            name = '{} {}'.format(line.candidate_title, name)
+        return name
+
+    def get_description(self, line, invoice_rule):
+        candidate_contact = '' if invoice_rule.show_candidate_name is False else self.candidate_contact(line)
+        return '{}\n{}\n{}'.format(line.notes,
+                                   self.address(line),
+                                   candidate_contact)
+
+    def invoice_line(self, invoice, line, tax_codes, activity_uid):
         invoice_rule = get_invoice_rule(invoice.customer_company)
-        address = "{} {}".format(line.street_address, line.city)
         return {
             "Date": format_date_to_myob(line.date),
             "Hours": line.units,
             "Rate": line.unit_price,
             "Total": math.ceil(line.unit_price * line.units * 100) / 100,
-            "Description": '{}\n{}\n{}'.format(
-                line.notes, address,
-                line.candidate_contact if invoice_rule.show_candidate_name else ''
-            ),
+            "Description": self.get_description(line, invoice_rule),
             "TaxCode": {"UID": tax_codes[line.vat_name]},
             "Units": line.units,
             "Activity": {"UID": activity_uid}
@@ -161,7 +172,8 @@ class InvoiceMapper(ContactMapper):
             "TotalTax": invoice.tax,
             "TotalAmount": invoice.total_with_tax,
             "Status": "Open",
-            "Number": invoice.number[-8:],
+            # WARNING: uncomment if you need invoice number
+            # "Number": invoice.number[-8:],
             "CustomerPurchaseOrderNumber": invoice.number[:20],
             "IsTaxInclusive": False,
             "Terms": {
