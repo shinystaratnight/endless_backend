@@ -1295,18 +1295,15 @@ class DashboardModuleSerializer(ApiBaseModelSerializer):
 
 class UserDashboardModuleSerializer(ApiBaseModelSerializer):
 
-    def validate(self, attrs):
-        if core_models.UserDashboardModule.objects.filter(
-                company_contact__contact__user=self.context['request'].user.id,
-                dashboard_module=attrs['dashboard_module']).exists():
-            raise serializers.ValidationError(
-                {'dashboard_module': _("Module already exists")})
-        return attrs
-
     class Meta:
         model = core_models.UserDashboardModule
-        fields = ('id', 'company_contact',
-                  'dashboard_module', 'position', 'ui_config')
+        fields = (
+            'id',
+            'company_contact',
+            'dashboard_module',
+            'position',
+            'ui_config',
+        )
         extra_kwargs = {
             'company_contact': {'read_only': True}
         }
