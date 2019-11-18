@@ -24,6 +24,7 @@ from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
 from r3sourcer.apps.core.utils.utils import tz_time2utc_time
 from r3sourcer.apps.core.workflow import WorkflowProcess
+from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
 from r3sourcer.apps.hr.utils.utils import get_jobsite_date_time
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
@@ -945,43 +946,48 @@ class JobOffer(core_models.UUIDModel):
                     target_date=self.start_time).exists():
                 self.move_candidate_to_carrier_list(new_offer=True)
 
-            task = hr_utils.get_jo_sms_sending_task(self)
+            offer = JobOffer.objects.get(pk=self.pk)
+            _now = get_jobsite_date_time(offer.job, datetime.utcnow())
+            tomorrow = _now + timedelta(days=1)
+            tomorrow_end = tomorrow.replace(hour=5, minute=0, second=0, microsecond=0) + timedelta(days=1)
+            target_date_and_time = get_jobsite_date_time(offer.job, offer.start_time)
+            # TODO: maybe need to rethink, but it should work
+            # compute eta to schedule SMS sending
+            if is_resend:
+                eta = _now + timedelta(seconds=10)
+            elif target_date_and_time <= tomorrow_end:
+                # today and tomorrow day and night shifts
+                eta = _now.replace(hour=10, minute=0, second=0, microsecond=0)
 
-            if task:
-                offer = JobOffer.objects.get(pk=self.pk)
-                _now = get_jobsite_date_time(offer.job, timezone.now())
-                tomorrow = _now + timedelta(days=1)
-                tomorrow_end = tomorrow.replace(hour=5, minute=0, second=0, microsecond=0) + timedelta(days=1)
-                target_date_and_time = get_jobsite_date_time(offer.job, offer.start_time)
-                # TODO: maybe need to rethink, but it should work
-                # compute eta to schedule SMS sending
-                if is_resend:
-                    eta = _now + timedelta(seconds=10)
-                elif target_date_and_time <= tomorrow_end:
-                    # today and tomorrow day and night shifts
-                    eta = _now.replace(hour=10, minute=0, second=0, microsecond=0)
-
-                    if _now >= target_date_and_time - timedelta(hours=1):
-                        if _now >= target_date_and_time + timedelta(hours=2):
-                            eta = None
-                        else:
-                            eta = _now + timedelta(seconds=10)
-                    elif eta <= _now or eta >= target_date_and_time - timedelta(hours=1, minutes=30):
-                        eta = _now + timedelta(seconds=10)
-                else:
-                    if not self.has_future_accepted_jo() \
-                            and not self.has_previous_jo() \
-                            and target_date_and_time <= _now + timedelta(days=4):
-                        eta = _now + timedelta(seconds=10)
+                if _now >= target_date_and_time - timedelta(hours=1):
+                    if _now >= target_date_and_time + timedelta(hours=2):
+                        eta = None
                     else:
-                        # future date day shift
-                        __target = target_date_and_time.replace(hour=10, minute=0, second=0, microsecond=0)
-                        eta = __target - timedelta(days=1)
-                if eta:
-                    self.scheduled_sms_datetime = eta
-                    self.save(update_fields=['scheduled_sms_datetime'])
-                    utc_eta = tz_time2utc_time(eta)
-                    task.apply_async(args=[self.id], eta=utc_eta)
+                        eta = _now + timedelta(seconds=10)
+                elif eta <= _now or eta >= target_date_and_time - timedelta(hours=1, minutes=30):
+                    eta = _now + timedelta(seconds=10)
+            else:
+                if not self.has_future_accepted_jo() \
+                        and not self.has_previous_jo() \
+                        and target_date_and_time <= _now + timedelta(days=4):
+                    eta = _now + timedelta(seconds=10)
+                else:
+                    # future date day shift
+                    __target = target_date_and_time.replace(hour=10, minute=0, second=0, microsecond=0)
+                    eta = __target - timedelta(days=1)
+            if eta:
+                self.scheduled_sms_datetime = eta
+                self.save(update_fields=['scheduled_sms_datetime'])
+                utc_eta = tz_time2utc_time(eta)
+                if offer.is_first() and not offer.is_accepted():
+                    task = send_jo_confirmation_sms
+                elif offer.is_recurring():
+                    task = send_recurring_jo_confirmation_sms
+                else:
+                    # FIXME: send job confirmation SMS because there is pending job's JOs for candidate
+                    task = send_jo_confirmation_sms
+
+                task.apply_async(args=[self.id], eta=utc_eta)
 
 
 class JobOfferSMS(core_models.UUIDModel):
@@ -1263,7 +1269,7 @@ class TimeSheet(
                 defaults=data
             )
 
-        now = hr_utils.get_jobsite_date_time(job_offer.job, timezone.now())
+        now = hr_utils.get_jobsite_date_time(job_offer.job, datetime.utcnow())
         if now <= job_offer.start_time + timedelta(hours=2):
             cls._send_placement_acceptance_sms(time_sheet, job_offer)
 
@@ -1294,7 +1300,7 @@ class TimeSheet(
         return timedelta()
 
     def auto_fill_four_hours(self):
-        now = hr_utils.get_jobsite_date_time(self.job_offer.job, timezone.now())
+        now = hr_utils.get_jobsite_date_time(self.job_offer.job, datetime.utcnow())
         self.candidate_submitted_at = now
         self.supervisor_approved_at = now
         self.shift_started_at = now
@@ -1342,7 +1348,7 @@ class TimeSheet(
         if self.status == self.STATUS_CHOICES.check_confirmed:
             if hr_utils.get_jobsite_date_time(self.job_offer.job,
                                               self.shift_started_at) <= hr_utils.get_jobsite_date_time(
-                    self.job_offer.job, timezone.now()):
+                    self.job_offer.job, datetime.utcnow()):
                 self.status = self.STATUS_CHOICES.submit_pending
                 self.save(update_fields=['status'])
 
@@ -1370,7 +1376,7 @@ class TimeSheet(
         elif self.going_to_work_confirmation is None:
             pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
             going_eta = hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at) - timedelta(minutes=pre_shift_confirmation_delta)
-            if going_eta <= hr_utils.get_jobsite_date_time(self.job_offer.job, timezone.now()):
+            if going_eta <= hr_utils.get_jobsite_date_time(self.job_offer.job, datetime.utcnow()):
                 self.status = self.STATUS_CHOICES.check_pending
         elif not self.going_to_work_confirmation:
             self.status = self.STATUS_CHOICES.check_failed
@@ -1390,7 +1396,7 @@ class TimeSheet(
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
 
-            now = hr_utils.get_jobsite_date_time(self.job_offer.job, timezone.now())
+            now = hr_utils.get_jobsite_date_time(self.job_offer.job, datetime.utcnow())
             if now <= hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at):
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
                 pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
