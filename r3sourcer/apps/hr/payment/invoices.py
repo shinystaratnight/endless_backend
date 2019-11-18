@@ -13,10 +13,8 @@ from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.core.utils.companies import get_site_url
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
+from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
 
-from .base import BasePaymentService, calc_worked_delta
-
-from ..models import TimeSheet
 from ..utils.utils import get_invoice_rule
 
 
@@ -225,7 +223,8 @@ class InvoiceService(BasePaymentService):
                 )
 
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
-            timesheets = self._get_timesheets(None, date_from, date_to, company=company)
+            time_sheets_qs = TimeSheet.objects.order_by('shift_started_at')
+            timesheets = self._get_timesheets(time_sheets_qs, date_from, date_to, company=company)
             candidates = set(timesheets.values_list('job_offer__candidate_contact', flat=True))
 
             for candidate in candidates:

@@ -27,7 +27,8 @@ from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.payment import InvoiceService, calc_worked_delta
+from r3sourcer.apps.hr.payment.invoices import InvoiceService
+from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
@@ -76,8 +77,8 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
 
     target_date_and_time = formats.date_format(job_offer.start_time, settings.DATETIME_FORMAT)
 
-    now = utils.get_jobsite_date_time(job_offer.job, timezone.localtime(timezone.now()))
-    if now >= utils.get_jobsite_date_time(job_offer.job, timezone.localtime(job_offer.start_time)):
+    now = utils.get_jobsite_date_time(job_offer.job, datetime.utcnow())
+    if now >= utils.get_jobsite_date_time(job_offer.job, job_offer.start_time):
         target_date_and_time = "ASAP"
 
     master_company = core_companies_utils.get_site_master_company(user=job_offer.candidate_contact.contact.user)
@@ -115,26 +116,22 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
         except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
         else:
-            log_message = None
             if job_offer.is_accepted():
                 log_message = 'Job Offer %s already accepted'
-            elif job_offer.is_cancelled():
-                job_offer.scheduled_sms_datetime = None
-                job_offer.status = hr_models.JobOffer.STATUS_CHOICES.undefined
-                job_offer.save(update_fields=['scheduled_sms_datetime', 'status'])
-
-            if log_message:
                 job_offer.scheduled_sms_datetime = None
                 job_offer.save(update_fields=['scheduled_sms_datetime'])
                 logger.info(log_message, str(job_offer_id))
                 return
 
-            now = utils.get_jobsite_date_time(job_offer.job, timezone.localtime(timezone.now()))
-            today = now.date()
+            if job_offer.is_cancelled():
+                job_offer.scheduled_sms_datetime = None
+                job_offer.status = hr_models.JobOffer.STATUS_CHOICES.undefined
+                job_offer.save(update_fields=['scheduled_sms_datetime', 'status'])
+
+            now = utils.get_jobsite_date_time(job_offer.job, datetime.utcnow())
             jo_target_datetime = utils.get_jobsite_date_time(job_offer.job, job_offer.start_time)
-            jo_target_date = jo_target_datetime.date()
-            jo_tz = jo_target_datetime.tzinfo
-            if jo_target_date > today and job_offer.has_timesheets_with_going_work_unset_or_timeout():
+            if jo_target_datetime.date() > now.date() \
+                    and job_offer.has_timesheets_with_going_work_unset_or_timeout():
                 eta = now + timedelta(hours=2)
                 if time(17, 0, 0, tzinfo=eta.tzinfo) > eta.timetz() > time(16, 0, 0, tzinfo=eta.tzinfo):
                     eta = datetime.combine(eta.date(), time(16, 0, tzinfo=eta.tzinfo))
@@ -142,20 +139,19 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                     send_job_offer_sms(job_offer=job_offer, **kwargs)
                     return
 
-                if task:
-                    utc_eta = tz_time2utc_time(eta)
-                    task.apply_async(args=[job_offer_id], eta=utc_eta)
-
-                    job_offer.scheduled_sms_datetime = eta
-                    job_offer.save(update_fields=['scheduled_sms_datetime'])
-
-                    logger.info('JO SMS sending will be rescheduled for Job Offer: %s', str(job_offer_id))
-            elif jo_target_date > today and jo_target_datetime.timetz() >= time(16, 0, 0, tzinfo=jo_tz):
-                eta = jo_target_datetime - timedelta(hours=8)
+                logger.info('JO SMS sending will be rescheduled for Job Offer: %s', str(job_offer_id))
+                job_offer.scheduled_sms_datetime = eta
+                job_offer.save(update_fields=['scheduled_sms_datetime'])
                 utc_eta = tz_time2utc_time(eta)
                 task.apply_async(args=[job_offer_id], eta=utc_eta)
+
+            elif jo_target_datetime.date() > now.date() \
+                    and jo_target_datetime.timetz() >= time(16, 0, 0, tzinfo=jo_target_datetime.tzinfo):
+                eta = jo_target_datetime - timedelta(hours=8)
+                utc_eta = tz_time2utc_time(eta)
                 job_offer.scheduled_sms_datetime = jo_target_datetime - timedelta(hours=8)
                 job_offer.save(update_fields=['scheduled_sms_datetime'])
+                task.apply_async(args=[job_offer_id], eta=utc_eta)
             else:
                 send_job_offer_sms(job_offer=job_offer, **kwargs)
 
@@ -163,19 +159,19 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
 @shared_task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_jo_confirmation_sms(self, job_offer_id):
-    send_or_schedule_job_offer_sms(
-        job_offer_id, send_jo_confirmation_sms,
-        tpl_id='job-offer-1st', action_sent='offer_sent_by_sms'
-    )
+    send_or_schedule_job_offer_sms(job_offer_id,
+                                   task=send_jo_confirmation_sms,
+                                   tpl_id='job-offer-1st',
+                                   action_sent='offer_sent_by_sms')
 
 
 @shared_task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_recurring_jo_confirmation_sms(self, job_offer_id):
-    send_or_schedule_job_offer_sms(
-        job_offer_id, send_recurring_jo_confirmation_sms,
-        tpl_id='job-offer-recurring', action_sent='offer_sent_by_sms'
-    )
+    send_or_schedule_job_offer_sms(job_offer_id,
+                                   task=send_recurring_jo_confirmation_sms,
+                                   tpl_id='job-offer-recurring',
+                                   action_sent='offer_sent_by_sms')
 
 
 def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
@@ -247,7 +243,7 @@ def send_placement_rejection_sms(self, job_offer_id):
             'object_id': job_offer_id
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
-            send_job_offer_sms(job_offer, 'job-offer-rejection')
+            send_job_offer_sms(job_offer, tpl_id='job-offer-rejection')
 
 
 def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
@@ -370,7 +366,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 autoconfirm_rejected_timesheet.apply_async(
                     args=[time_sheet_id], countdown=settings.SUPERVISOR_DECLINE_TIMEOUT
                 )
-            jobs_today = utils.get_jobsite_date_time(time_sheet.job_offer.job, datetime.now())
+            jobs_today = utils.get_jobsite_date_time(time_sheet.job_offer.job, datetime.utcnow())
 
             today = jobs_today.today()
 
@@ -506,7 +502,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         return
 
     try:
-        now = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.localtime(timezone.now()))
+        now = utils.get_jobsite_date_time(timesheet.job_offer.job, datetime.utcnow())
         today = now.date()
         sms_tpl = 'supervisor-timesheet-sign'
         email_tpl = 'supervisor-timesheet-sign'
