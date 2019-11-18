@@ -9,7 +9,6 @@ from django.utils.timezone import localtime
 from r3sourcer.apps.pricing.models import (
     RateCoefficientModifier, AllowanceMixin
 )
-from ..models import TimeSheet
 
 
 def calc_worked_delta(timesheet):
@@ -71,7 +70,7 @@ class BasePaymentService:
 
     def _get_timesheets(self, timesheets, date_from=None, date_to=None, candidate=None, company=None):
 
-        timesheets = timesheets or TimeSheet.objects.order_by('shift_started_at')
+        timesheets = timesheets
         timesheets = timesheets.filter(
             candidate_submitted_at__isnull=False,
             supervisor_approved_at__isnull=False

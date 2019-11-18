@@ -1,20 +1,16 @@
 from decimal import Decimal
 
 from django.core.files.base import ContentFile
-from django.contrib.sites.models import Site
-from django.db.models import Min
-from django.template import Context
 from django.template.loader import get_template
 from django.utils.formats import date_format
 from django.utils.timezone import localtime, now
 from filer.models import Folder, File
 
-from r3sourcer.apps.pricing.models import RateCoefficientModifier
-from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.candidate.models import CandidateContact, SkillRel
 from r3sourcer.apps.core.utils.companies import get_site_url
-
-from .base import BasePaymentService, calc_worked_delta
+from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
+from r3sourcer.apps.pricing.models import RateCoefficientModifier
+from r3sourcer.apps.pricing.services import CoefficientService
 from ..models import PayslipLine, Payslip, JobOffer, TimeSheet
 
 

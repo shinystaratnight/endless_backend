@@ -8,7 +8,7 @@ from django.utils import timezone
 
 from r3sourcer.apps.candidate.models import SkillRel
 from r3sourcer.apps.hr.models import TimeSheet
-from r3sourcer.apps.hr.payment import calc_worked_delta
+from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.myob.mappers import TimeSheetMapper, JobsiteMapper, format_date_to_myob
 from r3sourcer.apps.myob.models import MYOBSyncObject

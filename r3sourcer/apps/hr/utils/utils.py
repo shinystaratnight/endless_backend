@@ -143,18 +143,6 @@ def calculate_distances_for_jobsite(contacts, jobsite):
     return True
 
 
-def get_jo_sms_sending_task(job_offer):  # pragma: no cover
-    if job_offer.is_first() and not job_offer.is_accepted():
-        from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms as task
-    elif job_offer.is_recurring():
-        from r3sourcer.apps.hr.tasks import send_recurring_jo_confirmation_sms as task
-    else:
-        # FIXME: send job confirmation SMS because there is pending job's JOs for candidate
-        from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms as task
-
-    return task
-
-
 def send_jo_rejection(job_offer):  # pragme: no cover
     from r3sourcer.apps.hr.tasks import send_placement_rejection_sms
     send_placement_rejection_sms.delay(job_offer.pk)
@@ -233,35 +221,32 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
     invoice = None
     invoice_rule = company.invoice_rules.first()
 
-    try:
-        qry = Q(
-            invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
-        )
+    qry = Q(
+        invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
+    )
 
-        if recreate:
-            qry = Q()
+    if recreate:
+        qry = Q()
 
-        if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
-            invoice = Invoice.objects.filter(
-                qry,
-                customer_company=company, approved=False
-            ).latest('date')
-        elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
-            jobsite = timesheet.job_offer.shift.date.job.jobsite
-            invoice = Invoice.objects.filter(
-                qry,
-                invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite,
-                approved=False
-            ).latest('date')
-        elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
-            candidate = timesheet.job_offer.candidate_contact
-            invoice = Invoice.objects.filter(
-                qry,
-                customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate,
-                approved=False
-            ).latest('date')
-    except Exception:
-        pass
+    if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
+        invoice = Invoice.objects.filter(
+            qry,
+            customer_company=company, approved=False
+        ).latest('date')
+    elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
+        jobsite = timesheet.job_offer.shift.date.job.jobsite
+        invoice = Invoice.objects.filter(
+            qry,
+            invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite,
+            approved=False
+        ).latest('date')
+    elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
+        candidate = timesheet.job_offer.candidate_contact
+        invoice = Invoice.objects.filter(
+            qry,
+            customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate,
+            approved=False
+        ).latest('date')
 
     return invoice
 
@@ -269,7 +254,7 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
 def send_supervisor_timesheet_approve(timesheet, force=False, not_agree=False):
     from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
     if not_agree:
-        date_time = get_jobsite_date_time(job=timesheet.job_offer.job, date_time=timezone.localtime()) + timedelta(hours=4)
+        date_time = get_jobsite_date_time(job=timesheet.job_offer.job, date_time=datetime.utcnow()) + timedelta(hours=4)
         send_supervisor_timesheet_sign.apply_async(
             args=[timesheet.supervisor.id, timesheet.id, force], eta=date_time)
     else:
@@ -287,7 +272,7 @@ def schedule_auto_approve_timesheet(timesheet):
         if str(eval(task['request']['args'])[0]) == str(timesheet.id) and task['request']['name'] == \
                 'r3sourcer.apps.hr.tasks.auto_approve_timesheet':
             app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
-    date_time = get_jobsite_date_time(job=timesheet.job_offer.job, date_time=timezone.localtime()) + timedelta(hours=4)
+    date_time = get_jobsite_date_time(job=timesheet.job_offer.job, date_time=datetime.utcnow()) + timedelta(hours=4)
     auto_approve_timesheet.apply_async(args=[timesheet.id],
                                        eta=date_time)
 
@@ -336,12 +321,16 @@ def get_hours(time_delta):
 
 
 def get_jobsite_date_time(job, date_time):
-    tf = settings.TIME_ZONE_FINDER
     naive_dt = date_time.replace(tzinfo=None)
-    try:
-        time_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
-    except UnknownTimeZoneError:
-        time_zone = pytz.timezone('Australia/Sydney')
+    time_zone = geo_time_zone(lng=job.jobsite.address.longitude,
+                              lat=job.jobsite.address.latitude)
+    return time_zone.localize(naive_dt, is_dst=None)
 
-    datetime_with_tz = time_zone.localize(naive_dt, is_dst=None)
-    return datetime_with_tz
+
+def geo_time_zone(lng, lat):
+    tf = settings.TIME_ZONE_FINDER
+    try:
+        time_zone = tf.timezone_at(lng=lng, lat=lat)
+    except UnknownTimeZoneError:
+        time_zone = settings.TIME_ZONE
+    return pytz.timezone(time_zone)
