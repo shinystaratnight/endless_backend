@@ -1,40 +1,38 @@
 from cities_light.loading import get_model
 from django.apps import apps
 from django.conf import settings
-from django.db import transaction
-from django.db.models import Q, ForeignKey
 from django.contrib.auth import logout
-from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
+from django.db import transaction
+from django.db.models import Q, ForeignKey
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
-
 from rest_framework import viewsets, exceptions, status, fields
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
+from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.viewsets import ViewSet
 
+from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
+from r3sourcer.apps.core import tasks
+from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.models.dashboard import DashboardModule
+from r3sourcer.apps.core.utils.address import parse_google_address
+from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.utils import normalize_phone_number, validate_phone_number
+from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.apps.pricing.models import Industry
+from . import permissions, serializers
 from .. import models, mixins
 from ..decorators import get_model_workflow_functions
 from ..service import factory
 from ..utils.companies import get_master_companies_by_contact, get_site_master_company
 from ..utils.user import get_default_company
 from ..workflow import WorkflowProcess
-
-from . import permissions, serializers
-
-from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
-from r3sourcer.apps.core import tasks
-from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
-from r3sourcer.apps.core.models.dashboard import DashboardModule
-from r3sourcer.apps.core.utils.form_builder import StorageHelper
-from r3sourcer.apps.core.utils.address import parse_google_address
-from r3sourcer.apps.myob.models import MYOBSyncObject
-from r3sourcer.apps.pricing.models import Industry
 
 
 class BaseViewsetMixin():
@@ -883,6 +881,7 @@ class CompanyWorkflowNodeViewset(BaseApiViewset):
 class UserDashboardModuleViewSet(BaseApiViewset):
 
     CAN_NOT_CREATE_MODULE_ERROR = _("You should be CompanyContact to creating module")
+    MODULE_ALREADY_EXISTS = _("Module already exists")
 
     def get_queryset(self):
         if self.request.user.is_authenticated():
@@ -894,15 +893,18 @@ class UserDashboardModuleViewSet(BaseApiViewset):
         return models.DashboardModule.objects.none()
 
     def perform_create(self, serializer):
+        qs = models.UserDashboardModule.objects.filter(
+                company_contact__contact__user=self.request.user.id,
+                dashboard_module=serializer.validated_data['dashboard_module'])
+        if qs.exists():
+            raise exceptions.ValidationError(self.MODULE_ALREADY_EXISTS)
 
-        company_contact = self.request.user.contact.company_contact.last()
+        user = self.request.user
+        company_contact = user.contact.company_contact.last()
         if company_contact is None:
             raise exceptions.APIException(self.CAN_NOT_CREATE_MODULE_ERROR)
 
-        has_create_perm = self.request.user.has_perm(
-            'can_use_module', obj=serializer.validated_data['dashboard_module']
-        )
-        if not has_create_perm:
+        if user.is_manager() is False:
             raise exceptions.PermissionDenied
         serializer.save(company_contact=company_contact)
 

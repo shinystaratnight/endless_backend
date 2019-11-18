@@ -21,7 +21,7 @@ class ApiRouter(DefaultRouter):
         base_name=None, base_serializer=None, **kwargs
     ):
 
-        if (endpoint is None or isinstance(endpoint, type)):
+        if endpoint is None or isinstance(endpoint, type):
             extra = {}
             if base_viewset is not None:
                 extra['base_viewset'] = base_viewset
