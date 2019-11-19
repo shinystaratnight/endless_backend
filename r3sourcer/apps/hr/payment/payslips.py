@@ -17,6 +17,7 @@ from ..models import PayslipLine, Payslip, JobOffer, TimeSheet
 class PayslipService(BasePaymentService):
 
     def _get_skill_rate(self, candidate, skill):
+        # TODO: Fix timezone
         today = localtime(now()).date()
         skill_rel = candidate.candidate_skills.filter(
             skill=skill
@@ -154,6 +155,7 @@ class PayslipService(BasePaymentService):
             self.generate_pdf(payslip)
 
     def prepare(self, company, to_date, from_date):
+        # TODO: Fix timezone
         to_date = to_date or localtime(now()).date()
 
         candidate_ids = JobOffer.objects.filter(

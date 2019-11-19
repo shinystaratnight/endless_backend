@@ -773,6 +773,7 @@ class TestCompanyContactSerializer(SerializerMixin):
     def test_process_approve(self, staff_user):
         mock = MagicMock()
         mock.user = staff_user
+        # TODO: Fix timezone
         now = timezone.now()
         for left, right in itertools.product([True, False], repeat=2):
             instance = MagicMock()

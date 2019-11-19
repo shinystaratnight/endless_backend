@@ -21,6 +21,7 @@ def email_template():
 @pytest.fixture
 @freezegun.freeze_time(datetime(2017, 1, 1))
 def fake_email():
+    # TODO: Fix timezone
     return models.EmailMessage.objects.create(
         state=models.EmailMessage.STATE_CHOICES.CREATED,
         sent_at=timezone.now(),

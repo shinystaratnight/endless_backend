@@ -69,6 +69,7 @@ class TrialUserView(viewsets.GenericViewSet):
         # set role and permissions
         permission_list = GlobalPermission.objects.all()
         new_user.user_permissions.add(*permission_list)
+        # TODO: Fix timezone
         new_user.trial_period_start = timezone.now()
         new_user.save()
 
@@ -98,6 +99,7 @@ class TrialUserView(viewsets.GenericViewSet):
                 submit_message="You've been registered!"
             )
         )
+        # TODO: Fix timezone
         end_of_trial = timezone.now() + datetime.timedelta(days=30)
 
         send_trial_email.apply_async([contact.id, company.id], countdown=10)

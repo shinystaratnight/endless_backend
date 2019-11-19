@@ -16,6 +16,7 @@ def activity_dates_and_enabled_handler():
     from .models import ActivityDate
 
     with transaction.atomic():
+        # TODO: Fix timezone
         activity_dates = ActivityDate.objects.select_for_update().filter(status=ActivityDate.STATUS_CHOICES.WAITING,
                                                                          occur_at__lte=timezone.now(), activity=None)
         for dt in activity_dates.iterator():

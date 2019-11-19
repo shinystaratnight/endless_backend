@@ -73,6 +73,7 @@ class Command(BaseCommand):
         if options['interactive']:
             text = input("Enter text message: ")  # pragma: no cover
 
+        # TODO: Fix timezone
         sent_at = timezone.now()
         self.stdout.write("Sent fake sms:")
         self.stdout.write("Numbers: {} => {}".format(from_number, to_number))

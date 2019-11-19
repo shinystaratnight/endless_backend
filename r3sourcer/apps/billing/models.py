@@ -50,6 +50,7 @@ class Subscription(models.Model):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
         self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
+        # TODO: Fix timezone
         if self.current_period_end <= timezone.now().replace(tzinfo=None) and self.company.get_user():
             self.deactivate(user_id=(str(self.company.get_user().id)))
 
@@ -174,6 +175,7 @@ class Discount(models.Model):
         if self.duration == self.DURATIONS.repeating and self.duration_in_months:
             duration_in_days = 30 * self.duration_in_months
 
+            # TODO: Fix timezone
             if self.created + datetime.timedelta(days=duration_in_days) < datetime.datetime.now():
                 self.active = False
                 self.save()

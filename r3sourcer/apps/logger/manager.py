@@ -57,6 +57,7 @@ class EndlessLogger(object):
         general_logger_fields = {
             'updated_by': user if user else str(current_user.id if current_user else None),
             'date': date.today(),
+            # TODO: Fix timezone
             'updated_at': int(round(timezone.now().timestamp() * 1000)),
             'model': "{}.{}".format(instance.__class__.__module__, instance.__class__.__name__),
             'object_id': str(instance.id) if hasattr(instance, 'id') else '',

@@ -21,6 +21,7 @@ def get_sms(from_number, to_number, text, reply_timeout=None,
 
     number_of_segments = math.ceil(len(text) / settings.SMS_SEGMENT_SIZE)
     params = dict(
+        # TODO: Fix timezone
         text=text, from_number=from_number, to_number=to_number, check_delivered=True, sent_at=timezone.now(),
         check_reply=check_reply, type=SMSMessage.TYPE_CHOICES.SENT, company=company, segments=number_of_segments,
         template=kwargs.get('template')

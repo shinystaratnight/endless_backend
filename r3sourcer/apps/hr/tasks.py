@@ -75,10 +75,11 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
         logger.exception('Cannot load SMS service')
         return
 
-    target_date_and_time = formats.date_format(job_offer.start_time, settings.DATETIME_FORMAT)
+    now = utils.get_jobsite_localtime(job_offer.job)
+    start_time = utils.get_jobsite_date_time(job_offer.job, job_offer.start_time)
+    target_date_and_time = formats.date_format(start_time, settings.DATETIME_FORMAT)
 
-    now = utils.get_jobsite_date_time(job_offer.job, datetime.utcnow())
-    if now >= utils.get_jobsite_date_time(job_offer.job, job_offer.start_time):
+    if now >= start_time:
         target_date_and_time = "ASAP"
 
     master_company = core_companies_utils.get_site_master_company(user=job_offer.candidate_contact.contact.user)
@@ -128,7 +129,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                 job_offer.status = hr_models.JobOffer.STATUS_CHOICES.undefined
                 job_offer.save(update_fields=['scheduled_sms_datetime', 'status'])
 
-            now = utils.get_jobsite_date_time(job_offer.job, datetime.utcnow())
+            now = utils.get_jobsite_localtime(job_offer.job)
             jo_target_datetime = utils.get_jobsite_date_time(job_offer.job, job_offer.start_time)
             if jo_target_datetime.date() > now.date() \
                     and job_offer.has_timesheets_with_going_work_unset_or_timeout():
@@ -366,7 +367,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 autoconfirm_rejected_timesheet.apply_async(
                     args=[time_sheet_id], countdown=settings.SUPERVISOR_DECLINE_TIMEOUT
                 )
-            jobs_today = utils.get_jobsite_date_time(time_sheet.job_offer.job, datetime.utcnow())
+            jobs_today = utils.get_jobsite_localtime(time_sheet.job_offer.job)
 
             today = jobs_today.today()
 
@@ -428,6 +429,7 @@ def autoconfirm_rejected_timesheet(self, time_sheet_id):
         logger.error(e)
     else:
         if time_sheet.candidate_submitted_at is None:
+            # TODO: Fix timezone
             time_sheet.candidate_submitted_at = timezone.now()
             time_sheet.save(update_fields=['candidate_submitted_at'])
 
@@ -502,7 +504,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         return
 
     try:
-        now = utils.get_jobsite_date_time(timesheet.job_offer.job, datetime.utcnow())
+        now = utils.get_jobsite_localtime(timesheet.job_offer.job)
         today = now.date()
         sms_tpl = 'supervisor-timesheet-sign'
         email_tpl = 'supervisor-timesheet-sign'
@@ -838,6 +840,7 @@ def send_job_confirmation_sms(self, job_id):
 @app.task(bind=True, queue='hr')
 def close_not_active_jobsites(self):
     not_active_delta = timedelta(seconds=settings.JOBSITE_NOT_ACTIVE_TIMEOUT)
+    # TODO: Fix timezone
     timeout_datetime = timezone.localtime(timezone.now()) - not_active_delta
 
     jobsites = hr_models.Jobsite.objects.annotate(
@@ -870,6 +873,7 @@ def close_not_active_jobsites(self):
 
 @shared_task
 def auto_approve_timesheet(timesheet_id):
+    # TODO: Fix timezone
     hr_models.TimeSheet.objects.filter(
         id=timesheet_id, status=hr_models.TimeSheet.STATUS_CHOICES.modified
     ).update(status=hr_models.TimeSheet.STATUS_CHOICES.approved, supervisor_approved_at=timezone.now())

@@ -444,6 +444,7 @@ class RefreshCompanyFilesView(APIView):
         }
 
         myob_settings = request.user.company.myob_settings
+        # TODO: Fix timezone
         myob_settings.company_files_last_refreshed = timezone.now()
         myob_settings.save()
         return Response(data)
@@ -535,6 +536,7 @@ class RefreshMYOBAccountsView(APIView):
             data = serializers.MYOBAccountSerializer(myob_accounts, many=True).data
 
         myob_settings = request.user.company.myob_settings
+        # TODO: Fix timezone
         myob_settings.payroll_accounts_last_refreshed = timezone.now()
         myob_settings.save()
 

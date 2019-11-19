@@ -72,6 +72,7 @@ class BaseSync:
             created = True
 
         if not created:
+            # TODO: Fix timezone
             sync_obj.synced_at = timezone.now()
         if self.company:
             sync_obj.company = self.company

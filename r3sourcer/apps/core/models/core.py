@@ -1449,6 +1449,7 @@ class CompanyContactRelationship(
         return self.company.get_master_company()
 
     def get_closest_company(self):
+        # TODO: Fix timezone
         if self.termination_date and self.termination_date < timezone.now():
             return None
         return self.company
@@ -2566,6 +2567,7 @@ class TemplateMessage(UUIDModel):
                 'user': {'first_name': 'John',
                         'last_name': 'Davidson',
                         'contact': contact_instance},
+                # TODO: Fix timezone
                 'starts_at': datetime.now(),
                 'contact': Contact.objects.last()
             }

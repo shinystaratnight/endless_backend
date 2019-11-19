@@ -307,9 +307,11 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         # bind current date + timedelta (timeout)
         if self.reply_timeout:
             reply_timedelta = datetime.timedelta(minutes=self.reply_timeout)
+            # TODO: Fix timezone
             self.check_reply_at = timezone.now() + reply_timedelta
         if self.delivery_timeout:
             d_timedelta = datetime.timedelta(minutes=self.delivery_timeout)
+            # TODO: Fix timezone
             self.check_delivery_at = timezone.now() + d_timedelta
 
     def save(self, *args, **kwargs):

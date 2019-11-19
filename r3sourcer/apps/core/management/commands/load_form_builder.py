@@ -24,7 +24,9 @@ class Command(BaseCommand):
                     model_parts[1]
                 )
                 el["fields"]["content_type"] = ct_model.id
+                # TODO: Fix timezone
                 el["fields"]["created_at"] = timezone.now().isoformat()
+                # TODO: Fix timezone
                 el["fields"]["updated_at"] = timezone.now().isoformat()
 
             with open(fixture_file.name, "w") as jsonFile:
