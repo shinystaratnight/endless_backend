@@ -36,6 +36,7 @@ class IndustryFilter(FilterSet):
         fields = ['company']
 
     def filter_by_company_price_lists(self, queryset, name, value):
+        # TODO: Fix timezone
         now = timezone.now()
 
         return queryset.filter(

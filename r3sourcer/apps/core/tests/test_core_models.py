@@ -457,6 +457,7 @@ class TestInvoiceLine:
     def test_invoice_line_str(self, company, invoice):
         line = InvoiceLine()
         line.invoice = invoice
+        # TODO: Fix timezone
         line.date = datetime.now().date()
         assert str(line) == '{}: 01/01/2017'.format(str(line.invoice))
 
@@ -525,6 +526,7 @@ class TestCompanyContactRelationship:
         assert company_rel.master_company in staff_relationship.get_master_company()
 
     def test_get_closest_company_expired(self, staff_relationship):
+        # TODO: Fix timezone
         staff_relationship.termination_date = timezone.now() - timedelta(days=1)
         staff_relationship.save()
         assert staff_relationship.get_closest_company() is None

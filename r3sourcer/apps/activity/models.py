@@ -95,6 +95,7 @@ class Activity(UUIDModel):
 
     def __str__(self):
         if self.starts_at and self.ends_at and self.starts_at.date() == self.ends_at.date():
+            # TODO: Fix timezone
             if self.starts_at.date() == timezone.localtime(timezone.now()).date():
                 return self.template.name
             return '{}: {}'.format(
@@ -130,6 +131,7 @@ class Activity(UUIDModel):
         raise NotImplementedError
 
     def get_overdue(self):
+        # TODO: Fix timezone
         return self.ends_at < timezone.now().replace(tzinfo=self.ends_at.tzinfo) and not self.done
 
 
@@ -323,7 +325,9 @@ class ActivityRepeat(UUIDModel):
             priority=activity.priority,
             entity_object_id=activity.entity_object_id,
             entity_object_name=activity.entity_object_name,
+            # TODO: Fix timezone
             starts_at=timezone.now(),
+            # TODO: Fix timezone
             ends_at=timezone.now() + (activity.ends_at - activity.starts_at),
         )
         self.occurred_activities.add(new_activity)

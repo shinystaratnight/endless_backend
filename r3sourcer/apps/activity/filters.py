@@ -101,6 +101,7 @@ class ActivityExtraFilter(admin.filters.SimpleListFilter):
 
     def get_links(self, cl):
         result = list()
+        # TODO: Fix timezone
         now_date_time = timezone.localtime(timezone.now()).date()
         yesterday = (now_date_time - timezone.timedelta(days=1))  # .replace(hour=0, minute=0, second=0)
         tomorrow = (now_date_time + timezone.timedelta(days=1))  # .replace(hour=23, minute=59, second=59)

@@ -146,6 +146,7 @@ class SalespersonMixin:
                     portfolio_manager.legacy_myob_card_number = salesperson['DisplayID']
                     portfolio_manager.save(update_fields=['legacy_myob_card_number'])
             else:
+                # TODO: Fix timezone
                 starts_at = timezone.now()
                 activity_values = {
                     'contact': contact,

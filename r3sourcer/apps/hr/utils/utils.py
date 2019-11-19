@@ -18,6 +18,7 @@ from django.templatetags.static import static
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import InvoiceRule, Invoice
 from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
+from r3sourcer.apps.core.utils.utils import tz_time2utc_time
 from r3sourcer.celeryapp import app
 
 
@@ -254,9 +255,10 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
 def send_supervisor_timesheet_approve(timesheet, force=False, not_agree=False):
     from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
     if not_agree:
-        date_time = get_jobsite_date_time(job=timesheet.job_offer.job, date_time=datetime.utcnow()) + timedelta(hours=4)
+        date_time = get_jobsite_localtime(job=timesheet.job_offer.job) + timedelta(hours=4)
+        utc_eta = tz_time2utc_time(date_time)
         send_supervisor_timesheet_sign.apply_async(
-            args=[timesheet.supervisor.id, timesheet.id, force], eta=date_time)
+            args=[timesheet.supervisor.id, timesheet.id, force], eta=utc_eta)
     else:
         send_supervisor_timesheet_sign.apply_async(args=[timesheet.supervisor.id, timesheet.id, force], countdown=10)
 
@@ -272,9 +274,9 @@ def schedule_auto_approve_timesheet(timesheet):
         if str(eval(task['request']['args'])[0]) == str(timesheet.id) and task['request']['name'] == \
                 'r3sourcer.apps.hr.tasks.auto_approve_timesheet':
             app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
-    date_time = get_jobsite_date_time(job=timesheet.job_offer.job, date_time=datetime.utcnow()) + timedelta(hours=4)
-    auto_approve_timesheet.apply_async(args=[timesheet.id],
-                                       eta=date_time)
+    date_time = get_jobsite_localtime(job=timesheet.job_offer.job) + timedelta(hours=4)
+    utc_eta = tz_time2utc_time(date_time)
+    auto_approve_timesheet.apply_async(args=[timesheet.id], eta=utc_eta)
 
 
 def format_dates_range(dates_list):
@@ -318,6 +320,12 @@ def get_hours(time_delta):
         return '0'
     hours = time_delta.total_seconds() / 3600
     return '{0:.2f}'.format(hours)
+
+
+def get_jobsite_localtime(job):
+    time_zone = geo_time_zone(lng=job.jobsite.address.longitude,
+                              lat=job.jobsite.address.latitude)
+    return datetime.now(time_zone)
 
 
 def get_jobsite_date_time(job, date_time):

@@ -25,7 +25,7 @@ from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
 from r3sourcer.apps.core.utils.utils import tz_time2utc_time
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
-from r3sourcer.apps.hr.utils.utils import get_jobsite_date_time
+from r3sourcer.apps.hr.utils.utils import get_jobsite_date_time, get_jobsite_localtime
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.skills.models import Skill, SkillBaseRate
@@ -346,6 +346,7 @@ class Job(core_models.AbstractBaseOrder):
             return IRRELEVANT
 
         result = NOT_FULFILLED
+        # TODO: Fix timezone
         now = timezone.now()
         today = now.date()
         next_date = self.shift_dates.filter(shift_date__gt=today, cancelled=False).order_by('shift_date').first()
@@ -381,6 +382,7 @@ class Job(core_models.AbstractBaseOrder):
             return IRRELEVANT
 
         result = NOT_FULFILLED
+        # TODO: Fix timezone
         today = timezone.localtime(timezone.now()).date()
         sd_today = self.shift_dates.filter(shift_date=today, cancelled=False).first()
         if sd_today:
@@ -391,6 +393,7 @@ class Job(core_models.AbstractBaseOrder):
 
     def can_fillin(self):
         not_filled_future_sd = False
+        # TODO: Fix timezone
         today = timezone.localtime(timezone.now()).date()
         future_sds = self.shift_dates.filter(shift_date__gte=today)
         for sd in future_sds:
@@ -409,6 +412,7 @@ class Job(core_models.AbstractBaseOrder):
         if self.customer_company.type == core_models.Company.COMPANY_TYPES.master:
             return True
 
+        # TODO: Fix timezone
         today = timezone.localtime(timezone.now()).date()
 
         return self.customer_company.price_lists.filter(
@@ -507,6 +511,7 @@ class Job(core_models.AbstractBaseOrder):
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         if just_added:
+            # TODO: Fix timezone
             self.provider_signed_at = timezone.now()
             existing_jobs = Job.objects.filter(
                 jobsite=self.jobsite, position=self.position
@@ -702,9 +707,7 @@ class JobOffer(core_models.UUIDModel):
 
     @property
     def start_time(self):
-        return timezone.make_aware(
-            datetime.combine(self.shift.date.shift_date, self.shift.time)
-        )
+        return datetime.combine(self.shift.date.shift_date, self.shift.time)
 
     def is_accepted(self):
         return self.status == JobOffer.STATUS_CHOICES.accepted
@@ -773,6 +776,7 @@ class JobOffer(core_models.UUIDModel):
             cl.save()
 
     def get_timesheets_with_going_work_unset_or_timeout(self, check_date=None):
+        # TODO: Fix timezone
         now = timezone.now()
         if check_date is None:
             check_date = now.date()
@@ -804,6 +808,7 @@ class JobOffer(core_models.UUIDModel):
         Check if there are JO for the candidate/job earlier than this one
         :return: True or False
         """
+        # TODO: Fix timezone
         now = timezone.now()
         return self.job.get_job_offers().filter(
             models.Q(shift__date__shift_date=now.date(), shift__time__gte=now.timetz()) |
@@ -845,7 +850,7 @@ class JobOffer(core_models.UUIDModel):
         self.status = self.STATUS_CHOICES.cancelled
         self.scheduled_sms_datetime = None
         self.save()
-
+        # TODO: Fix timezone
         now = timezone.now()
         time_sheet = None
 
@@ -881,6 +886,7 @@ class JobOffer(core_models.UUIDModel):
         return accepted_count >= self.shift.workers
 
     def _cancel_for_filled_quota(self):
+        # TODO: Fix timezone
         now = timezone.now()
 
         with transaction.atomic():
@@ -901,6 +907,7 @@ class JobOffer(core_models.UUIDModel):
     def check_job_quota(self, is_initial):
         if is_initial:
             if self.is_quota_filled() or self.is_cancelled():
+                # TODO: Fix timezone
                 now = timezone.now()
                 self._cancel_for_filled_quota()
                 self.move_candidate_to_carrier_list()
@@ -947,7 +954,7 @@ class JobOffer(core_models.UUIDModel):
                 self.move_candidate_to_carrier_list(new_offer=True)
 
             offer = JobOffer.objects.get(pk=self.pk)
-            _now = get_jobsite_date_time(offer.job, datetime.utcnow())
+            _now = get_jobsite_localtime(offer.job)
             tomorrow = _now + timedelta(days=1)
             tomorrow_end = tomorrow.replace(hour=5, minute=0, second=0, microsecond=0) + timedelta(days=1)
             target_date_and_time = get_jobsite_date_time(offer.job, offer.start_time)
@@ -1269,7 +1276,7 @@ class TimeSheet(
                 defaults=data
             )
 
-        now = hr_utils.get_jobsite_date_time(job_offer.job, datetime.utcnow())
+        now = hr_utils.get_jobsite_localtime(job_offer.job)
         if now <= job_offer.start_time + timedelta(hours=2):
             cls._send_placement_acceptance_sms(time_sheet, job_offer)
 
@@ -1300,7 +1307,7 @@ class TimeSheet(
         return timedelta()
 
     def auto_fill_four_hours(self):
-        now = hr_utils.get_jobsite_date_time(self.job_offer.job, datetime.utcnow())
+        now = hr_utils.get_jobsite_localtime(self.job_offer.job)
         self.candidate_submitted_at = now
         self.supervisor_approved_at = now
         self.shift_started_at = now
@@ -1346,9 +1353,10 @@ class TimeSheet(
 
     def process_status(self):
         if self.status == self.STATUS_CHOICES.check_confirmed:
-            if hr_utils.get_jobsite_date_time(self.job_offer.job,
-                                              self.shift_started_at) <= hr_utils.get_jobsite_date_time(
-                    self.job_offer.job, datetime.utcnow()):
+            localtime_now = hr_utils.get_jobsite_localtime(self.job_offer.job)
+            local_target_date_time = hr_utils.get_jobsite_date_time(self.job_offer.job,
+                                                                    self.shift_started_at)
+            if local_target_date_time <= localtime_now:
                 self.status = self.STATUS_CHOICES.submit_pending
                 self.save(update_fields=['status'])
 
@@ -1356,6 +1364,7 @@ class TimeSheet(
         if self.going_to_work_confirmation is None:
             pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
             going_eta = self.shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
+            # TODO: Fix timezone
             if going_eta <= timezone.now():
                 self.status = self.STATUS_CHOICES.check_pending
                 self.save(update_fields=['status'])
@@ -1369,6 +1378,7 @@ class TimeSheet(
         elif self.candidate_submitted_at is not None:
             self.status = self.STATUS_CHOICES.approval_pending
         elif self.going_to_work_confirmation:
+            # TODO: Fix timezone
             if self.shift_started_at <= timezone.now():
                 self.status = self.STATUS_CHOICES.submit_pending
             else:
@@ -1376,7 +1386,7 @@ class TimeSheet(
         elif self.going_to_work_confirmation is None:
             pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
             going_eta = hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at) - timedelta(minutes=pre_shift_confirmation_delta)
-            if going_eta <= hr_utils.get_jobsite_date_time(self.job_offer.job, datetime.utcnow()):
+            if going_eta <= hr_utils.get_jobsite_localtime(self.job_offer.job):
                 self.status = self.STATUS_CHOICES.check_pending
         elif not self.going_to_work_confirmation:
             self.status = self.STATUS_CHOICES.check_failed
@@ -1396,7 +1406,7 @@ class TimeSheet(
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
 
-            now = hr_utils.get_jobsite_date_time(self.job_offer.job, datetime.utcnow())
+            now = hr_utils.get_jobsite_localtime(self.job_offer.job)
             if now <= hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at):
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
                 pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta

@@ -35,6 +35,7 @@ class BaseEmailService(metaclass=ABCMeta):
             else:
                 raise RecipientsInvalidInstance('Recipients should be either string or list')
 
+            # TODO: Fix timezone
             now_dt = timezone.now()
 
             email_message = email_models.EmailMessage(

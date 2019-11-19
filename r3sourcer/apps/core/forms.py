@@ -67,6 +67,7 @@ def get_year_choices():
     """
     Return year choices
     """
+    # TODO: Fix timezone
     year = timezone.now().year
     year_from = year - 1
     year_to = year + 10

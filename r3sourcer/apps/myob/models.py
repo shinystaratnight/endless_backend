@@ -207,6 +207,7 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
 class MYOBCompanyFileTokenManager(AbstractObjectOwnerManager):
 
     def enabled(self, date=None):
+        # TODO: Fix timezone
         date = date or timezone.localtime(timezone.now()).date()
         if isinstance(date, datetime.datetime):
             date = timezone.localtime(date).date()
@@ -270,6 +271,7 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
         return obj, created
 
     def is_enabled(self, date=None):
+        # TODO: Fix timezone
         date = date or timezone.now()
         if isinstance(date, datetime.datetime):
             date = timezone.localtime(date).date()

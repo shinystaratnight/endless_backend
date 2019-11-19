@@ -87,6 +87,7 @@ class BaseSMSService(metaclass=ABCMeta):
             if ac:
                 ac.activity = ac.create_activity(
                     _("Undelivered message"), _("Undelivered message"),
+                    # TODO: Fix timezone
                     sms_message.sent_at, timezone.now()
                 )
                 ac.save(update_fields=['activity_id'])
@@ -235,6 +236,7 @@ class BaseSMSService(metaclass=ABCMeta):
         else:
             sms_activity.create_activity(
                 _('Could not find sent SMS'), _('Could not find sent SMS'),
+                # TODO: Fix timezone
                 sms_message.sent_at, timezone.now(),
                 contact=sms_activity.to_contact
             )
@@ -248,6 +250,7 @@ class BaseSMSService(metaclass=ABCMeta):
         elif sms_message.is_negative_answer():
             sms_activity.create_activity(
                 _('Negative answer'), _('Negative answer'),
+                # TODO: Fix timezone
                 sms_message.sent_at, timezone.now(),
                 contact=sms_activity.to_contact
             )
@@ -260,6 +263,7 @@ class BaseSMSService(metaclass=ABCMeta):
             sms_message.add_related_objects(*sent_message.get_related_objects())
         sms_activity.create_activity(
             _('Ambiguous answer'), _('Ambiguous answer'),
+            # TODO: Fix timezone
             sms_message.sent_at, timezone.now(), contact=sms_activity.to_contact
         )
         if sms_activity.from_contact and sms_activity.to_contact:
