@@ -73,6 +73,7 @@ class TimesheetFilter(FilterSet):
         :param contact: request.user.contact
         :return: Q object
         """
+        # TODO: Fix timezone
         now = timezone.now()
         ended_at = now - datetime.timedelta(hours=4)
 

@@ -319,6 +319,7 @@ class CandidateLocationViewset(
             job = Job.objects.get(id=job_id)
         except Job.DoesNotExist:
             exceptions.ValidationError({'job': _('Cannot find job')})
+        # TODO: Fix timezone
         now = timezone.now()
 
         timesheets = list(TimeSheet.objects.filter(

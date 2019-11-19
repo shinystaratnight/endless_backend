@@ -210,6 +210,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         bearer_token = BearerToken(request_validator)
         token = bearer_token.create_token(token_request, save_token=False)
 
+        # TODO: Fix timezone
         expires = timezone.now() + timedelta(seconds=oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
         client = None
         AccessToken = get_access_token_model()
@@ -235,6 +236,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         if user is None:
             raise exceptions.NotFound()
 
+        # TODO: Fix timezone
         instance.loggedin_at = timezone.now()
         instance.save()
 

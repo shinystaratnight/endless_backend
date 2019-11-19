@@ -190,6 +190,7 @@ def terminate_company_contact(company_contact_rel_id):
         logger.exception('Cannot find company contact relation to terminate')
     else:
         termination_date = company_contact_rel.termination_date
+        # TODO: Fix timezone
         today = timezone.localtime(timezone.now()).date()
 
         if termination_date and termination_date == today:

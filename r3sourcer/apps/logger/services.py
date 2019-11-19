@@ -29,6 +29,7 @@ class LocationLogger():
         return LocationHistory.objects_in(self.logger_database)
 
     def log_instance_location(self, instance, latitude, longitude, timesheet_id=None, name=None):
+        # TODO: Fix timezone
         now = timezone.now()
 
         log = LocationHistory(

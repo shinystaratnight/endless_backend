@@ -158,6 +158,7 @@ class MYOBAuth(object):
         }
         if state is None:
             # could use oauth2 state param more properly
+            # TODO: Fix timezone
             params['state'] = str(datetime.datetime.now().timestamp())
         url = self.get_auth_url()
         req = requests.Request(method="GET", url=url, params=params)
@@ -296,6 +297,7 @@ class MYOBAuth(object):
             }
 
         url = self.get_token_url()
+        # TODO: Fix timezone
         now = timezone.now()
         resp = myob_request('post', url, data=data)
         log.info('%s %s', resp.status_code, resp.content)

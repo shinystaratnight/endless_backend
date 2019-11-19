@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_parse_date_from():
+    # TODO: Fix timezone
     return timezone.now() - datetime.timedelta(hours=24)
 
 

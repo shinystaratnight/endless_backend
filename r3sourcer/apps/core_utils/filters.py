@@ -33,6 +33,7 @@ class DateRangesMixin(object):
         return urllib_parse.urlencode(extra_dict)
 
     def get_data_ranges_initial(self):
+        # TODO: Fix timezone
         today = timezone.localtime(timezone.now()).date()
         monday = (today - timezone.timedelta(days=today.weekday()))
         sunday = (today + timezone.timedelta(days=(6 - today.weekday())))

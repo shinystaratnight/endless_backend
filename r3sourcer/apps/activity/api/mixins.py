@@ -19,6 +19,7 @@ class RelatedActivitiesColumnMixin():
         cached_key = 'related_activities:{id}'.format(id=obj.id)
         cached_data = cache.get(cached_key, None)
         if not isinstance(cached_data, tuple) or len(cached_data) != 3:
+            # TODO: Fix timezone
             now = timezone.now()
             activities = activity_models.Activity.objects.filter(
                 entity_object_id=obj.id, entity_object_name=obj.__class__.__name__
@@ -30,8 +31,9 @@ class RelatedActivitiesColumnMixin():
             #         models.Q(sms_activities__from_contact_id=obj.contact.id) |
             #         models.Q(sms_activities__to_contact_id=obj.contact.id)
             #     )
-
+            # TODO: Fix timezone
             yesterday = timezone.now() - datetime.timedelta(days=1)
+            # TODO: Fix timezone
             tomorrow = timezone.now() + datetime.timedelta(days=1)
             yesterday = yesterday.replace(second=0, minute=0, hour=0)
             tomorrow = tomorrow.replace(second=59, minute=59, hour=23)

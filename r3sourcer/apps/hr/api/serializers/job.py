@@ -174,7 +174,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
     def get_no_sds(self, obj):  # pragma: no cover
         if obj is None:
             return True
-
+        # TODO: Fix timezone
         return not obj.shift_dates.filter(
             shift_date__gt=timezone.localtime(timezone.now()).date(), cancelled=False
         ).exists()
@@ -191,6 +191,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
         if obj is None:  # pragma: no cover
             return result
 
+        # TODO: Fix timezone
         today = timezone.localtime(timezone.now()).date()
         timesheets = hr_models.TimeSheet.objects.filter(
             job_offer__shift__date__job_id=obj.id, shift_started_at__date=today
@@ -348,6 +349,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         )
         target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
+        # TODO: Fix timezone
         is_today_or_future = target_date_and_time.date() >= timezone.now().date()
 
         if (obj.is_cancelled() or not_received_or_scheduled) and not is_filled and is_today_or_future:
@@ -355,6 +357,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
                 job_offer_smses__offer_sent_by_sms__isnull=False,
                 candidate_contact=obj.candidate_contact
             ).order_by('job_offer_smses__offer_sent_by_sms__sent_at').last()
+            # TODO: Fix timezone
             return bool(
                 obj.job_offer_smses.filter(offer_sent_by_sms__isnull=False).exists() and last_jo and
                 last_jo.job_offer_smses.filter(offer_sent_by_sms__sent_at__lt=timezone.now()).exists()
@@ -376,6 +379,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         )
         target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
+        # TODO: Fix timezone
         is_today_or_future = target_date_and_time.date() >= timezone.now().date()
 
         return has_not_sent and not obj.is_accepted() and not is_filled and is_today_or_future

@@ -22,6 +22,7 @@ class SkillFilter(FilterSet):
         if company and company.type == core_models.Company.COMPANY_TYPES.master:
             return queryset.filter(company=company).distinct()
 
+        # TODO: Fix timezone
         now = timezone.now()
         return queryset.filter(
             price_list_rates__price_list__company_id=value,

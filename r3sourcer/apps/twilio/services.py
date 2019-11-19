@@ -37,6 +37,7 @@ class TwilioSMSService(BaseSMSService):
             """ Update current credential (numbers, accounts, messages) """
 
             phone_numbers = []
+            # TODO: Fix timezone
             last_sync = timezone.now()
             for n in c.client.api.incoming_phone_numbers.stream():
                 phone_numbers.append(models.TwilioPhoneNumber.fetch_remote(n, c.company))
@@ -49,6 +50,7 @@ class TwilioSMSService(BaseSMSService):
                     'date_sent_after': account.get_last_sync()
                 }  # get all messages sent_at after `self.get_last_sync()`
 
+                # TODO: Fix timezone
                 acc_last_sync = timezone.localtime(timezone.now()).date()
                 logger.info("Sync params: {}".format(params))
 

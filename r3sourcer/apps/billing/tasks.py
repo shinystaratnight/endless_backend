@@ -171,6 +171,7 @@ def fetch_payments():
 
 @shared_task
 def send_sms_payment_reminder():
+    # TODO: Fix timezone
     now = datetime.datetime.now()
     balance_objects = SMSBalance.objects.filter(last_payment__status='not_paid')
     one_day_objects = balance_objects.filter(last_payment__created__gte=now-datetime.timedelta(days=1))

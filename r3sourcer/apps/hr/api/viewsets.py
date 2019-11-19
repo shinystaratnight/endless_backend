@@ -48,10 +48,12 @@ class BaseTimeSheetViewsetMixin:
 
     def submit_hours(self, data, time_sheet, is_candidate=True, not_agree=False):
         if is_candidate:
+            # TODO: Fix timezone
             data.update(candidate_submitted_at=timezone.now())
         elif not_agree:
             data.update(supervisor_approved_at=None)
         else:
+            # TODO: Fix timezone
             data.update(supervisor_approved_at=timezone.now())
         serializer = timesheet_serializers.TimeSheetSerializer(
             time_sheet, data=data, partial=True
@@ -59,6 +61,7 @@ class BaseTimeSheetViewsetMixin:
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
+        # TODO: Fix timezone
         now = timezone.localtime(timezone.now())
 
         if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
@@ -253,6 +256,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         if request.method == 'PUT':
             data = self.prepare_related_data(request.data)
+            # TODO: Fix timezone
             data['candidate_submitted_at'] = timezone.now()
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -261,6 +265,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 hr_utils.send_supervisor_timesheet_approve(obj, True)
 
             time_sheet = serializer.save()
+            # TODO: Fix timezone
             time_sheet.candidate_submitted_at = timezone.now()
         else:
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
@@ -273,6 +278,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         if request.method == 'PUT':
             data = self.prepare_related_data(request.data)
+            # TODO: Fix timezone
             data['supervisor_approved_at'] = timezone.now()
             serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
             serializer.is_valid(raise_exception=True)
@@ -321,6 +327,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # approve timesheet
+        # TODO: Fix timezone
         time_sheet.supervisor_approved_at = timezone.now()
         time_sheet.supervisor_approved_scheme = serializer.APPROVAL_SCHEME
         time_sheet.save()
@@ -353,6 +360,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         ))
 
         # approve timesheet
+        # TODO: Fix timezone
         serializer.save(
             supervisor_approved_at=timezone.now(),
             supervisor_approved_scheme=serializer.APPROVAL_SCHEME
@@ -481,6 +489,7 @@ class JobViewset(BaseApiViewset):
 
         requested_shift_ids = request.query_params.getlist('shifts')
 
+        # TODO: Fix timezone
         now = timezone.localtime(timezone.now())
         today = now.date()
 
@@ -808,6 +817,7 @@ class JobViewset(BaseApiViewset):
             for new_shift_date_obj in new_shift_dates_objs:
                 self._extend_shift_date(job, new_shift_date_obj, shift_objs, is_autofill)
 
+        # TODO: Fix timezone
         today = timezone.localtime(timezone.now()).date()
         shifts = hr_models.Shift.objects.filter(
             date__job=job, date__shift_date__gte=today, date__cancelled=False
