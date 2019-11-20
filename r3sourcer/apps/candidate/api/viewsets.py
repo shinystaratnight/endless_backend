@@ -1,10 +1,7 @@
-import datetime
-
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Exists
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-
 from rest_framework import status, exceptions, permissions as drf_permissions, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -13,14 +10,13 @@ from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestCandid
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.candidate.api.filters import CandidateContactAnonymousFilter
 from r3sourcer.apps.core import tasks as core_tasks
-from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
+from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
-from r3sourcer.apps.hr.models import Job, TimeSheet, ShiftDate
 from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.hr.models import Job, TimeSheet
 from r3sourcer.apps.logger.main import location_logger
 from r3sourcer.apps.myob.models import MYOBSyncObject
-
 from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
 from ..tasks import buy_candidate
@@ -37,11 +33,9 @@ class CandidateContactViewset(BaseApiViewset):
         if not instance.contact.phone_mobile_verified:
             core_tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id),
                                                            countdown=10)
-
         if not instance.contact.email_verified:
             core_tasks.send_contact_verify_email.apply_async(
-                args=(instance.contact.id, manager_id.id, master_company.id), countdown=10
-            )
+                args=(instance.contact.id, manager_id.id, master_company.id))
 
     def perform_destroy(self, instance):
         has_joboffers = instance.job_offers.exists()

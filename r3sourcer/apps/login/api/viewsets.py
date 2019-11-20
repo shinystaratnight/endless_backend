@@ -53,7 +53,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
     }
 
     def get_object(self):
-        obj = super(AuthViewSet, self).get_object()
+        obj = super().get_object()
 
         if obj.loggedin_at is not None:
             raise TokenAlreadyUsed()

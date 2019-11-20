@@ -14,11 +14,11 @@ from rest_framework import viewsets, exceptions, status, fields
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
-from rest_framework.status import HTTP_400_BAD_REQUEST
 from rest_framework.viewsets import ViewSet
 
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
 from r3sourcer.apps.core import tasks
+from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.address import parse_google_address
@@ -185,11 +185,15 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def perform_create(self, serializer):
         instance = serializer.save()
 
+        manager = self.request.user.contact
         master_company = get_site_master_company(request=self.request)
         models.ContactRelationship.objects.create(
             contact=instance,
             company=master_company
         )
+        if not instance.email_verified:
+            core_tasks.send_contact_verify_email.apply_async(
+                args=(instance.id, manager.id, master_company.id))
 
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def validate(self, request, *args, **kwargs):
