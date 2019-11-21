@@ -1476,28 +1476,23 @@ class CompanyContactRelationship(
             role = Role.ROLE_NAMES.client
             if self.company.type == self.company.COMPANY_TYPES.master:
                 role = Role.ROLE_NAMES.manager
-
+                # TODO: Move this logic to celery task
                 if not self.company_contact.contact.company_contact.filter(dashboard_modules__isnull=False).exists():
-                    UserDashboardModule.objects.create(
-                        company_contact=self.company_contact,
-                        dashboard_module=DashboardModule.objects.get(add_label='+ Add new candidate contact'),
-                        position=1
+                    dashboard_endpoints = (
+                        "/core/companies/",
+                        "/candidate/candidatecontacts/",
+                        "/hr/jobs/",
+                        "/core/companycontacts/",
                     )
-                    UserDashboardModule.objects.create(
-                        company_contact=self.company_contact,
-                        dashboard_module=DashboardModule.objects.get(add_label='+ Add new client'),
-                        position=2
-                    )
-                    UserDashboardModule.objects.create(
-                        company_contact=self.company_contact,
-                        dashboard_module=DashboardModule.objects.get(add_label='+ Add new client contact'),
-                        position=3
-                    )
-                    UserDashboardModule.objects.create(
-                        company_contact=self.company_contact,
-                        dashboard_module=DashboardModule.objects.get(add_label='+ Add new job'),
-                        position=4
-                    )
+                    for x, y in enumerate(DashboardModule.objects.filter(
+                            is_active=True,
+                            endpoint__in=dashboard_endpoints,
+                    ).all(), start=1):
+                        UserDashboardModule.objects.create(
+                            company_contact=self.company_contact,
+                            dashboard_module=y,
+                            position=x
+                        )
 
             self.company_contact.contact.user.role.add(Role.objects.create(name=role, company_contact_rel=self))
 
