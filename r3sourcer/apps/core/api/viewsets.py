@@ -191,9 +191,6 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             contact=instance,
             company=master_company
         )
-        if not instance.email_verified:
-            core_tasks.send_contact_verify_email.apply_async(
-                args=(instance.id, manager.id, master_company.id))
 
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def validate(self, request, *args, **kwargs):
@@ -623,12 +620,11 @@ class CompanyContactViewset(BaseApiViewset):
         master_company = get_site_master_company(request=self.request)
 
         if not instance.contact.phone_mobile_verified:
-            tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id), countdown=10)
+            tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id))
 
         if not instance.contact.email_verified:
             tasks.send_contact_verify_email.apply_async(
-                args=(instance.contact.id, manager_id.id, master_company.id), countdown=10
-            )
+                args=(instance.contact.id, manager_id.id, master_company.id))
 
     @action(methods=['post'], detail=False)
     def register(self, request, *args, **kwargs):
