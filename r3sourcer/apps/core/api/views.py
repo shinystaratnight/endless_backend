@@ -63,7 +63,7 @@ class TrialUserView(viewsets.GenericViewSet):
         contact.last_name = serializer.validated_data['last_name']
         contact.save(update_fields=['first_name', 'last_name'])
 
-        trial_role, created = models.Role.objects.create(name=models.Role.ROLE_NAMES.manager)
+        trial_role = models.Role.objects.create(name=models.Role.ROLE_NAMES.manager)
         new_user.role.add(trial_role)
 
         # set role and permissions
