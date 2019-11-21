@@ -28,8 +28,6 @@ class DashboardModule(UUIDModel):
     endpoint = models.CharField(
         max_length=255,
         verbose_name=_('Endpoint'),
-        null=True,
-        blank=True
     )
 
     description = models.CharField(
