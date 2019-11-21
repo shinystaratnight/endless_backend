@@ -31,8 +31,7 @@ class CandidateContactViewset(BaseApiViewset):
         master_company = get_site_master_company(request=self.request)
 
         if not instance.contact.phone_mobile_verified:
-            core_tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id),
-                                                           countdown=10)
+            core_tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id))
         if not instance.contact.email_verified:
             core_tasks.send_contact_verify_email.apply_async(
                 args=(instance.contact.id, manager_id.id, master_company.id))
