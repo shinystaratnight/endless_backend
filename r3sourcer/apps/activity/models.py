@@ -99,11 +99,11 @@ class Activity(UUIDModel):
             if self.starts_at.date() == timezone.localtime(timezone.now()).date():
                 return self.template.name
             return '{}: {}'.format(
-                date_format(timezone.localtime(self.starts_at), settings.DATETIME_FORMAT),
+                date_format(self.starts_at, settings.DATETIME_FORMAT),
                 self.template.name)
         return '{} - {}: {}'.format(
-            date_format(timezone.localtime(self.starts_at), settings.DATETIME_FORMAT),
-            date_format(timezone.localtime(self.ends_at), settings.DATETIME_FORMAT),
+            date_format(self.starts_at, settings.DATETIME_FORMAT),
+            date_format(self.ends_at, settings.DATETIME_FORMAT),
             self.template.name)
 
     class Meta:
