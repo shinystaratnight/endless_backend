@@ -36,19 +36,19 @@ WEEKDAY_MAP = {
 
 
 def today_7_am():
-    return timezone.make_aware(datetime.combine(date.today(), time(7, 0)))
+    return datetime.utcnow().replace(hour=7, minute=0, second=0, microsecond=0)
 
 
 def today_12_pm():
-    return timezone.make_aware(datetime.combine(date.today(), time(12, 0)))
+    return datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
 
 
 def today_12_30_pm():
-    return timezone.make_aware(datetime.combine(date.today(), time(12, 30)))
+    return datetime.utcnow().replace(hour=12, minute=30, second=0, microsecond=0)
 
 
 def today_3_30_pm():
-    return timezone.make_aware(datetime.combine(date.today(), time(15, 30)))
+    return datetime.utcnow().replace(hour=15, minute=30, second=0, microsecond=0)
 
 
 def tomorrow_7_am():
@@ -325,14 +325,26 @@ def get_hours(time_delta):
 def get_jobsite_localtime(job):
     time_zone = geo_time_zone(lng=job.jobsite.address.longitude,
                               lat=job.jobsite.address.latitude)
+    return timezone_now(time_zone)
+
+
+def timezone_now(time_zone):
     return datetime.now(time_zone)
 
 
-def get_jobsite_date_time(job, date_time):
+def datetime2timezone(date_time, time_zone):
     naive_dt = date_time.replace(tzinfo=None)
+    return time_zone.localize(naive_dt, is_dst=None)
+
+
+def utc2local(date_time, time_zone):
+    return date_time.replace(tzinfo=pytz.utc).astimezone(time_zone)
+
+
+def get_jobsite_date_time(job, date_time):
     time_zone = geo_time_zone(lng=job.jobsite.address.longitude,
                               lat=job.jobsite.address.latitude)
-    return time_zone.localize(naive_dt, is_dst=None)
+    return datetime2timezone(date_time, time_zone)
 
 
 def geo_time_zone(lng, lat):

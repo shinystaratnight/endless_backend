@@ -243,11 +243,9 @@ class SubcontractorViewset(BaseApiViewset):
                         headers=headers)
 
 
-class CandidateLocationViewset(
-    BaseViewsetMixin,
-    mixins.UpdateModelMixin,
-    viewsets.GenericViewSet
-):
+class CandidateLocationViewset(BaseViewsetMixin,
+                               mixins.UpdateModelMixin,
+                               viewsets.GenericViewSet):
 
     queryset = CandidateContact.objects.all()
     serializer_class = serializers.CandidateContactSerializer

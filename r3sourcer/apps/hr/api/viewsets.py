@@ -6,6 +6,7 @@ import operator
 from functools import reduce
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Min
 from django.utils import timezone, dateparse
@@ -33,6 +34,7 @@ from r3sourcer.apps.hr.api.filters import TimesheetFilter, ShiftFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
 from r3sourcer.apps.hr.tasks import generate_invoice
 from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
+from r3sourcer.apps.hr.utils.utils import geo_time_zone
 from r3sourcer.apps.myob.tasks import sync_time_sheet
 
 
@@ -47,25 +49,24 @@ class BaseTimeSheetViewsetMixin:
     }
 
     def submit_hours(self, data, time_sheet, is_candidate=True, not_agree=False):
+        tz = geo_time_zone(lng=time_sheet.job_offer.job.jobsite.address.longitude,
+                           lat=time_sheet.job_offer.job.jobsite.address.latitude)
+        now = hr_utils.timezone_now(tz)
         if is_candidate:
-            # TODO: Fix timezone
-            data.update(candidate_submitted_at=timezone.now())
+            data.update(candidate_submitted_at=now)
         elif not_agree:
             data.update(supervisor_approved_at=None)
         else:
-            # TODO: Fix timezone
-            data.update(supervisor_approved_at=timezone.now())
-        serializer = timesheet_serializers.TimeSheetSerializer(
-            time_sheet, data=data, partial=True
-        )
+            data.update(supervisor_approved_at=now)
+        serializer = timesheet_serializers.TimeSheetSerializer(time_sheet, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        # TODO: Fix timezone
-        now = timezone.localtime(timezone.now())
-
-        if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
-                                                  supervisor=time_sheet.supervisor).exists():
+        if not hr_models.TimeSheet.objects.filter(
+                shift_ended_at__date=now.date(),
+                going_to_work_confirmation=True,
+                supervisor=time_sheet.supervisor
+        ).exists():
             hr_utils.send_supervisor_timesheet_approve(time_sheet, True, not_agree)
             if not_agree:
                 hr_utils.schedule_auto_approve_timesheet(time_sheet)
@@ -103,9 +104,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     def get_queryset(self):
         query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.contact.get_closest_company(),
-                         job_offer__candidate_contact__candidate_rels__owner=True)
+                  job_offer__candidate_contact__candidate_rels__owner=True)
         return super().get_queryset().filter(query)
-
 
     def get_contact(self):
         role_id = self.request.query_params.get('role')
@@ -114,7 +114,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             role = Role.objects.get(id=role_id)
             company_contact_rel = role.company_contact_rel
             contact = company_contact_rel.company_contact.contact, company_contact_rel
-        except Exception:
+        except ObjectDoesNotExist:
             contact = self.request.user.contact, None
 
         return contact
@@ -162,22 +162,27 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @transaction.atomic
     @action(methods=['put'], detail=True)
     def not_agree(self, request, pk, *args, **kwargs):  # pragma: no cover
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        tz = geo_time_zone(lng=time_sheet.job_offer.job.jobsite.address.longitude,
+                           lat=time_sheet.job_offer.job.jobsite.address.latitude)
+        now = hr_utils.timezone_now(tz)
         data = dict(request.data)
-        data.update(supervisor_modified=True, supervisor_modified_at=timezone.localtime(),
+        data.update(supervisor_modified=True,
+                    supervisor_modified_at=now,
                     status=hr_models.TimeSheet.STATUS_CHOICES.modified)
         return self.handle_request(request, pk, False, data=data, not_agree=True,
                                    *args, **kwargs)
 
     @transaction.atomic
     @action(methods=['put'], detail=True)
-    def evaluate(self, request, *args, **kwargs):
-        timesheet = self.get_object()
+    def evaluate(self, request, pk, *args, **kwargs):
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
         request.data['candidate_contact'] = (
-            timesheet.job_offer.candidate_contact.id
+            time_sheet.job_offer.candidate_contact.id
         )
-        request.data['supervisor'] = timesheet.supervisor.pk
-        request.data['reference_timesheet'] = timesheet.pk
+        request.data['supervisor'] = time_sheet.supervisor.pk
+        request.data['reference_timesheet'] = time_sheet.pk
         eval_serializer = timesheet_serializers.CandidateEvaluationSerializer(data=request.data)
         eval_serializer.is_valid(raise_exception=True)
         eval_serializer.save()
@@ -207,11 +212,11 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['post'], detail=True)
     def confirm(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
-        obj.going_to_work_confirmation = True
-        obj.update_status(False)
-        obj.save(update_fields=['going_to_work_confirmation', 'status'])
+        time_sheet.going_to_work_confirmation = True
+        time_sheet.update_status(False)
+        time_sheet.save(update_fields=['going_to_work_confirmation', 'status'])
 
         return Response({
             'status': 'success'
@@ -219,11 +224,11 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['post'], detail=True)
     def decline(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
-        obj.going_to_work_confirmation = False
-        obj.update_status(False)
-        obj.save(update_fields=['going_to_work_confirmation', 'status'])
+        time_sheet.going_to_work_confirmation = False
+        time_sheet.update_status(False)
+        time_sheet.save(update_fields=['going_to_work_confirmation', 'status'])
 
         return Response({
             'status': 'success'
@@ -231,10 +236,10 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['post'], detail=True)
     def resend_sms(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
-        process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SHIFT_ENDING])
+        process_time_sheet_log_and_send_notifications.apply_async(args=[time_sheet.id, SHIFT_ENDING])
 
         return Response({
             'status': 'success'
@@ -252,58 +257,64 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['get', 'put'], detail=True)
     def candidate_fill(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
-
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
         if request.method == 'PUT':
+            tz = geo_time_zone(lng=time_sheet.job_offer.job.jobsite.address.longitude,
+                               lat=time_sheet.job_offer.job.jobsite.address.latitude)
+            now = hr_utils.timezone_now(tz)
             data = self.prepare_related_data(request.data)
-            # TODO: Fix timezone
-            data['candidate_submitted_at'] = timezone.now()
-            serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
+            data['candidate_submitted_at'] = now
+            serializer = timesheet_serializers.TimeSheetManualSerializer(time_sheet,
+                                                                         data=data,
+                                                                         partial=True)
             serializer.is_valid(raise_exception=True)
 
             if serializer.validated_data.get('send_supervisor_message'):
-                hr_utils.send_supervisor_timesheet_approve(obj, True)
+                hr_utils.send_supervisor_timesheet_approve(time_sheet, True)
 
+            time_sheet.candidate_submitted_at = now
             time_sheet = serializer.save()
-            # TODO: Fix timezone
-            time_sheet.candidate_submitted_at = timezone.now()
         else:
-            serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
+            serializer = timesheet_serializers.TimeSheetManualSerializer(time_sheet)
 
         return Response(serializer.data)
 
     @action(methods=['get', 'put'], detail=True)
     def supervisor_approve(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
-
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
         if request.method == 'PUT':
+            tz = geo_time_zone(lng=time_sheet.job_offer.job.jobsite.address.longitude,
+                               lat=time_sheet.job_offer.job.jobsite.address.latitude)
+            now = hr_utils.timezone_now(tz)
+
             data = self.prepare_related_data(request.data)
-            # TODO: Fix timezone
-            data['supervisor_approved_at'] = timezone.now()
-            serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
+            data['supervisor_approved_at'] = now
+            serializer = timesheet_serializers.TimeSheetManualSerializer(time_sheet,
+                                                                         data=data,
+                                                                         partial=True)
             serializer.is_valid(raise_exception=True)
 
             if serializer.validated_data.get('send_supervisor_message'):
-                hr_utils.send_supervisor_timesheet_approve(obj, True)
+                hr_utils.send_supervisor_timesheet_approve(time_sheet, True)
 
             if serializer.validated_data.get('send_candidate_message'):
                 from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SUPERVISOR_DECLINED
-                process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
+                process_time_sheet_log_and_send_notifications.apply_async(args=[time_sheet.id, SUPERVISOR_DECLINED])
 
             serializer.save()
         else:
-            if not obj.break_started_at or not obj.break_ended_at:
-                obj.no_break = True
-            serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
+            if not any([time_sheet.break_started_at, time_sheet.break_ended_at]):
+                time_sheet.no_break = True
+            serializer = timesheet_serializers.TimeSheetManualSerializer(time_sheet)
 
         return Response(serializer.data)
 
     @action(methods=['post'], detail=True)
     def sync(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
-        obj.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
 
-        sync_time_sheet.apply_async(args=[obj.id])
+        sync_time_sheet.apply_async(args=[time_sheet.id])
 
         return Response({'status': 'success'})
 
@@ -317,7 +328,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
-        serializer = timesheet_serializers.PinCodeSerializer(instance=time_sheet, data=request.data)
+        serializer = timesheet_serializers.PinCodeSerializer(instance=time_sheet,
+                                                             data=request.data)
         serializer.is_valid(raise_exception=True)
 
         # check if already approved
@@ -326,9 +338,12 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 "description": _("TimeSheet already confirmed")
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        tz = geo_time_zone(lng=time_sheet.job_offer.job.jobsite.address.longitude,
+                           lat=time_sheet.job_offer.job.jobsite.address.latitude)
+        now = hr_utils.timezone_now(tz)
+
         # approve timesheet
-        # TODO: Fix timezone
-        time_sheet.supervisor_approved_at = timezone.now()
+        time_sheet.supervisor_approved_at = now
         time_sheet.supervisor_approved_scheme = serializer.APPROVAL_SCHEME
         time_sheet.save()
 
@@ -352,7 +367,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 "description": _("TimeSheet already confirmed")
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = timesheet_serializers.TimeSheetSignatureSerializer(instance=time_sheet, data=request.data)
+        serializer = timesheet_serializers.TimeSheetSignatureSerializer(instance=time_sheet,
+                                                                        data=request.data)
         serializer.is_valid(raise_exception=True)
 
         logger.debug("TimeSheet {ts_id} approved through signature.".format(
@@ -360,9 +376,11 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         ))
 
         # approve timesheet
-        # TODO: Fix timezone
+        tz = geo_time_zone(lng=time_sheet.job_offer.job.jobsite.address.longitude,
+                           lat=time_sheet.job_offer.job.jobsite.address.latitude)
+        now = hr_utils.timezone_now(tz)
         serializer.save(
-            supervisor_approved_at=timezone.now(),
+            supervisor_approved_at=now,
             supervisor_approved_scheme=serializer.APPROVAL_SCHEME
         )
 
@@ -916,12 +934,10 @@ class JobViewset(BaseApiViewset):
         self.perform_update(serializer)
 
 
-class TimeSheetCandidateViewset(
-    BaseTimeSheetViewsetMixin,
-    BaseViewsetMixin,
-    mixins.ListModelMixin,
-    GenericViewSet
-):
+class TimeSheetCandidateViewset(BaseTimeSheetViewsetMixin,
+                                BaseViewsetMixin,
+                                mixins.ListModelMixin,
+                                GenericViewSet):
     def get_candidate_queryset(self, request):
         contact = request.user.contact
 
