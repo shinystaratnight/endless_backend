@@ -11,7 +11,8 @@ from rest_framework import serializers
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField, ApiContactPictureField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
-from r3sourcer.apps.hr.utils.utils import geo_time_zone, datetime2timezone, utc2local, timezone_now
+from r3sourcer.apps.hr.utils.utils import datetime2timezone, utc2local, timezone_now
+from r3sourcer.apps.core.utils.utils import geo_time_zone
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface import models as sms_models

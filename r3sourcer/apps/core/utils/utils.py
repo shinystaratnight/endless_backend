@@ -2,10 +2,12 @@ from functools import reduce
 from urllib.parse import urlparse
 
 import pytz
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from easy_thumbnails.alias import aliases
 from phonenumbers import parse, NumberParseException, is_valid_number, format_number, PhoneNumberFormat, PhoneNumber
+from pytz import UnknownTimeZoneError
 
 
 def get_thumbnail_picture(picture, alias):
@@ -97,3 +99,16 @@ def local_time2utc_time(dt, timezone):
     local_tz = pytz.timezone(timezone)
     datetime_with_tz = local_tz.localize(dt, is_dst=None)
     return tz_time2utc_time(datetime_with_tz)
+
+
+def geo_time_zone(lng, lat):
+    tf = settings.TIME_ZONE_FINDER
+    try:
+        time_zone = tf.timezone_at(lng=lng, lat=lat)
+    except UnknownTimeZoneError:
+        time_zone = settings.TIME_ZONE
+    return pytz.timezone(time_zone)
+
+
+def utc2local(date_time, time_zone):
+    return date_time.replace(tzinfo=pytz.utc).astimezone(time_zone)

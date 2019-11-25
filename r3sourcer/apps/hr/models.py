@@ -5,6 +5,7 @@ from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
 import pytz
+from django.db.models import F
 from django.utils.functional import cached_property
 from easy_thumbnails.fields import ThumbnailerImageField
 
@@ -23,10 +24,10 @@ from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
-from r3sourcer.apps.core.utils.utils import tz_time2utc_time
+from r3sourcer.apps.core.utils.utils import tz_time2utc_time, geo_time_zone
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
-from r3sourcer.apps.hr.utils.utils import get_jobsite_date_time, get_jobsite_localtime, geo_time_zone
+from r3sourcer.apps.hr.utils.utils import get_jobsite_date_time, get_jobsite_localtime
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.skills.models import Skill, SkillBaseRate
@@ -241,7 +242,7 @@ class JobsiteUnavailability(core_models.UUIDModel):
         verbose_name_plural = _("Jobsite Unavailabilities")
 
 
-class Job(core_models.AbstractBaseOrder):
+class Job(core_models.TimeZone, core_models.AbstractBaseOrder):
 
     jobsite = models.ForeignKey(
         Jobsite,
@@ -329,6 +330,15 @@ class Job(core_models.AbstractBaseOrder):
         )
     get_title.short_description = _('Title')
 
+    @property
+    def jobsite_geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+        ).annotate(
+            longitude=F('jobsite__address__longitude'),
+            latitude=F('jobsite__address__latitude')
+        ).values_list('longitude', 'latitude').get()
+
     def get_job_offers(self):
         return JobOffer.objects.filter(shift__date__job=self)
 
@@ -345,10 +355,10 @@ class Job(core_models.AbstractBaseOrder):
             return IRRELEVANT
 
         result = NOT_FULFILLED
-        # TODO: Fix timezone
-        now = timezone.now()
-        today = now.date()
-        next_date = self.shift_dates.filter(shift_date__gt=today, cancelled=False).order_by('shift_date').first()
+        next_date = self.shift_dates.filter(
+            shift_date__gt=self.now_utc.date(),
+            cancelled=False,
+        ).order_by('shift_date').first()
 
         if next_date is not None:
             result = next_date.is_fulfilled()
@@ -358,10 +368,11 @@ class Job(core_models.AbstractBaseOrder):
                 )
 
                 for unaccepted_jo in unaccepted_jos.all():
+                    # TODO: Refactor this very eager query
                     todays_timesheets = unaccepted_jo.time_sheets.filter(
                         going_to_work_confirmation=True,
-                        shift_started_at__lte=now,
-                        shift_ended_at__gte=now + timedelta(hours=1),
+                        shift_started_at__lte=self.now_utc,
+                        shift_ended_at__gte=self.now_utc + timedelta(hours=1),
                     )
 
                     if not todays_timesheets.exists():
@@ -381,9 +392,7 @@ class Job(core_models.AbstractBaseOrder):
             return IRRELEVANT
 
         result = NOT_FULFILLED
-        # TODO: Fix timezone
-        today = timezone.localtime(timezone.now()).date()
-        sd_today = self.shift_dates.filter(shift_date=today, cancelled=False).first()
+        sd_today = self.shift_dates.filter(shift_date=self.now_utc.date(), cancelled=False).first()
         if sd_today:
             result = sd_today.is_fulfilled()
         else:
@@ -392,9 +401,7 @@ class Job(core_models.AbstractBaseOrder):
 
     def can_fillin(self):
         not_filled_future_sd = False
-        # TODO: Fix timezone
-        today = timezone.localtime(timezone.now()).date()
-        future_sds = self.shift_dates.filter(shift_date__gte=today)
+        future_sds = self.shift_dates.filter(shift_date__gte=self.now_utc.date())
         for sd in future_sds:
             if sd.is_fulfilled() == NOT_FULFILLED:
                 not_filled_future_sd = True
@@ -411,16 +418,13 @@ class Job(core_models.AbstractBaseOrder):
         if self.customer_company.type == core_models.Company.COMPANY_TYPES.master:
             return True
 
-        # TODO: Fix timezone
-        today = timezone.localtime(timezone.now()).date()
-
         return self.customer_company.price_lists.filter(
             models.Q(
                 price_list_rates__skill=self.position,
                 price_list_rates__hourly_rate__gt=0
             ),
-            models.Q(valid_until__gte=today) | models.Q(valid_until__isnull=True),
-            effective=True, valid_from__lte=today,
+            models.Q(valid_until__gte=self.now_utc.date()) | models.Q(valid_until__isnull=True),
+            effective=True, valid_from__lte=self.now_utc.date(),
         ).exists()
     has_active_price_list_and_rate.short_description = _('Customer active price list for skill')
 
@@ -511,9 +515,10 @@ class Job(core_models.AbstractBaseOrder):
         just_added = self._state.adding
         if just_added:
             # TODO: Fix timezone
-            self.provider_signed_at = timezone.now()
+            self.provider_signed_at = self.now_utc
             existing_jobs = Job.objects.filter(
-                jobsite=self.jobsite, position=self.position
+                jobsite=self.jobsite,
+                position=self.position,
             )
             completed_list = core_models.WorkflowObject.objects.filter(
                 object_id__in=existing_jobs.values_list('id', flat=True), state__number=60, active=True
@@ -546,18 +551,16 @@ class Job(core_models.AbstractBaseOrder):
         return None
 
 
-class ShiftDate(core_models.UUIDModel):
+class ShiftDate(core_models.TimeZoneUUIDModel):
 
     job = models.ForeignKey(
-        Job,
+        'hr.Job',
         related_name="shift_dates",
         on_delete=models.CASCADE,
         verbose_name=_("Job")
     )
 
-    shift_date = models.DateField(
-        verbose_name=_("Shift date")
-    )
+    shift_date = models.DateField(verbose_name=_("Shift date"))
 
     hourly_rate = models.DecimalField(
         decimal_places=2,
@@ -566,9 +569,7 @@ class ShiftDate(core_models.UUIDModel):
         null=True
     )
 
-    cancelled = models.BooleanField(
-        default=False
-    )
+    cancelled = models.BooleanField(default=False)
 
     class Meta:
         verbose_name = _("Shift Date")
@@ -576,6 +577,15 @@ class ShiftDate(core_models.UUIDModel):
 
     def __str__(self):
         return date_format(self.shift_date, settings.DATE_FORMAT)
+
+    @property
+    def jobsite_geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+        ).annotate(
+            longitude=F('job__jobsite__address__longitude'),
+            latitude=F('job__jobsite__address__latitude')
+        ).values_list('longitude', 'latitude').get()
 
     @property
     def job_offers(self):
@@ -608,11 +618,11 @@ class ShiftQuerySet(AbstractObjectOwnerQuerySet):
                                  output_field=models.IntegerField()))
 
 
-class Shift(core_models.UUIDModel):
+class Shift(core_models.TimeZoneUUIDModel):
     time = models.TimeField(verbose_name=_("Time"))
 
     date = models.ForeignKey(
-        ShiftDate,
+        'hr.ShiftDate',
         related_name="shifts",
         on_delete=models.CASCADE,
         verbose_name=_("Date")
@@ -642,6 +652,15 @@ class Shift(core_models.UUIDModel):
             datetime.combine(self.date.shift_date, self.time),
             settings.DATETIME_FORMAT
         )
+
+    @property
+    def jobsite_geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+        ).annotate(
+            longitude=F('date__job__jobsite__address__longitude'),
+            latitude=F('date__job__jobsite__address__latitude')
+        ).values_list('longitude', 'latitude').get()
 
     @property
     def job(self):
