@@ -723,7 +723,8 @@ class JobsiteSerializer(
         return validated_data
 
     def get_timezone(self, obj):
-        return obj.get_timezone()
+        tz = obj.get_timezone()
+        return tz.zone
 
 
 class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSerializer):

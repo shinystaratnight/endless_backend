@@ -4,6 +4,7 @@ from uuid import UUID # not remove
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
+import pytz
 from django.utils.functional import cached_property
 from easy_thumbnails.fields import ThumbnailerImageField
 
@@ -201,7 +202,7 @@ class Jobsite(CategoryFolderMixin,
         return self.get_site_name()[:30]
 
     def get_timezone(self):
-        time_zone = settings.TIME_ZONE
+        time_zone = pytz.timezone(settings.TIME_ZONE)
         if self.address:
             time_zone = geo_time_zone(lng=self.address.longitude,
                                       lat=self.address.latitude)
@@ -1191,10 +1192,8 @@ class TimeSheet(core_models.UUIDModel, WorkflowProcess):
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
     def __str__(self):
-        tz = geo_time_zone(lng=self.job_offer.job.jobsite.address.longitude,
-                           lat=self.job_offer.job.jobsite.address.latitude)
         fields = [self.shift_started_at, self.candidate_submitted_at, self.supervisor_approved_at]
-        show = [date_format(hr_utils.utc2local(x, tz), settings.DATETIME_FORMAT) for x in fields if x]
+        show = [date_format(hr_utils.utc2local(x, self.tz), settings.DATETIME_FORMAT) for x in fields if x]
         return ' '.join(show)
 
     @cached_property
@@ -1374,9 +1373,7 @@ class TimeSheet(core_models.UUIDModel, WorkflowProcess):
                 self.save(update_fields=['status'])
 
     def update_status(self, save=True):
-        tz = geo_time_zone(lng=self.job_offer.job.jobsite.address.longitude,
-                           lat=self.job_offer.job.jobsite.address.latitude)
-        now = hr_utils.timezone_now(tz)
+        now = hr_utils.timezone_now(self.tz)
         if self.supervisor_approved_at is not None:
             self.status = self.STATUS_CHOICES.approved
         elif self.supervisor_modified:
@@ -1385,13 +1382,13 @@ class TimeSheet(core_models.UUIDModel, WorkflowProcess):
         elif self.candidate_submitted_at is not None:
             self.status = self.STATUS_CHOICES.approval_pending
         elif self.going_to_work_confirmation:
-            if hr_utils.utc2local(self.shift_started_at, tz) <= now:
+            if hr_utils.utc2local(self.shift_started_at, self.tz) <= now:
                 self.status = self.STATUS_CHOICES.submit_pending
             else:
                 self.status = self.STATUS_CHOICES.check_confirmed
         elif self.going_to_work_confirmation is None:
             pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
-            going_eta = hr_utils.utc2local(self.shift_started_at, tz) - timedelta(minutes=pre_shift_confirmation_delta)
+            going_eta = hr_utils.utc2local(self.shift_started_at, self.tz) - timedelta(minutes=pre_shift_confirmation_delta)
             if going_eta <= now:
                 self.status = self.STATUS_CHOICES.check_pending
         elif not self.going_to_work_confirmation:
@@ -1413,10 +1410,10 @@ class TimeSheet(core_models.UUIDModel, WorkflowProcess):
             ('rate_overrides_approved_at', self.rate_overrides_approved_at, None),
         )
 
-    def convert_datetime_before_save(self, tz):
+    def convert_datetime_before_save(self):
         def setter_fn(args):
             field, value = args
-            setattr(self, field, hr_utils.utc2local(value, tz))
+            setattr(self, field, hr_utils.utc2local(value, self.tz))
 
         def filter_fn(args):
             _, value = args
@@ -1426,11 +1423,9 @@ class TimeSheet(core_models.UUIDModel, WorkflowProcess):
         list(map(setter_fn, filter(filter_fn, fields)))
 
     def save(self, *args, **kwargs):
-        tz = geo_time_zone(lng=self.job_offer.job.jobsite.address.longitude,
-                           lat=self.job_offer.job.jobsite.address.latitude)
-        now = hr_utils.timezone_now(tz)
+        now = hr_utils.timezone_now(self.tz)
         # TODO: Dmytro F. Think about it and find more clear solution
-        self.convert_datetime_before_save(tz)
+        self.convert_datetime_before_save()
 
         just_added = self._state.adding
         going_set = self.going_to_work_confirmation is not None and (
@@ -1442,7 +1437,7 @@ class TimeSheet(core_models.UUIDModel, WorkflowProcess):
         if just_added:
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
-            shift_started_at = hr_utils.utc2local(self.shift_started_at, tz)
+            shift_started_at = hr_utils.utc2local(self.shift_started_at, self.tz)
             if now <= shift_started_at:
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
                 pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
@@ -1474,7 +1469,7 @@ class TimeSheet(core_models.UUIDModel, WorkflowProcess):
 
         if going_set and self.going_to_work_confirmation and self.is_allowed(20):
             self.create_state(20)
-            self._send_submit_sms(hr_utils.utc2local(self.shift_ended_at, tz))
+            self._send_submit_sms(hr_utils.utc2local(self.shift_ended_at, self.tz))
 
         # If accepted manually, disable reply checking.
         if self.going_to_work_confirmation and self.going_to_work_sent_sms and self.going_to_work_sent_sms.check_reply:
