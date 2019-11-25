@@ -17,7 +17,6 @@ from django.db import models
 from django.utils import six, timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-from phonenumber_field import phonenumber
 from rest_framework import serializers, exceptions, validators
 from rest_framework.fields import empty
 
@@ -1865,3 +1864,36 @@ class CompanyPurposeSerializer(ApiBaseModelSerializer):
         model = core_models.Company
         fields = ('purpose', )
 
+
+class TimezoneApiSerializerMixin:
+    method_fields = ('timezone',)
+
+    @classmethod
+    def get_timezone(cls, obj):
+        return obj.timezone
+
+
+class UUIDApiSerializerMixin(TimezoneApiSerializerMixin):
+    method_fields = (
+        *TimezoneApiSerializerMixin.method_fields,
+        'updated_at',
+        'created_at',
+        'updated_at_tz',
+        'created_at_tz',
+    )
+
+    @classmethod
+    def get_created_at(cls, obj):
+        return obj.created_at_utc
+
+    @classmethod
+    def get_updated_at(cls, obj):
+        return obj.updated_at_utc
+
+    @classmethod
+    def get_created_at_tz(cls, obj):
+        return obj.created_at_tz
+
+    @classmethod
+    def get_updated_at_tz(cls, obj):
+        return obj.updated_at_tz

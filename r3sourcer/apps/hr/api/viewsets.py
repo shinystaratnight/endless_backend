@@ -34,7 +34,7 @@ from r3sourcer.apps.hr.api.filters import TimesheetFilter, ShiftFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
 from r3sourcer.apps.hr.tasks import generate_invoice
 from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
-from r3sourcer.apps.hr.utils.utils import geo_time_zone
+from r3sourcer.apps.core.utils.utils import geo_time_zone
 from r3sourcer.apps.myob.tasks import sync_time_sheet
 
 
@@ -507,15 +507,11 @@ class JobViewset(BaseApiViewset):
 
         requested_shift_ids = request.query_params.getlist('shifts')
 
-        # TODO: Fix timezone
-        now = timezone.localtime(timezone.now())
-        today = now.date()
-
         shifts_q = Q(id__in=requested_shift_ids) if requested_shift_ids else Q()
 
         init_shifts_qry = hr_models.Shift.objects.filter(
             shifts_q,
-            date__shift_date__gte=today,
+            date__shift_date__gte=job.now_utc.date(),
             date__job=job,
             date__cancelled=False,
         ).annotate(
@@ -632,7 +628,8 @@ class JobViewset(BaseApiViewset):
         ).values_list('id', flat=True))
 
         carrier_list = list(candidate_contacts.filter(
-            carrier_lists__confirmed_available=True, carrier_lists__target_date__gte=today
+            carrier_lists__confirmed_available=True,
+            carrier_lists__target_date__gte=job.now_utc.date()
         ).values_list('id', flat=True))
 
         top_contacts = set(favourite_list + booked_before_list + carrier_list)
@@ -751,10 +748,8 @@ class JobViewset(BaseApiViewset):
         when_list = []
 
         for init_shift in init_shifts:
-            shift_start_time = timezone.make_aware(
-                datetime.datetime.combine(init_shift.date.shift_date, init_shift.time)
-            )
-
+            shift_start_time = datetime.datetime.combine(init_shift.date.shift_date,
+                                                         init_shift.time)
             from_date = shift_start_time - datetime.timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
             to_date = shift_start_time + datetime.timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
 
@@ -810,7 +805,10 @@ class JobViewset(BaseApiViewset):
         if request.method == 'PUT':
             is_autofill = request.data.get('autofill', False)
             try:
-                latest_shift_date = job.shift_dates.filter(cancelled=False, shifts__isnull=False).latest('shift_date')
+                latest_shift_date = job.shift_dates.filter(
+                    cancelled=False,
+                    shifts__isnull=False,
+                ).latest('shift_date')
             except hr_models.ShiftDate.DoesNotExist:
                 raise exceptions.NotFound(_('Latest Shift Date not found'))
 
@@ -820,7 +818,9 @@ class JobViewset(BaseApiViewset):
             for new_shift_date in new_shift_dates:
                 new_shift_date = datetime.datetime.strptime(new_shift_date, '%Y-%m-%d').date()
                 new_shift_date_obj, created = hr_models.ShiftDate.objects.get_or_create(
-                    job=job, shift_date=new_shift_date, defaults={
+                    job=job,
+                    shift_date=new_shift_date,
+                    defaults={
                         'workers': job.workers,
                         'hourly_rate': latest_shift_date.hourly_rate,
                     },
@@ -835,20 +835,21 @@ class JobViewset(BaseApiViewset):
             for new_shift_date_obj in new_shift_dates_objs:
                 self._extend_shift_date(job, new_shift_date_obj, shift_objs, is_autofill)
 
-        # TODO: Fix timezone
-        today = timezone.localtime(timezone.now()).date()
         shifts = hr_models.Shift.objects.filter(
-            date__job=job, date__shift_date__gte=today, date__cancelled=False
+            date__job=job,
+            date__shift_date__gte=job.now_utc.date(),
+            date__cancelled=False,
         ).select_related('date').order_by('date__shift_date', 'time')
 
         candidate_ids = hr_models.JobOffer.objects.filter(
-            shift__date__job=job, shift__date__cancelled=False
+            shift__date__job=job,
+            shift__date__cancelled=False,
         ).values_list('candidate_contact_id', flat=True).distinct()
         candidate_contacts = candidate_models.CandidateContact.objects.filter(id__in=candidate_ids)
 
         shifts = hr_models.Shift.objects.filter(
            Q(job_offers__candidate_contact__in=candidate_ids) |
-           Q(date__job=job), date__shift_date__gte=today, date__cancelled=False
+           Q(date__job=job), date__shift_date__gte=job.now_utc.date(), date__cancelled=False
         ).select_related('date').order_by('date__shift_date', 'time').distinct('date__shift_date', 'time')
 
         partially_available_candidates = job_utils.get_partially_available_candidates(
@@ -872,7 +873,9 @@ class JobViewset(BaseApiViewset):
         for shift in shifts:
             shift_obj = shift.shift if is_autofill else shift
             new_shift_obj, created = hr_models.Shift.objects.get_or_create(
-                date=new_shift_date, time=shift_obj.time, defaults={
+                date=new_shift_date,
+                time=shift_obj.time,
+                defaults={
                     'workers': shift_obj.workers,
                     'hourly_rate': shift_obj.hourly_rate,
                 },
@@ -897,11 +900,12 @@ class JobViewset(BaseApiViewset):
         if not shift_datetime:
             candidate_contacts = candidate_models.CandidateContact.objects.none()
         else:
-            shift_datetime = timezone.make_naive(dateparse.parse_datetime(shift_datetime))
+            shift_datetime = dateparse.parse_datetime(shift_datetime)
 
             candidate_contacts = job_utils.get_available_candidate_list(job)
             candidate_contacts = candidate_contacts.filter(
-                candidate_rels__master_company=job.provider_company, candidate_rels__active=True
+                candidate_rels__master_company=job.provider_company,
+                candidate_rels__active=True,
             ).distinct()
 
             partially_available_candidates = job_utils.get_partially_available_candidate_ids_for_vs(
