@@ -1,12 +1,11 @@
 import operator
-import pytz
 from datetime import timedelta, date, time, datetime
 from filer.models import File, Folder
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
-from r3sourcer.apps.core.utils.utils import tz_time2utc_time
+from r3sourcer.apps.core.utils.utils import tz_time2utc_time, geo_time_zone
 from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.celeryapp import app
 
@@ -754,8 +753,8 @@ def send_going_to_work_sms(self, time_sheet_id):
 def get_confirmation_string(job):
     dates = formats.date_format(job.work_start_date, settings.DATE_FORMAT)
     if job.shift_dates.exists():
-        settingstime_zone = utils.geo_time_zone(lng=job.jobsite.address.longitude,
-                                                lat=job.jobsite.address.latitude)
+        settingstime_zone = geo_time_zone(lng=job.jobsite.address.longitude,
+                                          lat=job.jobsite.address.latitude)
         shift_dates_list = job.shift_dates.filter(
             shift_date__gte=date.today()
         ).order_by('shift_date').values_list('shift_date', flat=True)

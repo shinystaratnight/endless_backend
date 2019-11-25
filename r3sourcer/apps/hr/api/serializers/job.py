@@ -13,7 +13,7 @@ from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.utils import utils as hr_utils, job as hr_job_utils
-from r3sourcer.apps.hr.utils.utils import geo_time_zone
+from r3sourcer.apps.core.utils.utils import geo_time_zone
 from r3sourcer.apps.logger.main import endless_logger
 
 
@@ -407,9 +407,28 @@ class JobOfferSMSSimpleSerializer(core_serializers.ApiBaseModelSerializer):
         )
 
 
-class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
+class ShiftDateSerializer(core_serializers.UUIDApiSerializerMixin,
+                          core_serializers.ApiBaseModelSerializer):
+    method_fields = (
+        *core_serializers.UUIDApiSerializerMixin.method_fields,
+    )
 
-    method_fields = ('is_fulfilled', 'workers_details', 'can_delete')
+    class Meta:
+        model = hr_models.ShiftDate
+        fields = (
+            '__all__'
+        )
+
+
+class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
+                      core_serializers.ApiBaseModelSerializer):
+
+    method_fields = (
+        *core_serializers.UUIDApiSerializerMixin.method_fields,
+        'is_fulfilled',
+        'workers_details',
+        'can_delete',
+    )
 
     class Meta:
         model = hr_models.Shift

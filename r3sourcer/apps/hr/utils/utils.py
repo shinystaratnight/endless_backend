@@ -1,9 +1,6 @@
 import logging
 import pytz
-from django.conf import settings
-from pytz.exceptions import UnknownTimeZoneError
 from itertools import chain
-from uuid import UUID # not remove
 
 from datetime import datetime, date, time, timedelta
 from collections import defaultdict
@@ -18,7 +15,7 @@ from django.templatetags.static import static
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import InvoiceRule, Invoice
 from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
-from r3sourcer.apps.core.utils.utils import tz_time2utc_time
+from r3sourcer.apps.core.utils.utils import tz_time2utc_time, geo_time_zone
 from r3sourcer.celeryapp import app
 
 
@@ -347,10 +344,3 @@ def get_jobsite_date_time(job, date_time):
     return datetime2timezone(date_time, time_zone)
 
 
-def geo_time_zone(lng, lat):
-    tf = settings.TIME_ZONE_FINDER
-    try:
-        time_zone = tf.timezone_at(lng=lng, lat=lat)
-    except UnknownTimeZoneError:
-        time_zone = settings.TIME_ZONE
-    return pytz.timezone(time_zone)

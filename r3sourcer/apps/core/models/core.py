@@ -20,6 +20,7 @@ from django.db import models
 from django.db.models import Q, Sum
 from django.utils import timezone
 from django.utils.formats import date_format
+from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.exceptions import APIException
@@ -37,6 +38,7 @@ from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core.utils.user import get_default_company
+from r3sourcer.apps.core.utils.utils import geo_time_zone, utc2local
 from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
@@ -54,10 +56,35 @@ from ..workflow import WorkflowProcess
 from .constants import MANAGER, CANDIDATE, CLIENT
 
 
+class TimeZone(models.Model):
+    class Meta:
+        abstract = True
+
+    @property
+    def jobsite_geo(self):
+        raise NotImplementedError
+
+    @cached_property
+    def tz(self):
+        return geo_time_zone(*self.jobsite_geo)
+
+    @property
+    def timezone(self):
+        return self.tz.zone
+
+    @property
+    def now_tz(self):
+        return datetime.now(self.tz)
+
+    @property
+    def now_utc(self):
+        return datetime.now(pytz.utc)
+
+
 class UUIDModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True, editable=False)
-    created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, editable=False)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), editable=False)
 
     objects = AbstractObjectOwnerManager()
 
@@ -84,7 +111,45 @@ class UUIDModel(models.Model):
     def object_history(self):
         return endless_logger.get_object_history(self.__class__, self.pk)
 
+    def default_created_at(self):
+        if self.created_at is None:
+            self.created_at = datetime.now(pytz.utc)
 
+    def default_updated_at(self):
+        self.updated_at = datetime.now(pytz.utc)
+
+    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+        self.default_created_at()
+        self.default_updated_at()
+        super().save(force_insert, force_update, using, update_fields)
+
+
+class TimeZoneUUIDModel(TimeZone, UUIDModel):
+    class Meta:
+        abstract = True
+
+    @property
+    def jobsite_geo(self):
+        raise NotImplementedError
+
+    @property
+    def created_at_tz(self):
+        return utc2local(self.created_at, self.tz)
+
+    @property
+    def updated_at_tz(self):
+        return utc2local(self.updated_at, self.tz)
+
+    @property
+    def created_at_utc(self):
+        return self.created_at
+
+    @property
+    def updated_at_utc(self):
+        return self.updated_at
+
+
+# do anything you want
 class Contact(
     CategoryFolderMixin,
     MYOBMixin,
@@ -1897,11 +1962,10 @@ class VAT(UUIDModel):
         return False
 
 
-class AbstractBaseOrder(
-        UUIDModel,
-        WorkflowProcess,
-        CompanyLookupMixin,
-        MasterCompanyLookupMixin):
+class AbstractBaseOrder(UUIDModel,
+                        WorkflowProcess,
+                        CompanyLookupMixin,
+                        MasterCompanyLookupMixin):
 
     provider_company = models.ForeignKey(  # master
         Company,
@@ -2804,6 +2868,8 @@ connect_default_signals(City)
 
 __all__ = [
     'UUIDModel',
+    'TimeZone',
+    'TimeZoneUUIDModel',
     'Contact', 'ContactRelationship', 'ContactUnavailability', 'CompanyIndustryRel',
     'User', 'UserManager',
     'Country', 'Region', 'City',
