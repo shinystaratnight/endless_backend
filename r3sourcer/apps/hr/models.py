@@ -1,10 +1,10 @@
-from pytz import timezone as pytz_timezone
 from itertools import chain
-from timezonefinder import TimezoneFinder
 from uuid import UUID # not remove
 
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
+
+from django.utils.functional import cached_property
 from easy_thumbnails.fields import ThumbnailerImageField
 
 from django.conf import settings
@@ -25,7 +25,7 @@ from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
 from r3sourcer.apps.core.utils.utils import tz_time2utc_time
 from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
-from r3sourcer.apps.hr.utils.utils import get_jobsite_date_time, get_jobsite_localtime
+from r3sourcer.apps.hr.utils.utils import get_jobsite_date_time, get_jobsite_localtime, geo_time_zone
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.skills.models import Skill, SkillBaseRate
@@ -38,12 +38,10 @@ from r3sourcer.celeryapp import app
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
 
-class Jobsite(
-    CategoryFolderMixin,
-    MYOBMixin,
-    core_models.UUIDModel,
-    WorkflowProcess
-):
+class Jobsite(CategoryFolderMixin,
+              MYOBMixin,
+              core_models.UUIDModel,
+              WorkflowProcess):
 
     industry = models.ForeignKey(
         Industry,
@@ -203,11 +201,11 @@ class Jobsite(
         return self.get_site_name()[:30]
 
     def get_timezone(self):
+        time_zone = settings.TIME_ZONE
         if self.address:
-            tf = TimezoneFinder()
-            time_zone = tf.timezone_at(lng=self.address.longitude, lat=self.address.latitude)
-            return time_zone
-        return settings.TIME_ZONE
+            time_zone = geo_time_zone(lng=self.address.longitude,
+                                      lat=self.address.latitude)
+        return time_zone
 
 
 class JobsiteUnavailability(core_models.UUIDModel):
@@ -659,25 +657,24 @@ class Shift(core_models.UUIDModel):
 
 
 class JobOffer(core_models.UUIDModel):
-
-    shift = models.ForeignKey(
-        Shift,
-        on_delete=models.CASCADE,
-        related_name='job_offers',
-        verbose_name=_("Shift")
-    )
-
-    candidate_contact = models.ForeignKey(
-        CandidateContact,
-        verbose_name=_("Candidate contact"),
-        on_delete=models.PROTECT,
-        related_name='job_offers'
-    )
-
     STATUS_CHOICES = Choices(
         (0, 'undefined', _("Undefined")),
         (1, 'accepted', _("Accepted")),
         (2, 'cancelled', _("Cancelled")),
+    )
+
+    shift = models.ForeignKey(
+        'hr.Shift',
+        on_delete=models.CASCADE,
+        related_name='job_offers',
+        verbose_name=_('Shift')
+    )
+
+    candidate_contact = models.ForeignKey(
+        'candidate.CandidateContact',
+        verbose_name=_('Candidate contact'),
+        on_delete=models.PROTECT,
+        related_name='job_offers'
     )
 
     status = models.PositiveSmallIntegerField(
@@ -697,9 +694,8 @@ class JobOffer(core_models.UUIDModel):
         verbose_name_plural = _("Job Offers")
 
     def __str__(self):
-        return '{}'.format(date_format(
-            timezone.localtime(self.created_at), settings.DATETIME_FORMAT
-        ))
+        return '{}'.format(date_format(self.created_at,
+                                       settings.DATETIME_FORMAT))
 
     @property
     def job(self):
@@ -745,7 +741,8 @@ class JobOffer(core_models.UUIDModel):
             confirmed_available = self.is_accepted()
 
         cl = CarrierList.objects.filter(
-            candidate_contact=self.candidate_contact, target_date=self.start_time
+            candidate_contact=self.candidate_contact,
+            target_date=self.start_time
         ).first()
 
         if cl is not None:
@@ -1029,18 +1026,15 @@ class JobOfferSMS(core_models.UUIDModel):
         verbose_name_plural = _("Job Offer SMSes")
 
 
-class TimeSheet(
-        core_models.UUIDModel,
-        WorkflowProcess):
-
+class TimeSheet(core_models.UUIDModel, WorkflowProcess):
     sent_sms_field = 'going_to_work_sent_sms'
     receive_sms_field = 'going_to_work_reply_sms'
 
     job_offer = models.ForeignKey(
-        JobOffer,
+        'hr.JobOffer',
         on_delete=models.CASCADE,
-        related_name="time_sheets",
-        verbose_name=_("Job Offer")
+        related_name='time_sheets',
+        verbose_name=_('Job Offer')
     )
 
     going_to_work_sent_sms = models.ForeignKey(
@@ -1065,33 +1059,10 @@ class TimeSheet(
         verbose_name=_("Going to Work")
     )
 
-    shift_started_at = models.DateTimeField(
-        verbose_name=_("Shift Started at"),
-        null=True,
-        blank=True,
-        default=hr_utils.today_7_am
-    )
-
-    break_started_at = models.DateTimeField(
-        verbose_name=_("Break Started at"),
-        null=True,
-        blank=True,
-        default=hr_utils.today_12_pm
-    )
-
-    break_ended_at = models.DateTimeField(
-        verbose_name=_("Break Ended at"),
-        null=True,
-        blank=True,
-        default=hr_utils.today_12_30_pm
-    )
-
-    shift_ended_at = models.DateTimeField(
-        verbose_name=_("Shift Ended at"),
-        null=True,
-        blank=True,
-        default=hr_utils.today_3_30_pm
-    )
+    shift_started_at = models.DateTimeField(verbose_name=_("Shift Started at"))
+    break_started_at = models.DateTimeField(verbose_name=_("Break Started at"))
+    break_ended_at = models.DateTimeField(verbose_name=_("Break Ended at"))
+    shift_ended_at = models.DateTimeField(verbose_name=_("Shift Ended at"))
 
     supervisor = models.ForeignKey(
         core_models.CompanyContact,
@@ -1220,17 +1191,48 @@ class TimeSheet(
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
     def __str__(self):
-        return '{} {} {}'.format(
-            date_format(hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at),
-                        settings.DATETIME_FORMAT)
-            if self.shift_started_at else '',
-            date_format(hr_utils.get_jobsite_date_time(self.job_offer.job, self.candidate_submitted_at),
-                        settings.DATETIME_FORMAT)
-            if self.candidate_submitted_at else '',
-            date_format(hr_utils.get_jobsite_date_time(self.job_offer.job, self.supervisor_approved_at),
-                        settings.DATETIME_FORMAT)
-            if self.supervisor_approved_at else ''
-        )
+        tz = geo_time_zone(lng=self.job_offer.job.jobsite.address.longitude,
+                           lat=self.job_offer.job.jobsite.address.latitude)
+        fields = [self.shift_started_at, self.candidate_submitted_at, self.supervisor_approved_at]
+        show = [date_format(hr_utils.utc2local(x, tz), settings.DATETIME_FORMAT) for x in fields if x]
+        return ' '.join(show)
+
+    @cached_property
+    def tz(self):
+        return geo_time_zone(lng=self.job_offer.job.jobsite.address.longitude,
+                             lat=self.job_offer.job.jobsite.address.latitude)
+
+    @property
+    def shift_started_at_tz(self):
+        return hr_utils.utc2local(self.shift_started_at, self.tz)
+
+    @property
+    def shift_ended_at_tz(self):
+        return hr_utils.utc2local(self.shift_ended_at, self.tz)
+
+    @property
+    def break_started_at_tz(self):
+        return hr_utils.utc2local(self.break_started_at, self.tz)
+
+    @property
+    def break_ended_at_tz(self):
+        return hr_utils.utc2local(self.break_ended_at, self.tz)
+
+    @property
+    def shift_started_at_utc(self):
+        return self.shift_started_at
+
+    @property
+    def shift_ended_at_utc(self):
+        return self.shift_ended_at
+
+    @property
+    def break_started_at_utc(self):
+        return self.break_started_at
+
+    @property
+    def break_ended_at_utc(self):
+        return self.break_ended_at
 
     def get_job_offer(self):
         return self.job_offer
@@ -1246,7 +1248,10 @@ class TimeSheet(
 
     @classmethod
     def get_or_create_for_job_offer_accepted(cls, job_offer):
-        start_time = job_offer.start_time
+        tz = geo_time_zone(lng=job_offer.job.jobsite.address.longitude,
+                           lat=job_offer.job.jobsite.address.latitude)
+        now = hr_utils.timezone_now(tz)
+        start_time = hr_utils.utc2local(job_offer.start_time, tz)
         master_company = job_offer.shift.date.job.jobsite.master_company
         going_to_work_confirmation = None
         status = cls.STATUS_CHOICES.new
@@ -1272,23 +1277,22 @@ class TimeSheet(
         except IntegrityError:
             time_sheet, created = cls.objects.update_or_create(
                 job_offer=job_offer,
-                shift_started_at=job_offer.start_time,
+                shift_started_at=start_time,
                 defaults=data
             )
 
-        now = hr_utils.get_jobsite_localtime(job_offer.job)
-        if now <= job_offer.start_time + timedelta(hours=2):
+        if now <= start_time + timedelta(hours=2):
             cls._send_placement_acceptance_sms(time_sheet, job_offer)
 
         return time_sheet
 
     @classmethod
-    def _send_placement_acceptance_sms(self, time_sheet, job_offer):
+    def _send_placement_acceptance_sms(cls, time_sheet, job_offer):
         from r3sourcer.apps.hr.tasks import send_placement_acceptance_sms
         send_placement_acceptance_sms.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
 
     def get_closest_company(self):
-        return self.get_job_offer().job.get_closest_company()
+        return self.job_offer.job.get_closest_company()
 
     @property
     def candidate_contact(self):
@@ -1370,6 +1374,9 @@ class TimeSheet(
                 self.save(update_fields=['status'])
 
     def update_status(self, save=True):
+        tz = geo_time_zone(lng=self.job_offer.job.jobsite.address.longitude,
+                           lat=self.job_offer.job.jobsite.address.latitude)
+        now = hr_utils.timezone_now(tz)
         if self.supervisor_approved_at is not None:
             self.status = self.STATUS_CHOICES.approved
         elif self.supervisor_modified:
@@ -1378,15 +1385,14 @@ class TimeSheet(
         elif self.candidate_submitted_at is not None:
             self.status = self.STATUS_CHOICES.approval_pending
         elif self.going_to_work_confirmation:
-            # TODO: Fix timezone
-            if self.shift_started_at <= timezone.now():
+            if hr_utils.utc2local(self.shift_started_at, tz) <= now:
                 self.status = self.STATUS_CHOICES.submit_pending
             else:
                 self.status = self.STATUS_CHOICES.check_confirmed
         elif self.going_to_work_confirmation is None:
             pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
-            going_eta = hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at) - timedelta(minutes=pre_shift_confirmation_delta)
-            if going_eta <= hr_utils.get_jobsite_localtime(self.job_offer.job):
+            going_eta = hr_utils.utc2local(self.shift_started_at, tz) - timedelta(minutes=pre_shift_confirmation_delta)
+            if going_eta <= now:
                 self.status = self.STATUS_CHOICES.check_pending
         elif not self.going_to_work_confirmation:
             self.status = self.STATUS_CHOICES.check_failed
@@ -1394,7 +1400,38 @@ class TimeSheet(
         if save:
             self.save(update_fields=['status'])
 
+    @property
+    def _datetime_fields(self):
+        return (
+            ('shift_started_at', self.shift_started_at, hr_utils.today_7_am()),
+            ('break_started_at', self.break_started_at, hr_utils.today_12_pm()),
+            ('break_ended_at', self.break_ended_at, hr_utils.today_12_30_pm()),
+            ('shift_ended_at', self.shift_ended_at, hr_utils.today_3_30_pm()),
+            ('candidate_submitted_at', self.candidate_submitted_at, None),
+            ('supervisor_approved_at', self.supervisor_approved_at, None),
+            ('supervisor_modified_at', self.supervisor_modified_at, None),
+            ('rate_overrides_approved_at', self.rate_overrides_approved_at, None),
+        )
+
+    def convert_datetime_before_save(self, tz):
+        def setter_fn(args):
+            field, value = args
+            setattr(self, field, hr_utils.utc2local(value, tz))
+
+        def filter_fn(args):
+            _, value = args
+            return value is not None
+
+        fields = [(field, x or y) for field, x, y in self._datetime_fields]
+        list(map(setter_fn, filter(filter_fn, fields)))
+
     def save(self, *args, **kwargs):
+        tz = geo_time_zone(lng=self.job_offer.job.jobsite.address.longitude,
+                           lat=self.job_offer.job.jobsite.address.latitude)
+        now = hr_utils.timezone_now(tz)
+        # TODO: Dmytro F. Think about it and find more clear solution
+        self.convert_datetime_before_save(tz)
+
         just_added = self._state.adding
         going_set = self.going_to_work_confirmation is not None and (
             just_added or self.__original_going_to_work_confirmation != self.going_to_work_confirmation
@@ -1405,12 +1442,11 @@ class TimeSheet(
         if just_added:
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
-
-            now = hr_utils.get_jobsite_localtime(self.job_offer.job)
-            if now <= hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at):
+            shift_started_at = hr_utils.utc2local(self.shift_started_at, tz)
+            if now <= shift_started_at:
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
                 pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
-                going_eta = hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_started_at) - timedelta(minutes=pre_shift_confirmation_delta)
+                going_eta = shift_started_at - timedelta(minutes=pre_shift_confirmation_delta)
                 if pre_shift_confirmation and going_eta > now:
                     self._send_going_to_work(going_eta)
                 else:
@@ -1438,7 +1474,7 @@ class TimeSheet(
 
         if going_set and self.going_to_work_confirmation and self.is_allowed(20):
             self.create_state(20)
-            self._send_submit_sms(hr_utils.get_jobsite_date_time(self.job_offer.job, self.shift_ended_at))
+            self._send_submit_sms(hr_utils.utc2local(self.shift_ended_at, tz))
 
         # If accepted manually, disable reply checking.
         if self.going_to_work_confirmation and self.going_to_work_sent_sms and self.going_to_work_sent_sms.check_reply:
@@ -1556,7 +1592,6 @@ class BlackList(core_models.UUIDModel):
         null=True,
         on_delete=models.CASCADE
     )
-
 
     class Meta:
         verbose_name = _("Black list")

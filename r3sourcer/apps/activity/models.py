@@ -66,10 +66,7 @@ class Activity(UUIDModel):
         verbose_name=_("Contact")
     )
 
-    starts_at = models.DateTimeField(
-        _("Starts at"),
-        default=timezone.now
-    )
+    starts_at = models.DateTimeField(_("Starts at"), default=timezone.now)
 
     ends_at = models.DateTimeField(
         _("Ends at")
@@ -144,10 +141,7 @@ class ActivityDate(UUIDModel):
 
     DEFAULT_STATUS_CHOICES = STATUS_CHOICES.WAITING
 
-    occur_at = models.DateTimeField(
-        _("Occur at"),
-        default=None
-    )
+    occur_at = models.DateTimeField(_("Occur at"), default=None)
 
     activity_repeat = models.ForeignKey(
         'ActivityRepeat',
@@ -253,10 +247,7 @@ class ActivityRepeat(UUIDModel):
         verbose_name=_("Activity")
     )
 
-    started_at = models.DateTimeField(
-        _("Started at"),
-        default=timezone.now
-    )
+    started_at = models.DateTimeField(_("Started at"), default=timezone.now)
 
     base_type = models.CharField(
         _("Schedule type"),

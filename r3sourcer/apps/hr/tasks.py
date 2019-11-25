@@ -2,7 +2,6 @@ import operator
 import pytz
 from datetime import timedelta, date, time, datetime
 from filer.models import File, Folder
-from timezonefinder import TimezoneFinder
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
@@ -755,8 +754,8 @@ def send_going_to_work_sms(self, time_sheet_id):
 def get_confirmation_string(job):
     dates = formats.date_format(job.work_start_date, settings.DATE_FORMAT)
     if job.shift_dates.exists():
-        tf = TimezoneFinder(in_memory=True)
-        settingstime_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
+        settingstime_zone = utils.geo_time_zone(lng=job.jobsite.address.longitude,
+                                                lat=job.jobsite.address.latitude)
         shift_dates_list = job.shift_dates.filter(
             shift_date__gte=date.today()
         ).order_by('shift_date').values_list('shift_date', flat=True)
