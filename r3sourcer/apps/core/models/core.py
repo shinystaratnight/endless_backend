@@ -2,7 +2,6 @@ import math
 import os
 import uuid
 from datetime import date, datetime, timedelta, time
-from timezonefinder import TimezoneFinder
 
 import collections
 import re
@@ -37,7 +36,6 @@ from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core.utils.user import get_default_company
-from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from r3sourcer.apps.logger.main import endless_logger
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
@@ -1290,8 +1288,9 @@ class Company(CategoryFolderMixin,
         master_company = self.get_master_company()[0]
         hq_address = master_company.get_hq_address()
         if hq_address:
-            tf = TimezoneFinder()
-            time_zone = tf.timezone_at(lng=hq_address.address.longitude, lat=hq_address.address.latitude)
+            from r3sourcer.apps.hr.utils.utils import geo_time_zone
+            time_zone = geo_time_zone(lng=hq_address.address.longitude,
+                                      lat=hq_address.address.latitude)
             return time_zone
         return settings.TIME_ZONE
 

@@ -1,3 +1,6 @@
+from datetime import datetime
+
+import pytz
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils import timezone
@@ -8,6 +11,7 @@ from rest_framework import serializers
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField, ApiContactPictureField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
+from r3sourcer.apps.hr.utils.utils import geo_time_zone, datetime2timezone, utc2local, timezone_now
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface import models as sms_models
@@ -83,20 +87,23 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     image_fields = ('supervisor_signature',)
 
     method_fields = (
-        'company', 'jobsite', 'position', 'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
+        'company', 'jobsite', 'position', 'shift_started_at', 'shift_ended_at', 'break_started_at', 'break_ended_at',
+        'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
-        'invoice', 'shift', 'evaluation'
+        'invoice', 'shift', 'evaluation', 'time_zone',
     )
 
     class Meta:
         model = TimeSheet
         fields = (
             'id', 'job_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
-            'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
+            'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
             'candidate_submitted_at', 'supervisor_approved_at', 'supervisor_approved_scheme', 'candidate_rate',
             'rate_overrides_approved_by', 'rate_overrides_approved_at', 'sync_status', 'status', 'supervisor_modified',
-            'supervisor_modified_at', 'supervisor_signature', 'process_status', 'process_pending_status'
+            'supervisor_modified_at', 'supervisor_signature', 'process_status', 'process_pending_status',
+            'shift_started_at_tz', 'shift_ended_at_tz', 'break_started_at_tz', 'break_ended_at_tz',
+            'shift_started_at_utc', 'shift_ended_at_utc', 'break_started_at_utc', 'break_ended_at_utc',
         )
         related_fields = {
             'job_offer': ('id', {
@@ -132,25 +139,39 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             position = obj.job_offer.job.position
             return {'id': position.id, '__str__': str(position)}
 
-    def _format_date_range(self, date_start, date_end):
-        if date_start:
-            dt = timezone.make_naive(date_start)
-            start = date_format(dt, settings.DATETIME_FORMAT)
-        else:
-            start = '-'
+    def __format_datetime(self, date_time, tz, default='-'):
+        filtered = filter(bool, [date_time])
+        local_datetimes = list(map(lambda x: utc2local(x, tz), filtered))
+        datetimes, *_ = [*list(map(lambda x: time_format(x, settings.TIME_FORMAT), local_datetimes)), default]
+        return datetimes
 
-        if date_end:
-            end = time_format(timezone.make_naive(date_end), settings.TIME_FORMAT)
-        else:
-            end = '-'
+    def _format_date_range(self, start, end, tz):
+        return ' / '.join(map(lambda x: self.__format_datetime(x, tz), [start, end]))
 
-        return '{} / {}'.format(start, end)
+    def get_shift_started_at(self, obj):
+        return obj.shift_started_at_tz
+
+    def get_shift_ended_at(self, obj):
+        return obj.shift_ended_at_tz
+
+    def get_break_started_at(self, obj):
+        return obj.break_started_at_tz
+
+    def get_break_ended_at(self, obj):
+        return obj.break_ended_at_tz
+
+    def get_time_zone(self, obj):
+        return obj.tz.zone
 
     def get_shift_started_ended(self, obj):
-        return self._format_date_range(obj.shift_started_at, obj.shift_ended_at)
+        tz = geo_time_zone(lng=obj.job_offer.job.jobsite.address.longitude,
+                           lat=obj.job_offer.job.jobsite.address.latitude)
+        return self._format_date_range(obj.shift_started_at_utc, obj.shift_ended_at_utc, tz)
 
     def get_break_started_ended(self, obj):
-        return self._format_date_range(obj.break_started_at, obj.break_ended_at)
+        tz = geo_time_zone(lng=obj.job_offer.job.jobsite.address.longitude,
+                           lat=obj.job_offer.job.jobsite.address.latitude)
+        return self._format_date_range(obj.break_started_at_utc, obj.break_ended_at_utc, tz)
 
     def get_job(self, obj):
         job = obj.job_offer.job
@@ -171,24 +192,21 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         return obj.supervisor_approved_at is not None
 
     def get_resend_sms_candidate(self, obj):
-        # TODO: Fix timezone
         return (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at <= timezone.now()
+            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= datetime.now(pytz.utc)
         )
 
     def get_resend_sms_supervisor(self, obj):
-        # TODO: Fix timezone
         return (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is not None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at <= timezone.now()
+            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= datetime.now(pytz.utc)
         )
 
     def get_candidate_submit_hidden(self, obj):
-        # TODO: Fix timezone
         return not (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_started_at <= timezone.now()
+            obj.supervisor_approved_at is None and obj.shift_started_at_utc <= datetime.now(pytz.utc)
         )
 
     def get_evaluated(self, obj):
@@ -198,7 +216,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         if obj.candidate_evaluations.exists():
             return CandidateEvaluationSerializer(
                 obj.candidate_evaluations.all().first(),
-                fields=['id', 'evaluation_score', 'evaluated_at',]
+                fields=['id', 'evaluation_score', 'evaluated_at']
             ).data
 
     def get_myob_status(self, obj):
@@ -222,7 +240,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
 
     def _get_related_sms(self, obj, template_slug):
         ct = ContentType.objects.get_for_model(TimeSheet)
-        timesheet_date = timezone.localtime(obj.shift_started_at).date()
+        timesheet_date = obj.shift_started_at_tz.date()
         sms = sms_models.SMSMessage.objects.filter(
             related_objects__content_type=ct, related_objects__object_id=obj.id,
             template__slug=template_slug, sent_at__date=timesheet_date
