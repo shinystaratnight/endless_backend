@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta, time
 import collections
 import re
 
+import pytz
 from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
@@ -1292,7 +1293,7 @@ class Company(CategoryFolderMixin,
             time_zone = geo_time_zone(lng=hq_address.address.longitude,
                                       lat=hq_address.address.latitude)
             return time_zone
-        return settings.TIME_ZONE
+        return pytz.timezone(settings.TIME_ZONE)
 
     @classmethod
     def owned_by_lookups(cls, owner):
