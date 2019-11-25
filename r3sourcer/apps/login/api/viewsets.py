@@ -274,11 +274,12 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             for x in self.request.user.role.all().order_by('name')
         ]
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
+        time_zone = request.user.company.get_timezone()
         return Response({
             'status': 'success',
             'data': {
                 'contact': serializer.data,
-                'timezone': request.user.company.get_timezone(),
+                'timezone': time_zone.zone,
                 'user': str(request.user.id),
                 'end_trial_date': request.user.get_end_of_trial(),
                 'is_primary': request.user.company.primary_contact == request.user.contact.get_company_contact_by_company(
