@@ -2,6 +2,7 @@ from django.db import models
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.postgres.fields import JSONField
 from django.core.exceptions import ValidationError
+from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.models.core import UUIDModel, Company
@@ -245,7 +246,7 @@ class WorkflowObject(UUIDModel):
     def __str__(self):
         return str(self.state)
 
-    @property
+    @cached_property
     def model_object(self):
         return self.get_model_object(self.state, self.object_id)
 
@@ -271,8 +272,6 @@ class WorkflowObject(UUIDModel):
         if just_added and lifecycle_enabled:
             self.model_object.before_state_creation(self)
 
-        super().save(*args, **kwargs)
-
         if just_added:
             if not is_raw:
                 self.model_object.workflow(self.state)
@@ -282,6 +281,7 @@ class WorkflowObject(UUIDModel):
 
         if lifecycle_enabled and self.active:
             self.model_object.after_state_activated(self)
+        super().save(*args, **kwargs)
 
     def clean(self):
         self.validate_object(self.state, self.object_id, self._state.adding)
