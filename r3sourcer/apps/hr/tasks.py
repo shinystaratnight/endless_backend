@@ -1,5 +1,7 @@
 import operator
 from datetime import timedelta, date, time, datetime
+
+import pytz
 from filer.models import File, Folder
 
 from celery import shared_task
@@ -1019,13 +1021,18 @@ def send_invoice_email(invoice_id):
 
 @shared_task
 def generate_invoices():
-    today = date.today()
+    # TODO: Potential time zone problem, Fix timezone!!!!
+    today = datetime.now(pytz.utc).date()
     invoice_rules = core_models.InvoiceRule.objects.filter(
-        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.weekly, period_zero_reference=today.isoweekday()) |
-        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.monthly, period_zero_reference=today.day) |
+        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.weekly,
+                 period_zero_reference=today.isoweekday()) |
+        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.monthly,
+                 period_zero_reference=today.day) |
         models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.daily)
     )
 
+    # TODO: remove this inline import after fix import logic
+    from r3sourcer.apps.hr.payment.invoices import InvoiceService
     service = InvoiceService()
 
     for invoice_rule in invoice_rules:
@@ -1042,12 +1049,16 @@ def generate_invoices():
             date_from = today - timedelta(days=1)
 
         existing_invoices = core_models.Invoice.objects.filter(
-            invoice_lines__date__gte=date_from, invoice_lines__date__lte=date_to)
+            invoice_lines__date__gte=date_from,
+            invoice_lines__date__lte=date_to,
+        )
 
         if not existing_invoices:
             service.generate_invoice(date_from, date_to, company=company)
 
-    fortnightly = core_models.InvoiceRule.objects.filter(period=core_models.InvoiceRule.PERIOD_CHOICES.fortnightly)
+    fortnightly = core_models.InvoiceRule.objects.filter(
+        period=core_models.InvoiceRule.PERIOD_CHOICES.fortnightly,
+    )
 
     for invoice_rule in fortnightly:
         if invoice_rule.last_invoice_created:
