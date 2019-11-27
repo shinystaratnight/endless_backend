@@ -69,8 +69,6 @@ class BasePaymentService:
     modifier_type = RateCoefficientModifier.TYPE_CHOICES.company
 
     def _get_timesheets(self, timesheets, date_from=None, date_to=None, candidate=None, company=None):
-
-        timesheets = timesheets
         timesheets = timesheets.filter(
             candidate_submitted_at__isnull=False,
             supervisor_approved_at__isnull=False

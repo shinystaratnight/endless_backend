@@ -17,7 +17,7 @@ from django.core.cache import cache
 from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Sum
+from django.db.models import Q, Sum, F
 from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.functional import cached_property
@@ -2312,10 +2312,10 @@ class Invoice(AbstractOrder):
         super(Invoice, self).save(*args, **kwargs)
 
 
-class InvoiceLine(AbstractOrderLine):
+class InvoiceLine(TimeZone, AbstractOrderLine):
 
     invoice = models.ForeignKey(
-        Invoice,
+        'core.Invoice',
         related_name="invoice_lines",
         on_delete=models.CASCADE,
         verbose_name=_("Invoice"),
@@ -2333,6 +2333,32 @@ class InvoiceLine(AbstractOrderLine):
     class Meta:
         verbose_name = _("Invoice Line")
         verbose_name_plural = _("Invoice Lines")
+
+    @property
+    def jobsite_geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+        ).annotate(
+            longitude=F('timesheet__job_offer__job__jobsite__address__longitude'),
+            latitude=F('timesheet__job_offer__job__jobsite__address__latitude')
+        ).values_list('longitude', 'latitude').get()
+
+    # TODO: Remove duplicated fields after make AbstractOrderLine TimeZoneUUID support
+    @property
+    def created_at_tz(self):
+        return utc2local(self.created_at, self.tz)
+
+    @property
+    def updated_at_tz(self):
+        return utc2local(self.updated_at, self.tz)
+
+    @property
+    def created_at_utc(self):
+        return self.created_at
+
+    @property
+    def updated_at_utc(self):
+        return self.updated_at
 
     def __str__(self):
         return '{}: {}'.format(

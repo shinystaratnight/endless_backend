@@ -1,7 +1,9 @@
 import math
+from datetime import datetime
 
 from decimal import Decimal
 
+import pytz
 from django.core.files.base import ContentFile
 from django.template.loader import get_template
 from django.utils.formats import date_format
@@ -11,6 +13,7 @@ from filer.models import Folder, File
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
 from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.core.utils.companies import get_site_url
+from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
@@ -40,6 +43,9 @@ class InvoiceService(BasePaymentService):
         return price_list_rate
 
     def calculate(self, company, date_from=None, date_to=None, timesheets=None):
+        if timesheets is None:
+            timesheets = TimeSheet.objects
+
         timesheets = self._get_timesheets(timesheets, date_from, date_to, company=company)
         coefficient_service = CoefficientService()
         lines = []
@@ -177,7 +183,11 @@ class InvoiceService(BasePaymentService):
             invoice_lines = []
 
             for line in lines:
-                invoice_lines.append(InvoiceLine(invoice=invoice, **line))
+                invoice_lines.append(InvoiceLine(
+                    invoice=invoice,
+                    created_at=datetime.now(pytz.utc),
+                    updated_at=datetime.now(pytz.utc),
+                    **line))
 
             InvoiceLine.objects.bulk_create(invoice_lines)
 
