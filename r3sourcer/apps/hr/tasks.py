@@ -25,7 +25,6 @@ from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.payment.invoices import InvoiceService
 from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
@@ -246,7 +245,7 @@ def send_placement_rejection_sms(self, job_offer_id):
 
 
 def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
-    invoice = utils.get_invoice(company, date_from, date_to, timesheet)
+    invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
 
     if invoice is None and recreate:
         invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
@@ -255,7 +254,7 @@ def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
 
 
 @shared_task
-def generate_invoice(timesheet_id=None, recreate=False, delete_lines=False):
+def generate_invoice(timesheet_id, recreate=False, delete_lines=False):
     """
     Generates new or updates existing invoice. Accepts regular(customer) company.
     """
@@ -268,7 +267,8 @@ def generate_invoice(timesheet_id=None, recreate=False, delete_lines=False):
 
     if company.type == core_models.Company.COMPANY_TYPES.master:
         return
-
+    # TODO: Remove this import after fix import logic
+    from r3sourcer.apps.hr.payment.invoices import InvoiceService
     service = InvoiceService()
     invoice_rule = utils.get_invoice_rule(company)
     date_from, date_to = utils.get_invoice_dates(invoice_rule, timesheet)

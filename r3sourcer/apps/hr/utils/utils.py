@@ -7,6 +7,7 @@ from collections import defaultdict
 from functools import reduce
 from urllib.parse import urlparse
 
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 from django.utils import timezone, formats
 from django.template.defaulttags import register
@@ -218,33 +219,36 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
     """
     invoice = None
     invoice_rule = company.invoice_rules.first()
-
+    qs = Invoice.objects
     qry = Q(
         invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
     )
-
     if recreate:
         qry = Q()
 
     if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
-        invoice = Invoice.objects.filter(
+        qs = qs.filter(
             qry,
             customer_company=company, approved=False
-        ).latest('date')
+        )
     elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
         jobsite = timesheet.job_offer.shift.date.job.jobsite
-        invoice = Invoice.objects.filter(
+        qs = qs.filter(
             qry,
             invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite,
             approved=False
-        ).latest('date')
+        )
     elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
         candidate = timesheet.job_offer.candidate_contact
-        invoice = Invoice.objects.filter(
+        qs = qs.filter(
             qry,
             customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate,
             approved=False
-        ).latest('date')
+        )
+    try:
+        invoice = qs.latest('date')
+    except ObjectDoesNotExist:
+        invoice = None
 
     return invoice
 

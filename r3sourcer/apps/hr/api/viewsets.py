@@ -392,7 +392,10 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @transaction.atomic
     @action(methods=['post'], detail=True)
     def recreate_invoice(self, request, pk, *args, **kwargs):
-        generate_invoice.apply_async(kwargs={'timesheet_id': pk, 'delete_lines': True}, countdown=10)
+        generate_invoice.apply_async(kwargs={
+            'timesheet_id': pk,
+            'recreate': True,
+            'delete_lines': True}, countdown=10)
 
         return Response({
             'status': 'success',
