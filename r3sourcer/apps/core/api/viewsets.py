@@ -18,7 +18,6 @@ from rest_framework.viewsets import ViewSet
 
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
 from r3sourcer.apps.core import tasks
-from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.address import parse_google_address

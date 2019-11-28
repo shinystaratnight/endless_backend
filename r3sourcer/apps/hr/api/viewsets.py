@@ -9,7 +9,7 @@ from django.conf import settings
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Min
-from django.utils import timezone, dateparse
+from django.utils import dateparse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, mixins, status, filters
@@ -32,6 +32,7 @@ from r3sourcer.apps.core_adapter import constants
 from r3sourcer.apps.hr import models as hr_models, payment
 from r3sourcer.apps.hr.api.filters import TimesheetFilter, ShiftFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
+from r3sourcer.apps.hr.payment.invoices import InvoiceService
 from r3sourcer.apps.hr.tasks import generate_invoice
 from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
 from r3sourcer.apps.core.utils.utils import geo_time_zone
@@ -423,12 +424,12 @@ class InvoiceViewset(BaseApiViewset):
                 )
             )
 
-        except Exception:
+        except ObjectDoesNotExist:
             client_company = invoice.customer_company
             rule = client_company.invoice_rules.first()
             show_candidate = rule.show_candidate_name if rule else False
 
-            pdf_file_obj = payment.InvoiceService.generate_pdf(invoice, show_candidate)
+            pdf_file_obj = InvoiceService.generate_pdf(invoice, show_candidate)
 
         pdf_url = pdf_file_obj.url
 
