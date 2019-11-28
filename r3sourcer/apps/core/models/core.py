@@ -2254,7 +2254,7 @@ class Invoice(AbstractOrder):
 
     number = models.CharField(
         verbose_name=_("Number"),
-        max_length=20,
+        max_length=8,
         null=True
     )
 
@@ -2293,9 +2293,9 @@ class Invoice(AbstractOrder):
         invoice_number = ''
 
         if rule.serial_number:
-            invoice_number += rule.serial_number[:12]
+            invoice_number += rule.serial_number
 
-        starting_number = format(rule.starting_number, '08')
+        starting_number = format(rule.starting_number, '05')
         invoice_number += starting_number
 
         return invoice_number
@@ -2304,6 +2304,7 @@ class Invoice(AbstractOrder):
         just_added = self._state.adding
 
         if just_added:
+            # TODO: Bad logic, add more clear solution
             rule = self.provider_company.invoice_rules.first()
             self.number = self.get_invoice_number(rule)
             rule.starting_number += 1
@@ -2451,7 +2452,7 @@ class InvoiceRule(AbstractPayRuleMixin, UUIDModel):
     )
 
     serial_number = models.CharField(
-        max_length=20,
+        max_length=3,
         verbose_name=_("Serial number"),
         null=True,
         blank=True
