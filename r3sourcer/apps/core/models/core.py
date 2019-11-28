@@ -61,12 +61,12 @@ class TimeZone(models.Model):
         abstract = True
 
     @property
-    def jobsite_geo(self):
+    def geo(self):
         raise NotImplementedError
 
     @cached_property
     def tz(self):
-        return geo_time_zone(*self.jobsite_geo)
+        return geo_time_zone(*self.geo)
 
     @property
     def timezone(self):
@@ -118,10 +118,10 @@ class UUIDModel(models.Model):
     def default_updated_at(self):
         self.updated_at = datetime.now(pytz.utc)
 
-    def save(self, force_insert=False, force_update=False, using=None, update_fields=None):
+    def save(self, *args, **kwargs):
         self.default_created_at()
         self.default_updated_at()
-        super().save(force_insert, force_update, using, update_fields)
+        super().save(*args, **kwargs)
 
 
 class TimeZoneUUIDModel(TimeZone, UUIDModel):
@@ -129,7 +129,7 @@ class TimeZoneUUIDModel(TimeZone, UUIDModel):
         abstract = True
 
     @property
-    def jobsite_geo(self):
+    def geo(self):
         raise NotImplementedError
 
     @property
@@ -150,12 +150,10 @@ class TimeZoneUUIDModel(TimeZone, UUIDModel):
 
 
 # do anything you want
-class Contact(
-    CategoryFolderMixin,
-    MYOBMixin,
-    GenerateAuthTokenMixin,
-    UUIDModel
-):
+class Contact(CategoryFolderMixin,
+              MYOBMixin,
+              GenerateAuthTokenMixin,
+              UUIDModel):
 
     EXCLUDE_INPUT_FIELDS = (
         'files',
@@ -391,7 +389,6 @@ class Contact(
             self.user = user
 
         super().save(*args, **kwargs)
-
 
     @classmethod
     def owned_by_lookups(cls, owner):
@@ -704,7 +701,7 @@ class City(UUIDModel,
         return self.name
 
 
-class Address(UUIDModel):
+class Address(TimeZoneUUIDModel):
 
     default_errors = {
         'fetch_error': _("Can't get coordinates by address")
@@ -729,6 +726,10 @@ class Address(UUIDModel):
     class Meta:
         verbose_name = _("Address")
         verbose_name_plural = _("Addresses")
+
+    @property
+    def geo(self):
+        return self.longitude, self.latitude
 
     def __str__(self):
         address = '{}\n{}'.format(self.street_address, self.postal_code)
@@ -969,7 +970,7 @@ class Company(CategoryFolderMixin,
               MYOBMixin,
               WorkflowProcess,
               CompanyLookupMixin,
-              UUIDModel,
+              TimeZoneUUIDModel,
               MasterCompanyLookupMixin):
 
     name = models.CharField(max_length=127, verbose_name=_("Company Name"), unique=True)
@@ -1309,6 +1310,16 @@ class Company(CategoryFolderMixin,
 
         return discounts
 
+    @property
+    def geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+            company_addresses__hq=True,
+        ).annotate(
+            longitude=F('company_addresses__address__longitude'),
+            latitude=F('company_addresses__address__latitude')
+        ).values_list('longitude', 'latitude').get()
+
     def save(self, *args, **kwargs):
         from r3sourcer.apps.company_settings.models import CompanySettings, MYOBSettings
         from r3sourcer.apps.core.models.workflow import WorkflowNode, CompanyWorkflowNode
@@ -1366,11 +1377,10 @@ class Company(CategoryFolderMixin,
             return [Q(regular_companies__master_company=owner), Q(id=owner.id)]
 
 
-class CompanyRel(
-        UUIDModel,
-        WorkflowProcess,
-        CompanyLookupMixin,
-        MasterCompanyLookupMixin):
+class CompanyRel(UUIDModel,
+                 WorkflowProcess,
+                 CompanyLookupMixin,
+                 MasterCompanyLookupMixin):
     """
     Model for storing master and regular company relationship
     """
@@ -1480,10 +1490,9 @@ class CompanyRel(
         cache.set('company_rel_{}'.format(self.regular_company.id), None)
 
 
-class CompanyContactRelationship(
-        UUIDModel,
-        CompanyLookupMixin,
-        MasterCompanyLookupMixin):
+class CompanyContactRelationship(UUIDModel,
+                                 CompanyLookupMixin,
+                                 MasterCompanyLookupMixin):
     company = models.ForeignKey(
         Company,
         related_name="relationships",
@@ -1582,9 +1591,7 @@ class CompanyIndustryRel(UUIDModel):
         super(CompanyIndustryRel, self).save(*args, **kwargs)
 
 
-class CompanyAddress(
-        UUIDModel,
-        MasterCompanyLookupMixin):
+class CompanyAddress(TimeZoneUUIDModel, MasterCompanyLookupMixin):
 
     name = models.CharField(
         max_length=63,
@@ -1634,6 +1641,16 @@ class CompanyAddress(
 
     def __str__(self):
         return self.name
+
+    @property
+    def geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+            hq=True,
+        ).annotate(
+            longitude=F('address__longitude'),
+            latitude=F('address__latitude')
+        ).values_list('longitude', 'latitude').get()
 
     def save(self, *args, **kwargs):
         if self.hq:
@@ -1945,7 +1962,7 @@ class VAT(UUIDModel):
         return False
 
 
-class AbstractBaseOrder(UUIDModel,
+class AbstractBaseOrder(TimeZoneUUIDModel,
                         WorkflowProcess,
                         CompanyLookupMixin,
                         MasterCompanyLookupMixin):
@@ -2033,6 +2050,16 @@ class AbstractBaseOrder(UUIDModel,
 
     def __str__(self):
         return "{}, {}".format(self.provider_company, self.customer_company)
+
+    @property
+    def geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+            provider_company__company_addresses__hq=True,
+        ).annotate(
+            longitude=F('provider_company__company_addresses__address__longitude'),
+            latitude=F('provider_company__company_addresses__address__latitude')
+        ).values_list('longitude', 'latitude').get()
 
     def get_customer(self):
         return self.customer_company
@@ -2140,7 +2167,11 @@ class Order(AbstractOrder):
             self.create_state(10)
 
 
-class AbstractOrderLine(UUIDModel):
+class AbstractOrderLine(TimeZoneUUIDModel):
+
+    @property
+    def geo(self):
+        raise NotImplementedError
 
     date = models.DateField(verbose_name=_("Date"))
 
@@ -2196,6 +2227,10 @@ class AbstractOrderLine(UUIDModel):
 
 class OrderLine(AbstractOrderLine):
 
+    @property
+    def geo(self):
+        raise NotImplementedError
+
     order = models.ForeignKey(
         Order,
         related_name="order_lines",
@@ -2243,14 +2278,10 @@ class Invoice(AbstractOrder):
 
     date = models.DateField(
         verbose_name=_("Creation date"),
-        auto_now_add=True,
         null=True
     )
 
-    updated = models.DateField(
-        auto_now=True,
-        null=True
-    )
+    updated = models.DateField(null=True)
 
     number = models.CharField(
         verbose_name=_("Number"),
@@ -2289,6 +2320,15 @@ class Invoice(AbstractOrder):
             date_format(self.date, settings.DATE_FORMAT)
         )
 
+    @property
+    def synced_at_tz(self):
+        if self.synced_at:
+            return utc2local(self.synced_at, self.tz)
+
+    @property
+    def synced_at_utc(self):
+        return self.synced_at
+
     def get_invoice_number(self, rule):
         invoice_number = ''
 
@@ -2301,6 +2341,9 @@ class Invoice(AbstractOrder):
         return invoice_number
 
     def save(self, *args, **kwargs):
+        if not self.date:
+            self.date = datetime.now(pytz.utc).date()
+        self.updated = datetime.now(pytz.utc).date()
         just_added = self._state.adding
 
         if just_added:
@@ -2313,7 +2356,7 @@ class Invoice(AbstractOrder):
         super(Invoice, self).save(*args, **kwargs)
 
 
-class InvoiceLine(TimeZone, AbstractOrderLine):
+class InvoiceLine(AbstractOrderLine):
 
     invoice = models.ForeignKey(
         'core.Invoice',
@@ -2336,12 +2379,12 @@ class InvoiceLine(TimeZone, AbstractOrderLine):
         verbose_name_plural = _("Invoice Lines")
 
     @property
-    def jobsite_geo(self):
+    def geo(self):
         return self.__class__.objects.filter(
             pk=self.pk,
         ).annotate(
-            longitude=F('timesheet__job_offer__job__jobsite__address__longitude'),
-            latitude=F('timesheet__job_offer__job__jobsite__address__latitude')
+            longitude=F('timesheet__job_offer__shift__date__job__jobsite__address__longitude'),
+            latitude=F('timesheet__job_offer__shift__date__job__jobsite__address__latitude')
         ).values_list('longitude', 'latitude').get()
 
     # TODO: Remove duplicated fields after make AbstractOrderLine TimeZoneUUID support

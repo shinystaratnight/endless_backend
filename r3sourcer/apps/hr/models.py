@@ -242,7 +242,7 @@ class JobsiteUnavailability(core_models.UUIDModel):
         verbose_name_plural = _("Jobsite Unavailabilities")
 
 
-class Job(core_models.TimeZone, core_models.AbstractBaseOrder):
+class Job(core_models.AbstractBaseOrder):
 
     jobsite = models.ForeignKey(
         Jobsite,
@@ -331,7 +331,7 @@ class Job(core_models.TimeZone, core_models.AbstractBaseOrder):
     get_title.short_description = _('Title')
 
     @property
-    def jobsite_geo(self):
+    def geo(self):
         return self.__class__.objects.filter(
             pk=self.pk,
         ).annotate(
@@ -579,7 +579,7 @@ class ShiftDate(core_models.TimeZoneUUIDModel):
         return date_format(self.shift_date, settings.DATE_FORMAT)
 
     @property
-    def jobsite_geo(self):
+    def geo(self):
         return self.__class__.objects.filter(
             pk=self.pk,
         ).annotate(
@@ -654,7 +654,7 @@ class Shift(core_models.TimeZoneUUIDModel):
         )
 
     @property
-    def jobsite_geo(self):
+    def geo(self):
         return self.__class__.objects.filter(
             pk=self.pk,
         ).annotate(
