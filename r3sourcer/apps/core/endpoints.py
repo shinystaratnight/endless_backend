@@ -256,8 +256,8 @@ class CityEndpoint(ApiEndpoint):
 
 
 class InvoiceEndpoint(ApiEndpoint):
-
     model = models.Invoice
+    serializer = serializers.InvoiceLineSerializer
     filter_class = filters.InvoiceFilter
 
 

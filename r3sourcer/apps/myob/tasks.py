@@ -154,8 +154,7 @@ def sync_invoice(invoice_id):
         logger.warn('Sync to MYOB failed')
     else:
         if synced:
-            # TODO: Fix timezone
-            invoice.synced_at = timezone.now()
+            invoice.synced_at = invoice.now_utc
             invoice.save(update_fields=['synced_at'])
 
 

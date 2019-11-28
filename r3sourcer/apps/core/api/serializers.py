@@ -540,12 +540,10 @@ class MetaFields(serializers.SerializerMetaclass):
 
 
 @six.add_metaclass(MetaFields)
-class ApiBaseModelSerializer(
-        ApiFieldsMixin,
-        ApiMethodFieldsMixin,
-        ApiFullRelatedFieldsMixin,
-        serializers.ModelSerializer):
-
+class ApiBaseModelSerializer(ApiFieldsMixin,
+                             ApiMethodFieldsMixin,
+                             ApiFullRelatedFieldsMixin,
+                             serializers.ModelSerializer):
     pass
 
 
@@ -1336,7 +1334,6 @@ class CompanyIndustrySerializer(serializers.ModelSerializer):
         fields = ('id', '__str__', 'default', 'industry' )
 
 
-
 class CompanyListSerializer(
     core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin, core_mixins.ApiContentTypeFieldMixin,
     ApiBaseModelSerializer
@@ -1470,7 +1467,6 @@ class CompanyListSerializer(
     def get_industries(self, obj):
         queryset = core_models.CompanyIndustryRel.objects.filter(company=obj)
         return [CompanyIndustrySerializer(q).data for q in queryset]
-
 
 
 class FormFieldSerializer(ApiBaseModelSerializer):
@@ -1766,18 +1762,6 @@ class FormBuilderSerializer(ApiBaseModelSerializer):
         )
 
 
-class InvoiceLineSerializer(ApiBaseModelSerializer):
-
-    class Meta:
-        model = core_models.InvoiceLine
-        fields = ('__all__', {
-            'vat': ('id', 'name'),
-            'timesheet': ('id', {
-                'job_offer': ('id', 'candidate_contact'),
-            })
-        })
-
-
 class TrialSerializer(serializers.Serializer):
 
     first_name = serializers.CharField()
@@ -1897,3 +1881,43 @@ class UUIDApiSerializerMixin(TimezoneApiSerializerMixin):
     @classmethod
     def get_updated_at_tz(cls, obj):
         return obj.updated_at_tz
+
+
+class InvoiceSerializer(UUIDApiSerializerMixin, ApiBaseModelSerializer):
+    method_fields = (
+        *UUIDApiSerializerMixin.method_fields,
+        *ApiBaseModelSerializer.method_fields,
+        'synced_at',
+        'synced_at_tz',
+    )
+
+    @classmethod
+    def get_synced_at(cls, obj):
+        return obj.synced_at_utc
+
+    @classmethod
+    def get_synced_at_tz(cls, obj):
+        return obj.synced_at_tz
+
+    class Meta:
+        model = core_models.Invoice
+        fields = (
+            '__all__',
+            {'invoice_lines': '__all__'}
+        )
+
+
+class InvoiceLineSerializer(UUIDApiSerializerMixin, ApiBaseModelSerializer):
+    method_fields = (
+        *UUIDApiSerializerMixin.method_fields,
+        *ApiBaseModelSerializer.method_fields,
+    )
+
+    class Meta:
+        model = core_models.InvoiceLine
+        fields = ('__all__', {
+            'vat': ('id', 'name'),
+            'timesheet': ('id', {
+                'job_offer': ('id', 'candidate_contact'),
+            })
+        })
