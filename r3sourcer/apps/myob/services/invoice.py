@@ -119,7 +119,7 @@ class InvoiceSync(SalespersonMixin, BaseSync):
         data = self.mapper.map_to_myob(invoice, lines, customer_uid, salesperson=salesperson)
 
         if partial:
-            params = {"$filter": "CustomerPurchaseOrderNumber eq '%s'" % invoice.number}
+            params = {"$filter": "Number eq '%s'" % invoice.number}
             myob_invoice = self.client.api.Sale.Invoice.TimeBilling.get(params=params)['Items'][0]
             myob_id = myob_invoice['UID']
             row_version = myob_invoice['RowVersion']
