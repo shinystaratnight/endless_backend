@@ -74,9 +74,7 @@ class BaseTimeSheetViewsetMixin:
         return Response(serializer.data)
 
     def handle_request(self, request, pk, is_candidate=True, not_agree=False, *args, **kwargs):
-        time_sheet = get_object_or_404(
-            hr_models.TimeSheet.objects.select_for_update(), pk=pk
-        )
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
 
         if request.method == 'PUT':
             return self.submit_hours(
@@ -257,7 +255,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['get', 'put'], detail=True)
     def candidate_fill(self, request, pk, *args, **kwargs):
-        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
         if request.method == 'PUT':
             tz = geo_time_zone(lng=time_sheet.job_offer.job.jobsite.address.longitude,
                                lat=time_sheet.job_offer.job.jobsite.address.latitude)
@@ -281,7 +279,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['get', 'put'], detail=True)
     def supervisor_approve(self, request, pk, *args, **kwargs):
-        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
         if request.method == 'PUT':
             tz = geo_time_zone(lng=time_sheet.job_offer.job.jobsite.address.longitude,
                                lat=time_sheet.job_offer.job.jobsite.address.latitude)
@@ -311,7 +309,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['post'], detail=True)
     def sync(self, request, pk, *args, **kwargs):
-        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
         time_sheet.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
 
         sync_time_sheet.apply_async(args=[time_sheet.id])
@@ -326,7 +324,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         Would be used for approving through pin code.
         """
 
-        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
 
         serializer = timesheet_serializers.PinCodeSerializer(instance=time_sheet,
                                                              data=request.data)
@@ -359,7 +357,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         Would be used for approving through signature.
         """
 
-        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
 
         # check if already approved
         if time_sheet.supervisor_approved_at:
