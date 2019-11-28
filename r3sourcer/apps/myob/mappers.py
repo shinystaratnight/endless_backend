@@ -172,9 +172,7 @@ class InvoiceMapper(ContactMapper):
             "TotalTax": invoice.tax,
             "TotalAmount": invoice.total_with_tax,
             "Status": "Open",
-            # WARNING: uncomment if you need invoice number
-            # "Number": invoice.number[-8:],
-            "CustomerPurchaseOrderNumber": invoice.number[:20],
+            "Number": invoice.number,
             "IsTaxInclusive": False,
             "Terms": {
                 "PaymentIsDue": CompanyMapper.PAYMENT_IS_DUE_MAP.get(invoice.customer_company.terms_of_payment),
