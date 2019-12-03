@@ -326,6 +326,22 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
         return Response(data)
 
+    @action(methods=['post'], detail=True)
+    def emails(self, request, *args, **kwargs):
+        instance = self.get_object()
+        manager = self.request.user.contact
+        master_company = get_site_master_company(request=self.request)
+        data = {
+            'status': 'error',
+            'message': 'Email already verified',
+        }
+        if not instance.email_verified:
+            tasks.send_contact_verify_email.apply_async(
+                args=(instance.id, manager.id, master_company.id))
+            data = {'status': 'success'}
+
+        return Response(data)
+
     def _update_password(self, serializer_class):
         instance = self.get_object()
         serializer = serializer_class(instance.user, data=self.request.data)
