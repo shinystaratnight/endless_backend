@@ -112,8 +112,8 @@ class StandardPayMixin:
 
 
 class CandidateCardFinderMixin:
-    def _find_old_myob_card(self, candidate_contact_id, resource=None):
-        candidate_contact = CandidateContact.objects.select_related('contact').get(pk=candidate_contact_id)
+    def _find_old_myob_card(self, candidate_contact, resource=None):
+        candidate_contact = CandidateContact.objects.select_related('contact').get(pk=candidate_contact.id)
         contact = candidate_contact.contact
         resp = self.client.api.Contact.Employee.get(params={
             '$filter':

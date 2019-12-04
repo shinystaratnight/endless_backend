@@ -118,7 +118,7 @@ class TimeSheetSync(BaseCategoryMixin,
 
         # find existing remote resource
         card_number = candidate.contact.get_myob_card_number()
-        myob_employee = self.get_myob_employee_data(candidate.id, card_number)
+        myob_employee = self.get_myob_employee_data(candidate, card_number)
 
         # TODO: fix this when candidate sync will be done
         # if resource was not exists then stop processing
@@ -126,7 +126,7 @@ class TimeSheetSync(BaseCategoryMixin,
             rs = CandidateSync(self.client)
             rs.sync_to_myob(candidate, partial=True)
 
-            myob_employee = self.get_myob_employee_data(candidate.id, card_number)
+            myob_employee = self.get_myob_employee_data(candidate, card_number)
 
         if not myob_employee:
             return
@@ -175,16 +175,16 @@ class TimeSheetSync(BaseCategoryMixin,
     def _get_resource(self):
         return self.client.api.Payroll.Timesheet
 
-    def get_myob_employee_data(self, candidate_id, card_number=None):
+    def get_myob_employee_data(self, candidate, card_number=None):
         """
         Return myob candidate response if it exists in remote service.
         Find Employee card from remote resources.
 
-        :param candidate_id: CandidateContactID
+        :param candidate: CandidateContact
         :param card_number: card number
         :return: dict MYOB response
         """
-        cache_key = (candidate_id, self.client.cf_data.company_file.id)
+        cache_key = (candidate.id, self.client.cf_data.company_file.id)
         # check if candidate already was cached and return value
         if self._employee_cache.get(cache_key):
             return self._employee_cache[cache_key]
@@ -194,14 +194,14 @@ class TimeSheetSync(BaseCategoryMixin,
         sync_obj = MYOBSyncObject.objects.filter(
             app=model_parts[0],
             model=model_parts[1],
-            record=candidate_id,
+            record=candidate.id,
             company=self.company,
             direction=MYOBSyncObject.SYNC_DIRECTION_CHOICES.myob
         ).first()
 
         # find candidate resource by `DisplayID`
         _, _, myob_employee_resp = self._get_myob_existing_resp(
-            candidate_id,
+            candidate,
             card_number,
             sync_obj, resource=self.client.api.Contact.Employee
         )
