@@ -152,9 +152,9 @@ class InvoiceMapper(ContactMapper):
                                    self.address(line),
                                    candidate_contact)
 
-    def invoice_line(self, invoice, line, tax_codes, activity_uid):
+    def invoice_line(self, invoice, line, tax_codes, activity_uid, job):
         invoice_rule = get_invoice_rule(invoice.customer_company)
-        return {
+        line = {
             "Date": format_date_to_myob(line.date),
             "Hours": line.units,
             "Rate": line.unit_price,
@@ -162,8 +162,10 @@ class InvoiceMapper(ContactMapper):
             "Description": self.get_description(line, invoice_rule),
             "TaxCode": {"UID": tax_codes[line.vat_name]},
             "Units": line.units,
+            "Job": {"UID": job['UID']},
             "Activity": {"UID": activity_uid}
         }
+        return line
 
     def map_to_myob(self, invoice, lines, customer_uid, salesperson=None):
         data = {

@@ -209,6 +209,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         return self.paginated(queryset.distinct().order_by('-shift_started_at'))
 
+    @transaction.atomic
     @action(methods=['post'], detail=True)
     def confirm(self, request, pk, *args, **kwargs):
         time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
@@ -221,6 +222,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             'status': 'success'
         })
 
+    @transaction.atomic
     @action(methods=['post'], detail=True)
     def decline(self, request, pk, *args, **kwargs):
         time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
@@ -233,6 +235,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             'status': 'success'
         })
 
+    @transaction.atomic
     @action(methods=['post'], detail=True)
     def resend_sms(self, request, pk, *args, **kwargs):
         time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)

@@ -1,7 +1,8 @@
 import decimal
 import logging
+from datetime import datetime
 
-
+import pytz
 from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.db.models import Q
@@ -72,7 +73,7 @@ class BaseSync:
             created = True
 
         if not created:
-            sync_obj.synced_at = sync_obj.now_utc
+            sync_obj.synced_at = datetime.now(pytz.utc)
         if self.company:
             sync_obj.company = self.company
         if legacy_number:

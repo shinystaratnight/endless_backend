@@ -6,13 +6,13 @@ from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED
 from r3sourcer.apps.core.models import InvoiceLine
 from r3sourcer.apps.myob.mappers import InvoiceMapper, ActivityMapper
 from r3sourcer.apps.myob.services.base import BaseSync
-from r3sourcer.apps.myob.services.mixins import SalespersonMixin
+from r3sourcer.apps.myob.services.mixins import SalespersonMixin, JobMixin
 from r3sourcer.apps.pricing.models import PriceListRate
 
 log = logging.getLogger(__name__)
 
 
-class InvoiceSync(SalespersonMixin, BaseSync):
+class InvoiceSync(SalespersonMixin, JobMixin, BaseSync):
     app = "core"
     model = "Invoice"
     mapper_class = InvoiceMapper
@@ -112,10 +112,13 @@ class InvoiceSync(SalespersonMixin, BaseSync):
 
         lines = []
         for line in invoice_lines:
+            jobsite = line.timesheet.job_offer.job.jobsite
+            myob_job = self._get_myob_job(jobsite)
             lines.append(self.mapper.invoice_line(invoice,
                                                   line,
                                                   tax_codes,
-                                                  activities[line.id]))
+                                                  activities[line.id],
+                                                  myob_job))
         data = self.mapper.map_to_myob(invoice, lines, customer_uid, salesperson=salesperson)
 
         if partial:
