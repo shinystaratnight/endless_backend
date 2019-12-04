@@ -236,9 +236,7 @@ class BaseSync:
     def _sync_to(self, instance, sync_obj=None, partial=False):
         raise NotImplementedError()
 
-    def _get_myob_existing_resp(
-        self, instance, myob_card_number, sync_obj=None, field_name='DisplayID', resource=None
-    ):
+    def _get_myob_existing_resp(self, instance, myob_card_number, sync_obj=None, field_name='DisplayID', resource=None):
         """
         Search remote resource by field.
 
