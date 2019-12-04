@@ -16,7 +16,7 @@ from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.candidate import CandidateSync
 from r3sourcer.apps.myob.services.decorators import myob_enabled_mode
 from r3sourcer.apps.myob.services.exceptions import MYOBClientException
-from r3sourcer.apps.myob.services.mixins import BaseCategoryMixin, StandardPayMixin, CandidateCardFinderMixin
+from r3sourcer.apps.myob.services.mixins import BaseCategoryMixin, StandardPayMixin, CandidateCardFinderMixin, JobMixin
 from r3sourcer.apps.pricing.models import RateCoefficientModifier
 from r3sourcer.apps.pricing.services import CoefficientService
 
@@ -31,6 +31,7 @@ def format_short_wage_category_name(skill_name, rate_name):
 class TimeSheetSync(BaseCategoryMixin,
                     StandardPayMixin,
                     CandidateCardFinderMixin,
+                    JobMixin,
                     BaseSync):
 
     app = "crm_hr"
@@ -460,37 +461,6 @@ class TimeSheetSync(BaseCategoryMixin,
                     found_cnt += 1
                     break
         return found_cnt == len(new_categories)
-
-    def _get_myob_job(self, jobsite):
-        # jobsite = timesheet.job_offer.shift.date.job.jobsite
-        number = jobsite.get_myob_card_number()
-        myob_job = self._get_object_by_field(
-            number.lower(),
-            resource=self.client.api.GeneralLedger.Job,
-            myob_field='tolower(Number)',
-            single=True
-        )
-        data = JobsiteMapper().map_to_myob(jobsite)
-
-        if myob_job is None:
-            resp = self.client.api.GeneralLedger.Job.post(json=data, raw_resp=True)
-        else:
-            data = self._get_data_to_update(myob_job, data)
-            resp = self.client.api.GeneralLedger.Job.put(
-                uid=myob_job['UID'], json=data, raw_resp=True
-            )
-
-        if resp.status_code >= 400:
-            log.warning(resp.text)
-        elif myob_job is None:
-            myob_job = self._get_object_by_field(
-                number.lower(),
-                resource=self.client.api.GeneralLedger.Job,
-                myob_field='tolower(Number)',
-                single=True
-            )
-
-        return myob_job
 
     def _get_myob_customer(self, timesheet):
         from r3sourcer.apps.myob.services.company import CompanySync

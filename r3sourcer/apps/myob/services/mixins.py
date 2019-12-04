@@ -5,6 +5,7 @@ from django.utils import timezone
 
 from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.candidate.models import CandidateContact
+from r3sourcer.apps.myob.mappers import JobsiteMapper
 from r3sourcer.apps.myob.models import MYOBSyncObject
 
 
@@ -29,6 +30,38 @@ class BaseCategoryMixin:
                 )
             self._base_category = base_category
         return self._base_category
+
+
+class JobMixin:
+    def _get_myob_job(self, jobsite):
+        number = jobsite.get_myob_card_number()
+        myob_job = self._get_object_by_field(
+            number.lower(),
+            resource=self.client.api.GeneralLedger.Job,
+            myob_field='tolower(Number)',
+            single=True
+        )
+        data = JobsiteMapper().map_to_myob(jobsite)
+
+        if myob_job is None:
+            resp = self.client.api.GeneralLedger.Job.post(json=data, raw_resp=True)
+        else:
+            data = self._get_data_to_update(myob_job, data)
+            resp = self.client.api.GeneralLedger.Job.put(
+                uid=myob_job['UID'], json=data, raw_resp=True
+            )
+
+        if resp.status_code >= 400:
+            log.warning(resp.text)
+        elif myob_job is None:
+            myob_job = self._get_object_by_field(
+                number.lower(),
+                resource=self.client.api.GeneralLedger.Job,
+                myob_field='tolower(Number)',
+                single=True
+            )
+
+        return myob_job
 
 
 class StandardPayMixin:
