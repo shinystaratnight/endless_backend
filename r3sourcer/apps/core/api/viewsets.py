@@ -184,7 +184,6 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def perform_create(self, serializer):
         instance = serializer.save()
 
-        manager = self.request.user.contact
         master_company = get_site_master_company(request=self.request)
         models.ContactRelationship.objects.create(
             contact=instance,
@@ -1084,12 +1083,8 @@ class AddressViewset(GoogleAddressMixin, BaseApiViewset):
 
     @action(methods=['post'], detail=False, permission_classes=(AllowAny,))
     def parse(self, request, *args, **kwargs):
-        try:
-            address_data = request.data
-            data = parse_google_address(address_data)
-        except Exception:
-            raise exceptions.ValidationError(_('Address is invalid!'))
-
+        address_data = request.data
+        data = parse_google_address(address_data)
         return Response(data)
 
 
