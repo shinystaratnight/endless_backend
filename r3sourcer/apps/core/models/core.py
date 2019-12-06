@@ -80,6 +80,9 @@ class TimeZone(models.Model):
     def now_utc(self):
         return datetime.now(pytz.utc)
 
+    def utc2local(self, dt):
+        return utc2local(dt, self.tz)
+
 
 class UUIDModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)

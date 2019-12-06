@@ -1,21 +1,20 @@
 from datetime import timedelta
 
+from crum import get_current_request
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
-
-from crum import get_current_request
 from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
-from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.core.utils.companies import get_site_master_company
-from r3sourcer.apps.core.workflow import WorkflowProcess
-from r3sourcer.apps.skills import models as skill_models
-from r3sourcer.apps.core.decorators import workflow_function
-from r3sourcer.apps.activity import models as activity_models
 from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
+from r3sourcer.apps.activity.models import Activity
+from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.decorators import workflow_function
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
+from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.pricing import models as pricing_models
+from r3sourcer.apps.skills import models as skill_models
 
 
 class VisaType(core_models.UUIDModel):
@@ -325,7 +324,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     @property
     def activities(self):
-        return activity_models.Activity.objects.filter(
+        return Activity.objects.filter(
             entity_object_name=self.__class__.__name__,
             entity_object_id=self.pk
         )

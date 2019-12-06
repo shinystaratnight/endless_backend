@@ -3,10 +3,9 @@ from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
 
+from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.models import Contact
-
-from .models import Activity
 
 
 class ActivityTypeFilter(admin.SimpleListFilter):
@@ -23,7 +22,7 @@ class ActivityTypeFilter(admin.SimpleListFilter):
             try:
                 model = factory.get_instance_class(name, fail_fast=True)
                 results.append((name, model._meta.verbose_name))
-            except:
+            except Exception as e:
                 pass
         return results
 
@@ -64,7 +63,7 @@ class ActivityExtraFilter(admin.filters.SimpleListFilter):
     title = None
 
     def __init__(self, request, params, model, model_admin):
-        super(admin.SimpleListFilter, self).__init__(request, params, model, model_admin)
+        super().__init__(request, params, model, model_admin)
 
         for param in self.expected_parameters():
             if param in params:

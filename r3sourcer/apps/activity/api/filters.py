@@ -1,6 +1,6 @@
 from django_filters.rest_framework import FilterSet
 
-from ..models import Activity
+from r3sourcer.apps.activity.models import Activity
 
 
 class ActivityFilter(FilterSet):

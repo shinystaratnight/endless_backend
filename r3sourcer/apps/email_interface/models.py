@@ -96,11 +96,6 @@ class EmailMessage(core_models.UUIDModel, models.Model):
         verbose_name=_("Recipients")
     )
 
-    created_at = models.DateTimeField(
-        verbose_name=_("Date stored in database"),
-        auto_now_add=True
-    )
-
     is_read = models.BooleanField(
         default=False,
         verbose_name=_("Seen")

@@ -1,13 +1,12 @@
 import datetime
 import logging
 
-from django.utils import timezone
+import pytz
 
 from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.myob.mappers import JobsiteMapper
 from r3sourcer.apps.myob.models import MYOBSyncObject
-
 
 log = logging.getLogger(__name__)
 
@@ -179,12 +178,11 @@ class SalespersonMixin:
                     portfolio_manager.legacy_myob_card_number = salesperson['DisplayID']
                     portfolio_manager.save(update_fields=['legacy_myob_card_number'])
             else:
-                # TODO: Fix timezone
-                starts_at = timezone.now()
+                now = datetime.datetime.now(pytz.utc)
                 activity_values = {
                     'contact': contact,
-                    'starts_at': starts_at,
-                    'ends_at': starts_at + datetime.timedelta(days=1)
+                    'starts_at': now,
+                    'ends_at': now + datetime.timedelta(days=1)
                 }
                 Activity.objects.create(**activity_values)
 
