@@ -828,7 +828,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     )
 
     contact = models.ForeignKey(
-        Contact,
+        'core.Contact',
         on_delete=models.PROTECT,
         related_name="company_contact",
         verbose_name=_("Contact")

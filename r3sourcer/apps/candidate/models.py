@@ -6,15 +6,13 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
-from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
+from r3sourcer import ref
 from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
-from r3sourcer.apps.pricing import models as pricing_models
-from r3sourcer.apps.skills import models as skill_models
 
 
 class VisaType(core_models.UUIDModel):
@@ -146,14 +144,14 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     )
 
     contact = models.OneToOneField(
-        core_models.Contact,
+        'core.Contact',
         on_delete=models.CASCADE,
         related_name="candidate_contacts",
         verbose_name=_("Contact")
     )
 
     recruitment_agent = models.ForeignKey(
-        core_models.CompanyContact,
+        'core.CompanyContact',
         null=True,
         blank=True,
         related_name='candidate_contacts',
@@ -168,7 +166,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     )
 
     nationality = models.ForeignKey(
-        core_models.Country,
+        'core.Country',
         to_field='code2',
         null=True,
         blank=True,
@@ -176,7 +174,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     )
 
     visa_type = models.ForeignKey(
-        VisaType,
+        'candidate.VisaType',
         null=True,
         blank=True,
         related_name="candidate_contacts",
@@ -268,7 +266,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     )
 
     bank_account = models.ForeignKey(
-        core_models.BankAccount,
+        'core.BankAccount',
         related_name="candidates",
         on_delete=models.PROTECT,
         verbose_name=_("Bank Account"),
@@ -277,7 +275,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     )
 
     employment_classification = models.ForeignKey(
-        skill_models.EmploymentClassification,
+        'skills.EmploymentClassification',
         related_name="candidates",
         on_delete=models.PROTECT,
         verbose_name=_("Employment Classification"),
@@ -286,7 +284,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
     )
 
     superannuation_fund = models.ForeignKey(
-        SuperannuationFund,
+        'candidate.SuperannuationFund',
         related_name="candidates",
         on_delete=models.PROTECT,
         verbose_name=_("Superannuation Fund"),
@@ -558,14 +556,14 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
 class TagRel(core_models.UUIDModel):
     tag = models.ForeignKey(
-        core_models.Tag,
+        'core.Tag',
         related_name="tag_rels",
         on_delete=models.PROTECT,
         verbose_name=_("Tag")
     )
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         on_delete=models.CASCADE,
         related_name="tag_rels",
         verbose_name=_("Candidate Contact")
@@ -582,7 +580,7 @@ class TagRel(core_models.UUIDModel):
     )
 
     verified_by = models.ForeignKey(
-        core_models.CompanyContact,
+        'core.CompanyContact',
         on_delete=models.PROTECT,
         related_name="verified_tag_rels",
         verbose_name=_("Verified By"),
@@ -640,7 +638,7 @@ class SkillRel(core_models.UUIDModel):
     )
 
     skill = models.ForeignKey(
-        skill_models.Skill,
+        'skills.Skill',
         related_name="candidate_skills",
         verbose_name=_("Skill")
     )
@@ -651,7 +649,7 @@ class SkillRel(core_models.UUIDModel):
     )
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         on_delete=models.CASCADE,
         related_name="candidate_skills"
     )
@@ -699,19 +697,19 @@ class SkillRel(core_models.UUIDModel):
 
 class SkillRateCoefficientRel(core_models.UUIDModel):
     skill_rel = models.ForeignKey(
-        SkillRel,
+        'candidate.SkillRel',
         related_name="candidate_skill_coefficient_rels",
         verbose_name=_("Candidate skill")
     )
 
     rate_coefficient = models.ForeignKey(
-        pricing_models.RateCoefficient,
+        'pricing.RateCoefficient',
         related_name="candidate_skill_coefficient_rels",
         verbose_name=_("Rate coefficient")
     )
 
     rate_coefficient_modifier = models.ForeignKey(
-        pricing_models.RateCoefficientModifier,
+        'pricing.RateCoefficientModifier',
         related_name="candidate_skill_coefficient_rels",
         verbose_name=_("Rate coefficient modifier")
     )
@@ -722,31 +720,28 @@ class SkillRateCoefficientRel(core_models.UUIDModel):
         unique_together = ("skill_rel", "rate_coefficient", "rate_coefficient_modifier")
 
 
-class InterviewSchedule(core_models.UUIDModel):
+class InterviewSchedule(core_models.TimeZoneUUIDModel):
+    CATEGORY_CHOICES = Choices(
+        ('first_phone_interview', _('First Phone Interview')),
+        ('second_phone_interview', _('Second Phone Interview')),
+        ('live_interview', _('Live interview')),
+    )
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         on_delete=models.PROTECT,
         related_name="interview_schedules",
         verbose_name=_("Candidate Contact")
     )
 
     company_contact = models.ForeignKey(
-        core_models.CompanyContact,
+        'core.CompanyContact',
         related_name="interview_schedules",
         on_delete=models.PROTECT,
         verbose_name=_("Company Contact")
     )
 
-    target_date_and_time = models.DateTimeField(
-        verbose_name=_("Target date")
-    )
-
-    CATEGORY_CHOICES = Choices(
-        ('first_phone_interview', _('First Phone Interview')),
-        ('second_phone_interview', _('Second Phone Interview')),
-        ('live_interview', _('Live interview')),
-    )
+    target_date_and_time = ref.DTField(verbose_name=_("Target date"))
 
     category = models.CharField(
         max_length=15,
@@ -756,10 +751,19 @@ class InterviewSchedule(core_models.UUIDModel):
         blank=True
     )
 
-    accepted = models.BooleanField(
-        default=False,
-        verbose_name=_("Accepted")
-    )
+    accepted = models.BooleanField(default=False, verbose_name=_("Accepted"))
+
+    @property
+    def geo(self):
+        raise NotImplementedError
+
+    @property
+    def target_date_and_time_tz(self):
+        return self.utc2local(self.target_date_and_time)
+
+    @property
+    def target_date_and_time_utc(self):
+        return self.target_date_and_time
 
     def __str__(self):
         return "{}: {}".format(self.candidate_contact,
@@ -769,21 +773,21 @@ class InterviewSchedule(core_models.UUIDModel):
 class CandidateRel(core_models.UUIDModel):
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         on_delete=models.CASCADE,
         related_name="candidate_rels",
         verbose_name=_("Candidate Contact")
     )
 
     master_company = models.ForeignKey(
-        core_models.Company,
+        'core.Company',
         on_delete=models.CASCADE,
         related_name="candidate_rels",
         verbose_name=_("Master Company")
     )
 
     company_contact = models.ForeignKey(
-        core_models.CompanyContact,
+        'core.CompanyContact',
         related_name="candidate_rels",
         on_delete=models.CASCADE,
         verbose_name=_("Company Contact"),
@@ -809,73 +813,101 @@ class CandidateRel(core_models.UUIDModel):
         return "{}: {}".format(self.master_company, self.candidate_contact)
 
 
-class AcceptanceTestRel(core_models.UUIDModel):
+class AcceptanceTestRel(core_models.TimeZoneUUIDModel):
 
     acceptance_test = models.ForeignKey(
-        acceptance_test_models.AcceptanceTest,
+        'acceptance_tests.AcceptanceTest',
         on_delete=models.CASCADE,
         related_name='candidate_acceptance_tests',
         verbose_name=_("Acceptance Test")
     )
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         on_delete=models.CASCADE,
         related_name='candidate_acceptance_tests',
         verbose_name=_("Candidate Contact")
     )
 
-    test_started_at = models.DateTimeField(
-        verbose_name=_("Test Started at"),
-        auto_now_add=True
-    )
-
-    test_finished_at = models.DateTimeField(
-        verbose_name=_("Test Finished at"),
-        auto_now=True
-    )
+    test_started_at = ref.DTField(verbose_name=_("Test Started at"))
+    test_finished_at = ref.DTField(verbose_name=_("Test Finished at"))
 
     class Meta:
         verbose_name = _("Acceptance Test Relation")
         verbose_name_plural = _("Acceptance Test Relations")
+
+    @property
+    def geo(self):
+        raise NotImplementedError
+
+    @property
+    def test_started_at_tz(self):
+        return self.utc2local(self.test_started_at)
+
+    @property
+    def test_started_at_utc(self):
+        return self.test_started_at
+
+    @property
+    def test_finished_at_tz(self):
+        return self.utc2local(self.test_finished_at)
+
+    @property
+    def test_finished_at_utc(self):
+        return self.test_finished_at
 
     def __str__(self):
         return '{} {}'.format(
             str(self.candidate_contact), str(self.acceptance_test)
         )
 
+    def save(self, *args, **kwargs):
+        if not self.test_started_at:
+            self.test_started_at = self.now_utc
+        self.test_finished_at = self.now_utc
+        super().save(*args, **kwargs)
 
-class AcceptanceTestQuestionRel(core_models.UUIDModel):
+
+class AcceptanceTestQuestionRel(core_models.TimeZoneUUIDModel):
 
     candidate_acceptance_test = models.ForeignKey(
-        AcceptanceTestRel,
+        'candidate.AcceptanceTestRel',
         on_delete=models.CASCADE,
         related_name='acceptance_test_question_rels',
         verbose_name=_("Acceptance Test Relation")
     )
 
     acceptance_test_question = models.ForeignKey(
-        acceptance_test_models.AcceptanceTestQuestion,
+        'acceptance_tests.AcceptanceTestQuestion',
         on_delete=models.PROTECT,
         related_name='acceptance_test_question_rels',
         verbose_name=_("Acceptance Test Question")
     )
 
     acceptance_test_answer = models.ForeignKey(
-        acceptance_test_models.AcceptanceTestAnswer,
+        'acceptance_tests.AcceptanceTestAnswer',
         on_delete=models.PROTECT,
         related_name='acceptance_test_question_rels',
         verbose_name=_("Acceptance Test Answer")
     )
 
-    question_answered_at = models.DateTimeField(
-        verbose_name=_("Question Answered at"),
-        auto_now=True
-    )
+    question_answered_at = ref.DTField(verbose_name=_("Question Answered at"))
 
     class Meta:
         verbose_name = _("Acceptance Test Question Relation")
         verbose_name_plural = _("Acceptance Test Question Relations")
+
+    @property
+    def geo(self):
+        raise NotImplementedError
+
+    @property
+    def question_answered_at_tz(self):
+        return self.utc2local(self.question_answered_at)
+
+    @property
+    def question_answered_at_utc(self):
+        return self.question_answered_at
 
     def __str__(self):
         return '{}, {}: {}'.format(str(self.candidate_acceptance_test),
@@ -885,6 +917,10 @@ class AcceptanceTestQuestionRel(core_models.UUIDModel):
     def get_if_correct(self):
         return self.acceptance_test_answer in \
                self.acceptance_test_question.get_correct_answers()
+
+    def save(self, *args, **kwargs):
+        self.question_answered_at = self.now_utc
+        super().save(*args, **kwargs)
 
 
 class Subcontractor(core_models.UUIDModel):
@@ -914,7 +950,7 @@ class Subcontractor(core_models.UUIDModel):
     )
 
     primary_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         verbose_name=_('Candidate Contact'),
         on_delete=models.CASCADE
     )
@@ -931,10 +967,10 @@ class Subcontractor(core_models.UUIDModel):
 
     class Meta:
         verbose_name = _("Subcontractor")
-        verbose_name_plural = _("Subcontactors")
+        verbose_name_plural = _("Subcontractors")
 
     def __str__(self):
-        if (self.subcontractor_type == self.SUBCONTRACTOR_TYPE_CHOICES.sole_trader):
+        if self.subcontractor_type == self.SUBCONTRACTOR_TYPE_CHOICES.sole_trader:
             return str(self.primary_contact)
         return str(self.company)
 
@@ -942,13 +978,13 @@ class Subcontractor(core_models.UUIDModel):
 class SubcontractorCandidateRelation(core_models.UUIDModel):
 
     subcontractor = models.ForeignKey(
-        Subcontractor,
+        'candidate.Subcontractor',
         related_name='subcontractor_candidates',
         verbose_name=_('Subcontractor')
     )
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         related_name='subcontractor_candidates',
         verbose_name=_('Candidate Contact')
     )
