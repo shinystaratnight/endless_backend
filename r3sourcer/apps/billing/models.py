@@ -10,12 +10,12 @@ from model_utils import Choices
 
 from r3sourcer import ref
 from r3sourcer.apps.core import tasks
-from r3sourcer.apps.core.models import TimeZone
+from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
 
-class Subscription(TimeZone):
+class Subscription(CompanyTimeZoneMixin):
     SUBSCRIPTION_STATUSES = Choices(
         ('active', 'Active'),
         ('past_due', 'Past due'),
@@ -42,10 +42,6 @@ class Subscription(TimeZone):
     # stripe ids
     plan_id = models.CharField(max_length=255)
     subscription_id = models.CharField(max_length=255)
-
-    @property
-    def geo(self):
-        raise NotImplementedError
 
     @property
     def created_tz(self):
@@ -154,7 +150,7 @@ class SMSBalance(models.Model):
         super().save(*args, **kwargs)
 
 
-class Payment(TimeZone):
+class Payment(CompanyTimeZoneMixin):
     PAYMENT_TYPES = Choices(
         ('sms', 'SMS'),
         ('extra_workers', 'Extra Workers'),
@@ -177,10 +173,6 @@ class Payment(TimeZone):
         return '{} Payment at {}'.format(self.company, date_format(self.created, settings.DATETIME_MYOB_FORMAT))
 
     @property
-    def geo(self):
-        raise NotImplementedError
-
-    @property
     def created_tz(self):
         return self.utc2local(self.created)
 
@@ -194,7 +186,7 @@ class Payment(TimeZone):
         super().save(*args, **kwargs)
 
 
-class Discount(TimeZone):
+class Discount(CompanyTimeZoneMixin):
     DURATIONS = Choices(
         ('forever', 'Forever'),
         ('once', 'Once'),
@@ -215,10 +207,6 @@ class Discount(TimeZone):
     duration = models.CharField(max_length=255, choices=DURATIONS)
     duration_in_months = models.IntegerField(blank=True, null=True)
     created = ref.DTField()
-
-    @property
-    def geo(self):
-        raise NotImplementedError
 
     @property
     def created_tz(self):
@@ -278,7 +266,7 @@ class Discount(TimeZone):
             subscription = stripe.Subscription.retrieve(subscription.subscription_id)
             subscription.coupon = coupon.id
             subscription.save()
-        super(Discount, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class SubscriptionType(models.Model):
@@ -309,7 +297,7 @@ class SubscriptionType(models.Model):
     def save(self, *args, **kwargs):
         from r3sourcer.apps.billing.tasks import charge_for_new_amount
         charge_for_new_amount.delay()
-        super(SubscriptionType, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
 class StripeCountryAccount(models.Model):

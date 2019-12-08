@@ -977,6 +977,9 @@ class Company(CategoryFolderMixin,
               TimeZoneUUIDModel,
               MasterCompanyLookupMixin):
 
+    def get_myob_name(self):
+        raise NotImplementedError
+
     name = models.CharField(max_length=127, verbose_name=_("Company Name"), unique=True)
 
     short_name = models.CharField(
