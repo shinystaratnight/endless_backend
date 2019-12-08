@@ -1,7 +1,5 @@
 import calendar
-from datetime import datetime
 
-import pytz
 from celery import schedules
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -12,6 +10,7 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils.choices import Choices
 from redbeat import RedBeatSchedulerEntry
 
+from r3sourcer import ref
 from r3sourcer.apps.activity.exceptions import PeriodNameError
 from r3sourcer.apps.activity.fields import FactoryLookupField
 from r3sourcer.apps.core.models import TemplateMessage, UUIDModel, TimeZoneUUIDModel
@@ -66,8 +65,8 @@ class Activity(TimeZoneUUIDModel):
         verbose_name=_("Contact")
     )
 
-    starts_at = models.DateTimeField(_("Starts at"))
-    ends_at = models.DateTimeField(_("Ends at"))
+    starts_at = ref.DTField(_("Starts at"))
+    ends_at = ref.DTField(_("Ends at"))
 
     done = models.NullBooleanField(
         _("Done"),
@@ -142,7 +141,6 @@ class Activity(TimeZoneUUIDModel):
         raise NotImplementedError
 
     def get_overdue(self):
-        # TODO: Fix timezone
         return self.ends_at < self.now_utc and not self.done
 
     def save(self, *args, **kwargs):
@@ -161,7 +159,7 @@ class ActivityDate(TimeZoneUUIDModel):
 
     DEFAULT_STATUS_CHOICES = STATUS_CHOICES.WAITING
 
-    occur_at = models.DateTimeField(_("Occur at"))
+    occur_at = ref.DTField(_("Occur at"))
 
     activity_repeat = models.ForeignKey(
         'activity.ActivityRepeat',
@@ -279,7 +277,7 @@ class ActivityRepeat(TimeZoneUUIDModel):
         verbose_name=_("Activity")
     )
 
-    started_at = models.DateTimeField(_("Started at"))
+    started_at = ref.DTField(_("Started at"))
 
     base_type = models.CharField(
         _("Schedule type"),

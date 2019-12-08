@@ -1,43 +1,75 @@
 import datetime
+from decimal import Decimal
 
 import stripe
-
-from decimal import Decimal
 from django.conf import settings
 from django.db import models
-from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import Company, Country
+from r3sourcer import ref
 from r3sourcer.apps.core import tasks
-
+from r3sourcer.apps.core.models import TimeZone
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
 
-class Subscription(models.Model):
+class Subscription(TimeZone):
     SUBSCRIPTION_STATUSES = Choices(
         ('active', 'Active'),
         ('past_due', 'Past due'),
         ('canceled', 'Canceled'),
         ('unpaid', 'Unpaid'),
     )
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='subscriptions')
+    company = models.ForeignKey(
+        'core.Company',
+        on_delete=models.CASCADE,
+        related_name='subscriptions')
     name = models.CharField(max_length=255)
-    subscription_type = models.ForeignKey('billing.SubscriptionType', on_delete=models.DO_NOTHING, related_name='subscriptions')
+    subscription_type = models.ForeignKey(
+        'billing.SubscriptionType',
+        on_delete=models.DO_NOTHING,
+        related_name='subscriptions')
     price = models.PositiveIntegerField()
     worker_count = models.PositiveIntegerField()
-    created = models.DateTimeField(auto_now_add=True)
+    created = ref.DTField()
     active = models.BooleanField(default=True)
     status = models.CharField(max_length=255, choices=SUBSCRIPTION_STATUSES)
-    current_period_start = models.DateTimeField(blank=True, null=True)
-    current_period_end = models.DateTimeField(blank=True, null=True)
+    current_period_start = ref.DTField(blank=True, null=True)
+    current_period_end = ref.DTField(blank=True, null=True)
 
     # stripe ids
     plan_id = models.CharField(max_length=255)
     subscription_id = models.CharField(max_length=255)
+
+    @property
+    def geo(self):
+        raise NotImplementedError
+
+    @property
+    def created_tz(self):
+        return self.utc2local(self.created)
+
+    @property
+    def created_utc(self):
+        return self.created
+
+    @property
+    def current_period_start_tz(self):
+        return self.utc2local(self.current_period_start)
+
+    @property
+    def current_period_start_utc(self):
+        return self.current_period_start
+
+    @property
+    def current_period_end_tz(self):
+        return self.utc2local(self.current_period_end)
+
+    @property
+    def current_period_end_utc(self):
+        return self.current_period_end
 
     def __str__(self):
         return "{} with {} workers. Status: {}".format(self.company.name, self.worker_count, self.status)
@@ -50,8 +82,7 @@ class Subscription(models.Model):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
         self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
-        # TODO: Fix timezone
-        if self.current_period_end <= timezone.now().replace(tzinfo=None) and self.company.get_user():
+        if self.current_period_end <= self.now_utc and self.company.get_user():
             self.deactivate(user_id=(str(self.company.get_user().id)))
 
     def deactivate(self, user_id=None):
@@ -72,11 +103,15 @@ class Subscription(models.Model):
         return self.company.sms_balance.balance
 
     def save(self, *args, **kwargs):
-        super(Subscription, self).save(*args, **kwargs)
+        if not self.created:
+            self.created = self.now_utc
+        super().save(*args, **kwargs)
 
         if self.active:
-            subscriptions = Subscription.objects.filter(company=self.company, active=True) \
-                                                .exclude(id=self.id)
+            subscriptions = Subscription.objects.filter(
+                company=self.company,
+                active=True,
+            ).exclude(id=self.id)
 
             for subscription in subscriptions:
                 subscription.deactivate()
@@ -105,7 +140,7 @@ class SMSBalance(models.Model):
     def save(self, *args, **kwargs):
         from r3sourcer.apps.billing.tasks import charge_for_sms
 
-        if self.balance <= self.top_up_limit and self.auto_charge == True:
+        if self.balance <= self.top_up_limit and self.auto_charge is True:
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
 
         if Decimal(self.balance) - self.segment_cost < 0:
@@ -116,10 +151,10 @@ class SMSBalance(models.Model):
             self.company.sms_enabled = True
             self.company.save()
 
-        super(SMSBalance, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
 
-class Payment(models.Model):
+class Payment(TimeZone):
     PAYMENT_TYPES = Choices(
         ('sms', 'SMS'),
         ('extra_workers', 'Extra Workers'),
@@ -130,9 +165,9 @@ class Payment(models.Model):
         ('paid', 'Paid'),
         ('not_paid', 'Not paid')
     )
-    company = models.ForeignKey(Company)
+    company = models.ForeignKey('core.Company')
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
-    created = models.DateTimeField(auto_now_add=True)
+    created = ref.DTField()
     amount = models.IntegerField()
     status = models.CharField(max_length=255, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES.not_paid)
     stripe_id = models.CharField(max_length=255)
@@ -141,8 +176,25 @@ class Payment(models.Model):
     def __str__(self):
         return '{} Payment at {}'.format(self.company, date_format(self.created, settings.DATETIME_MYOB_FORMAT))
 
+    @property
+    def geo(self):
+        raise NotImplementedError
 
-class Discount(models.Model):
+    @property
+    def created_tz(self):
+        return self.utc2local(self.created)
+
+    @property
+    def created_utc(self):
+        return self.created
+
+    def save(self, *args, **kwargs):
+        if not self.created:
+            self.created = self.now_utc
+        super().save(*args, **kwargs)
+
+
+class Discount(TimeZone):
     DURATIONS = Choices(
         ('forever', 'Forever'),
         ('once', 'Once'),
@@ -153,14 +205,28 @@ class Discount(models.Model):
         ('extra_workers', 'Extra Workers'),
         ('subscription', 'Subscription')
     )
-    company = models.ForeignKey(Company, related_name='discounts')
+    company = models.ForeignKey(
+        'core.Company',
+        related_name='discounts')
     payment_type = models.CharField(max_length=255, choices=PAYMENT_TYPES, blank=True, null=True)
     percent_off = models.IntegerField(blank=True, null=True)
     amount_off = models.IntegerField(blank=True, null=True)
     active = models.BooleanField(default=True)
     duration = models.CharField(max_length=255, choices=DURATIONS)
     duration_in_months = models.IntegerField(blank=True, null=True)
-    created = models.DateTimeField(auto_now_add=True)
+    created = ref.DTField()
+
+    @property
+    def geo(self):
+        raise NotImplementedError
+
+    @property
+    def created_tz(self):
+        return self.utc2local(self.created)
+
+    @property
+    def created_utc(self):
+        return self.created
 
     def apply_discount(self, original_amount):
         if self.percent_off:
@@ -183,6 +249,9 @@ class Discount(models.Model):
         return discounted_value
 
     def save(self, *args, **kwargs):
+        if not self.created:
+            self.created = self.now_utc
+
         if not self.id and self.payment_type == 'subscription':
             subscription = Subscription.objects.get(company=self.company, active=True)
 
@@ -245,7 +314,7 @@ class SubscriptionType(models.Model):
 
 class StripeCountryAccount(models.Model):
     country = models.ForeignKey(
-        Country,
+        'core.Country',
         to_field='code2',
         null=True,
         blank=True,
