@@ -7,7 +7,6 @@ from datetime import timedelta
 
 from django.contrib.sites.models import Site
 from django.core.files.base import ContentFile
-from django.utils import timezone
 from imghdr import what
 from rest_framework import serializers
 
@@ -39,14 +38,6 @@ class ApiBaseRelatedField(serializers.RelatedField):
     @classmethod
     def to_read_only_data(cls, value):
         return cls(read_only=True).to_representation(value)
-
-
-class ApiDateTimeTzField(serializers.DateTimeField):
-
-    def to_representation(self, value):
-        if timezone.is_aware(value):
-            value = timezone.localtime(value)
-        return super().to_representation(value)
 
 
 class ApiBase64FileField(serializers.FileField):

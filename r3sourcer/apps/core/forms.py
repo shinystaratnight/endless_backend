@@ -3,7 +3,6 @@ from django.contrib.admin.forms import AdminAuthenticationForm
 from django.contrib.auth import authenticate
 from django.contrib.auth.models import Group
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from easy_select2 import Select2
 from phonenumber_field.formfields import PhoneNumberField
@@ -11,6 +10,7 @@ from phonenumber_field.formfields import PhoneNumberField
 from r3sourcer.apps.core.utils.utils import is_valid_email, \
     is_valid_phone_number
 from . import models
+from ...helpers.datetimes import utc_now
 
 
 class CoreAdminAuthenticationForm(AdminAuthenticationForm):
@@ -67,8 +67,7 @@ def get_year_choices():
     """
     Return year choices
     """
-    # TODO: Fix timezone
-    year = timezone.now().year
+    year = utc_now().year
     year_from = year - 1
     year_to = year + 10
     return [(i, i) for i in range(year_from, year_to)]

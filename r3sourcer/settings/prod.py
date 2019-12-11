@@ -125,8 +125,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'crum.CurrentRequestUserMiddleware',
-    # Maybe it is a error point, (24.10.2019 Dmitry F)
-    # 'r3sourcer.apps.core.timezone_middleware.TimezoneMiddleware'
 ]
 
 ROOT_URLCONF = 'r3sourcer.urls'

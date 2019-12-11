@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, time
 from django.conf import settings
 from django.db import models
 from django.utils.formats import time_format
-from django.utils.timezone import localtime, make_naive
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.models import UUIDModel
@@ -111,7 +110,7 @@ class WeekdayWorkRule(WorkRuleMixin, UUIDModel):
     def calc_hours(self, start_datetime, worked_hours, break_started=None,
                    break_ended=None):
         weekday = WEEKDAY_MAP[
-            localtime(start_datetime).weekday()
+            start_datetime.weekday()
         ]
 
         if not getattr(self, 'weekday_' + weekday):
@@ -207,26 +206,21 @@ class TimeOfDayWorkRule(WorkRuleMixin, UUIDModel):
         worked_delta = timedelta()
 
         # calc started_at and ended_at for time sheet
-        start = make_naive(start_datetime)
-        start_date = start.date()
-        ended = start + worked_hours + break_delta
+        start_date = start_datetime.date()
+        ended = start_datetime + worked_hours + break_delta
 
         # get rate start time
         rate_start = datetime.combine(start_date, self.time_start)
 
         # calc rate started_at and ended_at
         if self.time_end < self.time_start:
-            rate_end = datetime.combine(
-                start_date + timedelta(days=1), self.time_end)
+            rate_end = datetime.combine(start_date + timedelta(days=1), self.time_end)
         else:
             rate_end = datetime.combine(start_date, self.time_end)
 
         # calc break timedelta
         break_delta = timedelta()
         if break_started and break_ended:
-            break_started = make_naive(break_started)
-            break_ended = make_naive(break_ended)
-
             # if break started in rate time range
             if rate_start <= break_started <= rate_end:
                 # if break ended in rate time range
@@ -241,12 +235,12 @@ class TimeOfDayWorkRule(WorkRuleMixin, UUIDModel):
                     break_delta = rate_end - rate_start
 
         # if started at in rate time range
-        if rate_start <= start <= rate_end:
+        if rate_start <= start_datetime <= rate_end:
             if ended <= rate_end:
-                worked_delta = ended - start
+                worked_delta = ended - start_datetime
             else:
-                worked_delta = rate_end - start
-        elif start < rate_start:
+                worked_delta = rate_end - start_datetime
+        elif start_datetime < rate_start:
             if rate_start <= ended <= rate_end:
                 worked_delta = ended - rate_start
             elif ended > rate_end:

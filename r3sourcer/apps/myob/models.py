@@ -1,12 +1,12 @@
 import datetime
 
 from django.db import models
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import UUIDModel, Company, User
 from r3sourcer.apps.core.managers import AbstractObjectOwnerManager
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class MYOBWatchdogModel(models.Model):
@@ -207,10 +207,9 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
 class MYOBCompanyFileTokenManager(AbstractObjectOwnerManager):
 
     def enabled(self, date=None):
-        # TODO: Fix timezone
-        date = date or timezone.localtime(timezone.now()).date()
+        date = date or utc_now().date()
         if isinstance(date, datetime.datetime):
-            date = timezone.localtime(date).date()
+            date = date.date()
 
         return self.get_queryset().filter(
             (models.Q(enable_from__isnull=True) | models.Q(enable_from__lte=date)) &
@@ -226,7 +225,10 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
     auth_data = models.ForeignKey(
         'myob.MYOBAuthData',
         related_name='company_file_token')
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, related_name='company_file_tokens')
+    company = models.ForeignKey(
+        'core.Company',
+        on_delete=models.CASCADE,
+        related_name='company_file_tokens')
     cf_token = models.CharField(
         verbose_name=_(u"Company File Token"),
         max_length=32,
@@ -270,11 +272,11 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
 
         return obj, created
 
-    def is_enabled(self, date=None):
-        # TODO: Fix timezone
-        date = date or timezone.now()
-        if isinstance(date, datetime.datetime):
-            date = timezone.localtime(date).date()
+    def is_enabled(self, dt=None):
+        if dt is None:
+            dt = utc_now()
+
+        date = dt.date()
 
         return (not self.enable_from or self.enable_from <= date) and \
             (not self.enable_until or self.enable_until >= date)

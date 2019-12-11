@@ -1,3 +1,4 @@
+from datetime import timedelta
 from urllib import parse as urllib_parse
 
 from django.contrib import admin
@@ -7,11 +8,11 @@ from django.contrib.admin.filters import (
 from django.contrib.admin.utils import get_model_from_relation
 
 from django.db.models import DateTimeField
-from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 
 from .forms import DateCondRangeForm
+from ...helpers.datetimes import utc_now
 
 
 class DateRangesMixin(object):
@@ -33,17 +34,16 @@ class DateRangesMixin(object):
         return urllib_parse.urlencode(extra_dict)
 
     def get_data_ranges_initial(self):
-        # TODO: Fix timezone
-        today = timezone.localtime(timezone.now()).date()
-        monday = (today - timezone.timedelta(days=today.weekday()))
-        sunday = (today + timezone.timedelta(days=(6 - today.weekday())))
-        last_monday = monday - timezone.timedelta(days=7)
-        last_sunday = sunday - timezone.timedelta(days=7)
-        next_monday = monday + timezone.timedelta(days=7)
-        next_sunday = sunday + timezone.timedelta(days=7)
+        today = utc_now().date()
+        monday = (today - timedelta(days=today.weekday()))
+        sunday = (today + timedelta(days=(6 - today.weekday())))
+        last_monday = monday - timedelta(days=7)
+        last_sunday = sunday - timedelta(days=7)
+        next_monday = monday + timedelta(days=7)
+        next_sunday = sunday + timedelta(days=7)
 
-        yesterday_str = date_format(today - timezone.timedelta(days=1))
-        tomorrow_str = date_format(today + timezone.timedelta(days=1))
+        yesterday_str = date_format(today - timedelta(days=1))
+        tomorrow_str = date_format(today + timedelta(days=1))
         today_str = date_format(today)
         last_monday_str = date_format(last_monday)
         last_sunday_str = date_format(last_sunday)

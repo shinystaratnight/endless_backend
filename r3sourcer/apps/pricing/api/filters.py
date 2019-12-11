@@ -1,9 +1,9 @@
 from django.db.models import Q
-from django.utils import timezone
 from django_filters import UUIDFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.pricing import models
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class PriceListRateFilter(FilterSet):
@@ -36,15 +36,12 @@ class IndustryFilter(FilterSet):
         fields = ['company']
 
     def filter_by_company_price_lists(self, queryset, name, value):
-        # TODO: Fix timezone
-        now = timezone.now()
-
         return queryset.filter(
             Q(skillname__skills__company_id=value) |
             Q(skillname__skills__price_list_rates__price_list__company_id=value,
               skillname__skills__price_list_rates__price_list__effective=True,
-              skillname__skills__price_list_rates__price_list__valid_from__lte=now,
-              skillname__skills__price_list_rates__price_list__valid_until__gte=now)
+              skillname__skills__price_list_rates__price_list__valid_from__lte=utc_now(),
+              skillname__skills__price_list_rates__price_list__valid_until__gte=utc_now())
         ).distinct()
 
 

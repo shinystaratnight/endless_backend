@@ -1,12 +1,11 @@
 import datetime
 import logging
 
-import pytz
-
 from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.myob.mappers import JobsiteMapper
 from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.helpers.datetimes import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -178,7 +177,7 @@ class SalespersonMixin:
                     portfolio_manager.legacy_myob_card_number = salesperson['DisplayID']
                     portfolio_manager.save(update_fields=['legacy_myob_card_number'])
             else:
-                now = datetime.datetime.now(pytz.utc)
+                now = utc_now()
                 activity_values = {
                     'contact': contact,
                     'starts_at': now,

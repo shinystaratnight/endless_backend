@@ -11,6 +11,7 @@ from model_utils import Choices
 from r3sourcer import ref
 from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
+from r3sourcer.helpers.datetimes import utc_now
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
@@ -229,8 +230,7 @@ class Discount(CompanyTimeZoneMixin):
         if self.duration == self.DURATIONS.repeating and self.duration_in_months:
             duration_in_days = 30 * self.duration_in_months
 
-            # TODO: Fix timezone
-            if self.created + datetime.timedelta(days=duration_in_days) < datetime.datetime.now():
+            if self.created + datetime.timedelta(days=duration_in_days) < utc_now():
                 self.active = False
                 self.save()
 

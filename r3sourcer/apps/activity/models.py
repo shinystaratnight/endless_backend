@@ -1,10 +1,10 @@
 import calendar
+from datetime import timedelta
 
 from celery import schedules
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils.choices import Choices
@@ -396,7 +396,7 @@ class ActivityRepeat(TimeZoneUUIDModel):
             entry = RedBeatSchedulerEntry(
                 self.TASK_KEY.format(self.TASK_NAME),
                 self.TASK_NAME,
-                schedules.schedule(timezone.timedelta(**{period: value})),
+                schedules.schedule(timedelta(**{period: value})),
                 app=celery_app
             )
             self.tas_key = entry.key
@@ -430,9 +430,8 @@ class ActivityRepeat(TimeZoneUUIDModel):
         if self.base_type in [self.PERIODIC_TYPE.secondly,
                               self.PERIODIC_TYPE.minutely]:
             # return IntervalSchedule(**f_dict)
-            return schedules.schedule(
-                timezone.timedelta(minutes=f_dict['every'])
-            )
+            return schedules.schedule(timedelta(minutes=f_dict['every']))
+
         return schedules.crontab(**f_dict)
 
     def deactivate(self):
