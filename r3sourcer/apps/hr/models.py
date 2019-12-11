@@ -1255,7 +1255,7 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
 
     def __str__(self):
         fields = [self.shift_started_at_tz, self.candidate_submitted_at_tz, self.supervisor_approved_at_tz]
-        return ' '.join(fields)
+        return ' '.join([str(x) for x in fields])
 
     @property
     def geo(self):
