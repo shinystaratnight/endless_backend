@@ -1433,8 +1433,7 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
             raise ValueError('Invalid eta, datetime without timezone')
 
         if going_eta.tzinfo != pytz.utc:
-            raise ValueError(f'Invalid timezone, '
-                             f'need UTC but provided {going_eta.tzinfo}')
+            raise ValueError('Invalid timezone, need UTC but provided %s' % {going_eta.tzinfo})
 
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
         for task in chain.from_iterable(app.control.inspect().scheduled().values()):
