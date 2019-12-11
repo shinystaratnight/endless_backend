@@ -1504,10 +1504,10 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
     @property
     def _datetime_fields(self):
         return (
-            ('shift_started_at', self.shift_started_at, self.today_7_am()),
-            ('break_started_at', self.break_started_at, self.today_12_pm()),
-            ('break_ended_at', self.break_ended_at, self.today_12_30_pm()),
-            ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm()),
+            ('shift_started_at', self.shift_started_at, self.today_7_am),
+            ('break_started_at', self.break_started_at, self.today_12_pm),
+            ('break_ended_at', self.break_ended_at, self.today_12_30_pm),
+            ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
             ('candidate_submitted_at', self.candidate_submitted_at, None),
             ('supervisor_approved_at', self.supervisor_approved_at, None),
             ('supervisor_modified_at', self.supervisor_modified_at, None),
