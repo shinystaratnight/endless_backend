@@ -1,9 +1,7 @@
 import stripe
-
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework import exceptions, status, permissions
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -14,9 +12,9 @@ from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
 from r3sourcer.apps.core.models import User, Company
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
-from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
 from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
-
+from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
+from r3sourcer.helpers.datetimes import utc_now
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
@@ -444,8 +442,7 @@ class RefreshCompanyFilesView(APIView):
         }
 
         myob_settings = request.user.company.myob_settings
-        # TODO: Fix timezone
-        myob_settings.company_files_last_refreshed = timezone.now()
+        myob_settings.company_files_last_refreshed = utc_now()
         myob_settings.save()
         return Response(data)
 
@@ -536,8 +533,7 @@ class RefreshMYOBAccountsView(APIView):
             data = serializers.MYOBAccountSerializer(myob_accounts, many=True).data
 
         myob_settings = request.user.company.myob_settings
-        # TODO: Fix timezone
-        myob_settings.payroll_accounts_last_refreshed = timezone.now()
+        myob_settings.payroll_accounts_last_refreshed = utc_now()
         myob_settings.save()
 
         return Response(data)

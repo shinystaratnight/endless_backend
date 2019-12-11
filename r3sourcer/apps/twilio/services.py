@@ -1,11 +1,10 @@
 import logging
 
-from django.utils import timezone
-
 from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
 from r3sourcer.apps.sms_interface.exceptions import AccountHasNotPhoneNumbers
 from r3sourcer.apps.sms_interface.services import BaseSMSService
 from r3sourcer.apps.twilio import models
+from r3sourcer.helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +36,7 @@ class TwilioSMSService(BaseSMSService):
             """ Update current credential (numbers, accounts, messages) """
 
             phone_numbers = []
-            # TODO: Fix timezone
-            last_sync = timezone.now()
+            last_sync = utc_now()
             for n in c.client.api.incoming_phone_numbers.stream():
                 phone_numbers.append(models.TwilioPhoneNumber.fetch_remote(n, c.company))
 
@@ -50,8 +48,7 @@ class TwilioSMSService(BaseSMSService):
                     'date_sent_after': account.get_last_sync()
                 }  # get all messages sent_at after `self.get_last_sync()`
 
-                # TODO: Fix timezone
-                acc_last_sync = timezone.localtime(timezone.now()).date()
+                acc_last_sync = utc_now().date()
                 logger.info("Sync params: {}".format(params))
 
                 for sms_message in remote_account.messages.stream(**params):

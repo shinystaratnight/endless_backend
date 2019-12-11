@@ -6,7 +6,6 @@ from datetime import datetime
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
 from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
@@ -20,7 +19,6 @@ from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSe
 from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.models.core import Company, Contact, VAT
-from r3sourcer.apps.core.tasks import cancel_subscription_access
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.celeryapp import app
 
@@ -72,7 +70,7 @@ class SubscriptionCreateView(APIView):
         current_period_end = None
 
         if isinstance(subscription.current_period_start, int):
-            # TODO change it to fromtimestamp if necessery 
+            # TODO change it to fromtimestamp if necessery
             current_period_start = datetime.utcfromtimestamp(subscription.current_period_start)
             current_period_end = datetime.utcfromtimestamp(subscription.current_period_end)
 

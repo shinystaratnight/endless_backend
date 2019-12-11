@@ -1,12 +1,11 @@
-import datetime
+from datetime import timedelta
 
 from django.core.cache import cache
-from django.utils import timezone
 
-from r3sourcer.apps.activity import models as activity_models
+from r3sourcer.apps.activity.models import Activity
 
 
-class RelatedActivitiesColumnMixin():
+class RelatedActivitiesColumnMixin:
 
     def get_method_fields(self):
         method_fields = list(super().get_method_fields())
@@ -19,10 +18,9 @@ class RelatedActivitiesColumnMixin():
         cached_key = 'related_activities:{id}'.format(id=obj.id)
         cached_data = cache.get(cached_key, None)
         if not isinstance(cached_data, tuple) or len(cached_data) != 3:
-            # TODO: Fix timezone
-            now = timezone.now()
-            activities = activity_models.Activity.objects.filter(
-                entity_object_id=obj.id, entity_object_name=obj.__class__.__name__
+            activities = Activity.objects.filter(
+                entity_object_id=obj.id,
+                entity_object_name=obj.__class__.__name__
             )
 
             # TODO: uncomment this after add SMS Activity
@@ -31,19 +29,24 @@ class RelatedActivitiesColumnMixin():
             #         models.Q(sms_activities__from_contact_id=obj.contact.id) |
             #         models.Q(sms_activities__to_contact_id=obj.contact.id)
             #     )
-            # TODO: Fix timezone
-            yesterday = timezone.now() - datetime.timedelta(days=1)
-            # TODO: Fix timezone
-            tomorrow = timezone.now() + datetime.timedelta(days=1)
+            yesterday = obj.now_tz - timedelta(days=1)
+            tomorrow = obj.now_tz + timedelta(days=1)
             yesterday = yesterday.replace(second=0, minute=0, hour=0)
             tomorrow = tomorrow.replace(second=59, minute=59, hour=23)
 
             total = activities.count()
-            actual = activities.filter(ends_at__gte=yesterday, ends_at__lte=tomorrow).exclude(
-                done=activity_models.Activity.STATUS_CHOICES.DONE
+
+            actual = activities.filter(
+                ends_at__gte=yesterday,
+                ends_at__lte=tomorrow,
+            ).exclude(
+                done=Activity.STATUS_CHOICES.DONE
             ).count()
-            overdue = activities.filter(ends_at__lte=now).exclude(
-                done=activity_models.Activity.STATUS_CHOICES.DONE
+
+            overdue = activities.filter(
+                ends_at__lte=obj.now_tz,
+            ).exclude(
+                done=Activity.STATUS_CHOICES.DONE,
             ).count()
             cache.set(cached_key, (total, actual, overdue), timeout=60 * 20)
         else:

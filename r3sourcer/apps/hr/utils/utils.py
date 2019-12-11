@@ -1,24 +1,21 @@
 import logging
-import pytz
-from itertools import chain
-
-from datetime import datetime, date, time, timedelta
 from collections import defaultdict
+from datetime import timedelta
 from functools import reduce
+from itertools import chain
 from urllib.parse import urlparse
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
-from django.utils import timezone, formats
 from django.template.defaulttags import register
 from django.templatetags.static import static
+from django.utils import formats
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import InvoiceRule, Invoice
 from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
-from r3sourcer.apps.core.utils.utils import tz_time2utc_time, geo_time_zone
 from r3sourcer.celeryapp import app
-
+from r3sourcer.helpers.datetimes import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -31,42 +28,6 @@ WEEKDAY_MAP = {
     5: 'saturday',
     6: 'sunday',
 }
-
-
-def today_7_am():
-    return datetime.utcnow().replace(hour=7, minute=0, second=0, microsecond=0)
-
-
-def today_12_pm():
-    return datetime.utcnow().replace(hour=12, minute=0, second=0, microsecond=0)
-
-
-def today_12_30_pm():
-    return datetime.utcnow().replace(hour=12, minute=30, second=0, microsecond=0)
-
-
-def today_3_30_pm():
-    return datetime.utcnow().replace(hour=15, minute=30, second=0, microsecond=0)
-
-
-def tomorrow_7_am():
-    return today_7_am() + timedelta(days=1)
-
-
-def tomorrow():
-    return date.today() + timedelta(days=1)
-
-
-def today_5_am():
-    return timezone.make_aware(datetime.combine(date.today(), time(5, 0)))
-
-
-def tomorrow_5_am():
-    return today_5_am() + timedelta(days=1)
-
-
-def tomorrow_end_5_am():
-    return tomorrow_5_am() + timedelta(days=1)
 
 
 def _time_diff(start, end):
@@ -173,10 +134,10 @@ def get_invoice_dates(invoice_rule, timesheet=None):
 
     date_from = None
     date_to = None
-    today = date.today()
+    today = utc_now().date()
 
     if timesheet:
-        today = timezone.localtime(timesheet.shift_started_at).date()
+        today = timesheet.shift_started_at_tz.date()
 
     if invoice_rule.period == InvoiceRule.PERIOD_CHOICES.daily:
         date_from = today
@@ -256,10 +217,9 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
 def send_supervisor_timesheet_approve(timesheet, force=False, not_agree=False):
     from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
     if not_agree:
-        date_time = get_jobsite_localtime(job=timesheet.job_offer.job) + timedelta(hours=4)
-        utc_eta = tz_time2utc_time(date_time)
+        date_time = utc_now() + timedelta(hours=4)
         send_supervisor_timesheet_sign.apply_async(
-            args=[timesheet.supervisor.id, timesheet.id, force], eta=utc_eta)
+            args=[timesheet.supervisor.id, timesheet.id, force], eta=date_time)
     else:
         send_supervisor_timesheet_sign.apply_async(args=[timesheet.supervisor.id, timesheet.id, force], countdown=10)
 
@@ -275,9 +235,8 @@ def schedule_auto_approve_timesheet(timesheet):
         if str(eval(task['request']['args'])[0]) == str(timesheet.id) and task['request']['name'] == \
                 'r3sourcer.apps.hr.tasks.auto_approve_timesheet':
             app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
-    date_time = get_jobsite_localtime(job=timesheet.job_offer.job) + timedelta(hours=4)
-    utc_eta = tz_time2utc_time(date_time)
-    auto_approve_timesheet.apply_async(args=[timesheet.id], eta=utc_eta)
+    date_time = utc_now() + timedelta(hours=4)
+    auto_approve_timesheet.apply_async(args=[timesheet.id], eta=date_time)
 
 
 def format_dates_range(dates_list):
@@ -321,30 +280,3 @@ def get_hours(time_delta):
         return '0'
     hours = time_delta.total_seconds() / 3600
     return '{0:.2f}'.format(hours)
-
-
-def get_jobsite_localtime(job):
-    time_zone = geo_time_zone(lng=job.jobsite.address.longitude,
-                              lat=job.jobsite.address.latitude)
-    return timezone_now(time_zone)
-
-
-def timezone_now(time_zone):
-    return datetime.now(time_zone)
-
-
-def datetime2timezone(date_time, time_zone):
-    naive_dt = date_time.replace(tzinfo=None)
-    return time_zone.localize(naive_dt, is_dst=None)
-
-
-def utc2local(date_time, time_zone):
-    return date_time.replace(tzinfo=pytz.utc).astimezone(time_zone)
-
-
-def get_jobsite_date_time(job, date_time):
-    time_zone = geo_time_zone(lng=job.jobsite.address.longitude,
-                              lat=job.jobsite.address.latitude)
-    return datetime2timezone(date_time, time_zone)
-
-

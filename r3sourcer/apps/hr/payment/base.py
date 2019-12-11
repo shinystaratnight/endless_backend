@@ -4,10 +4,10 @@ from io import BytesIO
 
 import weasyprint
 from django.db.models import Q
-from django.utils.timezone import localtime
 
 from r3sourcer.apps.pricing.models import (
-    RateCoefficientModifier, AllowanceMixin
+    RateCoefficientModifier,
+    AllowanceMixin,
 )
 
 
@@ -19,47 +19,41 @@ def calc_worked_delta(timesheet):
     :return: timedelta
     """
 
-    started = localtime(timesheet.shift_started_at)
-    ended = timesheet.shift_ended_at
-    if ended:
-        ended = localtime(ended)
+    if not timesheet.shift_ended_at:
+        return timedelta()
 
-    hours_12 = timedelta(hours=12)
-    if ended:
-        if ended < started:
-            timesheet.shift_ended_at += hours_12
-            timesheet.save(update_fields=['shift_ended_at'])
-            ended = timesheet.shift_ended_at
+    if timesheet.shift_ended_at < timesheet.shift_started_at:
+        timesheet.shift_ended_at += timedelta(hours=12)
+        timesheet.save(update_fields=['shift_ended_at'])
 
-        delta = ended - started
+    delta = timesheet.shift_ended_at - timesheet.shift_started_at
 
-        if timesheet.break_started_at and timesheet.break_ended_at:
-            break_started = localtime(timesheet.break_started_at)
-            break_ended = localtime(timesheet.break_ended_at)
-            if break_started.date() < started.date():
-                break_started += timedelta(days=1)
-            if break_started < started:
-                break_started += hours_12
-            if break_ended < started:
-                break_ended += hours_12
+    if timesheet.break_started_at and timesheet.break_ended_at:
+        if timesheet.break_started_at.date() < timesheet.shift_started_at.date():
+            timesheet.break_started_at += timedelta(days=1)
 
-            if break_started > ended or break_ended > ended:
-                break_delta = timesheet.break_ended_at - timesheet.break_started_at
-            elif break_ended >= break_started:
-                break_delta = break_ended - break_started
-                timesheet.break_started_at = break_started
-                timesheet.break_ended_at = break_ended
-                timesheet.save(
-                    update_fields=['break_started_at', 'break_ended_at']
-                )
-            else:
-                break_delta = timedelta()
+        if timesheet.break_started_at < timesheet.shift_started_at:
+            timesheet.break_started_at += timedelta(hours=12)
+
+        if timesheet.break_ended_at < timesheet.shift_started_at:
+            timesheet.break_ended_at += timedelta(hours=12)
+
+        if timesheet.break_started_at > timesheet.shift_ended_at \
+                or timesheet.break_ended_at > timesheet.shift_ended_at:
+            break_delta = timesheet.break_ended_at - timesheet.break_started_at
+
+        elif timesheet.break_ended_at >= timesheet.break_started_at:
+            break_delta = timesheet.break_ended_at - timesheet.break_started_at
+            timesheet.break_ended_at = timesheet.break_ended_at
+            timesheet.save(
+                update_fields=['break_started_at', 'break_ended_at']
+            )
         else:
             break_delta = timedelta()
-
-        delta -= break_delta
     else:
-        delta = timedelta()
+        break_delta = timedelta()
+
+    delta -= break_delta
 
     return delta
 

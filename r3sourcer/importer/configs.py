@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
-from django.utils import timezone
 from model_utils import Choices
 
 from r3sourcer.apps.core import models
@@ -761,7 +760,7 @@ class ShiftDateConfig(BaseRateMixin, BaseConfig):
 
     @classmethod
     def prepare_data(cls, row):  # pragma: no cover
-        dt = timezone.localtime(row['shift_date'])
+        dt = row['shift_date']
         row['shift_date'] = dt.date()
 
         row = cls.fetch_skill_base_rate(row, 'hourly_rate_id')
@@ -771,7 +770,7 @@ class ShiftDateConfig(BaseRateMixin, BaseConfig):
     @classmethod
     def post_process(cls, row, instance):   # pragma: no cover
         if instance:
-            dt = timezone.localtime(row['shift_start_time'])
+            dt = row['shift_start_time']
             hr_models.Shift.objects.get_or_create(
                 date=instance,
                 time=dt.time(),

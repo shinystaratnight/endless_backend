@@ -14,7 +14,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.validators import URLValidator
 from django.db import models
-from django.utils import six, timezone
+from django.utils import six
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions, validators
@@ -28,11 +28,12 @@ from django.contrib.contenttypes.fields import GenericRelation
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import models as core_models, tasks as core_tasks
-from r3sourcer.apps.core.utils.utils import normalize_phone_number, validate_phone_number, tz_time2utc_time
+from r3sourcer.apps.core.utils.utils import normalize_phone_number, validate_phone_number
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, NOT_ALLOWED)
 from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 from r3sourcer.apps.core.models import Workflow
 from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.helpers.datetimes import utc_now, tz2utc
 
 rest_settings = settings.REST_FRAMEWORK
 
@@ -111,11 +112,6 @@ class ApiFullRelatedFieldsMixin():
                 else:
                     is_pk_data = True
 
-            if isinstance(field, serializers.DateTimeField):
-                self.fields[field_name] = core_field.ApiDateTimeTzField(
-                    *field._args, **field._kwargs
-                )
-                continue
             if isinstance(field, serializers.ChoiceField):
                 self.fields[field_name] = core_field.ApiChoicesField(
                     *field._args, **field._kwargs
@@ -610,19 +606,17 @@ class CompanyContactSerializer(ApiBaseModelSerializer):
         return instance
 
     def process_approve(self, instance):
-        # TODO: Fix timezone
-        now = timezone.now()
         request = self.context['request']
         approved_by_staff = self.context['approved_by_staff']
         approved_by_primary_contact = self.context['approved_by_primary_contact']
 
         if approved_by_staff:
             instance.approved_by_staff = request.user.contact
-            instance.staff_approved_at = now
+            instance.staff_approved_at = utc_now()
 
         if approved_by_primary_contact:
             instance.approved_by_primary_contact = request.user.contact
-            instance.primary_contact_approved_at = now
+            instance.primary_contact_approved_at = utc_now()
 
     class Meta:
         model = core_models.CompanyContact
@@ -860,9 +854,12 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
             errors['company'] = _('Please select or create new client!')
             company = None
 
-        if company and contact and core_models.CompanyContactRelationship.objects.filter(
-            company=company, company_contact__contact_id=contact_id
-        ).exists():
+        if company \
+                and contact \
+                and core_models.CompanyContactRelationship.objects.filter(
+                        company=company,
+                        company_contact__contact_id=contact_id,
+                    ).exists():
             if not self.instance or self.instance.contact.id != contact_id:
                 errors['contact'] = _('This client contact already exists!')
 
@@ -898,23 +895,20 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
         return instance
 
     def update(self, instance, validated_data):
-        contact = validated_data.get('contact', None)
-        errors = {}
-        if not isinstance(contact, core_models.Contact):
-            errors['contact'] = _('Contact is required')
+        contact = validated_data.get('contact')
+        if contact is None:
+            errors = {'contact': _('Contact is required')}
+            raise exceptions.ValidationError(errors)
 
         try:
-            company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+            company = core_models.Company.objects.get(pk=self.initial_data.get('company'))
         except core_models.Company.DoesNotExist:
-            errors['company'] = _('Company is required')
-
-        if errors:
+            errors = {'company': _('Company is required')}
             raise exceptions.ValidationError(errors)
 
         instance = super(CompanyContactSerializer, self).update(instance, validated_data)
 
-        # TODO: Fix timezone
-        today = timezone.localtime(timezone.now()).date()
+        today = company.now_tz.date()
         termination_date = validated_data.get('termination_date')
 
         if not validated_data['active']:
@@ -924,7 +918,8 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
             termination_date = None
 
         rel, created = core_models.CompanyContactRelationship.objects.update_or_create(
-            company_contact=instance, company=company,
+            company_contact=instance,
+            company=company,
             defaults={
                 'active': validated_data['active'],
                 'termination_date': termination_date
@@ -932,9 +927,10 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
         )
 
         if termination_date and termination_date > today:
-            eta = timezone.make_aware(datetime.combine(termination_date, time(2)))
-            utc_eta = tz_time2utc_time(eta)
-            core_tasks.terminate_company_contact.apply_async(args=[rel.id], eta=utc_eta)
+            eta = datetime.combine(termination_date, time(2))
+            utc_eta = tz2utc(eta)
+            core_tasks.terminate_company_contact.apply_async(args=[rel.id],
+                                                             eta=utc_eta)
 
         return instance
 

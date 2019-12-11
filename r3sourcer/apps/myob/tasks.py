@@ -4,7 +4,6 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from django.db.models import Q, F
-from django.utils import timezone
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import Company, Invoice
@@ -17,7 +16,7 @@ from r3sourcer.apps.myob.services.invoice import InvoiceSync
 from r3sourcer.apps.myob.services.timesheet import TimeSheetSync
 from r3sourcer.apps.myob.services.utils import sync_candidate_contacts_to_myob, sync_companies_to_myob
 from r3sourcer.celeryapp import app
-
+from r3sourcer.helpers.datetimes import utc_now
 
 logger = get_task_logger(__name__)
 
@@ -113,7 +112,7 @@ def clean_myob_request_log(self):
     Clean myob request logs from db.
     """
 
-    today = datetime.date.today()
+    today = utc_now().date()
     MYOBRequestLog.objects.filter(created__date__lt=today).delete()
 
 

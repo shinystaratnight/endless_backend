@@ -6,31 +6,29 @@ from django.contrib.auth import authenticate, logout
 from django.core.cache import cache
 from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
 from django.utils.decorators import method_decorator
+from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
-from oauth2_provider.views.mixins import OAuthLibMixin
-from oauth2_provider.settings import oauth2_settings
-from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
 from oauth2_provider.models import get_access_token_model
-from oauthlib.oauth2.rfc6749.tokens import BearerToken
+from oauth2_provider.settings import oauth2_settings
+from oauth2_provider.views.mixins import OAuthLibMixin
+from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
 from oauthlib.common import Request
+from oauthlib.oauth2.rfc6749.tokens import BearerToken
 from rest_framework import viewsets, status, exceptions, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
+from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.utils import get_host, is_valid_email, is_valid_phone_number
 from r3sourcer.apps.core.views import OAuth2JWTTokenMixin
 from r3sourcer.apps.login.api.exceptions import TokenAlreadyUsed
-
+from r3sourcer.helpers.datetimes import utc_now
+from .serializers import LoginSerializer, ContactLoginSerializer, TokenLoginSerializer
 from ..models import TokenLogin
 from ..tasks import send_login_message
-
-from .serializers import LoginSerializer, ContactLoginSerializer, TokenLoginSerializer
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -210,8 +208,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         bearer_token = BearerToken(request_validator)
         token = bearer_token.create_token(token_request, save_token=False)
 
-        # TODO: Fix timezone
-        expires = timezone.now() + timedelta(seconds=oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
+        expires = utc_now() + timedelta(seconds=oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
         client = None
         AccessToken = get_access_token_model()
         access_token = AccessToken(
@@ -236,8 +233,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         if user is None:
             raise exceptions.NotFound()
 
-        # TODO: Fix timezone
-        instance.loggedin_at = timezone.now()
+        instance.loggedin_at = utc_now()
         instance.save()
 
         cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))

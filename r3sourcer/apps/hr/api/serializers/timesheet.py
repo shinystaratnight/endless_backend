@@ -1,25 +1,18 @@
-from datetime import datetime
-
-import pytz
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.utils import timezone
-from django.utils.formats import time_format, date_format
+from django.utils.formats import time_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers
 
-from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField, ApiContactPictureField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
-from r3sourcer.apps.hr.utils.utils import datetime2timezone, utc2local, timezone_now
-from r3sourcer.apps.core.utils.utils import geo_time_zone
+from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.api import serializers as sms_serializers
-
+from r3sourcer.helpers.datetimes import utc_now
 from ...models import TimeSheet, CandidateEvaluation
-
 
 __all__ = [
     'TimeSheetSignatureSerializer',
@@ -140,14 +133,13 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             position = obj.job_offer.job.position
             return {'id': position.id, '__str__': str(position)}
 
-    def __format_datetime(self, date_time, tz, default='-'):
+    def __format_datetime(self, date_time, default='-'):
         filtered = filter(bool, [date_time])
-        local_datetimes = list(map(lambda x: utc2local(x, tz), filtered))
-        datetimes, *_ = [*list(map(lambda x: time_format(x, settings.TIME_FORMAT), local_datetimes)), default]
+        datetimes, *_ = [*list(map(lambda x: time_format(x, settings.TIME_FORMAT), filtered)), default]
         return datetimes
 
-    def _format_date_range(self, start, end, tz):
-        return ' / '.join(map(lambda x: self.__format_datetime(x, tz), [start, end]))
+    def _format_date_range(self, start, end):
+        return ' / '.join(map(lambda x: self.__format_datetime(x), [start, end]))
 
     def get_shift_started_at(self, obj):
         return obj.shift_started_at_tz
@@ -165,14 +157,10 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         return obj.tz.zone
 
     def get_shift_started_ended(self, obj):
-        tz = geo_time_zone(lng=obj.job_offer.job.jobsite.address.longitude,
-                           lat=obj.job_offer.job.jobsite.address.latitude)
-        return self._format_date_range(obj.shift_started_at_utc, obj.shift_ended_at_utc, tz)
+        return self._format_date_range(obj.shift_started_at_tz, obj.shift_ended_at_tz)
 
     def get_break_started_ended(self, obj):
-        tz = geo_time_zone(lng=obj.job_offer.job.jobsite.address.longitude,
-                           lat=obj.job_offer.job.jobsite.address.latitude)
-        return self._format_date_range(obj.break_started_at_utc, obj.break_ended_at_utc, tz)
+        return self._format_date_range(obj.break_started_at_tz, obj.break_ended_at_tz)
 
     def get_job(self, obj):
         job = obj.job_offer.job
@@ -181,7 +169,8 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     def get_related_sms(self, obj):
         ct = ContentType.objects.get_for_model(TimeSheet)
         smses = sms_models.SMSMessage.objects.filter(
-            related_objects__content_type=ct, related_objects__object_id=obj.id
+            related_objects__content_type=ct,
+            related_objects__object_id=obj.id
         )
         if smses.exists():
             return sms_serializers.SMSMessageSerializer(smses, many=True, fields=['id', '__str__', 'type']).data
@@ -195,19 +184,19 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     def get_resend_sms_candidate(self, obj):
         return (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= datetime.now(pytz.utc)
+            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= utc_now()
         )
 
     def get_resend_sms_supervisor(self, obj):
         return (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is not None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= datetime.now(pytz.utc)
+            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= utc_now()
         )
 
     def get_candidate_submit_hidden(self, obj):
         return not (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_started_at_utc <= datetime.now(pytz.utc)
+            obj.supervisor_approved_at is None and obj.shift_started_at_utc <= utc_now()
         )
 
     def get_evaluated(self, obj):
@@ -243,18 +232,22 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         ct = ContentType.objects.get_for_model(TimeSheet)
         timesheet_date = obj.shift_started_at_tz.date()
         sms = sms_models.SMSMessage.objects.filter(
-            related_objects__content_type=ct, related_objects__object_id=obj.id,
-            template__slug=template_slug, sent_at__date=timesheet_date
+            related_objects__content_type=ct,
+            related_objects__object_id=obj.id,
+            template__slug=template_slug,
+            sent_at__date=timesheet_date
         ).first()
 
         if not sms:
             sms = sms_models.SMSMessage.objects.filter(
-                template__slug=template_slug, sent_at__date=timesheet_date,
+                template__slug=template_slug,
+                sent_at__date=timesheet_date,
                 company=obj.master_company
             ).first()
             if not sms:
                 sms = sms_models.SMSMessage.objects.filter(
-                    template__slug=template_slug, related_objects__object_id=obj.id,
+                    template__slug=template_slug,
+                    related_objects__object_id=obj.id,
                     company=obj.master_company
                     ).first()
 

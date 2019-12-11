@@ -589,7 +589,8 @@ class CompanyContactViewset(BaseApiViewset):
     def is_approved_by_staff(self, user):
         return models.CompanyContactRelationship.objects.filter(
             company__type=models.Company.COMPANY_TYPES.master,
-            company_contact__contact__user=user).exists()
+            company_contact__contact__user=user
+        ).exists()
 
     def is_approved_by_manager(self, user):
         return models.CompanyRel.objects.filter(manager__contact__user=user).exists()

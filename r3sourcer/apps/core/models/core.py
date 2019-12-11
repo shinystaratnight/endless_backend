@@ -18,11 +18,11 @@ from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, F
-from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.text import slugify
 from django.utils.translation import ugettext_lazy as _
+from django_mock_queries.constants import ObjectDoesNotExist
 from rest_framework.exceptions import APIException
 
 from cities_light.abstract_models import (
@@ -38,8 +38,8 @@ from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core.utils.user import get_default_company
-from r3sourcer.apps.core.utils.utils import geo_time_zone, utc2local
 from r3sourcer.apps.logger.main import endless_logger
+from r3sourcer.helpers.datetimes import datetime2timezone, geo_time_zone, tz2utc, utc_now, utc2local
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..managers import (
@@ -66,11 +66,31 @@ class TimeZone(models.Model):
 
     @cached_property
     def tz(self):
-        return geo_time_zone(*self.geo)
+        try:
+            coord = self.geo
+        except ObjectDoesNotExist:
+            coord = -0.118092, 51.509865
+        return geo_time_zone(*coord)
 
     @property
     def timezone(self):
         return self.tz.zone
+
+    @property
+    def today_tz(self):
+        return self.now_tz.date()
+
+    @property
+    def tomorrow_tz(self):
+        return self.now_tz + timedelta(days=1)
+
+    @property
+    def tomorrow_utc(self):
+        return self.now_utc + timedelta(days=1)
+
+    @property
+    def today_utc(self):
+        return self.now_utc.date()
 
     @property
     def now_tz(self):
@@ -79,6 +99,20 @@ class TimeZone(models.Model):
     @property
     def now_utc(self):
         return datetime.now(pytz.utc)
+
+    def utc2local(self, dt):
+        if dt is not None:
+            return utc2local(dt, self.tz)
+
+    @classmethod
+    def local2utc(cls, dt):
+        return tz2utc(dt)
+
+    def dt2utc(self, dt):
+        return datetime2timezone(dt, pytz.utc)
+
+    def dt2local(self, dt):
+        return datetime2timezone(dt, self.tz)
 
 
 class UUIDModel(models.Model):
@@ -113,10 +147,10 @@ class UUIDModel(models.Model):
 
     def default_created_at(self):
         if self.created_at is None:
-            self.created_at = datetime.now(pytz.utc)
+            self.created_at = utc_now()
 
     def default_updated_at(self):
-        self.updated_at = datetime.now(pytz.utc)
+        self.updated_at = utc_now()
 
     def save(self, *args, **kwargs):
         self.default_created_at()
@@ -134,11 +168,11 @@ class TimeZoneUUIDModel(TimeZone, UUIDModel):
 
     @property
     def created_at_tz(self):
-        return utc2local(self.created_at, self.tz)
+        return self.utc2local(self.created_at)
 
     @property
     def updated_at_tz(self):
-        return utc2local(self.updated_at, self.tz)
+        return self.utc2local(self.updated_at)
 
     @property
     def created_at_utc(self):
@@ -523,7 +557,7 @@ class User(UUIDModel,
             'Unselect this instead of deleting accounts.'
         ),
     )
-    date_joined = models.DateTimeField(_('date joined'), default=timezone.now)
+    date_joined = models.DateTimeField(_('date joined'))
     trial_period_start = models.DateTimeField(_('trial start'), null=True, blank=True)
     role = models.ManyToManyField('Role')
 
@@ -651,6 +685,10 @@ class User(UUIDModel,
                 Q(contact__company_contact__relationships__company__regular_companies__master_company=owner),
                 Q(contact__contact_relations__company=owner)
             ]
+
+    def save(self, *args, **kwargs):
+        if not self.date_joined:
+            self.date_joined = utc_now()
 
 
 class Country(UUIDModel, AbstractCountry):
@@ -824,7 +862,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     )
 
     contact = models.ForeignKey(
-        Contact,
+        'core.Contact',
         on_delete=models.PROTECT,
         related_name="company_contact",
         verbose_name=_("Contact")
@@ -876,7 +914,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     )
 
     approved_by_staff = models.ForeignKey(
-        'Contact',
+        'core.Contact',
         verbose_name=_("Approved by staff"),
         on_delete=models.PROTECT,
         null=True,
@@ -972,6 +1010,9 @@ class Company(CategoryFolderMixin,
               CompanyLookupMixin,
               TimeZoneUUIDModel,
               MasterCompanyLookupMixin):
+
+    def get_myob_name(self):
+        raise NotImplementedError
 
     name = models.CharField(max_length=127, verbose_name=_("Company Name"), unique=True)
 
@@ -1298,9 +1339,13 @@ class Company(CategoryFolderMixin,
         from r3sourcer.apps.candidate.models import CandidateContact
 
         if not start_date:
-            start_date = timezone.make_aware(datetime.combine(date.today(), time(0, 0))) - timedelta(days=31)
+            start_date = datetime.combine(utc_now().date(), time(0, 0)) - timedelta(days=31)
 
-        return CandidateContact.objects.filter(job_offers__time_sheets__shift_started_at__gt=start_date).filter(job_offers__time_sheets__status=7).count()
+        return CandidateContact.objects.filter(
+            job_offers__time_sheets__shift_started_at__gt=start_date,
+        ).filter(
+            job_offers__time_sheets__status=7,
+        ).count()
 
     def get_active_discounts(self, payment_type=None):
         discounts = self.discounts.filter(active=True)
@@ -1365,10 +1410,7 @@ class Company(CategoryFolderMixin,
         master_company = self.get_master_company()[0]
         hq_address = master_company.get_hq_address()
         if hq_address:
-            from r3sourcer.apps.hr.utils.utils import geo_time_zone
-            time_zone = geo_time_zone(lng=hq_address.address.longitude,
-                                      lat=hq_address.address.latitude)
-            return time_zone
+            return master_company.tz
         return pytz.timezone(settings.TIME_ZONE)
 
     @classmethod
@@ -1490,11 +1532,11 @@ class CompanyRel(UUIDModel,
         cache.set('company_rel_{}'.format(self.regular_company.id), None)
 
 
-class CompanyContactRelationship(UUIDModel,
+class CompanyContactRelationship(TimeZoneUUIDModel,
                                  CompanyLookupMixin,
                                  MasterCompanyLookupMixin):
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         related_name="relationships",
         verbose_name=_("Company"),
         on_delete=models.PROTECT
@@ -1516,6 +1558,16 @@ class CompanyContactRelationship(UUIDModel,
         blank=True
     )
 
+    @property
+    def geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+            company__company_addresses__hq=True,
+        ).annotate(
+            longitude=F('company__company_addresses__address__longitude'),
+            latitude=F('company__company_addresses__address__latitude')
+        ).values_list('longitude', 'latitude').get()
+
     def __str__(self):
         return "{company}: {contact}".format(company=self.company, contact=self.company_contact)
 
@@ -1523,8 +1575,7 @@ class CompanyContactRelationship(UUIDModel,
         return self.company.get_master_company()
 
     def get_closest_company(self):
-        # TODO: Fix timezone
-        if self.termination_date and self.termination_date < timezone.now():
+        if self.termination_date and self.termination_date < utc_now():
             return None
         return self.company
 
@@ -2323,7 +2374,7 @@ class Invoice(AbstractOrder):
     @property
     def synced_at_tz(self):
         if self.synced_at:
-            return utc2local(self.synced_at, self.tz)
+            return self.utc2local(self.synced_at)
 
     @property
     def synced_at_utc(self):
@@ -2342,8 +2393,8 @@ class Invoice(AbstractOrder):
 
     def save(self, *args, **kwargs):
         if not self.date:
-            self.date = datetime.now(pytz.utc).date()
-        self.updated = datetime.now(pytz.utc).date()
+            self.date = utc_now().date()
+        self.updated = utc_now().date()
         just_added = self._state.adding
 
         if just_added:
@@ -2390,11 +2441,11 @@ class InvoiceLine(AbstractOrderLine):
     # TODO: Remove duplicated fields after make AbstractOrderLine TimeZoneUUID support
     @property
     def created_at_tz(self):
-        return utc2local(self.created_at, self.tz)
+        return self.utc2local(self.created_at)
 
     @property
     def updated_at_tz(self):
-        return utc2local(self.updated_at, self.tz)
+        return self.utc2local(self.updated_at)
 
     @property
     def created_at_utc(self):
@@ -2679,7 +2730,6 @@ class TemplateMessage(UUIDModel):
                 'user': {'first_name': 'John',
                         'last_name': 'Davidson',
                         'contact': contact_instance},
-                # TODO: Fix timezone
                 'starts_at': datetime.now(),
                 'contact': Contact.objects.last()
             }
@@ -2899,7 +2949,7 @@ class Role(UUIDModel):
     name = models.CharField(max_length=255, choices=ROLE_NAMES)
 
     company_contact_rel = models.ForeignKey(
-        CompanyContactRelationship,
+        'core.CompanyContactRelationship',
         on_delete=models.CASCADE,
         related_name='user_roles',
         verbose_name=_('Company Contact Relation'),
