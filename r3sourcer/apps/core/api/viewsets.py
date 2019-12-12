@@ -1021,15 +1021,14 @@ class FormViewSet(BaseApiViewset):
             raise exceptions.ValidationError(storage_helper.errors)
 
         instance = storage_helper.create_instance()
-        if CandidateContact.objects.get(id=instance.id):
-            if data.get('tests'):
-                for item in data.get('tests'):
-                    question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
-                    answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
-                    workflow_object = WorkflowObject.objects.get(object_id=str(instance.id))
-                    WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
-                                                        acceptance_test_question=question,
-                                                        answer=answer)
+        if CandidateContact.objects.get(id=instance.id) and data.get('tests'):
+            for item in data.get('tests'):
+                question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
+                answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
+                workflow_object = WorkflowObject.objects.get(object_id=str(instance.id))
+                WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
+                                                    acceptance_test_question=question,
+                                                    answer=answer)
 
         for extra_field in form_obj.builder.extra_fields.all():
             if extra_field.name not in extra_data:

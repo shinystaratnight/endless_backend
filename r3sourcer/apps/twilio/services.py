@@ -18,7 +18,7 @@ class TwilioSMSService(BaseSMSService):
             sms_message.from_number = from_number
             twilio_account = models.TwilioAccount.objects.get(phone_numbers__phone_number=from_number)
         else:
-            logger.warn('Cannot find Twilio number')
+            logger.warning('Cannot find Twilio number')
             raise AccountHasNotPhoneNumbers
 
         sms_message.sid = twilio_account.client.api.account.messages.create(
@@ -84,7 +84,7 @@ class TwilioSMSService(BaseSMSService):
             twilio_account = models.TwilioAccount.objects.filter(credential__company=master_company).last()
 
             if not twilio_account:
-                logger.warn('Cannot find Twilio number')
+                logger.warning('Cannot find Twilio number')
                 return
 
             from_number = twilio_account.phone_numbers.filter(is_default=True, sms_enabled=True).first()

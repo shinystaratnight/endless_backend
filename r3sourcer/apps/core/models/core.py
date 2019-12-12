@@ -2008,21 +2008,21 @@ class AbstractBaseOrder(TimeZoneUUIDModel,
                         MasterCompanyLookupMixin):
 
     provider_company = models.ForeignKey(  # master
-        Company,
+        'core.Company',
         on_delete=models.PROTECT,
         verbose_name=_("Provider Company"),
         related_name="provider_%(class)ss",
     )
 
     customer_company = models.ForeignKey(  # any company
-        Company,
+        'core.Company',
         on_delete=models.CASCADE,
         verbose_name=_("Customer Company"),
         related_name="customer_%(class)ss",
     )
 
     provider_representative = models.ForeignKey(
-        CompanyContact,
+        'core.CompanyContact',
         on_delete=models.PROTECT,
         verbose_name=_("Provider Representative"),
         related_name="provider_representative_%(class)ss",
@@ -2031,7 +2031,7 @@ class AbstractBaseOrder(TimeZoneUUIDModel,
     )
 
     customer_representative = models.ForeignKey(
-        CompanyContact,
+        'core.CompanyContact',
         on_delete=models.PROTECT,
         verbose_name=_("Customer Representative"),
         related_name="customer_representative_%(class)ss",
@@ -2090,6 +2090,22 @@ class AbstractBaseOrder(TimeZoneUUIDModel,
 
     def __str__(self):
         return "{}, {}".format(self.provider_company, self.customer_company)
+
+    @property
+    def provider_signed_at_tz(self):
+        return self.utc2local(self.provider_signed_at)
+
+    @property
+    def provider_signed_at_utc(self):
+        return self.provider_signed_at
+
+    @property
+    def customer_signed_at_tz(self):
+        return self.utc2local(self.customer_signed_at)
+
+    @property
+    def customer_signed_at_utc(self):
+        return self.customer_signed_at
 
     @property
     def geo(self):
