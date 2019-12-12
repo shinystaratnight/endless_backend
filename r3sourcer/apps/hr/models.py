@@ -1255,7 +1255,7 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
 
     def __str__(self):
         fields = [self.shift_started_at_tz, self.candidate_submitted_at_tz, self.supervisor_approved_at_tz]
-        return ' '.join(fields)
+        return ' '.join([str(x) for x in fields])
 
     @property
     def geo(self):
@@ -1433,8 +1433,7 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
             raise ValueError('Invalid eta, datetime without timezone')
 
         if going_eta.tzinfo != pytz.utc:
-            raise ValueError(f'Invalid timezone, '
-                             f'need UTC but provided {going_eta.tzinfo}')
+            raise ValueError('Invalid timezone, need UTC but provided %s' % {going_eta.tzinfo})
 
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
         for task in chain.from_iterable(app.control.inspect().scheduled().values()):
@@ -1505,10 +1504,10 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
     @property
     def _datetime_fields(self):
         return (
-            ('shift_started_at', self.shift_started_at, self.today_7_am()),
-            ('break_started_at', self.break_started_at, self.today_12_pm()),
-            ('break_ended_at', self.break_ended_at, self.today_12_30_pm()),
-            ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm()),
+            ('shift_started_at', self.shift_started_at, self.today_7_am),
+            ('break_started_at', self.break_started_at, self.today_12_pm),
+            ('break_ended_at', self.break_ended_at, self.today_12_30_pm),
+            ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
             ('candidate_submitted_at', self.candidate_submitted_at, None),
             ('supervisor_approved_at', self.supervisor_approved_at, None),
             ('supervisor_modified_at', self.supervisor_modified_at, None),
