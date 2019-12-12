@@ -12,6 +12,7 @@ from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.utils import utils as hr_utils, job as hr_job_utils
 from r3sourcer.apps.logger.main import endless_logger
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class FillinAvailableMixin:
@@ -171,7 +172,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
         if obj is None:
             return True
         return not obj.shift_dates.filter(
-            shift_date__gt=obj.today_tz,
+            shift_date__gt=utc_now().date(),
             cancelled=False,
         ).exists()
 
@@ -187,10 +188,9 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
         if obj is None:  # pragma: no cover
             return result
 
-        today = obj.today_tz
         timesheets = hr_models.TimeSheet.objects.filter(
             job_offer__shift__date__job_id=obj.id,
-            shift_started_at__date=today
+            shift_started_at__date=utc_now().date()
         )
         total_timesheets = timesheets.count()
 
@@ -350,7 +350,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             ).order_by('job_offer_smses__offer_sent_by_sms__sent_at').last()
             return bool(
                 obj.job_offer_smses.filter(offer_sent_by_sms__isnull=False).exists() and last_jo and
-                last_jo.job_offer_smses.filter(offer_sent_by_sms__sent_at__lt=obj.now_tz).exists()
+                last_jo.job_offer_smses.filter(offer_sent_by_sms__sent_at__lt=utc_now()).exists()
             )
 
         return False
@@ -515,7 +515,7 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
     def get_days_from_last_timesheet(self, obj):
         last_timesheet = obj.last_timesheet_date
         if last_timesheet:
-            return (obj.today_tz - last_timesheet.date()).days
+            return (utc_now().date() - last_timesheet.date()).days
         else:
             return 0
 
