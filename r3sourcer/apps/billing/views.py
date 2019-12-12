@@ -43,7 +43,6 @@ class SubscriptionCreateView(APIView):
             except StripeCountryAccount.DoesNotExist:
                 stripe_account = StripeCountryAccount.objects.get(country="AU")
             stripe.api_key = stripe_account.stripe_secret_key
-            # stripe_product_id = stripe_account.stripe_product_id
             vat_object = VAT.objects.filter(country=country_code)
             if vat_object:
                 tax_percent = vat_object.first().stripe_rate

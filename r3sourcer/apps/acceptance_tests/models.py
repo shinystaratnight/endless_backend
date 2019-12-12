@@ -70,7 +70,7 @@ class AcceptanceTest(UUIDModel):
 
 class AcceptanceTestSkill(UUIDModel):
     acceptance_test = models.ForeignKey(
-        AcceptanceTest,
+        'acceptance_tests.AcceptanceTest',
         on_delete=models.CASCADE,
         related_name='acceptance_tests_skills',
         verbose_name=_("Acceptance Test")
