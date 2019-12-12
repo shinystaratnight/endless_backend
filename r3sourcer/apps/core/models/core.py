@@ -118,7 +118,7 @@ class TimeZone(models.Model):
 class UUIDModel(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     updated_at = models.DateTimeField(verbose_name=_("Updated at"), auto_now=True, editable=False)
-    created_at = models.DateTimeField(verbose_name=_("Created at"), editable=False)
+    created_at = models.DateTimeField(verbose_name=_("Created at"), auto_now_add=True, editable=False)
 
     objects = AbstractObjectOwnerManager()
 
@@ -144,18 +144,6 @@ class UUIDModel(models.Model):
     @property
     def object_history(self):
         return endless_logger.get_object_history(self.__class__, self.pk)
-
-    def default_created_at(self):
-        if self.created_at is None:
-            self.created_at = utc_now()
-
-    def default_updated_at(self):
-        self.updated_at = utc_now()
-
-    def save(self, *args, **kwargs):
-        self.default_created_at()
-        self.default_updated_at()
-        super().save(*args, **kwargs)
 
 
 class TimeZoneUUIDModel(TimeZone, UUIDModel):
@@ -689,6 +677,7 @@ class User(UUIDModel,
     def save(self, *args, **kwargs):
         if not self.date_joined:
             self.date_joined = utc_now()
+        super().save(*args, **kwargs)
 
 
 class Country(UUIDModel, AbstractCountry):
