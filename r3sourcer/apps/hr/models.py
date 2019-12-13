@@ -992,12 +992,13 @@ class JobOffer(core_models.TimeZoneUUIDModel):
         is_initial = not self.is_recurring()
         is_accepted = self.is_accepted()
 
-        orig = JobOffer.objects.get(pk=self.pk)
-        if self.is_cancelled() and not just_added and orig.is_accepted():
-            orig.move_candidate_to_carrier_list(confirmed_available=True)
+        if not just_added:
+            orig = JobOffer.objects.get(pk=self.pk)
+            if self.is_cancelled() and orig.is_accepted():
+                orig.move_candidate_to_carrier_list(confirmed_available=True)
 
-        if self.is_accepted() and not just_added:
-            is_accepted = orig.is_accepted() != self.is_accepted()
+            if self.is_accepted():
+                is_accepted = orig.is_accepted() != self.is_accepted()
 
         create_time_sheet = False
         if is_accepted:
