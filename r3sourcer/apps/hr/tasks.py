@@ -187,7 +187,7 @@ def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
             data_dict = dict(
                 recipients,
                 job=job,
-                target_date_and_time=formats.date_format(job_offer.start_time, settings.DATETIME_FORMAT),
+                target_date_and_time=formats.date_format(job_offer.start_time_tz, settings.DATETIME_FORMAT),
                 related_obj=job_offer,
                 related_objs=[job_offer.candidate_contact, job_offer.job]
             )
