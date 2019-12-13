@@ -1363,10 +1363,10 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
 
         data = {
             'job_offer': job_offer,
-            'shift_started_at': job_offer.start_time,
-            'break_started_at': job_offer.start_time + timedelta(hours=5),
-            'break_ended_at': job_offer.start_time + timedelta(hours=5, minutes=30),
-            'shift_ended_at': job_offer.start_time + timedelta(hours=8, minutes=30),
+            'shift_started_at': job_offer.start_time_utc,
+            'break_started_at': job_offer.start_time_utc + timedelta(hours=5),
+            'break_ended_at': job_offer.start_time_utc + timedelta(hours=5, minutes=30),
+            'shift_ended_at': job_offer.start_time_utc + timedelta(hours=8, minutes=30),
             'supervisor': job_offer.job.jobsite.primary_contact,
             'candidate_rate': job_offer.shift.hourly_rate,
             'going_to_work_confirmation': going_to_work_confirmation,
@@ -1378,11 +1378,11 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
         except IntegrityError:
             time_sheet, created = cls.objects.update_or_create(
                 job_offer=job_offer,
-                shift_started_at=job_offer.start_time,
+                shift_started_at=job_offer.start_time_utc,
                 defaults=data
             )
 
-        if utc_now() <= job_offer.start_time + timedelta(hours=2):
+        if utc_now() <= job_offer.start_time_utc + timedelta(hours=2):
             cls._send_placement_acceptance_sms(time_sheet, job_offer)
 
         return time_sheet

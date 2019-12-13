@@ -341,7 +341,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             obj.job_offer_smses.filter(reply_received_by_sms__isnull=True).exists() and not obj.is_accepted()
         )
         is_filled = obj.is_quota_filled()
-        is_today_or_future = obj.start_time.date() >= obj.today_tz
+        is_today_or_future = obj.start_time_tz.date() >= obj.today_tz
 
         if (obj.is_cancelled() or not_received_or_scheduled) and not is_filled and is_today_or_future:
             last_jo = obj.job.get_job_offers().filter(
@@ -368,7 +368,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             not obj.job_offer_smses.exists()
         )
         is_filled = obj.is_quota_filled()
-        is_today_or_future = obj.start_time.date() >= obj.today_tz
+        is_today_or_future = obj.start_time_tz.date() >= obj.today_tz
 
         return has_not_sent and not obj.is_accepted() and not is_filled and is_today_or_future
 
