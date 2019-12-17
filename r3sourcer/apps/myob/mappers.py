@@ -2,7 +2,6 @@ import math
 from datetime import datetime
 
 from django.conf import settings
-from django.utils import timezone
 from django.utils.formats import date_format
 
 from r3sourcer.apps.core.models import WorkflowObject, Company
@@ -17,10 +16,6 @@ class BSBNumberError(ValueError):
 
 def format_date_to_myob(date_time, only_date=False):
     if isinstance(date_time, datetime):
-        try:
-            date_time = timezone.make_naive(date_time)
-        except ValueError:
-            pass
         date_time = date_time.date()
     return date_time and date_format(date_time, settings.DATE_MYOB_FORMAT)
 

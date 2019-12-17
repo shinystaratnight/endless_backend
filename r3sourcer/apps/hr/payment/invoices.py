@@ -1,23 +1,19 @@
 import math
-from datetime import datetime
-
 from decimal import Decimal
 
-import pytz
 from django.core.files.base import ContentFile
 from django.template.loader import get_template
 from django.utils.formats import date_format
-from django.utils.timezone import localtime
 from filer.models import Folder, File
 
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
-from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.core.utils.companies import get_site_url
+from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.hr.models import TimeSheet
-from r3sourcer.apps.pricing.services import CoefficientService
-from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
-
+from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
+from r3sourcer.apps.pricing.services import CoefficientService
+from r3sourcer.helpers.datetimes import utc_now
 from ..utils.utils import get_invoice_rule
 
 
@@ -56,15 +52,14 @@ class InvoiceService(BasePaymentService):
             skill = timesheet.job_offer.job.position
             customer_company = timesheet.job_offer.shift.date.job.customer_company
             price_list_rate = self._get_price_list_rate(skill, customer_company)
-            started_at = localtime(timesheet.shift_started_at)
             worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc(
                 timesheet.master_company, industry,
                 RateCoefficientModifier.TYPE_CHOICES.company,
-                started_at,
+                timesheet.shift_started_at_tz,
                 worked_hours,
-                break_started=timesheet.break_started_at,
-                break_ended=timesheet.break_ended_at,
+                break_started=timesheet.break_started_at_tz,
+                break_ended=timesheet.break_ended_at_tz,
             )
 
             lines_iter = self.lines_iter(
@@ -81,7 +76,7 @@ class InvoiceService(BasePaymentService):
 
                 vat_name = 'GST' if company.registered_for_gst else 'GNR'
                 lines.append({
-                    'date': started_at.date(),
+                    'date': timesheet.shift_started_at_tz.date(),
                     'units': units,
                     'notes': notes,
                     'unit_price': rate,
@@ -185,8 +180,8 @@ class InvoiceService(BasePaymentService):
             for line in lines:
                 invoice_lines.append(InvoiceLine(
                     invoice=invoice,
-                    created_at=datetime.now(pytz.utc),
-                    updated_at=datetime.now(pytz.utc),
+                    created_at=utc_now(),
+                    updated_at=utc_now(),
                     **line))
 
             InvoiceLine.objects.bulk_create(invoice_lines)

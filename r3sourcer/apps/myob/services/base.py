@@ -1,16 +1,13 @@
 import decimal
 import logging
-from datetime import datetime
 
-import pytz
-from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.db.models import Q
+from django.utils.decorators import method_decorator
 
 from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.services.decorators import myob_enabled_mode
-
+from r3sourcer.helpers.datetimes import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +70,7 @@ class BaseSync:
             created = True
 
         if not created:
-            sync_obj.synced_at = datetime.now(pytz.utc)
+            sync_obj.synced_at = utc_now()
         if self.company:
             sync_obj.company = self.company
         if legacy_number:

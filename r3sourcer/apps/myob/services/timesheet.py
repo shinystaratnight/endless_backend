@@ -1,16 +1,14 @@
 import logging
-
 from collections import defaultdict
 
 from django.db.models import Q
 from django.utils.decorators import method_decorator
-from django.utils import timezone
 
 from r3sourcer.apps.candidate.models import SkillRel
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.myob.helpers import get_myob_client
-from r3sourcer.apps.myob.mappers import TimeSheetMapper, JobsiteMapper, format_date_to_myob
+from r3sourcer.apps.myob.mappers import TimeSheetMapper, format_date_to_myob
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.services.base import BaseSync
 from r3sourcer.apps.myob.services.candidate import CandidateSync
@@ -19,7 +17,6 @@ from r3sourcer.apps.myob.services.exceptions import MYOBClientException
 from r3sourcer.apps.myob.services.mixins import BaseCategoryMixin, StandardPayMixin, CandidateCardFinderMixin, JobMixin
 from r3sourcer.apps.pricing.models import RateCoefficientModifier
 from r3sourcer.apps.pricing.services import CoefficientService
-
 
 log = logging.getLogger(__name__)
 
@@ -132,8 +129,8 @@ class TimeSheetSync(BaseCategoryMixin,
             return
 
         # get existing remote time sheets in date range by job id
-        start_date = timezone.make_naive(timesheets.earliest('shift_started_at').shift_started_at)
-        end_date = timezone.make_naive(timesheets.latest('shift_started_at').shift_started_at)
+        start_date = timesheets.earliest('shift_started_at').shift_started_at
+        end_date = timesheets.latest('shift_started_at').shift_started_at
         myob_employee_uid = myob_employee['UID']
         self._existing_timesheets_dates, payroll_categories = self._get_existing_timesheets_data(
             myob_employee_uid, start_date, end_date
@@ -267,7 +264,7 @@ class TimeSheetSync(BaseCategoryMixin,
         :return: dict or None
         """
 
-        timesheet_date = format_date_to_myob(timezone.localtime(timesheet.shift_started_at).date())
+        timesheet_date = format_date_to_myob(timesheet.shift_started_at.date())
 
         # slip processing if time sheet date already exists in myob
         if timesheet_date in self._existing_timesheets_dates:
@@ -302,12 +299,11 @@ class TimeSheetSync(BaseCategoryMixin,
 
         job = timesheet.job_offer.job
         position = job.position
-        started_at = timezone.localtime(timesheet.shift_started_at)
         worked_hours = calc_worked_delta(timesheet)
         timesheets_with_rates = self.timesheet_rates_calc.calc(
             timesheet.master_company, job.jobsite.industry,
             RateCoefficientModifier.TYPE_CHOICES.candidate,
-            started_at,
+            timesheet.shift_started_at_tz,
             worked_hours,
             break_started=timesheet.break_started_at,
             break_ended=timesheet.break_ended_at,

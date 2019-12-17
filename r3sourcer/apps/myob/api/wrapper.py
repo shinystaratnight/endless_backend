@@ -12,7 +12,6 @@ import pytz
 import requests
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
 
@@ -21,6 +20,7 @@ from r3sourcer.apps.myob.api.utils import get_myob_app_info
 from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBCompanyFileToken, MYOBCompanyFile
 from r3sourcer.apps.myob.services.exceptions import MyOBCredentialException, MYOBException, MYOBProgrammingException, \
     MYOBImplementationException, MYOBServerException
+from r3sourcer.helpers.datetimes import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -158,8 +158,7 @@ class MYOBAuth(object):
         }
         if state is None:
             # could use oauth2 state param more properly
-            # TODO: Fix timezone
-            params['state'] = str(datetime.datetime.now().timestamp())
+            params['state'] = str(utc_now().timestamp())
         url = self.get_auth_url()
         req = requests.Request(method="GET", url=url, params=params)
         return req.prepare().url
@@ -297,14 +296,12 @@ class MYOBAuth(object):
             }
 
         url = self.get_token_url()
-        # TODO: Fix timezone
-        now = timezone.now()
         resp = myob_request('post', url, data=data)
         log.info('%s %s', resp.status_code, resp.content)
 
         resp_data = resp.json(parse_float=decimal.Decimal)
         expires_at = int(resp_data['expires_in'])  # value in seconds
-        expires_at = now + datetime.timedelta(seconds=expires_at)
+        expires_at = utc_now() + datetime.timedelta(seconds=expires_at)
         self.auth_data.access_token = resp_data['access_token']
         self.auth_data.refresh_token = resp_data['refresh_token']
         self.auth_data.expires_in = resp_data['expires_in']

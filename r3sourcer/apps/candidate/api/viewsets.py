@@ -1,6 +1,7 @@
+from datetime import timedelta
+
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Exists
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import status, exceptions, permissions as drf_permissions, viewsets, mixins
 from rest_framework.decorators import action
@@ -17,6 +18,7 @@ from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.hr.models import Job, TimeSheet
 from r3sourcer.apps.logger.main import location_logger
 from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.helpers.datetimes import utc_now
 from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
 from ..tasks import buy_candidate
@@ -271,7 +273,7 @@ class CandidateLocationViewset(BaseViewsetMixin,
         name = request.data.get('name')
 
         if not timesheet_id:
-            now = timezone.localtime()
+            now = utc_now()
             timesheet = TimeSheet.objects.filter(
                 job_offer__candidate_contact=instance,
                 shift_started_at__lte=now,
@@ -310,15 +312,13 @@ class CandidateLocationViewset(BaseViewsetMixin,
             job = Job.objects.get(id=job_id)
         except Job.DoesNotExist:
             exceptions.ValidationError({'job': _('Cannot find job')})
-        # TODO: Fix timezone
-        now = timezone.now()
 
         timesheets = list(TimeSheet.objects.filter(
-            Q(shift_ended_at__gte=now - timezone.timedelta(hours=8)) | Q(shift_ended_at=None),
+            Q(shift_ended_at__gte=utc_now() - timedelta(hours=8)) | Q(shift_ended_at=None),
             ~Q(shift_started_at=None),
             job_offer_id__in=job.get_job_offers().values('id'),
-                    going_to_work_confirmation=True,
-                ).values_list('id', flat=True))
+            going_to_work_confirmation=True,
+        ).values_list('id', flat=True))
 
         data = location_logger.fetch_location_candidates(
             instances=timesheets,

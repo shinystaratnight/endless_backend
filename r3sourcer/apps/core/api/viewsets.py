@@ -341,6 +341,20 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
         return Response(data)
 
+    @action(methods=['post'], detail=True)
+    def smses(self, request, *args, **kwargs):
+        instance = self.get_object()
+        manager = self.request.user.contact
+        data = {
+            'status': 'error',
+            'message': 'Mobile phone already verified',
+        }
+        if not instance.phone_mobile_verified:
+            tasks.send_contact_verify_sms.apply_async(args=(instance.id, manager.id))
+            data = {'status': 'success'}
+
+        return Response(data)
+
     def _update_password(self, serializer_class):
         instance = self.get_object()
         serializer = serializer_class(instance.user, data=self.request.data)
@@ -589,7 +603,8 @@ class CompanyContactViewset(BaseApiViewset):
     def is_approved_by_staff(self, user):
         return models.CompanyContactRelationship.objects.filter(
             company__type=models.Company.COMPANY_TYPES.master,
-            company_contact__contact__user=user).exists()
+            company_contact__contact__user=user
+        ).exists()
 
     def is_approved_by_manager(self, user):
         return models.CompanyRel.objects.filter(manager__contact__user=user).exists()
@@ -1020,15 +1035,14 @@ class FormViewSet(BaseApiViewset):
             raise exceptions.ValidationError(storage_helper.errors)
 
         instance = storage_helper.create_instance()
-        if CandidateContact.objects.get(id=instance.id):
-            if data.get('tests'):
-                for item in data.get('tests'):
-                    question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
-                    answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
-                    workflow_object = WorkflowObject.objects.get(object_id=str(instance.id))
-                    WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
-                                                        acceptance_test_question=question,
-                                                        answer=answer)
+        if CandidateContact.objects.get(id=instance.id) and data.get('tests'):
+            for item in data.get('tests'):
+                question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
+                answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
+                workflow_object = WorkflowObject.objects.get(object_id=str(instance.id))
+                WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
+                                                    acceptance_test_question=question,
+                                                    answer=answer)
 
         for extra_field in form_obj.builder.extra_fields.all():
             if extra_field.name not in extra_data:

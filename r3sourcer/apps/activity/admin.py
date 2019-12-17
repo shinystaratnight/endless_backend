@@ -6,16 +6,25 @@ from django.http import Http404, HttpResponseRedirect
 from django.shortcuts import get_object_or_404
 from django.utils.safestring import mark_safe
 from django.utils.translation import ugettext_lazy as _
+
+from r3sourcer.apps.activity.filters import (
+    ActivityTypeFilter,
+    OnlyMyActivityFilter,
+    make_actuality_filter,
+)
+from r3sourcer.apps.activity.models import (
+    Activity,
+    ActivityDate,
+    ActivityRepeat,
+    ActivityTemplate,
+)
 from r3sourcer.apps.core.admin import MessageTemplateAdmin
 from r3sourcer.apps.core_utils import admin_helpers
-from r3sourcer.apps.core_utils.filters import (DatePeriodRangeAdminFilter,
-                                        FieldDropDownFilter,
-                                        RelatedDropDownFilter)
+from r3sourcer.apps.core_utils.filters import (
+    DatePeriodRangeAdminFilter,
+    RelatedDropDownFilter,
+)
 from r3sourcer.apps.core_utils.mixins import RelatedFieldMixin
-
-from .models import Activity, ActivityDate, ActivityRepeat, ActivityTemplate
-
-from .filters import ActivityTypeFilter, OnlyMyActivityFilter, make_actuality_filter
 
 
 class GeneralActivityMixin(RelatedFieldMixin):
@@ -92,7 +101,9 @@ class GeneralActivityMixin(RelatedFieldMixin):
                                                  ActivityRepeat._meta.model_name)),
                 object_id
         )
-        return super(GeneralActivityMixin, self).change_view(request, object_id, form_url=form_url,
+        return super(GeneralActivityMixin, self).change_view(request,
+                                                             object_id,
+                                                             form_url=form_url,
                                                              extra_context=extra_context)
 
 

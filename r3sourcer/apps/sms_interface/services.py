@@ -1,21 +1,19 @@
 import logging
 from abc import ABCMeta, abstractmethod
 
+from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
-from django.conf import settings
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.phonenumber import PhoneNumber
 
 from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.companies import get_site_master_company
-
 from .exceptions import SMSServiceError, AccountHasNotPhoneNumbers, SMSBalanceError, SMSDisableError
 from .helpers import get_sms, get_phone_number
 from .models import SMSMessage, SMSTemplate
-
+from ...helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -85,11 +83,10 @@ class BaseSMSService(metaclass=ABCMeta):
 
             # get sms activity
             if ac:
-                ac.activity = ac.create_activity(
-                    _("Undelivered message"), _("Undelivered message"),
-                    # TODO: Fix timezone
-                    sms_message.sent_at, timezone.now()
-                )
+                ac.activity = ac.create_activity(_("Undelivered message"),
+                                                 _("Undelivered message"),
+                                                 sms_message.sent_at,
+                                                 utc_now())
                 ac.save(update_fields=['activity_id'])
         except SMSBalanceError:
             sms_message.error_code = "No Funds"
@@ -146,7 +143,8 @@ class BaseSMSService(metaclass=ABCMeta):
     @transaction.atomic
     def _process_sms(self, sms_message):
         is_new_sms = not SMSMessage.objects.filter(
-            sid=sms_message.sid, is_fetched=True
+            sid=sms_message.sid,
+            is_fetched=True
         ).exists()
 
         sms_message.is_fetched = True
@@ -234,12 +232,11 @@ class BaseSMSService(metaclass=ABCMeta):
                 related_object)
             )
         else:
-            sms_activity.create_activity(
-                _('Could not find sent SMS'), _('Could not find sent SMS'),
-                # TODO: Fix timezone
-                sms_message.sent_at, timezone.now(),
-                contact=sms_activity.to_contact
-            )
+            sms_activity.create_activity(_('Could not find sent SMS'),
+                                         _('Could not find sent SMS'),
+                                         sms_message.sent_at,
+                                         utc_now(),
+                                         contact=sms_activity.to_contact)
         return related_object
 
     def _is_positive(self, sms_message, sms_activity):
@@ -248,12 +245,11 @@ class BaseSMSService(metaclass=ABCMeta):
             # TODO: implement positive handler
             positive = True
         elif sms_message.is_negative_answer():
-            sms_activity.create_activity(
-                _('Negative answer'), _('Negative answer'),
-                # TODO: Fix timezone
-                sms_message.sent_at, timezone.now(),
-                contact=sms_activity.to_contact
-            )
+            sms_activity.create_activity(_('Negative answer'),
+                                         _('Negative answer'),
+                                         sms_message.sent_at,
+                                         utc_now(),
+                                         contact=sms_activity.to_contact)
             positive = False
         return positive
 
@@ -261,11 +257,11 @@ class BaseSMSService(metaclass=ABCMeta):
         # TODO: not sure if we should call sent_message.no_check_reply() here
         if sent_message:
             sms_message.add_related_objects(*sent_message.get_related_objects())
-        sms_activity.create_activity(
-            _('Ambiguous answer'), _('Ambiguous answer'),
-            # TODO: Fix timezone
-            sms_message.sent_at, timezone.now(), contact=sms_activity.to_contact
-        )
+        sms_activity.create_activity(_('Ambiguous answer'),
+                                     _('Ambiguous answer'),
+                                     sms_message.sent_at,
+                                     utc_now(),
+                                     contact=sms_activity.to_contact)
         if sms_activity.from_contact and sms_activity.to_contact:
             sms_data = {
                 'full_name': str(sms_activity.from_contact),

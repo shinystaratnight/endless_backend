@@ -5,7 +5,6 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
-from django.utils import timezone
 from django.utils.decorators import method_decorator
 from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
@@ -17,7 +16,7 @@ from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.api import serializers
 from r3sourcer.apps.core.tasks import send_trial_email, cancel_trial
-from r3sourcer.apps.core.utils.utils import tz_time2utc_time
+from r3sourcer.helpers.datetimes import utc_now, tz2utc
 
 User = get_user_model()
 
@@ -69,8 +68,7 @@ class TrialUserView(viewsets.GenericViewSet):
         # set role and permissions
         permission_list = GlobalPermission.objects.all()
         new_user.user_permissions.add(*permission_list)
-        # TODO: Fix timezone
-        new_user.trial_period_start = timezone.now()
+        new_user.trial_period_start = utc_now()
         new_user.save()
 
         company = models.Company.objects.create(
@@ -99,11 +97,10 @@ class TrialUserView(viewsets.GenericViewSet):
                 submit_message="You've been registered!"
             )
         )
-        # TODO: Fix timezone
-        end_of_trial = timezone.now() + datetime.timedelta(days=30)
+        end_of_trial = utc_now() + datetime.timedelta(days=30)
 
         send_trial_email.apply_async([contact.id, company.id], countdown=10)
-        utc_end_of_trial = tz_time2utc_time(end_of_trial)
+        utc_end_of_trial = tz2utc(end_of_trial)
         cancel_trial.apply_async([new_user.id], eta=utc_end_of_trial)
 
         return Response({

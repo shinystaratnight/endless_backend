@@ -1,4 +1,4 @@
-import datetime
+from datetime import timedelta
 from decimal import Decimal
 
 import stripe
@@ -11,7 +11,7 @@ from django.conf import settings
 from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance, SubscriptionType, StripeCountryAccount
 from r3sourcer.apps.core.models import Company, VAT
 from r3sourcer.apps.email_interface.utils import get_email_service
-
+from r3sourcer.helpers.datetimes import utc_now
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
 logger = get_task_logger(__name__)
@@ -23,7 +23,7 @@ def charge_for_extra_workers():
     Checks number of active workers. If that number is bigger that number of workers from client's plan
     then it charges extra fee for every worker.
     """
-    today = datetime.datetime.today().date()
+    today = utc_now().date()
     company_list = Company.objects.filter(type=Company.COMPANY_TYPES.master) \
                                   .filter(subscriptions__active=True) \
                                   .filter(subscriptions__current_period_end=today)
@@ -171,12 +171,10 @@ def fetch_payments():
 
 @shared_task
 def send_sms_payment_reminder():
-    # TODO: Fix timezone
-    now = datetime.datetime.now()
     balance_objects = SMSBalance.objects.filter(last_payment__status='not_paid')
-    one_day_objects = balance_objects.filter(last_payment__created__gte=now-datetime.timedelta(days=1))
-    two_days_objects = balance_objects.filter(last_payment__created__gte=now-datetime.timedelta(days=2)) \
-                                      .filter(last_payment__created__lt=now-datetime.timedelta(days=1))
+    one_day_objects = balance_objects.filter(last_payment__created__gte=utc_now() - timedelta(days=1))
+    two_days_objects = balance_objects.filter(last_payment__created__gte=utc_now() - timedelta(days=2)) \
+                                      .filter(last_payment__created__lt=utc_now() - timedelta(days=1))
     email_interface = get_email_service()
 
     for sms_balance in one_day_objects:

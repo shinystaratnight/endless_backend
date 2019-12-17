@@ -1,4 +1,5 @@
 import json
+from datetime import datetime
 
 import jwt
 
@@ -8,7 +9,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import PermissionDenied
 from django.db import models
 from django.http import Http404
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from django.shortcuts import get_list_or_404
 from django import forms
@@ -123,16 +123,10 @@ class MessageViewBase(object):
             return model_class.objects.filter(pk=object_id).last()
 
         def parse_date(dt_str):
-            try:
-                return timezone.datetime.strptime(dt_str, '%d/%m/%Y')
-            except Exception:
-                pass
+            return datetime.strptime(dt_str, '%d/%m/%Y')
 
         def parse_datetime(dtm_str):
-            try:
-                return timezone.datetime.strptime(dtm_str, '%d/%m/%Y %H:%M')
-            except Exception:
-                pass
+            return datetime.strptime(dtm_str, '%d/%m/%Y %H:%M')
 
         base_types = {
             'date': parse_date,

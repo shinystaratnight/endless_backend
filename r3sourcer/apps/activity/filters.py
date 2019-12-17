@@ -1,12 +1,13 @@
-from django.utils import timezone
+from datetime import timedelta
+
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from django.contrib import admin
 
+from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.models import Contact
-
-from .models import Activity
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class ActivityTypeFilter(admin.SimpleListFilter):
@@ -23,7 +24,7 @@ class ActivityTypeFilter(admin.SimpleListFilter):
             try:
                 model = factory.get_instance_class(name, fail_fast=True)
                 results.append((name, model._meta.verbose_name))
-            except:
+            except Exception as e:
                 pass
         return results
 
@@ -64,7 +65,7 @@ class ActivityExtraFilter(admin.filters.SimpleListFilter):
     title = None
 
     def __init__(self, request, params, model, model_admin):
-        super(admin.SimpleListFilter, self).__init__(request, params, model, model_admin)
+        super().__init__(request, params, model, model_admin)
 
         for param in self.expected_parameters():
             if param in params:
@@ -101,18 +102,16 @@ class ActivityExtraFilter(admin.filters.SimpleListFilter):
 
     def get_links(self, cl):
         result = list()
-        # TODO: Fix timezone
-        now_date_time = timezone.localtime(timezone.now()).date()
-        yesterday = (now_date_time - timezone.timedelta(days=1))  # .replace(hour=0, minute=0, second=0)
-        tomorrow = (now_date_time + timezone.timedelta(days=1))  # .replace(hour=23, minute=59, second=59)
+        now_date_time = utc_now().date()
+        yesterday = (now_date_time - timedelta(days=1))  # .replace(hour=0, minute=0, second=0)
+        tomorrow = (now_date_time + timedelta(days=1))  # .replace(hour=23, minute=59, second=59)
         tomorrow_start = tomorrow  # .replace(hour=0, minute=0, second=0)
         tomorrow_end = tomorrow  # .replace(hour=23, minute=59, second=59)
         monday = (
-        now_date_time - timezone.timedelta(days=now_date_time.weekday()))  # .replace(hour=0, minute=0, second=0)
-        sunday = (now_date_time + timezone.timedelta(
-            days=(7 - now_date_time.weekday())))  # .replace(hour=23, minute=59, second=59)
-        next_monday = monday + timezone.timedelta(days=7)
-        next_sunday = sunday + timezone.timedelta(days=7)
+        now_date_time - timedelta(days=now_date_time.weekday()))  # .replace(hour=0, minute=0, second=0)
+        sunday = (now_date_time + timedelta(days=(7 - now_date_time.weekday())))  # .replace(hour=23, minute=59, second=59)
+        next_monday = monday + timedelta(days=7)
+        next_sunday = sunday + timedelta(days=7)
 
         # actual
         data_dict = {

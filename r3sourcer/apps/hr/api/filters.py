@@ -1,7 +1,6 @@
 import datetime
 
 from django.db.models import Q, OuterRef, Exists
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
 from django_filters import UUIDFilter, NumberFilter, BooleanFilter, ChoiceFilter
@@ -13,6 +12,7 @@ from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Invoice
 from r3sourcer.apps.core_adapter.filters import DateRangeFilter
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class TimesheetFilter(FilterSet):
@@ -73,9 +73,7 @@ class TimesheetFilter(FilterSet):
         :param contact: request.user.contact
         :return: Q object
         """
-        # TODO: Fix timezone
-        now = timezone.now()
-        ended_at = now - datetime.timedelta(hours=4)
+        ended_at = utc_now() - datetime.timedelta(hours=4)
 
         qs_unapproved = (
             Q(candidate_submitted_at__isnull=False) |
