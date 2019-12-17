@@ -101,6 +101,7 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
     TYPE_CHOICES = Choices(
         ('SENT', _("SMS sent")),
         ('RECEIVED', _("SMS received")),
+        ('UNKNOWN', _('SMS Unknown')),
     )
 
     STATUS_CHOICES = Choices(
@@ -134,7 +135,7 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
         blank=True,
         verbose_name=_("Type"),
         choices=TYPE_CHOICES,
-        default=TYPE_CHOICES.SENT,
+        default=TYPE_CHOICES.UNKNOWN,
     )
     reply_to = models.ForeignKey(
         'sms_interface.SMSMessage',
@@ -175,6 +176,8 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
     )
     company = models.ForeignKey(
         'core.Company',
+        null=True,
+        blank=True,
         verbose_name=_('Company'),
     )
     segments = models.IntegerField(
