@@ -176,6 +176,8 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
     )
     company = models.ForeignKey(
         'core.Company',
+        null=True,
+        blank=True,
         verbose_name=_('Company'),
     )
     segments = models.IntegerField(
