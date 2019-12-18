@@ -28,7 +28,7 @@ from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
-from r3sourcer.apps.sms_interface.models import SMSMessage
+from r3sourcer.apps.sms_interface.models import SMSMessage, SMSTemplate
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.celeryapp import app
 from r3sourcer.helpers.datetimes import utc_now, tz2utc
@@ -86,8 +86,14 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
         'related_obj': job_offer,
         'related_objs': [job_offer.candidate_contact, job_offer.job]
     }
+
+    try:
+        sms_template = SMSTemplate.objects.get(company=master_company, slug=tpl_id)
+    except SMSTemplate.DoesNotExist:
+        sms_template = SMSTemplate.objects.get(company=None, slug=tpl_id)
+
     sent_message = sms_interface.send_tpl(
-        job_offer.candidate_contact.contact.phone_mobile, tpl_id, check_reply=bool(action_sent), **data_dict
+        job_offer.candidate_contact.contact.phone_mobile, sms_template.id, check_reply=bool(action_sent), **data_dict
     )
 
     if action_sent and sent_message:
@@ -192,8 +198,15 @@ def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
                 related_objs=[job_offer.candidate_contact, job_offer.job]
             )
 
+            master_company = job_offer.shift.date.job.jobsite.master_company
+
+            try:
+                sms_template = SMSTemplate.objects.get(company=master_company, slug=tpl_id)
+            except SMSTemplate.DoesNotExist:
+                sms_template = SMSTemplate.objects.get(company=None, slug=tpl_id)
+
             sms_interface.send_tpl(
-                recipients.get(recipient, None), tpl_id, check_reply=False, **data_dict
+                recipients.get(recipient, None), sms_template.id, check_reply=False, **data_dict
             )
 
 
@@ -385,7 +398,15 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 if time_sheet.shift_ended_at.date() != utc_now().date():
                     sms_tpl = events_dict[event].get('sms_old_tpl', sms_tpl)
 
-                sms_interface.send_tpl(recipient.contact.phone_mobile, sms_tpl, check_reply=False, **data_dict)
+                master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
+
+                try:
+                    sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
+                except SMSTemplate.DoesNotExist:
+                    sms_template = SMSTemplate.objects.get(company=None, slug=sms_tpl)
+
+                sms_interface.send_tpl(recipient.contact.phone_mobile, tpl_id=sms_template.id, check_reply=False,
+                                       **data_dict)
 
             if candidate.message_by_email:
                 try:
@@ -458,7 +479,14 @@ def send_supervisor_timesheet_message(
                 logger.exception('Cannot load SMS service')
                 return
 
-            sms_interface.send_tpl(supervisor.contact.phone_mobile, sms_tpl, check_reply=False, **data_dict)
+            master_company = core_companies_utils.get_site_master_company(user=supervisor.contact.user)
+
+            try:
+                sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
+            except SMSTemplate.DoesNotExist:
+                sms_template = SMSTemplate.objects.get(company=None, slug=sms_tpl)
+
+            sms_interface.send_tpl(supervisor.contact.phone_mobile, sms_template.id, check_reply=False, **data_dict)
 
         if should_send_email:
             try:
@@ -675,7 +703,13 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
                     logger.exception('Cannot load SMS service')
                     return
 
-                sms_interface.send_tpl(recipient.contact.phone_mobile, sms_tpl, check_reply=False, **data_dict)
+                master_company = timesheet.master_company
+                try:
+                    sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
+                except SMSTemplate.DoesNotExist:
+                    sms_template = SMSTemplate.objects.get(company=None, slug=sms_tpl)
+
+                sms_interface.send_tpl(recipient.contact.phone_mobile, sms_template.id, check_reply=False, **data_dict)
 
 
 @app.task(bind=True, queue='sms')
@@ -725,8 +759,13 @@ def send_going_to_work_sms(self, time_sheet_id):
                 logger.exception('Cannot load SMS service')
                 return
 
+            try:
+                sms_template = SMSTemplate.objects.get(company=time_sheet.master_company, slug='candidate-going-to-work')
+            except SMSTemplate.DoesNotExist:
+                sms_template = SMSTemplate.objects.get(company=None, slug='candidate-going-to-work')
+
             sent_message = sms_interface.send_tpl(
-                candidate_contact.contact.phone_mobile, 'candidate-going-to-work', check_reply=check_reply, **data_dict
+                candidate_contact.contact.phone_mobile, sms_template.id, check_reply=check_reply, **data_dict
             )
 
             if not sent_message:
@@ -817,9 +856,14 @@ def send_job_confirmation_sms(self, job_id):
             related_obj=job,
             related_objs=[job.customer_representative, jobsite, job.provider_representative, extranet_login],
         )
+        master_company = jobsite.master_company
+        try:
+            sms_template = SMSTemplate.objects.get(company=master_company, slug='job-confirmed')
+        except SMSTemplate.DoesNotExist:
+            sms_template = SMSTemplate.objects.get(company=None, slug='job-confirmed')
 
         sms_interface.send_tpl(
-            job.customer_representative.contact.phone_mobile, 'job-confirmed', check_reply=False, **data_dict
+            job.customer_representative.contact.phone_mobile, sms_template.id, check_reply=False, **data_dict
         )
 
 

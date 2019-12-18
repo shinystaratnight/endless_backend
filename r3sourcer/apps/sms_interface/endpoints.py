@@ -30,7 +30,13 @@ class SMSLogEndpoint(ApiEndpoint):
     search_fields = ('from_number', 'to_number', 'sid')
 
 
+class SMSTemplateEndpoint(ApiEndpoint):
+
+    model = sms_models.SMSTemplate
+    base_viewset = viewsets.SMSMessageTemplateViewset
+
+
 router.register(endpoint=SMSMessageApiEndpoint())
 router.register(endpoint=SMSRelatedObjectEndpoint())
-router.register(sms_models.SMSTemplate)
+router.register(endpoint=SMSTemplateEndpoint())
 router.register(endpoint=SMSLogEndpoint(), url='sms-interface/smslogs')
