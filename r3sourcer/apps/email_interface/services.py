@@ -4,15 +4,13 @@ import smtplib
 from abc import ABCMeta, abstractmethod
 from email.message import EmailMessage
 
-
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
-from django.utils import timezone
 
 from r3sourcer.apps.email_interface import models as email_models
 from r3sourcer.apps.email_interface.exceptions import RecipientsInvalidInstance, EmailBaseServiceError
-
+from r3sourcer.helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -35,14 +33,12 @@ class BaseEmailService(metaclass=ABCMeta):
             else:
                 raise RecipientsInvalidInstance('Recipients should be either string or list')
 
-            now_dt = timezone.now()
-
             email_message = email_models.EmailMessage(
                 state=email_models.EmailMessage.STATE_CHOICES.CREATED,
                 sent_at=None,
                 from_email=from_email,
                 subject=subject,
-                created_at=now_dt,
+                created_at=utc_now(),
                 to_addresses=to_addresses,
                 template=template
             )

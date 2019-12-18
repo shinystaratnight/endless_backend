@@ -3,23 +3,20 @@ import datetime
 from celery import shared_task
 from celery.utils.log import get_task_logger
 
-from django.db.models import Q
-from django.utils import timezone
+from django.db.models import Q, F
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import Company, Invoice
 from r3sourcer.apps.core.tasks import one_task_at_the_same_time
-from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.hr.models import TimeSheet
-from r3sourcer.apps.myob.api.wrapper import MYOBServerException, MYOBClient
-from r3sourcer.apps.myob.helpers import get_myob_client
-from r3sourcer.apps.myob.models import MYOBSyncObject, MYOBRequestLog, MYOBCompanyFileToken
-from r3sourcer.apps.myob.services.candidate import CandidateSync
+from r3sourcer.apps.myob.services.exceptions import MYOBServerException
+from r3sourcer.apps.myob.helpers import get_myob_client, get_myob_settings
+from r3sourcer.apps.myob.models import MYOBRequestLog
 from r3sourcer.apps.myob.services.invoice import InvoiceSync
 from r3sourcer.apps.myob.services.timesheet import TimeSheetSync
 from r3sourcer.apps.myob.services.utils import sync_candidate_contacts_to_myob, sync_companies_to_myob
 from r3sourcer.celeryapp import app
-
+from r3sourcer.helpers.datetimes import utc_now
 
 logger = get_task_logger(__name__)
 
@@ -35,27 +32,36 @@ def retry_on_myob_error(origin_task):
     return wrap
 
 
-def get_myob_client_for_account(company):
-    myob_client = get_myob_client(company=company)
-    if myob_client:
-        myob_client.init_api()
-    return myob_client
+@app.task(bind=True)
+def sync_company_to_myob(self, settings, regular_company_id, master_company_id):
+    if settings.get('time_sheet_company_file_id'):
+        sync_candidate_contacts_myob(settings['time_sheet_company_file_id'],
+                                     regular_company_id,
+                                     master_company_id)
+
+    if settings.get('invoice_company_file_id'):
+        sync_active_companies_to_myob(settings['invoice_company_file_id'],
+                                      master_company_id)
 
 
 @app.task(bind=True)
-def sync_company_to_myob(self, company_id):
-    company = Company.objects.get(id=company_id)
-    company_settings = getattr(company, 'myob_settings', None)
+def sync_active_companies_to_myob(self, company_file_id, master_company_id):
+    """Pay attention company file id should have been associated
+       with time invoice company file id
+    """
+    myob_client = get_myob_client(company_id=master_company_id,
+                                  myob_company_file_id=company_file_id)
+    sync_companies_to_myob(myob_client, master_company_id)
 
-    if company_settings and company_settings.timesheet_company_file:
-        myob_client = get_myob_client(
-            cf_id=company_settings.timesheet_company_file.cf_id)
-        sync_candidate_contacts_to_myob(myob_client, company)
 
-    if company_settings and company_settings.invoice_company_file:
-        myob_client = get_myob_client(
-            cf_id=company_settings.invoice_company_file.cf_id)
-        sync_companies_to_myob(myob_client, company)
+@app.task(bind=True)
+def sync_candidate_contacts_myob(self, company_file_id, regular_company_id, master_company_id):
+    """Pay attention company file id should have been associated
+       with time sheet company file id
+    """
+    myob_client = get_myob_client(company_id=master_company_id,
+                                  myob_company_file_id=company_file_id)
+    sync_candidate_contacts_to_myob(myob_client, regular_company_id)
 
 
 @app.task(bind=True)
@@ -71,25 +77,28 @@ def sync_to_myob(self):
         Q(myob_settings__timesheet_company_file__isnull=False)
     ).values_list('id', flat=True)
     for company_id in companies:
-        sync_company_to_myob(company_id)
+        settings = get_myob_settings(company_id)
+        sync_company_to_myob(settings, company_id, company_id)
 
 
 @app.task(bind=True)
-@one_task_at_the_same_time()
 @retry_on_myob_error
 def sync_timesheets(self):
     companies = Company.objects.filter(type=Company.COMPANY_TYPES.master)
 
     for company in companies:
-        candidates = CandidateContact.objects.owned_by(company)
+        settings = get_myob_settings(company.id)
 
-        company_settings = getattr(company, 'myob_settings', None)
-        if not company_settings or not company_settings.timesheet_company_file:
+        if not settings.get('time_sheet_company_file_id'):
             logger.warn('Company %s has no TimeSheet Company Files configured', str(company))
             continue
 
-        sync_service = TimeSheetSync(cf_id=company_settings.timesheet_company_file.cf_id, company=company)
+        myob_client = get_myob_client(company_id=company.id,
+                                      myob_company_file_id=settings['time_sheet_company_file_id'])
 
+        sync_service = TimeSheetSync(myob_client)
+
+        candidates = CandidateContact.objects.owned_by(company)
         for candidate in candidates:
             sync_service.sync_to_myob(candidate)
 
@@ -103,24 +112,22 @@ def clean_myob_request_log(self):
     Clean myob request logs from db.
     """
 
-    today = datetime.date.today()
+    today = utc_now().date()
     MYOBRequestLog.objects.filter(created__date__lt=today).delete()
 
 
 @shared_task
-@retry_on_myob_error
 def sync_invoice(invoice_id):
     invoice = Invoice.objects.get(id=invoice_id)
     company = invoice.provider_company
 
+    cf_id = None
     if company.myob_settings.invoice_company_file:
         company_file = company.myob_settings.invoice_company_file
-        cf_token = company_file.tokens.first()
-    else:
-        cf_token = MYOBCompanyFileToken.objects.filter(company=company).first()
+        cf_id = company_file.id
 
-    client = MYOBClient(cf_data=cf_token)
-    service = InvoiceSync(myob_client=client, company=company)
+    client = get_myob_client(company_id=company.id, myob_company_file_id=cf_id)
+    service = InvoiceSync(client)
 
     params = {"$filter": "Number eq '%s'" % invoice.number}
     synced_invoice = client.api.Sale.Invoice.TimeBilling.get(params=params)
@@ -146,21 +153,36 @@ def sync_invoice(invoice_id):
         logger.warn('Sync to MYOB failed')
     else:
         if synced:
-            invoice.synced_at = timezone.now()
+            invoice.synced_at = invoice.now_utc
             invoice.save(update_fields=['synced_at'])
 
 
 @app.task(bind=True)
-@one_task_at_the_same_time()
 @retry_on_myob_error
-def sync_timesheet(self, timesheet_id):
+def sync_time_sheet(self, time_sheet_id):
+    qs = TimeSheet.objects.filter(
+        pk=time_sheet_id
+    ).annotate(
+        regular_company_id=F('job_offer__shift__date__job__jobsite__regular_company_id'),
+        master_company_id=F('job_offer__shift__date__job__jobsite__master_company_id'),
+        candidate_contact_id=F('job_offer__candidate_contact_id'),
+    ).values_list(
+        'regular_company_id',
+        'master_company_id',
+        'candidate_contact_id',
+    )
     try:
-        timesheet = TimeSheet.objects.get(id=timesheet_id)
+        regular_company_id, master_company_id, candidate_contact_id = qs.get()
     except TimeSheet.DoesNotExist:
         logger.warn('TimeSheet with id=%s does not exist')
         return
 
-    regular_company = str(timesheet.regular_company.id)
-    sync_company_to_myob(regular_company)
-    service = TimeSheetSync.from_candidate(timesheet.job_offer.candidate_contact)
-    service.sync_single_to_myob(timesheet)
+    settings = get_myob_settings(master_company_id)
+
+    sync_candidate_contacts_myob(settings['time_sheet_company_file_id'],
+                                 regular_company_id,
+                                 master_company_id)
+
+    candidate_contact = CandidateContact.objects.get(pk=candidate_contact_id)
+    service = TimeSheetSync.from_candidate(settings, master_company_id)
+    service.sync_single_to_myob(time_sheet_id, candidate_contact)

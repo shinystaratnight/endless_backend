@@ -1,40 +1,37 @@
 from cities_light.loading import get_model
 from django.apps import apps
 from django.conf import settings
-from django.db import transaction
-from django.db.models import Q, ForeignKey
 from django.contrib.auth import logout
-from django.contrib.sites.models import Site
 from django.contrib.contenttypes.models import ContentType
+from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
+from django.db import transaction
+from django.db.models import Q, ForeignKey
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
-
-from phonenumber_field import phonenumber
 from rest_framework import viewsets, exceptions, status, fields
-from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import action
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
+from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
+from r3sourcer.apps.core import tasks
+from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.models.dashboard import DashboardModule
+from r3sourcer.apps.core.utils.address import parse_google_address
+from r3sourcer.apps.core.utils.form_builder import StorageHelper
+from r3sourcer.apps.core.utils.utils import normalize_phone_number, validate_phone_number
+from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.apps.pricing.models import Industry
+from . import permissions, serializers
 from .. import models, mixins
 from ..decorators import get_model_workflow_functions
 from ..service import factory
 from ..utils.companies import get_master_companies_by_contact, get_site_master_company
 from ..utils.user import get_default_company
 from ..workflow import WorkflowProcess
-
-from . import permissions, serializers
-
-from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
-from r3sourcer.apps.core import tasks
-from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
-from r3sourcer.apps.core.models.dashboard import DashboardModule
-from r3sourcer.apps.core.utils.form_builder import StorageHelper
-from r3sourcer.apps.core.utils.address import parse_google_address
-from r3sourcer.apps.myob.models import MYOBSyncObject
-from r3sourcer.apps.pricing.models import Industry
 
 
 class BaseViewsetMixin():
@@ -184,14 +181,6 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     phone_fields = ['phone_mobile']
     raise_invalid_address = False
 
-    def normalize_phone(self, phone):
-        if phone.startswith('0'):
-            phone = '+61{}'.format(phone[1:])
-        elif not phone.startswith('+'):
-            phone = '+{}'.format(phone)
-
-        return phone
-
     def perform_create(self, serializer):
         instance = serializer.save()
 
@@ -204,7 +193,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def validate(self, request, *args, **kwargs):
         email = request.GET.get('email')
-        phone = request.GET.get('phone')
+        phone = request.GET.get('phone', '').strip()
 
         if email is not None:
             try:
@@ -216,9 +205,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
                     'message': e.message
                 })
         elif phone is not None:
-            phone = self.normalize_phone(phone)
-            phone_number = phonenumber.to_python(phone)
-            if not phone_number or not phone_number.is_valid():
+            phone = normalize_phone_number(phone)
+            if not phone or validate_phone_number(phone) is False:
                 raise exceptions.ValidationError({
                     'valid': False,
                     'message': _('Enter a valid Phone Number')
@@ -243,19 +231,23 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def exists(self, request, *args, **kwargs):
         email = request.GET.get('email')
         phone = request.GET.get('phone', '').strip()
-        phone = self.normalize_phone(phone)
-
         message = ''
-
         if email and models.Contact.objects.filter(email=email).exists():
             message = _('User with this email already registered')
-        elif phone and models.Contact.objects.filter(phone_mobile=phone).exists():
-            message = _('User with this phone number already registered')
+        elif phone:
+            _phone = normalize_phone_number(phone)
+            if validate_phone_number(_phone) is False:
+                message = _('Invalid phone number %s' % phone)
+            if validate_phone_number(_phone) is True and models.Contact.objects.filter(phone_mobile=_phone).exists():
+                message = _('User with this phone number already registered')
 
         if message:
-            raise exceptions.ValidationError({
-                'valid': False,
-                'message': message
+            return Response({
+                'errors': {
+                    'valid': False,
+                    'message': message
+                },
+                'status': 'error'
             })
 
         return Response({
@@ -330,6 +322,36 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         if (is_email or is_sms) and request.user.id == instance.user.id:
             logout(request)
             data['logout'] = True
+
+        return Response(data)
+
+    @action(methods=['post'], detail=True)
+    def emails(self, request, *args, **kwargs):
+        instance = self.get_object()
+        manager = self.request.user.contact
+        master_company = get_site_master_company(request=self.request)
+        data = {
+            'status': 'error',
+            'message': 'Email already verified',
+        }
+        if not instance.email_verified:
+            tasks.send_contact_verify_email.apply_async(
+                args=(instance.id, manager.id, master_company.id))
+            data = {'status': 'success'}
+
+        return Response(data)
+
+    @action(methods=['post'], detail=True)
+    def smses(self, request, *args, **kwargs):
+        instance = self.get_object()
+        manager = self.request.user.contact
+        data = {
+            'status': 'error',
+            'message': 'Mobile phone already verified',
+        }
+        if not instance.phone_mobile_verified:
+            tasks.send_contact_verify_sms.apply_async(args=(instance.id, manager.id))
+            data = {'status': 'success'}
 
         return Response(data)
 
@@ -581,7 +603,8 @@ class CompanyContactViewset(BaseApiViewset):
     def is_approved_by_staff(self, user):
         return models.CompanyContactRelationship.objects.filter(
             company__type=models.Company.COMPANY_TYPES.master,
-            company_contact__contact__user=user).exists()
+            company_contact__contact__user=user
+        ).exists()
 
     def is_approved_by_manager(self, user):
         return models.CompanyRel.objects.filter(manager__contact__user=user).exists()
@@ -626,12 +649,11 @@ class CompanyContactViewset(BaseApiViewset):
         master_company = get_site_master_company(request=self.request)
 
         if not instance.contact.phone_mobile_verified:
-            tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id), countdown=10)
+            tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id))
 
         if not instance.contact.email_verified:
             tasks.send_contact_verify_email.apply_async(
-                args=(instance.contact.id, manager_id.id, master_company.id), countdown=10
-            )
+                args=(instance.contact.id, manager_id.id, master_company.id))
 
     @action(methods=['post'], detail=False)
     def register(self, request, *args, **kwargs):
@@ -888,6 +910,7 @@ class CompanyWorkflowNodeViewset(BaseApiViewset):
 class UserDashboardModuleViewSet(BaseApiViewset):
 
     CAN_NOT_CREATE_MODULE_ERROR = _("You should be CompanyContact to creating module")
+    MODULE_ALREADY_EXISTS = _("Module already exists")
 
     def get_queryset(self):
         if self.request.user.is_authenticated():
@@ -899,15 +922,18 @@ class UserDashboardModuleViewSet(BaseApiViewset):
         return models.DashboardModule.objects.none()
 
     def perform_create(self, serializer):
+        qs = models.UserDashboardModule.objects.filter(
+                company_contact__contact__user=self.request.user.id,
+                dashboard_module=serializer.validated_data['dashboard_module'])
+        if qs.exists():
+            raise exceptions.ValidationError(self.MODULE_ALREADY_EXISTS)
 
-        company_contact = self.request.user.contact.company_contact.last()
+        user = self.request.user
+        company_contact = user.contact.company_contact.last()
         if company_contact is None:
             raise exceptions.APIException(self.CAN_NOT_CREATE_MODULE_ERROR)
 
-        has_create_perm = self.request.user.has_perm(
-            'can_use_module', obj=serializer.validated_data['dashboard_module']
-        )
-        if not has_create_perm:
+        if user.is_manager() is False:
             raise exceptions.PermissionDenied
         serializer.save(company_contact=company_contact)
 
@@ -1009,15 +1035,14 @@ class FormViewSet(BaseApiViewset):
             raise exceptions.ValidationError(storage_helper.errors)
 
         instance = storage_helper.create_instance()
-        if CandidateContact.objects.get(id=instance.id):
-            if data.get('tests'):
-                for item in data.get('tests'):
-                    question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
-                    answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
-                    workflow_object = WorkflowObject.objects.get(object_id=str(instance.id))
-                    WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
-                                                        acceptance_test_question=question,
-                                                        answer=answer)
+        if CandidateContact.objects.get(id=instance.id) and data.get('tests'):
+            for item in data.get('tests'):
+                question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
+                answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
+                workflow_object = WorkflowObject.objects.get(object_id=str(instance.id))
+                WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
+                                                    acceptance_test_question=question,
+                                                    answer=answer)
 
         for extra_field in form_obj.builder.extra_fields.all():
             if extra_field.name not in extra_data:
@@ -1072,12 +1097,8 @@ class AddressViewset(GoogleAddressMixin, BaseApiViewset):
 
     @action(methods=['post'], detail=False, permission_classes=(AllowAny,))
     def parse(self, request, *args, **kwargs):
-        try:
-            address_data = request.data
-            data = parse_google_address(address_data)
-        except Exception:
-            raise exceptions.ValidationError(_('Address is invalid!'))
-
+        address_data = request.data
+        data = parse_google_address(address_data)
         return Response(data)
 
 

@@ -1,27 +1,26 @@
+import logging
+from datetime import timedelta
+
 from django.core.exceptions import ValidationError
-from django.db import transaction
 from django.db import models
+from django.db import transaction
 from django.db.models.signals import post_save
-from django.utils import timezone
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
-
-from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
-from r3sourcer.apps.sms_interface import models as sms_models
 from model_utils import Choices
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
-import datetime
-import logging
-
 from r3sourcer.apps.core.models import UUIDModel
+from r3sourcer.apps.sms_interface import models as sms_models
+from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
+from r3sourcer.helpers.datetimes import tz2utc, utc_now
 
 logger = logging.getLogger(__name__)
 
 
 def get_parse_date_from():
-    return timezone.now() - datetime.timedelta(hours=24)
+    return utc_now() - timedelta(hours=24)
 
 
 class TwilioCredential(UUIDModel, DeadlineCheckingMixin):
@@ -111,8 +110,8 @@ class TwilioPhoneNumber(sms_models.PhoneNumber):
                 'sid': remote_phone.sid,
                 'company': company,
                 'account_sid': remote_phone.account_sid,
-                'created_at': sms_models.replace_timezone(remote_phone.date_created),
-                'updated_at': sms_models.replace_timezone(remote_phone.date_updated),
+                'created_at': tz2utc(remote_phone.date_created),
+                'updated_at': tz2utc(remote_phone.date_updated),
             })
 
         return values_phone
@@ -237,7 +236,7 @@ class TwilioAccount(UUIDModel):
     def get_last_sync(self):
         last_sync = self.last_sync
         if last_sync:
-            last_sync -= datetime.timedelta(hours=self.TIMEDELTA_DAYS_FETCH)  # last_sync - TIMEDELTA_DAYS
+            last_sync -= timedelta(hours=self.TIMEDELTA_DAYS_FETCH)  # last_sync - TIMEDELTA_DAYS
         else:
             last_sync = self.credential.parse_from_date
         return last_sync
@@ -275,9 +274,9 @@ class TwilioSMSMessage(sms_models.SMSMessage):
             'from_number': remote_message.from_,
             'to_number': remote_message.to,
             'text': remote_message.body,
-            'sent_at': sms_models.replace_timezone(remote_message.date_sent),
-            'updated_at': sms_models.replace_timezone(remote_message.date_updated),
-            'created_at': sms_models.replace_timezone(remote_message.date_created),
+            'sent_at': tz2utc(remote_message.date_sent),
+            'updated_at': tz2utc(remote_message.date_updated),
+            'created_at': tz2utc(remote_message.date_created),
             'status': remote_message.status.upper(),
             'type': message_type,
             'error_code': remote_message.error_code,

@@ -1,8 +1,8 @@
 from django.conf import settings
-from django.utils import timezone
 from infi.clickhouse_orm.database import Database
 
 from .models import LocationHistory
+from ...helpers.datetimes import utc_now
 
 
 class LocationLogger():
@@ -29,8 +29,6 @@ class LocationLogger():
         return LocationHistory.objects_in(self.logger_database)
 
     def log_instance_location(self, instance, latitude, longitude, timesheet_id=None, name=None):
-        now = timezone.now()
-
         log = LocationHistory(
             model=instance._meta.label,
             name=name and str(name),
@@ -38,8 +36,8 @@ class LocationLogger():
             timesheet_id=timesheet_id and str(timesheet_id),
             latitude=latitude,
             longitude=longitude,
-            log_at=now,
-            date=now.date()
+            log_at=utc_now(),
+            date=utc_now().date()
         )
         self.logger_database.insert([log])
 

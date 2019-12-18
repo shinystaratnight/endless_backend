@@ -1,21 +1,18 @@
-import pytz
 from datetime import date, datetime, timedelta
-from timezonefinder import TimezoneFinder
 
-from django.db.models import Max, Q
 from django.conf import settings
-from django.utils import timezone
+from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
 
+from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins
 from r3sourcer.apps.core.utils.user import get_default_user
-
-from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.utils import utils as hr_utils, job as hr_job_utils
 from r3sourcer.apps.logger.main import endless_logger
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class FillinAvailableMixin:
@@ -66,7 +63,7 @@ class FillinAvailableMixin:
 
             for shift in shifts_data['shifts']:
                 data = {
-                    'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
+                    'datetime': datetime.combine(shift.date.shift_date, shift.time),
                 }
 
                 accepted_messages, not_accepted_messages = self._get_jo_messages(
@@ -97,7 +94,7 @@ class FillinAvailableMixin:
 
         for shift in init_shifts:
             data = {
-                'datetime': timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time)),
+                'datetime': datetime.combine(shift.date.shift_date, shift.time),
             }
 
             accepted_messages, not_accepted_messages = self._get_jo_messages(
@@ -174,9 +171,9 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
     def get_no_sds(self, obj):  # pragma: no cover
         if obj is None:
             return True
-
         return not obj.shift_dates.filter(
-            shift_date__gt=timezone.localtime(timezone.now()).date(), cancelled=False
+            shift_date__gt=utc_now().date(),
+            cancelled=False,
         ).exists()
 
     def get_hide_fillin(self, obj):  # pragma: no cover
@@ -191,9 +188,9 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
         if obj is None:  # pragma: no cover
             return result
 
-        today = timezone.localtime(timezone.now()).date()
         timesheets = hr_models.TimeSheet.objects.filter(
-            job_offer__shift__date__job_id=obj.id, shift_started_at__date=today
+            job_offer__shift__date__job_id=obj.id,
+            shift_started_at__date=utc_now().date()
         )
         total_timesheets = timesheets.count()
 
@@ -258,10 +255,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
         return core_serializers.TagSerializer(tags, many=True, read_only=True, fields=['id', 'name']).data
 
     def get_jobsite_provider_signed_at(self, obj):
-        tf = TimezoneFinder(in_memory=True)
-        time_zone = pytz.timezone(tf.timezone_at(lng=obj.jobsite.address.longitude, lat=obj.jobsite.address.latitude))
-        start_time = obj.provider_signed_at.replace(tzinfo=time_zone)
-        return start_time
+        return obj.provider_signed_at_tz
 
 
 class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
@@ -346,9 +340,8 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         not_received_or_scheduled = (
             obj.job_offer_smses.filter(reply_received_by_sms__isnull=True).exists() and not obj.is_accepted()
         )
-        target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
-        is_today_or_future = target_date_and_time.date() >= timezone.now().date()
+        is_today_or_future = obj.start_time_tz.date() >= obj.today_tz
 
         if (obj.is_cancelled() or not_received_or_scheduled) and not is_filled and is_today_or_future:
             last_jo = obj.job.get_job_offers().filter(
@@ -357,7 +350,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             ).order_by('job_offer_smses__offer_sent_by_sms__sent_at').last()
             return bool(
                 obj.job_offer_smses.filter(offer_sent_by_sms__isnull=False).exists() and last_jo and
-                last_jo.job_offer_smses.filter(offer_sent_by_sms__sent_at__lt=timezone.now()).exists()
+                last_jo.job_offer_smses.filter(offer_sent_by_sms__sent_at__lt=utc_now()).exists()
             )
 
         return False
@@ -374,9 +367,8 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             obj.job_offer_smses.filter(offer_sent_by_sms__isnull=True).exists() or
             not obj.job_offer_smses.exists()
         )
-        target_date_and_time = timezone.localtime(obj.start_time)
         is_filled = obj.is_quota_filled()
-        is_today_or_future = target_date_and_time.date() >= timezone.now().date()
+        is_today_or_future = obj.start_time_tz.date() >= obj.today_tz
 
         return has_not_sent and not obj.is_accepted() and not is_filled and is_today_or_future
 
@@ -406,9 +398,28 @@ class JobOfferSMSSimpleSerializer(core_serializers.ApiBaseModelSerializer):
         )
 
 
-class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
+class ShiftDateSerializer(core_serializers.UUIDApiSerializerMixin,
+                          core_serializers.ApiBaseModelSerializer):
+    method_fields = (
+        *core_serializers.UUIDApiSerializerMixin.method_fields,
+    )
 
-    method_fields = ('is_fulfilled', 'workers_details', 'can_delete')
+    class Meta:
+        model = hr_models.ShiftDate
+        fields = (
+            '__all__'
+        )
+
+
+class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
+                      core_serializers.ApiBaseModelSerializer):
+
+    method_fields = (
+        *core_serializers.UUIDApiSerializerMixin.method_fields,
+        'is_fulfilled',
+        'workers_details',
+        'can_delete',
+    )
 
     class Meta:
         model = hr_models.Shift
@@ -424,14 +435,24 @@ class ShiftSerializer(core_serializers.ApiBaseModelSerializer):
         return obj and (obj.is_fulfilled_annotated if hasattr(obj, 'is_fulfilled_annotated') else obj.is_fulfilled())
 
     def get_workers_details(self, obj):
-        accepted = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.accepted).distinct()
-        cancelled = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.cancelled).distinct()
-        undefined = obj.job_offers.filter(status=hr_models.JobOffer.STATUS_CHOICES.undefined).distinct()
+        qs = obj.job_offers.filter(
+            status__in=[
+                hr_models.JobOffer.STATUS_CHOICES.accepted,
+                hr_models.JobOffer.STATUS_CHOICES.cancelled,
+                hr_models.JobOffer.STATUS_CHOICES.undefined,
+            ]
+        ).select_related('candidate_contact').distinct()
+        result = {}
+        for x in qs:
+            storage = result.setdefault(x.status, [])
+            storage.append({
+                'id': x.candidate_contact.id,
+                'name': str(x.candidate_contact)})
 
         return {
-            'accepted': [str(jo.candidate_contact) for jo in accepted],
-            'cancelled': [str(jo.candidate_contact) for jo in cancelled],
-            'undefined': [str(jo.candidate_contact) for jo in undefined],
+            'accepted': result.get(hr_models.JobOffer.STATUS_CHOICES.accepted, []),
+            'cancelled': result.get(hr_models.JobOffer.STATUS_CHOICES.cancelled, []),
+            'undefined': result.get(hr_models.JobOffer.STATUS_CHOICES.undefined, []),
         }
 
     def get_can_delete(self, obj):  # pragma: no cover
@@ -494,8 +515,7 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
     def get_days_from_last_timesheet(self, obj):
         last_timesheet = obj.last_timesheet_date
         if last_timesheet:
-            today = date.today()
-            return (today - timezone.localtime(last_timesheet).date()).days
+            return (utc_now().date() - last_timesheet.date()).days
         else:
             return 0
 
@@ -712,7 +732,8 @@ class JobsiteSerializer(
         return validated_data
 
     def get_timezone(self, obj):
-        return obj.get_timezone()
+        tz = obj.get_timezone()
+        return tz.zone
 
 
 class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSerializer):
@@ -734,7 +755,7 @@ class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
 
     def get_job_shift(self, obj):
         return [
-            timezone.make_aware(datetime.combine(shift.date.shift_date, shift.time))
+            datetime.combine(shift.date.shift_date, shift.time)
             for shift in hr_models.Shift.objects.filter(date__job=obj)
         ]
 
@@ -764,7 +785,7 @@ class JobExtendSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
                 latest_fullfilled_shifts = latest_shift_date.shifts.all()
 
             return [{
-                'shift_datetime': timezone.make_aware(datetime.combine(latest_shift_date.shift_date, shift.time)),
+                'shift_datetime': datetime.combine(latest_shift_date.shift_date, shift.time),
                 'candidates': JobExtendFillinSerialzier([
                     jo.candidate_contact for jo in shift.job_offers.exclude(
                         status=hr_models.JobOffer.STATUS_CHOICES.cancelled

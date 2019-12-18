@@ -184,6 +184,7 @@ class TestClickhouseLogger:
 
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id)
         assert len(history) == 3
+        # TODO: Fix timezone
         history = self.logger.get_object_history(new_instance.__class__, new_instance.id,
                                                  from_date=timezone.now())
         assert len(history) == 1

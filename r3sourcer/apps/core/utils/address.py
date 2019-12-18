@@ -31,10 +31,11 @@ def parse_google_address(address_data):
 
     country = Country.objects.get(code2=address_parts['country']['short_name'])
 
-    region_part = address_parts.get('administrative_area_level_1')
+    region_part_key, *_ = sorted([x for x in address_parts.keys()
+                                  if 'administrative_area_level_' in x])
+    region_part = address_parts.get(region_part_key)
     try:
-        region = region_part['long_name'].split(' ', 1)[0] if region_part['long_name'].split(' ', 1)[0] else region_part[
-            'long_name']
+        region = region_part['long_name'].split(' ', 1)[0] if region_part['long_name'].split(' ', 1)[0] else region_part['long_name']
         region = Region.objects.get(
             Q(name__icontains=region) | Q(alternate_names__contains=region_part['short_name']),
             country=country

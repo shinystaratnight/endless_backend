@@ -4,32 +4,31 @@ from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth import authenticate, logout
 from django.core.cache import cache
+from django.core.exceptions import ValidationError
 from django.db.models import Q
-from django.utils import timezone
-from django.utils.translation import ugettext_lazy as _
 from django.utils.decorators import method_decorator
+from django.utils.translation import ugettext_lazy as _
 from django.views.decorators.csrf import csrf_exempt
-from oauth2_provider.views.mixins import OAuthLibMixin
-from oauth2_provider.settings import oauth2_settings
-from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
 from oauth2_provider.models import get_access_token_model
-from oauthlib.oauth2.rfc6749.tokens import BearerToken
+from oauth2_provider.settings import oauth2_settings
+from oauth2_provider.views.mixins import OAuthLibMixin
+from oauth2_provider_jwt.views import TokenView, MissingIdAttribute
 from oauthlib.common import Request
+from oauthlib.oauth2.rfc6749.tokens import BearerToken
 from rest_framework import viewsets, status, exceptions, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
+from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.utils.companies import get_site_master_company
-from r3sourcer.apps.core.utils.utils import get_host
+from r3sourcer.apps.core.utils.utils import get_host, is_valid_email, is_valid_phone_number
 from r3sourcer.apps.core.views import OAuth2JWTTokenMixin
 from r3sourcer.apps.login.api.exceptions import TokenAlreadyUsed
-
+from r3sourcer.helpers.datetimes import utc_now
+from .serializers import LoginSerializer, ContactLoginSerializer, TokenLoginSerializer
 from ..models import TokenLogin
 from ..tasks import send_login_message
-
-from .serializers import LoginSerializer, ContactLoginSerializer, TokenLoginSerializer
 
 
 @method_decorator(csrf_exempt, name='dispatch')
@@ -52,7 +51,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
     }
 
     def get_object(self):
-        obj = super(AuthViewSet, self).get_object()
+        obj = super().get_object()
 
         if obj.loggedin_at is not None:
             raise TokenAlreadyUsed()
@@ -126,20 +125,31 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        is_email = '@' in serializer.data['username']
+        email_username = is_valid_email(serializer.data['username'])
+        mobile_phone_username = is_valid_phone_number(serializer.data['username'])
+        if email_username is True:
+            contact_qs = Contact.objects.filter(email=serializer.data['username'])
+        elif mobile_phone_username is True:
+            contact_qs = Contact.objects.filter(phone_mobile=serializer.data['username'])
+        else:
+            raise ValidationError(
+                _(
+                    "Please enter a correct email or mobile phone number and password. "
+                    "Note that both fields may be case-sensitive."
+                ),
+                code='invalid_login',
+            )
 
-        contact = Contact.objects.filter(
-            Q(email=serializer.data['username']) |
-            Q(phone_mobile=serializer.data['username'])
-        ).first()
+        contact = contact_qs.first()
         if contact and ('password' not in serializer.data or
                         not serializer.data['password']):
             send_login_message(serializer.data['username'], contact)
-            if is_email:
+            if email_username is True:
                 message = _('E-mail with login token was sent.')
-            else:
+            elif mobile_phone_username is True:
                 message = _('SMS with login token was sent.')
-
+            else:
+                raise ValueError('Invalid token transport')
             return Response({
                 'status': 'success',
                 'message': message,
@@ -153,7 +163,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                             password=serializer.data.get('password'))
         if user is None:
             if contact is not None:
-                if is_email:
+                if email_username:
                     message = {
                         'username': self.errors['email_not_found'],
                     }
@@ -163,7 +173,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                     }
             else:
                 message = {
-                    'username': self.errors['email_not_found'] if is_email else self.errors['phone_not_found'],
+                    'username': self.errors['email_not_found'] if email_username else self.errors['phone_not_found'],
                 }
 
             raise exceptions.ValidationError(message)
@@ -198,7 +208,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         bearer_token = BearerToken(request_validator)
         token = bearer_token.create_token(token_request, save_token=False)
 
-        expires = timezone.now() + timedelta(seconds=oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
+        expires = utc_now() + timedelta(seconds=oauth2_settings.ACCESS_TOKEN_EXPIRE_SECONDS)
         client = None
         AccessToken = get_access_token_model()
         access_token = AccessToken(
@@ -223,7 +233,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         if user is None:
             raise exceptions.NotFound()
 
-        instance.loggedin_at = timezone.now()
+        instance.loggedin_at = utc_now()
         instance.save()
 
         cache.set('user_site_%s' % str(user.id), request.META.get('HTTP_HOST'))
@@ -260,11 +270,12 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             for x in self.request.user.role.all().order_by('name')
         ]
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
+        time_zone = request.user.company.get_timezone()
         return Response({
             'status': 'success',
             'data': {
                 'contact': serializer.data,
-                'timezone': request.user.company.get_timezone(),
+                'timezone': time_zone.zone,
                 'user': str(request.user.id),
                 'end_trial_date': request.user.get_end_of_trial(),
                 'is_primary': request.user.company.primary_contact == request.user.contact.get_company_contact_by_company(

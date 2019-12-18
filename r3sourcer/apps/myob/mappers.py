@@ -2,7 +2,6 @@ import math
 from datetime import datetime
 
 from django.conf import settings
-from django.utils import timezone
 from django.utils.formats import date_format
 
 from r3sourcer.apps.core.models import WorkflowObject, Company
@@ -17,10 +16,6 @@ class BSBNumberError(ValueError):
 
 def format_date_to_myob(date_time, only_date=False):
     if isinstance(date_time, datetime):
-        try:
-            date_time = timezone.make_naive(date_time)
-        except ValueError:
-            pass
         date_time = date_time.date()
     return date_time and date_format(date_time, settings.DATE_MYOB_FORMAT)
 
@@ -124,7 +119,7 @@ class ContactMapper:
     def _map_extra_data_to_myob(self, contact):
         return {}
 
-    def map_to_myob(self, contact):
+    def map_to_myob(self, contact, *args, **kwargs):
         data = {
             'IsIndividual': True,
         }
@@ -135,41 +130,52 @@ class ContactMapper:
 
 
 class InvoiceMapper(ContactMapper):
-    def map_to_myob(self, invoice, customer_uid, tax_codes, activities, salesperson=None):
+    @classmethod
+    def address(cls, line):
+        return "{} {}".format(line.street_address, line.city)
+
+    @classmethod
+    def candidate_contact(cls, line):
+        name = '{} {}'.format(line.candidate_first_name, line.candidate_last_name)
+        if line.candidate_title:
+            name = '{} {}'.format(line.candidate_title, name)
+        return name
+
+    def get_description(self, line, invoice_rule):
+        candidate_contact = '' if invoice_rule.show_candidate_name is False else self.candidate_contact(line)
+        return '{}\n{}\n{}'.format(line.notes,
+                                   self.address(line),
+                                   candidate_contact)
+
+    def invoice_line(self, invoice, line, tax_codes, activity_uid, job):
         invoice_rule = get_invoice_rule(invoice.customer_company)
+        line = {
+            "Date": format_date_to_myob(line.date),
+            "Hours": line.units,
+            "Rate": line.unit_price,
+            "Total": math.ceil(line.unit_price * line.units * 100) / 100,
+            "Description": self.get_description(line, invoice_rule),
+            "TaxCode": {"UID": tax_codes[line.vat_name]},
+            "Units": line.units,
+            "Job": {"UID": job['UID']},
+            "Activity": {"UID": activity_uid}
+        }
+        return line
+
+    def map_to_myob(self, invoice, lines, customer_uid, salesperson=None):
         data = {
             "Date": format_date_to_myob(invoice.date),
             "Customer": {'UID': customer_uid},
             "TotalTax": invoice.tax,
             "TotalAmount": invoice.total_with_tax,
             "Status": "Open",
-            "Number": invoice.number[-8:],
-            "CustomerPurchaseOrderNumber": invoice.number[:20],
+            "Number": invoice.number,
             "IsTaxInclusive": False,
             "Terms": {
                 "PaymentIsDue": CompanyMapper.PAYMENT_IS_DUE_MAP.get(invoice.customer_company.terms_of_payment),
                 "BalanceDueDate": invoice.customer_company.payment_due_date
             },
-        }
-        lines = list()
-
-        for invoice_line in invoice.invoice_lines.all():
-            address = "{} {}".format(invoice_line.timesheet.job_offer.job.jobsite.address.street_address,
-                                     invoice_line.timesheet.job_offer.job.jobsite.address.city)
-            lines.append({
-                "Date": format_date_to_myob(invoice_line.date),
-                "Hours": invoice_line.units,
-                "Rate": invoice_line.unit_price,
-                "Total": math.ceil(invoice_line.unit_price * invoice_line.units * 100) / 100,
-                "Description": '{}\n{}\n{}'.format(
-                    invoice_line.notes, address,
-                    invoice_line.timesheet.job_offer.candidate_contact if invoice_rule.show_candidate_name else ''
-                ),
-                "TaxCode": {"UID": tax_codes[invoice_line.vat.name]},
-                "Activity": {"UID": activities[invoice_line.id]}
-            })
-
-        data['Lines'] = lines
+            'Lines': lines}
 
         if salesperson:
             data["SalesPerson"] = {

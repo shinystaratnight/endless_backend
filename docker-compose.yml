@@ -5,7 +5,7 @@ services:
     restart: always
     image: "postgres:9.6"
     ports:
-      - "6543:5432"
+      - "5432:5432"
     env_file:
       - env_defaults
       - .env
@@ -23,13 +23,16 @@ services:
       - ./clickhouse-entrypoint.sh:/var/lib/clickhouse/clickhouse-entrypoint.sh
     entrypoint: /var/lib/clickhouse/clickhouse-entrypoint.sh
     ports:
-      - "8124:8123"
-      - "9001:9000"
-      - "9010:9009"
+      - "8123:8123"
+      - "9000:9000"
+      - "9009:9009"
 
   rabbitmq:
     restart: always
     image: "rabbitmq:3"
+    ports:
+      - 15672:15672
+      - 5672:5672
 
   nginx:
     restart: always
@@ -51,7 +54,7 @@ services:
     restart: always
     build:
       context: .
-      dockerfile: ./conf/docker/Dockerfile.dev
+      dockerfile: conf/docker/Dockerfile
     dns:
       - 8.8.8.8
     ports:

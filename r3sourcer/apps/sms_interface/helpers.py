@@ -2,9 +2,9 @@ import math
 
 from django.conf import settings
 from django.db.models import Q
-from django.utils import timezone
 
-from .models import PhoneNumber, SMSMessage
+from r3sourcer.apps.sms_interface.models import PhoneNumber, SMSMessage
+from r3sourcer.helpers.datetimes import utc_now
 
 
 def get_phone_number(company=None):
@@ -21,9 +21,16 @@ def get_sms(from_number, to_number, text, reply_timeout=None,
 
     number_of_segments = math.ceil(len(text) / settings.SMS_SEGMENT_SIZE)
     params = dict(
-        text=text, from_number=from_number, to_number=to_number, check_delivered=True, sent_at=timezone.now(),
-        check_reply=check_reply, type=SMSMessage.TYPE_CHOICES.SENT, company=company, segments=number_of_segments,
-        template=kwargs.get('template')
+        text=text,
+        from_number=from_number,
+        to_number=to_number,
+        check_delivered=True,
+        sent_at=utc_now(),
+        check_reply=check_reply,
+        type=SMSMessage.TYPE_CHOICES.SENT,
+        company=company,
+        segments=number_of_segments,
+        template=kwargs.get('template'),
     )
 
     if reply_timeout is not None:

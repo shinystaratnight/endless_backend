@@ -1,41 +1,37 @@
 import operator
-import pytz
 from datetime import timedelta, date, time, datetime
-from filer.models import File, Folder
-from timezonefinder import TimezoneFinder
 
 from celery import shared_task
 from celery.utils.log import get_task_logger
-
-from r3sourcer.celeryapp import app
-
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.db import transaction, models
-from django.utils import timezone, formats
+from django.template.loader import get_template
+from django.utils import formats
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-from django.template.loader import get_template
+from filer.models import File, Folder
 
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
+from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.payment import InvoiceService, calc_worked_delta
+from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
-from r3sourcer.apps.myob.api.wrapper import MYOBClient
-from r3sourcer.apps.myob.models import MYOBCompanyFileToken
+from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
-from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.pricing.services import CoefficientService
+from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface.models import SMSMessage, SMSTemplate
 from r3sourcer.apps.sms_interface.utils import get_sms_service
-
+from r3sourcer.celeryapp import app
+from r3sourcer.helpers.datetimes import utc_now, tz2utc
 
 logger = get_task_logger(__name__)
 
@@ -74,10 +70,9 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
         logger.exception('Cannot load SMS service')
         return
 
-    target_date_and_time = formats.date_format(job_offer.start_time, settings.DATETIME_FORMAT)
+    target_date_and_time = formats.date_format(job_offer.start_time_tz, settings.DATETIME_FORMAT)
 
-    now = utils.get_jobsite_date_time(job_offer.job, timezone.localtime(timezone.now()))
-    if now >= utils.get_jobsite_date_time(job_offer.job, timezone.localtime(job_offer.start_time)):
+    if utc_now() >= job_offer.start_time_utc:
         target_date_and_time = "ASAP"
 
     master_company = core_companies_utils.get_site_master_company(user=job_offer.candidate_contact.contact.user)
@@ -121,44 +116,39 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
         except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
         else:
-            log_message = None
             if job_offer.is_accepted():
                 log_message = 'Job Offer %s already accepted'
-            elif job_offer.is_cancelled():
-                job_offer.scheduled_sms_datetime = None
-                job_offer.status = hr_models.JobOffer.STATUS_CHOICES.undefined
-                job_offer.save(update_fields=['scheduled_sms_datetime', 'status'])
-
-            if log_message:
                 job_offer.scheduled_sms_datetime = None
                 job_offer.save(update_fields=['scheduled_sms_datetime'])
                 logger.info(log_message, str(job_offer_id))
                 return
 
-            now = utils.get_jobsite_date_time(job_offer.job, timezone.localtime(timezone.now()))
-            today = now.date()
-            jo_target_datetime = utils.get_jobsite_date_time(job_offer.job, job_offer.start_time)
-            jo_target_date = jo_target_datetime.date()
-            jo_tz = jo_target_datetime.tzinfo
-            if jo_target_date > today and job_offer.has_timesheets_with_going_work_unset_or_timeout():
-                eta = now + timedelta(hours=2)
-                if time(17, 0, 0, tzinfo=eta.tzinfo) > eta.timetz() > time(16, 0, 0, tzinfo=eta.tzinfo):
-                    eta = datetime.combine(eta.date(), time(16, 0, tzinfo=eta.tzinfo))
-                elif eta.timetz() > time(17, 0, 0, tzinfo=eta.tzinfo):
+            if job_offer.is_cancelled():
+                job_offer.scheduled_sms_datetime = None
+                job_offer.status = hr_models.JobOffer.STATUS_CHOICES.undefined
+                job_offer.save(update_fields=['scheduled_sms_datetime', 'status'])
+
+            if job_offer.start_time_utc.date() > utc_now() \
+                    and job_offer.has_timesheets_with_going_work_unset_or_timeout():
+                eta_tz = job_offer.now_tz + timedelta(hours=2)
+                if time(17, 0, 0, tzinfo=eta_tz.tzinfo) > eta_tz.timetz() > time(16, 0, 0, tzinfo=eta_tz.tzinfo):
+                    eta_tz = datetime.combine(eta_tz.date(), time(16, 0, tzinfo=eta_tz.tzinfo))
+                elif eta_tz.timetz() > time(17, 0, 0, tzinfo=eta_tz.tzinfo):
                     send_job_offer_sms(job_offer=job_offer, **kwargs)
                     return
 
-                if task:
-                    task.apply_async(args=[job_offer_id], eta=eta)
-
-                    job_offer.scheduled_sms_datetime = eta
-                    job_offer.save(update_fields=['scheduled_sms_datetime'])
-
-                    logger.info('JO SMS sending will be rescheduled for Job Offer: %s', str(job_offer_id))
-            elif jo_target_date > today and jo_target_datetime.timetz() >= time(16, 0, 0, tzinfo=jo_tz):
-                task.apply_async(args=[job_offer_id], eta=jo_target_datetime - timedelta(hours=8))
-                job_offer.scheduled_sms_datetime = jo_target_datetime - timedelta(hours=8)
+                logger.info('JO SMS sending will be rescheduled for Job Offer: %s', str(job_offer_id))
+                eta_utc = tz2utc(eta_tz)
+                job_offer.scheduled_sms_datetime = eta_utc
                 job_offer.save(update_fields=['scheduled_sms_datetime'])
+                task.apply_async(args=[job_offer_id], eta=eta_utc)
+
+            elif job_offer.start_time_utc.date() > utc_now() \
+                    and job_offer.start_time_tz.timetz() >= time(16, 0, 0, tzinfo=job_offer.start_time_tz.tzinfo):
+                eta_utc = job_offer.start_time_utc - timedelta(hours=8)
+                job_offer.scheduled_sms_datetime = eta_utc
+                job_offer.save(update_fields=['scheduled_sms_datetime'])
+                task.apply_async(args=[job_offer_id], eta=eta_utc)
             else:
                 send_job_offer_sms(job_offer=job_offer, **kwargs)
 
@@ -166,19 +156,19 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
 @shared_task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_jo_confirmation_sms(self, job_offer_id):
-    send_or_schedule_job_offer_sms(
-        job_offer_id, send_jo_confirmation_sms,
-        tpl_id='job-offer-1st', action_sent='offer_sent_by_sms'
-    )
+    send_or_schedule_job_offer_sms(job_offer_id,
+                                   task=send_jo_confirmation_sms,
+                                   tpl_id='job-offer-1st',
+                                   action_sent='offer_sent_by_sms')
 
 
 @shared_task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_recurring_jo_confirmation_sms(self, job_offer_id):
-    send_or_schedule_job_offer_sms(
-        job_offer_id, send_recurring_jo_confirmation_sms,
-        tpl_id='job-offer-recurring', action_sent='offer_sent_by_sms'
-    )
+    send_or_schedule_job_offer_sms(job_offer_id,
+                                   task=send_recurring_jo_confirmation_sms,
+                                   tpl_id='job-offer-recurring',
+                                   action_sent='offer_sent_by_sms')
 
 
 def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
@@ -203,7 +193,7 @@ def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
             data_dict = dict(
                 recipients,
                 job=job,
-                target_date_and_time=formats.date_format(job_offer.start_time, settings.DATETIME_FORMAT),
+                target_date_and_time=formats.date_format(job_offer.start_time_tz, settings.DATETIME_FORMAT),
                 related_obj=job_offer,
                 related_objs=[job_offer.candidate_contact, job_offer.job]
             )
@@ -257,11 +247,11 @@ def send_placement_rejection_sms(self, job_offer_id):
             'object_id': job_offer_id
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
-            send_job_offer_sms(job_offer, 'job-offer-rejection')
+            send_job_offer_sms(job_offer, tpl_id='job-offer-rejection')
 
 
 def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
-    invoice = utils.get_invoice(company, date_from, date_to, timesheet)
+    invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
 
     if invoice is None and recreate:
         invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
@@ -270,7 +260,7 @@ def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
 
 
 @shared_task
-def generate_invoice(timesheet_id=None, recreate=False, delete_lines=False):
+def generate_invoice(timesheet_id, recreate=False, delete_lines=False):
     """
     Generates new or updates existing invoice. Accepts regular(customer) company.
     """
@@ -283,7 +273,8 @@ def generate_invoice(timesheet_id=None, recreate=False, delete_lines=False):
 
     if company.type == core_models.Company.COMPANY_TYPES.master:
         return
-
+    # TODO: Remove this import after fix import logic
+    from r3sourcer.apps.hr.payment.invoices import InvoiceService
     service = InvoiceService()
     invoice_rule = utils.get_invoice_rule(company)
     date_from, date_to = utils.get_invoice_dates(invoice_rule, timesheet)
@@ -333,13 +324,10 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
         logger.error(e)
     else:
         candidate = time_sheet.candidate_contact
-        target_date_and_time = utils.get_jobsite_date_time(time_sheet.job_offer.job, time_sheet.shift_started_at)
-        end_date_and_time = utils.get_jobsite_date_time(time_sheet.job_offer.job, time_sheet.shift_ended_at)
         contacts = {
             'candidate_contact': candidate,
             'company_contact': time_sheet.supervisor
         }
-
         with transaction.atomic():
             site_url = core_companies_utils.get_site_url(user=contacts['candidate_contact'].contact.user)
             data_dict = dict(
@@ -349,14 +337,12 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 get_fill_time_sheet_url="%s/hr/timesheets-candidate" % site_url,
                 get_supervisor_redirect_url="%s/hr/timesheets/unapproved" % site_url,
                 get_supervisor_sign_url="%s/hr/timesheets/unapproved" % site_url,
-                shift_start_date=formats.date_format(target_date_and_time, settings.DATETIME_FORMAT),
-                shift_end_date=formats.date_format(end_date_and_time.date(), settings.DATE_FORMAT),
+                shift_start_date=formats.date_format(time_sheet.shift_started_at_tz, settings.DATETIME_FORMAT),
+                shift_end_date=formats.date_format(time_sheet.shift_ended_at_tz.date(), settings.DATE_FORMAT),
                 related_obj=time_sheet,
             )
 
             if event == SUPERVISOR_DECLINED:
-                end_date_and_time = utils.get_jobsite_date_time(time_sheet.job_offer.job, time_sheet.shift_ended_at)
-
                 if time_sheet.break_started_at and time_sheet.break_ended_at:
                     break_delta = time_sheet.break_ended_at - time_sheet.break_started_at
                     break_str = format_timedelta(break_delta)
@@ -367,9 +353,9 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 worked_str = format_timedelta(time_sheet.shift_ended_at - time_sheet.shift_started_at - break_delta)
 
                 data_dict.update(
-                    shift_start_date=formats.date_format(target_date_and_time, settings.DATE_FORMAT),
-                    shift_start_time=formats.time_format(target_date_and_time.time(), settings.TIME_FORMAT),
-                    shift_end_time=formats.time_format(end_date_and_time.time(), settings.TIME_FORMAT),
+                    shift_start_date=formats.date_format(time_sheet.shift_started_at_tz, settings.DATE_FORMAT),
+                    shift_start_time=formats.time_format(time_sheet.shift_started_at_tz.time(), settings.TIME_FORMAT),
+                    shift_end_time=formats.time_format(time_sheet.shift_ended_at_tz.time(), settings.TIME_FORMAT),
                     shift_break_hours=break_str,
                     shift_worked_hours=worked_str,
                     supervisor_timeout=format_timedelta(timedelta(seconds=settings.SUPERVISOR_DECLINE_TIMEOUT))
@@ -381,8 +367,6 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 autoconfirm_rejected_timesheet.apply_async(
                     args=[time_sheet_id], countdown=settings.SUPERVISOR_DECLINE_TIMEOUT
                 )
-
-            today = date.today()
 
             if event == SHIFT_ENDING:
                 recipient = time_sheet.candidate_contact
@@ -411,7 +395,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                     return
 
                 sms_tpl = events_dict[event]['sms_tpl']
-                if end_date_and_time.date() != today:
+                if time_sheet.shift_ended_at.date() != utc_now().date():
                     sms_tpl = events_dict[event].get('sms_old_tpl', sms_tpl)
 
                 master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
@@ -432,7 +416,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                     return
 
                 email_tpl = events_dict[event]['email_tpl']
-                if end_date_and_time.date() != today:
+                if time_sheet.shift_ended_at.date() != utc_now().date():
                     email_tpl = events_dict[event].get('email_old_tpl', email_tpl)
 
                 if not email_tpl:
@@ -450,7 +434,7 @@ def autoconfirm_rejected_timesheet(self, time_sheet_id):
         logger.error(e)
     else:
         if time_sheet.candidate_submitted_at is None:
-            time_sheet.candidate_submitted_at = timezone.now()
+            time_sheet.candidate_submitted_at = utc_now()
             time_sheet.save(update_fields=['candidate_submitted_at'])
 
 
@@ -518,101 +502,110 @@ def send_supervisor_timesheet_message(
 @one_sms_task_at_the_same_time
 def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=False):
     try:
-        supervisor = core_models.CompanyContact.objects.get(id=supervisor_id)
+        supervisor = core_models.CompanyContact.objects.get(pk=supervisor_id)
     except core_models.CompanyContact.DoesNotExist:
-        supervisor = None
-
-    try:
-        timesheet = hr_models.TimeSheet.objects.get(id=timesheet_id)
-    except hr_models.TimeSheet.DoesNotExist:
-        timesheet = None
-
-    if not supervisor or not timesheet:
         return
 
     try:
-        now = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.localtime(timezone.now()))
-        today = now.date()
-        sms_tpl = 'supervisor-timesheet-sign'
-        email_tpl = 'supervisor-timesheet-sign'
+        time_sheet = hr_models.TimeSheet.objects.get(pk=timesheet_id)
+    except hr_models.TimeSheet.DoesNotExist:
+        return
 
-        if force:
-            send_supervisor_timesheet_message(
-                supervisor, True, True, sms_tpl, email_tpl, related_timesheets=[timesheet]
-            )
+    now_tz = time_sheet.now_tz
+    now_utc = time_sheet.now_utc
+    today_tz = now_tz.date()
+    today_utc = now_utc.date()
+    sms_tpl = 'supervisor-timesheet-sign'
+    email_tpl = 'supervisor-timesheet-sign'
+
+    if force:
+        send_supervisor_timesheet_message(supervisor, True, True, sms_tpl, email_tpl,
+                                          related_timesheets=[time_sheet])
+        return
+
+    should_send_sms = False
+    if supervisor.message_by_sms:
+        if not SMSMessage.objects.filter(
+                  to_number=supervisor.contact.phone_mobile,
+                  template__slug=sms_tpl,
+                  sent_at__date=today_utc,
+               ).exists():
+            should_send_sms = True
+
+    should_send_email = False
+    if supervisor.message_by_email:
+        if not EmailMessage.objects.filter(
+                   to_addresses=supervisor.contact.email,
+                   template__slug=email_tpl,
+                   sent_at__date=today_utc).exists():
+            should_send_email = True
+
+    if not should_send_email and not should_send_sms:
+        return
+
+    if hr_models.TimeSheet.objects.filter(
+            shift_ended_at__date=today_utc,
+            going_to_work_confirmation=True,
+            supervisor=supervisor).exists():
+
+        today_shift_end = hr_models.TimeSheet.objects.filter(
+            shift_ended_at__date=today_utc,
+            going_to_work_confirmation=True,
+            supervisor=supervisor
+        ).latest('shift_ended_at').shift_ended_at
+
+        timesheets = hr_models.TimeSheet.objects.filter(
+            shift_ended_at__date=today_utc,
+            shift_ended_at__lte=today_shift_end,
+            going_to_work_confirmation=True,
+            supervisor=supervisor
+        )
+
+        not_signed_timesheets = timesheets.filter(
+            candidate_submitted_at__isnull=True,
+            supervisor=supervisor
+        )
+
+        if not_signed_timesheets.exists():
             return
 
-        should_send_sms = False
-        if supervisor.message_by_sms:
-            if not SMSMessage.objects.filter(to_number=supervisor.contact.phone_mobile,
-                                             template__slug=sms_tpl, sent_at__date=today).exists():
-                should_send_sms = True
+        signed_time_sheets = timesheets.filter(
+            candidate_submitted_at__isnull=False,
+            supervisor=supervisor,
+        )
 
-        should_send_email = False
-        if supervisor.message_by_email:
-            if not EmailMessage.objects.filter(to_addresses=supervisor.contact.email,
-                                               template__slug=email_tpl, sent_at__date=today).exists():
-                should_send_email = True
+        signed_timesheets_started = signed_time_sheets.order_by(
+            'shift_started_at',
+        ).values_list(
+            'shift_started_at',
+            flat=True
+        ).distinct()
+        signed_timesheets_started = list(signed_timesheets_started)
+        related_timesheets = list(signed_time_sheets)
 
-        if not should_send_email and not should_send_sms:
+        if time_sheet.shift_started_at not in signed_timesheets_started:
+            signed_timesheets_started.append(time_sheet.shift_started_at)
+            related_timesheets.append(time_sheet)
+
+        if not signed_timesheets_started:
             return
 
-        if hr_models.TimeSheet.objects.filter(shift_ended_at__date=today, going_to_work_confirmation=True,
-                                              supervisor=supervisor).exists():
+        send_supervisor_timesheet_message(
+            supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl,
+            related_timesheets=related_timesheets
+        )
 
-            today_shift_end = hr_models.TimeSheet.objects.filter(
-                shift_ended_at__date=today,
-                going_to_work_confirmation=True,
-                supervisor=supervisor
-            ).latest('shift_ended_at').shift_ended_at
+        eta = now_tz + timedelta(hours=4)
+        is_today_reminder = True
+        if eta.time() > time(19, 0):
+            is_today_reminder = False
+            eta = datetime.combine(today_tz, time(19, 0))
+        elif eta.time() < time(7, 0) or eta.date() > today_tz:
+            eta = datetime.combine(eta.today(), time(7, 0))
 
-            timesheets = hr_models.TimeSheet.objects.filter(
-                shift_ended_at__date=today,
-                shift_ended_at__lte=today_shift_end,
-                going_to_work_confirmation=True,
-                supervisor=supervisor
-            )
-
-            not_signed_timesheets = timesheets.filter(
-                candidate_submitted_at__isnull=True,
-                supervisor=supervisor
-            )
-
-            if not_signed_timesheets.exists():
-                return
-
-            signed_timesheets = timesheets.filter(candidate_submitted_at__isnull=False, supervisor=supervisor)
-
-            signed_timesheets_started = signed_timesheets.order_by('shift_started_at').values_list(
-                'shift_started_at', flat=True
-            ).distinct()
-            signed_timesheets_started = list(signed_timesheets_started)
-            related_timesheets = list(signed_timesheets)
-
-            if timesheet.shift_started_at not in signed_timesheets_started:
-                signed_timesheets_started.append(timesheet.shift_started_at)
-                related_timesheets.append(timesheet)
-
-            if len(signed_timesheets_started) == 0:
-                return
-
-            send_supervisor_timesheet_message(
-                supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl,
-                related_timesheets=related_timesheets
-            )
-
-            eta = now + timedelta(hours=4)
-            is_today_reminder = True
-            if eta.time() > time(19, 0):
-                is_today_reminder = False
-                eta = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.make_aware(datetime.combine(date.today(), time(19, 0))))
-            elif eta.time() < time(7, 0) or eta.date() > today:
-                eta = utils.get_jobsite_date_time(timesheet.job_offer.job, timezone.make_aware(datetime.combine(eta.today(), time(7, 0))))
-
-            if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
-                send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder], eta=eta)
-    except Exception as e:
-        logger.error(e)
+        if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
+            utc_eta = tz2utc(eta)
+            send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder], eta=utc_eta)
 
 
 @app.task(bind=True, queue='sms')
@@ -652,8 +645,7 @@ def check_unpaid_invoices():
     for company in master_companies:
         unpaid_invoices = core_models.Invoice.objects.filter(provider_company=company, is_paid=False)
         date_from = unpaid_invoices.order_by('-date')[0].date - timedelta(days=32)
-        cf_token = MYOBCompanyFileToken.objects.filter(company=company).latest('created')
-        client = MYOBClient(cf_data=cf_token)
+        client = get_myob_client(company.id)
         initialized = client.init_api(timeout=True)
 
         if not initialized:
@@ -691,8 +683,7 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
             )
             if needs_target_dt:
                 try:
-                    target_date_and_time = utils.get_jobsite_date_time(timesheet.job_offer.job, jo.start_time)
-                    target_date_and_time = formats.date_format(target_date_and_time, settings.DATETIME_FORMAT)
+                    target_date_and_time = formats.date_format(jo.start_time_tz, settings.DATETIME_FORMAT)
                 except AttributeError as e:
                     logger.error(e)
                 else:
@@ -740,7 +731,6 @@ def send_going_to_work_sms(self, time_sheet_id):
     :return:
     """
     action_sent = 'going_to_work_sent_sms'
-
     with transaction.atomic():
         try:
             time_sheet = hr_models.TimeSheet.objects.select_for_update().get(
@@ -753,13 +743,11 @@ def send_going_to_work_sms(self, time_sheet_id):
                     time_sheet.going_to_work_confirmation):
                 return
 
-            target_date_and_time = utils.get_jobsite_date_time(time_sheet.job_offer.job, time_sheet.shift_started_at)
             candidate_contact = time_sheet.job_offer.candidate_contact
             data_dict = dict(
                 job=time_sheet.job_offer.job,
                 candidate_contact=candidate_contact,
-                target_date_and_time=formats.date_format(
-                    target_date_and_time, settings.DATETIME_FORMAT),
+                target_date_and_time=formats.date_format(time_sheet.shift_started_at_tz, settings.DATETIME_FORMAT),
                 related_obj=time_sheet,
                 related_objs=[time_sheet.job_offer.job, candidate_contact],
             )
@@ -794,8 +782,6 @@ def send_going_to_work_sms(self, time_sheet_id):
 def get_confirmation_string(job):
     dates = formats.date_format(job.work_start_date, settings.DATE_FORMAT)
     if job.shift_dates.exists():
-        tf = TimezoneFinder(in_memory=True)
-        settingstime_zone = pytz.timezone(tf.timezone_at(lng=job.jobsite.address.longitude, lat=job.jobsite.address.latitude))
         shift_dates_list = job.shift_dates.filter(
             shift_date__gte=date.today()
         ).order_by('shift_date').values_list('shift_date', flat=True)
@@ -806,7 +792,7 @@ def get_confirmation_string(job):
                 shift_dates = utils.format_dates_range(shift_dates_list)
             else:
                 shift_dates = [
-                    formats.date_format(fulldate.astimezone(settingstime_zone), settings.DATE_FORMAT)
+                    formats.date_format(fulldate.astimezone(job.tz), settings.DATE_FORMAT)
                     for fulldate in shift_dates_list
                 ]
 
@@ -884,7 +870,7 @@ def send_job_confirmation_sms(self, job_id):
 @app.task(bind=True, queue='hr')
 def close_not_active_jobsites(self):
     not_active_delta = timedelta(seconds=settings.JOBSITE_NOT_ACTIVE_TIMEOUT)
-    timeout_datetime = timezone.localtime(timezone.now()) - not_active_delta
+    timeout_datetime = utc_now() - not_active_delta
 
     jobsites = hr_models.Jobsite.objects.annotate(
         active_ts_sum=models.Sum(models.Case(
@@ -917,8 +903,11 @@ def close_not_active_jobsites(self):
 @shared_task
 def auto_approve_timesheet(timesheet_id):
     hr_models.TimeSheet.objects.filter(
-        id=timesheet_id, status=hr_models.TimeSheet.STATUS_CHOICES.modified
-    ).update(status=hr_models.TimeSheet.STATUS_CHOICES.approved, supervisor_approved_at=timezone.now())
+        id=timesheet_id,
+        status=hr_models.TimeSheet.STATUS_CHOICES.modified
+    ).update(
+        status=hr_models.TimeSheet.STATUS_CHOICES.approved,
+        supervisor_approved_at=utc_now())
 
 
 def get_file_from_str(str):
@@ -972,15 +961,14 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
     for timesheet in timesheets:
         jobsite = timesheet.job_offer.job.jobsite
         industry = jobsite.industry
-        started_at = timesheet.shift_started_at
         worked_hours = calc_worked_delta(timesheet)
         coeffs_hours = coefficient_service.calc(
             timesheet.master_company, industry,
             RateCoefficientModifier.TYPE_CHOICES.candidate,
-            started_at,
+            timesheet.shift_started_at_tz,
             worked_hours,
-            break_started=timesheet.break_started_at,
-            break_ended=timesheet.break_ended_at,
+            break_started=timesheet.break_started_at_tz,
+            break_ended=timesheet.break_ended_at_tz,
         )
         timesheet.coeffs_hours = coeffs_hours
         name_mapping = {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}
@@ -1044,9 +1032,10 @@ def send_invoice_email(invoice_id):
                 date_format(invoice.date, 'Y_m_d')
             )
         )
-    except Exception:
+    except ObjectDoesNotExist:
         rule = invoice.provider_company.invoice_rules.first()
         show_candidate = rule.show_candidate_name if rule else False
+        from r3sourcer.apps.hr.payment.invoices import InvoiceService
         pdf_file_obj = InvoiceService.generate_pdf(invoice, show_candidate)
 
     timesheet_ids = invoice.invoice_lines.values_list('timesheet_id', flat=True).distinct()
@@ -1063,13 +1052,17 @@ def send_invoice_email(invoice_id):
 
 @shared_task
 def generate_invoices():
-    today = date.today()
+    today = utc_now().date()
     invoice_rules = core_models.InvoiceRule.objects.filter(
-        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.weekly, period_zero_reference=today.isoweekday()) |
-        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.monthly, period_zero_reference=today.day) |
+        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.weekly,
+                 period_zero_reference=today.isoweekday()) |
+        models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.monthly,
+                 period_zero_reference=today.day) |
         models.Q(period=core_models.InvoiceRule.PERIOD_CHOICES.daily)
     )
 
+    # TODO: remove this inline import after fix import logic
+    from r3sourcer.apps.hr.payment.invoices import InvoiceService
     service = InvoiceService()
 
     for invoice_rule in invoice_rules:
@@ -1086,12 +1079,16 @@ def generate_invoices():
             date_from = today - timedelta(days=1)
 
         existing_invoices = core_models.Invoice.objects.filter(
-            invoice_lines__date__gte=date_from, invoice_lines__date__lte=date_to)
+            invoice_lines__date__gte=date_from,
+            invoice_lines__date__lte=date_to,
+        )
 
         if not existing_invoices:
             service.generate_invoice(date_from, date_to, company=company)
 
-    fortnightly = core_models.InvoiceRule.objects.filter(period=core_models.InvoiceRule.PERIOD_CHOICES.fortnightly)
+    fortnightly = core_models.InvoiceRule.objects.filter(
+        period=core_models.InvoiceRule.PERIOD_CHOICES.fortnightly,
+    )
 
     for invoice_rule in fortnightly:
         if invoice_rule.last_invoice_created:

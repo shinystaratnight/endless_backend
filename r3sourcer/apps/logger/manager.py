@@ -2,13 +2,13 @@ from datetime import date, datetime
 
 from django.conf import settings
 from django.contrib.auth import get_user_model
-from django.utils import timezone
 from django.utils.formats import date_format
 from infi.clickhouse_orm.database import Database
 from infi.clickhouse_orm.fields import DateTimeField
 
 from .models import LogHistory
 from .utils import get_current_user, get_field_value, format_range
+from ...helpers.datetimes import utc_now
 
 
 def get_endless_logger():
@@ -57,7 +57,7 @@ class EndlessLogger(object):
         general_logger_fields = {
             'updated_by': user if user else str(current_user.id if current_user else None),
             'date': date.today(),
-            'updated_at': int(round(timezone.now().timestamp() * 1000)),
+            'updated_at': int(round(utc_now().timestamp() * 1000)),
             'model': "{}.{}".format(instance.__class__.__module__, instance.__class__.__name__),
             'object_id': str(instance.id) if hasattr(instance, 'id') else '',
             'transaction_type': transaction_type
@@ -400,7 +400,7 @@ class ClickHouseLogger(EndlessLogger):
         return query_set.order_by(order_by) if order_by is not None else query_set
 
     def _map_field_history(self, log_object):
-        updated_at = timezone.make_aware(datetime.utcfromtimestamp(log_object.updated_at / 1000))
+        updated_at = datetime.utcfromtimestamp(log_object.updated_at / 1000)
 
         return {
             'updated_by': log_object.updated_by,

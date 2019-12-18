@@ -4,7 +4,6 @@ from collections import defaultdict
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
-from django.utils import timezone
 
 
 HAS_JOBOFFER, HAS_TIMESHEET, UNAVAILABLE = range(3)
@@ -58,7 +57,7 @@ def get_partially_available_candidate_ids_for_vs(candidate_contacts, shift_date,
     """
     from r3sourcer.apps.hr.models import JobOffer
 
-    shift_start_time = timezone.make_aware(datetime.combine(shift_date, shift_time))
+    shift_start_time = datetime.combine(shift_date, shift_time)
 
     from_date = shift_start_time - timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
     to_date = shift_start_time + timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)

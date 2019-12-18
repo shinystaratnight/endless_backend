@@ -6,9 +6,10 @@ import operator
 from functools import reduce
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Min
-from django.utils import timezone, dateparse
+from django.utils import dateparse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, mixins, status, filters
@@ -16,7 +17,7 @@ from rest_framework.decorators import action
 from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 from rest_framework.settings import api_settings
-from rest_framework.viewsets import GenericViewSet, ModelViewSet
+from rest_framework.viewsets import GenericViewSet
 from filer.models import File
 
 from r3sourcer.apps.candidate import models as candidate_models
@@ -26,15 +27,16 @@ from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.api.permissions import SiteMasterCompanyFilterBackend
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.utils.companies import get_site_master_company
-from r3sourcer.apps.core.models import Role, Address, CompanyContact
+from r3sourcer.apps.core.models import Role, Address
 from r3sourcer.apps.core_adapter import constants
-from r3sourcer.apps.hr import models as hr_models, payment
+from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.api.filters import TimesheetFilter, ShiftFilter
 from r3sourcer.apps.hr.api.serializers import timesheet as timesheet_serializers, job as job_serializers
+from r3sourcer.apps.hr.payment.invoices import InvoiceService
 from r3sourcer.apps.hr.tasks import generate_invoice
 from r3sourcer.apps.hr.utils import job as job_utils, utils as hr_utils
-from r3sourcer.apps.myob.tasks import sync_timesheet
-
+from r3sourcer.apps.myob.tasks import sync_time_sheet
+from r3sourcer.helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -48,21 +50,23 @@ class BaseTimeSheetViewsetMixin:
 
     def submit_hours(self, data, time_sheet, is_candidate=True, not_agree=False):
         if is_candidate:
-            data.update(candidate_submitted_at=timezone.now())
+            data.update(candidate_submitted_at=utc_now())
+
         elif not_agree:
             data.update(supervisor_approved_at=None)
+
         else:
-            data.update(supervisor_approved_at=timezone.now())
-        serializer = timesheet_serializers.TimeSheetSerializer(
-            time_sheet, data=data, partial=True
-        )
+            data.update(supervisor_approved_at=utc_now())
+
+        serializer = timesheet_serializers.TimeSheetSerializer(time_sheet, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
 
-        now = timezone.localtime(timezone.now())
-
-        if not hr_models.TimeSheet.objects.filter(shift_ended_at__date=now.date(), going_to_work_confirmation=True,
-                                                  supervisor=time_sheet.supervisor).exists():
+        if not hr_models.TimeSheet.objects.filter(
+                shift_ended_at__date=utc_now().date(),
+                going_to_work_confirmation=True,
+                supervisor=time_sheet.supervisor
+        ).exists():
             hr_utils.send_supervisor_timesheet_approve(time_sheet, True, not_agree)
             if not_agree:
                 hr_utils.schedule_auto_approve_timesheet(time_sheet)
@@ -70,9 +74,7 @@ class BaseTimeSheetViewsetMixin:
         return Response(serializer.data)
 
     def handle_request(self, request, pk, is_candidate=True, not_agree=False, *args, **kwargs):
-        time_sheet = get_object_or_404(
-            hr_models.TimeSheet.objects.select_for_update(), pk=pk
-        )
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
 
         if request.method == 'PUT':
             return self.submit_hours(
@@ -100,9 +102,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     def get_queryset(self):
         query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.contact.get_closest_company(),
-                         job_offer__candidate_contact__candidate_rels__owner=True)
+                  job_offer__candidate_contact__candidate_rels__owner=True)
         return super().get_queryset().filter(query)
-
 
     def get_contact(self):
         role_id = self.request.query_params.get('role')
@@ -111,7 +112,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             role = Role.objects.get(id=role_id)
             company_contact_rel = role.company_contact_rel
             contact = company_contact_rel.company_contact.contact, company_contact_rel
-        except Exception:
+        except ObjectDoesNotExist:
             contact = self.request.user.contact, None
 
         return contact
@@ -160,21 +161,21 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @action(methods=['put'], detail=True)
     def not_agree(self, request, pk, *args, **kwargs):  # pragma: no cover
         data = dict(request.data)
-        data.update(supervisor_modified=True, supervisor_modified_at=timezone.localtime(),
+        data.update(supervisor_modified=True,
+                    supervisor_modified_at=utc_now(),
                     status=hr_models.TimeSheet.STATUS_CHOICES.modified)
-        return self.handle_request(request, pk, False, data=data, not_agree=True,
-                                   *args, **kwargs)
+        return self.handle_request(request, pk, False, data=data, not_agree=True, *args, **kwargs)
 
     @transaction.atomic
     @action(methods=['put'], detail=True)
-    def evaluate(self, request, *args, **kwargs):
-        timesheet = self.get_object()
+    def evaluate(self, request, pk, *args, **kwargs):
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
         request.data['candidate_contact'] = (
-            timesheet.job_offer.candidate_contact.id
+            time_sheet.job_offer.candidate_contact.id
         )
-        request.data['supervisor'] = timesheet.supervisor.pk
-        request.data['reference_timesheet'] = timesheet.pk
+        request.data['supervisor'] = time_sheet.supervisor.pk
+        request.data['reference_timesheet'] = time_sheet.pk
         eval_serializer = timesheet_serializers.CandidateEvaluationSerializer(data=request.data)
         eval_serializer.is_valid(raise_exception=True)
         eval_serializer.save()
@@ -202,36 +203,39 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         return self.paginated(queryset.distinct().order_by('-shift_started_at'))
 
+    @transaction.atomic
     @action(methods=['post'], detail=True)
     def confirm(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
-        obj.going_to_work_confirmation = True
-        obj.update_status(False)
-        obj.save(update_fields=['going_to_work_confirmation', 'status'])
+        time_sheet.going_to_work_confirmation = True
+        time_sheet.update_status(False)
+        time_sheet.save(update_fields=['going_to_work_confirmation', 'status'])
 
         return Response({
             'status': 'success'
         })
 
+    @transaction.atomic
     @action(methods=['post'], detail=True)
     def decline(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
-        obj.going_to_work_confirmation = False
-        obj.update_status(False)
-        obj.save(update_fields=['going_to_work_confirmation', 'status'])
+        time_sheet.going_to_work_confirmation = False
+        time_sheet.update_status(False)
+        time_sheet.save(update_fields=['going_to_work_confirmation', 'status'])
 
         return Response({
             'status': 'success'
         })
 
+    @transaction.atomic
     @action(methods=['post'], detail=True)
     def resend_sms(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
 
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
-        process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SHIFT_ENDING])
+        process_time_sheet_log_and_send_notifications.apply_async(args=[time_sheet.id, SHIFT_ENDING])
 
         return Response({
             'status': 'success'
@@ -249,55 +253,57 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
     @action(methods=['get', 'put'], detail=True)
     def candidate_fill(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
-
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
         if request.method == 'PUT':
             data = self.prepare_related_data(request.data)
-            data['candidate_submitted_at'] = timezone.now()
-            serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
+            data['candidate_submitted_at'] = utc_now()
+            serializer = timesheet_serializers.TimeSheetManualSerializer(time_sheet,
+                                                                         data=data,
+                                                                         partial=True)
             serializer.is_valid(raise_exception=True)
 
             if serializer.validated_data.get('send_supervisor_message'):
-                hr_utils.send_supervisor_timesheet_approve(obj, True)
+                hr_utils.send_supervisor_timesheet_approve(time_sheet, True)
 
-            time_sheet = serializer.save()
-            time_sheet.candidate_submitted_at = timezone.now()
+            time_sheet.candidate_submitted_at = utc_now()
+            serializer.save()
         else:
-            serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
+            serializer = timesheet_serializers.TimeSheetManualSerializer(time_sheet)
 
         return Response(serializer.data)
 
     @action(methods=['get', 'put'], detail=True)
     def supervisor_approve(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
-
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
         if request.method == 'PUT':
             data = self.prepare_related_data(request.data)
-            data['supervisor_approved_at'] = timezone.now()
-            serializer = timesheet_serializers.TimeSheetManualSerializer(obj, data=data, partial=True)
+            data['supervisor_approved_at'] = utc_now()
+            serializer = timesheet_serializers.TimeSheetManualSerializer(time_sheet,
+                                                                         data=data,
+                                                                         partial=True)
             serializer.is_valid(raise_exception=True)
 
             if serializer.validated_data.get('send_supervisor_message'):
-                hr_utils.send_supervisor_timesheet_approve(obj, True)
+                hr_utils.send_supervisor_timesheet_approve(time_sheet, True)
 
             if serializer.validated_data.get('send_candidate_message'):
                 from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SUPERVISOR_DECLINED
-                process_time_sheet_log_and_send_notifications.apply_async(args=[obj.id, SUPERVISOR_DECLINED])
+                process_time_sheet_log_and_send_notifications.apply_async(args=[time_sheet.id, SUPERVISOR_DECLINED])
 
             serializer.save()
         else:
-            if not obj.break_started_at or not obj.break_ended_at:
-                obj.no_break = True
-            serializer = timesheet_serializers.TimeSheetManualSerializer(obj)
+            if not any([time_sheet.break_started_at, time_sheet.break_ended_at]):
+                time_sheet.no_break = True
+            serializer = timesheet_serializers.TimeSheetManualSerializer(time_sheet)
 
         return Response(serializer.data)
 
     @action(methods=['post'], detail=True)
     def sync(self, request, pk, *args, **kwargs):
-        obj = self.get_object()
-        obj.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
+        time_sheet.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
 
-        sync_timesheet.delay(obj.id)
+        sync_time_sheet.apply_async(args=[time_sheet.id])
 
         return Response({'status': 'success'})
 
@@ -309,9 +315,10 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         Would be used for approving through pin code.
         """
 
-        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
 
-        serializer = timesheet_serializers.PinCodeSerializer(instance=time_sheet, data=request.data)
+        serializer = timesheet_serializers.PinCodeSerializer(instance=time_sheet,
+                                                             data=request.data)
         serializer.is_valid(raise_exception=True)
 
         # check if already approved
@@ -321,7 +328,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         # approve timesheet
-        time_sheet.supervisor_approved_at = timezone.now()
+        time_sheet.supervisor_approved_at = utc_now()
         time_sheet.supervisor_approved_scheme = serializer.APPROVAL_SCHEME
         time_sheet.save()
 
@@ -337,7 +344,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         Would be used for approving through signature.
         """
 
-        time_sheet = get_object_or_404(hr_models.TimeSheet.objects.select_for_update(), pk=pk)
+        time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
 
         # check if already approved
         if time_sheet.supervisor_approved_at:
@@ -345,7 +352,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
                 "description": _("TimeSheet already confirmed")
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = timesheet_serializers.TimeSheetSignatureSerializer(instance=time_sheet, data=request.data)
+        serializer = timesheet_serializers.TimeSheetSignatureSerializer(instance=time_sheet,
+                                                                        data=request.data)
         serializer.is_valid(raise_exception=True)
 
         logger.debug("TimeSheet {ts_id} approved through signature.".format(
@@ -354,7 +362,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         # approve timesheet
         serializer.save(
-            supervisor_approved_at=timezone.now(),
+            supervisor_approved_at=utc_now(),
             supervisor_approved_scheme=serializer.APPROVAL_SCHEME
         )
 
@@ -366,7 +374,10 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @transaction.atomic
     @action(methods=['post'], detail=True)
     def recreate_invoice(self, request, pk, *args, **kwargs):
-        generate_invoice.apply_async(kwargs={'timesheet_id': pk, 'delete_lines': True}, countdown=10)
+        generate_invoice.apply_async(kwargs={
+            'timesheet_id': pk,
+            'recreate': True,
+            'delete_lines': True}, countdown=10)
 
         return Response({
             'status': 'success',
@@ -396,12 +407,12 @@ class InvoiceViewset(BaseApiViewset):
                 )
             )
 
-        except Exception:
+        except ObjectDoesNotExist:
             client_company = invoice.customer_company
             rule = client_company.invoice_rules.first()
             show_candidate = rule.show_candidate_name if rule else False
 
-            pdf_file_obj = payment.InvoiceService.generate_pdf(invoice, show_candidate)
+            pdf_file_obj = InvoiceService.generate_pdf(invoice, show_candidate)
 
         pdf_url = pdf_file_obj.url
 
@@ -421,12 +432,7 @@ class JobOfferViewset(BaseApiViewset):
 
     @action(methods=['get'], detail=False)
     def candidate(self, request, *args, **kwargs):  # pragma: no cover
-        candidate_contact_id = self.request.query_params.get("candidate_contact")
-        candidate_contact = candidate_models.CandidateContact.objects.get(id=candidate_contact_id)
-        if candidate_contact.get_closest_company() == request.user.company:
-            return self.list(request, *args, **kwargs)
-        else:
-            return Response({"results": []}, status=status.HTTP_200_OK)
+        return self.list(request, *args, **kwargs)
 
     @action(methods=['post'], detail=True)
     def accept(self, request, *args, **kwargs):  # pragma: no cover
@@ -486,14 +492,11 @@ class JobViewset(BaseApiViewset):
 
         requested_shift_ids = request.query_params.getlist('shifts')
 
-        now = timezone.localtime(timezone.now())
-        today = now.date()
-
         shifts_q = Q(id__in=requested_shift_ids) if requested_shift_ids else Q()
 
         init_shifts_qry = hr_models.Shift.objects.filter(
             shifts_q,
-            date__shift_date__gte=today,
+            date__shift_date__gte=job.now_utc.date(),
             date__job=job,
             date__cancelled=False,
         ).annotate(
@@ -610,7 +613,8 @@ class JobViewset(BaseApiViewset):
         ).values_list('id', flat=True))
 
         carrier_list = list(candidate_contacts.filter(
-            carrier_lists__confirmed_available=True, carrier_lists__target_date__gte=today
+            carrier_lists__confirmed_available=True,
+            carrier_lists__target_date__gte=job.now_utc.date()
         ).values_list('id', flat=True))
 
         top_contacts = set(favourite_list + booked_before_list + carrier_list)
@@ -729,10 +733,8 @@ class JobViewset(BaseApiViewset):
         when_list = []
 
         for init_shift in init_shifts:
-            shift_start_time = timezone.make_aware(
-                datetime.datetime.combine(init_shift.date.shift_date, init_shift.time)
-            )
-
+            shift_start_time = datetime.datetime.combine(init_shift.date.shift_date,
+                                                         init_shift.time)
             from_date = shift_start_time - datetime.timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
             to_date = shift_start_time + datetime.timedelta(hours=settings.VACANCY_FILLING_TIME_DELTA)
 
@@ -788,7 +790,10 @@ class JobViewset(BaseApiViewset):
         if request.method == 'PUT':
             is_autofill = request.data.get('autofill', False)
             try:
-                latest_shift_date = job.shift_dates.filter(cancelled=False, shifts__isnull=False).latest('shift_date')
+                latest_shift_date = job.shift_dates.filter(
+                    cancelled=False,
+                    shifts__isnull=False,
+                ).latest('shift_date')
             except hr_models.ShiftDate.DoesNotExist:
                 raise exceptions.NotFound(_('Latest Shift Date not found'))
 
@@ -798,7 +803,9 @@ class JobViewset(BaseApiViewset):
             for new_shift_date in new_shift_dates:
                 new_shift_date = datetime.datetime.strptime(new_shift_date, '%Y-%m-%d').date()
                 new_shift_date_obj, created = hr_models.ShiftDate.objects.get_or_create(
-                    job=job, shift_date=new_shift_date, defaults={
+                    job=job,
+                    shift_date=new_shift_date,
+                    defaults={
                         'workers': job.workers,
                         'hourly_rate': latest_shift_date.hourly_rate,
                     },
@@ -813,19 +820,21 @@ class JobViewset(BaseApiViewset):
             for new_shift_date_obj in new_shift_dates_objs:
                 self._extend_shift_date(job, new_shift_date_obj, shift_objs, is_autofill)
 
-        today = timezone.localtime(timezone.now()).date()
         shifts = hr_models.Shift.objects.filter(
-            date__job=job, date__shift_date__gte=today, date__cancelled=False
+            date__job=job,
+            date__shift_date__gte=job.now_utc.date(),
+            date__cancelled=False,
         ).select_related('date').order_by('date__shift_date', 'time')
 
         candidate_ids = hr_models.JobOffer.objects.filter(
-            shift__date__job=job, shift__date__cancelled=False
+            shift__date__job=job,
+            shift__date__cancelled=False,
         ).values_list('candidate_contact_id', flat=True).distinct()
         candidate_contacts = candidate_models.CandidateContact.objects.filter(id__in=candidate_ids)
 
         shifts = hr_models.Shift.objects.filter(
            Q(job_offers__candidate_contact__in=candidate_ids) |
-           Q(date__job=job), date__shift_date__gte=today, date__cancelled=False
+           Q(date__job=job), date__shift_date__gte=job.now_utc.date(), date__cancelled=False
         ).select_related('date').order_by('date__shift_date', 'time').distinct('date__shift_date', 'time')
 
         partially_available_candidates = job_utils.get_partially_available_candidates(
@@ -849,7 +858,9 @@ class JobViewset(BaseApiViewset):
         for shift in shifts:
             shift_obj = shift.shift if is_autofill else shift
             new_shift_obj, created = hr_models.Shift.objects.get_or_create(
-                date=new_shift_date, time=shift_obj.time, defaults={
+                date=new_shift_date,
+                time=shift_obj.time,
+                defaults={
                     'workers': shift_obj.workers,
                     'hourly_rate': shift_obj.hourly_rate,
                 },
@@ -874,11 +885,12 @@ class JobViewset(BaseApiViewset):
         if not shift_datetime:
             candidate_contacts = candidate_models.CandidateContact.objects.none()
         else:
-            shift_datetime = timezone.make_naive(dateparse.parse_datetime(shift_datetime))
+            shift_datetime = dateparse.parse_datetime(shift_datetime)
 
             candidate_contacts = job_utils.get_available_candidate_list(job)
             candidate_contacts = candidate_contacts.filter(
-                candidate_rels__master_company=job.provider_company, candidate_rels__active=True
+                candidate_rels__master_company=job.provider_company,
+                candidate_rels__active=True,
             ).distinct()
 
             partially_available_candidates = job_utils.get_partially_available_candidate_ids_for_vs(
@@ -911,12 +923,10 @@ class JobViewset(BaseApiViewset):
         self.perform_update(serializer)
 
 
-class TimeSheetCandidateViewset(
-    BaseTimeSheetViewsetMixin,
-    BaseViewsetMixin,
-    mixins.ListModelMixin,
-    GenericViewSet
-):
+class TimeSheetCandidateViewset(BaseTimeSheetViewsetMixin,
+                                BaseViewsetMixin,
+                                mixins.ListModelMixin,
+                                GenericViewSet):
     def get_candidate_queryset(self, request):
         contact = request.user.contact
 

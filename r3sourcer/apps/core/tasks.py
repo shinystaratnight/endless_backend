@@ -1,15 +1,14 @@
 from contextlib import contextmanager
+from datetime import datetime
 from urllib.parse import urlparse
 
 from celery import shared_task
-from celery.five import monotonic
 from celery.utils.log import get_task_logger
 
 from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
-from django.utils import timezone
-
+from vine.five import monotonic
 from r3sourcer.celeryapp import app
 
 from r3sourcer.apps.core import models as core_models
@@ -116,9 +115,13 @@ def fetch_holiday_dates(country_code, year, month):
         raise EnricoApiException(response)
 
     for data_item in response:
-        date = timezone.datetime(data_item['date']['year'], data_item['date']['month'], data_item['date']['day'])
+        date = datetime(data_item['date']['year'],
+                        data_item['date']['month'],
+                        data_item['date']['day'])
         core_models.PublicHoliday.objects.get_or_create(
-            country=country, name=data_item['englishName'], date=date)
+            country=country,
+            name=data_item['englishName'],
+            date=date)
 
 
 one_sms_task_at_the_same_time = one_task_at_the_same_time(True)
@@ -191,7 +194,7 @@ def terminate_company_contact(company_contact_rel_id):
         logger.exception('Cannot find company contact relation to terminate')
     else:
         termination_date = company_contact_rel.termination_date
-        today = timezone.localtime(timezone.now()).date()
+        today = company_contact_rel.now_tz.date()
 
         if termination_date and termination_date == today:
             company_contact_rel.active = False

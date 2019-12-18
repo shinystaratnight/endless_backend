@@ -1,26 +1,25 @@
 import calendar
+from datetime import timedelta
 
+from celery import schedules
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.utils import timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-
-from celery import schedules
 from model_utils.choices import Choices
 from redbeat import RedBeatSchedulerEntry
 
-from r3sourcer.apps.core.models import TemplateMessage, UUIDModel
-from r3sourcer.apps.core.service import FactoryException, factory
-
+from r3sourcer import ref
 from r3sourcer.apps.activity.exceptions import PeriodNameError
 from r3sourcer.apps.activity.fields import FactoryLookupField
-
+from r3sourcer.apps.core.models import TemplateMessage, UUIDModel, TimeZoneUUIDModel
+from r3sourcer.apps.core.service import FactoryException, factory
 from r3sourcer.celeryapp import app as celery_app
 
 
-class Activity(UUIDModel):
+class Activity(TimeZoneUUIDModel):
+
     PRIORITY_CHOICES = Choices(
         (1, 'BOTTOM_PRIORITY', _("Bottom")),
         (2, 'LOW_PRIORITY', _("Low")),
@@ -66,14 +65,8 @@ class Activity(UUIDModel):
         verbose_name=_("Contact")
     )
 
-    starts_at = models.DateTimeField(
-        _("Starts at"),
-        default=timezone.now
-    )
-
-    ends_at = models.DateTimeField(
-        _("Ends at")
-    )
+    starts_at = ref.DTField(_("Starts at"))
+    ends_at = ref.DTField(_("Ends at"))
 
     done = models.NullBooleanField(
         _("Done"),
@@ -93,17 +86,35 @@ class Activity(UUIDModel):
         blank=True
     )
 
+    @property
+    def geo(self):
+        raise NotImplementedError
+
+    @property
+    def starts_at_tz(self):
+        return self.utc2local(self.starts_at)
+
+    @property
+    def starts_at_utc(self):
+        return self.starts_at
+
+    @property
+    def ends_at_tz(self):
+        return self.utc2local(self.ends_at)
+
+    @property
+    def ends_at_utc(self):
+        return self.ends_at
+
     def __str__(self):
+        _starts_at = date_format(self.starts_at, settings.DATETIME_FORMAT)
+        _ends_at = date_format(self.ends_at, settings.DATETIME_FORMAT)
         if self.starts_at and self.ends_at and self.starts_at.date() == self.ends_at.date():
-            if self.starts_at.date() == timezone.localtime(timezone.now()).date():
+            if self.starts_at.date() == self.now_utc.date():
                 return self.template.name
-            return '{}: {}'.format(
-                date_format(timezone.localtime(self.starts_at), settings.DATETIME_FORMAT),
-                self.template.name)
-        return '{} - {}: {}'.format(
-            date_format(timezone.localtime(self.starts_at), settings.DATETIME_FORMAT),
-            date_format(timezone.localtime(self.ends_at), settings.DATETIME_FORMAT),
-            self.template.name)
+
+            return '{}: {}'.format(_starts_at, self.template.name)
+        return '{} - {}: {}'.format(_starts_at, _ends_at, self.template.name)
 
     class Meta:
         verbose_name = _("Activity")
@@ -130,10 +141,16 @@ class Activity(UUIDModel):
         raise NotImplementedError
 
     def get_overdue(self):
-        return self.ends_at < timezone.now().replace(tzinfo=self.ends_at.tzinfo) and not self.done
+        return self.ends_at < self.now_utc and not self.done
+
+    def save(self, *args, **kwargs):
+        if not self.starts_at:
+            self.starts_at = self.now_utc
+        super().save(*args, **kwargs)
 
 
-class ActivityDate(UUIDModel):
+class ActivityDate(TimeZoneUUIDModel):
+
     STATUS_CHOICES = Choices(
         (True, 'OCCURRED', _("Occurred")),
         (False, 'FAIL', _("Fail")),
@@ -142,20 +159,17 @@ class ActivityDate(UUIDModel):
 
     DEFAULT_STATUS_CHOICES = STATUS_CHOICES.WAITING
 
-    occur_at = models.DateTimeField(
-        _("Occur at"),
-        default=None
-    )
+    occur_at = ref.DTField(_("Occur at"))
 
     activity_repeat = models.ForeignKey(
-        'ActivityRepeat',
+        'activity.ActivityRepeat',
         related_name='repeat_dates',
         verbose_name=_("Activity repeater"),
         on_delete=models.PROTECT
     )
 
     activity = models.ForeignKey(
-        Activity,
+        'activity.Activity',
         default=None,
         blank=True,
         null=True,
@@ -174,6 +188,18 @@ class ActivityDate(UUIDModel):
         default="",
         blank=True
     )
+
+    @property
+    def geo(self):
+        raise NotImplementedError
+
+    @property
+    def occur_at_tz(self):
+        return self.utc2local(self.occur_at)
+
+    @property
+    def occur_at_utc(self):
+        return self.occur_at
 
     def __str__(self):
         return str(self.occur_at)
@@ -196,7 +222,7 @@ class ActivityDate(UUIDModel):
         verbose_name_plural = _("Activity schedule dates")
 
 
-class ActivityRepeat(UUIDModel):
+class ActivityRepeat(TimeZoneUUIDModel):
     TASK_KEY = 'periodic_task:{}'
     TASK_NAME = 'activity.tasks.activity_handler'
 
@@ -246,15 +272,12 @@ class ActivityRepeat(UUIDModel):
     )
 
     activity = models.ForeignKey(
-        Activity,
+        'activity.Activity',
         default=None,
         verbose_name=_("Activity")
     )
 
-    started_at = models.DateTimeField(
-        _("Started at"),
-        default=timezone.now
-    )
+    started_at = ref.DTField(_("Started at"))
 
     base_type = models.CharField(
         _("Schedule type"),
@@ -299,7 +322,7 @@ class ActivityRepeat(UUIDModel):
     )
 
     occurred_activities = models.ManyToManyField(
-        Activity,
+        'activity.Activity',
         related_name='repeaters',
         editable=False
     )
@@ -310,10 +333,25 @@ class ActivityRepeat(UUIDModel):
         default=''
     )
 
+    @property
+    def geo(self):
+        raise NotImplementedError
+
+    @property
+    def started_at_tz(self):
+        return self.utc2local(self.started_at)
+
+    @property
+    def started_at_utc(self):
+        return self.started_at
+
     def __str__(self):
         if self.activity and self.activity.entity_object_name:
-            return '{}: {}'.format(self.activity.entity_object_name, self.activity.template.name)
-        return '{}: {}'.format(self.get_repeat_type_display(), self.activity.template)
+            return '{}: {}'.format(self.activity.entity_object_name,
+                                   self.activity.template.name)
+
+        return '{}: {}'.format(self.get_repeat_type_display(),
+                               self.activity.template)
 
     def occur(self):
         activity = self.activity
@@ -323,8 +361,7 @@ class ActivityRepeat(UUIDModel):
             priority=activity.priority,
             entity_object_id=activity.entity_object_id,
             entity_object_name=activity.entity_object_name,
-            starts_at=timezone.now(),
-            ends_at=timezone.now() + (activity.ends_at - activity.starts_at),
+            ends_at=self.now_utc + (activity.ends_at - activity.starts_at),
         )
         self.occurred_activities.add(new_activity)
         return new_activity
@@ -359,7 +396,7 @@ class ActivityRepeat(UUIDModel):
             entry = RedBeatSchedulerEntry(
                 self.TASK_KEY.format(self.TASK_NAME),
                 self.TASK_NAME,
-                schedules.schedule(timezone.timedelta(**{period: value})),
+                schedules.schedule(timedelta(**{period: value})),
                 app=celery_app
             )
             self.tas_key = entry.key
@@ -393,9 +430,8 @@ class ActivityRepeat(UUIDModel):
         if self.base_type in [self.PERIODIC_TYPE.secondly,
                               self.PERIODIC_TYPE.minutely]:
             # return IntervalSchedule(**f_dict)
-            return schedules.schedule(
-                timezone.timedelta(minutes=f_dict['every'])
-            )
+            return schedules.schedule(timedelta(minutes=f_dict['every']))
+
         return schedules.crontab(**f_dict)
 
     def deactivate(self):
@@ -437,22 +473,27 @@ class ActivityRepeat(UUIDModel):
 
     def clean(self):
         """
-        Validate shcedule type
+        Validate schedule type
 
         """
-        if self.repeat_type == ActivityRepeat.REPEAT_CHOICES.SCHEDULE and \
-                self.base_type == ActivityRepeat.PERIODIC_TYPE.secondly:
+        if self.repeat_type == self.REPEAT_CHOICES.SCHEDULE and \
+                self.base_type == self.PERIODIC_TYPE.secondly:
             raise ValidationError({"repeat_type": _("Incorrect type: use `Interval`"),
                                    'base_type': _("Incorrect schedule")})
 
-        if self.repeat_type == ActivityRepeat.REPEAT_CHOICES.SCHEDULE and \
-                self.base_type == ActivityRepeat.PERIODIC_TYPE.minutely:
+        if self.repeat_type == self.REPEAT_CHOICES.SCHEDULE and \
+                self.base_type == self.PERIODIC_TYPE.minutely:
             raise ValidationError({"repeat_type": _("Incorrect type: use `Interval`"),
                                    'base_type': _("Incorrect schedule")})
 
     class Meta:
         verbose_name = _("Activity repeat")
         verbose_name_plural = _("Activity repeat")
+
+    def save(self, *args, **kwargs):
+        if not self.started_at:
+            self.started_at = self.now_utc
+        super().save(*args, **kwargs)
 
 
 class ActivityTemplate(TemplateMessage):

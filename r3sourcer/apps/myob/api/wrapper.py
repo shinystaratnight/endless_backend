@@ -10,19 +10,17 @@ import time
 
 import pytz
 import requests
-
 from django.conf import settings
 from django.core.urlresolvers import reverse
-from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-from django.utils import timezone
 from rest_framework import status
-from rest_framework.exceptions import APIException
 
 from r3sourcer.apps.core.models import Company
-from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBCompanyFileToken, MYOBCompanyFile
 from r3sourcer.apps.myob.api.utils import get_myob_app_info
-
+from r3sourcer.apps.myob.models import MYOBRequestLog, MYOBCompanyFileToken, MYOBCompanyFile
+from r3sourcer.apps.myob.services.exceptions import MyOBCredentialException, MYOBException, MYOBProgrammingException, \
+    MYOBImplementationException, MYOBServerException
+from r3sourcer.helpers.datetimes import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -31,32 +29,6 @@ def check_account_id(url1, url2):
     pattern = '^(?P<protocol>\w+)\:\/\/(?P<domain_name>[\w,\d,\.]+)\/' \
               'accountright\/(?P<account_id>[\d,\w\-]+)(?P<path>.+)?'
     return re.match(pattern, url1).groupdict()['account_id'] == re.match(pattern, url2).groupdict()['account_id']
-
-
-class MYOBException(APIException):
-    """
-    General MYOB related Exception
-    """
-    status_code = status.HTTP_400_BAD_REQUEST
-
-
-class MYOBProgrammingException(MYOBException):
-    """
-    MYOB Exception raised when API wrapper is used improperly.
-    """
-
-
-class MYOBImplementationException(MYOBException):
-    """
-    MYOB Exception raised when current API implementation
-    encounters unexpected and unhandled situation.
-    """
-
-
-class MYOBServerException(MYOBException):
-    """
-    MYOB Server Exception (5xx) raised after retries.
-    """
 
 
 def decimal_default(obj):
@@ -186,7 +158,7 @@ class MYOBAuth(object):
         }
         if state is None:
             # could use oauth2 state param more properly
-            params['state'] = str(datetime.datetime.now().timestamp())
+            params['state'] = str(utc_now().timestamp())
         url = self.get_auth_url()
         req = requests.Request(method="GET", url=url, params=params)
         return req.prepare().url
@@ -324,15 +296,12 @@ class MYOBAuth(object):
             }
 
         url = self.get_token_url()
-        now = timezone.now()
         resp = myob_request('post', url, data=data)
         log.info('%s %s', resp.status_code, resp.content)
 
         resp_data = resp.json(parse_float=decimal.Decimal)
         expires_at = int(resp_data['expires_in'])  # value in seconds
-        expires_at = now + datetime.timedelta(seconds=expires_at)
-        expires_at = date_format(expires_at, settings.DATETIME_MYOB_FORMAT)
-
+        expires_at = utc_now() + datetime.timedelta(seconds=expires_at)
         self.auth_data.access_token = resp_data['access_token']
         self.auth_data.refresh_token = resp_data['refresh_token']
         self.auth_data.expires_in = resp_data['expires_in']
@@ -353,6 +322,9 @@ class MYOBClient(object):
 
         if not auth_data:
             auth_data = cf_data.auth_data if cf_data else None
+
+        if not cf_data:
+            cf_data = auth_data.company_file_token.first()
 
         self.request = request
         self.cftoken = None
@@ -440,12 +412,20 @@ class MYOBClient(object):
 
     def get_cf_token(self):
         if self.request and 'myob_cf_token' in self.request.session:
-            return self.request.session.get('myob_cf_token')
-        if self.cf_vars.get('cf_token') is not None:
-            return self.cf_vars['cf_token']
-        if self.cf_data:
-            return self.cf_data.cf_token
-        return ''
+            token = self.request.session.get('myob_cf_token')
+
+        elif self.cf_vars.get('cf_token') is not None:
+            token = self.cf_vars['cf_token']
+
+        elif self.cf_data:
+            token = self.cf_data.cf_token
+        else:
+            token = None
+
+        if token is None or not token.strip():
+            raise MyOBCredentialException('Company file token is invalid')
+
+        return token
 
     def encode_cf_token(self, username, password):
         cf_token = '{}:{}'.format(username, password)
@@ -474,16 +454,10 @@ class MYOBClient(object):
 
     def api_request(self, method, url, **kwargs):
         r = myob_request(method, url, **kwargs)
-
-        if r.status_code == 401:
-            data = r.json()
-            if isinstance(data, dict) and 'Errors' in data:
-                for e in data['Errors']:
-                    if e['ErrorCode'] == 31001:  # OAuthTokenIsInvalid
-                        self.refresh()
-                        # TODO: use some request limit
-                        kwargs['headers'] = self.get_headers()
-                        return self.api_request(method, url, **kwargs)
+        if int(r.status_code) == 401:
+            self.refresh()
+            kwargs['headers'] = self.get_headers()
+            return self.api_request(method, url, **kwargs)
         return r
 
     def api_call(self, method, uri, **kwargs):
@@ -499,7 +473,6 @@ class MYOBClient(object):
 
     def get_resources(self):
         uri = self.get_cf_uri()
-
         return self.api_call('get', uri)
 
     def get_current_user(self):
@@ -637,7 +610,7 @@ class MYOBAccountRightV2Resource(object):
         self._check_method(self._allow_get)
         uri = self._get_uri()
         if uid:
-            uri = uri.rstrip('/') + '/' + uid
+            uri = '/'.join([uri.rstrip('/'), uid])
         resp = self._client.api_call('get', uri, **kwargs)
         return self._get_response(resp, raw_resp)
 
@@ -652,7 +625,7 @@ class MYOBAccountRightV2Resource(object):
         self._check_method(self._allow_put)
         uri = self._get_uri()
         if uid:
-            uri = uri.rstrip('/') + '/' + uid
+            uri = '/'.join([uri.rstrip('/'), uid])
         resp = self._client.api_call('put', uri, **kwargs)
         return self._get_response(resp, raw_resp)
 
@@ -669,7 +642,7 @@ class MYOBAccountRightV2Resource(object):
         self._check_method(self._allow_delete)
         uri = self._get_uri()
         if uid:
-            uri = uri.rstrip('/') + '/' + uid
+            uri = '/'.join([uri.rstrip('/'), uid])
         resp = self._client.api_call('delete', uri, **kwargs)
         return self._get_response(resp, raw_resp)
 

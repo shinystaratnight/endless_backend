@@ -1,15 +1,13 @@
 import decimal
 import logging
 
-
-from django.utils import timezone
-from django.utils.decorators import method_decorator
 from django.db.models import Q
+from django.utils.decorators import method_decorator
 
 from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.myob.services.decorators import myob_enabled_mode
-
+from r3sourcer.helpers.datetimes import utc_now
 
 log = logging.getLogger(__name__)
 
@@ -24,22 +22,19 @@ class BaseSync:
 
     required_put_keys = ('UID', 'RowVersion', 'DisplayID')
 
-    def __init__(self, myob_client=None, company=None, cf_id=None):
-        self.client = myob_client or get_myob_client(cf_id=cf_id, company=company)
-        if self.client is None:
-            return
+    def __init__(self, client):
+        self.client = client
+        self.cf_data = client.cf_data
+        self.company = self.cf_data.company
+        self._clients[self.cf_data.id] = self.client
 
         self.client.init_api()
-        self._clients[self.client.cf_data.id] = self.client
-
-        self.company = company or self.client.cf_data.company
-
         if not self.mapper:
             self.mapper = self.mapper_class and self.mapper_class()
-
         self.resource = self._get_resource()
 
     def _switch_client(self, date=None, company_file_token=None):
+        """ Did not use maybe deprecated"""
         kwargs = {
             'company': self.company,
             'date': date,
@@ -75,7 +70,7 @@ class BaseSync:
             created = True
 
         if not created:
-            sync_obj.synced_at = timezone.now()
+            sync_obj.synced_at = utc_now()
         if self.company:
             sync_obj.company = self.company
         if legacy_number:
@@ -238,9 +233,7 @@ class BaseSync:
     def _sync_to(self, instance, sync_obj=None, partial=False):
         raise NotImplementedError()
 
-    def _get_myob_existing_resp(
-        self, instance, myob_card_number, sync_obj=None, field_name='DisplayID', resource=None
-    ):
+    def _get_myob_existing_resp(self, instance, myob_card_number, sync_obj=None, field_name='DisplayID', resource=None):
         """
         Search remote resource by field.
 
@@ -290,12 +283,10 @@ class BaseSync:
             return
 
         sync_obj = self._get_sync_object(instance)
-        if sync_obj and self._is_synced(instance, sync_obj=sync_obj) and partial:
-            return
+        # WARNING: If uncomment this line re-sync should not work
+        # if sync_obj and self._is_synced(instance, sync_obj=sync_obj) and partial:
+        #     return
 
         res = self._sync_to(instance, sync_obj, partial)
         if res:
             self._update_sync_object(instance)
-
-    def sync_from_myob(self):
-        raise NotImplementedError()

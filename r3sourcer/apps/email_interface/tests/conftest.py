@@ -1,5 +1,6 @@
 from datetime import datetime
 
+import pytz
 from django.utils import timezone
 
 import freezegun
@@ -21,12 +22,13 @@ def email_template():
 @pytest.fixture
 @freezegun.freeze_time(datetime(2017, 1, 1))
 def fake_email():
+    now = datetime.now(pytz.utc)
     return models.EmailMessage.objects.create(
         state=models.EmailMessage.STATE_CHOICES.CREATED,
-        sent_at=timezone.now(),
+        sent_at=now,
         from_email='test@test.tt',
         subject='subject',
-        created_at=timezone.now(),
+        created_at=now,
         to_addresses='test1@test.tt'
     )
 

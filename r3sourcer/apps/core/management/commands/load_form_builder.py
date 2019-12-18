@@ -5,7 +5,8 @@ import tempfile
 from django.contrib.contenttypes.models import ContentType
 from django.core.management import call_command
 from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
+
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class Command(BaseCommand):
@@ -24,8 +25,8 @@ class Command(BaseCommand):
                     model_parts[1]
                 )
                 el["fields"]["content_type"] = ct_model.id
-                el["fields"]["created_at"] = timezone.now().isoformat()
-                el["fields"]["updated_at"] = timezone.now().isoformat()
+                el["fields"]["created_at"] = utc_now().isoformat()
+                el["fields"]["updated_at"] = utc_now().isoformat()
 
             with open(fixture_file.name, "w") as jsonFile:
                 json.dump(data, jsonFile)

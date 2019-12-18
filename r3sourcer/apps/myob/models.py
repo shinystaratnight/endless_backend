@@ -1,12 +1,12 @@
 import datetime
 
 from django.db import models
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer.apps.core.models import UUIDModel, Company, User
 from r3sourcer.apps.core.managers import AbstractObjectOwnerManager
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class MYOBWatchdogModel(models.Model):
@@ -122,8 +122,7 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
 
     myob_user_username = models.CharField(
         verbose_name=_(u"User Username"),
-        max_length=512,
-        unique=True
+        max_length=512
     )
 
     expires_in = models.PositiveIntegerField(
@@ -182,7 +181,10 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
     )
 
     authenticated = models.BooleanField(default=False)
-    auth_data = models.ForeignKey('MYOBAuthData', blank=True, null=True)
+    auth_data = models.ForeignKey(
+        'myob.MYOBAuthData',
+        related_name='company_file',
+        blank=True, null=True)
 
     class Meta:
         verbose_name = _("MYOB Company File")
@@ -205,9 +207,9 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
 class MYOBCompanyFileTokenManager(AbstractObjectOwnerManager):
 
     def enabled(self, date=None):
-        date = date or timezone.localtime(timezone.now()).date()
+        date = date or utc_now().date()
         if isinstance(date, datetime.datetime):
-            date = timezone.localtime(date).date()
+            date = date.date()
 
         return self.get_queryset().filter(
             (models.Q(enable_from__isnull=True) | models.Q(enable_from__lte=date)) &
@@ -220,16 +222,17 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
     Contains all information needed for authorization and fetching information related to a specific company file
     """
     company_file = models.ForeignKey(MYOBCompanyFile, related_name='tokens')
-
-    auth_data = models.ForeignKey(MYOBAuthData)
-
-    company = models.ForeignKey(Company, on_delete=models.CASCADE, null=True, related_name='company_file_tokens')
-
+    auth_data = models.ForeignKey(
+        'myob.MYOBAuthData',
+        related_name='company_file_token')
+    company = models.ForeignKey(
+        'core.Company',
+        on_delete=models.CASCADE,
+        related_name='company_file_tokens')
     cf_token = models.CharField(
         verbose_name=_(u"Company File Token"),
         max_length=32,
     )
-
     enable_from = models.DateField(
         null=True,
         blank=True,
@@ -269,10 +272,11 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
 
         return obj, created
 
-    def is_enabled(self, date=None):
-        date = date or timezone.now()
-        if isinstance(date, datetime.datetime):
-            date = timezone.localtime(date).date()
+    def is_enabled(self, dt=None):
+        if dt is None:
+            dt = utc_now()
+
+        date = dt.date()
 
         return (not self.enable_from or self.enable_from <= date) and \
             (not self.enable_until or self.enable_until >= date)

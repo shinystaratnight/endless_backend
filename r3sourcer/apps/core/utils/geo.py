@@ -6,6 +6,7 @@ import googlemaps.exceptions
 
 from django.conf import settings
 
+from r3sourcer.helpers.datetimes import utc_now
 
 MODE_DRIVING = 'driving'
 MODE_TRANSIT = 'transit'
@@ -167,7 +168,7 @@ class GMaps(object):
                 destinations,
                 mode,
                 departure_time=int(
-                    datetime.combine(date.today(), time(6, 0)).timestamp()
+                    datetime.combine(utc_now().date(), time(6, 0)).timestamp()
                 ) if mode == MODE_TRANSIT else None
             )
 

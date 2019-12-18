@@ -1,27 +1,21 @@
 from decimal import Decimal
 
 from django.core.files.base import ContentFile
-from django.contrib.sites.models import Site
-from django.db.models import Min
-from django.template import Context
 from django.template.loader import get_template
 from django.utils.formats import date_format
-from django.utils.timezone import localtime, now
 from filer.models import Folder, File
 
-from r3sourcer.apps.pricing.models import RateCoefficientModifier
-from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.candidate.models import CandidateContact, SkillRel
 from r3sourcer.apps.core.utils.companies import get_site_url
-
-from .base import BasePaymentService, calc_worked_delta
+from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
+from r3sourcer.apps.pricing.models import RateCoefficientModifier
+from r3sourcer.apps.pricing.services import CoefficientService
 from ..models import PayslipLine, Payslip, JobOffer, TimeSheet
 
 
 class PayslipService(BasePaymentService):
 
     def _get_skill_rate(self, candidate, skill):
-        today = localtime(now()).date()
         skill_rel = candidate.candidate_skills.filter(
             skill=skill
         ).first()
@@ -45,20 +39,17 @@ class PayslipService(BasePaymentService):
             skill = timesheet.job_offer.job.position
             skill_rate = self._get_skill_rate(candidate, skill)
 
-            started_at = localtime(timesheet.shift_started_at)
             worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc(
                 timesheet.master_company, industry,
                 RateCoefficientModifier.TYPE_CHOICES.company,
-                started_at,
+                timesheet.shift_started_at_tz,
                 worked_hours,
                 break_started=timesheet.break_started_at,
                 break_ended=timesheet.break_ended_at,
             )
 
-            lines_iter = self.lines_iter(
-                coeffs_hours, skill, skill_rate
-            )
+            lines_iter = self.lines_iter(coeffs_hours, skill, skill_rate)
 
             for raw_line in lines_iter:
                 units = Decimal(raw_line['hours'].total_seconds() / 3600)
@@ -158,7 +149,7 @@ class PayslipService(BasePaymentService):
             self.generate_pdf(payslip)
 
     def prepare(self, company, to_date, from_date):
-        to_date = to_date or localtime(now()).date()
+        to_date = to_date or company.today_tz
 
         candidate_ids = JobOffer.objects.filter(
             shift__date__job__provider_company=company

@@ -1,13 +1,12 @@
 import logging
-
 from argparse import RawTextHelpFormatter
 
 from django.core.management.base import BaseCommand, CommandError
-from django.utils import timezone
 
 from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.sms_interface.helpers import get_phone_number
 from r3sourcer.apps.sms_interface.models import SMSMessage
+from r3sourcer.helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -73,7 +72,7 @@ class Command(BaseCommand):
         if options['interactive']:
             text = input("Enter text message: ")  # pragma: no cover
 
-        sent_at = timezone.now()
+        sent_at = utc_now()
         self.stdout.write("Sent fake sms:")
         self.stdout.write("Numbers: {} => {}".format(from_number, to_number))
         self.stdout.write("Sent at: {}".format(sent_at))

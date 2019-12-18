@@ -34,10 +34,11 @@ class SMSMessageViewset(BaseApiViewset):
                 'template': sms_message.template,
             }
 
-            sms_interface.send(
-                sms_message.to_number, sms_message.text, sms_message.from_number, sms_message.related_object,
-                **data_dict
-            )
+            sms_interface.send(sms_message.to_number,
+                               sms_message.text,
+                               sms_message.from_number,
+                               sms_message.related_object,
+                               **data_dict)
 
         return Response({'status': 'success'})
 

@@ -1,9 +1,7 @@
 import stripe
-
 from django.conf import settings
 from django.contrib.auth.models import Group
 from django.shortcuts import get_object_or_404
-from django.utils import timezone
 from rest_framework import exceptions, status, permissions
 from rest_framework.generics import ListAPIView
 from rest_framework.response import Response
@@ -14,9 +12,9 @@ from r3sourcer.apps.company_settings.models import MYOBAccount, GlobalPermission
 from r3sourcer.apps.core.models import User, Company
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
-from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
 from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
-
+from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
+from r3sourcer.helpers.datetimes import utc_now
 
 stripe.api_key = settings.STRIPE_SECRET_API_KEY
 
@@ -347,19 +345,23 @@ class MYOBAuthorizationView(APIView):
         if not company and self.request.user.is_authenticated:
             company = self.request.user.company.get_closest_master_company()
 
-        MYOBAuthData.objects.get_or_create(
-            user=request.user,
-            company=company,
+        auth_data_ = dict(
+            user_id=request.user.id,
+            company_id=company.id,
             myob_user_username=response['user']['username'],
-            defaults=dict(
-                client_id=data['client_id'],
-                client_secret=data['client_secret'],
-                access_token=response['access_token'],
-                refresh_token=response['refresh_token'],
-                myob_user_uid=response['user']['uid'],
-                expires_in=response['expires_in'],
-            )
+            client_id=data['client_id'],
+            client_secret=data['client_secret'],
+            access_token=response['access_token'],
+            refresh_token=response['refresh_token'],
+            myob_user_uid=response['user']['uid'],
+            expires_in=response['expires_in'],
         )
+        auth_data_filter = dict(user_id=request.user.id, company_id=company.id)
+        auth_data = MYOBAuthData.objects.filter(**auth_data_filter)
+        if auth_data:
+            MYOBAuthData.objects.filter(**auth_data_filter).update(**auth_data_)
+        else:
+            MYOBAuthData.objects.filter(**auth_data_filter).create(**auth_data_)
 
         return Response()
 
@@ -411,12 +413,11 @@ class RefreshCompanyFilesView(APIView):
     def get(self, request, *args, **kwargs):
         company = request.user.company
         auth_data_list = request.user.auth_data.all()
-        new_company_files = list()
+        company_files = list()
 
         for auth_data in auth_data_list:
             client = MYOBClient(auth_data=auth_data)
             raw_company_files = client.get_company_files()
-
             for raw_company_file in raw_company_files:
                 company_file, created = MYOBCompanyFile.objects.update_or_create(
                     cf_id=raw_company_file['Id'],
@@ -433,16 +434,15 @@ class RefreshCompanyFilesView(APIView):
                         'auth_data': auth_data,
                     }
                 )
-                if created:
-                    new_company_files.append(company_file)
+                company_files.append(company_file)
 
-        serialzer = MYOBCompanyFileSerializer(new_company_files, many=True)
+        serialzer = MYOBCompanyFileSerializer(company_files, many=True)
         data = {
             "company_files": serialzer.data
         }
 
         myob_settings = request.user.company.myob_settings
-        myob_settings.company_files_last_refreshed = timezone.now()
+        myob_settings.company_files_last_refreshed = utc_now()
         myob_settings.save()
         return Response(data)
 
@@ -500,12 +500,11 @@ class RefreshMYOBAccountsView(APIView):
 
             account_response = client.get_accounts(company_file.cf_id, company_file_token).json()
 
-            if 'Items' not in account_response:
-                continue
+            for account in account_response.get('Items', []):
+                # Header accounts haven't allowed for attach activity
+                if account.get('IsHeader', False) is True:
+                    continue
 
-            accounts = account_response['Items']
-
-            for account in accounts:
                 account_object, created = MYOBAccount.objects.update_or_create(
                     uid=account['UID'],
                     defaults={
@@ -534,7 +533,7 @@ class RefreshMYOBAccountsView(APIView):
             data = serializers.MYOBAccountSerializer(myob_accounts, many=True).data
 
         myob_settings = request.user.company.myob_settings
-        myob_settings.payroll_accounts_last_refreshed = timezone.now()
+        myob_settings.payroll_accounts_last_refreshed = utc_now()
         myob_settings.save()
 
         return Response(data)

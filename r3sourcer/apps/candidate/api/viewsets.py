@@ -1,10 +1,8 @@
-import datetime
+from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q, Exists
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
-
 from rest_framework import status, exceptions, permissions as drf_permissions, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -12,20 +10,33 @@ from rest_framework.response import Response
 from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestCandidateWorkflowSerializer
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.candidate.api.filters import CandidateContactAnonymousFilter
-from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
+from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
+from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
-from r3sourcer.apps.hr.models import Job, TimeSheet, ShiftDate
 from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.hr.models import Job, TimeSheet
 from r3sourcer.apps.logger.main import location_logger
 from r3sourcer.apps.myob.models import MYOBSyncObject
-
+from r3sourcer.helpers.datetimes import utc_now
 from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
 from ..tasks import buy_candidate
 
 
 class CandidateContactViewset(BaseApiViewset):
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+
+        manager_id = self.request.user.contact
+        master_company = get_site_master_company(request=self.request)
+
+        if not instance.contact.phone_mobile_verified:
+            core_tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id))
+        if not instance.contact.email_verified:
+            core_tasks.send_contact_verify_email.apply_async(
+                args=(instance.contact.id, manager_id.id, master_company.id))
 
     def perform_destroy(self, instance):
         has_joboffers = instance.job_offers.exists()
@@ -234,11 +245,9 @@ class SubcontractorViewset(BaseApiViewset):
                         headers=headers)
 
 
-class CandidateLocationViewset(
-    BaseViewsetMixin,
-    mixins.UpdateModelMixin,
-    viewsets.GenericViewSet
-):
+class CandidateLocationViewset(BaseViewsetMixin,
+                               mixins.UpdateModelMixin,
+                               viewsets.GenericViewSet):
 
     queryset = CandidateContact.objects.all()
     serializer_class = serializers.CandidateContactSerializer
@@ -264,7 +273,7 @@ class CandidateLocationViewset(
         name = request.data.get('name')
 
         if not timesheet_id:
-            now = timezone.localtime()
+            now = utc_now()
             timesheet = TimeSheet.objects.filter(
                 job_offer__candidate_contact=instance,
                 shift_started_at__lte=now,
@@ -303,14 +312,13 @@ class CandidateLocationViewset(
             job = Job.objects.get(id=job_id)
         except Job.DoesNotExist:
             exceptions.ValidationError({'job': _('Cannot find job')})
-        now = timezone.now()
 
         timesheets = list(TimeSheet.objects.filter(
-            Q(shift_ended_at__gte=now - timezone.timedelta(hours=8)) | Q(shift_ended_at=None),
+            Q(shift_ended_at__gte=utc_now() - timedelta(hours=8)) | Q(shift_ended_at=None),
             ~Q(shift_started_at=None),
             job_offer_id__in=job.get_job_offers().values('id'),
-                    going_to_work_confirmation=True,
-                ).values_list('id', flat=True))
+            going_to_work_confirmation=True,
+        ).values_list('id', flat=True))
 
         data = location_logger.fetch_location_candidates(
             instances=timesheets,

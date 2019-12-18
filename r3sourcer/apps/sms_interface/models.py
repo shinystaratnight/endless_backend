@@ -1,28 +1,22 @@
 import datetime
 import logging
-import pytz
 import re
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
+from django.db.models import F
 from django.db.models.signals import post_save
-from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import UUIDModel, Company, Contact, TemplateMessage
-from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
+from r3sourcer import ref
+from r3sourcer.apps.core.models import UUIDModel, Company, Contact, TemplateMessage, TimeZoneUUIDModel
 from r3sourcer.apps.sms_interface.managers import SMSMessageObjectOwnerManager
-
+from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
 
 logger = logging.getLogger(__name__)
-
-
-def replace_timezone(dt, time_zone=pytz.utc):
-    if isinstance(dt, timezone.datetime):
-        return dt.replace(tzinfo=time_zone)
-    return dt
 
 
 def disable_default_flag_for_phones(**kwargs):
@@ -100,13 +94,14 @@ class FakeSMSManager(models.Manager):
         ).filter(is_fake=True)
 
 
-class SMSMessage(DeadlineCheckingMixin, UUIDModel):
+class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
 
     INVALID_RECIPIENT = _("Invalid recipient instance")
 
     TYPE_CHOICES = Choices(
         ('SENT', _("SMS sent")),
         ('RECEIVED', _("SMS received")),
+        ('UNKNOWN', _('SMS Unknown')),
     )
 
     STATUS_CHOICES = Choices(
@@ -140,10 +135,10 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         blank=True,
         verbose_name=_("Type"),
         choices=TYPE_CHOICES,
-        default=TYPE_CHOICES.SENT,
+        default=TYPE_CHOICES.UNKNOWN,
     )
     reply_to = models.ForeignKey(
-        'self',
+        'sms_interface.SMSMessage',
         verbose_name=_("Reply to"),
         related_name='replyto',
         blank=True,
@@ -174,16 +169,16 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         'related_object_id'
     )
     template = models.ForeignKey(
-        'SMSTemplate',
+        'sms_interface.SMSTemplate',
         verbose_name=_("Template"),
         null=True,
         blank=True
     )
     company = models.ForeignKey(
         'core.Company',
-        verbose_name=_('Company'),
         null=True,
-        blank=True
+        blank=True,
+        verbose_name=_('Company'),
     )
     segments = models.IntegerField(
         verbose_name=_('Number of segments'),
@@ -216,19 +211,19 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
     )
 
     # dates
-    sent_at = models.DateTimeField(
+    sent_at = ref.DTField(
         verbose_name=_("Sent at"),
         blank=True,
         null=True,
     )  # delivered/sent date
 
     # for optimization
-    check_delivery_at = models.DateTimeField(
+    check_delivery_at = ref.DTField(
         verbose_name=_("Check delivery date"),
         blank=True,
         null=True,
     )
-    check_reply_at = models.DateTimeField(
+    check_reply_at = ref.DTField(
         verbose_name=_("Check reply at"),
         blank=True,
         null=True,
@@ -270,6 +265,40 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
 
     objects = SMSMessageObjectOwnerManager()
 
+    @property
+    def geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+            company__company_addresses__hq=True,
+        ).annotate(
+            longitude=F('company__company_addresses__address__longitude'),
+            latitude=F('company__company_addresses__address__latitude')
+        ).values_list('longitude', 'latitude').get()
+
+    @property
+    def sent_at_tz(self):
+        return self.utc2local(self.sent_at)
+
+    @property
+    def sent_at_utc(self):
+        return self.sent_at
+
+    @property
+    def check_delivery_at_tz(self):
+        return self.utc2local(self.check_delivery_at)
+
+    @property
+    def check_delivery_at_utc(self):
+        return self.check_delivery_at
+
+    @property
+    def check_reply_at_tz(self):
+        return self.utc2local(self.check_reply_at)
+
+    @property
+    def check_reply_at_utc(self):
+        return self.check_reply_at
+
     def is_late_reply(self):
         sent_message = self.get_sent_by_reply(check_reply=False)
         return (
@@ -277,10 +306,10 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
             not self.get_sent_by_reply() and
             sent_message and
             not SMSMessage.objects.filter(
-                sent_at__range=[sent_message.sent_at, self.sent_at],
+                sent_at__range=[sent_message.sent_at_utc, self.sent_at_utc],
                 from_number=sent_message.from_number,
                 to_number=sent_message.to_number
-            ).exclude(id__in=[self.id, sent_message.id]).exists()
+            ).exclude(id__in=[self.pk, sent_message.id]).exists()
         )
 
     def is_positive_answer(self):
@@ -304,23 +333,23 @@ class SMSMessage(DeadlineCheckingMixin, UUIDModel):
         return bool(re.match('^(log|log ?in|sign ?in)$', (self.text or "").strip(), re.I))
 
     def set_check_dates(self):
-        # bind current date + timedelta (timeout)
         if self.reply_timeout:
             reply_timedelta = datetime.timedelta(minutes=self.reply_timeout)
-            self.check_reply_at = timezone.now() + reply_timedelta
+            self.check_reply_at = self.now_utc + reply_timedelta
+
         if self.delivery_timeout:
             d_timedelta = datetime.timedelta(minutes=self.delivery_timeout)
-            self.check_delivery_at = timezone.now() + d_timedelta
+            self.check_delivery_at = self.now_utc + d_timedelta
 
     def save(self, *args, **kwargs):
         if self._state.adding:
             self.set_check_dates()
-        super(SMSMessage, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
     def get_sent_by_reply(self, check_reply=True):
         try:
             return self.__class__.objects.filter(
-                sent_at__lte=self.sent_at,
+                sent_at__lte=self.sent_at_utc,
                 from_number=self.to_number,
                 to_number=self.from_number,
                 type=self.TYPE_CHOICES.SENT,
@@ -398,7 +427,7 @@ class SMSRelatedObject(UUIDModel):
     """
 
     sms = models.ForeignKey(
-        SMSMessage,
+        'sms_interface.SMSMessage',
         verbose_name=_("SMS message"),
         related_name='related_objects'
     )
@@ -417,7 +446,7 @@ class SMSRelatedObject(UUIDModel):
         verbose_name_plural = _("SMS related objects")
 
 
-class RelatedSMSMixin(object):
+class RelatedSMSMixin:
     """
     Would be used in models with linked sms messages.
     """
@@ -425,7 +454,7 @@ class RelatedSMSMixin(object):
     def get_all_related_sms(self):
         return SMSMessage.objects.filter(
             id__in=set(SMSRelatedObject.objects.filter(
-                object_id=self.id
+                object_id=self.pk,
             ).values_list('sms', flat=True))
         ).order_by('sent_at')
 

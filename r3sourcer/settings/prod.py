@@ -19,6 +19,7 @@ from datetime import timedelta
 from decimal import Decimal
 
 from django.utils.translation import ugettext_lazy as _
+from timezonefinder import TimezoneFinder
 
 
 # Build paths inside the project like this: os.path.join(BASE_DIR, ...)
@@ -96,6 +97,7 @@ INSTALLED_APPS = [
     'oauth2_provider_jwt',
     'compressor',
     'djangobower',
+    'rest_framework_swagger',
 ]
 
 if 'r3sourcer.apps.logger' in INSTALLED_APPS:
@@ -123,7 +125,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'crum.CurrentRequestUserMiddleware',
-    'r3sourcer.apps.core.timezone_middleware.TimezoneMiddleware'
 ]
 
 ROOT_URLCONF = 'r3sourcer.urls'
@@ -491,3 +492,28 @@ try:
         JWT_PUBLIC_KEY_RSA_R3SOURCERISSUER = jwt_public.read()
 except FileNotFoundError:
     print('Please specify path to JWT RSA256 public key')
+
+TIME_ZONE_FINDER = TimezoneFinder(in_memory=True)
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '%(levelname)s %(asctime)s %(module)s %(process)d %(thread)d %(message)s'
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+            'formatter': 'verbose'
+        },
+    },
+    'loggers': {
+        'django.db.backends': {
+            'level': 'INFO',
+            'handlers': ['console'],
+        },
+    },
+}

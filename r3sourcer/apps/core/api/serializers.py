@@ -14,10 +14,9 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import FieldDoesNotExist, ValidationError
 from django.core.validators import URLValidator
 from django.db import models
-from django.utils import six, timezone
+from django.utils import six
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
-from phonenumber_field import phonenumber
 from rest_framework import serializers, exceptions, validators
 from rest_framework.fields import empty
 
@@ -29,10 +28,12 @@ from django.contrib.contenttypes.fields import GenericRelation
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import models as core_models, tasks as core_tasks
+from r3sourcer.apps.core.utils.utils import normalize_phone_number, validate_phone_number
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, NOT_ALLOWED)
 from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 from r3sourcer.apps.core.models import Workflow
 from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.helpers.datetimes import utc_now, tz2utc
 
 rest_settings = settings.REST_FRAMEWORK
 
@@ -111,11 +112,6 @@ class ApiFullRelatedFieldsMixin():
                 else:
                     is_pk_data = True
 
-            if isinstance(field, serializers.DateTimeField):
-                self.fields[field_name] = core_field.ApiDateTimeTzField(
-                    *field._args, **field._kwargs
-                )
-                continue
             if isinstance(field, serializers.ChoiceField):
                 self.fields[field_name] = core_field.ApiChoicesField(
                     *field._args, **field._kwargs
@@ -540,12 +536,10 @@ class MetaFields(serializers.SerializerMetaclass):
 
 
 @six.add_metaclass(MetaFields)
-class ApiBaseModelSerializer(
-        ApiFieldsMixin,
-        ApiMethodFieldsMixin,
-        ApiFullRelatedFieldsMixin,
-        serializers.ModelSerializer):
-
+class ApiBaseModelSerializer(ApiFieldsMixin,
+                             ApiMethodFieldsMixin,
+                             ApiFullRelatedFieldsMixin,
+                             serializers.ModelSerializer):
     pass
 
 
@@ -612,18 +606,17 @@ class CompanyContactSerializer(ApiBaseModelSerializer):
         return instance
 
     def process_approve(self, instance):
-        now = timezone.now()
         request = self.context['request']
         approved_by_staff = self.context['approved_by_staff']
         approved_by_primary_contact = self.context['approved_by_primary_contact']
 
         if approved_by_staff:
             instance.approved_by_staff = request.user.contact
-            instance.staff_approved_at = now
+            instance.staff_approved_at = utc_now()
 
         if approved_by_primary_contact:
             instance.approved_by_primary_contact = request.user.contact
-            instance.primary_contact_approved_at = now
+            instance.primary_contact_approved_at = utc_now()
 
     class Meta:
         model = core_models.CompanyContact
@@ -861,9 +854,12 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
             errors['company'] = _('Please select or create new client!')
             company = None
 
-        if company and contact and core_models.CompanyContactRelationship.objects.filter(
-            company=company, company_contact__contact_id=contact_id
-        ).exists():
+        if company \
+                and contact \
+                and core_models.CompanyContactRelationship.objects.filter(
+                        company=company,
+                        company_contact__contact_id=contact_id,
+                    ).exists():
             if not self.instance or self.instance.contact.id != contact_id:
                 errors['contact'] = _('This client contact already exists!')
 
@@ -899,22 +895,20 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
         return instance
 
     def update(self, instance, validated_data):
-        contact = validated_data.get('contact', None)
-        errors = {}
-        if not isinstance(contact, core_models.Contact):
-            errors['contact'] = _('Contact is required')
+        contact = validated_data.get('contact')
+        if contact is None:
+            errors = {'contact': _('Contact is required')}
+            raise exceptions.ValidationError(errors)
 
         try:
-            company = core_models.Company.objects.get(id=self.initial_data.get('company', None))
+            company = core_models.Company.objects.get(pk=self.initial_data.get('company'))
         except core_models.Company.DoesNotExist:
-            errors['company'] = _('Company is required')
-
-        if errors:
+            errors = {'company': _('Company is required')}
             raise exceptions.ValidationError(errors)
 
         instance = super(CompanyContactSerializer, self).update(instance, validated_data)
 
-        today = timezone.localtime(timezone.now()).date()
+        today = company.now_tz.date()
         termination_date = validated_data.get('termination_date')
 
         if not validated_data['active']:
@@ -924,7 +918,8 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
             termination_date = None
 
         rel, created = core_models.CompanyContactRelationship.objects.update_or_create(
-            company_contact=instance, company=company,
+            company_contact=instance,
+            company=company,
             defaults={
                 'active': validated_data['active'],
                 'termination_date': termination_date
@@ -932,8 +927,10 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
         )
 
         if termination_date and termination_date > today:
-            eta = timezone.make_aware(datetime.combine(termination_date, time(2)))
-            core_tasks.terminate_company_contact.apply_async(args=[rel.id], eta=eta)
+            eta = datetime.combine(termination_date, time(2))
+            utc_eta = tz2utc(eta)
+            core_tasks.terminate_company_contact.apply_async(args=[rel.id],
+                                                             eta=utc_eta)
 
         return instance
 
@@ -1293,18 +1290,15 @@ class DashboardModuleSerializer(ApiBaseModelSerializer):
 
 class UserDashboardModuleSerializer(ApiBaseModelSerializer):
 
-    def validate(self, attrs):
-        if core_models.UserDashboardModule.objects.filter(
-                company_contact__contact__user=self.context['request'].user.id,
-                dashboard_module=attrs['dashboard_module']).exists():
-            raise serializers.ValidationError(
-                {'dashboard_module': _("Module already exists")})
-        return attrs
-
     class Meta:
         model = core_models.UserDashboardModule
-        fields = ('id', 'company_contact',
-                  'dashboard_module', 'position', 'ui_config')
+        fields = (
+            'id',
+            'company_contact',
+            'dashboard_module',
+            'position',
+            'ui_config',
+        )
         extra_kwargs = {
             'company_contact': {'read_only': True}
         }
@@ -1334,7 +1328,6 @@ class CompanyIndustrySerializer(serializers.ModelSerializer):
     class Meta:
         model = core_models.CompanyIndustryRel
         fields = ('id', '__str__', 'default', 'industry' )
-
 
 
 class CompanyListSerializer(
@@ -1470,7 +1463,6 @@ class CompanyListSerializer(
     def get_industries(self, obj):
         queryset = core_models.CompanyIndustryRel.objects.filter(company=obj)
         return [CompanyIndustrySerializer(q).data for q in queryset]
-
 
 
 class FormFieldSerializer(ApiBaseModelSerializer):
@@ -1766,18 +1758,6 @@ class FormBuilderSerializer(ApiBaseModelSerializer):
         )
 
 
-class InvoiceLineSerializer(ApiBaseModelSerializer):
-
-    class Meta:
-        model = core_models.InvoiceLine
-        fields = ('__all__', {
-            'vat': ('id', 'name'),
-            'timesheet': ('id', {
-                'job_offer': ('id', 'candidate_contact'),
-            })
-        })
-
-
 class TrialSerializer(serializers.Serializer):
 
     first_name = serializers.CharField()
@@ -1787,21 +1767,12 @@ class TrialSerializer(serializers.Serializer):
     company_name = serializers.CharField(max_length=127)
     website = serializers.CharField()
 
-    def normalize_phone(self, phone):
-        if phone.startswith('0'):
-            phone = '+61{}'.format(phone[1:])
-        elif not phone.startswith('+'):
-            phone = '+{}'.format(phone)
-
-        return phone
-
     def validate(self, data):
         email = data['email']
         company_name = data['company_name']
-        phone = self.normalize_phone(data['phone_mobile'])
-        phone_mobile = phonenumber.to_python(phone)
+        data['phone_mobile'] = normalize_phone_number(data.get('phone_mobile', ''))
 
-        if not phone_mobile or not phone_mobile.is_valid():
+        if not data['phone_mobile'] or validate_phone_number(data['phone_mobile']) is False:
             raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})
 
         messages = {}
@@ -1809,7 +1780,7 @@ class TrialSerializer(serializers.Serializer):
         if core_models.Contact.objects.filter(email=email).exists():
             messages['email'] = _('User with this email already registered')
 
-        if core_models.Contact.objects.filter(phone_mobile=phone_mobile).exists():
+        if core_models.Contact.objects.filter(phone_mobile=data['phone_mobile']).exists():
             messages['phone_mobile'] = _('User with this phone number already registered')
 
         if messages:
@@ -1838,7 +1809,6 @@ class TrialSerializer(serializers.Serializer):
             })
         except Site.DoesNotExist:
             pass
-
         return data
 
 
@@ -1874,3 +1844,76 @@ class CompanyPurposeSerializer(ApiBaseModelSerializer):
         model = core_models.Company
         fields = ('purpose', )
 
+
+class TimezoneApiSerializerMixin:
+    method_fields = ('timezone',)
+
+    @classmethod
+    def get_timezone(cls, obj):
+        return obj.timezone
+
+
+class UUIDApiSerializerMixin(TimezoneApiSerializerMixin):
+    method_fields = (
+        *TimezoneApiSerializerMixin.method_fields,
+        'updated_at',
+        'created_at',
+        'updated_at_tz',
+        'created_at_tz',
+    )
+
+    @classmethod
+    def get_created_at(cls, obj):
+        return obj.created_at_utc
+
+    @classmethod
+    def get_updated_at(cls, obj):
+        return obj.updated_at_utc
+
+    @classmethod
+    def get_created_at_tz(cls, obj):
+        return obj.created_at_tz
+
+    @classmethod
+    def get_updated_at_tz(cls, obj):
+        return obj.updated_at_tz
+
+
+class InvoiceSerializer(UUIDApiSerializerMixin, ApiBaseModelSerializer):
+    method_fields = (
+        *UUIDApiSerializerMixin.method_fields,
+        *ApiBaseModelSerializer.method_fields,
+        'synced_at',
+        'synced_at_tz',
+    )
+
+    @classmethod
+    def get_synced_at(cls, obj):
+        return obj.synced_at_utc
+
+    @classmethod
+    def get_synced_at_tz(cls, obj):
+        return obj.synced_at_tz
+
+    class Meta:
+        model = core_models.Invoice
+        fields = (
+            '__all__',
+            {'invoice_lines': '__all__'}
+        )
+
+
+class InvoiceLineSerializer(UUIDApiSerializerMixin, ApiBaseModelSerializer):
+    method_fields = (
+        *UUIDApiSerializerMixin.method_fields,
+        *ApiBaseModelSerializer.method_fields,
+    )
+
+    class Meta:
+        model = core_models.InvoiceLine
+        fields = ('__all__', {
+            'vat': ('id', 'name'),
+            'timesheet': ('id', {
+                'job_offer': ('id', 'candidate_contact'),
+            })
+        })

@@ -1,7 +1,6 @@
 import os
-from datetime import timedelta
-from celery.schedules import crontab
 
+from celery.schedules import crontab
 from kombu import Queue, Exchange
 
 
@@ -21,7 +20,8 @@ redbeat_redis_url = 'redis://{host}:{port}/{db}'.format(
     db=env('REDIS_BEAT_DB'),
 )
 
-timezone = env('TIME_ZONE')
+timezone = 'UTC'
+enable_utc = True
 accept_content = ['json', 'application/text']
 broker_transport_options = {'visibility_timeout': 2 * 60 * 60}
 broker_pool_limit = None
@@ -53,7 +53,7 @@ beat_schedule = {
     },
     'sync_timesheets': {
         'task': 'r3sourcer.apps.myob.tasks.sync_timesheets',
-        'schedule': crontab(minute=0, hour='2-23'),
+        'schedule': crontab(minute=0, hour='*/1'),
     },
     'update_all_distances': {
         'task': 'r3sourcer.apps.hr.tasks.update_all_distances',
