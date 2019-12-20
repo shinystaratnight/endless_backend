@@ -128,7 +128,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                 job_offer.status = hr_models.JobOffer.STATUS_CHOICES.undefined
                 job_offer.save(update_fields=['scheduled_sms_datetime', 'status'])
 
-            if job_offer.start_time_utc.date() > utc_now() \
+            if job_offer.start_time_utc.date() > utc_now().date() \
                     and job_offer.has_timesheets_with_going_work_unset_or_timeout():
                 eta_tz = job_offer.now_tz + timedelta(hours=2)
                 if time(17, 0, 0, tzinfo=eta_tz.tzinfo) > eta_tz.timetz() > time(16, 0, 0, tzinfo=eta_tz.tzinfo):

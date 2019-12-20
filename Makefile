@@ -152,7 +152,7 @@ var/make/nginx:
 	$(call nginx_setup$(USE_NGINX_DOCKER))
 
 var/make/local-nginx:
-	$(call docker_exec, bin/app nginx_config --site_root=$(CURRENT_PATH)/var/www > $(NGINX_CONF_FILE));
+	$(call docker_exec, app nginx_config --site_root=$(CURRENT_PATH)/var/www > $(NGINX_CONF_FILE));
 	@if sudo ls $(NGINX_CONFIG_PATH); then \
         sudo rm -f $(NGINX_CONFIG_PATH)/$(DOMAIN_NAME).conf; \
         sudo ln -s $(CURRENT_PATH)/$(NGINX_CONF_FILE) $(NGINX_CONFIG_PATH)/$(DOMAIN_NAME).conf; \
@@ -168,7 +168,7 @@ var/make/docker-nginx:
 	@touch $@
 
 nginx_config/docker:
-	$(call docker_exec, bin/app nginx_config \
+	$(call docker_exec, app nginx_config \
 	    --site_root=/www/$(DOCKER_APP_NAME) > \
 	    $(NGINX_CONF_FILE))
 	@sudo cp $(NGINX_CONF_FILE) $(NGINX_VOLUME)/conf/nginx.$(DOMAIN_NAME).conf
@@ -243,9 +243,9 @@ clone_prod_db:
 
 test:
 	if (docker ps | grep "r3sourcer-$(DOCKER_APP_NAME)"); then \
-	    $(call docker_exec, bin/app test); \
-	elif [ -a ./bin/app ]; then \
-		bin/app test; \
+	    $(call docker_exec, app test); \
+	elif [ -a ./app ]; then \
+		app test; \
 	fi ;
 
 makemessages:
@@ -547,7 +547,7 @@ nginx_config_docker:
 	if [ ! -d "/etc/letsencrypt" ]; then \
 		sudo mkdir /etc/letsencrypt; \
 	fi;
-	docker-compose exec web bin/app nginx_config --site_root=$(DOCKER_BASE_DIR) > conf/docker/nginx.conf
+	docker-compose exec web app nginx_config --site_root=$(DOCKER_BASE_DIR) > conf/docker/nginx.conf
 	docker-compose stop nginx
 	docker-compose rm -f nginx
 	docker-compose up --build -d nginx
