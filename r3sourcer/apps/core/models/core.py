@@ -18,6 +18,7 @@ from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, F
+from django.db.models.signals import post_save
 from django.utils.formats import date_format
 from django.utils.functional import cached_property
 from django.utils.text import slugify
@@ -956,6 +957,24 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
                 Q(relationships__company=owner),
                 Q(relationships__company__regular_companies__master_company=owner)
             ]
+
+    @classmethod
+    def contact_registration_email_send(cls, sender, instance, created, **kwargs):
+        from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
+        if created:
+            master_company = instance.get_master_company()[0]
+            manager = master_company.primary_contact
+
+            if not instance.phone_mobile_verified:
+                send_contact_verify_sms.apply_async(args=(instance.contact.id, manager.id), countdown=10)
+
+            if not instance.email_verified:
+                send_contact_verify_email.apply_async(
+                    args=(instance.contact.id, manager.id, master_company.id), countdown=10
+                )
+
+
+post_save.connect(CompanyContact.contact_registration_email_send, sender=CompanyContact)
 
 
 class BankAccount(UUIDModel):

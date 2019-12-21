@@ -5,6 +5,7 @@ from . import models
 
 class SMSTemplateAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
+    list_display = ['name', 'company', ]
 
 
 class SMSMessageAdmin(admin.ModelAdmin):
