@@ -18,8 +18,7 @@ logger = logging.getLogger(__name__)
 class BaseEmailService(metaclass=ABCMeta):
 
     @transaction.atomic
-    def send(self, recipients, subject, text_message, html_message=None,
-             from_email=None, template=None, **kwargs):
+    def send(self, recipients, subject, text_message, html_message=None, from_email=None, template=None, **kwargs):
 
         try:
             if not from_email:
