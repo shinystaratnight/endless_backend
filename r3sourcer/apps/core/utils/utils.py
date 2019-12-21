@@ -4,15 +4,18 @@ from urllib.parse import urlparse
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from easy_thumbnails.alias import aliases
+from easy_thumbnails.exceptions import InvalidImageFormatError
+from easy_thumbnails.files import ThumbnailerImageFieldFile
 from phonenumbers import parse, NumberParseException, is_valid_number, format_number, PhoneNumberFormat, PhoneNumber
 
 
 def get_thumbnail_picture(picture, alias):
-    if picture:
-        try:
-            return picture.get_thumbnail(aliases.get(alias)).url
-        except Exception:
-            pass
+    if not isinstance(picture, ThumbnailerImageFieldFile):
+        return
+    try:
+        return picture.get_thumbnail(aliases.get(alias)).url
+    except InvalidImageFormatError:
+        pass
 
 
 def get_host(request):
