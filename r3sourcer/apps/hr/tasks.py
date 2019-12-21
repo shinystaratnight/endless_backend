@@ -143,7 +143,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                 job_offer.save(update_fields=['scheduled_sms_datetime'])
                 task.apply_async(args=[job_offer_id], eta=eta_utc)
 
-            elif job_offer.start_time_utc.date() > utc_now() \
+            elif job_offer.start_time_utc.date() > utc_now().date() \
                     and job_offer.start_time_tz.timetz() >= time(16, 0, 0, tzinfo=job_offer.start_time_tz.tzinfo):
                 eta_utc = job_offer.start_time_utc - timedelta(hours=8)
                 job_offer.scheduled_sms_datetime = eta_utc

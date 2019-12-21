@@ -20,12 +20,14 @@ def get_contact(contact_id):
         return contact
 
 
-def send_login_token(contact, send_func, tpl, redirect_url=None,
-                     type=TokenLogin.TYPES.sms):
+DEFAULT_LOGIN_REDIRECT = '/'
+
+
+def send_login_token(contact, send_func, tpl, redirect_url=DEFAULT_LOGIN_REDIRECT, type_=TokenLogin.TYPES.sms):
     with transaction.atomic():
-        token_login = TokenLogin.objects.create(
-            contact=contact, type=type, redirect_to=redirect_url
-        )
+        token_login = TokenLogin.objects.create(contact=contact,
+                                                type=type_,
+                                                redirect_to=redirect_url)
 
         data_dict = dict(
             contact=contact,
@@ -34,9 +36,14 @@ def send_login_token(contact, send_func, tpl, redirect_url=None,
         )
 
         logger.info('Prepared Login token for contact %s. URL: %s',
-                    contact, data_dict['auth_url'])
-
-        send_func(to_number=contact.phone_mobile, tpl_name=tpl, **data_dict)
+                    contact,
+                    data_dict['auth_url'])
+        if type_ in (TokenLogin.TYPES.sms,):
+            send_func(to_number=contact.phone_mobile, tpl_name=tpl, **data_dict)
+        elif type_ in (TokenLogin.TYPES.email,):
+            send_func(contact.email, tpl_name=tpl, **data_dict)
+        else:
+            raise Exception('Unknown login  token type')
 
 
 @shared_task(bind=True)
@@ -49,9 +56,7 @@ def send_login_sms(self, contact_id, redirect_url=None):
 
     contact = get_contact(contact_id)
     if contact is not None:
-        send_login_token(
-            contact, sms_interface.send_tpl, sms_tpl, redirect_url
-        )
+        send_login_token(contact, sms_interface.send_tpl, sms_tpl, redirect_url)
 
 
 @shared_task(bind=True)
@@ -61,14 +66,11 @@ def send_login_email(self, contact_id):
     )
 
     # FIXME: get valid sms template
-    email_tpl = ''
+    email_tpl = 'contact-e-mail-verification'
 
     contact = get_contact(contact_id)
     if contact is not None:
-        send_login_token(
-            contact, email_interface.send_tpl, email_tpl,
-            TokenLogin.TYPES.email
-        )
+        send_login_token(contact, email_interface.send_tpl, email_tpl, type_=TokenLogin.TYPES.email)
 
 
 def send_login_message(username, contact):
