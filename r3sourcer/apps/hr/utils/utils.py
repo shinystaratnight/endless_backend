@@ -231,6 +231,7 @@ def send_job_confirmation_sms(job):
 
 def schedule_auto_approve_timesheet(timesheet):
     from r3sourcer.apps.hr.tasks import auto_approve_timesheet
+    from uuid import UUID  # not remove
     for task in chain.from_iterable(app.control.inspect().scheduled().values()):
         if str(eval(task['request']['args'])[0]) == str(timesheet.id) and task['request']['name'] == \
                 'r3sourcer.apps.hr.tasks.auto_approve_timesheet':
