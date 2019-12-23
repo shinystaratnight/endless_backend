@@ -334,7 +334,6 @@ class BaseSMSService(metaclass=ABCMeta):
             raise SMSDisableError()
 
 
-
 class FakeSMSService(BaseSMSService):
 
     def process_sms_send(self, sms_message):

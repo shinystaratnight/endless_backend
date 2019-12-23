@@ -2736,9 +2736,7 @@ class TemplateMessage(UUIDModel):
                       'message_text_template',
                       'subject_template']:
             if getattr(self, field):
-                arguments = self.get_require_params(
-                    getattr(self, field), use_lookup=True
-                )
+                arguments = self.get_require_params(getattr(self, field))
                 for a in arguments:
                     if len(a.split(self.DELIMITER)) - 1 > self.MAX_LEVEL_DEEP:
                         raise ValidationError(
