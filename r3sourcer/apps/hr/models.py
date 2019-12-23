@@ -1,5 +1,5 @@
 from itertools import chain
-from uuid import UUID # not remove
+from uuid import UUID  # not remove
 
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal

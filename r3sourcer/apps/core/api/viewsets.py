@@ -645,15 +645,15 @@ class CompanyContactViewset(BaseApiViewset):
     def perform_create(self, serializer):
         instance = serializer.save()
 
-        manager_id = self.request.user.contact
+        manager = self.request.user.contact
         master_company = get_site_master_company(request=self.request)
 
         if not instance.contact.phone_mobile_verified:
-            tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager_id.id))
+            tasks.send_contact_verify_sms.apply_async(args=(instance.contact.id, manager.id))
 
         if not instance.contact.email_verified:
             tasks.send_contact_verify_email.apply_async(
-                args=(instance.contact.id, manager_id.id, master_company.id))
+                args=(instance.contact.id, manager.id, master_company.id))
 
     @action(methods=['post'], detail=False)
     def register(self, request, *args, **kwargs):
