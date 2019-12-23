@@ -673,13 +673,15 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
             logger.error(e)
             logger.info('SMS sending will not be proceed for JO: {}'.format(job_offer_id))
         else:
+            master_company = timesheet.master_company
             data_dict = dict(
                 job=jo.job,
                 candidate_contact=jo.candidate_contact,
                 supervisor=timesheet.supervisor,
                 timesheet=timesheet,
                 related_obj=jo.job,
-                related_objs=[jo.candidate_contact, timesheet.supervisor, timesheet]
+                related_objs=[jo.candidate_contact, timesheet.supervisor, timesheet],
+                master_company=master_company
             )
             if needs_target_dt:
                 try:
@@ -703,7 +705,6 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
                     logger.exception('Cannot load SMS service')
                     return
 
-                master_company = timesheet.master_company
                 try:
                     sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
                 except SMSTemplate.DoesNotExist:
@@ -715,8 +716,11 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
 @app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_placement_acceptance_sms(self, timesheet_id, job_offer_id):
-    send_timesheet_sms(
-        timesheet_id, job_offer_id, 'job-offer-placement-confirmation', 'candidate_contact', needs_target_dt=True
+    send_timesheet_sms(timesheet_id,
+                       job_offer_id,
+                       'job-offer-placement-confirmation',
+                       'candidate_contact',
+                       needs_target_dt=True
     )
 
 
