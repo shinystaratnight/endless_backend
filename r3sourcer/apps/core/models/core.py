@@ -2478,7 +2478,7 @@ class SiteCompany(
         verbose_name=_("Site"),
     )
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         related_name="site_companies",
         on_delete=models.PROTECT,
         verbose_name=_("Company")

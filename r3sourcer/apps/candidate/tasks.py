@@ -139,7 +139,7 @@ def update_superannuation_fund_list():
             defaults = {
                 'abn': abn,
                 'product_name': product_name,
-                'name': line[12:213].strip(),
+                'fund_name': line[12:213].strip(),
                 'usi': usi,
                 'contribution_restrictions': line[435:460].strip().lower() == 'y',
                 'from_date': datetime.strptime(line[460:471].strip(), '%Y-%m-%d').date(),
