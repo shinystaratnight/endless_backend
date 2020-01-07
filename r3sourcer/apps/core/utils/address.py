@@ -16,12 +16,15 @@ def get_address_parts(address_data):
 
 
 def get_street_address(address_parts):
-    street_address = address_parts['route']['long_name']
-
-    street_number = address_parts.get('street_number', {}).get('long_name')
-    if street_number:
-        street_address = ' '.join([street_number, street_address])
-
+    if address_parts.get('route'):
+        street_address = address_parts['route']['long_name']
+        street_number = address_parts.get('street_number', {}).get('long_name', '')
+        if street_number:
+            street_address = ' '.join([street_number, street_address])
+    elif address_parts.get('locality'):
+        street_address = address_parts['locality']['long_name']
+    else:
+        street_address = ''
     return street_address
 
 

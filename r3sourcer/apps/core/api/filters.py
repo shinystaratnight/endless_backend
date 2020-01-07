@@ -121,6 +121,9 @@ class ApiOrderingFilter(OrderingFilter):
 
     def is_valid_field(self, model, field):
         components = field.split('.', 1)
+        if len(components) < 2:
+            return False
+
         try:
             field = model._meta.get_field(components[0])
 
@@ -130,7 +133,7 @@ class ApiOrderingFilter(OrderingFilter):
             if isinstance(field, ForeignObjectRel):
                 return self.is_valid_field(field.model, components[1])
 
-            if field.remote_field and len(components) == 2:
+            if field.remote_field:
                 return self.is_valid_field(field.related_model, components[1])
 
             return True
