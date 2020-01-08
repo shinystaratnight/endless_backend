@@ -32,6 +32,8 @@ class ApiBaseRelatedField(serializers.RelatedField):
             'name': str_val,
             '__str__': str_val,
         }
+        if hasattr(value, 'timezone'):
+            data['timezone'] = value.timezone
 
         return data
 
