@@ -47,7 +47,7 @@ class PriceListEndpoint(ApiEndpoint):
 
     model = models.PriceList
     filter_class = filters.PriceListFilter
-    serializer_fields = ('id', 'company', 'valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at')
+    serializer_fields = ('id', 'company', 'valid_from', 'valid_until', 'effective', 'approved_by', 'approved_at', 'timezone')
 
 
 class PriceListRateModifierEndpoint(ApiEndpoint):

@@ -81,8 +81,8 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     image_fields = ('supervisor_signature',)
 
     method_fields = (
-        'company', 'jobsite', 'position', 'shift_started_at', 'shift_ended_at', 'break_started_at', 'break_ended_at',
-        'shift_started_ended', 'break_started_ended', 'job', 'related_sms',
+        'company', 'jobsite', 'position', 'shift_started_ended',
+        'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
         'invoice', 'shift', 'evaluation', 'time_zone',
@@ -91,13 +91,37 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     class Meta:
         model = TimeSheet
         fields = (
-            'id', 'job_offer', 'going_to_work_sent_sms', 'going_to_work_reply_sms', 'going_to_work_confirmation',
-            'break_started_at', 'break_ended_at', 'shift_ended_at', 'supervisor',
-            'candidate_submitted_at', 'supervisor_approved_at', 'supervisor_approved_scheme', 'candidate_rate',
-            'rate_overrides_approved_by', 'rate_overrides_approved_at', 'sync_status', 'status', 'supervisor_modified',
-            'supervisor_modified_at', 'supervisor_signature', 'process_status', 'process_pending_status',
-            'shift_started_at_tz', 'shift_ended_at_tz', 'break_started_at_tz', 'break_ended_at_tz',
-            'shift_started_at_utc', 'shift_ended_at_utc', 'break_started_at_utc', 'break_ended_at_utc',
+            'id',
+            'job_offer',
+            'going_to_work_sent_sms',
+            'going_to_work_reply_sms',
+            'going_to_work_confirmation',
+            'supervisor',
+            'candidate_submitted_at',
+            'supervisor_approved_at',
+            'supervisor_approved_scheme',
+            'candidate_rate',
+            'rate_overrides_approved_by',
+            'rate_overrides_approved_at',
+            'sync_status',
+            'status',
+            'supervisor_modified',
+            'supervisor_modified_at',
+            'supervisor_signature',
+            'process_status',
+            'process_pending_status',
+            'shift_started_at',
+            'shift_started_at_tz',
+            'shift_started_at_utc',
+            'shift_ended_at',
+            'shift_ended_at_tz',
+            'shift_ended_at_utc',
+            'break_started_at',
+            'break_started_at_tz',
+            'break_started_at_utc',
+            'break_ended_at',
+            'break_ended_at_tz',
+            'break_ended_at_utc',
         )
         related_fields = {
             'job_offer': ('id', {
@@ -140,18 +164,6 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
 
     def _format_date_range(self, start, end):
         return ' / '.join(map(lambda x: self.__format_datetime(x), [start, end]))
-
-    def get_shift_started_at(self, obj):
-        return obj.shift_started_at_tz
-
-    def get_shift_ended_at(self, obj):
-        return obj.shift_ended_at_tz
-
-    def get_break_started_at(self, obj):
-        return obj.break_started_at_tz
-
-    def get_break_ended_at(self, obj):
-        return obj.break_ended_at_tz
 
     def get_time_zone(self, obj):
         return obj.tz.zone
@@ -310,7 +322,7 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
 class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
     method_fields = (
-        'shift_total', 'break_total', 'total_worked'
+        'shift_total', 'break_total', 'total_worked', 'time_zone',
     )
 
     no_break = serializers.BooleanField(required=False)
@@ -322,8 +334,13 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
     class Meta:
         model = TimeSheet
         fields = (
-            'id', 'shift_started_at', 'break_started_at', 'break_ended_at', 'shift_ended_at', 'no_break',
-            'send_supervisor_message', 'send_candidate_message', 'candidate_submitted_at', 'supervisor_approved_at'
+            'id', 'shift_started_at', 'break_started_at', 'break_ended_at',
+            'shift_ended_at', 'no_break', 'send_supervisor_message',
+            'send_candidate_message', 'candidate_submitted_at',
+            'supervisor_approved_at', 'shift_started_at_tz',
+            'shift_ended_at_tz', 'break_started_at_tz', 'break_ended_at_tz',
+            'shift_started_at_utc', 'shift_ended_at_utc',
+            'break_started_at_utc', 'break_ended_at_utc',
         )
 
     def validate(self, data):
@@ -341,3 +358,6 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
     def get_total_worked(self, obj):
         return format_timedelta(obj.shift_delta - obj.break_delta)
+
+    def get_time_zone(self, obj):
+        return obj.tz.zone

@@ -3,13 +3,13 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q
+from django.db.models import Q, F
 from django.db.models.signals import post_save
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import UUIDModel, Company, CompanyContact
+from r3sourcer.apps.core.models import UUIDModel, Company, TimeZoneUUIDModel
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models.rules import all_rules, AllowanceWorkRule
 
@@ -152,7 +152,7 @@ class RateCoefficientRel(UUIDModel):
     )
 
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         on_delete=models.CASCADE,
         related_name='rate_coefficient_rels',
         verbose_name=_('Company'),
@@ -166,17 +166,17 @@ class RateCoefficientRel(UUIDModel):
         return '{}: {}'.format(str(self.company), str(self.rate_coefficient))
 
 
-class PriceList(PriceListMixin, UUIDModel):
+class PriceList(PriceListMixin, TimeZoneUUIDModel):
 
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         on_delete=models.CASCADE,
         related_name='price_lists',
         verbose_name=_('Company'),
     )
 
     approved_by = models.ForeignKey(
-        CompanyContact,
+        'core.CompanyContact',
         related_name="price_lists",
         on_delete=models.PROTECT,
         null=True,
@@ -222,6 +222,15 @@ class PriceList(PriceListMixin, UUIDModel):
                 Q(company=owner),
                 Q(company__regular_companies__master_company=owner)
             ]
+
+    @property
+    def geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+        ).annotate(
+            longitude=F('company__company_addresses__address__longitude'),
+            latitude=F('company__company_addresses__address__latitude')
+        ).values_list('longitude', 'latitude').get()
 
 
 class PriceListRate(PriceListRateMixin, UUIDModel):
