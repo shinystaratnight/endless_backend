@@ -47,6 +47,9 @@ def local2utc(dt, timezone):
 
 
 def geo_time_zone(lng, lat):
+    if None in (lng, lat):
+        return pytz.timezone('utc')
+
     tf = settings.TIME_ZONE_FINDER
     try:
         time_zone = tf.timezone_at(lng=lng, lat=lat)
