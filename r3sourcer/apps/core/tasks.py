@@ -219,16 +219,17 @@ def send_contact_verify_sms(self, contact_id, manager_id):
         logger.exception(e)
     else:
         with transaction.atomic():
+            master_company, *_ = contact.get_master_companies()
             primary_contact = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
 
             data_dict = dict(
                 contact=contact,
                 manager=primary_contact or contact.get_closest_company().primary_contact,
                 related_obj=contact,
-                master_company=contact.get_master_companies()
+                master_company=master_company
             )
             try:
-                sms_template = SMSTemplate.objects.get(company=contact.get_master_companies(), slug=sms_tpl)
+                sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
             except SMSTemplate.DoesNotExist:
                 sms_template = SMSTemplate.objects.get(company=None, slug=sms_tpl)
 
