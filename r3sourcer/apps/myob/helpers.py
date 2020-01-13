@@ -62,4 +62,3 @@ def get_myob_client(company_id, myob_company_file_id=None, date=None):
         raise MYOBClientException('Company File Token could not been provided')
 
     return MYOBClient(cf_data=cft)
-

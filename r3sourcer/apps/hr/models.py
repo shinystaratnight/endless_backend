@@ -1123,9 +1123,9 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
         verbose_name=_("Going to Work")
     )
 
-    shift_started_at = ref.DTField(verbose_name=_("Shift Started at"))
-    break_started_at = ref.DTField(verbose_name=_("Break Started at"))
-    break_ended_at = models.DateTimeField(verbose_name=_("Break Ended at"))
+    shift_started_at = models.DateTimeField(verbose_name=_("Shift Started at"))
+    break_started_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Break Started at"))
+    break_ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Break Ended at"))
     shift_ended_at = models.DateTimeField(verbose_name=_("Shift Ended at"))
 
     supervisor = models.ForeignKey(

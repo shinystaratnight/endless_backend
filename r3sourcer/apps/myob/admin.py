@@ -15,8 +15,14 @@ class MYOBRequestLogAdmin(admin.ModelAdmin):
 
 class MYOBAuthDataAdmin(admin.ModelAdmin):
     list_display = (
-        'client_id', 'myob_user_uid', 'myob_user_username',
-        'expires_at', 'created', 'modified'
+        'client_id',
+        'myob_user_uid',
+        'myob_user_username',
+        'expires_at',
+        'created',
+        'modified',
+        'company_id',
+        'user_id',
     )
 
 

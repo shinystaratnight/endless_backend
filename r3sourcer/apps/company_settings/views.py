@@ -412,7 +412,7 @@ class RefreshCompanyFilesView(APIView):
     """
     def get(self, request, *args, **kwargs):
         company = request.user.company
-        auth_data_list = request.user.auth_data.all()
+        auth_data_list = request.user.auth_data.filter(user=request.user)
         company_files = list()
 
         for auth_data in auth_data_list:
