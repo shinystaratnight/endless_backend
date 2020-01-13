@@ -301,11 +301,10 @@ class MYOBAuth(object):
 
         resp_data = resp.json(parse_float=decimal.Decimal)
         expires_at = int(resp_data['expires_in'])  # value in seconds
-        expires_at = utc_now() + datetime.timedelta(seconds=expires_at)
         self.auth_data.access_token = resp_data['access_token']
         self.auth_data.refresh_token = resp_data['refresh_token']
         self.auth_data.expires_in = resp_data['expires_in']
-        self.auth_data.expires_at = expires_at
+        self.auth_data.expires_at = utc_now() + datetime.timedelta(seconds=expires_at)
         self.auth_data.save()
         return resp
 

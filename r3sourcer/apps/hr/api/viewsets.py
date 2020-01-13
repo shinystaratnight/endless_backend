@@ -103,7 +103,11 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     def get_queryset(self):
         query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.contact.get_closest_company(),
                   job_offer__candidate_contact__candidate_rels__owner=True)
-        return super().get_queryset().filter(query)
+        qs = super().get_queryset().filter(query)
+        ordering = self.request.query_params.get('ordering', None)
+        if ordering:
+            qs = qs.order_by(ordering)
+        return qs
 
     def get_contact(self):
         role_id = self.request.query_params.get('role')
