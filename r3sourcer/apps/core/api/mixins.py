@@ -120,6 +120,9 @@ class GoogleAddressMixin:
     def prepare_related_data(self, data, is_create=False):
         data = super().prepare_related_data(data, is_create)
 
+        if data.get('address') is None:
+            return data
+
         if (not self.root_address and 'address' not in data) or (self.root_address and 'street_address' not in data):
             return data
 
