@@ -966,14 +966,13 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         jobsite = timesheet.job_offer.job.jobsite
         industry = jobsite.industry
         worked_hours = calc_worked_delta(timesheet)
-        coeffs_hours = coefficient_service.calc(
-            timesheet.master_company, industry,
-            RateCoefficientModifier.TYPE_CHOICES.candidate,
-            timesheet.shift_started_at_tz,
-            worked_hours,
-            break_started=timesheet.break_started_at_tz,
-            break_ended=timesheet.break_ended_at_tz,
-        )
+        coeffs_hours = coefficient_service.calc(timesheet.master_company,
+                                                industry,
+                                                RateCoefficientModifier.TYPE_CHOICES.candidate,
+                                                timesheet.shift_started_at_tz,
+                                                worked_hours,
+                                                break_started=timesheet.break_started_at_tz,
+                                                break_ended=timesheet.break_ended_at_tz)
         timesheet.coeffs_hours = coeffs_hours
         name_mapping = {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}
 
@@ -1001,8 +1000,8 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
     )
     file_name = 'timesheet_{}_{}_{}.pdf'.format(
         str(timesheets[0].id),
-        date_format(timesheets[0].shift_started_at, 'Y_m_d'),
-        date_format(timesheets[0].shift_ended_at, 'Y_m_d')
+        date_format(timesheets[0].shift_started_at_tz, 'Y_m_d'),
+        date_format(timesheets[0].shift_ended_at_tz, 'Y_m_d')
     )
     file_obj, created = File.objects.get_or_create(
         folder=folder,

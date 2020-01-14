@@ -19,7 +19,7 @@ class CoefficientService:
             '-rate_coefficient_modifiers__multiplier',
             '-rate_coefficient_modifiers__fixed_addition',
             '-rate_coefficient_modifiers__fixed_override',
-            '-priority'
+            '-priority',
         ).distinct()
 
     def process_rate_coefficients(self, rate_coefficients, start_datetime,
@@ -35,10 +35,10 @@ class CoefficientService:
 
                 for rule in rules:
                     calc_hours = origin_hours if is_allowance else worked_hours
-                    hours = rule.rule.calc_hours(
-                        start_datetime, calc_hours, break_started,
-                        break_ended
-                    )
+                    hours = rule.rule.calc_hours(start_datetime,
+                                                 calc_hours,
+                                                 break_started,
+                                                 break_ended)
 
                     if hours == timedelta(hours=-1):
                         is_allowance = True
@@ -82,18 +82,23 @@ class CoefficientService:
             rate_coefficients = self.get_industry_rate_coefficient(
                 company, industry, modifier_type, start_datetime, overlaps=True
             )
-            res = self.process_rate_coefficients(
-                rate_coefficients, start_datetime, worked_hours,
-                break_started, break_ended, overlaps=True
-            )
+            res = self.process_rate_coefficients(rate_coefficients,
+                                                 start_datetime,
+                                                 worked_hours,
+                                                 break_started,
+                                                 break_ended,
+                                                 overlaps=True)
         else:
             res = []
 
-        rate_coefficients = self.get_industry_rate_coefficient(
-            company, industry, modifier_type, start_datetime, overlaps=False
-        )
-        res.extend(self.process_rate_coefficients(
-            rate_coefficients, start_datetime, worked_hours,
-            break_started, break_ended
-        ))
+        rate_coefficients = self.get_industry_rate_coefficient(company,
+                                                               industry,
+                                                               modifier_type,
+                                                               start_datetime,
+                                                               overlaps=False)
+        res.extend(self.process_rate_coefficients(rate_coefficients,
+                                                  start_datetime,
+                                                  worked_hours,
+                                                  break_started,
+                                                  break_ended))
         return res
