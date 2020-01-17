@@ -264,7 +264,7 @@ class TimeSheetSync(BaseCategoryMixin,
         :return: dict or None
         """
 
-        timesheet_date = format_date_to_myob(timesheet.shift_started_at.date())
+        timesheet_date = format_date_to_myob(timesheet.shift_started_at_tz.date())
 
         # slip processing if time sheet date already exists in myob
         if timesheet_date in self._existing_timesheets_dates:
@@ -284,7 +284,7 @@ class TimeSheetSync(BaseCategoryMixin,
         address = "{} {}".format(jobsite.address.street_address, jobsite.address.city)
 
         data = self.mapper.map_to_myob(
-            timesheets_with_rates, myob_employee['UID'], timesheet.shift_started_at, timesheet.shift_started_at,
+            timesheets_with_rates, myob_employee['UID'], timesheet.shift_started_at_tz, timesheet.shift_started_at_tz,
             myob_job=myob_job, customer_uid=customer_uid, address=address)
 
         return data
