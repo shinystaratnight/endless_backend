@@ -84,8 +84,7 @@ class BasePaymentService:
                 qry &= Q(shift_started_at__date__lt=date_to)
 
             timesheets = timesheets.filter(qry)
-
-        return timesheets
+        return timesheets.order_by('shift_started_at')
 
     @classmethod
     def _get_file_from_str(cls, str):

@@ -47,24 +47,25 @@ class InvoiceService(BasePaymentService):
         lines = []
 
         for timesheet in timesheets:
+            timesheet.invoice_lines.filter(invoice__approved=False).delete()
             jobsite = timesheet.job_offer.job.jobsite
             industry = jobsite.industry
             skill = timesheet.job_offer.job.position
             customer_company = timesheet.job_offer.shift.date.job.customer_company
             price_list_rate = self._get_price_list_rate(skill, customer_company)
             worked_hours = calc_worked_delta(timesheet)
-            coeffs_hours = coefficient_service.calc(
-                timesheet.master_company, industry,
-                RateCoefficientModifier.TYPE_CHOICES.company,
-                timesheet.shift_started_at_tz,
-                worked_hours,
-                break_started=timesheet.break_started_at_tz,
-                break_ended=timesheet.break_ended_at_tz,
-            )
+            coeffs_hours = coefficient_service.calc(timesheet.master_company,
+                                                    industry,
+                                                    RateCoefficientModifier.TYPE_CHOICES.company,
+                                                    timesheet.shift_started_at_tz,
+                                                    worked_hours,
+                                                    break_started=timesheet.break_started_at_tz,
+                                                    break_ended=timesheet.break_ended_at_tz)
 
-            lines_iter = self.lines_iter(
-                coeffs_hours, skill, price_list_rate.hourly_rate, timesheet
-            )
+            lines_iter = self.lines_iter(coeffs_hours,
+                                         skill,
+                                         price_list_rate.hourly_rate,
+                                         timesheet)
 
             for raw_line in lines_iter:
                 rate = raw_line['rate']
@@ -114,7 +115,7 @@ class InvoiceService(BasePaymentService):
             master_logo = get_thumbnail_picture(invoice.provider_company.logo, 'large')
 
         context = {
-            'lines': invoice.invoice_lines.all(),
+            'lines': invoice.invoice_lines.order_by('date').all(),
             'invoice': invoice,
             'company': invoice.customer_company,
             'code_data': code_data,
@@ -156,7 +157,6 @@ class InvoiceService(BasePaymentService):
             )
 
         lines, timesheets = self.calculate(company, date_from, date_to, timesheets)
-
         if lines:
             if not invoice:
                 master_company = company.get_master_company()
@@ -186,7 +186,7 @@ class InvoiceService(BasePaymentService):
 
             InvoiceLine.objects.bulk_create(invoice_lines)
 
-            invoice.save(update_fields=['total', 'tax', 'total_with_tax'])
+            invoice.save(update_fields=['total', 'tax', 'total_with_tax', 'updated_at'])
 
             # TODO: decide when to trigger pdf generation
             # self.generate_pdf(invoice, show_candidate)
@@ -203,7 +203,6 @@ class InvoiceService(BasePaymentService):
 
         separation_rule = invoice_rule.separation_rule
         show_candidate = invoice_rule.show_candidate_name
-
         if separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
             self._prepare_invoice(
                 date_from=date_from,
