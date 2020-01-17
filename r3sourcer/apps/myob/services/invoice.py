@@ -119,6 +119,7 @@ class InvoiceSync(SalespersonMixin, JobMixin, BaseSync):
                                                   tax_codes,
                                                   activities[line.id],
                                                   myob_job))
+
         data = self.mapper.map_to_myob(invoice, lines, customer_uid, salesperson=salesperson)
 
         if partial:
