@@ -137,8 +137,7 @@ def get_invoice_dates(invoice_rule, timesheet=None):
     today = utc_now().date()
 
     if timesheet:
-        today = timesheet.shift_started_at_tz.date()
-
+        today = timesheet.shift_started_at.date()
     if invoice_rule.period == InvoiceRule.PERIOD_CHOICES.daily:
         date_from = today
         date_to = date_from + timedelta(days=1)

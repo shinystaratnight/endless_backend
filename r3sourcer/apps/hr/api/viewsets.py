@@ -404,18 +404,22 @@ class InvoiceViewset(BaseApiViewset):
         invoice = self.get_object()
 
         try:
-            pdf_file_obj = File.objects.get(
+            pdf_file_obj = File.objects.filter(
                 name='invoice_{}_{}.pdf'.format(
                     invoice.number,
                     date_format(invoice.date, 'Y_m_d')
                 )
-            )
+            ).order_by('-uploaded_at').first()
+            if pdf_file_obj is None:
+                raise ObjectDoesNotExist
+
+            if invoice.updated_at > pdf_file_obj.modified_at:
+                raise ObjectDoesNotExist
 
         except ObjectDoesNotExist:
             client_company = invoice.customer_company
             rule = client_company.invoice_rules.first()
             show_candidate = rule.show_candidate_name if rule else False
-
             pdf_file_obj = InvoiceService.generate_pdf(invoice, show_candidate)
 
         pdf_url = pdf_file_obj.url
