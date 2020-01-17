@@ -300,7 +300,7 @@ class TimeSheetMapper(StandardPayMapMixin):
             entries = []
 
             for timesheet_dict in timesheets_data.get('timesheets', []):
-                started = format_date_to_myob(timesheet_dict['timesheet'].shift_started_at, only_date=True)
+                started = format_date_to_myob(timesheet_dict['timesheet'].shift_started_at_tz, only_date=True)
 
                 if isinstance(timesheet_dict['hours'], str):
                     hours = timesheet_dict['hours']
