@@ -135,14 +135,17 @@ def get_invoice_dates(invoice_rule, timesheet=None):
     date_from = None
     date_to = None
     today = utc_now().date()
+    weekday = today.weekday()
 
     if timesheet:
         today = timesheet.shift_started_at.date()
+        weekday = timesheet.shift_started_at_tz.date().weekday()
+
     if invoice_rule.period == InvoiceRule.PERIOD_CHOICES.daily:
         date_from = today
         date_to = date_from + timedelta(days=1)
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.weekly:
-        date_from = today - timedelta(today.weekday())
+        date_from = today - timedelta(weekday)
         date_to = date_from + timedelta(days=7)
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.fortnightly:
         if invoice_rule.last_invoice_created:
