@@ -43,6 +43,8 @@ class CoefficientService:
                     if hours == timedelta(hours=-1):
                         is_allowance = True
                         hours = timedelta(hours=1)
+                        if used_hours < hours:
+                            used_hours = hours
                     elif isinstance(rule.rule, WeekdayWorkRule):
                         break
 
@@ -52,12 +54,6 @@ class CoefficientService:
                         break
 
                 if used_hours.total_seconds() > 0:
-                    # Dmitry F.
-                    # it is not best solution! but it needed to prevent
-                    # bad time calculation for allowance rules
-                    if is_allowance is True and used_hours.total_seconds() < 60 * 60:
-                        used_hours = timedelta(hours=1)
-
                     res.append({
                         'coefficient': rate_coefficient,
                         'hours': used_hours

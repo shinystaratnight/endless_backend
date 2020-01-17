@@ -47,6 +47,7 @@ class InvoiceService(BasePaymentService):
         lines = []
 
         for timesheet in timesheets:
+            timesheet.invoice_lines.filter(invoice__approved=False).delete()
             jobsite = timesheet.job_offer.job.jobsite
             industry = jobsite.industry
             skill = timesheet.job_offer.job.position
@@ -156,7 +157,6 @@ class InvoiceService(BasePaymentService):
             )
 
         lines, timesheets = self.calculate(company, date_from, date_to, timesheets)
-
         if lines:
             if not invoice:
                 master_company = company.get_master_company()
@@ -203,7 +203,6 @@ class InvoiceService(BasePaymentService):
 
         separation_rule = invoice_rule.separation_rule
         show_candidate = invoice_rule.show_candidate_name
-
         if separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
             self._prepare_invoice(
                 date_from=date_from,
