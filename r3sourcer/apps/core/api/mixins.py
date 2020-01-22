@@ -119,7 +119,7 @@ class GoogleAddressMixin:
 
     def prepare_related_data(self, data, is_create=False):
         data = super().prepare_related_data(data, is_create)
-
+        data = parse_google_address(data.get('street_address', data))
         if data.get('address') is None:
             return data
 

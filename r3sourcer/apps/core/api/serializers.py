@@ -551,7 +551,6 @@ class AddressSerializer(ApiBaseModelSerializer):
     def validate_state(self, value):
         if not value:
             return
-
         country = self.initial_data.get('country')
         if value and str(value.country.id) != country:
             raise serializers.ValidationError(
