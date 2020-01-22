@@ -80,24 +80,26 @@ def charge_for_sms(company_id, amount, sms_balance_id):
     sms_balance = SMSBalance.objects.get(id=sms_balance_id)
     # for country taxes
     tax_percent = 10.0
-    if company.get_hq_address():
-        country_code = company.get_hq_address().address.country.code2
-        try:
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
-        except StripeCountryAccount.DoesNotExist:
-            stripe_account = StripeCountryAccount.objects.get(country="AU")
-        stripe.api_key = stripe_account.stripe_secret_key
-        vat_object = VAT.objects.filter(country=country_code)
-        if vat_object:
-            tax_percent = vat_object.first().stripe_rate
+    country_code = company.get_hq_address().address.country.code2
+    try:
+        stripe_account = StripeCountryAccount.objects.get(country=country_code)
+    except StripeCountryAccount.DoesNotExist:
+        stripe_account = StripeCountryAccount.objects.get(country="AU")
+    stripe.api_key = stripe_account.stripe_secret_key
+    vat_object = VAT.objects.filter(country=country_code)
+    if vat_object:
+        tax_percent = vat_object.first().stripe_rate
+
     for discount in company.get_active_discounts('sms'):
         amount = discount.apply_discount(amount)
 
-    stripe.InvoiceItem.create(customer=company.stripe_customer,
+    stripe.InvoiceItem.create(api_key=stripe_account.stripe_secret_key,
+                              customer=company.stripe_customer,
                               amount=round((amount * 100) / 1.1),
                               currency=company.currency,
                               description='Topping up sms balance')
-    invoice = stripe.Invoice.create(customer=company.stripe_customer,
+    invoice = stripe.Invoice.create(api_key=stripe_account.stripe_secret_key,
+                                    customer=company.stripe_customer,
                                     billing="charge_automatically",
                                     tax_percent=tax_percent,
                                     description='Topping up sms balance')
