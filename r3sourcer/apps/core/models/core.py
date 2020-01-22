@@ -827,7 +827,10 @@ class Address(TimeZoneUUIDModel):
         else:
             original = type(self).objects.get(id=self.id)
             bind_address = original.get_full_address() != self.get_full_address()
-        if bind_address and not self.fetch_geo_coord(False):
+
+        if bind_address \
+                and not self.fetch_geo_coord(False) \
+                and None in [self.longitude, self.latitude]:
             if getattr(settings, 'FETCH_ADDRESS_RAISE_EXCEPTIONS', True):
                 raise ValidationError(self.default_errors['fetch_error'])
         super(Address, self).save(*args, **kwargs)
