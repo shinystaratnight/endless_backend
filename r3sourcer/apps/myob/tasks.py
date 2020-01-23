@@ -159,7 +159,7 @@ def sync_invoice(invoice_id):
 
 @app.task(bind=True)
 @retry_on_myob_error
-def sync_time_sheet(self, time_sheet_id):
+def sync_time_sheet(self, time_sheet_id, resync=False):
     qs = TimeSheet.objects.filter(
         pk=time_sheet_id
     ).annotate(
@@ -185,4 +185,4 @@ def sync_time_sheet(self, time_sheet_id):
 
     candidate_contact = CandidateContact.objects.get(pk=candidate_contact_id)
     service = TimeSheetSync.from_candidate(settings, master_company_id)
-    service.sync_single_to_myob(time_sheet_id, candidate_contact)
+    service.sync_single_to_myob(time_sheet_id, candidate_contact, resync)
