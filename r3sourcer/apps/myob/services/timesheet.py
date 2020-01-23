@@ -101,14 +101,14 @@ class TimeSheetSync(BaseCategoryMixin,
         # TODO: Urgent add resync logic
         # do:
         # get all synced time sheets and exclude it
-        # synced_timesheets = self._get_sync_objects_for_type().filter(
-        #     record__in=timesheet_qs.values_list('id', flat=True)
-        # )
-        # timesheets_exclude = Q()
-        # for synced_timesheet in synced_timesheets:
-        #     timesheets_exclude |= Q(id=synced_timesheet.record, updated_at__lte=synced_timesheet.synced_at)
+        synced_timesheets = self._get_sync_objects_for_type().filter(
+            record__in=timesheet_qs.values_list('id', flat=True)
+        )
+        timesheets_exclude = Q()
+        for synced_timesheet in synced_timesheets:
+            timesheets_exclude |= Q(id=synced_timesheet.record, updated_at__lte=synced_timesheet.synced_at)
 
-        timesheets = timesheet_qs  # .exclude(timesheets_exclude)
+        timesheets = timesheet_qs.exclude(timesheets_exclude)
         # done;
 
         # exit if times sheets not found after excluding
@@ -148,10 +148,10 @@ class TimeSheetSync(BaseCategoryMixin,
             sync_obj = self._get_sync_object(timesheet)  # type: MYOBSyncObject
 
             # if object was synced then skip processing
-            # if sync_obj and self._is_synced(timesheet, sync_obj=sync_obj):
-            #     if timesheet.status != TimeSheet.SYNC_STATUS_CHOICES.synced:
-            #         timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.synced)
-            #     continue
+            if sync_obj and self._is_synced(timesheet, sync_obj=sync_obj):
+                if timesheet.status != TimeSheet.SYNC_STATUS_CHOICES.synced:
+                    timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.synced)
+                continue
 
             timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.syncing)
 
@@ -308,7 +308,8 @@ class TimeSheetSync(BaseCategoryMixin,
                                                                timesheet.shift_started_at_tz,
                                                                worked_hours,
                                                                break_started=timesheet.break_started_at,
-                                                               break_ended=timesheet.break_ended_at)
+                                                               break_ended=timesheet.break_ended_at,
+                                                               overlaps=True)
 
         result = defaultdict(dict)
         rate_myob_id, base_rate = self._get_candidate_skill_rate_and_name(timesheet)
