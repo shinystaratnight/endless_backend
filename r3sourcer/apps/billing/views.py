@@ -130,12 +130,18 @@ class StripeCustomerCreateView(APIView):
         company = self.request.user.company
         description = '{}'.format(company.name)
         email = ''
+        default_stripe_account = StripeCountryAccount.objects.get(country="AU")
+        stripe_account = None
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
             try:
                 stripe_account = StripeCountryAccount.objects.get(country=country_code)
             except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
+                stripe_account = default_stripe_account
+
+        if stripe_account is None:
+            stripe_account = default_stripe_account
+
         stripe.api_key = stripe_account.stripe_secret_key
         if company.billing_email:
             email = company.billing_email
