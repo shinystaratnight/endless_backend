@@ -85,15 +85,15 @@ class TimeSheetSync(BaseCategoryMixin,
             self._sync_timesheets_to_myob(candidate, timesheet_qs)
 
     # @method_decorator(myob_enabled_mode)
-    def sync_single_to_myob(self, time_sheet_id, candidate_contact):
+    def sync_single_to_myob(self, time_sheet_id, candidate_contact, resync=False):
         time_sheets_q = (Q(candidate_submitted_at__isnull=True) |
                          Q(candidate_submitted_at=None) |
                          Q(supervisor_approved_at__isnull=True) |
                          Q(supervisor_approved_at=None))
         time_sheet_qs = TimeSheet.objects.filter(id=time_sheet_id).exclude(time_sheets_q)
-        self._sync_timesheets_to_myob(candidate_contact, time_sheet_qs)
+        self._sync_timesheets_to_myob(candidate_contact, time_sheet_qs, resync)
 
-    def _sync_timesheets_to_myob(self, candidate, timesheet_qs):
+    def _sync_timesheets_to_myob(self, candidate, timesheet_qs, resync=False):
         if self.client is None:
             log.info('MYOB client is not defined')
             return
@@ -101,15 +101,16 @@ class TimeSheetSync(BaseCategoryMixin,
         # TODO: Urgent add resync logic
         # do:
         # get all synced time sheets and exclude it
-        synced_timesheets = self._get_sync_objects_for_type().filter(
-            record__in=timesheet_qs.values_list('id', flat=True)
-        )
-        timesheets_exclude = Q()
-        for synced_timesheet in synced_timesheets:
-            timesheets_exclude |= Q(id=synced_timesheet.record, updated_at__lte=synced_timesheet.synced_at)
+        timesheets = timesheet_qs
 
-        timesheets = timesheet_qs.exclude(timesheets_exclude)
-        # done;
+        if resync is False:
+            synced_timesheets = self._get_sync_objects_for_type().filter(
+                record__in=timesheet_qs.values_list('id', flat=True)
+            )
+            timesheets_exclude = Q()
+            for synced_timesheet in synced_timesheets:
+                timesheets_exclude |= Q(id=synced_timesheet.record, updated_at__lte=synced_timesheet.synced_at)
+            timesheets = timesheets.exclude(timesheets_exclude)
 
         # exit if times sheets not found after excluding
         if not timesheets.exists():
@@ -148,11 +149,11 @@ class TimeSheetSync(BaseCategoryMixin,
             sync_obj = self._get_sync_object(timesheet)  # type: MYOBSyncObject
 
             # if object was synced then skip processing
-            if sync_obj and self._is_synced(timesheet, sync_obj=sync_obj):
+            if sync_obj and self._is_synced(timesheet, sync_obj=sync_obj) \
+                    and resync is False:
                 if timesheet.status != TimeSheet.SYNC_STATUS_CHOICES.synced:
                     timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.synced)
                 continue
-
             timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.syncing)
 
             # sync time sheet
