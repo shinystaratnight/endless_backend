@@ -109,6 +109,8 @@ class TimeSheetSync(BaseCategoryMixin,
             )
             timesheets_exclude = Q()
             for synced_timesheet in synced_timesheets:
+                timesheet = TimeSheet.objects.get(pk=synced_timesheet.record)
+                timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.synced)
                 timesheets_exclude |= Q(id=synced_timesheet.record, updated_at__lte=synced_timesheet.synced_at)
             timesheets = timesheets.exclude(timesheets_exclude)
 
