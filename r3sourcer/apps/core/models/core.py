@@ -2370,6 +2370,20 @@ class Invoice(AbstractOrder):
         default=False
     )
 
+    SYNC_STATUS_CHOICES = Choices(
+        (0, 'not_synced', _('Not synced')),
+        (1, 'sync_scheduled', _('Sync scheduled')),
+        (2, 'syncing', _('Syncing...')),
+        (3, 'synced', _('Synced')),
+        (4, 'sync_failed', _('Sync failed')),
+    )
+
+    sync_status = models.PositiveSmallIntegerField(
+        verbose_name=_("Sync status"),
+        choices=SYNC_STATUS_CHOICES,
+        default=SYNC_STATUS_CHOICES.not_synced
+    )
+
     class Meta:
         verbose_name = _("Company Invoice")
         verbose_name_plural = _("Company Invoices")
@@ -2379,6 +2393,10 @@ class Invoice(AbstractOrder):
             str(self.customer_company),
             date_format(self.date, settings.DATE_FORMAT)
         )
+
+    def set_sync_status(self, status):
+        self.sync_status = status
+        self.save(update_fields=['sync_status'])
 
     @property
     def synced_at_tz(self):
