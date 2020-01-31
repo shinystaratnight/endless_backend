@@ -119,6 +119,16 @@ def clean_myob_request_log(self):
 @shared_task
 def sync_invoice(invoice_id):
     invoice = Invoice.objects.get(id=invoice_id)
+    if invoice.sync_status in (Invoice.SYNC_STATUS_CHOICES.sync_scheduled,
+                               Invoice.SYNC_STATUS_CHOICES.syncing):
+        logger.warn('Sync process already running for invoice %s' % invoice_id)
+        return
+
+    if invoice.sync_status in (Invoice.SYNC_STATUS_CHOICES.not_synced,
+                               Invoice.SYNC_STATUS_CHOICES.synced,
+                               Invoice.SYNC_STATUS_CHOICES.sync_failed):
+        invoice.set_sync_status(Invoice.SYNC_STATUS_CHOICES.sync_scheduled)
+
     company = invoice.provider_company
 
     cf_id = None
@@ -134,8 +144,10 @@ def sync_invoice(invoice_id):
 
     synced = False
     try:
+        invoice.set_sync_status(Invoice.SYNC_STATUS_CHOICES.syncing)
         if synced_invoice['Count']:
             if synced_invoice['Count'] > 1:
+                invoice.set_sync_status(Invoice.SYNC_STATUS_CHOICES.sync_failed)
                 raise Exception("Got 2 or more invoices with id %s from MYOB." % invoice.id)
 
             synced_invoice_lines = synced_invoice['Items'][0]['Lines']
@@ -151,10 +163,12 @@ def sync_invoice(invoice_id):
             synced = True
     except ValueError:
         logger.warn('Sync to MYOB failed')
+        invoice.set_sync_status(Invoice.SYNC_STATUS_CHOICES.sync_failed)
     else:
         if synced:
             invoice.synced_at = invoice.now_utc
-            invoice.save(update_fields=['synced_at'])
+            invoice.sync_status = Invoice.SYNC_STATUS_CHOICES.synced
+            invoice.save(update_fields=['synced_at', 'sync_status'])
 
 
 @app.task(bind=True)

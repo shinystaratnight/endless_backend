@@ -122,10 +122,11 @@ class ApproveInvoiceView(APIView):
 class SyncInvoiceView(APIView):
     def post(self, request, *args, **kwargs):
         invoice = get_object_or_404(Invoice, id=self.kwargs['id'])
-        if invoice.approved:
-            sync_invoice.delay(invoice.id)
-            return Response({"status": "success"})
-        return Response({"error": "Invoice is not approved"})
+        if invoice.approved is False:
+            return Response({"error": "Invoice is not approved"})
+
+        sync_invoice.delay(invoice.id)
+        return Response({"status": "success"})
 
 
 class SyncInvoicesView(APIView):
