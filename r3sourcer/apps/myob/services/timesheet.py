@@ -90,7 +90,11 @@ class TimeSheetSync(BaseCategoryMixin,
                          Q(candidate_submitted_at=None) |
                          Q(supervisor_approved_at__isnull=True) |
                          Q(supervisor_approved_at=None))
-        time_sheet_qs = TimeSheet.objects.filter(id=time_sheet_id).exclude(time_sheets_q)
+        time_sheet_qs = TimeSheet.objects.filter(pk=time_sheet_id).exclude(time_sheets_q)
+
+        for time_sheet in time_sheet_qs:
+            time_sheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
+
         self._sync_timesheets_to_myob(candidate_contact, time_sheet_qs, resync)
 
     def _sync_timesheets_to_myob(self, candidate, timesheet_qs, resync=False):
