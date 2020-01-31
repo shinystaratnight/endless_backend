@@ -113,7 +113,6 @@ class TimeSheetSync(BaseCategoryMixin,
                 timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.synced)
                 timesheets_exclude |= Q(id=synced_timesheet.record, updated_at__lte=synced_timesheet.synced_at)
             timesheets = timesheets.exclude(timesheets_exclude)
-
         # exit if times sheets not found after excluding
         if not timesheets.exists():
             return
@@ -142,6 +141,7 @@ class TimeSheetSync(BaseCategoryMixin,
         )
 
         is_synced = False
+
         for timesheet in timesheets:
             # check if company file is enabled
             cf_data = self.client.cf_data
@@ -153,9 +153,10 @@ class TimeSheetSync(BaseCategoryMixin,
             # if object was synced then skip processing
             if sync_obj and self._is_synced(timesheet, sync_obj=sync_obj) \
                     and resync is False:
-                if timesheet.status != TimeSheet.SYNC_STATUS_CHOICES.synced:
+                if timesheet.sync_status != TimeSheet.SYNC_STATUS_CHOICES.synced:
                     timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.synced)
                 continue
+
             timesheet.set_sync_status(TimeSheet.SYNC_STATUS_CHOICES.syncing)
 
             # sync time sheet
