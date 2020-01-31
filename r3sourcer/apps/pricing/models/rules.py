@@ -210,13 +210,14 @@ class TimeOfDayWorkRule(WorkRuleMixin, UUIDModel):
         ended = start_datetime + worked_hours + break_delta
 
         # get rate start time
-        rate_start = datetime.combine(start_date, self.time_start)
+        rate_start = datetime.combine(start_date, self.time_start).replace(tzinfo=start_datetime.tzinfo)
 
         # calc rate started_at and ended_at
         if self.time_end < self.time_start:
-            rate_end = datetime.combine(start_date + timedelta(days=1), self.time_end)
+            rate_end = datetime.combine(start_date + timedelta(days=1),
+                                        self.time_end).replace(tzinfo=start_datetime.tzinfo)
         else:
-            rate_end = datetime.combine(start_date, self.time_end)
+            rate_end = datetime.combine(start_date, self.time_end).replace(tzinfo=start_datetime.tzinfo)
 
         # calc break timedelta
         break_delta = timedelta()
