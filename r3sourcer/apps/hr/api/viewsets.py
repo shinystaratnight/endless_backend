@@ -408,6 +408,10 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
 class InvoiceViewset(BaseApiViewset):
 
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        return queryset.order_by('created_at')
+
     @action(methods=['get'], detail=True)
     def pdf(self, request, *args, **kwargs):
         invoice = self.get_object()
