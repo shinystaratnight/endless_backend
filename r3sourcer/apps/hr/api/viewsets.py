@@ -305,8 +305,6 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @action(methods=['post'], detail=True)
     def sync(self, request, pk, *args, **kwargs):
         time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
-        time_sheet.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
-
         sync_time_sheet.apply_async(args=[time_sheet.id])
 
         return Response({'status': 'success'})
@@ -314,8 +312,6 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @action(methods=['post'], detail=True)
     def resync(self, request, pk, *args, **kwargs):
         time_sheet = get_object_or_404(hr_models.TimeSheet.objects, pk=pk)
-        time_sheet.set_sync_status(hr_models.TimeSheet.SYNC_STATUS_CHOICES.sync_scheduled)
-
         sync_time_sheet.apply_async(args=[time_sheet.id], kwargs={'resync': True})
 
         return Response({'status': 'success'})
