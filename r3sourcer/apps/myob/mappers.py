@@ -143,9 +143,7 @@ class InvoiceMapper(ContactMapper):
 
     def get_description(self, line, invoice_rule):
         candidate_contact = '' if invoice_rule.show_candidate_name is False else self.candidate_contact(line)
-        return '{}\n{}\n{}'.format(line.notes,
-                                   self.address(line),
-                                   candidate_contact)
+        return '{}\n{}\n{}'.format(candidate_contact, line.notes, self.address(line))
 
     def invoice_line(self, invoice, line, tax_codes, activity_uid, job):
         invoice_rule = get_invoice_rule(invoice.customer_company)
