@@ -27,6 +27,8 @@ class InvoiceService(BasePaymentService):
             order_number = '{}_{}'.format(jobsite, city)
         elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
             order_number = str(timesheet.job_offer.candidate_contact)
+        else:
+            raise Exception('Order number not filled')
 
         return order_number
 
