@@ -309,6 +309,29 @@ class CompanyWorkflowNodeAdmin(SuperuserAdmin):
     raw_id_fields = ('company', 'workflow_node')
 
 
+class InvoiceAdmin(admin.ModelAdmin):
+    list_display = (
+        'date',
+        'provider_company',
+        'customer_company',
+        'number',
+        'order_number',
+        'period',
+        'separation_rule',
+        'approved',
+        'sync_status',
+    )
+    ordering = ('-date',)
+
+
+class InvoiceRuleAdmin(SuperuserAdmin):
+    list_display = (
+        'company',
+        'period',
+        'separation_rule',
+    )
+
+
 if admin.site.is_registered(Site):
     admin.site.unregister(Site)
 
@@ -325,14 +348,14 @@ admin.site.register(models.CompanyLocalization)
 admin.site.register(models.CompanyContact, BaseAdmin)
 admin.site.register(models.CompanyContactAddress, BaseAdmin)
 admin.site.register(models.CompanyContactRelationship, BaseAdmin)
-admin.site.register(models.Invoice, BaseAdmin)
+admin.site.register(models.Invoice, InvoiceAdmin)
 admin.site.register(models.InvoiceLine)
 admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.Note)
 admin.site.register(models.Order)
 admin.site.register(models.SiteCompany, BaseAdmin)
 admin.site.register(models.VAT)
-admin.site.register(models.InvoiceRule)
+admin.site.register(models.InvoiceRule, InvoiceRuleAdmin)
 admin.site.register(models.ExtranetNavigation, ExtranetNavigationAdmin)
 admin.site.register(models.Workflow)
 admin.site.register(models.WorkflowNode, WorkflowNodeAdmin)
