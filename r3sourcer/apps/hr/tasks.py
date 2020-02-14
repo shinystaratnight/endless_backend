@@ -251,16 +251,11 @@ def send_placement_rejection_sms(self, job_offer_id):
 
 
 def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
-    invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
-
-    if invoice is None and recreate:
-        invoice = utils.get_invoice(company, date_from, date_to, timesheet, recreate)
-
-    return invoice
+    return utils.get_invoice(company, date_from, date_to, timesheet, recreate)
 
 
 @shared_task
-def generate_invoice(timesheet_id, recreate=False, delete_lines=False):
+def generate_invoice(timesheet_id, recreate=False):
     """
     Generates new or updates existing invoice. Accepts regular(customer) company.
     """
@@ -268,7 +263,6 @@ def generate_invoice(timesheet_id, recreate=False, delete_lines=False):
         timesheet = hr_models.TimeSheet.objects.get(id=timesheet_id)
     except hr_models.TimeSheet.DoesNotExist:
         return
-
     company = timesheet.regular_company
 
     if company.type == core_models.Company.COMPANY_TYPES.master:
@@ -279,14 +273,6 @@ def generate_invoice(timesheet_id, recreate=False, delete_lines=False):
     invoice_rule = utils.get_invoice_rule(company)
     date_from, date_to = utils.get_invoice_dates(invoice_rule, timesheet)
     invoice = _get_invoice(company, date_from, date_to, timesheet, recreate)
-
-    if invoice and invoice.approved or invoice is None:
-        new_date_from, new_date_to = utils.get_invoice_dates(invoice_rule)
-        invoice = _get_invoice(company, new_date_from, new_date_to, recreate=recreate)
-
-    if delete_lines:
-        timesheet.invoice_lines.filter(invoice__approved=False).delete()
-
     service.generate_invoice(date_from, date_to, company=company, invoice=invoice)
 
 

@@ -332,6 +332,31 @@ class InvoiceRuleAdmin(SuperuserAdmin):
     )
 
 
+class InvoiceLineAdmin(SuperuserAdmin):
+    list_display = (
+        'date',
+        'invoice',
+        'invoice_provider_company',
+        'invoice_customer_company',
+        'invoice_number',
+        'invoice_order_number',
+        'timesheet',
+    )
+    ordering = ('-invoice__number', '-date',)
+
+    def invoice_provider_company(self, obj):
+        return obj.invoice.provider_company
+
+    def invoice_customer_company(self, obj):
+        return obj.invoice.customer_company
+
+    def invoice_number(self, obj):
+        return obj.invoice.number
+
+    def invoice_order_number(self, obj):
+        return obj.invoice.order_number
+
+
 if admin.site.is_registered(Site):
     admin.site.unregister(Site)
 
@@ -349,7 +374,7 @@ admin.site.register(models.CompanyContact, BaseAdmin)
 admin.site.register(models.CompanyContactAddress, BaseAdmin)
 admin.site.register(models.CompanyContactRelationship, BaseAdmin)
 admin.site.register(models.Invoice, InvoiceAdmin)
-admin.site.register(models.InvoiceLine)
+admin.site.register(models.InvoiceLine, InvoiceLineAdmin)
 admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.Note)
 admin.site.register(models.Order)

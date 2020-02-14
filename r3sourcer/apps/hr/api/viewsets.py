@@ -385,8 +385,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     def recreate_invoice(self, request, pk, *args, **kwargs):
         generate_invoice.apply_async(kwargs={
             'timesheet_id': pk,
-            'recreate': True,
-            'delete_lines': True}, countdown=10)
+            'recreate': True}, countdown=5)
 
         return Response({
             'status': 'success',
