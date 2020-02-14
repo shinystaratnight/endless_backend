@@ -127,19 +127,15 @@ def seconds_to_hrs(seconds):
     return "%02d:%02d" % (hours, minutes % 60)
 
 
-def get_invoice_dates(invoice_rule, timesheet=None):
+def get_invoice_dates(invoice_rule, time_sheet):
     """
     Accepts invoice rule and returns date_from and date_to needed for invoice generation based on period setting.
     """
 
     date_from = None
     date_to = None
-    today = utc_now().date()
-    weekday = today.weekday()
-
-    if timesheet:
-        today = timesheet.shift_started_at.date()
-        weekday = timesheet.shift_started_at_tz.date().weekday()
+    today = time_sheet.shift_started_at_tz.date()
+    weekday = time_sheet.shift_started_at_tz.date().weekday()
 
     if invoice_rule.period == InvoiceRule.PERIOD_CHOICES.daily:
         date_from = today
@@ -180,7 +176,6 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
     """
     Checks if needed invoice already exists and returns it to update with new timesheets.
     """
-    invoice = None
     invoice_rule = company.invoice_rules.first()
     qs = Invoice.objects
     qry = Q(
@@ -192,21 +187,19 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
     if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
         qs = qs.filter(
             qry,
-            customer_company=company, approved=False
+            customer_company=company
         )
     elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
         jobsite = timesheet.job_offer.shift.date.job.jobsite
         qs = qs.filter(
             qry,
-            invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite,
-            approved=False
+            invoice_lines__timesheet__job_offer__shift__date__job__jobsite=jobsite
         )
     elif invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
         candidate = timesheet.job_offer.candidate_contact
         qs = qs.filter(
             qry,
-            customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate,
-            approved=False
+            customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate
         )
     try:
         invoice = qs.latest('date')
