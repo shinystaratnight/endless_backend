@@ -23,8 +23,7 @@ class InvoiceService(BasePaymentService):
             order_number = '{} - {}'.format(date_from, date_to)
         elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
             jobsite = timesheet.job_offer.shift.date.job.jobsite
-            city = jobsite.address.city
-            order_number = '{}_{}'.format(jobsite, city)
+            order_number = jobsite.address.city
         elif rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
             order_number = str(timesheet.job_offer.candidate_contact)
         else:
@@ -159,6 +158,7 @@ class InvoiceService(BasePaymentService):
             )
 
         lines, timesheets = self.calculate(company, date_from, date_to, timesheets)
+
         if lines:
             if not invoice:
                 master_company = company.get_master_company()
@@ -174,7 +174,7 @@ class InvoiceService(BasePaymentService):
             else:
                 lines = [
                     x for x in lines
-                    if not InvoiceLine.objects.filter(timesheet=x['timesheet'], invoice__approved=False).exists()
+                    if not InvoiceLine.objects.filter(timesheet=x['timesheet']).exists()
                 ]
 
             invoice_lines = []
@@ -195,9 +195,8 @@ class InvoiceService(BasePaymentService):
 
             return invoice
 
-    def generate_invoice(self, date_from, date_to, company=None, invoice=None):
-        if company:
-            invoice_rule = get_invoice_rule(company)
+    def generate_invoice(self, date_from, date_to, company, invoice=None):
+        invoice_rule = get_invoice_rule(company)
 
         if invoice:
             invoice_rule = invoice.customer_company.invoice_rules.first()

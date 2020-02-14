@@ -10,14 +10,17 @@ from r3sourcer.apps.core.admin import (
 from r3sourcer.apps.logger.admin import LoggerMixin
 
 
-DEFAULT_MODELS_LIST = [models.BankAccount,
-                       models.WorkflowObject, models.CompanyLocalization,
-                       models.InvoiceLine, models.Note, models.VAT,
-                       models.InvoiceRule]
+DEFAULT_MODELS_LIST = [
+    models.BankAccount,
+    models.WorkflowObject,
+    models.CompanyLocalization,
+    models.Note,
+    models.VAT,
+]
 
 BASE_MODELS_LIST = [models.CompanyRel, models.CompanyAddress,
                     models.CompanyContact, models.CompanyContactAddress,
-                    models.CompanyContactRelationship, models.Invoice,
+                    models.CompanyContactRelationship,
                     models.SiteCompany]
 
 SUPERUSER_MODELS_LIST = [models.Workflow]
