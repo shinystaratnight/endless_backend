@@ -31,7 +31,7 @@ from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface.models import SMSMessage, SMSTemplate
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.celeryapp import app
-from r3sourcer.helpers.datetimes import utc_now, tz2utc
+from r3sourcer.helpers.datetimes import utc_now, tz2utc, date2utc_date
 
 logger = get_task_logger(__name__)
 
@@ -1068,8 +1068,11 @@ def generate_invoices():
                 date_from = today - timedelta(days=1)
 
             existing_invoices = core_models.Invoice.objects.filter(
-                invoice_lines__date__gte=date_from,
-                invoice_lines__date__lte=date_to,
+                models.Q(provider_company=company) |
+                models.Q(customer_company=company),
+                invoice_lines__date__gte=date2utc_date(date_from, company.tz),
+                invoice_lines__date__lte=date2utc_date(date_to, company.tz),
+
             )
 
             if not existing_invoices:

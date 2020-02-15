@@ -29,6 +29,11 @@ def tz2utc(dt):
         return dt.astimezone(pytz.utc)
 
 
+def date2utc_date(date, timezone):
+    dt = datetime(year=date.year, month=date.month, day=date.day, tzinfo=timezone)
+    return tz2utc(dt).date()
+
+
 def utc2local(dt, tz):
     return dt.replace(tzinfo=pytz.utc).astimezone(tz)
 
