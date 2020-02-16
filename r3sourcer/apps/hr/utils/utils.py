@@ -172,18 +172,15 @@ def get_invoice_dates(invoice_rule, time_sheet):
     return date_from, date_to
 
 
-def get_invoice(company, date_from, date_to, timesheet, recreate=False):
+def get_invoice(company, date_from, date_to, timesheet, invoice_rule):
     """
     Checks if needed invoice already exists and returns it to update with new timesheets.
     """
-    invoice_rule = company.invoice_rules.first()
     qs = Invoice.objects
     qry = Q(
         invoice_lines__date__gte=date2utc_date(date_from, company.tz),
         invoice_lines__date__lt=date2utc_date(date_to, company.tz),
     )
-    if recreate:
-        qry = Q()
 
     if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
         qs = qs.filter(
@@ -200,7 +197,8 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
         candidate = timesheet.job_offer.candidate_contact
         qs = qs.filter(
             qry,
-            customer_company=company, invoice_lines__timesheet__job_offer__candidate_contact=candidate
+            customer_company=company,
+            invoice_lines__timesheet__job_offer__candidate_contact=candidate
         )
     try:
         invoice = qs.latest('date')
