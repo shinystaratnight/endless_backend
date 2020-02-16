@@ -1,4 +1,6 @@
 import math
+from copy import copy
+from hashlib import md5
 from decimal import Decimal
 
 from django.core.files.base import ContentFile
@@ -13,8 +15,7 @@ from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
-from r3sourcer.helpers.datetimes import utc_now
-from ..utils.utils import get_invoice_rule
+from r3sourcer.helpers.datetimes import utc_now, date2utc_date
 
 
 class InvoiceService(BasePaymentService):
@@ -150,7 +151,25 @@ class InvoiceService(BasePaymentService):
 
         return file_obj
 
-    def _prepare_invoice(self, date_from, date_to, invoice=None, company=None, timesheets=None, show_candidate=False):
+    @property
+    def invoice_line_keys(se1f):
+        return (
+            'timesheet',
+            'date',
+            'units',
+            'notes',
+            'unit_price',
+            'amount'
+        )
+
+    def get_line_unique_id(self, get_fn, line):
+        parts = []
+        for key in self.invoice_line_keys:
+            parts.append(str(get_fn(line, key)))
+
+        return md5(''.join(parts).encode()).hexdigest()
+
+    def _prepare_invoice(self, date_from, date_to, invoice=None, company=None, timesheets=None, show_candidate=False, recreate=False):
         if hasattr(company, 'subcontractor'):
             candidate = company.subcontractor.primary_contact
             timesheets = TimeSheet.objects.filter(
@@ -159,47 +178,62 @@ class InvoiceService(BasePaymentService):
 
         lines, timesheets = self.calculate(company, date_from, date_to, timesheets)
 
-        if lines:
-            if not invoice:
-                master_company = company.get_master_company()
-                provider_company = master_company[0] if master_company else company
-                invoice_rule = company.invoice_rules.first()
-                invoice = Invoice.objects.create(
-                    provider_company=provider_company,
-                    customer_company=company,
-                    order_number=self._get_order_number(invoice_rule, date_from, date_to, timesheets[0]),
-                    period=invoice_rule.period,
-                    separation_rule=invoice_rule.separation_rule
-                )
+        if not lines:
+            return
+
+        if not invoice:
+            master_company = company.get_master_company()
+            provider_company = master_company[0] if master_company else company
+            invoice_rule = company.invoice_rules.first()
+            invoice = Invoice.objects.create(
+                provider_company=provider_company,
+                customer_company=company,
+                order_number=self._get_order_number(invoice_rule, date_from, date_to, timesheets[0]),
+                period=invoice_rule.period,
+                separation_rule=invoice_rule.separation_rule
+            )
+
+        invoice_lines = {}
+        for line in invoice.invoice_lines.all():
+            invoice_lines[self.get_line_unique_id(getattr, line)] = line
+
+        calculated_lines = {}
+        for line in lines:
+            calculated_lines[self.get_line_unique_id(dict.get, line)] = line
+
+        to_insert = []
+
+        for key in copy(calculated_lines).keys():
+            item = calculated_lines.pop(key)
+            if invoice_lines.get(key) is None:
+                to_insert.append(item)
             else:
-                lines = [
-                    x for x in lines
-                    if not InvoiceLine.objects.filter(timesheet=x['timesheet']).exists()
-                ]
+                invoice_lines.pop(key)
 
-            invoice_lines = []
+        # delete outdated lines
+        for item in invoice_lines.values():
+            item.delete()
 
-            for line in lines:
-                invoice_lines.append(InvoiceLine(
-                    invoice=invoice,
-                    created_at=utc_now(),
-                    updated_at=utc_now(),
-                    **line))
+        invoice_lines = []
 
-            InvoiceLine.objects.bulk_create(invoice_lines)
+        for line in to_insert:
+            invoice_lines.append(InvoiceLine(
+                invoice=invoice,
+                created_at=utc_now(),
+                updated_at=utc_now(),
+                **line))
 
-            invoice.save(update_fields=['total', 'tax', 'total_with_tax', 'updated_at'])
+        InvoiceLine.objects.bulk_create(invoice_lines)
 
-            # TODO: decide when to trigger pdf generation
-            # self.generate_pdf(invoice, show_candidate)
+        invoice.save(update_fields=['total', 'tax', 'total_with_tax', 'updated_at'])
 
-            return invoice
+        # TODO: decide when to trigger pdf generation
+        # self.generate_pdf(invoice, show_candidate)
 
-    def generate_invoice(self, date_from, date_to, company, invoice=None):
-        invoice_rule = get_invoice_rule(company)
+        return invoice
 
+    def generate_invoice(self, date_from, date_to, company, invoice_rule, invoice=None, recreate=False):
         if invoice:
-            invoice_rule = invoice.customer_company.invoice_rules.first()
             company = invoice.customer_company
 
         separation_rule = invoice_rule.separation_rule
@@ -210,14 +244,20 @@ class InvoiceService(BasePaymentService):
                 date_to=date_to,
                 invoice=invoice,
                 company=company,
-                show_candidate=show_candidate
+                show_candidate=show_candidate,
+                recreate=recreate
             )
 
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_jobsite:
             jobsites = company.jobsites_regular.all()
 
             for jobsite in set(jobsites):
-                timesheets = TimeSheet.objects.filter(job_offer__shift__date__job__jobsite=jobsite)
+                timesheets = TimeSheet.objects.filter(
+                    job_offer__shift__date__job__jobsite=jobsite,
+                    job_offer__shift__date__shift_date__gte=date2utc_date(date_from, company.tz),
+                    job_offer__shift__date__shift_date__lt=date2utc_date(date_to, company.tz),
+                ).order_by('shift_started_at')
+
                 self._prepare_invoice(
                     date_from=date_from,
                     date_to=date_to,
