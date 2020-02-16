@@ -83,11 +83,11 @@ class BasePaymentService:
             )
 
         if date_from:
-            qry = Q(shift_started_at__date__gte=date_from)
-            if date_to:
-                qry &= Q(shift_started_at__date__lt=date_to)
+            timesheets.filter(Q(shift_started_at__date__gte=date_from))
 
-            timesheets = timesheets.filter(qry)
+        if date_to:
+            timesheets.filter(Q(shift_started_at__date__lte=date_to))
+
         return timesheets.order_by('shift_started_at')
 
     @classmethod

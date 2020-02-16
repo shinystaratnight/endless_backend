@@ -68,7 +68,6 @@ class InvoiceService(BasePaymentService):
                                          skill,
                                          price_list_rate.hourly_rate,
                                          timesheet)
-
             for raw_line in lines_iter:
                 rate = raw_line['rate']
                 notes = raw_line['notes']
@@ -255,7 +254,7 @@ class InvoiceService(BasePaymentService):
                 timesheets = TimeSheet.objects.filter(
                     job_offer__shift__date__job__jobsite=jobsite,
                     job_offer__shift__date__shift_date__gte=date2utc_date(date_from, company.tz),
-                    job_offer__shift__date__shift_date__lt=date2utc_date(date_to, company.tz),
+                    job_offer__shift__date__shift_date__lte=date2utc_date(date_to, company.tz),
                 ).order_by('shift_started_at')
 
                 self._prepare_invoice(
