@@ -250,10 +250,6 @@ def send_placement_rejection_sms(self, job_offer_id):
             send_job_offer_sms(job_offer, tpl_id='job-offer-rejection')
 
 
-def _get_invoice(company, date_from, date_to, timesheet=None, recreate=False):
-    return utils.get_invoice(company, date_from, date_to, timesheet, recreate)
-
-
 @shared_task
 def generate_invoice(timesheet_id, recreate=False):
     """
@@ -263,17 +259,38 @@ def generate_invoice(timesheet_id, recreate=False):
         timesheet = hr_models.TimeSheet.objects.get(id=timesheet_id)
     except hr_models.TimeSheet.DoesNotExist:
         return
+
     company = timesheet.regular_company
 
     if company.type == core_models.Company.COMPANY_TYPES.master:
         return
+
     # TODO: Remove this import after fix import logic
-    from r3sourcer.apps.hr.payment.invoices import InvoiceService
-    service = InvoiceService()
     invoice_rule = utils.get_invoice_rule(company)
     date_from, date_to = utils.get_invoice_dates(invoice_rule, timesheet)
-    invoice = _get_invoice(company, date_from, date_to, timesheet, recreate)
-    service.generate_invoice(date_from, date_to, company=company, invoice=invoice)
+    invoice = utils.get_invoice(company, date_from, date_to, timesheet, invoice_rule)
+    if invoice:
+        deny_conditions = (
+            invoice.is_paid,
+            invoice.approved,
+            invoice.sync_status in (
+                core_models.Invoice.SYNC_STATUS_CHOICES.sync_scheduled,
+                core_models.Invoice.SYNC_STATUS_CHOICES.syncing,
+                core_models.Invoice.SYNC_STATUS_CHOICES.synced,
+            )
+        )
+
+        if True in deny_conditions:
+            return
+
+    from r3sourcer.apps.hr.payment.invoices import InvoiceService
+    service = InvoiceService()
+    service.generate_invoice(date_from,
+                             date_to,
+                             company=company,
+                             invoice=invoice,
+                             recreate=recreate,
+                             invoice_rule=invoice_rule)
 
 
 @app.task(bind=True, queue='sms')
@@ -1076,7 +1093,10 @@ def generate_invoices():
             )
 
             if not existing_invoices:
-                service.generate_invoice(date_from, date_to, company=company)
+                service.generate_invoice(date_from,
+                                         date_to,
+                                         company=company,
+                                         invoice_rule=invoice_rule)
 
         fortnightly = core_models.InvoiceRule.objects.filter(
             period=core_models.InvoiceRule.PERIOD_CHOICES.fortnightly,
@@ -1095,4 +1115,7 @@ def generate_invoices():
             if date_from.isoweekday() != 1 or today != date_to + timedelta(days=invoice_rule.period_zero_reference):
                 continue
 
-            service.generate_invoice(date_from, date_to, company=company)
+            service.generate_invoice(date_from,
+                                     date_to,
+                                     company=company,
+                                     invoice_rule=invoice_rule)
