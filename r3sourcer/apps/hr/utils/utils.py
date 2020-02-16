@@ -15,7 +15,7 @@ from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import InvoiceRule, Invoice
 from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
 from r3sourcer.celeryapp import app
-from r3sourcer.helpers.datetimes import utc_now
+from r3sourcer.helpers.datetimes import utc_now, date2utc_date
 
 log = logging.getLogger(__name__)
 
@@ -179,7 +179,8 @@ def get_invoice(company, date_from, date_to, timesheet, recreate=False):
     invoice_rule = company.invoice_rules.first()
     qs = Invoice.objects
     qry = Q(
-        invoice_lines__date__gte=date_from, invoice_lines__date__lt=date_to,
+        invoice_lines__date__gte=date2utc_date(date_from, company.tz),
+        invoice_lines__date__lt=date2utc_date(date_to, company.tz),
     )
     if recreate:
         qry = Q()

@@ -1,5 +1,5 @@
 import copy
-from datetime import timedelta
+from datetime import timedelta, datetime
 from io import BytesIO
 
 import weasyprint
@@ -9,6 +9,7 @@ from r3sourcer.apps.pricing.models import (
     RateCoefficientModifier,
     AllowanceMixin,
 )
+from r3sourcer.helpers.datetimes import tz2utc, date2utc_date
 
 
 def calc_worked_delta(timesheet):
@@ -69,6 +70,9 @@ class BasePaymentService:
         )
 
         if company:
+            date_from = date2utc_date(date_from, company.tz)
+            date_to = date2utc_date(date_to, company.tz)
+
             timesheets = timesheets.filter(
                 job_offer__shift__date__job__jobsite__regular_company=company
             )
