@@ -227,9 +227,6 @@ class InvoiceService(BasePaymentService):
         return invoice
 
     def generate_invoice(self, date_from, date_to, company, invoice_rule, invoice=None, recreate=False):
-        if invoice:
-            company = invoice.customer_company
-
         separation_rule = invoice_rule.separation_rule
         show_candidate = invoice_rule.show_candidate_name
         time_sheets_qs = TimeSheet.objects.filter(
