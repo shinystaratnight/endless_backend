@@ -4,9 +4,10 @@ from hashlib import md5
 from decimal import Decimal
 
 from django.core.files.base import ContentFile
+from django.db.models import Count
 from django.template.loader import get_template
 from django.utils.formats import date_format
-from filer.models import Folder, File
+from filer.models import Folder, File, Q
 
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
 from r3sourcer.apps.core.utils.companies import get_site_url
@@ -40,11 +41,7 @@ class InvoiceService(BasePaymentService):
 
         return price_list_rate
 
-    def calculate(self, company, date_from=None, date_to=None, timesheets=None):
-        if timesheets is None:
-            timesheets = TimeSheet.objects
-
-        timesheets = self._get_timesheets(timesheets, date_from, date_to, company=company)
+    def calculate(self, company, timesheets):
         coefficient_service = CoefficientService()
         lines = []
 
@@ -168,14 +165,14 @@ class InvoiceService(BasePaymentService):
 
         return md5(''.join(parts).encode()).hexdigest()
 
-    def _prepare_invoice(self, date_from, date_to, invoice=None, company=None, timesheets=None, show_candidate=False, recreate=False):
+    def _prepare_invoice(self, date_from, date_to, timesheets, invoice=None, company=None, show_candidate=False, recreate=False):
         if hasattr(company, 'subcontractor'):
             candidate = company.subcontractor.primary_contact
-            timesheets = TimeSheet.objects.filter(
+            timesheets = timesheets.filter(
                 job_offer__candidate_contact=candidate
             )
 
-        lines, timesheets = self.calculate(company, date_from, date_to, timesheets)
+        lines, timesheets = self.calculate(company, timesheets)
 
         if not lines:
             return
@@ -237,6 +234,14 @@ class InvoiceService(BasePaymentService):
 
         separation_rule = invoice_rule.separation_rule
         show_candidate = invoice_rule.show_candidate_name
+        time_sheets_qs = TimeSheet.objects.filter(
+            Q(invoice_lines__isnull=True) | Q(invoice_lines__invoice__approved=False),
+            candidate_submitted_at__isnull=False,
+            supervisor_approved_at__isnull=False,
+            job_offer__shift__date__shift_date__lte=date2utc_date(date_to, company.tz),
+            job_offer__shift__date__job__jobsite__regular_company=company,
+        ).annotate(Count('id'))
+
         if separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
             self._prepare_invoice(
                 date_from=date_from,
@@ -244,6 +249,7 @@ class InvoiceService(BasePaymentService):
                 invoice=invoice,
                 company=company,
                 show_candidate=show_candidate,
+                timesheets=time_sheets_qs,
                 recreate=recreate
             )
 
@@ -251,10 +257,8 @@ class InvoiceService(BasePaymentService):
             jobsites = company.jobsites_regular.all()
 
             for jobsite in set(jobsites):
-                timesheets = TimeSheet.objects.filter(
+                time_sheets = time_sheets_qs.filter(
                     job_offer__shift__date__job__jobsite=jobsite,
-                    job_offer__shift__date__shift_date__gte=date2utc_date(date_from, company.tz),
-                    job_offer__shift__date__shift_date__lte=date2utc_date(date_to, company.tz),
                 ).order_by('shift_started_at')
 
                 self._prepare_invoice(
@@ -262,22 +266,24 @@ class InvoiceService(BasePaymentService):
                     date_to=date_to,
                     invoice=invoice,
                     company=company,
-                    timesheets=timesheets,
+                    timesheets=time_sheets,
                     show_candidate=show_candidate,
+                    recreate=recreate
                 )
 
         elif separation_rule == InvoiceRule.SEPARATION_CHOICES.per_candidate:
-            time_sheets_qs = TimeSheet.objects.order_by('shift_started_at')
-            timesheets = self._get_timesheets(time_sheets_qs, date_from, date_to, company=company)
-            candidates = set(timesheets.values_list('job_offer__candidate_contact', flat=True))
+            candidates = set(time_sheets_qs.values_list('job_offer__candidate_contact', flat=True))
 
             for candidate in candidates:
-                timesheets = TimeSheet.objects.filter(job_offer__candidate_contact_id=candidate)
+                time_sheets = time_sheets_qs.filter(
+                    job_offer__candidate_contact_id=candidate,
+                )
                 self._prepare_invoice(
                     date_from=date_from,
                     date_to=date_to,
                     invoice=invoice,
                     company=company,
-                    timesheets=timesheets,
+                    timesheets=time_sheets,
                     show_candidate=show_candidate,
+                    recreate=recreate
                 )
