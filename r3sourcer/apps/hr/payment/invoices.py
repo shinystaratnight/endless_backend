@@ -233,10 +233,9 @@ class InvoiceService(BasePaymentService):
             invoice_lines__isnull=True,
             candidate_submitted_at__isnull=False,
             supervisor_approved_at__isnull=False,
-            job_offer__shift__date__shift_date__lte=date2utc_date(date_to, company.tz),
+            job_offer__shift__date__shift_date__lt=date_to,
             job_offer__shift__date__job__jobsite__regular_company=company,
         ).annotate(Count('id'))
-
         if separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
             self._prepare_invoice(
                 date_from=date_from,

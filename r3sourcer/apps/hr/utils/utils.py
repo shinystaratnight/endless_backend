@@ -178,8 +178,8 @@ def get_invoice(company, date_from, date_to, timesheet, invoice_rule):
     """
     qs = Invoice.objects
     qry = Q(
-        invoice_lines__date__gte=date2utc_date(date_from, company.tz),
-        invoice_lines__date__lt=date2utc_date(date_to, company.tz),
+        invoice_lines__date__gte=date_from,
+        invoice_lines__date__lt=date_to,
     )
 
     if invoice_rule.separation_rule == InvoiceRule.SEPARATION_CHOICES.one_invoce:
