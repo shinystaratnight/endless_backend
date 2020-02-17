@@ -60,6 +60,7 @@ admin.site.register(models.PriceListRateCoefficient)
 admin.site.register(models.RateCoefficientModifier)
 admin.site.register(models.DynamicCoefficientRule)
 admin.site.register(models.RateCoefficientRel)
+admin.site.register(models.PriceListRateModifier)
 
 admin.site.register(models.WeekdayWorkRule, RateCoefficientForRulesAdmin)
 admin.site.register(models.OvertimeWorkRule, RateCoefficientForRulesAdmin)
