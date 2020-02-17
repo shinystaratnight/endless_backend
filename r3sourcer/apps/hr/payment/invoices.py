@@ -46,9 +46,7 @@ class InvoiceService(BasePaymentService):
         lines = []
 
         for timesheet in timesheets:
-            timesheet.invoice_lines.filter(invoice__approved=False).delete()
-            jobsite = timesheet.job_offer.job.jobsite
-            industry = jobsite.industry
+            industry = timesheet.job_offer.job.jobsite.industry
             skill = timesheet.job_offer.job.position
             customer_company = timesheet.job_offer.shift.date.job.customer_company
             price_list_rate = self._get_price_list_rate(skill, customer_company)
@@ -235,7 +233,7 @@ class InvoiceService(BasePaymentService):
         separation_rule = invoice_rule.separation_rule
         show_candidate = invoice_rule.show_candidate_name
         time_sheets_qs = TimeSheet.objects.filter(
-            Q(invoice_lines__isnull=True) | Q(invoice_lines__invoice__approved=False),
+            invoice_lines__isnull=True,
             candidate_submitted_at__isnull=False,
             supervisor_approved_at__isnull=False,
             job_offer__shift__date__shift_date__lte=date2utc_date(date_to, company.tz),
