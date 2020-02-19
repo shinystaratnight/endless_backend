@@ -1,257 +1,189 @@
 [
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "066aacfc-9ed9-4f6e-984b-50f482802985",
+  "pk": 1,
   "fields": {
-    "updated_at": "2018-08-16T13:01:03.527Z",
-    "created_at": "2018-08-16T13:01:03.527Z",
     "name": "Generated password",
     "slug": "generated-password",
     "message_text_template": "Dear [[contact]],\r\n\r\nYou have requested a password change! Your newly generated password is:\r\n\r\n[[password]]\r\n\r\nWe recommend you to change this password on your next login.\r\n\r\nKind regards, R3sourcer team",
     "reply_timeout": 0,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "187c0b76-15e5-4711-a324-270665b26517",
+  "pk": 2,
   "fields": {
-    "updated_at": "2018-03-21T08:22:31.290Z",
-    "created_at": "2018-03-21T08:22:14.726Z",
     "name": "Job Offer Placement Confirmation",
     "slug": "job-offer-placement-confirmation",
-    "message_text_template": "[[candidate_contact]] - SHIFT CONFIRMED! [[target_date_and_time]] Start!\r\n[[job__jobsite]].\r\n[[timesheet__supervisor]], [[timesheet__supervisor__contact__phone_mobile]].\r\nMake sure you arrive 10mins early have full PPE, white card, ID and relevant licences with you. Contact site foreman upon arrival.\r\nAny issues call LabourKing immediately on 0406587777",
+    "message_text_template": "[[candidate_contact]] - SHIFT CONFIRMED! [[target_date_and_time]] Start!\r\n[[job__jobsite]].\r\n[[timesheet__supervisor]], [[timesheet__supervisor__contact__phone_mobile]].\r\nMake sure you arrive 10mins early have full PPE, white card, ID and relevant licences with you. Contact site foreman upon arrival.\r\nAny issues call [[master_company]]",
     "reply_timeout": 0,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "19d86eac-3608-42ae-8e0c-2373a4f8c686",
+  "pk": 3,
   "fields": {
-    "updated_at": "2017-12-12T14:12:06.265Z",
-    "created_at": "2017-11-16T13:25:28.726Z",
     "name": "Mobile Phone Verification",
     "slug": "mobile-phone-verification",
-    "message_text_template": "Dear [[contact]], thank you for registering as Recruitee Candidate with Labourking. Please verify your phone by replying with YES. Best regards, [[manager]].",
+    "message_text_template": "Dear [[contact]], thank you for registering as Candidate with [[master_company]]. Please verify your phone by replying with YES. Best regards, [[manager]].",
     "reply_timeout": 60,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "24187173-85c2-4cce-9ed1-e888d70d8683",
+  "pk": 4,
   "fields": {
-    "updated_at": "2017-08-03T07:56:46.726Z",
-    "created_at": "2017-08-03T07:56:41.228Z",
     "name": "Login SMS Token",
     "slug": "login-sms-token",
     "message_text_template": "Mobile login for [[contact]]. Please follow this link: [[auth_url]]. If the link has expired please request a new one by replying with LOGIN or visiting [[project_url]]",
     "reply_timeout": 10,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "28e7ff56-040e-4ed3-8b2e-56007735ecbc",
+  "pk": 5,
   "fields": {
-    "updated_at": "2018-02-21T07:55:11.702Z",
-    "created_at": "2018-02-14T12:40:39.863Z",
     "name": "Candidate TimeSheet Hours (old shift)",
     "slug": "candidate-timesheet-hours-old",
     "message_text_template": "Hello [[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked on [[shift_end_date]]. Once you have submitted your hours, your site foreman today will be asked to approve them. Please make sure you are accurate and honest or your hours will not get approved. If you are unable to open the link, please submit your hours on a computer: [[site_url]] -> Customer Access. Thank you.",
     "reply_timeout": 0,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "68f2eaf7-6f82-4a3e-a61a-abee81e6177c",
+  "pk": 6,
   "fields": {
-    "updated_at": "2017-12-08T14:46:35.039Z",
-    "created_at": "2017-12-08T14:46:35.039Z",
     "name": "Job Offer 1st",
     "slug": "job-offer-1st",
     "message_text_template": "[[candidate_contact]]. JOB OFFER!\r\n[[job__position]] in [[jobsite_address__city__name]]/[[jobsite_address__state__name]].\r\nShift starts at [[target_date_and_time]].\r\nReply YES to confirm or NO to decline.\r\n[[master_company]]",
     "reply_timeout": 10,
-    "delivery_timeout": 360,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 360
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "86e81740-28cf-4883-a4e0-08ce2efbcb21",
+  "pk": 7,
   "fields": {
-    "updated_at": "2017-12-08T15:06:20.636Z",
-    "created_at": "2017-12-08T14:55:36.364Z",
     "name": "Candidate JO Cancelled <1 hrs",
     "slug": "candidate-jo-cancelled-1-hrs",
     "message_text_template": "[[candidate_contact]],\r\nThe [[job__position]] shift starting at [[target_date_and_time]] for [[job__jobsite]] job booking has been CANCELLED. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
     "reply_timeout": 10,
-    "delivery_timeout": 0,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 0
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "960128a2-b9bd-4894-9ea0-6590316ad7d9",
+  "pk": 8,
   "fields": {
-    "updated_at": "2018-02-15T14:09:48.260Z",
-    "created_at": "2018-02-15T14:09:48.260Z",
     "name": "Supervisor TimeSheet Sign Reminder",
     "slug": "supervisor-timesheet-sign-reminder",
-    "message_text_template": "Hi [[supervisor]], you still have outstanding timesheets to approve, please action immediately by clicking the link [[get_url]] or login via your computer crm.labourking.com.au -> Customer access.\r\nPlease note failure to do so will affect worker wages and your rates for the next order.\r\nAny issues please contact [[portfolio_manager]] [[portfolio_manager__contact__phone_mobile]].\r\nThank you",
+    "message_text_template": "Hi [[supervisor]], you still have outstanding timesheets to approve, please action immediately by clicking the link [[get_url]] or login via your computer to  [[site_url]].\r\nPlease note failure to do so will affect worker wages and your rates for the next order.\r\nAny issues please contact [[portfolio_manager]] [[portfolio_manager__contact__phone_mobile]].\r\nThank you",
     "reply_timeout": 0,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "a0259f85-cb1c-44da-b649-099f9a68f375",
+  "pk": 9,
   "fields": {
-    "updated_at": "2018-02-14T12:44:41.721Z",
-    "created_at": "2018-02-14T12:44:41.721Z",
     "name": "Candidate TimeSheet Agree",
     "slug": "candidate-timesheet-agree",
     "message_text_template": "[[candidate_contact]],\r\nUnfortunately your time sheet for [[shift_start_date]] was REJECTED by [[supervisor]]. Mobile: [[supervisor__contact__phone_mobile]]\r\nStart time: [[shift_start_time]]\r\nFinish time: [[shift_end_time]]\r\nBreak: [[shift_break_hours]]\r\nTotal: [[shift_worked_hours]]\r\nIf you do not agree to time sheet correction, please contact site manager in [[supervisor_timeout]] hours to correct the timesheet.\r\nRegards, [[candidate_contact__recruitment_agent__contact]]",
     "reply_timeout": 0,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "a6c45191-f6c9-4817-a991-9470c093e5d6",
+  "pk": 10,
   "fields": {
-    "updated_at": "2017-12-08T14:48:05.029Z",
-    "created_at": "2017-12-08T14:48:05.029Z",
     "name": "Job Offer Recurring",
     "slug": "job-offer-recurring",
     "message_text_template": "[[candidate_contact]].\r\nAre you able to work at the same site? [[job__position]].\r\n[[job__jobsite__get_address]]\r\nShift starts at [[target_date_and_time]]. \r\nReply YES to confirm or NO to decline.\r\n[[master_company]]",
     "reply_timeout": 10,
-    "delivery_timeout": 360,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 360
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "af0f7e8c-c1a7-4873-96e8-c9ce14034b75",
+  "pk": 11,
   "fields": {
-    "updated_at": "2018-06-07T07:17:04.495Z",
-    "created_at": "2018-06-07T07:17:04.495Z",
     "name": "Contact Mobile Phone Verification",
     "slug": "contact-mobile-phone-verification",
-    "message_text_template": "Dear [[contact]], thank you for registering with Labourking. Please verify your phone by replying with YES. Best regards, [[manager]].",
+    "message_text_template": "Dear [[contact]], thank you for registering with [[master_company]]. Please verify your phone by replying with YES. Best regards, [[manager]].",
     "reply_timeout": 60,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "c097f225-4f7a-4e98-8a02-d55a8e476cb6",
+  "pk": 12,
   "fields": {
-    "updated_at": "2018-06-06T08:45:07.647Z",
-    "created_at": "2018-03-28T14:41:44.708Z",
     "name": "Job Confirmed",
     "slug": "job-confirmed",
     "message_text_template": "[[supervisor__contact]]\r\nJOB CONFIRMED for [[get_confirmation_string]] at [[jobsite]] jobsite. Order link: [[auth_url]].\r\nAny issues please call [[portfolio_manager]], [[portfolio_manager__contact__phone_mobile]] thanks!",
     "reply_timeout": 0,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "c3397e10-b6f9-43b7-9ded-ddf647516cd2",
+  "pk": 13,
   "fields": {
-    "updated_at": "2018-08-03T07:08:30.299Z",
-    "created_at": "2018-02-14T12:38:58.505Z",
     "name": "Candidate TimeSheet Hours",
     "slug": "candidate-timesheet-hours",
     "message_text_template": "[[candidate_contact]] please click on the link [[get_fill_time_sheet_url]] to submit your timesheet for hours worked today. If you are unable to open the link, please submit your hours on a computer: [[site_url]] . Thank you.",
     "reply_timeout": 0,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "df02c5a8-57c0-459b-b316-4c1bb1003043",
+  "pk": 14,
   "fields": {
-    "updated_at": "2017-12-08T15:00:55.969Z",
-    "created_at": "2017-12-08T14:53:05.998Z",
     "name": "Candidate JO Cancelled",
     "slug": "candidate-jo-cancelled",
     "message_text_template": "[[candidate_contact]],\r\nThe [[job__position]] shift starting at [[target_date_and_time]] for [[job__jobsite]] job has been CANCELLED. We may send you another offer. Regards, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
     "reply_timeout": 10,
-    "delivery_timeout": 0,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 0
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "e4e610f7-5d24-4dc4-94e0-0a01fa6ba375",
+  "pk": 15,
   "fields": {
-    "updated_at": "2017-12-12T10:36:55.341Z",
-    "created_at": "2017-12-12T10:36:10.914Z",
     "name": "Job Offer Rejection",
     "slug": "job-offer-rejection",
     "message_text_template": "[[candidate_contact]],\r\nUnfortunately, the shift for [[job__jobsite]] at [[target_date_and_time]] has been filled!\r\nBe ready for more offers... [[master_company]]",
     "reply_timeout": 10,
-    "delivery_timeout": 0,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 0
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "ec4be330-4935-4616-93b6-e54d87301961",
+  "pk": 16,
   "fields": {
-    "updated_at": "2018-03-21T10:12:07.133Z",
-    "created_at": "2018-03-21T10:12:07.133Z",
     "name": "Candidate Going To Work",
     "slug": "candidate-going-to-work",
     "message_text_template": "[[candidate_contact]].\r\nAre you on your way to work? Confirm now by replying YES.\r\nFailure to reply in 30 minutes will result in your shift being cancelled!\r\nMake sure you have your white card and full PPE and you are on time.\r\nThanks, [[candidate_contact__recruitment_agent__contact]], [[candidate_contact__recruitment_agent__contact__phone_mobile]]",
     "reply_timeout": 30,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 },
 {
   "model": "sms_interface.defaultsmstemplate",
-  "pk": "f32739f6-c95a-4156-8ca3-c8f8acda1a84",
+  "pk": 17,
   "fields": {
-    "updated_at": "2018-02-21T07:55:37.375Z",
-    "created_at": "2018-02-15T13:48:18.181Z",
     "name": "Supervisor TimeSheet Sign",
     "slug": "supervisor-timesheet-sign",
-    "message_text_template": "Hi [[supervisor]] please approve or amend hours for your worker(s) by clinking the link [[get_url]] Please do so urgently so that workers can get paid for hours worked. If you cannot access the link simply reply LOGIN to this SMS and a new link will be sent to you.\r\nYou can also approve hours online: [[site_url]] -> Customer Access. Thank you!",
+    "message_text_template": "Hi [[supervisor]] please approve or amend hours for your worker(s) by clinking the link [[get_url]] Please do so urgently so that workers can get paid for hours worked. If you cannot access the link simply reply LOGIN to this SMS and a new link will be sent to you.\r\nYou can also approve hours online: [[site_url]]. Thank you!",
     "reply_timeout": 0,
-    "delivery_timeout": 10,
-    "company": null,
-    "type": "sms"
+    "delivery_timeout": 10
   }
 }
 ]

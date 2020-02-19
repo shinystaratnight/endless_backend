@@ -1396,6 +1396,22 @@ class Company(CategoryFolderMixin,
 
             self.create_state(10)
 
+            # process template create
+
+            sms_templates = []
+            from r3sourcer.apps.sms_interface.models import DefaultSMSTemplate, SMSTemplate
+            for template in DefaultSMSTemplate.objects.all():
+                obj = SMSTemplate(
+                    name=template.name,
+                    slug=template.slug,
+                    message_text_template=template.message_text_template,
+                    reply_timeout=template.reply_timeout,
+                    delivery_timeout=template.delivery_timeout,
+                    company=self,
+                )
+                sms_templates.append(obj)
+            SMSTemplate.objects.bulk_create(sms_templates)
+
     def get_closest_company(self):
         return self.get_closest_master_company()
 

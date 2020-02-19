@@ -228,10 +228,7 @@ def send_contact_verify_sms(self, contact_id, manager_id):
                 related_obj=contact,
                 master_company=master_company
             )
-            try:
-                sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
-            except SMSTemplate.DoesNotExist:
-                sms_template = SMSTemplate.objects.get(company=None, slug=sms_tpl)
+            sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
 
             logger.info('Sending phone verify SMS to %s.', contact)
 
@@ -339,10 +336,7 @@ def send_generated_password_sms(contact_id, new_password=None):
     }
     master_company = contact.get_closest_company()
 
-    try:
-        sms_template = SMSTemplate.objects.get(company=master_company, slug='generated-password')
-    except SMSTemplate.DoesNotExist:
-        sms_template = SMSTemplate.objects.get(company=None, slug='generated-password')
+    sms_template = SMSTemplate.objects.get(company=master_company, slug='generated-password')
 
     sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_id=sms_template.id, **data_dict)
 
