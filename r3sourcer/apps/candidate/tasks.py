@@ -50,10 +50,7 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
             logger.info('Sending phone verify SMS to %s.', candidate.contact)
 
             master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
-            try:
-                sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
-            except SMSTemplate.DoesNotExist:
-                sms_template = SMSTemplate.objects.get(company=None, slug=sms_tpl)
+            sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
 
             sms_interface.send_tpl(
                 to_number=candidate.contact.phone_mobile, tpl_id=sms_template.id, related_obj=candidate, **data_dict
