@@ -4,7 +4,6 @@ import re
 
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import models
 from django.db.models import F
 from django.db.models.signals import post_save
@@ -487,6 +486,11 @@ class SMSTemplate(TemplateMessage):
         verbose_name = _("SMS Template")
         verbose_name_plural = _("SMS Templates")
         ordering = ['name']
+        unique_together = [
+            'company',
+            'name',
+            'slug',
+        ]
 
 
 class DefaultSMSTemplate(models.Model):
