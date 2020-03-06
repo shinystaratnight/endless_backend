@@ -483,13 +483,13 @@ sentry_sdk.init(
 
 try:
     with open(root(env('JWT_RS256_PRIVATE_KEY_PATH')), 'r') as jwt_secret:
-        JWT_PRIVATE_KEY_RSA_R3SOURCERISSUER = jwt_secret.read()
+        JWT_PRIVATE_KEY_R3SOURCERISSUER = jwt_secret.read()
 except FileNotFoundError:
     print('Please specify path to JWT RSA256 private key')
 
 try:
     with open(root(env('JWT_RS256_PUBLIC_KEY_PATH')), 'r') as jwt_public:
-        JWT_PUBLIC_KEY_RSA_R3SOURCERISSUER = jwt_public.read()
+        JWT_PUBLIC_KEY_R3SOURCERISSUER = jwt_public.read()
 except FileNotFoundError:
     print('Please specify path to JWT RSA256 public key')
 
