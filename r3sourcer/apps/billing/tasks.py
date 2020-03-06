@@ -180,9 +180,11 @@ def send_sms_payment_reminder():
     email_interface = get_email_service()
 
     for sms_balance in one_day_objects:
+        # TODO: propagate master company
         email_interface.send_tpl(sms_balance.company.primary_contact.contact.email, tpl_name='sms_payment_reminder_24')
 
     for sms_balance in two_days_objects:
+        # TODO: propagate master company
         email_interface.send_tpl(sms_balance.company.primary_contact.contact.email, tpl_name='sms_payment_reminder_48')
 
 
