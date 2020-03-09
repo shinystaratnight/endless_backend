@@ -750,6 +750,7 @@ class Address(TimeZoneUUIDModel):
     longitude = models.DecimalField(max_digits=18, decimal_places=15, default=0)
 
     country = models.ForeignKey(Country, to_field='code2', default='AU')
+    apartment = models.CharField(max_length=6, blank=True, null=True, verbose_name=_('Apartment'))
 
     class Meta:
         verbose_name = _("Address")
@@ -760,7 +761,7 @@ class Address(TimeZoneUUIDModel):
         return self.longitude, self.latitude
 
     def __str__(self):
-        address = '{}\n{}'.format(self.street_address, self.postal_code)
+        address = '{} {} \n{}'.format(self.street_address, self.apartment or '', self.postal_code)
         if self.city:
             country_part = ' {}\n{}'.format(self.city.name,
                                             self.country.name)
