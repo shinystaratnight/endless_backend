@@ -498,7 +498,6 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         time_sheet = hr_models.TimeSheet.objects.get(pk=timesheet_id)
     except hr_models.TimeSheet.DoesNotExist:
         return
-
     now_tz = time_sheet.now_tz
     now_utc = time_sheet.now_utc
     today_tz = now_tz.date()
@@ -587,9 +586,9 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         is_today_reminder = True
         if eta.time() > time(19, 0):
             is_today_reminder = False
-            eta = datetime.combine(today_tz, time(19, 0))
+            eta = now_tz.replace(hour=19, minute=0, second=0)
         elif eta.time() < time(7, 0) or eta.date() > today_tz:
-            eta = datetime.combine(eta.today(), time(7, 0))
+            eta = eta.replace(hour=7, minute=0, second=0)
 
         if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
             utc_eta = tz2utc(eta)
