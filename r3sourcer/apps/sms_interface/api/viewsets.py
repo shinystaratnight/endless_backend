@@ -47,7 +47,7 @@ class SMSMessageTemplateViewset(BaseApiViewset):
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
-        return queryset.filter(company=None)
+        return queryset.filter(company=self.request.user.company)
 
     def get_object(self):
         obj = super().get_object()
