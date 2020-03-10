@@ -384,6 +384,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
             else:
                 recipient = time_sheet.supervisor
 
+            master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
             if candidate.message_by_sms:
                 try:
                     sms_interface = get_sms_service()
@@ -394,8 +395,6 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 sms_tpl = events_dict[event]['sms_tpl']
                 if time_sheet.shift_ended_at.date() != utc_now().date():
                     sms_tpl = events_dict[event].get('sms_old_tpl', sms_tpl)
-
-                master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
 
                 sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
 
@@ -416,7 +415,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 if not email_tpl:
                     return
 
-                email_interface.send_tpl(recipient.contact.email, tpl_name=email_tpl, **data_dict)
+                email_interface.send_tpl(recipient.contact.email, master_company.id, tpl_name=email_tpl, **data_dict)
 
 
 @app.task(bind=True, queue='sms')
@@ -466,6 +465,7 @@ def send_supervisor_timesheet_message(
         data_dict['related_objs'].extend(related_timesheets or [])
         data_dict.update(kwargs)
 
+        master_company = core_companies_utils.get_site_master_company(user=supervisor.contact.user)
         if should_send_sms and supervisor.contact.phone_mobile:
             try:
                 sms_interface = get_sms_service()
@@ -473,10 +473,7 @@ def send_supervisor_timesheet_message(
                 logger.exception('Cannot load SMS service')
                 return
 
-            master_company = core_companies_utils.get_site_master_company(user=supervisor.contact.user)
-
             sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
-
             sms_interface.send_tpl(supervisor.contact.phone_mobile, sms_template.id, check_reply=False, **data_dict)
 
         if should_send_email:
@@ -486,7 +483,7 @@ def send_supervisor_timesheet_message(
                 logger.exception('Cannot load SMS service')
                 return
 
-            email_interface.send_tpl(supervisor.contact.email, tpl_name=email_tpl, **data_dict)
+            email_interface.send_tpl(supervisor.contact.email, master_company.id, tpl_name=email_tpl, **data_dict)
 
 
 @app.task(bind=True, queue='sms')
@@ -501,7 +498,6 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         time_sheet = hr_models.TimeSheet.objects.get(pk=timesheet_id)
     except hr_models.TimeSheet.DoesNotExist:
         return
-
     now_tz = time_sheet.now_tz
     now_utc = time_sheet.now_utc
     today_tz = now_tz.date()
@@ -590,9 +586,9 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         is_today_reminder = True
         if eta.time() > time(19, 0):
             is_today_reminder = False
-            eta = datetime.combine(today_tz, time(19, 0))
+            eta = now_tz.replace(hour=19, minute=0, second=0)
         elif eta.time() < time(7, 0) or eta.date() > today_tz:
-            eta = datetime.combine(eta.today(), time(7, 0))
+            eta = eta.replace(hour=7, minute=0, second=0)
 
         if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
             utc_eta = tz2utc(eta)
@@ -1002,6 +998,7 @@ def send_invoice_email(invoice_id):
         logger.warn('Invoice with id=%s does not exist', invoice_id)
         return
 
+    master_company = invoice.provider_company
     client_company = invoice.customer_company
 
     try:
@@ -1018,21 +1015,21 @@ def send_invoice_email(invoice_id):
             )
         )
     except ObjectDoesNotExist:
-        rule = invoice.provider_company.invoice_rules.first()
+        rule = master_company.invoice_rules.first()
         show_candidate = rule.show_candidate_name if rule else False
         from r3sourcer.apps.hr.payment.invoices import InvoiceService
         pdf_file_obj = InvoiceService.generate_pdf(invoice, show_candidate)
 
     timesheet_ids = invoice.invoice_lines.values_list('timesheet_id', flat=True).distinct()
-    timesheets_pdf = generate_pdf(timesheet_ids, master_company=invoice.provider_company)
+    timesheets_pdf = generate_pdf(timesheet_ids, master_company=master_company)
 
     context = {
         'files': [pdf_file_obj, timesheets_pdf],
-        'master_company': invoice.provider_company.name,
+        'master_company': master_company.name,
         'master_company_contact': str(invoice.provider_representative),
         'client': client_company.name,
     }
-    email_interface.send_tpl(client_company.billing_email, tpl_name='client-invoice', **context)
+    email_interface.send_tpl(client_company.billing_email, master_company.id, tpl_name='client-invoice', **context)
 
 
 @shared_task

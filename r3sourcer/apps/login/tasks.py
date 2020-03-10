@@ -7,6 +7,7 @@ from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from .models import TokenLogin
+from ..core.utils.companies import get_site_master_company
 
 logger = get_task_logger(__name__)
 
@@ -41,7 +42,8 @@ def send_login_token(contact, send_func, tpl, redirect_url=DEFAULT_LOGIN_REDIREC
         if type_ in (TokenLogin.TYPES.sms,):
             send_func(to_number=contact.phone_mobile, tpl_name=tpl, **data_dict)
         elif type_ in (TokenLogin.TYPES.email,):
-            send_func(contact.email, tpl_name=tpl, **data_dict)
+            master_company = get_site_master_company(user=contact.user)
+            send_func(contact.email, master_company.id, tpl_name=tpl, **data_dict)
         else:
             raise Exception('Unknown login  token type')
 
@@ -55,6 +57,7 @@ def send_login_sms(self, contact_id, redirect_url=None):
     sms_tpl = 'login-sms-token'
 
     contact = get_contact(contact_id)
+
     if contact is not None:
         send_login_token(contact, sms_interface.send_tpl, sms_tpl, redirect_url)
 
@@ -70,7 +73,8 @@ def send_login_email(self, contact_id):
 
     contact = get_contact(contact_id)
     if contact is not None:
-        send_login_token(contact, email_interface.send_tpl, email_tpl, type_=TokenLogin.TYPES.email)
+        master_company = get_site_master_company(user=contact.user)
+        send_login_token(contact, email_interface.send_tpl, master_company.id, email_tpl, type_=TokenLogin.TYPES.email)
 
 
 def send_login_message(username, contact):

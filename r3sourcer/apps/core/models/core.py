@@ -750,6 +750,7 @@ class Address(TimeZoneUUIDModel):
     longitude = models.DecimalField(max_digits=18, decimal_places=15, default=0)
 
     country = models.ForeignKey(Country, to_field='code2', default='AU')
+    apartment = models.CharField(max_length=6, blank=True, null=True, verbose_name=_('Apartment'))
 
     class Meta:
         verbose_name = _("Address")
@@ -760,7 +761,7 @@ class Address(TimeZoneUUIDModel):
         return self.longitude, self.latitude
 
     def __str__(self):
-        address = '{}\n{}'.format(self.street_address, self.postal_code)
+        address = '{} {} \n{}'.format(self.street_address, self.apartment or '', self.postal_code)
         if self.city:
             country_part = ' {}\n{}'.format(self.city.name,
                                             self.country.name)
@@ -1411,6 +1412,21 @@ class Company(CategoryFolderMixin,
                 )
                 sms_templates.append(obj)
             SMSTemplate.objects.bulk_create(sms_templates)
+
+            email_templates = []
+            from r3sourcer.apps.email_interface.models import DefaultEmailTemplate, EmailTemplate
+            for template in DefaultEmailTemplate.objects.all():
+                obj = EmailTemplate(
+                    name=template.name,
+                    slug=template.slug,
+                    subject_template=template.subject_template,
+                    message_text_template=template.message_text_template,
+                    message_html_template=template.message_html_template,
+                    reply_timeout=template.reply_timeout,
+                    delivery_timeout=template.delivery_timeout,
+                    company_id=self.id)
+                email_templates.append(obj)
+            EmailTemplate.objects.bulk_create(email_templates)
 
     def get_closest_company(self):
         return self.get_closest_master_company()

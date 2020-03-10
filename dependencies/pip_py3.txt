@@ -39,7 +39,7 @@ Jinja2==2.9.5
 kombu==4.6.5
 MarkupSafe==0.23
 raven==5.27.1
-redis==2.10.5
+redis==3.4.1
 six==1.10.0
 tolerance==0.1.2
 uWSGI==2.0.15

@@ -28,9 +28,67 @@ class EmailTemplate(core_models.TemplateMessage):
         verbose_name=_("Type")
     )
 
+    company = models.ForeignKey(
+        'core.Company',
+        verbose_name=_("Master company"),
+        on_delete=models.CASCADE,
+        related_name='email_templates',
+        null=True,
+        blank=True,
+    )
+
     class Meta:
         verbose_name = _("E-mail Template")
         verbose_name_plural = _("E-mail Templates")
+        ordering = ['name']
+        unique_together = [
+            'company',
+            'name',
+            'slug',
+        ]
+
+
+class DefaultEmailTemplate(models.Model):
+    name = models.CharField(
+        max_length=256,
+        default="",
+        verbose_name=_("Name"),
+        db_index=True
+    )
+    slug = models.SlugField()
+    message_text_template = models.TextField(
+        default="",
+        verbose_name=_("Text template"),
+    )
+
+    subject_template = models.CharField(
+        max_length=256,
+        default="",
+        verbose_name=_("Subject template"),
+        blank=True
+    )
+
+    message_html_template = models.TextField(
+        default="",
+        verbose_name=_("HTML template"),
+        blank=True
+    )
+
+    reply_timeout = models.IntegerField(
+        default=10,
+        verbose_name=_("Reply timeout"),
+        help_text=_("Minutes")
+    )
+
+    delivery_timeout = models.IntegerField(
+        default=10,
+        verbose_name=_("Delivery timeout"),
+        help_text=_("Minutes")
+    )
+
+    class Meta:
+        verbose_name = _("Default Email Template")
+        verbose_name_plural = _("Default Email Templates")
         ordering = ['name']
 
 

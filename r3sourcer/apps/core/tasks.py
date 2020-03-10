@@ -9,6 +9,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db import transaction
 from vine.five import monotonic
+
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.celeryapp import app
 
 from r3sourcer.apps.core import models as core_models
@@ -159,7 +161,7 @@ def send_trial_email(self, contact_id, master_company_id):
             'verification_url': "%s%s" % (site_url, extranet_login.auth_url),
         }
 
-        email_interface.send_tpl(contact.email, tpl_name='trial-user-email-verification', **data_dict)
+        email_interface.send_tpl(contact.email, master_company.id, tpl_name='trial-user-email-verification', **data_dict)
 
 
 @shared_task()
@@ -282,7 +284,7 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
 
             logger.info('Sending e-mail verify to %s.', contact)
 
-            email_interface.send_tpl(contact.email, tpl_name=email_tpl, **data_dict)
+            email_interface.send_tpl(contact.email, master_company.id, tpl_name=email_tpl, **data_dict)
 
 
 @shared_task()
@@ -306,8 +308,8 @@ def send_generated_password_email(email, new_password=None):
             'password': new_password,
             'site_url': site_url,
         }
-
-        email_interface.send_tpl(contact.email, tpl_name='forgot-password', **data_dict)
+        master_company = get_site_master_company(user=contact.user)
+        email_interface.send_tpl(contact.email, master_company.id, tpl_name='forgot-password', **data_dict)
 
         contact.user.set_password(new_password)
         contact.user.save()
@@ -387,4 +389,4 @@ def send_verification_success_email(contact_id, master_company_id, template='e-m
 
             logger.info('Sending e-mail verification success to %s.', contact)
 
-            email_interface.send_tpl(contact.email, tpl_name=template, **data_dict)
+            email_interface.send_tpl(contact.email, master_company.id, tpl_name=template, **data_dict)
