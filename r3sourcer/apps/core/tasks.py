@@ -221,8 +221,8 @@ def send_contact_verify_sms(self, contact_id, manager_id):
         logger.exception(e)
     else:
         with transaction.atomic():
-            master_company, *_ = contact.get_master_companies()
             primary_contact = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
+            master_company, *_ = primary_contact.get_master_company()
 
             data_dict = dict(
                 contact=contact,
