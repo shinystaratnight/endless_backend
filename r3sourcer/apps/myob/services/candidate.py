@@ -29,59 +29,71 @@ class CandidateSync(BaseCategoryMixin,
     def _get_resource(self):
         return self.client.api.Contact.Employee
 
+    def get_by_display_id(self, display_id):
+        params = {'$filter': "tolower(DisplayID) eq '{display_id}'".format(display_id=display_id.lower())}
+        return self.client.api.Contact.Employee.get(params=params)
+
+    def _candidate_existing_resp(self, candidate_contact):
+        preview_card_number = candidate_contact.contact.old_myob_card_id
+        myob_card_number = candidate_contact.contact.myob_card_id
+        resp = self.client.api.Contact.Employee.get(params={
+            '$filter': "tolower(FirstName) eq '{first_name}' and tolower(LastName) eq '{last_name}'".format(
+                first_name=candidate_contact.contact.first_name.lower(),
+                last_name=candidate_contact.contact.last_name.lower())
+        })
+        if len(resp['Items']) < 1:
+            for display_id in filter(None, (myob_card_number, preview_card_number,)):
+                resp = self.get_by_display_id(display_id)
+                if resp['Items']:
+                    return resp['Items'][0]['DisplayID'], resp['Items'][0]
+        elif len(resp['Items']) > 1:
+            for x in resp['Items']:
+                if x['DisplayID'] in (myob_card_number, preview_card_number):
+                    return x['DisplayID'], x
+        else:
+            return resp['Items'][0]['DisplayID'], resp['Items'][0]
+
+        return None, None
+
     def _sync_to(self, candidate_contact, sync_obj=None, partial=False):
+        card_number, m_resp = self._candidate_existing_resp(candidate_contact)
         visa_type = candidate_contact.visa_type
         is_holiday_visa = visa_type and visa_type.subclass in ['417', '462']
 
-        # get existing candidate data
-        myob_card_number, old_myob_card_number, myob_contact_resp = self._get_myob_existing_resp(
-            candidate_contact, candidate_contact.contact.get_myob_card_number(), sync_obj
-        )
-
-        new_card_number = None
-        if is_holiday_visa:
-            if myob_card_number.startswith('alttax'):
-                new_card_number = myob_card_number
-            else:
-                new_card_number = 'alttax{}'.format(myob_card_number[:9])
-            myob_contact_resp = self._get_object_by_field(new_card_number)
-
         data = self.mapper.map_to_myob(candidate_contact)
+        data['DisplayID'] = candidate_contact.contact.myob_card_id
+
         if is_holiday_visa:
             notes = data.get('Notes', '')
             data['Notes'] = ('{}{}Working holiday visa'.format(notes, notes and '\r\n'))[:255]
 
-        is_employee_exists = myob_contact_resp is not None and myob_contact_resp['Count']
-
         # create or update employee data on remote service
-        if not is_employee_exists:
-            data['DisplayID'] = new_card_number or myob_card_number
+        if m_resp is None:
             resp = self.client.api.Contact.Employee.post(json=data, raw_resp=True)
         else:
-            item = myob_contact_resp['Items'][0]
-            data = self._get_data_to_update(item, data)
-            resp = self.client.api.Contact.Employee.put(uid=item['UID'], json=data, raw_resp=True)
+            data = self._get_data_to_update(m_resp, data)
+            resp = self.client.api.Contact.Employee.put(uid=m_resp['UID'], json=data, raw_resp=True)
 
         if 200 <= resp.status_code < 400:
             log.info('Candidate Contact %s synced' % candidate_contact.id)
+            self._update_sync_object(candidate_contact, candidate_contact.contact.myob_card_id)
 
-            self._update_sync_object(candidate_contact, new_card_number or old_myob_card_number)
+            if m_resp is None:
+                resp = self._get_object_by_field(candidate_contact.contact.myob_card_id)
 
-            if not is_employee_exists:
-                myob_contact_resp = self._get_object_by_field(new_card_number or myob_card_number)
-
-                if not myob_contact_resp or not myob_contact_resp['Count']:
+                if not resp or not resp['Count']:
                     return
 
-            item = myob_contact_resp['Items'][0]
+                m_resp = resp['Items'][0]
+
             try:
-                self._put_bank_account_info(item, candidate_contact)
+                self._put_bank_account_info(m_resp, candidate_contact)
             except ValueError as e:
                 log.warning(
                     "[MYOB API] Cannot sync bank account for Candidate Contact %s. error: %s", candidate_contact.id, e
                 )
-            self._put_extra_data(item, candidate_contact)
-            self._put_standart_pay_info(item, candidate_contact)
+            self._put_extra_data(m_resp, candidate_contact)
+            self._put_standart_pay_info(m_resp, candidate_contact)
         else:
             log.warning("[MYOB API] Candidate Contact %s: %s",
                         candidate_contact.id,
