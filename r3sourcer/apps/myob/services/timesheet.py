@@ -207,11 +207,10 @@ class TimeSheetSync(BaseCategoryMixin,
         ).first()
 
         # find candidate resource by `DisplayID`
-        _, _, myob_employee_resp = self._get_myob_existing_resp(
-            candidate,
-            card_number,
-            sync_obj, resource=self.client.api.Contact.Employee
-        )
+        _, _, myob_employee_resp = self._get_myob_existing_resp(candidate,
+                                                                card_number,
+                                                                sync_obj,
+                                                                resource=self.client.api.Contact.Employee)
 
         myob_employee = None
         # if resource exists then return it
