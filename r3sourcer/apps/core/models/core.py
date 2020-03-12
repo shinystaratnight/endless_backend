@@ -289,6 +289,9 @@ class Contact(CategoryFolderMixin,
 
     verification_token = models.CharField(max_length=64, default='')
 
+    myob_card_id = models.CharField(max_length=15, blank=True)
+    old_myob_card_id = models.CharField(max_length=15, blank=True, null=True, editable=False)
+
     class Meta:
         verbose_name = _("Contact")
         verbose_name_plural = _("Contacts")
@@ -407,11 +410,23 @@ class Contact(CategoryFolderMixin,
         if not self.email and not self.phone_mobile:
             raise ValidationError(_('Contact must have email and/or mobile phone number.'))
 
+        if not self.myob_card_id:
+            self.myob_card_id = self.get_myob_card_number()
+
         if is_adding and self.user is None:
             user = User.objects.create(email=self.email, phone_mobile=self.phone_mobile)
             self.user = user
 
+        if not is_adding:
+            origin = Contact.objects.get(pk=self.pk)
+            if origin.myob_card_id != self.myob_card_id:
+                self.old_myob_card_id = origin.myob_card_id
         super().save(*args, **kwargs)
+
+    def get_myob_card_number(self):
+        if not self.myob_card_id:
+            return str(self.id)[-15:]
+        return self.myob_card_id
 
     @classmethod
     def owned_by_lookups(cls, owner):

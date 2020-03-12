@@ -87,4 +87,7 @@ def parse_google_address(address_data):
             'longitude': location.get('lng', 0),
         })
 
+    if address_data.get('apartment'):
+        address['apartment'] = address_data['apartment']
+
     return address
