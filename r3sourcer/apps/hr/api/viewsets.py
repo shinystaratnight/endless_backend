@@ -446,6 +446,11 @@ class InvoiceViewset(BaseApiViewset):
 
 class JobOfferViewset(BaseApiViewset):
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.order_by('-shift__date__shift_date')
+        return qs
+
     @action(methods=['get'], detail=False)
     def candidate(self, request, *args, **kwargs):  # pragma: no cover
         return self.list(request, *args, **kwargs)

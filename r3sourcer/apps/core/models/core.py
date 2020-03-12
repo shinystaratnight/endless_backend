@@ -776,7 +776,10 @@ class Address(TimeZoneUUIDModel):
         return self.longitude, self.latitude
 
     def __str__(self):
-        address = '{} {} \n{}'.format(self.street_address, self.apartment or '', self.postal_code)
+        apartment = ''
+        if self.apartment:
+            apartment = ''.join([str(self.apartment), ' / '])
+        address = '{}{} \n{}'.format(apartment, self.street_address, self.postal_code)
         if self.city:
             country_part = ' {}\n{}'.format(self.city.name,
                                             self.country.name)
