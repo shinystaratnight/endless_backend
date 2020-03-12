@@ -3,6 +3,12 @@ from r3sourcer.apps.skills.models import Skill
 
 
 class SkillNameViewSet(core_viewsets.BaseApiViewset):
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        qs = qs.order_by('name')
+        return qs
+
     def _filter_list(self):
         if not hasattr(self, '_map_skill'):
             map_skill = dict()
