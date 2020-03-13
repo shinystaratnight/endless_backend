@@ -340,9 +340,9 @@ class MYOBClient(object):
         resp = self.api_request('get', url, headers=headers)
         return resp
 
-    def check_company_file(self, company_file_id, username, password):
-        url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
-        headers = self.get_headers()
+    def check_company_file(self, company_file, username, password):
+        url = company_file.cf_uri
+        headers = self.get_headers(federated_login=True)
         cf_token = self.encode_cf_token(username, password)
         headers['x-myobapi-cftoken'] = cf_token
         resp = self.api_request('get', url, headers=headers)
