@@ -166,8 +166,7 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
     """
     cf_id = models.CharField(
         verbose_name=_("Company File Id"),
-        unique=True,
-        max_length=64,  # curent length 36
+        max_length=64
     )
 
     cf_uri = models.CharField(
