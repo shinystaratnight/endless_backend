@@ -321,7 +321,6 @@ class MYOBClient(object):
 
         if not auth_data:
             auth_data = cf_data.auth_data if cf_data else None
-
         if not cf_data:
             cf_data = auth_data.company_file_token.first()
 
@@ -467,7 +466,7 @@ class MYOBClient(object):
 
     def get_company_files(self):
         url = self.get_api_url()
-        headers = self.get_headers()
+        headers = self.get_headers(federated_login=True)
         return self.api_request('get', url, headers=headers).json()
 
     def get_resources(self):
