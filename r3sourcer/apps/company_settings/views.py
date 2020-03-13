@@ -305,15 +305,10 @@ class CompanyFileAccountsView(APIView):
     If company file wasnt given returns empty list
     """
     def get(self, request, *args, **kwargs):
-        company = get_site_master_company(request=request, default=False)
-
-        if not company and request.user.is_authenticated:
-            company = request.user.company.get_closest_master_company()
-
         if 'id' in self.kwargs:
             company_file = get_object_or_404(MYOBCompanyFile,
                                              cf_id=self.kwargs['id'],
-                                             auth_data__company=company,
+                                             auth_data__company=request.user.company,
                                              auth_data__user=request.user)
             myob_accounts = company_file.accounts.all()
         else:
@@ -420,7 +415,7 @@ class RefreshCompanyFilesView(APIView):
     """
     def get(self, request, *args, **kwargs):
         company = request.user.company
-        auth_data_list = request.user.auth_data.filter(user=request.user)
+        auth_data_list = request.user.auth_data.filter(user=request.user, company=company)
         company_files = list()
 
         for auth_data in auth_data_list:
@@ -465,7 +460,11 @@ class CheckCompanyFilesView(APIView):
         username = self.request.data.get('username', None)
         password = self.request.data.get('password', None)
         company_file_id = self.request.data.get('id', None)
-        company_file = MYOBCompanyFile.objects.get(cf_id=company_file_id)
+
+        company_file = get_object_or_404(MYOBCompanyFile,
+                                         cf_id=self.kwargs['id'],
+                                         auth_data__company=request.user.company,
+                                         auth_data__user=request.user)
         auth_data = company_file.tokens.latest('created_at').auth_data
         client = MYOBClient(auth_data=auth_data)
         is_valid = client.check_company_file(company_file_id, username, password)
@@ -493,7 +492,10 @@ class RefreshMYOBAccountsView(APIView):
         refresh_only_one = 'id' in self.kwargs
 
         if 'id' in self.kwargs:
-            company_files = [get_object_or_404(MYOBCompanyFile, cf_id=self.kwargs['id'])]
+            company_files = [get_object_or_404(MYOBCompanyFile,
+                                               cf_id=self.kwargs['id'],
+                                               auth_data__user=request.user,
+                                               auth_data__company=request.user.company)]
         else:
             company_files = request.user.company_files
 
