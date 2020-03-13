@@ -305,8 +305,16 @@ class CompanyFileAccountsView(APIView):
     If company file wasnt given returns empty list
     """
     def get(self, request, *args, **kwargs):
+        company = get_site_master_company(request=request, default=False)
+
+        if not company and request.user.is_authenticated:
+            company = request.user.company.get_closest_master_company()
+
         if 'id' in self.kwargs:
-            company_file = get_object_or_404(MYOBCompanyFile, cf_id=self.kwargs['id'])
+            company_file = get_object_or_404(MYOBCompanyFile,
+                                             cf_id=self.kwargs['id'],
+                                             auth_data__company=company,
+                                             auth_data__user=request.user)
             myob_accounts = company_file.accounts.all()
         else:
             myob_accounts = MYOBAccount.objects.none()
