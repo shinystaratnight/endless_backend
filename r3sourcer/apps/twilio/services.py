@@ -26,6 +26,7 @@ class TwilioSMSService(BaseSMSService):
         ).sid
         sms_message.save(update_fields=['sid', 'from_number'])
 
+
     def process_sms_fetch(self):
         sms_list = []
 
