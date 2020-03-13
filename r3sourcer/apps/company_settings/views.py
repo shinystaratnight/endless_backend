@@ -421,6 +421,7 @@ class RefreshCompanyFilesView(APIView):
             for raw_company_file in raw_company_files:
                 company_file, created = MYOBCompanyFile.objects.update_or_create(
                     cf_id=raw_company_file['Id'],
+                    auth_data=auth_data,
                     defaults={
                         'cf_uri': raw_company_file['Uri'],
                         'cf_name': raw_company_file['Name'],
@@ -430,6 +431,7 @@ class RefreshCompanyFilesView(APIView):
                 company_file_token, _ = MYOBCompanyFileToken.objects.update_or_create(
                     company_file=company_file,
                     company=company,
+                    auth_data=auth_data,
                     defaults={
                         'auth_data': auth_data,
                     }
