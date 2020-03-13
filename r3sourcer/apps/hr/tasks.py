@@ -75,7 +75,7 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
     if utc_now() >= job_offer.start_time_utc:
         target_date_and_time = "ASAP"
 
-    master_company = core_companies_utils.get_site_master_company(user=job_offer.candidate_contact.contact.user)
+    master_company = job_offer.candidate_contact.contact.get_closest_company()
     data_dict = {
         'job_offer': job_offer,
         'job': job_offer.job,
@@ -113,6 +113,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
         except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
         else:
+
             if job_offer.is_accepted():
                 log_message = 'Job Offer %s already accepted'
                 job_offer.scheduled_sms_datetime = None
