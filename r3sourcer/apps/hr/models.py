@@ -1004,8 +1004,6 @@ class JobOffer(core_models.TimeZoneUUIDModel):
         if is_accepted:
             create_time_sheet = self.check_job_quota(is_initial)
 
-        super().save(*args, **kwargs)
-
         if create_time_sheet:
             TimeSheet.get_or_create_for_job_offer_accepted(self)
 
@@ -1056,6 +1054,8 @@ class JobOffer(core_models.TimeZoneUUIDModel):
                     task = send_jo_confirmation_sms
 
                 task.apply_async(args=[self.id], eta=utc_eta)
+
+        super().save(*args, **kwargs)
 
 
 class JobOfferSMS(core_models.UUIDModel):
