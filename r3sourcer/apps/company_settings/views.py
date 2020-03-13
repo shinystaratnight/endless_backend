@@ -509,7 +509,7 @@ class RefreshMYOBAccountsView(APIView):
             except MYOBCompanyFileToken.DoesNotExist:
                 continue
 
-            account_response = client.get_accounts(company_file.cf_id, company_file_token).json()
+            account_response = client.get_accounts(company_file, company_file_token).json()
 
             for account in account_response.get('Items', []):
                 # Header accounts haven't allowed for attach activity
@@ -547,7 +547,7 @@ class RefreshMYOBAccountsView(APIView):
         myob_settings.payroll_accounts_last_refreshed = utc_now()
         myob_settings.save()
 
-        return Response(data)
+        return Response(sorted(data, key = lambda i: i['number']))
 
 
 class MYOBSettingsView(APIView):
