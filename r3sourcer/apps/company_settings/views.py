@@ -462,12 +462,12 @@ class CheckCompanyFilesView(APIView):
         company_file_id = self.request.data.get('id', None)
 
         company_file = get_object_or_404(MYOBCompanyFile,
-                                         cf_id=self.kwargs['id'],
+                                         cf_id=company_file_id,
                                          auth_data__company=request.user.company,
                                          auth_data__user=request.user)
         auth_data = company_file.tokens.latest('created_at').auth_data
         client = MYOBClient(auth_data=auth_data)
-        is_valid = client.check_company_file(company_file_id, username, password)
+        is_valid = client.check_company_file(company_file, username, password)
         company_file_token = company_file.tokens.filter(auth_data__user=request.user).latest('created')
         company_file_token.cf_token = client.encode_cf_token(username, password)
         company_file_token.save()
@@ -476,7 +476,6 @@ class CheckCompanyFilesView(APIView):
         data = {
             "is_valid": is_valid
         }
-
         return Response(data)
 
 
