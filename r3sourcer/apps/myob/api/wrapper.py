@@ -332,10 +332,10 @@ class MYOBClient(object):
 
         self.auth = MYOBAuth(request=request, auth_data=auth_data)
 
-    def get_accounts(self, company_file_id, company_file_token):
-        company_file_url = MYOBCompanyFile.objects.get(cf_id=company_file_id).cf_uri
-        url = '%s/GeneralLedger/Account' % company_file_url
-        headers = self.get_headers()
+    def get_accounts(self, company_file, company_file_token):
+        _url = company_file.cf_uri
+        url = '%s/GeneralLedger/Account' % _url
+        headers = self.get_headers(federated_login=True)
         headers['x-myobapi-cftoken'] = company_file_token
         resp = self.api_request('get', url, headers=headers)
         return resp
