@@ -1014,40 +1014,39 @@ class JobOffer(core_models.TimeZoneUUIDModel):
             ).exists():
                 self.move_candidate_to_carrier_list(new_offer=True)
 
-            offer = JobOffer.objects.get(pk=self.pk)
+            # offer = JobOffer.objects.get(pk=self.pk)
             tomorrow = self.now_tz + timedelta(days=1)
             tomorrow_end = tomorrow.replace(hour=5, minute=0, second=0, microsecond=0) + timedelta(days=1)
             # TODO: maybe need to rethink, but it should work
             # compute eta to schedule SMS sending
             if is_resend:
                 eta = self.now_tz + timedelta(seconds=10)
-            elif offer.start_time_tz <= tomorrow_end:
+            elif self.start_time_tz <= tomorrow_end:
                 # today and tomorrow day and night shifts
                 eta = self.now_tz.replace(hour=10, minute=0, second=0, microsecond=0)
 
-                if self.now_tz >= offer.start_time_tz - timedelta(hours=1):
-                    if self.now_tz >= offer.start_time_tz + timedelta(hours=2):
+                if self.now_tz >= self.start_time_tz - timedelta(hours=1):
+                    if self.now_tz >= self.start_time_tz + timedelta(hours=2):
                         eta = None
                     else:
                         eta = self.now_tz + timedelta(seconds=10)
-                elif eta <= self.now_tz or eta >= offer.start_time_tz - timedelta(hours=1, minutes=30):
+                elif eta <= self.now_tz or eta >= self.start_time_tz - timedelta(hours=1, minutes=30):
                     eta = self.now_tz + timedelta(seconds=10)
             else:
                 if not self.has_future_accepted_jo() \
                         and not self.has_previous_jo() \
-                        and offer.start_time_tz <= self.now_tz + timedelta(days=4):
+                        and self.start_time_tz <= self.now_tz + timedelta(days=4):
                     eta = self.now_tz + timedelta(seconds=10)
                 else:
                     # future date day shift
-                    __target = offer.start_time_tz.replace(hour=10, minute=0, second=0, microsecond=0)
+                    __target = self.start_time_tz.replace(hour=10, minute=0, second=0, microsecond=0)
                     eta = __target - timedelta(days=1)
             if eta:
                 utc_eta = tz2utc(eta)
                 self.scheduled_sms_datetime = utc_eta
-                self.save(update_fields=['scheduled_sms_datetime'])
-                if offer.is_first() and not offer.is_accepted():
+                if self.is_first() and not self.is_accepted():
                     task = send_jo_confirmation_sms
-                elif offer.is_recurring():
+                elif self.is_recurring():
                     task = send_recurring_jo_confirmation_sms
                 else:
                     # FIXME: send job confirmation SMS because there is pending job's JOs for candidate
