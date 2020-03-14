@@ -1046,6 +1046,7 @@ class JobOffer(core_models.TimeZoneUUIDModel):
             if eta:
                 utc_eta = tz2utc(eta)
                 self.scheduled_sms_datetime = utc_eta
+                self.save(update_fields=['scheduled_sms_datetime'])
                 if self.is_first() and not self.is_accepted():
                     task = send_jo_confirmation_sms
                 elif self.is_recurring():
@@ -1055,8 +1056,6 @@ class JobOffer(core_models.TimeZoneUUIDModel):
                     task = send_jo_confirmation_sms
 
                 task.apply_async(args=[self.id], eta=utc_eta)
-
-        super().save(*args, **kwargs)
 
 
 class JobOfferSMS(core_models.UUIDModel):
