@@ -130,7 +130,6 @@ one_sms_task_at_the_same_time = one_task_at_the_same_time(True)
 
 
 @app.task(bind=True)
-@one_sms_task_at_the_same_time
 def send_trial_email(self, contact_id, master_company_id):
     try:
         contact = core_models.Contact.objects.get(id=contact_id)

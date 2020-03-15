@@ -113,7 +113,6 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
         except hr_models.JobOffer.DoesNotExist as e:
             logger.error(e)
         else:
-
             if job_offer.is_accepted():
                 log_message = 'Job Offer %s already accepted'
                 job_offer.scheduled_sms_datetime = None
@@ -152,7 +151,6 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
 
 
 @shared_task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def send_jo_confirmation_sms(self, job_offer_id):
     send_or_schedule_job_offer_sms(job_offer_id,
                                    task=send_jo_confirmation_sms,
@@ -161,7 +159,6 @@ def send_jo_confirmation_sms(self, job_offer_id):
 
 
 @shared_task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def send_recurring_jo_confirmation_sms(self, job_offer_id):
     send_or_schedule_job_offer_sms(job_offer_id,
                                    task=send_recurring_jo_confirmation_sms,
@@ -230,7 +227,6 @@ def send_job_offer_cancelled_lt_one_hour_sms(jo_id):
 
 
 @app.task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def send_placement_rejection_sms(self, job_offer_id):
     from r3sourcer.apps.sms_interface.models import SMSRelatedObject
 
@@ -289,7 +285,6 @@ def generate_invoice(timesheet_id, recreate=False):
 
 
 @app.task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
     """
     Send time sheet log sms notification.
@@ -420,7 +415,6 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
 
 
 @app.task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def autoconfirm_rejected_timesheet(self, time_sheet_id):
     try:
         time_sheet = hr_models.TimeSheet.objects.get(id=time_sheet_id)
@@ -488,7 +482,6 @@ def send_supervisor_timesheet_message(
 
 
 @app.task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=False):
     try:
         supervisor = core_models.CompanyContact.objects.get(pk=supervisor_id)
@@ -699,7 +692,6 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
 
 
 @app.task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def send_placement_acceptance_sms(self, timesheet_id, job_offer_id):
     send_timesheet_sms(timesheet_id,
                        job_offer_id,
@@ -710,7 +702,6 @@ def send_placement_acceptance_sms(self, timesheet_id, job_offer_id):
 
 
 @app.task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def send_going_to_work_sms(self, time_sheet_id):
     """
     Send morning check sms notification.
@@ -791,7 +782,6 @@ def get_confirmation_string(job):
 
 
 @app.task(bind=True, queue='sms')
-@one_sms_task_at_the_same_time
 def send_job_confirmation_sms(self, job_id):
     """
     Send sms for Job confirmation.
