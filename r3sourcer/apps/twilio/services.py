@@ -20,12 +20,11 @@ class TwilioSMSService(BaseSMSService):
         else:
             logger.warning('Cannot find Twilio number')
             raise AccountHasNotPhoneNumbers
-
-        sms_message.sid = twilio_account.client.api.account.messages.create(
+        response_ = twilio_account.client.api.account.messages.create(
             body=sms_message.text, from_=from_number, to=sms_message.to_number
-        ).sid
+        )
+        sms_message.sid = response_.sid
         sms_message.save(update_fields=['sid', 'from_number'])
-
 
     def process_sms_fetch(self):
         sms_list = []
