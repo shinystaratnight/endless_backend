@@ -34,7 +34,6 @@ class TwilioSMSService(BaseSMSService):
 
         for c in c_items.iterator():
             """ Update current credential (numbers, accounts, messages) """
-
             phone_numbers = []
             last_sync = utc_now()
             for n in c.client.api.incoming_phone_numbers.stream():
@@ -83,12 +82,12 @@ class TwilioSMSService(BaseSMSService):
         except models.TwilioAccount.DoesNotExist:
             twilio_account = models.TwilioAccount.objects.filter(credential__company=master_company).last()
 
-            if not twilio_account:
-                logger.warning('Cannot find Twilio number')
-                return
+        if not twilio_account:
+            logger.warning('Cannot find Twilio number')
+            return
 
-            from_number = twilio_account.phone_numbers.filter(is_default=True, sms_enabled=True).first()
-            if from_number:
-                from_number = from_number.phone_number
+        from_number = twilio_account.phone_numbers.filter(is_default=True, sms_enabled=True).first()
+        if from_number:
+            from_number = from_number.phone_number
 
         return from_number
