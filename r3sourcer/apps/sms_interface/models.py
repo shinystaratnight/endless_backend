@@ -313,7 +313,8 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
 
     def is_positive_answer(self):
         pattern = r'^(y[a-z]s|y|ye[a-z]{0,1}?|yse|yeah|ya(s*)|yo|ok)(\W(.|\n)*)?$'
-        return bool(re.match(pattern, (self.text or "").strip(), re.I))
+        result = bool(re.match(pattern, (self.text or "").strip(), re.I))
+        return result
 
     def is_negative_answer(self):
         pattern = r'^(n|no|nah|nop|nope|not|sorry|nay)(\W(.|\n)*)?$'
