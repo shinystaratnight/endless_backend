@@ -231,7 +231,7 @@ class UserTimezone(APIView):
     def post(self, *args, **kwargs):
         self.request.session['user_timezone'] = self.request.data.get('user_timezone')
         company = self.request.user.company
-        company.company_timezone = self.request.data.get('user_timezone')
-        company.save()
-
+        if company:
+            company.company_timezone = self.request.data.get('user_timezone')
+            company.save()
         return Response()
