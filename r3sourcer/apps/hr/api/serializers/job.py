@@ -317,7 +317,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         reply_smses = obj.job_offer_smses.filter(reply_received_by_sms__isnull=False)
         return (
             sent_smses.exists() and not reply_smses.exists() and
-            sent_smses.filter(offer_sent_by_sms__late_reply__isnull=False) and not obj.accepted
+            sent_smses.filter(offer_sent_by_sms__late_reply__isnull=False) and not obj.is_accepted
         )
 
     def get_has_accept_action(self, obj):
