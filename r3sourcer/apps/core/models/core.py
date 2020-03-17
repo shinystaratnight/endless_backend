@@ -667,6 +667,10 @@ class User(UUIDModel,
                 if company:
                     return company
                 else:
+                    for company_contact in self.contact.company_contact.all():
+                        for rel in company_contact.relationships.all():
+                            return rel.company
+
                     return self.contact.company_contact.first().relationships.first().company
             elif self.is_candidate():
                 return self.contact.candidate_contacts.candidate_rels.first().master_company

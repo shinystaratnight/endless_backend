@@ -257,6 +257,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
     def restore_session(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             raise exceptions.AuthenticationFailed()
+
         serializer = ContactLoginSerializer(request.user.contact)
         roles = [
             {
