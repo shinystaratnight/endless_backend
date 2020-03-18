@@ -420,6 +420,9 @@ class CompanyViewset(BaseApiViewset):
         industries_objects = data.pop('industries_objects', None)
         company = models.Company.objects.get(pk=kwargs['pk'])
         if industries_objects:
+            if len(industries_objects) < 2:
+                industries_objects[0]['default'] = True
+
             for industry in industries_objects:
                 industry_instance = Industry.objects.get(pk=industry['id'])
                 company_industry, _ = models.CompanyIndustryRel.objects.get_or_create(company=company, industry=industry_instance)
