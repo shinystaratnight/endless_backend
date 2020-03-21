@@ -11,10 +11,10 @@ from model_utils import Choices
 from twilio.base.exceptions import TwilioRestException
 from twilio.rest import Client
 
-from r3sourcer.apps.core.models import UUIDModel
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
 from r3sourcer.helpers.datetimes import tz2utc, utc_now
+from r3sourcer.helpers.models.abs import UUIDModel
 
 logger = logging.getLogger(__name__)
 

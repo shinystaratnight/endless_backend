@@ -6,91 +6,15 @@ from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.db import models
 from django.db.models import F
-from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer import ref
-from r3sourcer.apps.core.models import UUIDModel, Company, Contact, TemplateMessage, TimeZoneUUIDModel
+from r3sourcer.apps.core.models import TimeZoneUUIDModel, Contact, Company
 from r3sourcer.apps.sms_interface.managers import SMSMessageObjectOwnerManager
 from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
 
-logger = logging.getLogger(__name__)
-
-
-def disable_default_flag_for_phones(**kwargs):
-    """
-    Disable is_default value for all phone numbers if instance
-
-    :param kwargs:
-    :return:
-    """
-    if kwargs['instance'].is_default:
-        kwargs['instance'].company.phone_numbers.exclude(id=kwargs['instance'].id).update(is_default=False)
-
-
-class PhoneNumber(UUIDModel):
-
-    sid = models.CharField(
-        max_length=254,
-        verbose_name=_("SID"),
-        unique=True,
-        editable=False,
-        help_text=_("Number ID"),
-    )
-    phone_number = models.CharField(
-        max_length=32,
-        verbose_name=_("Phone"),
-    )
-    friendly_name = models.CharField(
-        max_length=512,
-        default="",
-        editable=False,
-        verbose_name=_("Friendly name"),
-    )
-    company = models.ForeignKey(
-        Company,
-        on_delete=models.CASCADE,
-        verbose_name=_("Company"),
-        related_name='phone_numbers'
-    )
-
-    # capabilities
-    sms_enabled = models.BooleanField(
-        default=True,
-        verbose_name=_("SMS enabled"),
-    )
-    mms_enabled = models.BooleanField(
-        default=True,
-        verbose_name=_("MMS enabled"),
-    )
-    voice_enabled = models.BooleanField(
-        default=True,
-        verbose_name=_("VOICE enabled"),
-    )
-
-    is_default = models.BooleanField(
-        verbose_name=_("Using as default for company"),
-        default=False
-    )
-
-    def __str__(self):
-        return self.phone_number
-
-    class Meta:
-        verbose_name = _("Phone number")
-        verbose_name_plural = _("Phone numbers")
-
-
-post_save.connect(disable_default_flag_for_phones, sender=PhoneNumber)
-
-
-class FakeSMSManager(models.Manager):
-
-    def get_queryset(self, *args, **kwargs):
-        return super(FakeSMSManager, self).get_queryset(
-            *args, **kwargs
-        ).filter(is_fake=True)
+from ..sms_related_objects import SMSRelatedObject
 
 
 class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
@@ -364,7 +288,7 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
         ).exists()
 
     def add_related_objects(self, *args):
-        logger.info("Add related objects to message {}({}): {}".format(self.id, self, args))
+        logging.info("Add related objects to message {}({}): {}".format(self.id, self, args))
         return [
             SMSRelatedObject.objects.get_or_create(
                 object_id=obj.id if isinstance(obj, models.Model) else obj['object_id'],
@@ -388,7 +312,7 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
     def no_check_reply(self):
         self.check_reply = False
         self.save(update_fields=['check_reply'])
-        logger.info("Message {} ({}) will not check reply".format(self.id, self))
+        logging.info("Message {} ({}) will not check reply".format(self.id, self))
 
     @classmethod
     def owned_by_lookups(cls, owner):
@@ -419,107 +343,3 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
         ordering = ['-sent_at']
         verbose_name = _("SMS message")
         verbose_name_plural = _("SMS messages")
-
-
-class SMSRelatedObject(UUIDModel):
-    """
-    Related object for SMSMessage.
-    """
-
-    sms = models.ForeignKey(
-        'sms_interface.SMSMessage',
-        verbose_name=_("SMS message"),
-        related_name='related_objects'
-    )
-    content_type = models.ForeignKey(
-        ContentType,
-        on_delete=models.CASCADE
-    )
-    object_id = models.UUIDField()
-    content_object = GenericForeignKey()
-
-    def __str__(self):
-        return '{}: {}'.format(self.content_type.name, self.content_object)
-
-    class Meta:
-        verbose_name = _("SMS related object")
-        verbose_name_plural = _("SMS related objects")
-
-
-class RelatedSMSMixin:
-    """
-    Would be used in models with linked sms messages.
-    """
-
-    def get_all_related_sms(self):
-        return SMSMessage.objects.filter(
-            id__in=set(SMSRelatedObject.objects.filter(
-                object_id=self.pk,
-            ).values_list('sms', flat=True))
-        ).order_by('sent_at')
-
-
-class SMSTemplate(TemplateMessage):
-    SMS = 'sms'
-    TYPE_CHOICES = (
-        (SMS, _("SMS")),
-    )
-
-    type = models.CharField(
-        max_length=8,
-        choices=TYPE_CHOICES,
-        verbose_name=_("Type")
-    )
-
-    company = models.ForeignKey(
-        'core.Company',
-        verbose_name=_("Master company"),
-        on_delete=models.CASCADE,
-        related_name='sms_templates',
-        null=True,
-        blank=True,
-    )
-
-    subject_template = ''
-    message_html_template = ''
-
-    class Meta:
-        verbose_name = _("SMS Template")
-        verbose_name_plural = _("SMS Templates")
-        ordering = ['name']
-        unique_together = [
-            'company',
-            'name',
-            'slug',
-        ]
-
-
-class DefaultSMSTemplate(models.Model):
-    name = models.CharField(
-        max_length=256,
-        default="",
-        verbose_name=_("Name"),
-        db_index=True
-    )
-    slug = models.SlugField()
-    message_text_template = models.TextField(
-        default="",
-        verbose_name=_("Text template"),
-    )
-
-    reply_timeout = models.IntegerField(
-        default=10,
-        verbose_name=_("Reply timeout"),
-        help_text=_("Minutes")
-    )
-
-    delivery_timeout = models.IntegerField(
-        default=10,
-        verbose_name=_("Delivery timeout"),
-        help_text=_("Minutes")
-    )
-
-    class Meta:
-        verbose_name = _("Default SMS Template")
-        verbose_name_plural = _("Default SMS Templates")
-        ordering = ['name']

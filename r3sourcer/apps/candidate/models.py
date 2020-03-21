@@ -13,9 +13,10 @@ from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
+from r3sourcer.helpers.models.abs import UUIDModel
 
 
-class VisaType(core_models.UUIDModel):
+class VisaType(UUIDModel):
 
     GENERAL_TYPE_CHOICES = Choices(
         ('visitor', _("Visitor")),
@@ -72,7 +73,7 @@ class VisaType(core_models.UUIDModel):
         return False
 
 
-class SuperannuationFund(core_models.UUIDModel):
+class SuperannuationFund(UUIDModel):
 
     fund_name = models.CharField(
         max_length=255,
@@ -119,7 +120,7 @@ class SuperannuationFund(core_models.UUIDModel):
         return False
 
 
-class CandidateContact(core_models.UUIDModel, WorkflowProcess):
+class CandidateContact(UUIDModel, WorkflowProcess):
 
     RESIDENCY_STATUS_CHOICES = Choices(
         (0, 'unknown', _('Unknown')),
@@ -224,11 +225,6 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
 
     strength = models.PositiveSmallIntegerField(
         verbose_name=_("Strength"),
-        default=0
-    )
-
-    language = models.PositiveSmallIntegerField(
-        verbose_name=_("Language"),
         default=0
     )
 
@@ -554,7 +550,7 @@ class CandidateContact(core_models.UUIDModel, WorkflowProcess):
             ]
 
 
-class TagRel(core_models.UUIDModel):
+class TagRel(UUIDModel):
     tag = models.ForeignKey(
         'core.Tag',
         related_name="tag_rels",
@@ -624,7 +620,7 @@ class TagRel(core_models.UUIDModel):
         return False
 
 
-class SkillRel(core_models.UUIDModel):
+class SkillRel(UUIDModel):
 
     PRIOR_EXPERIENCE_CHOICES = Choices(
         (timedelta(days=0), 'inexperienced', _("Inexperienced")),
@@ -695,7 +691,7 @@ class SkillRel(core_models.UUIDModel):
         self.candidate_contact.candidate_scores.recalc_scores()
 
 
-class SkillRateCoefficientRel(core_models.UUIDModel):
+class SkillRateCoefficientRel(UUIDModel):
     skill_rel = models.ForeignKey(
         'candidate.SkillRel',
         related_name="candidate_skill_coefficient_rels",
@@ -770,7 +766,7 @@ class InterviewSchedule(core_models.TimeZoneUUIDModel):
                                self.target_date_and_time)
 
 
-class CandidateRel(core_models.UUIDModel):
+class CandidateRel(UUIDModel):
 
     candidate_contact = models.ForeignKey(
         'candidate.CandidateContact',
@@ -923,7 +919,7 @@ class AcceptanceTestQuestionRel(core_models.TimeZoneUUIDModel):
         super().save(*args, **kwargs)
 
 
-class Subcontractor(core_models.UUIDModel):
+class Subcontractor(UUIDModel):
 
     SUBCONTRACTOR_TYPE_CHOICES = Choices(
         (10, 'sole_trader', _("sole_trader")),
@@ -975,7 +971,7 @@ class Subcontractor(core_models.UUIDModel):
         return str(self.company)
 
 
-class SubcontractorCandidateRelation(core_models.UUIDModel):
+class SubcontractorCandidateRelation(UUIDModel):
 
     subcontractor = models.ForeignKey(
         'candidate.Subcontractor',
@@ -1001,3 +997,34 @@ class CandidateContactAnonymous(CandidateContact):
 
     def __str__(self):
         return 'Anonymous Candidate'
+
+
+class CandidateContactLanguage(models.Model):
+    candidate_contact = models.ForeignKey(
+        'candidate.CandidateContact',
+        related_name='languages',
+        verbose_name=_('Candidate Contact language'),
+        on_delete=models.CASCADE
+    )
+    language = models.ForeignKey(
+        'core.Language',
+        related_name="candidate_contacts",
+        verbose_name=_("Language"),
+        on_delete=models.PROTECT)
+
+    default = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _("Company language")
+        verbose_name_plural = _("Company languages")
+        unique_together = (("candidate_contact", "language"),)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+
+        if self.default is True:
+            CandidateContact.objects \
+                            .filter(candidate_contact=self.candidate_contact, default=True)\
+                            .update(default=False)
+
+        super().save(force_insert, force_update, using, update_fields)

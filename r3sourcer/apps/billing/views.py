@@ -18,7 +18,7 @@ from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSe
     CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
 from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
-from r3sourcer.apps.core.models.core import Company, Contact, VAT
+from r3sourcer.apps.core.models import Company, Contact, VAT
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.celeryapp import app
 

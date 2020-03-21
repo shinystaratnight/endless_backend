@@ -5,7 +5,7 @@ from django.db import models
 from django.utils.formats import time_format
 from django.utils.translation import ugettext_lazy as _
 
-from r3sourcer.apps.core.models import UUIDModel
+from r3sourcer.helpers.models.abs import UUIDModel
 from ..utils.utils import format_timedelta
 from ..exceptions import RateNotApplicable
 
