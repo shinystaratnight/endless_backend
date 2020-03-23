@@ -66,7 +66,7 @@ class BaseSMSService(metaclass=ABCMeta):
         return sms_message
 
     @transaction.atomic
-    def send_tpl(self, to_number, tpl_id, from_number, related_obj, **kwargs):
+    def send_tpl(self, to_number, tpl_id, related_obj, from_number=None, **kwargs):
         try:
             template = SMSTemplate.objects.get(id=tpl_id)
             message = template.compile(**kwargs)['text']
