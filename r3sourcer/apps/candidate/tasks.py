@@ -40,7 +40,8 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
         with transaction.atomic():
             data_dict = dict(
                 contact=candidate.contact,
-                manager=candidate.recruitment_agent or candidate.get_closest_company().primary_contact
+                manager=candidate.recruitment_agent or candidate.get_closest_company().primary_contact,
+                related_obj=candidate,
             )
 
             if workflow_object_id is not None:
@@ -52,9 +53,9 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
             master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
             sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
 
-            sms_interface.send_tpl(
-                to_number=candidate.contact.phone_mobile, tpl_id=sms_template.id, related_obj=candidate, **data_dict
-            )
+            sms_interface.send_tpl(to_number=candidate.contact.phone_mobile,
+                                   tpl_id=sms_template.id,
+                                   **data_dict)
 
 
 @shared_task()
