@@ -6,11 +6,16 @@ class SkillNameViewSet(core_viewsets.BaseApiViewset):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        qs = qs.filter(
+            industry__in=self.request.user.company.industries.all(),
+            skills__company=self.request.user.company,
+        )
         if self.request.query_params.get('ordering'):
             ordering = self.request.query_params.get('ordering')
             qs = qs.order_by(*ordering.split(','))
         else:
             qs = qs.order_by('name')
+
         return qs
 
     def _filter_list(self):
