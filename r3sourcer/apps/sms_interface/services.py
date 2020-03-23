@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 class BaseSMSService(metaclass=ABCMeta):
 
     @transaction.atomic
-    def send(self, to_number, text, from_number=None, related_obj=None, **kwargs):
+    def send(self, to_number, text, from_number, related_obj, **kwargs):
         if isinstance(to_number, PhoneNumber):
             to_number = to_number.as_e164
 
@@ -38,11 +38,9 @@ class BaseSMSService(metaclass=ABCMeta):
             self.sms_disable(company)
             self.substract_sms_cost(company, sms_message)
 
-            sms_message.related_object = related_obj
             sms_message.save()
-
-            if 'related_objs' in kwargs and isinstance(kwargs['related_objs'], (list, tuple)):
-                sms_message.add_related_objects(*kwargs.pop('related_objs'))
+            related_objs = kwargs.pop('related_objs', [])
+            sms_message.add_related_objects([related_obj, *related_objs])
 
             self.process_sms_send(sms_message)
 
@@ -51,26 +49,24 @@ class BaseSMSService(metaclass=ABCMeta):
             )
         except SMSServiceError as e:
             sms_message.error_message = str(e)
-            sms_message.save()
-
         except SMSBalanceError:
             sms_message.error_code = "No Funds"
             sms_message.error_message = "SMS balance should be positive, your is: {}".format(company.sms_balance.balance)
-            sms_message.save()
             raise SMSBalanceError(sms_message.error_message)
         except SMSDisableError:
             sms_message.error_code = "SMS disabled"
             sms_message.error_message = "SMS sending is disabled for company {}, your SMS balance is: {}".format(company, company.sms_balance.balance)
-            sms_message.save()
             raise SMSDisableError(sms_message.error_message)
         except AccountHasNotPhoneNumbers:
             if sms_message and sms_message.pk:
                 sms_message.delete()
+        finally:
+            sms_message.save()
 
         return sms_message
 
     @transaction.atomic
-    def send_tpl(self, to_number, tpl_id, from_number=None, related_obj=None, **kwargs):
+    def send_tpl(self, to_number, tpl_id, from_number, related_obj, **kwargs):
         try:
             template = SMSTemplate.objects.get(id=tpl_id)
             message = template.compile(**kwargs)['text']

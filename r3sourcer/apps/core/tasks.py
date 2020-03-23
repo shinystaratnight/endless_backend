@@ -334,6 +334,7 @@ def send_generated_password_sms(contact_id, new_password=None):
     data_dict = {
         'contact': contact,
         'password': new_password,
+        'related_obj': contact,
     }
     master_company = contact.get_closest_company()
 
