@@ -3,10 +3,13 @@ from decimal import Decimal
 from django.db.models import Avg
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, serializers
+from rest_framework.exceptions import ValidationError
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_fields
+from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.core.utils.utils import normalize_phone_number
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.skills import models as skill_models
@@ -82,10 +85,12 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
         return data
 
 
-class CandidateContactSerializer(
-    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
-    core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer
-):
+class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
+                                 core_mixins.WorkflowLatestStateMixin,
+                                 core_mixins.ApiContentTypeFieldMixin,
+                                 core_serializers.ApiBaseModelSerializer):
+
+    emergency_contact_phone = serializers.CharField(allow_null=True)
 
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company', 'myob_name')
 
@@ -149,6 +154,19 @@ class CandidateContactSerializer(
         read_only_fields = ('candidate_scores',)
 
         related = core_serializers.RELATED_DIRECT
+
+    def validate_emergency_contact_phone(self, value):
+        master_company = get_site_master_company(request=self.context['request'])
+        if not master_company:
+            raise ValidationError(_('Master company not found'))
+
+        country_code = master_company.default_phone_prefix
+        if not country_code:
+            raise ValidationError('Default phone prefix for company {} not set'.format(master_company))
+
+        kwargs = dict(country_code=country_code)
+        value = normalize_phone_number(value, kwargs)
+        return value
 
     def get_average_score(self, obj):
         if not obj:

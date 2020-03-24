@@ -1244,6 +1244,8 @@ class Company(CategoryFolderMixin,
 
     company_timezone = models.CharField(max_length=126, blank=True, null=True)
 
+    default_phone_prefix = models.CharField(max_length=3, null=True, blank=True)
+
     class Meta:
         verbose_name = _("Company")
         verbose_name_plural = _("Companies")

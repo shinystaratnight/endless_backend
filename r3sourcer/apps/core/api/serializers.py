@@ -641,7 +641,9 @@ class NoteSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
         fields = ('__all__', )
 
 
-class ContactSerializer(ApiContactImageFieldsMixin, core_mixins.ApiContentTypeFieldMixin, ApiBaseModelSerializer):
+class ContactSerializer(ApiContactImageFieldsMixin,
+                        core_mixins.ApiContentTypeFieldMixin,
+                        ApiBaseModelSerializer):
     image_fields = ('picture', )
     many_related_fields = {
         'company_contact': 'contact',
