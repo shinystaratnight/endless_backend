@@ -1,6 +1,7 @@
 from functools import reduce
 from urllib.parse import urlparse
 
+from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from easy_thumbnails.alias import aliases
@@ -27,24 +28,32 @@ def get_host(request):
     return host_parts.netloc or host_parts.path
 
 
-def parse_phone_number(phone_number):
+def parse_phone_number(phone_number, kwargs=None):
+    if kwargs is None:
+        kwargs = {}
     try:
         parsed_phone_number = parse(phone_number)
     except NumberParseException:
         parsed_phone_number = PhoneNumber()
-    return parsed_phone_number
+    return parsed_phone_number, kwargs
 
 
-def process_phone_number_leading_zero(phone_number):
+def process_phone_number_leading_zero(phone_number, kwargs=None):
+    if kwargs is None:
+        kwargs = {}
+
     if phone_number.startswith('0'):
-        return '+61{}'.format(phone_number[1:])
-    return phone_number
+        country_code = kwargs.get('country_code', settings.DEFAULT_PHONE_NUMBER_COUNTRY_CODE)
+        return '+{}{}'.format(country_code, phone_number[1:]), kwargs
+    return phone_number, kwargs
 
 
-def process_phone_number_leading_plus(phone_number):
+def process_phone_number_leading_plus(phone_number, kwargs=None):
+    if kwargs is None:
+        kwargs = {}
     if not phone_number.startswith('+'):
-        return '+{}'.format(phone_number)
-    return phone_number
+        return '+{}'.format(phone_number), kwargs
+    return phone_number, kwargs
 
 
 PHONE_NUMBER_VALIDATION_CHAIN = (
@@ -54,10 +63,12 @@ PHONE_NUMBER_VALIDATION_CHAIN = (
 )
 
 
-def normalize_phone_number(phone_number):
-    __phone_number = reduce(lambda r, f: f(r),
-                            PHONE_NUMBER_VALIDATION_CHAIN,
-                            phone_number)
+def normalize_phone_number(phone_number, kwargs=None):
+    if kwargs is None:
+        kwargs = {}
+    __phone_number, _ = reduce(lambda r, f: f(*r),
+                               PHONE_NUMBER_VALIDATION_CHAIN,
+                               (phone_number, kwargs))
 
     if is_valid_number(__phone_number) is False:
         return phone_number
@@ -77,6 +88,8 @@ def is_valid_email(email):
     return True
 
 
-def is_valid_phone_number(phone_number):
-    phone = normalize_phone_number(phone_number)
+def is_valid_phone_number(phone_number, kwargs=None):
+    if kwargs is None:
+        kwargs = {}
+    phone = normalize_phone_number(phone_number, kwargs)
     return validate_phone_number(phone)

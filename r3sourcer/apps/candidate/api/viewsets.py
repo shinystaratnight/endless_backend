@@ -1,8 +1,10 @@
 from datetime import timedelta
 
 from django.contrib.contenttypes.models import ContentType
+from django.core.exceptions import ValidationError
 from django.db.models import Q, Exists
 from django.utils.translation import ugettext_lazy as _
+from phonenumber_field.modelfields import PhoneNumberField
 from rest_framework import status, exceptions, permissions as drf_permissions, viewsets, mixins
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -22,10 +24,10 @@ from r3sourcer.helpers.datetimes import utc_now
 from . import serializers
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
 from ..tasks import buy_candidate
+from ...core.utils.utils import normalize_phone_number
 
 
 class CandidateContactViewset(BaseApiViewset):
-
     def perform_create(self, serializer):
         instance = serializer.save()
 
@@ -49,6 +51,27 @@ class CandidateContactViewset(BaseApiViewset):
         instance.contact.bank_accounts.all().delete()
         instance.contact.user.delete()
 
+    def validate_contact(self, contact, data):
+        master_company = get_site_master_company(request=self.request)
+        if not master_company:
+            raise ValidationError(_('Master company not found'))
+
+        country_code = master_company.default_phone_prefix
+        if not country_code:
+            raise ValidationError('Default phone prefix for company {} not set'.format(master_company))
+
+        kwargs = dict(country_code=country_code)
+        for field in contact._meta.fields:
+            if not isinstance(field, PhoneNumberField):
+                continue
+
+            value = data.get(field.name)
+            if not value:
+                continue
+
+            data[field.name] = normalize_phone_number(value, kwargs)
+        return data
+
     def update(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
         partial = kwargs.pop('partial', False)
@@ -64,7 +87,7 @@ class CandidateContactViewset(BaseApiViewset):
                     'legacy_myob_card_number': myob_name
                 }
             )
-
+        data['contact'] = self.validate_contact(instance.contact, data.get('contact', {}))
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
