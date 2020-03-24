@@ -36,3 +36,9 @@ class ApiLimitOffsetPagination(LimitOffsetPagination):
             ('message', message),
             ('results', results)
         ]))
+
+    def paginate_queryset(self, queryset, request, view=None):
+        if not queryset.query.order_by:
+            queryset = queryset.order_by('pk')
+
+        return super().paginate_queryset(queryset, request, view)
