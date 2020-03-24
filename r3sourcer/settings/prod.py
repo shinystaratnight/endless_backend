@@ -517,3 +517,5 @@ LOGGING = {
         },
     },
 }
+
+DEFAULT_PHONE_NUMBER_COUNTRY_CODE = '61'
