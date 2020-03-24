@@ -1,3 +1,7 @@
+# eggs without version for keep freshness
+pycountry
+
+# other eggs
 Django==1.11.17
 psycopg2-binary==2.8.3
 django-money==0.10.2
@@ -64,5 +68,3 @@ git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails
 # TODO: uncomment this after redbeat support timezones
 # celery-redbeat==0.11.0
 git+https://github.com/sempr/redbeat#egg=celery-redbeat
-
-

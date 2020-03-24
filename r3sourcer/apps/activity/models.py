@@ -13,7 +13,8 @@ from redbeat import RedBeatSchedulerEntry
 from r3sourcer import ref
 from r3sourcer.apps.activity.exceptions import PeriodNameError
 from r3sourcer.apps.activity.fields import FactoryLookupField
-from r3sourcer.apps.core.models import TemplateMessage, UUIDModel, TimeZoneUUIDModel
+from r3sourcer.apps.core.models import TimeZoneUUIDModel
+from r3sourcer.helpers.models.abs import TemplateMessage, UUIDModel
 from r3sourcer.apps.core.service import FactoryException, factory
 from r3sourcer.celeryapp import app as celery_app
 

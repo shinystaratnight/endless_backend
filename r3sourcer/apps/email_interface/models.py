@@ -4,6 +4,7 @@ from filer.models import File
 
 from model_utils import Choices
 
+from r3sourcer.helpers.models.abs import TemplateMessage, UUIDModel
 from r3sourcer.apps.core import models as core_models
 
 
@@ -16,7 +17,7 @@ FILE_MIME_MAPPING = {
 }
 
 
-class EmailTemplate(core_models.TemplateMessage):
+class EmailTemplate(TemplateMessage):
     EMAIL = 'email'
     TYPE_CHOICES = (
         (EMAIL, _("Email")),
@@ -92,7 +93,7 @@ class DefaultEmailTemplate(models.Model):
         ordering = ['name']
 
 
-class EmailMessage(core_models.UUIDModel, models.Model):
+class EmailMessage(UUIDModel, models.Model):
 
     STATE_CHOICES = Choices(
         ('CREATED', _("Created")),
@@ -226,7 +227,7 @@ class EmailMessage(core_models.UUIDModel, models.Model):
             return None
 
 
-class EmailBody(core_models.UUIDModel, models.Model):
+class EmailBody(UUIDModel, models.Model):
     """ Mail message body """
 
     UUID_PATTERN = r'[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}'

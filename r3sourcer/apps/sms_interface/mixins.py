@@ -15,7 +15,8 @@ from django import forms
 from model_utils import Choices
 from oauth2_provider_jwt.utils import decode_jwt
 
-from r3sourcer.apps.core.models import Contact, TemplateMessage, User
+from r3sourcer.apps.core.models import Contact, User
+from r3sourcer.helpers.models.abs import TemplateMessage
 
 
 class DeadlineCheckingMixin(models.Model):

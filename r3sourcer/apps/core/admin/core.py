@@ -126,7 +126,6 @@ class CompanyIndustryRel(admin.TabularInline):
     extra = 0
 
 
-
 class ContactAdmin(admin.ModelAdmin):
 
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
@@ -136,6 +135,7 @@ class AddressAdmin(admin.ModelAdmin):
 
     search_fields = ('city__name', 'country__name', 'street_address', 'state__name',)
     list_display = ('__str__', 'country', 'city', 'state')
+
 
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
 

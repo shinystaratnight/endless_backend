@@ -1,7 +1,7 @@
 from rest_framework import serializers
 
 from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType
-from r3sourcer.apps.core.models.core import Company
+from r3sourcer.apps.core.models import Company
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):

@@ -4,7 +4,8 @@ from django.db import models
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import UUIDModel, Company, User
+from r3sourcer.apps.core.models import Company, User
+from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.core.managers import AbstractObjectOwnerManager
 from r3sourcer.helpers.datetimes import utc_now
 

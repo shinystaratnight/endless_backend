@@ -207,7 +207,7 @@ CACHES = {
 
 # Internationalization
 # https://docs.djangoproject.com/en/1.10/topics/i18n/
-
+DEFAULT_LANGUAGE = 'en'
 LANGUAGE_CODE = 'en-au'
 
 TIME_ZONE = env('TIME_ZONE')
