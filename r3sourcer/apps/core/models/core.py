@@ -1086,7 +1086,7 @@ class Company(CategoryFolderMixin,
     )
 
     primary_contact = models.ForeignKey(
-        CompanyContact,
+        'core.CompanyContact',
         on_delete=models.SET_NULL,
         related_name="companies",
         verbose_name=_("Manager"),
@@ -1476,24 +1476,24 @@ class CompanyRel(UUIDModel,
     Model for storing master and regular company relationship
     """
     master_company = models.ForeignKey(
-        Company,
+        'core.Company',
         related_name="master_companies",
         verbose_name=_("Master company"),
         on_delete=models.PROTECT
     )
 
     regular_company = models.ForeignKey(
-        Company,
+        'core.Company',
         related_name="regular_companies",
         verbose_name=_("Regular company"),
         on_delete=models.CASCADE
     )
 
     manager = models.ForeignKey(
-        CompanyContact,
+        'core.CompanyContact',
         related_name="company_accounts",
         verbose_name=_("Primary Contact"),
-        on_delete=models.SET_NULL,
+        on_delete=models.PROTECT,
         null=True,
         blank=True
     )
