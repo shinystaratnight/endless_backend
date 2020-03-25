@@ -126,7 +126,6 @@ class CompanyIndustryRel(admin.TabularInline):
     extra = 0
 
 
-
 class ContactAdmin(admin.ModelAdmin):
 
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
@@ -136,6 +135,7 @@ class AddressAdmin(admin.ModelAdmin):
 
     search_fields = ('city__name', 'country__name', 'street_address', 'state__name',)
     list_display = ('__str__', 'country', 'city', 'state')
+
 
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
 
@@ -332,6 +332,15 @@ class InvoiceRuleAdmin(SuperuserAdmin):
     )
 
 
+class CompanyRelAdmin(SuperuserAdmin):
+    list_display = (
+        'master_company',
+        'regular_company',
+        #'primary_contact',
+        #'manager',
+    )
+
+
 class InvoiceLineAdmin(SuperuserAdmin):
     list_display = (
         'date',
@@ -367,7 +376,7 @@ admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
 admin.site.register(models.Address, AddressAdmin)
-admin.site.register(models.CompanyRel, BaseAdmin)
+admin.site.register(models.CompanyRel, CompanyRelAdmin)
 admin.site.register(models.CompanyAddress, BaseAdmin)
 admin.site.register(models.CompanyLocalization)
 admin.site.register(models.CompanyContact, BaseAdmin)

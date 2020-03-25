@@ -18,7 +18,7 @@ DEFAULT_MODELS_LIST = [
     models.VAT,
 ]
 
-BASE_MODELS_LIST = [models.CompanyRel, models.CompanyAddress,
+BASE_MODELS_LIST = [models.CompanyAddress,
                     models.CompanyContact, models.CompanyContactAddress,
                     models.CompanyContactRelationship,
                     models.SiteCompany]

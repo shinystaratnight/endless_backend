@@ -63,6 +63,23 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
             active=True
         ).order_by('-state__number').distinct()
 
+    def get_inactive_states(self):
+        """
+        Gets active states of the object
+        :return: queryset of the states
+        """
+        from .models import WorkflowObject
+
+        if not hasattr(self, 'id'):
+            return WorkflowObject.objects.none()
+
+        return WorkflowObject.objects.filter(
+            object_id=self.id,
+            state__workflow__model=self.content_type,
+            state__company_workflow_nodes__company=self.get_closest_company(),
+            active=False
+        ).order_by('-state__number').distinct()
+
     def has_state(self, state, is_active=True):
         """
         Checks if object has state
@@ -280,6 +297,30 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         return ''.join(
             [str(item) for item in self.get_required_messages(new_state)]
         )
+
+    def active_false_workflow(self, state):
+        states = self.get_inactive_states()
+        rules = state.rules
+        if not rules:
+            return
+
+        if 'inactive' in rules.keys():
+            for state in states:
+                if state.state.number in rules["inactive"]:
+                    state.active = True
+                    state.save(update_fields=['active'])
+
+    def active_true_workflow(self, state):
+        states = self.get_active_states()
+        rules = state.rules
+        if not rules:
+            return
+
+        if 'active' in rules.keys():
+            for state in states:
+                if state.state.number not in rules["active"]:
+                    state.active = False
+                    state.save(update_fields=['active'])
 
     def workflow(self, new_state):
         """
