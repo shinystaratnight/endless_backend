@@ -77,7 +77,8 @@ def normalize_phone_number(phone_number, kwargs=None):
 
 
 def validate_phone_number(phone_number):
-    return is_valid_number(parse_phone_number(phone_number))
+    parsed_number, _ = parse_phone_number(phone_number)
+    return is_valid_number(parsed_number)
 
 
 def is_valid_email(email):
