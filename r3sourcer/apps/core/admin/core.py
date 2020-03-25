@@ -332,6 +332,15 @@ class InvoiceRuleAdmin(SuperuserAdmin):
     )
 
 
+class CompanyRelAdmin(SuperuserAdmin):
+    list_display = (
+        'master_company',
+        'regular_company',
+        #'primary_contact',
+        #'manager',
+    )
+
+
 class InvoiceLineAdmin(SuperuserAdmin):
     list_display = (
         'date',
@@ -367,7 +376,7 @@ admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
 admin.site.register(models.Address, AddressAdmin)
-admin.site.register(models.CompanyRel, BaseAdmin)
+admin.site.register(models.CompanyRel, CompanyRelAdmin)
 admin.site.register(models.CompanyAddress, BaseAdmin)
 admin.site.register(models.CompanyLocalization)
 admin.site.register(models.CompanyContact, BaseAdmin)

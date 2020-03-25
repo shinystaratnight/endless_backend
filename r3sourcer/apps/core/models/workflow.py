@@ -281,6 +281,10 @@ class WorkflowObject(UUIDModel):
 
         if lifecycle_enabled and self.active:
             self.model_object.after_state_activated(self)
+            self.model_object.active_true_workflow(self.state)
+        elif lifecycle_enabled and not self.active:
+            self.model_object.active_false_workflow(self.state)
+
         super().save(*args, **kwargs)
 
     def clean(self):

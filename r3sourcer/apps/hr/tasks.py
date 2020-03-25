@@ -450,7 +450,7 @@ def send_supervisor_timesheet_message(
 
         company_rel = supervisor.relationships.all().first()
         if company_rel:
-            primary_contact = company_rel.company.primary_contact
+            primary_contact = company_rel.manager or company_rel.company.primary_contact
 
         site_url = core_companies_utils.get_site_url(user=supervisor.contact.user)
         data_dict = dict(
