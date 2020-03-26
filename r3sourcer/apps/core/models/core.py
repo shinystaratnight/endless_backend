@@ -1742,7 +1742,7 @@ class CompanyAddress(TimeZoneUUIDModel, MasterCompanyLookupMixin):
 
 
 class CompanyContactAddress(
-    UUIDModel,
+        UUIDModel,
         MasterCompanyLookupMixin):
 
     company_address = models.ForeignKey(
@@ -2509,7 +2509,7 @@ class InvoiceLine(AbstractOrderLine):
 
 
 class SiteCompany(
-    UUIDModel,
+        UUIDModel,
         MasterCompanyLookupMixin):
     site = models.ForeignKey(
         Site,
