@@ -2,6 +2,7 @@ from django.conf.urls import url
 
 from r3sourcer.apps.core import views
 from r3sourcer.apps.core.api import views as api_views
+from r3sourcer.apps.core.api.languages import views as language_views
 
 
 urlpatterns = [
@@ -13,4 +14,6 @@ urlpatterns = [
     url(r'^core/users/(?P<id>[\w\-]+)/set_roles/$', views.SetRolesView.as_view(), name='set_roles'),
     url(r'^core/users/(?P<id>[\w\-]+)/revoke_roles/$', views.RevokeRolesView.as_view(), name='revoke_roles'),
     url(r'^core/users/timezone/$', views.UserTimezone.as_view(), name='user_timezone'),
+    # new patterns
+    url(r'^languages/', language_views.LanguageViewSet.as_view({'get': 'list'}), name='languages'),
 ]

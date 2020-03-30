@@ -1023,8 +1023,8 @@ class CandidateContactLanguage(models.Model):
              update_fields=None):
 
         if self.default is True:
-            CandidateContact.objects \
-                            .filter(candidate_contact=self.candidate_contact, default=True)\
-                            .update(default=False)
+            CandidateContactLanguage.objects \
+                                    .filter(candidate_contact=self.candidate_contact, default=True)\
+                                    .update(default=False)
 
         super().save(force_insert, force_update, using, update_fields)
