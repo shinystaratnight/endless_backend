@@ -4,6 +4,7 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from rest_framework_swagger.views import get_swagger_view
 
+from r3sourcer.apps.candidate.api.candidate_contact_languages.urls import router as candidate_contact_language_router
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
 from r3sourcer.apps.core.views import FormView, RegisterFormView, OAuthJWTToken
@@ -46,6 +47,8 @@ _urlpatterns = [
     url(r'^oauth2/token/$', OAuthJWTToken.as_view(), name='oauth2_token'),
     url(r'^oauth2/', include('oauth2_provider_jwt.urls', namespace='oauth2_provider')),
     url(r'^swagger/', swagger_view),
+    # new api endpoints - refactor this in future
+    url(r'^', include(candidate_contact_language_router.urls)),
 ]
 
 urlpatterns = [
