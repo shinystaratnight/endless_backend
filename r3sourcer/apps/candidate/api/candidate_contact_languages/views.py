@@ -15,12 +15,11 @@ class CandidateContactLanguageViewSet(mixins.ListModelMixin,
     queryset = CandidateContactLanguage.objects.all()
     permission_classes = [permissions.IsAuthenticated]
     serializer_class = CandidateContactLanguageSerializer
-    pagination_class = None
     lookup_url_kwarg = 'language_id'
 
     def get_queryset(self):
         qs = self.queryset.filter(
-            candidate_contact__contact_id=self.kwargs['contact_id']
+            candidate_contact_id=self.kwargs['candidate_contact_id']
         )
         if self.kwargs.get(self.lookup_url_kwarg):
             qs = qs.filter(**{self.lookup_url_kwarg: self.kwargs[self.lookup_url_kwarg]})
