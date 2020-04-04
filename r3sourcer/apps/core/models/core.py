@@ -35,7 +35,8 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.helpers.datetimes import datetime2timezone, geo_time_zone, tz2utc, utc_now, utc2local
-from r3sourcer.helpers.models.abs import UUIDModel
+from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
+from .company_languages import CompanyLanguage
 from ..decorators import workflow_function
 from ..fields import ContactLookupField
 from ..managers import (
@@ -50,90 +51,6 @@ from ..utils.validators import string_is_numeric
 from ..workflow import WorkflowProcess
 
 from .constants import MANAGER, CANDIDATE, CLIENT
-
-
-class TimeZone(models.Model):
-    class Meta:
-        abstract = True
-
-    @property
-    def geo(self):
-        raise NotImplementedError
-
-    @cached_property
-    def tz(self):
-        try:
-            coord = self.geo
-        except ObjectDoesNotExist:
-            coord = -0.118092, 51.509865
-        return geo_time_zone(*coord)
-
-    @property
-    def timezone(self):
-        return self.tz.zone
-
-    @property
-    def today_tz(self):
-        return self.now_tz.date()
-
-    @property
-    def tomorrow_tz(self):
-        return self.now_tz + timedelta(days=1)
-
-    @property
-    def tomorrow_utc(self):
-        return self.now_utc + timedelta(days=1)
-
-    @property
-    def today_utc(self):
-        return self.now_utc.date()
-
-    @property
-    def now_tz(self):
-        return datetime.now(self.tz)
-
-    @property
-    def now_utc(self):
-        return datetime.now(pytz.utc)
-
-    def utc2local(self, dt):
-        if dt is not None:
-            return utc2local(dt, self.tz)
-
-    @classmethod
-    def local2utc(cls, dt):
-        return tz2utc(dt)
-
-    def dt2utc(self, dt):
-        return datetime2timezone(dt, pytz.utc)
-
-    def dt2local(self, dt):
-        return datetime2timezone(dt, self.tz)
-
-
-class TimeZoneUUIDModel(TimeZone, UUIDModel):
-    class Meta:
-        abstract = True
-
-    @property
-    def geo(self):
-        raise NotImplementedError
-
-    @property
-    def created_at_tz(self):
-        return self.utc2local(self.created_at)
-
-    @property
-    def updated_at_tz(self):
-        return self.utc2local(self.updated_at)
-
-    @property
-    def created_at_utc(self):
-        return self.created_at
-
-    @property
-    def updated_at_utc(self):
-        return self.updated_at
 
 
 # do anything you want
@@ -1385,22 +1302,12 @@ class Company(CategoryFolderMixin,
 
             self.create_state(10)
 
+            # add default company language
+            company_language = CompanyLanguage(company_id=self.id,
+                                               language_id=settings.DEFAULT_LANGUAGE)
+            company_language.save()
+
             # process template create
-
-            sms_templates = []
-            from r3sourcer.apps.sms_interface.models import DefaultSMSTemplate, SMSTemplate
-            for template in DefaultSMSTemplate.objects.all():
-                obj = SMSTemplate(
-                    name=template.name,
-                    slug=template.slug,
-                    message_text_template=template.message_text_template,
-                    reply_timeout=template.reply_timeout,
-                    delivery_timeout=template.delivery_timeout,
-                    company=self,
-                )
-                sms_templates.append(obj)
-            SMSTemplate.objects.bulk_create(sms_templates)
-
             email_templates = []
             from r3sourcer.apps.email_interface.models import DefaultEmailTemplate, EmailTemplate
             for template in DefaultEmailTemplate.objects.all():
@@ -2764,8 +2671,6 @@ connect_default_signals(Region)
 connect_default_signals(City)
 
 __all__ = [
-    'TimeZone',
-    'TimeZoneUUIDModel',
     'Contact', 'ContactRelationship', 'ContactUnavailability', 'CompanyIndustryRel',
     'User', 'UserManager',
     'Country', 'Region', 'City',

@@ -5,6 +5,7 @@ from django.contrib import admin
 from rest_framework_swagger.views import get_swagger_view
 
 from r3sourcer.apps.candidate.api.candidate_contact_languages.urls import router as candidate_contact_language_router
+from r3sourcer.apps.core.api.company_languages.urls import router as company_language_router
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
 from r3sourcer.apps.core.views import FormView, RegisterFormView, OAuthJWTToken
@@ -49,6 +50,7 @@ _urlpatterns = [
     url(r'^swagger/', swagger_view),
     # new api endpoints - refactor this in future
     url(r'^', include(candidate_contact_language_router.urls)),
+    url(r'^', include(company_language_router.urls)),
 ]
 
 urlpatterns = [

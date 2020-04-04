@@ -9,3 +9,6 @@ class Language(models.Model):
     class Meta:
         verbose_name = _("Language")
         verbose_name_plural = _("Languages")
+
+    def __str__(self):
+        return self.name

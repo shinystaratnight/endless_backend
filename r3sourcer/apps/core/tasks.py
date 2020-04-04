@@ -11,6 +11,7 @@ from django.db import transaction
 from vine.five import monotonic
 
 from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.sms_interface.helpers import get_sms_template
 from r3sourcer.celeryapp import app
 
 from r3sourcer.apps.core import models as core_models
@@ -19,7 +20,6 @@ from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.core.utils.public_holidays import EnricoApi, EnricoApiException
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.login.models import TokenLogin
-from r3sourcer.apps.sms_interface.models import SMSTemplate
 
 
 LOCK_EXPIRE = 5 * 60
@@ -229,7 +229,9 @@ def send_contact_verify_sms(self, contact_id, manager_id):
                 related_obj=contact,
                 master_company=master_company
             )
-            sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
+            sms_template = get_sms_template(company_id=master_company.id,
+                                            candidate_contact_id=contact.candidate_contacts.id,
+                                            slug=sms_tpl)
 
             logger.info('Sending phone verify SMS to %s.', contact)
 
@@ -337,9 +339,10 @@ def send_generated_password_sms(contact_id, new_password=None):
         'related_obj': contact,
     }
     master_company = contact.get_closest_company()
-
-    sms_template = SMSTemplate.objects.get(company=master_company, slug='generated-password')
-
+    sms_tpl = 'generated-password'
+    sms_template = get_sms_template(company_id=master_company.id,
+                                    candidate_contact_id=contact.candidate_contacts.id,
+                                    slug=sms_tpl)
     sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_id=sms_template.id, **data_dict)
 
     contact.user.set_password(new_password)

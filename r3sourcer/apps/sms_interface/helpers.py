@@ -3,7 +3,9 @@ import math
 from django.conf import settings
 from django.db.models import Q
 
-from r3sourcer.apps.sms_interface.models import PhoneNumber, SMSMessage
+from r3sourcer.apps.candidate.models import CandidateContactLanguage
+from r3sourcer.apps.core.models import CompanyLanguage
+from r3sourcer.apps.sms_interface.models import PhoneNumber, SMSMessage, SMSTemplate
 from r3sourcer.helpers.datetimes import utc_now
 
 
@@ -40,3 +42,28 @@ def get_sms(from_number, to_number, text, reply_timeout=None,
         params['delivery_timeout'] = delivery_timeout
 
     return SMSMessage(**params)
+
+
+def get_sms_template(company_id, candidate_contact_id, slug):
+    candidate_languages = CandidateContactLanguage.objects.filter(candidate_contact_id=candidate_contact_id).all()
+    company_languages = CompanyLanguage.objects.filter(company_id=company_id).all()
+    default_candidate_lang, *_ = [x for x in candidate_languages if x.default is True] or [None]
+    candidate_langs = [x for x in candidate_languages if x.default is False]
+    default_company_lang, *_ = [x for x in company_languages if x.default is True] or [None]
+    same_lang = set([x.language_id for x in candidate_languages]) & set([x.language_id for x in company_languages])
+    if default_candidate_lang is not None \
+            and default_candidate_lang.language_id in [x.language_id for x in company_languages]:
+        language = default_candidate_lang.language_id
+    elif default_company_lang is not None \
+            and default_company_lang.language_id in [x.language_id for x in candidate_langs]:
+        language = default_company_lang.language_id
+    elif same_lang:
+        language = sorted(same_lang)[-1]
+    elif default_company_lang:
+        language = default_company_lang.language_id
+    else:
+        language = settings.DEFAULT_LANGUAGE
+
+    return SMSTemplate.objects.get(company_id=company_id,
+                                   language_id=language,
+                                   slug=slug)

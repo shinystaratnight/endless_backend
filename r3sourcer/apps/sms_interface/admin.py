@@ -5,12 +5,20 @@ from . import models
 
 class SMSTemplateAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
-    list_display = ['name', 'company', ]
+    list_display = ['name', 'company', 'language_name']
+
+    @classmethod
+    def language_name(cls, obj):
+        return obj.language.name
 
 
 class DefaultSMSTemplateAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
-    list_display = ['name']
+    list_display = ['name', 'language_name']
+
+    @classmethod
+    def language_name(cls, obj):
+        return obj.language.name
 
 
 class SMSMessageAdmin(admin.ModelAdmin):

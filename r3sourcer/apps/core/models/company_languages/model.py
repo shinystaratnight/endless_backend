@@ -1,6 +1,8 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
+from r3sourcer.apps.sms_interface.models import DefaultSMSTemplate, SMSTemplate
+
 
 class CompanyLanguage(models.Model):
     company = models.ForeignKey(
@@ -29,4 +31,25 @@ class CompanyLanguage(models.Model):
             CompanyLanguage.objects.filter(company=self.company, default=True).update(default=False)
 
         super().save(force_insert, force_update, using, update_fields)
-        # add steps for adding company templates
+
+        if self.company.type == self.company.COMPANY_TYPES.master:
+            sms_templates = SMSTemplate.objects.filter(
+                language=self.language,
+                company=self.company
+            ).all()
+            default_sms_templates = DefaultSMSTemplate.objects.filter(
+                language=self.language
+            ).exclude(slug__in=[x.slug for x in sms_templates]).all()
+            new_sms_templates = []
+            for sms_template in default_sms_templates:
+                obj = SMSTemplate(
+                    name=sms_template.name,
+                    slug=sms_template.slug,
+                    message_text_template=sms_template.message_text_template,
+                    reply_timeout=sms_template.reply_timeout,
+                    delivery_timeout=sms_template.delivery_timeout,
+                    language_id=self.language_id,
+                    company_id=self.company_id)
+                new_sms_templates.append(obj)
+            SMSTemplate.objects.bulk_create(new_sms_templates)
+
