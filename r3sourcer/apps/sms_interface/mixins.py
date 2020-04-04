@@ -15,7 +15,6 @@ from django import forms
 from model_utils import Choices
 from oauth2_provider_jwt.utils import decode_jwt
 
-from r3sourcer.apps.core.models import Contact, User
 from r3sourcer.helpers.models.abs import TemplateMessage
 
 
@@ -42,6 +41,7 @@ class DeadlineCheckingMixin(models.Model):
 
 class TokenRequiredMixin(object):
     def dispatch(self, request, *args, **kwargs):
+        from r3sourcer.apps.core.models import User
         token = request.GET.get('token')
         if not token:
             raise PermissionDenied
@@ -52,7 +52,7 @@ class TokenRequiredMixin(object):
         except (jwt.PyJWTError, User.DoesNotExist):
             raise PermissionDenied
 
-        return super(TokenRequiredMixin, self).dispatch(request, *args, **kwargs)
+        return super().dispatch(request, *args, **kwargs)
 
 
 class MessageViewBase(object):
@@ -165,6 +165,7 @@ class MessageViewBase(object):
         """
         Return contacts recipient by recipient_field (email, phone_mobile)
         """
+        from r3sourcer.apps.core.models import Contact
         recipients = self.get_recipient_value()
 
         if recipients:
@@ -179,6 +180,7 @@ class MessageViewBase(object):
         """
         Return contact recipient by recipient_field (email, phone_mobile)
         """
+        from r3sourcer.apps.core.models import Contact
         recipients = self.get_recipient_value()
         if self.request.method == 'POST':
             # get recipient by recipient_id

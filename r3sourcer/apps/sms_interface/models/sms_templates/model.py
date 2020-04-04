@@ -22,9 +22,9 @@ class SMSTemplate(TemplateMessage):
         on_delete=models.CASCADE,
         related_name='sms_templates',
     )
-    company_language = models.ForeignKey(
-        'core.CompanyLanguage',
-        verbose_name=_("Master company language"),
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Template language"),
         on_delete=models.CASCADE,
         related_name='sms_templates',
     )
@@ -40,4 +40,5 @@ class SMSTemplate(TemplateMessage):
             'company',
             'name',
             'slug',
+            'language',
         ]

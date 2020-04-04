@@ -43,7 +43,7 @@ def get_field_value(instance, field):
     :return: value of the field
     """
     if field.get_internal_type() == "ForeignKey" and getattr(instance, field.name):
-        new_value = getattr(instance, field.name).id
+        new_value = getattr(instance, field.name).pk
     else:
         new_value = getattr(instance, field.name)
     return new_value

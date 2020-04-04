@@ -1,6 +1,6 @@
 from django.db.models import F
 
-from r3sourcer.apps.core.models import TimeZone
+from r3sourcer.helpers.models.abs import TimeZone
 
 
 class CompanyTimeZoneMixin(TimeZone):

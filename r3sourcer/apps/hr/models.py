@@ -33,14 +33,14 @@ from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
 from r3sourcer.celeryapp import app
 from r3sourcer.helpers.datetimes import utc_now, tz2utc
-from r3sourcer.helpers.models.abs import UUIDModel
+from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
 
 class Jobsite(CategoryFolderMixin,
               MYOBMixin,
-              core_models.TimeZoneUUIDModel,
+              TimeZoneUUIDModel,
               WorkflowProcess):
 
     industry = models.ForeignKey(
@@ -582,7 +582,7 @@ class Job(core_models.AbstractBaseOrder):
         return None
 
 
-class ShiftDate(core_models.TimeZoneUUIDModel):
+class ShiftDate(TimeZoneUUIDModel):
 
     job = models.ForeignKey(
         'hr.Job',
@@ -649,7 +649,7 @@ class ShiftQuerySet(AbstractObjectOwnerQuerySet):
                                  output_field=models.IntegerField()))
 
 
-class Shift(core_models.TimeZoneUUIDModel):
+class Shift(TimeZoneUUIDModel):
     time = models.TimeField(verbose_name=_("Time"))
 
     date = models.ForeignKey(
@@ -707,7 +707,7 @@ class Shift(core_models.TimeZoneUUIDModel):
         return result
 
 
-class JobOffer(core_models.TimeZoneUUIDModel):
+class JobOffer(TimeZoneUUIDModel):
     STATUS_CHOICES = Choices(
         (0, 'undefined', _("Undefined")),
         (1, 'accepted', _("Accepted")),
@@ -1091,7 +1091,7 @@ class JobOfferSMS(UUIDModel):
         verbose_name_plural = _("Job Offer SMSes")
 
 
-class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
+class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     sent_sms_field = 'going_to_work_sent_sms'
     receive_sms_field = 'going_to_work_reply_sms'
 

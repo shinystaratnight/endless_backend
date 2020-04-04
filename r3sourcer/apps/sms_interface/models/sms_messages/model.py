@@ -10,9 +10,9 @@ from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
 from r3sourcer import ref
-from r3sourcer.apps.core.models import TimeZoneUUIDModel, Contact, Company
 from r3sourcer.apps.sms_interface.managers import SMSMessageObjectOwnerManager
 from r3sourcer.apps.sms_interface.mixins import DeadlineCheckingMixin
+from r3sourcer.helpers.models.abs import TimeZoneUUIDModel
 
 from ..sms_related_objects import SMSRelatedObject
 
@@ -283,6 +283,7 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
             return None
 
     def has_contact_relation(self):
+        from r3sourcer.apps.core.models import Contact
         return Contact.objects.filter(
             phone_mobile__in=[self.from_number, self.to_number]
         ).exists()
@@ -316,9 +317,11 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
 
     @classmethod
     def owned_by_lookups(cls, owner):
+        from r3sourcer.apps.core.models import Company
         res = [models.Q(company=owner)]
 
         if isinstance(owner, Company):
+            from r3sourcer.apps.core.models import Contact
             phone_numbers = owner.twilio_credentials.values_list(
                 'accounts_list__phone_numbers__phone_number', flat=True
             )

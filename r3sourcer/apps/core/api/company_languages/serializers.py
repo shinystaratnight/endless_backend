@@ -1,25 +1,24 @@
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from rest_framework import serializers
 
-from r3sourcer.apps.candidate.models import CandidateContactLanguage, CandidateContact
+from r3sourcer.apps.core.models import CompanyLanguage, Company, Language
 from r3sourcer.apps.core.api.languages.serializers import LanguageSerializer
-from r3sourcer.apps.core.models import Language
 
 
-class CandidateContactLanguageSerializer(serializers.ModelSerializer):
+class CompanyLanguageSerializer(serializers.ModelSerializer):
     language_id = serializers.CharField(write_only=True)
-    candidate_contact_id = serializers.CharField(write_only=True)
+    company_id = serializers.CharField(write_only=True)
     language = LanguageSerializer(read_only=True)
-    candidate_contact = serializers.SerializerMethodField(read_only=True)
+    company = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model = CandidateContactLanguage
+        model = CompanyLanguage
         fields = (
             'language_id',
-            'candidate_contact_id',
+            'company_id',
             'default',
             'language',
-            'candidate_contact',
+            'company',
         )
 
     @classmethod
@@ -31,14 +30,14 @@ class CandidateContactLanguageSerializer(serializers.ModelSerializer):
         return value
 
     @classmethod
-    def validate_candidate_contact_id(cls, value):
+    def validate_company_id(cls, value):
         try:
-            CandidateContact.objects.get(pk=value)
+            Company.objects.get(pk=value)
         except ObjectDoesNotExist:
             raise ValidationError('Candidate contact with pk = {} does not exist'.format(value))
         return value
 
     @classmethod
-    def get_candidate_contact(self, obj):
-        return {'id': obj.candidate_contact_id,
-                '__str__': str(obj.candidate_contact)}
+    def get_company(cls, obj):
+        return {'id': obj.company_id,
+                '__str__': str(obj.company)}

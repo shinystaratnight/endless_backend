@@ -13,7 +13,7 @@ from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
-from r3sourcer.helpers.models.abs import UUIDModel
+from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 
 class VisaType(UUIDModel):
@@ -716,7 +716,7 @@ class SkillRateCoefficientRel(UUIDModel):
         unique_together = ("skill_rel", "rate_coefficient", "rate_coefficient_modifier")
 
 
-class InterviewSchedule(core_models.TimeZoneUUIDModel):
+class InterviewSchedule(TimeZoneUUIDModel):
     CATEGORY_CHOICES = Choices(
         ('first_phone_interview', _('First Phone Interview')),
         ('second_phone_interview', _('Second Phone Interview')),
@@ -809,7 +809,7 @@ class CandidateRel(UUIDModel):
         return "{}: {}".format(self.master_company, self.candidate_contact)
 
 
-class AcceptanceTestRel(core_models.TimeZoneUUIDModel):
+class AcceptanceTestRel(TimeZoneUUIDModel):
 
     acceptance_test = models.ForeignKey(
         'acceptance_tests.AcceptanceTest',
@@ -864,7 +864,7 @@ class AcceptanceTestRel(core_models.TimeZoneUUIDModel):
         super().save(*args, **kwargs)
 
 
-class AcceptanceTestQuestionRel(core_models.TimeZoneUUIDModel):
+class AcceptanceTestQuestionRel(TimeZoneUUIDModel):
 
     candidate_acceptance_test = models.ForeignKey(
         'candidate.AcceptanceTestRel',
