@@ -46,7 +46,6 @@ class SMSDialogTemplateView(MessageView, FormView):
         return TwilioSMSService.get_sender_phones(self.user.contact).get(id=sender)
 
     def form_valid(self, form):
-
         for recipient in self.get_recipients():
             params = self.get_url_params()
             params.update(self.get_extra_params(recipient))
@@ -58,6 +57,7 @@ class SMSDialogTemplateView(MessageView, FormView):
                         text=form.cleaned_data['body'],
                         from_number=sender_contact.phone_number,
                         sender_contact=self.user.contact,
+                        related_object=recipient,
                         **params
                 )
             except Exception as e:
