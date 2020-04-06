@@ -28,7 +28,7 @@ class ApiBaseRelatedField(serializers.RelatedField):
     def to_representation(self, value):
         str_val = str(value)
         data = {
-            'id': value.id,
+            'id': value.pk,
             'name': str_val,
             '__str__': str_val,
         }
