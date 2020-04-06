@@ -31,7 +31,7 @@ class CandidateContactLanguageViewSet(mixins.ListModelMixin,
     def create(self, request, *args, **kwargs):
         try:
             response = super().create(request, args, kwargs)
-        except IntegrityError as e:
-            raise Custom409(e)
+        except IntegrityError:
+            raise Custom409("Candidate language already exists")
         return response
 
