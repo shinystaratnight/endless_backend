@@ -13,6 +13,7 @@ class SMSTemplate(TemplateMessage):
     type = models.CharField(
         max_length=8,
         choices=TYPE_CHOICES,
+        default=SMS,
         verbose_name=_("Type")
     )
 
