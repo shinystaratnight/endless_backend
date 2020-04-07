@@ -161,7 +161,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             })
 
         user = authenticate(username=serializer.data['username'],
-                            password=serializer.data.get('password'))
+                            password=serializer.data.get('password'),
+                            country_code=serializer.data.get('country_code'))
         if user is None:
             if contact is not None:
                 if email_username:
