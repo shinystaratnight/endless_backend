@@ -21,7 +21,7 @@ class ContactBackend(ModelBackend):
                 return value
         return value
 
-    def authenticate(self, request, username=None, password=None, **kwargs):
+    def authenticate(self, request, username=None, password=None, country_code=None, **kwargs):
         UserModel = get_user_model()
         if username is None:
             username = self.get_login_value(UserModel, **kwargs)
@@ -33,7 +33,7 @@ class ContactBackend(ModelBackend):
         for field in UserModel.REQUIRED_FIELDS:
             field_name = 'contact__{}'.format(field)
             validator = self.required_fields_validator.get(field)
-            if validator(username) is True:
+            if validator(username, country_code) is True:
                 params |= Q(**{field_name: username})
 
         try:

@@ -33,13 +33,13 @@ def parse_phone_number(phone_number, country_code):
         parsed_phone_number = parse(phone_number, country_code)
     except NumberParseException:
         parsed_phone_number = PhoneNumber()
-    return parsed_phone_number
+    return parsed_phone_number, country_code
 
 
 def process_phone_number_leading_plus(phone_number, country_code):
     if not phone_number.startswith('+'):
-        return '+{}'.format(phone_number)
-    return phone_number
+        return '+{}'.format(phone_number), country_code
+    return phone_number, country_code
 
 
 PHONE_NUMBER_VALIDATION_CHAIN = (
@@ -49,9 +49,9 @@ PHONE_NUMBER_VALIDATION_CHAIN = (
 
 
 def normalize_phone_number(phone_number, country_code):
-    __phone_number = reduce(lambda r, f: f(*r),
-                            PHONE_NUMBER_VALIDATION_CHAIN,
-                            (phone_number, country_code))
+    __phone_number, _ = reduce(lambda r, f: f(*r),
+                               PHONE_NUMBER_VALIDATION_CHAIN,
+                               (phone_number, country_code))
 
     if is_valid_number(__phone_number) is False:
         return phone_number
@@ -60,11 +60,11 @@ def normalize_phone_number(phone_number, country_code):
 
 
 def validate_phone_number(phone_number, country_code):
-    parsed_number = parse_phone_number(phone_number, country_code)
+    parsed_number, _ = parse_phone_number(phone_number, country_code)
     return is_valid_number(parsed_number)
 
 
-def is_valid_email(email):
+def is_valid_email(email, *args):
     try:
         validate_email(email)
     except ValidationError:
