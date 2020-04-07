@@ -1767,7 +1767,7 @@ class TrialSerializer(serializers.Serializer):
     phone_mobile = serializers.CharField()
     company_name = serializers.CharField(max_length=127)
     website = serializers.CharField()
-    country_code = serializers.CharField(required=True)
+    country_code = serializers.CharField()
 
     def validate(self, data):
         email = data['email']

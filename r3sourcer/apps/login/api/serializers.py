@@ -26,10 +26,7 @@ class LoginSerializer(serializers.Serializer):
         default=False,
         label=_('Remember me')
     )
-    country_code = serializers.CharField(
-        required=True,
-        label=_('Country code')
-    )
+    country_code = serializers.CharField(label=_('Country code'))
 
     class Meta:
         model = models.TokenLogin
