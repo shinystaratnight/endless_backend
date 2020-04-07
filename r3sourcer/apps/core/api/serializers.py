@@ -1767,13 +1767,14 @@ class TrialSerializer(serializers.Serializer):
     phone_mobile = serializers.CharField()
     company_name = serializers.CharField(max_length=127)
     website = serializers.CharField()
+    country_code = serializers.CharField(required=True)
 
     def validate(self, data):
         email = data['email']
         company_name = data['company_name']
-        data['phone_mobile'] = normalize_phone_number(data.get('phone_mobile', ''))
+        data['phone_mobile'] = normalize_phone_number(data.get('phone_mobile', ''), data['country_code'])
 
-        if not data['phone_mobile'] or validate_phone_number(data['phone_mobile']) is False:
+        if not data['phone_mobile'] or validate_phone_number(data['phone_mobile'], data['country_code']) is False:
             raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})
 
         messages = {}

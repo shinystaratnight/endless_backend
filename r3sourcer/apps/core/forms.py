@@ -26,9 +26,10 @@ class CoreAdminAuthenticationForm(AdminAuthenticationForm):
     def clean(self):
         username = self.cleaned_data.get('username')
         password = self.cleaned_data.get('password')
+        country_code = self.cleaned_data.get('country_code')
 
         email_username = is_valid_email(username)
-        mobile_phone_username = is_valid_phone_number(username)
+        mobile_phone_username = is_valid_phone_number(username, country_code)
         if email_username is False and mobile_phone_username is False:
             raise forms.ValidationError(
                 self.error_messages['invalid_login'],

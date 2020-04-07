@@ -159,13 +159,8 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
         master_company = get_site_master_company(request=self.context['request'])
         if not master_company:
             raise ValidationError(_('Master company not found'))
-
-        country_code = master_company.default_phone_prefix
-        if not country_code:
-            raise ValidationError('Default phone prefix for company {} not set'.format(master_company))
-
-        kwargs = dict(country_code=country_code)
-        value = normalize_phone_number(value, kwargs)
+        country_code = master_company.get_hq_address().address.country.code2
+        value = normalize_phone_number(value, country_code)
         return value
 
     def get_average_score(self, obj):
