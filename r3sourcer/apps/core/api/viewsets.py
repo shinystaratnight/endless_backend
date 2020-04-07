@@ -194,6 +194,13 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def validate(self, request, *args, **kwargs):
         email = request.GET.get('email')
         phone = request.GET.get('phone', '').strip()
+        country_code = request.GET.get('country_code')
+
+        if not country_code:
+            raise exceptions.ValidationError({
+                'valid': False,
+                'message': _('Please specify country_code')
+            })
 
         if email is not None:
             try:
@@ -205,8 +212,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
                     'message': e.message
                 })
         elif phone is not None:
-            phone = normalize_phone_number(phone)
-            if not phone or validate_phone_number(phone) is False:
+            phone = normalize_phone_number(phone, country_code)
+            if not phone or validate_phone_number(phone, country_code) is False:
                 raise exceptions.ValidationError({
                     'valid': False,
                     'message': _('Enter a valid Phone Number')
@@ -231,14 +238,18 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def exists(self, request, *args, **kwargs):
         email = request.GET.get('email')
         phone = request.GET.get('phone', '').strip()
+        country_code = request.GET.get('country_code')
         message = ''
-        if email and models.Contact.objects.filter(email=email).exists():
+        if not country_code:
+            message = _('Country code is required field')
+        elif email and models.Contact.objects.filter(email=email).exists():
             message = _('User with this email already registered')
         elif phone:
-            _phone = normalize_phone_number(phone)
-            if validate_phone_number(_phone) is False:
+            _phone = normalize_phone_number(phone, country_code)
+            if validate_phone_number(_phone, country_code) is False:
                 message = _('Invalid phone number %s' % phone)
-            if validate_phone_number(_phone) is True and models.Contact.objects.filter(phone_mobile=_phone).exists():
+            if validate_phone_number(_phone, country_code) is True \
+                    and models.Contact.objects.filter(phone_mobile=_phone).exists():
                 message = _('User with this phone number already registered')
 
         if message:
