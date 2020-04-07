@@ -30,7 +30,10 @@ def get_host(request):
 
 def parse_phone_number(phone_number, country_code):
     try:
-        parsed_phone_number = parse(phone_number, country_code)
+        if country_code is None:
+            parsed_phone_number = parse(phone_number)
+        else:
+            parsed_phone_number = parse(phone_number, country_code)
     except NumberParseException:
         parsed_phone_number = PhoneNumber()
     return parsed_phone_number, country_code

@@ -196,12 +196,6 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         phone = request.GET.get('phone', '').strip()
         country_code = request.GET.get('country_code')
 
-        if not country_code:
-            raise exceptions.ValidationError({
-                'valid': False,
-                'message': _('Please specify country_code')
-            })
-
         if email is not None:
             try:
                 validate_email(email)
@@ -240,9 +234,8 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         phone = request.GET.get('phone', '').strip()
         country_code = request.GET.get('country_code')
         message = ''
-        if not country_code:
-            message = _('Country code is required field')
-        elif email and models.Contact.objects.filter(email=email).exists():
+
+        if email and models.Contact.objects.filter(email=email).exists():
             message = _('User with this email already registered')
         elif phone:
             _phone = normalize_phone_number(phone, country_code)
