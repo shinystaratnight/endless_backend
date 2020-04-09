@@ -90,7 +90,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                                  core_mixins.ApiContentTypeFieldMixin,
                                  core_serializers.ApiBaseModelSerializer):
 
-    emergency_contact_phone = serializers.CharField(allow_null=True)
+    emergency_contact_phone = serializers.CharField(allow_null=True, required=False)
 
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company', 'myob_name')
 
@@ -156,11 +156,12 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
         related = core_serializers.RELATED_DIRECT
 
     def validate_emergency_contact_phone(self, value):
-        master_company = get_site_master_company(request=self.context['request'])
-        if not master_company:
-            raise ValidationError(_('Master company not found'))
-        country_code = master_company.get_hq_address().address.country.code2
-        value = normalize_phone_number(value, country_code)
+        if value:
+            master_company = get_site_master_company(request=self.context['request'])
+            if not master_company:
+                raise ValidationError(_('Master company not found'))
+            country_code = master_company.get_hq_address().address.country.code2
+            value = normalize_phone_number(value, country_code)
         return value
 
     def get_average_score(self, obj):

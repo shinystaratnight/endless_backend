@@ -127,7 +127,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
 
         email_username = is_valid_email(serializer.data['username'])
         mobile_phone_username = is_valid_phone_number(serializer.data['username'],
-                                                      serializer.data['country_code'])
+                                                      serializer.data.get('country_code'))
         if email_username is True:
             contact_qs = Contact.objects.filter(email=serializer.data['username'])
         elif mobile_phone_username is True:

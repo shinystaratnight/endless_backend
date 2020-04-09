@@ -1772,9 +1772,10 @@ class TrialSerializer(serializers.Serializer):
     def validate(self, data):
         email = data['email']
         company_name = data['company_name']
-        data['phone_mobile'] = normalize_phone_number(data.get('phone_mobile', ''), data['country_code'])
+        data['phone_mobile'] = normalize_phone_number(data.get('phone_mobile', ''),
+                                                      data.get('country_code'))
 
-        if not data['phone_mobile'] or validate_phone_number(data['phone_mobile'], data['country_code']) is False:
+        if not data['phone_mobile'] or validate_phone_number(data['phone_mobile'], data.get('country_code')) is False:
             raise serializers.ValidationError({'phone_mobile': _('Invalid phone number')})
 
         messages = {}
