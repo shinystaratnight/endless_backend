@@ -1,11 +1,9 @@
-from django.conf import settings
-
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.core.models import Contact, Company
 from r3sourcer.apps.core.utils.text import pluralize
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
-from r3sourcer.apps.sms_interface import models as sms_models
+from r3sourcer.apps.sms_interface.models import SMSMessage
 
 
 class SMSMessageSerializer(ApiBaseModelSerializer):
@@ -13,7 +11,7 @@ class SMSMessageSerializer(ApiBaseModelSerializer):
     method_fields = ('delivered_received_datetime', 'related', 'from', 'to', 'can_resend')
 
     class Meta:
-        model = sms_models.SMSMessage
+        model = SMSMessage
         fields = '__all__'
         exclude_many = True
         extra_kwargs = {
@@ -21,10 +19,10 @@ class SMSMessageSerializer(ApiBaseModelSerializer):
         }
 
     def get_delivered_received_datetime(self, obj):
-        if obj.type == sms_models.SMSMessage.TYPE_CHOICES.SENT:
-            if obj.status == sms_models.SMSMessage.STATUS_CHOICES.DELIVERED:
+        if obj.type == SMSMessage.TYPE_CHOICES.SENT:
+            if obj.status == SMSMessage.STATUS_CHOICES.DELIVERED:
                 return obj.updated_at
-        if obj.type == sms_models.SMSMessage.TYPE_CHOICES.RECEIVED:
+        if obj.type == SMSMessage.TYPE_CHOICES.RECEIVED:
             return obj.updated_at
 
     def _related_item(self, related, related_ct):
@@ -87,7 +85,7 @@ class SMSLogSerializer(ApiBaseModelSerializer):
     method_fields = ('cost', )
 
     class Meta:
-        model = sms_models.SMSMessage
+        model = SMSMessage
         fields = ('sent_at', 'sid', 'type', 'from_number', 'to_number', 'segments', 'status')
         exclude_many = True
 

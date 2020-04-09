@@ -56,11 +56,8 @@ class CandidateContactViewset(BaseApiViewset):
         if not master_company:
             raise ValidationError(_('Master company not found'))
 
-        country_code = master_company.default_phone_prefix
-        if not country_code:
-            raise ValidationError('Default phone prefix for company {} not set'.format(master_company))
+        country_code = master_company.get_hq_address().address.country.code2
 
-        kwargs = dict(country_code=country_code)
         for field in contact._meta.fields:
             if not isinstance(field, PhoneNumberField):
                 continue
@@ -69,7 +66,7 @@ class CandidateContactViewset(BaseApiViewset):
             if not value:
                 continue
 
-            data[field.name] = normalize_phone_number(value, kwargs)
+            data[field.name] = normalize_phone_number(value, country_code)
         return data
 
     def update(self, request, *args, **kwargs):

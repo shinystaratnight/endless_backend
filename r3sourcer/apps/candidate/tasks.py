@@ -11,10 +11,11 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from r3sourcer.apps.billing import models as billing_models
+from r3sourcer.apps.billing.models import StripeCountryAccount
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.candidate import models as candidate_models
-from r3sourcer.apps.sms_interface.models import SMSTemplate
+from r3sourcer.apps.sms_interface.helpers import get_sms_template
 
 
 logger = get_task_logger(__name__)
@@ -51,8 +52,9 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
             logger.info('Sending phone verify SMS to %s.', candidate.contact)
 
             master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
-            sms_template = SMSTemplate.objects.get(company=master_company, slug=sms_tpl)
-
+            sms_template = get_sms_template(company_id=master_company.id,
+                                            candidate_contact_id=candidate.id,
+                                            slug=sms_tpl)
             sms_interface.send_tpl(to_number=candidate.contact.phone_mobile,
                                    tpl_id=sms_template.id,
                                    **data_dict)

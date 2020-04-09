@@ -5,8 +5,8 @@ from django.core.exceptions import ValidationError
 from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
 
-from r3sourcer.apps.core.models.core import UUIDModel, Company
-
+from r3sourcer.apps.core.models import Company
+from r3sourcer.helpers.models.abs import UUIDModel
 
 __all__ = [
     'Workflow',

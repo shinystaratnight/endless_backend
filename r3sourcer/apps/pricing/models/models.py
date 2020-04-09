@@ -9,7 +9,8 @@ from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import UUIDModel, Company, TimeZoneUUIDModel
+from r3sourcer.apps.core.models import Company
+from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models.rules import all_rules, AllowanceWorkRule
 

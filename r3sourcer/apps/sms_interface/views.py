@@ -2,7 +2,6 @@ from django.contrib.contenttypes.models import ContentType
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import generics
-from rest_framework import permissions
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -10,9 +9,10 @@ from .models import SMSTemplate
 from .mixins import MessageViewBase
 from .serializers import TemplateBodySerializer, ContentTypeSerializer, TemplateSerializer, \
     SMSMessageSerializer, SMSErrorSerializer
-from r3sourcer.apps.core.models.core import Company
+from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.serializers import ModelObjectSerializer
+
 
 class TemplateCompileView(MessageViewBase, APIView):
 

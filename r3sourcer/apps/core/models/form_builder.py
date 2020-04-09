@@ -17,7 +17,8 @@ from model_utils import Choices
 from model_utils.managers import InheritanceManager
 from polymorphic.models import PolymorphicModel
 
-from r3sourcer.apps.core.models import UUIDModel, Country
+from r3sourcer.apps.core.models import Country
+from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.core.utils.address import parse_google_address
 from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
 from r3sourcer.apps.core.utils.form_builder import StorageHelper

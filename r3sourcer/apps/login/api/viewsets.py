@@ -126,7 +126,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         serializer.is_valid(raise_exception=True)
 
         email_username = is_valid_email(serializer.data['username'])
-        mobile_phone_username = is_valid_phone_number(serializer.data['username'])
+        mobile_phone_username = is_valid_phone_number(serializer.data['username'],
+                                                      serializer.data.get('country_code'))
         if email_username is True:
             contact_qs = Contact.objects.filter(email=serializer.data['username'])
         elif mobile_phone_username is True:
@@ -160,7 +161,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             })
 
         user = authenticate(username=serializer.data['username'],
-                            password=serializer.data.get('password'))
+                            password=serializer.data.get('password'),
+                            country_code=serializer.data.get('country_code'))
         if user is None:
             if contact is not None:
                 if email_username:
@@ -272,6 +274,15 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         ]
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
         time_zone = request.user.company.get_timezone()
+
+        country_code = None
+        country_phone_prefix = None
+        company_hq = request.user.company.get_hq_address()
+        if company_hq is not None:
+            country = company_hq.address.country
+            country_code = country.code2
+            country_phone_prefix = country.phone
+
         return Response({
             'status': 'success',
             'data': {
@@ -281,7 +292,9 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                 'end_trial_date': request.user.get_end_of_trial(),
                 'is_primary': request.user.company.primary_contact == request.user.contact.get_company_contact_by_company(
                     request.user.company),
-                'roles': roles
+                'roles': roles,
+                'country_code': country_code,
+                'country_phone_prefix': country_phone_prefix,
             }
         }, status=status.HTTP_200_OK)
 

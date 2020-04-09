@@ -33,13 +33,14 @@ from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
 from r3sourcer.celeryapp import app
 from r3sourcer.helpers.datetimes import utc_now, tz2utc
+from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
 
 class Jobsite(CategoryFolderMixin,
               MYOBMixin,
-              core_models.TimeZoneUUIDModel,
+              TimeZoneUUIDModel,
               WorkflowProcess):
 
     industry = models.ForeignKey(
@@ -241,7 +242,7 @@ class Jobsite(CategoryFolderMixin,
         return time_zone
 
 
-class JobsiteUnavailability(core_models.UUIDModel):
+class JobsiteUnavailability(UUIDModel):
 
     jobsite = models.ForeignKey(
         Jobsite,
@@ -581,7 +582,7 @@ class Job(core_models.AbstractBaseOrder):
         return None
 
 
-class ShiftDate(core_models.TimeZoneUUIDModel):
+class ShiftDate(TimeZoneUUIDModel):
 
     job = models.ForeignKey(
         'hr.Job',
@@ -648,7 +649,7 @@ class ShiftQuerySet(AbstractObjectOwnerQuerySet):
                                  output_field=models.IntegerField()))
 
 
-class Shift(core_models.TimeZoneUUIDModel):
+class Shift(TimeZoneUUIDModel):
     time = models.TimeField(verbose_name=_("Time"))
 
     date = models.ForeignKey(
@@ -706,7 +707,7 @@ class Shift(core_models.TimeZoneUUIDModel):
         return result
 
 
-class JobOffer(core_models.TimeZoneUUIDModel):
+class JobOffer(TimeZoneUUIDModel):
     STATUS_CHOICES = Choices(
         (0, 'undefined', _("Undefined")),
         (1, 'accepted', _("Accepted")),
@@ -1058,7 +1059,7 @@ class JobOffer(core_models.TimeZoneUUIDModel):
                 task.apply_async(args=[self.id], eta=utc_eta)
 
 
-class JobOfferSMS(core_models.UUIDModel):
+class JobOfferSMS(UUIDModel):
 
     job_offer = models.ForeignKey(
         JobOffer,
@@ -1090,7 +1091,7 @@ class JobOfferSMS(core_models.UUIDModel):
         verbose_name_plural = _("Job Offer SMSes")
 
 
-class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
+class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     sent_sms_field = 'going_to_work_sent_sms'
     receive_sms_field = 'going_to_work_reply_sms'
 
@@ -1586,7 +1587,7 @@ class TimeSheet(core_models.TimeZoneUUIDModel, WorkflowProcess):
 
 
 class TimeSheetIssue(
-        core_models.UUIDModel,
+        UUIDModel,
         WorkflowProcess):
 
     time_sheet = models.ForeignKey(
@@ -1637,7 +1638,7 @@ class TimeSheetIssue(
         return self.time_sheet.get_closest_company()
 
 
-class BlackList(core_models.UUIDModel):
+class BlackList(UUIDModel):
 
     company = models.ForeignKey(
         core_models.Company,
@@ -1728,7 +1729,7 @@ class BlackList(core_models.UUIDModel):
             ]
 
 
-class FavouriteList(core_models.UUIDModel):
+class FavouriteList(UUIDModel):
 
     company_contact = models.ForeignKey(
         core_models.CompanyContact,
@@ -1822,7 +1823,7 @@ class FavouriteList(core_models.UUIDModel):
             ]
 
 
-class CarrierList(core_models.UUIDModel):
+class CarrierList(UUIDModel):
 
     candidate_contact = models.ForeignKey(
         'candidate.CandidateContact',
@@ -1905,7 +1906,7 @@ class CarrierList(core_models.UUIDModel):
         self.save(update_fields=['confirmed_available'])
 
 
-class CandidateEvaluation(core_models.UUIDModel):
+class CandidateEvaluation(UUIDModel):
 
     candidate_contact = models.ForeignKey(
         CandidateContact,
@@ -1979,7 +1980,7 @@ class CandidateEvaluation(core_models.UUIDModel):
     single_evaluation_average.short_description = _("Jobsite Feedback")
 
 
-class ContactJobsiteDistanceCache(core_models.UUIDModel):
+class ContactJobsiteDistanceCache(UUIDModel):
     contact = models.ForeignKey(
         'core.Contact',
         on_delete=models.CASCADE,
@@ -2002,7 +2003,7 @@ class ContactJobsiteDistanceCache(core_models.UUIDModel):
         unique_together = ("contact", "jobsite")
 
 
-class Payslip(core_models.UUIDModel):
+class Payslip(UUIDModel):
 
     payment_date = models.DateField(
         verbose_name=_("Payment Date"),
@@ -2103,7 +2104,7 @@ class Payslip(core_models.UUIDModel):
         return sum_pay
 
 
-class PayslipRule(core_models.AbstractPayRuleMixin, core_models.UUIDModel):
+class PayslipRule(core_models.AbstractPayRuleMixin, UUIDModel):
 
     company = models.ForeignKey(
         core_models.Company,
@@ -2117,7 +2118,7 @@ class PayslipRule(core_models.AbstractPayRuleMixin, core_models.UUIDModel):
         verbose_name_plural = _("Payslip Rules")
 
 
-class PayslipLine(core_models.UUIDModel):
+class PayslipLine(UUIDModel):
 
     description = models.CharField(
         max_length=255,
@@ -2177,7 +2178,7 @@ class PayslipLine(core_models.UUIDModel):
         return self.TYPE_CHOICES[self.type]
 
 
-class PersonalIncomeTax(core_models.UUIDModel):
+class PersonalIncomeTax(UUIDModel):
 
     country = models.ForeignKey(
         core_models.Country,
@@ -2224,7 +2225,7 @@ class PersonalIncomeTax(core_models.UUIDModel):
         verbose_name_plural = _("Personal Income Taxes")
 
 
-class SocialInsurance(core_models.UUIDModel):
+class SocialInsurance(UUIDModel):
 
     country = models.ForeignKey(
         core_models.Country,
@@ -2273,7 +2274,7 @@ class SocialInsurance(core_models.UUIDModel):
         verbose_name_plural = _("Social Insurances")
 
 
-class CandidateScore(core_models.UUIDModel):
+class CandidateScore(UUIDModel):
 
     candidate_contact = models.OneToOneField(
         CandidateContact,
@@ -2476,7 +2477,7 @@ class CandidateScore(core_models.UUIDModel):
         return self.average_score
 
 
-class JobTag(core_models.UUIDModel):
+class JobTag(UUIDModel):
     tag = models.ForeignKey(
         core_models.Tag,
         related_name="job_tags",

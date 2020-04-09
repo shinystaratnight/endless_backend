@@ -26,6 +26,8 @@ class LoginSerializer(serializers.Serializer):
         default=False,
         label=_('Remember me')
     )
+    country_code = serializers.CharField(label=_('Country code'),
+                                         required=False)
 
     class Meta:
         model = models.TokenLogin
@@ -35,7 +37,7 @@ class LoginSerializer(serializers.Serializer):
         username = data['username']
 
         email_username = is_valid_email(username)
-        mobile_phone_username = is_valid_phone_number(username)
+        mobile_phone_username = is_valid_phone_number(username, data.get('country_code'))
         if email_username is False and mobile_phone_username is False:
             raise serializers.ValidationError(
                 _(

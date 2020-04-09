@@ -2,8 +2,7 @@ from django.contrib.postgres.fields import JSONField
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
-from .core import UUIDModel
-
+from r3sourcer.helpers.models.abs import UUIDModel
 
 __all__ = [
     'DashboardModule',

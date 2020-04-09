@@ -43,7 +43,7 @@ class OAuth2JWTTokenMixin():
         if username:
             if is_valid_email(username) is True:
                 contact_qs = Contact.objects.filter(email=username)
-            elif is_valid_phone_number(username) is True:
+            elif is_valid_phone_number(username, country_code=None) is True:
                 contact_qs = Contact.objects.filter(phone_mobile=username)
             else:
                 raise ValueError('Invalid username')

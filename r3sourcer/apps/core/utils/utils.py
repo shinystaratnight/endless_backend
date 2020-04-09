@@ -28,47 +28,33 @@ def get_host(request):
     return host_parts.netloc or host_parts.path
 
 
-def parse_phone_number(phone_number, kwargs=None):
-    if kwargs is None:
-        kwargs = {}
+def parse_phone_number(phone_number, country_code):
     try:
-        parsed_phone_number = parse(phone_number)
+        if country_code is None:
+            parsed_phone_number = parse(phone_number)
+        else:
+            parsed_phone_number = parse(phone_number, country_code)
     except NumberParseException:
         parsed_phone_number = PhoneNumber()
-    return parsed_phone_number, kwargs
+    return parsed_phone_number, country_code
 
 
-def process_phone_number_leading_zero(phone_number, kwargs=None):
-    if kwargs is None:
-        kwargs = {}
-
-    if phone_number.startswith('0'):
-        country_code = kwargs.get('country_code', settings.DEFAULT_PHONE_NUMBER_COUNTRY_CODE)
-        return '+{}{}'.format(country_code, phone_number[1:]), kwargs
-    return phone_number, kwargs
-
-
-def process_phone_number_leading_plus(phone_number, kwargs=None):
-    if kwargs is None:
-        kwargs = {}
+def process_phone_number_leading_plus(phone_number, country_code):
     if not phone_number.startswith('+'):
-        return '+{}'.format(phone_number), kwargs
-    return phone_number, kwargs
+        return '+{}'.format(phone_number), country_code
+    return phone_number, country_code
 
 
 PHONE_NUMBER_VALIDATION_CHAIN = (
-    process_phone_number_leading_zero,
     process_phone_number_leading_plus,
     parse_phone_number,
 )
 
 
-def normalize_phone_number(phone_number, kwargs=None):
-    if kwargs is None:
-        kwargs = {}
+def normalize_phone_number(phone_number, country_code):
     __phone_number, _ = reduce(lambda r, f: f(*r),
                                PHONE_NUMBER_VALIDATION_CHAIN,
-                               (phone_number, kwargs))
+                               (phone_number, country_code))
 
     if is_valid_number(__phone_number) is False:
         return phone_number
@@ -76,12 +62,12 @@ def normalize_phone_number(phone_number, kwargs=None):
     return format_number(__phone_number, PhoneNumberFormat.E164)
 
 
-def validate_phone_number(phone_number):
-    parsed_number, _ = parse_phone_number(phone_number)
+def validate_phone_number(phone_number, country_code):
+    parsed_number, _ = parse_phone_number(phone_number, country_code)
     return is_valid_number(parsed_number)
 
 
-def is_valid_email(email):
+def is_valid_email(email, *args):
     try:
         validate_email(email)
     except ValidationError:
@@ -89,8 +75,6 @@ def is_valid_email(email):
     return True
 
 
-def is_valid_phone_number(phone_number, kwargs=None):
-    if kwargs is None:
-        kwargs = {}
-    phone = normalize_phone_number(phone_number, kwargs)
-    return validate_phone_number(phone)
+def is_valid_phone_number(phone_number, country_code):
+    phone = normalize_phone_number(phone_number, country_code)
+    return validate_phone_number(phone, country_code)

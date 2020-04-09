@@ -2,7 +2,7 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from django.db import models
 
-from r3sourcer.apps.core.models import UUIDModel
+from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.myob.models import MYOBCompanyFile
 
 
