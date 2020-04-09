@@ -274,7 +274,15 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         ]
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
         time_zone = request.user.company.get_timezone()
-        country = request.user.company.get_hq_address().address.country
+
+        country_code = None
+        country_phone_prefix = None
+        company_hq = request.user.company.get_hq_address()
+        if company_hq is not None:
+            country = company_hq.address.country
+            country_code = country.code2
+            country_phone_prefix = country.phone
+
         return Response({
             'status': 'success',
             'data': {
@@ -285,8 +293,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                 'is_primary': request.user.company.primary_contact == request.user.contact.get_company_contact_by_company(
                     request.user.company),
                 'roles': roles,
-                'country_code': country.code2,
-                'country_phone_prefix': country.phone,
+                'country_code': country_code,
+                'country_phone_prefix': country_phone_prefix,
             }
         }, status=status.HTTP_200_OK)
 
