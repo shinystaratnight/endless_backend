@@ -274,6 +274,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         ]
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
         time_zone = request.user.company.get_timezone()
+        country = request.user.company.get_hq_address().address.country
         return Response({
             'status': 'success',
             'data': {
@@ -283,7 +284,9 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                 'end_trial_date': request.user.get_end_of_trial(),
                 'is_primary': request.user.company.primary_contact == request.user.contact.get_company_contact_by_company(
                     request.user.company),
-                'roles': roles
+                'roles': roles,
+                'country_code': country.code2,
+                'country_phone_prefix': country.phone,
             }
         }, status=status.HTTP_200_OK)
 

@@ -873,7 +873,7 @@ class BankAccount(UUIDModel):
     account_number = models.CharField(max_length=10, verbose_name=_("Account Number"))
 
     contact = models.ForeignKey(
-        Contact,
+        'core.Contact',
         related_name="bank_accounts",
         on_delete=models.PROTECT,
         verbose_name="Contact"
