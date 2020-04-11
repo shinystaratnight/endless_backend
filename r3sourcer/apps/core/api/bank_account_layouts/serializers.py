@@ -1,8 +1,4 @@
-from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from rest_framework import serializers
-
-from r3sourcer.apps.core.api.languages.serializers import LanguageSerializer
-from r3sourcer.apps.core.models import Company, Language, BankAccountLayout
 
 
 class BankAccountFieldLanguage(serializers.Serializer):
