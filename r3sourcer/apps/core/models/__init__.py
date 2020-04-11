@@ -14,3 +14,5 @@ from .bank_account_field_languages import *
 from .bank_account_layout import *
 from .bank_account_layout_fields import *
 from .bank_account_layout_country import *
+from .contact_bank_accounts import *
+from .contact_bank_account_fields import *
