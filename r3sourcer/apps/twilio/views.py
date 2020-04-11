@@ -56,8 +56,8 @@ class SMSDialogTemplateView(MessageView, FormView):
                         to_number=recipient.phone_mobile,
                         text=form.cleaned_data['body'],
                         from_number=sender_contact.phone_number,
+                        related_obj=recipient,
                         sender_contact=self.user.contact,
-                        related_object=recipient,
                         **params
                 )
             except Exception as e:
