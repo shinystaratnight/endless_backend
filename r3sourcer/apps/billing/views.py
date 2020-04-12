@@ -18,6 +18,7 @@ from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSe
     CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
 from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
+from r3sourcer.apps.core.api.serializers import VATSerializer
 from r3sourcer.apps.core.models import Company, Contact, VAT
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.celeryapp import app
@@ -304,10 +305,14 @@ class TwilioAutoChargeView(APIView):
 
 class SubscriptionTypeView(APIView):
     def get(self, *args, **kwargs):
+        country_code = self.request.user.company.get_hq_address().address.country.code2
+        vats = VAT.objects.filter(country_id=country_code)
+        vat_serializer = VATSerializer(vats, many=True)
         subscription_types = SubscriptionType.objects.all()
         serializer = SubscriptionTypeSerializer(subscription_types, many=True)
         data = {
-            "subscription_types": serializer.data
+            "subscription_types": serializer.data,
+            "vats": vat_serializer.data,
             }
         return Response(data, status=status.HTTP_200_OK)
 
