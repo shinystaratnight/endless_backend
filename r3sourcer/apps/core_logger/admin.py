@@ -15,7 +15,6 @@ DEFAULT_MODELS_LIST = [
     models.WorkflowObject,
     models.CompanyLocalization,
     models.Note,
-    models.VAT,
 ]
 
 BASE_MODELS_LIST = [models.CompanyAddress,

@@ -341,6 +341,13 @@ class CompanyRelAdmin(SuperuserAdmin):
     )
 
 
+class VATAdmin(admin.ModelAdmin):
+    list_display = (
+        'country',
+        'name',
+    )
+
+
 class InvoiceLineAdmin(SuperuserAdmin):
     list_display = (
         'date',
@@ -388,7 +395,7 @@ admin.site.register(models.Tag, TagAdmin)
 admin.site.register(models.Note)
 admin.site.register(models.Order)
 admin.site.register(models.SiteCompany, BaseAdmin)
-admin.site.register(models.VAT)
+admin.site.register(models.VAT, VATAdmin)
 admin.site.register(models.InvoiceRule, InvoiceRuleAdmin)
 admin.site.register(models.ExtranetNavigation, ExtranetNavigationAdmin)
 admin.site.register(models.Workflow)

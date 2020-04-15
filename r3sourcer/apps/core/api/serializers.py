@@ -1920,3 +1920,11 @@ class InvoiceLineSerializer(UUIDApiSerializerMixin, ApiBaseModelSerializer):
                 'job_offer': ('id', 'candidate_contact'),
             })
         })
+
+
+class VATSerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.VAT
+        fields = (
+            '__all__',
+        )

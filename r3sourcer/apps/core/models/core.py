@@ -1902,7 +1902,10 @@ class Tag(MPTTModel, UUIDModel):
 
 
 class VAT(UUIDModel):
-    country = models.ForeignKey(Country, to_field='code2', default='AU')
+    country = models.ForeignKey(
+        'core.Country',
+        to_field='code2',
+        default='AU')
     name = models.CharField(
         max_length=64,
         verbose_name=_("Name"),
@@ -2192,7 +2195,7 @@ class AbstractOrderLine(TimeZoneUUIDModel):
     )
 
     vat = models.ForeignKey(
-        VAT,
+        'core.VAT',
         on_delete=models.PROTECT,
         verbose_name=_("VAT"),
     )
