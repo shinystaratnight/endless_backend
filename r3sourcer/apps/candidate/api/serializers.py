@@ -91,6 +91,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                                  core_serializers.ApiBaseModelSerializer):
 
     emergency_contact_phone = serializers.CharField(allow_null=True, required=False)
+    # birthday = serializers.DateField(required=True)
 
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company', 'myob_name')
 
@@ -105,9 +106,6 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
             raise exceptions.ValidationError(
                 _('Candidate Contact with this Contact already exists.')
             )
-
-        if not contact.birthday:
-            raise exceptions.ValidationError({'contact': _('Contact should have birthday.')})
 
         request = self.context.get('request')
         access_levels = (core_models.constants.MANAGER, core_models.constants.CLIENT)
