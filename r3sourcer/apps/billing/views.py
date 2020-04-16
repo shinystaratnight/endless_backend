@@ -18,6 +18,7 @@ from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSe
     CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
 from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
 from r3sourcer.apps.billing import STRIPE_INTERVALS
+from r3sourcer.apps.core.api.serializers import VATSerializer
 from r3sourcer.apps.core.models import Company, Contact, VAT
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.celeryapp import app
@@ -31,25 +32,34 @@ class SubscriptionCreateView(APIView):
         company = self.request.user.company
 
         if not company.stripe_customer:
-            data = {'error': 'User didnt provide payment information.'}
+            data = {'error': 'User did not provide payment information.'}
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
-        # for country taxes
-        tax_percent = 10.0
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
-            stripe.api_key = stripe_account.stripe_secret_key
-            vat_object = VAT.objects.filter(country=country_code)
-            if vat_object:
-                tax_percent = vat_object.first().stripe_rate
+        company_address = company.get_hq_address()
+        if not company_address:
+            data = {'error': 'Bad company address'}
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
-        plan_type = self.request.data.get('type', None)
+        country_code = company_address.address.country.code2
+        try:
+            stripe_account = StripeCountryAccount.objects.get(country=country_code)
+        except StripeCountryAccount.DoesNotExist:
+            data = {'error': 'Payment system did not configure '
+                             'for country {country_code}'.format(country_code=country_code)}
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+
+        vat_object = VAT.objects.filter(country=country_code)
+        if not vat_object:
+            data = {'error': 'Tax rate did not configure '
+                             'for country {country_code}'.format(country_code=country_code)}
+            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+        tax_percent = vat_object.first().stripe_rate
+
+        stripe.api_key = stripe_account.stripe_secret_key
+
+        plan_type = self.request.data['type']
         sub_type = SubscriptionType.objects.get(type=plan_type)
-        worker_count = self.request.data.get('worker_count', None)
+        worker_count = self.request.data['worker_count']
         plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
         product = stripe.Product.create(name=plan_name, type='service')
         plan = stripe.Plan.create(
@@ -57,12 +67,12 @@ class SubscriptionCreateView(APIView):
             nickname=plan_name,
             interval=STRIPE_INTERVALS[plan_type],
             currency=company.currency,
-            amount=round((int(self.request.data.get('price', None)) * 100) / 1.1),
+            amount=round((int(self.request.data['price']) * 100) / 1.1),
         )
 
         subscription = stripe.Subscription.create(
             customer=company.stripe_customer,
-            items=[{"plan": plan.id},],
+            items=[{"plan": plan.id}],
             tax_percent=tax_percent,
         )
         current_period_start = None
@@ -91,7 +101,7 @@ class SubscriptionCreateView(APIView):
                 Payment.objects.create(
                     company=company,
                     type=Payment.PAYMENT_TYPES.subscription,
-                    amount=(int(self.request.data.get('price', None))),
+                    amount=int(self.request.data['price']),
                     stripe_id=invoice['id'],
                     invoice_url=invoice['invoice_pdf'],
                     status=invoice['status']
@@ -304,10 +314,14 @@ class TwilioAutoChargeView(APIView):
 
 class SubscriptionTypeView(APIView):
     def get(self, *args, **kwargs):
+        country_code = self.request.user.company.get_hq_address().address.country.code2
+        vats = VAT.objects.filter(country_id=country_code)
+        vat_serializer = VATSerializer(vats, many=True)
         subscription_types = SubscriptionType.objects.all()
         serializer = SubscriptionTypeSerializer(subscription_types, many=True)
         data = {
-            "subscription_types": serializer.data
+            "subscription_types": serializer.data,
+            "vats": vat_serializer.data,
             }
         return Response(data, status=status.HTTP_200_OK)
 
