@@ -1304,7 +1304,8 @@ class Company(CategoryFolderMixin,
 
             # add default company language
             company_language = CompanyLanguage(company_id=self.id,
-                                               language_id=settings.DEFAULT_LANGUAGE)
+                                               language_id=settings.DEFAULT_LANGUAGE,
+                                               default=True)
             company_language.save()
 
             # process template create

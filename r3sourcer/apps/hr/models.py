@@ -1650,7 +1650,7 @@ class BlackList(UUIDModel):
     )
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         on_delete=models.CASCADE,
         related_name="blacklists",
         verbose_name=_("Candidate Contact")
@@ -1739,7 +1739,7 @@ class FavouriteList(UUIDModel):
     )
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         related_name="favouritelists",
         verbose_name=_("Candidate Contact"),
         on_delete=models.CASCADE,
@@ -1909,7 +1909,7 @@ class CarrierList(UUIDModel):
 class CandidateEvaluation(UUIDModel):
 
     candidate_contact = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         on_delete=models.CASCADE,
         related_name="candidate_evaluations",
         verbose_name=_("Candidate Contact")
@@ -2045,7 +2045,7 @@ class Payslip(UUIDModel):
     )
 
     candidate = models.ForeignKey(
-        CandidateContact,
+        'candidate.CandidateContact',
         verbose_name=_("Candidate contact"),
         related_name="payslips"
     )
@@ -2277,7 +2277,7 @@ class SocialInsurance(UUIDModel):
 class CandidateScore(UUIDModel):
 
     candidate_contact = models.OneToOneField(
-        CandidateContact,
+        'candidate.CandidateContact',
         on_delete=models.CASCADE,
         related_name="candidate_scores",
         verbose_name=_("Candidate Scores"),
