@@ -6,6 +6,8 @@ from rest_framework_swagger.views import get_swagger_view
 
 from r3sourcer.apps.candidate.api.candidate_contact_languages.urls import router as candidate_contact_language_router
 from r3sourcer.apps.core.api.company_languages.urls import router as company_language_router
+from r3sourcer.apps.core.api.bank_account_layouts.urls import router as bank_account_layout_router
+from r3sourcer.apps.core.api.contact_bank_accounts.urls import router as contact_bank_account_router
 from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.viewsets import AppsList, ModelsList, FunctionsList
 from r3sourcer.apps.core.views import FormView, RegisterFormView, OAuthJWTToken
@@ -51,6 +53,8 @@ _urlpatterns = [
     # new api endpoints - refactor this in future
     url(r'^', include(candidate_contact_language_router.urls)),
     url(r'^', include(company_language_router.urls)),
+    url(r'^', include(bank_account_layout_router.urls)),
+    url(r'^', include(contact_bank_account_router.urls)),
 ]
 
 urlpatterns = [

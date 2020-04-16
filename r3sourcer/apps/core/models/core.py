@@ -874,7 +874,7 @@ class BankAccount(UUIDModel):
 
     contact = models.ForeignKey(
         'core.Contact',
-        related_name="bank_accounts",
+        related_name="bank_accounts_old",
         on_delete=models.PROTECT,
         verbose_name="Contact"
     )

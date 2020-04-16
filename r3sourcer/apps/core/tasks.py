@@ -7,6 +7,7 @@ from celery.utils.log import get_task_logger
 
 from django.conf import settings
 from django.core.cache import cache
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from vine.five import monotonic
 
@@ -229,10 +230,13 @@ def send_contact_verify_sms(self, contact_id, manager_id):
                 related_obj=contact,
                 master_company=master_company
             )
+            try:
+                candidate_contact_id = contact.candidate_contacts.id
+            except ObjectDoesNotExist:
+                candidate_contact_id = None
             sms_template = get_sms_template(company_id=master_company.id,
-                                            candidate_contact_id=contact.candidate_contacts.id,
+                                            candidate_contact_id=candidate_contact_id,
                                             slug=sms_tpl)
-
             logger.info('Sending phone verify SMS to %s.', contact)
 
             sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_id=sms_template.id, **data_dict)
