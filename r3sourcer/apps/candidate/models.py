@@ -498,15 +498,26 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         super().save(*args, **kwargs)
 
         if just_added:
-
             self.contact.user.role.add(core_models.Role.objects.create(name=core_models.Role.ROLE_NAMES.candidate))
-
             if not hasattr(self, 'candidate_scores'):
                 from r3sourcer.apps.hr.models import CandidateScore
                 obj = CandidateScore.objects.create(candidate_contact=self)
                 obj.recalc_scores()
 
             self.create_state(10)
+
+            # add master company language as candidate default language
+            candidate_default_language = self.languages.filter(default=True).first()
+            if not candidate_default_language:
+                master_company = self.get_closest_company()
+                default_language = master_company.languages.filter(default=True).first()
+                if default_language:
+                    candidate_language = CandidateContactLanguage(
+                        candidate_contact=self,
+                        language_id=default_language.language_id,
+                        default=True,
+                    )
+                    candidate_language.save()
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         related_objs = reply_sms.get_related_objects()
