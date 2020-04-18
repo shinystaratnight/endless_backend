@@ -73,11 +73,13 @@ class BaseEmailService(metaclass=ABCMeta):
                 email_message.save()
 
     @transaction.atomic
-    def send_tpl(self, recipients, master_company_id=None, from_email=None, tpl_name=None,  **kwargs):
+    def send_tpl(self, recipients, master_company, from_email=None, tpl_name=None,  **kwargs):
+        language = master_company.languages.get(default=True)
         try:
             template = email_models.EmailTemplate.objects.get(
                 Q(name=tpl_name) | Q(slug=tpl_name),
-                company_id=master_company_id
+                company_id=master_company.id,
+                language_id=language.language_id
             )
             compiled = template.compile(**kwargs)
             subject = compiled['subject']

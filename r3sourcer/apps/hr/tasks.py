@@ -418,7 +418,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 if not email_tpl:
                     return
 
-                email_interface.send_tpl(recipient.contact.email, master_company.id, tpl_name=email_tpl, **data_dict)
+                email_interface.send_tpl(recipient.contact.email, master_company, tpl_name=email_tpl, **data_dict)
 
 
 @app.task(bind=True, queue='sms')
@@ -491,7 +491,7 @@ def send_supervisor_timesheet_message(
                 logger.exception('Cannot load SMS service')
                 return
 
-            email_interface.send_tpl(supervisor.contact.email, master_company.id, tpl_name=email_tpl, **data_dict)
+            email_interface.send_tpl(supervisor.contact.email, master_company, tpl_name=email_tpl, **data_dict)
 
 
 @app.task(bind=True, queue='sms')
@@ -1045,7 +1045,7 @@ def send_invoice_email(invoice_id):
         'master_company_contact': str(invoice.provider_representative),
         'client': client_company.name,
     }
-    email_interface.send_tpl(client_company.billing_email, master_company.id, tpl_name='client-invoice', **context)
+    email_interface.send_tpl(client_company.billing_email, master_company, tpl_name='client-invoice', **context)
 
 
 @shared_task
