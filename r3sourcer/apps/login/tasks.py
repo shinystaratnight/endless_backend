@@ -73,8 +73,7 @@ def send_login_email(self, contact_id):
 
     contact = get_contact(contact_id)
     if contact is not None:
-        master_company = get_site_master_company(user=contact.user)
-        send_login_token(contact, email_interface.send_tpl, master_company.id, email_tpl, type_=TokenLogin.TYPES.email)
+        send_login_token(contact, email_interface.send_tpl, email_tpl, type_=TokenLogin.TYPES.email)
 
 
 def send_login_message(username, contact):

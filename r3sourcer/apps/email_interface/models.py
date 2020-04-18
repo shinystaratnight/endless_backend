@@ -4,9 +4,7 @@ from filer.models import File
 
 from model_utils import Choices
 
-from r3sourcer.helpers.models.abs import TemplateMessage, UUIDModel
-from r3sourcer.apps.core import models as core_models
-
+from r3sourcer.helpers.models.abs import TemplateMessage, UUIDModel, DefaultTemplateABS
 
 TEXT_CONTENT_TYPE = 'text/plain'
 HTML_CONTENT_TYPE = 'text/html'
@@ -26,6 +24,7 @@ class EmailTemplate(TemplateMessage):
     type = models.CharField(
         max_length=8,
         choices=TYPE_CHOICES,
+        default=EMAIL,
         verbose_name=_("Type")
     )
 
@@ -37,6 +36,12 @@ class EmailTemplate(TemplateMessage):
         null=True,
         blank=True,
     )
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Template language"),
+        on_delete=models.CASCADE,
+        related_name='email_templates',
+    )
 
     class Meta:
         verbose_name = _("E-mail Template")
@@ -46,20 +51,17 @@ class EmailTemplate(TemplateMessage):
             'company',
             'name',
             'slug',
+            'language',
         ]
 
 
-class DefaultEmailTemplate(models.Model):
-    name = models.CharField(
-        max_length=256,
-        default="",
-        verbose_name=_("Name"),
-        db_index=True
-    )
-    slug = models.SlugField()
-    message_text_template = models.TextField(
-        default="",
-        verbose_name=_("Text template"),
+class DefaultEmailTemplate(DefaultTemplateABS):
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Language"),
+        on_delete=models.PROTECT,
+        related_name='default_email_templates',
+        db_index=True,
     )
 
     subject_template = models.CharField(
@@ -75,22 +77,32 @@ class DefaultEmailTemplate(models.Model):
         blank=True
     )
 
-    reply_timeout = models.IntegerField(
-        default=10,
-        verbose_name=_("Reply timeout"),
-        help_text=_("Minutes")
-    )
-
-    delivery_timeout = models.IntegerField(
-        default=10,
-        verbose_name=_("Delivery timeout"),
-        help_text=_("Minutes")
-    )
-
     class Meta:
         verbose_name = _("Default Email Template")
         verbose_name_plural = _("Default Email Templates")
+        unique_together = (('slug', 'language'),)
         ordering = ['name']
+
+    def save(self, *args, **kwargs):
+        from r3sourcer.apps.core.models import Company
+        super().save(*args, **kwargs)
+        templates = []
+        for company in Company.objects.filter(
+                type=Company.COMPANY_TYPES.master,
+                languages__language=self.language
+        ).exclude(
+            sms_templates__slug=self.slug,
+        ).all():
+            obj = EmailTemplate(
+                name=self.name,
+                slug=self.slug,
+                message_html_template=self.message_html_template,
+                reply_timeout=self.reply_timeout,
+                delivery_timeout=self.delivery_timeout,
+                language_id=self.language.alpha_2,
+                company_id=company.id)
+            templates.append(obj)
+        EmailTemplate.objects.bulk_create(templates)
 
 
 class EmailMessage(UUIDModel, models.Model):
