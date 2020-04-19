@@ -101,10 +101,10 @@ def charge_for_sms(company_id, amount, sms_balance_id):
     for discount in company.get_active_discounts('sms'):
         amount = discount.apply_discount(amount)
 
-    tax_value = round(int(amount * tax_percent))
+    tax_value = tax_percent / 100 + 1
     stripe.InvoiceItem.create(api_key=stripe_account.stripe_secret_key,
                               customer=company.stripe_customer,
-                              amount=round(int(amount * 100) - tax_value),
+                              amount=round(int(amount * 100 / tax_value)),
                               currency=company.currency,
                               description='Topping up sms balance')
     invoice = stripe.Invoice.create(api_key=stripe_account.stripe_secret_key,
