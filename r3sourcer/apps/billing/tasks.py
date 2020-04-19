@@ -95,7 +95,7 @@ def charge_for_sms(company_id, amount, sms_balance_id):
 
     stripe.InvoiceItem.create(api_key=stripe_account.stripe_secret_key,
                               customer=company.stripe_customer,
-                              amount=round((amount * 100) / 1.1),
+                              amount=round(int(amount * 100)),
                               currency=company.currency,
                               description='Topping up sms balance')
     invoice = stripe.Invoice.create(api_key=stripe_account.stripe_secret_key,
