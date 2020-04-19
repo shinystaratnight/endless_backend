@@ -67,7 +67,7 @@ class SubscriptionCreateView(APIView):
             nickname=plan_name,
             interval=STRIPE_INTERVALS[plan_type],
             currency=company.currency,
-            amount=round((int(self.request.data['price']) * 100) / 1.1),
+            amount=round((int(self.request.data['price']) * 100)),
         )
 
         subscription = stripe.Subscription.create(
