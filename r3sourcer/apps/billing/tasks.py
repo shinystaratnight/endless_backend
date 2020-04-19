@@ -100,7 +100,6 @@ def charge_for_sms(company_id, amount, sms_balance_id):
                               description='Topping up sms balance')
     invoice = stripe.Invoice.create(api_key=stripe_account.stripe_secret_key,
                                     customer=company.stripe_customer,
-                                    billing_reason="charge_automatically",
                                     tax_percent=tax_percent,
                                     description='Topping up sms balance')
     invoice.pay()
