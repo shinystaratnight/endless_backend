@@ -66,7 +66,7 @@ class CompanyLanguage(models.Model):
                 obj = EmailTemplate(
                     name=email_template.name,
                     slug=email_template.slug,
-                    message_htnl_template=email_template.message_html_template,
+                    message_html_template=email_template.message_html_template,
                     reply_timeout=email_template.reply_timeout,
                     delivery_timeout=email_template.delivery_timeout,
                     language_id=self.language_id,
