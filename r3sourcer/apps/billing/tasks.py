@@ -84,18 +84,27 @@ def charge_for_sms(company_id, amount, sms_balance_id):
     try:
         stripe_account = StripeCountryAccount.objects.get(country=country_code)
     except StripeCountryAccount.DoesNotExist:
-        stripe_account = StripeCountryAccount.objects.get(country="AU")
+        logger.exception('Payment system did not configure '
+                         'for country {country_code}'.format(country_code=country_code))
+        return
     stripe.api_key = stripe_account.stripe_secret_key
-    vat_object = VAT.objects.filter(country=country_code)
-    if vat_object:
-        tax_percent = vat_object.first().stripe_rate
+
+    try:
+        vat_object = VAT.objects.get(country=country_code)
+    except VAT.DoesNotExist:
+        logger.exception('Tax rate did not configure '
+                         'for country {country_code}'.format(country_code=country_code))
+        return
+
+    tax_percent = vat_object.stripe_rate
 
     for discount in company.get_active_discounts('sms'):
         amount = discount.apply_discount(amount)
 
+    tax_value = round(int(amount * tax_percent))
     stripe.InvoiceItem.create(api_key=stripe_account.stripe_secret_key,
                               customer=company.stripe_customer,
-                              amount=round(int(amount * 100)),
+                              amount=round(int(amount * 100) - tax_value),
                               currency=company.currency,
                               description='Topping up sms balance')
     invoice = stripe.Invoice.create(api_key=stripe_account.stripe_secret_key,
