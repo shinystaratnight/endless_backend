@@ -27,8 +27,7 @@ def sync_candidate_contacts_to_myob(myob_client=None, account=None):
     candidate_contacts = CandidateContact.objects.filter(id__in=candidates_with_signed_timesheets).distinct()
 
     for candidate_contact in candidate_contacts:
-        if candidate_contact.get_closest_company() == account:
-            sync.sync_to_myob(candidate_contact, partial=True)
+        sync.sync_to_myob(candidate_contact, partial=True)
 
 
 def get_latest_state(obj):

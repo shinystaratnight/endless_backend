@@ -13,6 +13,7 @@ class BankAccountLayoutField(models.Model):
         related_name="fields",
         verbose_name=_("Bank account layout"),
         on_delete=models.PROTECT)
+    order = models.SmallIntegerField(default=0)
     required = models.BooleanField(default=False)
 
     class Meta:

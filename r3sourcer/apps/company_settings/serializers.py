@@ -15,13 +15,14 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
     register_form_id = serializers.SerializerMethodField()
     company_name = serializers.SerializerMethodField()
     country_code = serializers.SerializerMethodField()
+    currency = serializers.SerializerMethodField()
 
     class Meta:
         model = CompanySettings
         fields = (
             'id', 'logo', 'color_scheme', 'font', 'forwarding_number', 'company', 'billing_email', 'register_form_id',
             'company_name', 'sms_enabled', 'pre_shift_sms_enabled', 'pre_shift_sms_delta', 'invoice_template', 'advance_state_saving',
-            'country_code',
+            'country_code', 'currency'
         )
         read_only_fields = ('company',)
 
@@ -39,6 +40,10 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
     def get_country_code(self, obj):
         if obj.company:
             return obj.company.get_hq_address().address.country.code2
+
+    def get_currency(self, obj):
+        if obj.company:
+            return obj.company.get_hq_address().address.country.currency
 
 
 class PayslipRuleSerializer(serializers.ModelSerializer):
