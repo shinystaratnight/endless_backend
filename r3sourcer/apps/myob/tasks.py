@@ -35,9 +35,9 @@ def retry_on_myob_error(origin_task):
 @app.task(bind=True)
 def sync_company_to_myob(self, settings, regular_company_id, master_company_id):
     if settings.get('time_sheet_company_file_id'):
-        sync_candidate_contacts_myob(settings['time_sheet_company_file_id'],
-                                     regular_company_id,
-                                     master_company_id)
+        sync_candidate_contacts_myob.apply_async(args=[settings['time_sheet_company_file_id'],
+                                                       regular_company_id,
+                                                       master_company_id])
 
     if settings.get('invoice_company_file_id'):
         sync_active_companies_to_myob(settings['invoice_company_file_id'],
@@ -192,10 +192,9 @@ def sync_time_sheet(self, time_sheet_id, resync=False):
         return
 
     settings = get_myob_settings(master_company_id)
-
-    sync_candidate_contacts_myob(settings['time_sheet_company_file_id'],
-                                 regular_company_id,
-                                 master_company_id)
+    sync_candidate_contacts_myob.apply_async(args=[settings['time_sheet_company_file_id'],
+                                                   regular_company_id,
+                                                   master_company_id])
 
     candidate_contact = CandidateContact.objects.get(pk=candidate_contact_id)
     service = TimeSheetSync.from_candidate(settings, master_company_id)
