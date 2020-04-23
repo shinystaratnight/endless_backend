@@ -109,7 +109,7 @@ class CandidateSync(BaseCategoryMixin,
 
         uid = payment_details['UID']
 
-        bank_data = self.mapper.map_bank_account(candidate_contact)
+        bank_data = self.mapper.map_bank_account(candidate_contact.contact)
         bank_data = self._get_data_to_update(payment_details, bank_data)
         bank_data['Employee'] = {
             'UID': employee_item['UID'],
