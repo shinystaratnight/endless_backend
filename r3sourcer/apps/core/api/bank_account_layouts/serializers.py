@@ -31,6 +31,7 @@ class BankAccountLayoutFieldSerializer(serializers.Serializer):
     id = serializers.IntegerField(source='field.id')
     name = serializers.CharField(source='field.name')
     description = serializers.CharField(source='field.description')
+    order = serializers.IntegerField(default=0)
     languages = BankAccountFieldLanguage(many=True, source='field.languages')
 
     class Meta:
@@ -39,6 +40,7 @@ class BankAccountLayoutFieldSerializer(serializers.Serializer):
             'name',
             'description',
             'languages',
+            'order',
         )
 
 
