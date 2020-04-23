@@ -376,25 +376,46 @@ class TimeSheetMapper(StandardPayMapMixin):
 
 
 class CandidateMapper(StandardPayMapMixin, ContactMapper):
+    @property
+    def layout_mapper(self):
+        return {
+            'BSBNumber': 'bsb_number',
+            'BankAccountName': 'bank_account_name',
+            'BankAccountNumber': 'bank_account_number',
+        }
 
-    def map_bank_account(self, candidate_contact):
-        bank_acc = candidate_contact.contact.bank_accounts.first()
-        if not bank_acc:
+    def map_bank_account(self, contact):
+        bank_account = contact.bank_accounts.filter(
+            layout__payment_system='MYOB'
+        ).first()
+        if bank_account is None:
             return {}
 
-        if len(bank_acc.bsb) != 6:
-            raise BSBNumberError('BSB is invalid')
+        layout_fields = bank_account.layout.fields.filter(
+            field__name__in=self.layout_mapper.values()
+        ).all()
+        if not layout_fields:
+            return {}
+        account_field_map = {x.field_id: x.value
+                             for x in bank_account.fields.all()}
+
+        field_values_map = {x.field.name: account_field_map.get(x.field.id)
+                            for x in layout_fields}
+
+        myob_layout_map = {k: field_values_map[v]
+                           for k, v in self.layout_mapper.items()}
+
+        bsb_number = myob_layout_map.get('BSBNumber')
+        if bsb_number is None or len(bsb_number) < 6:
+            return {}
 
         data = {
             'PaymentMethod': 'Electronic',
-            'BankStatementText': 'pay {}'.format(
-                str(candidate_contact.contact)
-            )[:18],
+            'BankStatementText': 'pay {}'.format(str(contact))[:18],
             'BankAccounts': [{
-                'BSBNumber': '{}-{}'.format(bank_acc.bsb[:3],
-                                            bank_acc.bsb[3:]),
-                'BankAccountName': bank_acc.bank_account_name[:32].strip(),
-                'BankAccountNumber': bank_acc.account_number[:9],
+                'BSBNumber': '{}-{}'.format(bsb_number[:3], bsb_number[3:]),
+                'BankAccountName': myob_layout_map.get('BankAccountName', '')[:32].strip(),
+                'BankAccountNumber': myob_layout_map.get('BankAccountNumber', '')[:9],
                 'Value': 100,
                 'Unit': 'Percent'
             }]
