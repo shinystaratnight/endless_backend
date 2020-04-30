@@ -163,11 +163,10 @@ class BaseSMSService(metaclass=ABCMeta):
             return
 
         if sent_message is not None:
-            related_object = sent_message.related_object
+            related_objects = sent_message.related_objects.all()
         else:
-            related_object = None
+            related_objects = []
 
-        can_process = hasattr(related_object, 'process_sms_reply')
         positive = self._is_positive(sms_message)
 
         if sent_message:
@@ -184,7 +183,7 @@ class BaseSMSService(metaclass=ABCMeta):
                 sent_message, sent_message.id, sms_message.id
             ))
 
-        if can_process:
+        for related_object in [x for x in related_objects if hasattr(x, 'process_sms_reply')]:
             logger.info('Run process_sms_reply. Related object: {}; Answer: {}'.format(
                 related_object, positive
             ))
