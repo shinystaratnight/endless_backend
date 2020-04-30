@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group, Permission
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.validators import MinLengthValidator
@@ -297,6 +297,11 @@ class Contact(CategoryFolderMixin,
         if is_adding and self.user is None:
             user = User.objects.create(email=self.email, phone_mobile=self.phone_mobile)
             self.user = user
+
+        if is_adding and self.is_company_contact() and self.is_master_related():
+            for permission in Permission.objects.all():
+                self.user.user_permissions.add(permission)
+            self.user.save()
 
         if not is_adding:
             origin = Contact.objects.get(pk=self.pk)
