@@ -267,22 +267,18 @@ class WorkflowObject(UUIDModel):
 
         just_added = self._state.adding
 
-        lifecycle_enabled = kwargs.pop('lifecycle', True)
-
-        if just_added and lifecycle_enabled:
-            self.model_object.before_state_creation(self)
-
         if just_added:
+            self.model_object.before_state_creation(self)
             if not is_raw:
                 self.model_object.workflow(self.state)
+        super().save(*args, **kwargs)
+        if just_added:
+            self.model_object.after_state_created(self)
 
-            if lifecycle_enabled:
-                self.model_object.after_state_created(self)
-
-        if lifecycle_enabled and self.active:
+        if self.active:
             self.model_object.after_state_activated(self)
             self.model_object.active_true_workflow(self.state)
-        elif lifecycle_enabled and not self.active:
+        elif not self.active:
             self.model_object.active_false_workflow(self.state)
 
         super().save(*args, **kwargs)
