@@ -865,6 +865,21 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
                 Q(relationships__company__regular_companies__master_company=owner)
             ]
 
+    def save(self, *args, **kwargs):
+        just_added = self._state.adding
+        super().save(*args, **kwargs)
+        if just_added:
+            from r3sourcer.apps.core.models import DashboardModule, UserDashboardModule
+            dashboard_modules = []
+            for dashboard_module in DashboardModule.objects.all():
+                user_module = UserDashboardModule(
+                    company_contact=self,
+                    dashboard_module=dashboard_module,
+                    position=1,
+                )
+                dashboard_modules.append(user_module)
+            UserDashboardModule.objects.bulk_create(dashboard_modules)
+
 
 class BankAccount(UUIDModel):
     bank_name = models.CharField(max_length=63, verbose_name=_("Bank Name"))
