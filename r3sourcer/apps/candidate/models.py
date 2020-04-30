@@ -497,6 +497,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         just_added = self._state.adding
         super().save(*args, **kwargs)
 
+        master_company = self.get_closest_company()
         if just_added:
             self.contact.user.role.add(core_models.Role.objects.create(name=core_models.Role.ROLE_NAMES.candidate))
             if not hasattr(self, 'candidate_scores'):
@@ -509,7 +510,6 @@ class CandidateContact(UUIDModel, WorkflowProcess):
             # add master company language as candidate default language
             candidate_default_language = self.languages.filter(default=True).first()
             if not candidate_default_language:
-                master_company = self.get_closest_company()
                 default_language = master_company.languages.filter(default=True).first()
                 if default_language:
                     candidate_language = CandidateContactLanguage(
@@ -518,6 +518,8 @@ class CandidateContact(UUIDModel, WorkflowProcess):
                         default=True,
                     )
                     candidate_language.save()
+        if not self.recruitment_agent:
+            self.recruitment_agent = master_company.primary_contact
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         related_objs = reply_sms.get_related_objects()
