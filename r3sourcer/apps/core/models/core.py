@@ -8,7 +8,7 @@ from django.conf import settings
 from django.contrib.contenttypes.fields import GenericForeignKey
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group, Permission
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, Group
 from django.contrib.sites.models import Site
 from django.core.cache import cache
 from django.core.validators import MinLengthValidator
@@ -16,9 +16,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models import Q, Sum, F
 from django.utils.formats import date_format
-from django.utils.functional import cached_property
 from django.utils.translation import ugettext_lazy as _
-from django_mock_queries.constants import ObjectDoesNotExist
 from rest_framework.exceptions import APIException
 
 from cities_light.abstract_models import (
@@ -34,7 +32,7 @@ from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer.apps.core.utils.user import get_default_company
-from r3sourcer.helpers.datetimes import datetime2timezone, geo_time_zone, tz2utc, utc_now, utc2local
+from r3sourcer.helpers.datetimes import utc_now
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 from .company_languages import CompanyLanguage
 from ..decorators import workflow_function
@@ -54,6 +52,9 @@ from .constants import MANAGER, CANDIDATE, CLIENT
 
 
 # do anything you want
+from ...company_settings.models import GlobalPermission
+
+
 class Contact(CategoryFolderMixin,
               MYOBMixin,
               GenerateAuthTokenMixin,
@@ -299,8 +300,8 @@ class Contact(CategoryFolderMixin,
             self.user = user
 
         if is_adding and self.is_company_contact() and self.is_master_related():
-            for permission in Permission.objects.all():
-                self.user.user_permissions.add(permission)
+            permission_list = GlobalPermission.objects.all()
+            self.user.user_permissions.add(*permission_list)
             self.user.save()
 
         if not is_adding:
