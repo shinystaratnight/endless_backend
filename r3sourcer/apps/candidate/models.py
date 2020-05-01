@@ -495,9 +495,12 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     def save(self, *args, **kwargs):
         just_added = self._state.adding
+        master_company = self.get_closest_company()
+        if not self.recruitment_agent:
+            self.recruitment_agent = master_company.primary_contact
+
         super().save(*args, **kwargs)
 
-        master_company = self.get_closest_company()
         if just_added:
             self.contact.user.role.add(core_models.Role.objects.create(name=core_models.Role.ROLE_NAMES.candidate))
             if not hasattr(self, 'candidate_scores'):
@@ -518,8 +521,6 @@ class CandidateContact(UUIDModel, WorkflowProcess):
                         default=True,
                     )
                     candidate_language.save()
-        if not self.recruitment_agent:
-            self.recruitment_agent = master_company.primary_contact
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         related_objs = reply_sms.get_related_objects()
