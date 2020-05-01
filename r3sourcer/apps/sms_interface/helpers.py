@@ -1,6 +1,7 @@
 import math
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Q
 
 from r3sourcer.apps.candidate.models import CandidateContactLanguage
@@ -51,19 +52,25 @@ def get_sms_template(company_id, candidate_contact_id, slug):
     candidate_langs = [x for x in candidate_languages if x.default is False]
     default_company_lang, *_ = [x for x in company_languages if x.default is True] or [None]
     same_lang = set([x.language_id for x in candidate_languages]) & set([x.language_id for x in company_languages])
+    templates = {x.language_id: x for x in SMSTemplate.objects.filter(company_id=company_id, slug=slug).all()}
+
+    langs = []
     if default_candidate_lang is not None \
             and default_candidate_lang.language_id in [x.language_id for x in company_languages]:
-        language = default_candidate_lang.language_id
+        langs.append(default_candidate_lang.language_id)
     elif default_company_lang is not None \
             and default_company_lang.language_id in [x.language_id for x in candidate_langs]:
-        language = default_company_lang.language_id
+        langs.append(default_company_lang.language_id)
     elif same_lang:
-        language = sorted(same_lang)[-1]
-    elif default_company_lang:
-        language = default_company_lang.language_id
-    else:
-        language = settings.DEFAULT_LANGUAGE
+        langs.append(sorted(same_lang)[-1])
 
-    return SMSTemplate.objects.get(company_id=company_id,
-                                   language_id=language,
-                                   slug=slug)
+    if default_company_lang:
+        langs.append(default_company_lang.language_id)
+
+    langs.append(settings.DEFAULT_LANGUAGE)
+
+    for lang in langs:
+        template = templates.get(lang)
+        if template:
+            return template
+    raise ObjectDoesNotExist('Template not found')
