@@ -385,7 +385,6 @@ def send_verification_success_email(contact_id, master_company_id, template='e-m
                 manager=primary_contact,
                 username=username,
                 password=new_password,
-                master_company=master_company,
                 master_company_url=site_url,
                 subdomain=domain
             )
