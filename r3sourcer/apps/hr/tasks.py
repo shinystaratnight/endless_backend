@@ -476,7 +476,7 @@ def send_supervisor_timesheet_message(
                 return
 
             sms_template = get_sms_template(company_id=master_company.id,
-                                            candidate_contact_id=supervisor.contact.candidate_contacts.id,
+                                            candidate_contact_id=None,
                                             slug=sms_tpl)
 
             sms_interface.send_tpl(to_number=supervisor.contact.phone_mobile,

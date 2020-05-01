@@ -346,7 +346,7 @@ class ContactRelationship(UUIDModel):
         verbose_name_plural = _("Contact Relationships")
 
     def __str__(self):
-        return '{} {} - {}'.format(str(self.contact), self.unavailable_from, self.unavailable_until)
+        return '{}'.format(str(self.contact))
 
 
 class ContactUnavailability(UUIDModel):
