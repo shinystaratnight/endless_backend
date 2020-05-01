@@ -1,3 +1,4 @@
+import json
 import math
 import os
 import uuid
@@ -881,6 +882,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
                     company_contact=self,
                     dashboard_module=dashboard_module,
                     position=1,
+                    ui_config=json.dumps({'active': True})
                 )
                 dashboard_modules.append(user_module)
             UserDashboardModule.objects.bulk_create(dashboard_modules)

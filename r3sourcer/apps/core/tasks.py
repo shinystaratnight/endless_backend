@@ -283,7 +283,6 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
                 contact=contact,
                 manager=primary_contact,
                 related_obj=contact,
-                master_company=master_company,
                 email_verification_link="%s%s" % (site_url, extranet_login.auth_url),
             )
 
@@ -386,7 +385,6 @@ def send_verification_success_email(contact_id, master_company_id, template='e-m
                 manager=primary_contact,
                 username=username,
                 password=new_password,
-                master_company=master_company,
                 master_company_url=site_url,
                 subdomain=domain
             )
