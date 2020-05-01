@@ -53,9 +53,6 @@ from .constants import MANAGER, CANDIDATE, CLIENT
 
 
 # do anything you want
-from ...company_settings.models import GlobalPermission
-
-
 class Contact(CategoryFolderMixin,
               MYOBMixin,
               GenerateAuthTokenMixin,
@@ -301,6 +298,7 @@ class Contact(CategoryFolderMixin,
             self.user = user
 
         if is_adding and self.is_company_contact() and self.is_master_related():
+            from r3sourcer.apps.company_settings.models import GlobalPermission
             permission_list = GlobalPermission.objects.all()
             self.user.user_permissions.add(*permission_list)
             self.user.save()
