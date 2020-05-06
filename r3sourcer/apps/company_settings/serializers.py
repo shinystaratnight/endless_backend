@@ -39,11 +39,17 @@ class CompanySettingsSerializer(serializers.ModelSerializer):
 
     def get_country_code(self, obj):
         if obj.company:
-            return obj.company.get_hq_address().address.country.code2
+            hq_addr = obj.company.get_hq_address()
+            if not hq_addr:
+                return
+            return hq_addr.address.country.code2
 
     def get_currency(self, obj):
         if obj.company:
-            return obj.company.get_hq_address().address.country.currency
+            hq_addr = obj.company.get_hq_address()
+            if not hq_addr:
+                return
+            return hq_addr.address.country.currency
 
 
 class PayslipRuleSerializer(serializers.ModelSerializer):
