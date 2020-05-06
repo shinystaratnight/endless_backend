@@ -40,7 +40,8 @@ class BaseSMSService(metaclass=ABCMeta):
 
             sms_message.save()
             related_objs = kwargs.pop('related_objs', [])
-            sms_message.add_related_objects([related_obj, *related_objs])
+            objs = [related_obj, *related_objs]
+            sms_message.add_related_objects(*objs)
 
             self.process_sms_send(sms_message)
 
