@@ -881,10 +881,14 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
                     company_contact=self,
                     dashboard_module=dashboard_module,
                     position=1,
-                    ui_config=json.dumps({'active': True})
                 )
                 dashboard_modules.append(user_module)
             UserDashboardModule.objects.bulk_create(dashboard_modules)
+
+            from r3sourcer.apps.company_settings.models import GlobalPermission
+            permission_list = GlobalPermission.objects.all()
+            self.contact.user.user_permissions.add(*permission_list)
+            self.contact.user.save()
 
 
 class BankAccount(UUIDModel):

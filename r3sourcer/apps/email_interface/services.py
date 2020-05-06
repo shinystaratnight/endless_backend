@@ -5,6 +5,7 @@ from abc import ABCMeta, abstractmethod
 from email.message import EmailMessage
 
 from django.conf import settings
+from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q
 
@@ -74,23 +75,27 @@ class BaseEmailService(metaclass=ABCMeta):
 
     @transaction.atomic
     def send_tpl(self, recipients, master_company, from_email=None, tpl_name=None,  **kwargs):
-        language = master_company.languages.get(default=True)
-        try:
-            template = email_models.EmailTemplate.objects.get(
-                Q(name=tpl_name) | Q(slug=tpl_name),
-                company_id=master_company.id,
-                language_id=language.language_id
-            )
-            compiled = template.compile(**kwargs)
-            subject = compiled['subject']
-        except email_models.EmailTemplate.DoesNotExist:
+        languages = master_company.languages.order_by('-default').values_list('language_id', flat=True).all()
+        templates = {x.language_id: x for x in email_models.EmailTemplate.objects
+                                                                         .filter(Q(name=tpl_name) | Q(slug=tpl_name),
+                                                                                 company_id=master_company.id)
+                                                                         .all()}
+        template = None
+        for lang in languages:
+            template = templates.get(lang)
+            if template:
+                break
+
+        if template is None:
             logger.exception('Cannot find email template with name %s', tpl_name)
-        else:
-            self.send(
-                recipients, subject, compiled['text'],
-                html_message=compiled['html'], from_email=from_email, template=template,
-                **kwargs
-            )
+
+        compiled = template.compile(**kwargs)
+        subject = compiled['subject']
+        self.send(
+            recipients, subject, compiled['text'],
+            html_message=compiled['html'], from_email=from_email, template=template,
+            **kwargs
+        )
 
     @abstractmethod
     def process_email_send(self, email_message):
