@@ -1,11 +1,14 @@
 from django.contrib import admin
 
 from . import models
+from ...helpers.admin.filters import LanguageListFilter, CompanyListFilter
 
 
 class SMSTemplateAdmin(admin.ModelAdmin):
-    prepopulated_fields = {"slug": ("name",)}
-    list_display = ['name', 'company', 'language_name']
+    # prepopulated_fields = {"slug": ("name",)}
+    list_display = ['company', 'name', 'language_name']
+    ordering = ['company', 'name', 'language']
+    list_filter = (CompanyListFilter, LanguageListFilter, 'name')
 
     @classmethod
     def language_name(cls, obj):
@@ -13,8 +16,11 @@ class SMSTemplateAdmin(admin.ModelAdmin):
 
 
 class DefaultSMSTemplateAdmin(admin.ModelAdmin):
-    prepopulated_fields = {"slug": ("name",)}
+    # prepopulated_fields = {"slug": ("name",)}
     list_display = ['name', 'language_name']
+    ordering = ['name', 'language']
+    search_fields = ['name']
+    list_filter = (LanguageListFilter, 'name')
 
     @classmethod
     def language_name(cls, obj):
