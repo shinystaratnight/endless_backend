@@ -343,7 +343,7 @@ class CandidateFormMixin(ModelForm):
         from r3sourcer.apps.candidate.models import CandidateRel
         from r3sourcer.apps.core.models import ContactRelationship
         from r3sourcer.apps.core.utils.companies import get_site_master_company
-
+        from r3sourcer.apps.core.tasks import send_contact_verify_sms, send_contact_verify_email
         instance = super().save(*args, **kwargs)
 
         master_company = get_site_master_company()
@@ -357,5 +357,11 @@ class CandidateFormMixin(ModelForm):
             owner=True,
             active=True,
         )
+
+        manager = master_company.primary_contact
+        if not instance.contact.phone_mobile_verified:
+            send_contact_verify_sms.apply_async(args=(instance.contact.id, manager.contact_id))
+        if not instance.contact.email_verified:
+            send_contact_verify_email.apply_async(args=(instance.contact.id, manager.contact_id, master_company.id))
 
         return instance
