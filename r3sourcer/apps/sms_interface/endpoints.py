@@ -3,6 +3,7 @@ from r3sourcer.apps.core.api.router import router
 from r3sourcer.apps.core.api.endpoints import ApiEndpoint
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.api import serializers as sms_serializers, filters, viewsets
+from r3sourcer.apps.sms_interface.api.serializers import SMSTemplateSerializer
 
 
 class SMSMessageApiEndpoint(ApiEndpoint):
@@ -34,6 +35,7 @@ class SMSTemplateEndpoint(ApiEndpoint):
 
     model = sms_models.SMSTemplate
     base_viewset = viewsets.SMSMessageTemplateViewset
+    serializer = SMSTemplateSerializer
 
 
 router.register(endpoint=SMSMessageApiEndpoint())

@@ -1,5 +1,7 @@
 import logging
 
+from django.db.models import Q
+from rest_framework import viewsets, mixins, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -43,25 +45,18 @@ class SMSMessageViewset(BaseApiViewset):
         return Response({'status': 'success'})
 
 
-class SMSMessageTemplateViewset(BaseApiViewset):
+class SMSMessageTemplateViewset(mixins.ListModelMixin,
+                                mixins.CreateModelMixin,
+                                mixins.UpdateModelMixin,
+                                mixins.DestroyModelMixin,
+                                viewsets.GenericViewSet):
+    queryset = SMSTemplate.objects.all()
+    permission_classes = [permissions.IsAuthenticated]
 
-    def filter_queryset(self, queryset):
-        queryset = super().filter_queryset(queryset)
-        return queryset.filter(company=self.request.user.company)
+    def get_queryset(self):
+        return self.queryset.filter(
+            company_id=self.request.user.company.id
+        )
 
-    def get_object(self):
-        obj = super().get_object()
-        try:
-            obj = self.queryset.get(name=obj.name, company=self.request.user.company)
-            return obj
-        except obj.DoesNotExist:
-            obj = super().get_object()
-            return obj
-
-    def perform_update(self, serializer):
-        if not serializer.validated_data.get('company'):
-            self.request.data['company'] = self.request.user.company
-            self.request.data.pop('id')
-            SMSTemplate.objects.create(**self.request.data)
-        else:
-            serializer.save()
+    def perform_create(self, serializer):
+        serializer.save(company_id=self.request.user.company.id)
