@@ -163,11 +163,6 @@ class BaseSMSService(metaclass=ABCMeta):
             )
             return
 
-        if sent_message is not None:
-            related_objects = sent_message.related_objects.all()
-        else:
-            related_objects = []
-
         positive = self._is_positive(sms_message)
 
         if sent_message:
@@ -183,6 +178,11 @@ class BaseSMSService(metaclass=ABCMeta):
             logger.info('Received late reply for message {}: sent: {}; reply: {};'.format(
                 sent_message, sent_message.id, sms_message.id
             ))
+
+        if sent_message is not None:
+            related_objects = sent_message.get_related_objects()
+        else:
+            related_objects = []
 
         for related_object in [x for x in related_objects if hasattr(x, 'process_sms_reply')]:
             logger.info('Run process_sms_reply. Related object: {}; Answer: {}'.format(
