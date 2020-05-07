@@ -1051,6 +1051,7 @@ class FormViewSet(BaseApiViewset):
                                                     acceptance_test_question=question,
                                                     answer=answer)
 
+
         for extra_field in form_obj.builder.extra_fields.all():
             if extra_field.name not in extra_data:
                 continue
