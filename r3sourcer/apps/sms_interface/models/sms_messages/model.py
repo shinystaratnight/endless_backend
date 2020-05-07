@@ -271,16 +271,13 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
         super().save(*args, **kwargs)
 
     def get_sent_by_reply(self, check_reply=True):
-        try:
-            return self.__class__.objects.filter(
-                sent_at__lte=self.sent_at_utc,
-                from_number=self.to_number,
-                to_number=self.from_number,
-                type=self.TYPE_CHOICES.SENT,
-                check_reply=check_reply
-            ).latest('sent_at')
-        except self.__class__.DoesNotExist:
-            return None
+        return self.__class__.objects.filter(
+            sent_at__lte=self.sent_at_utc,
+            from_number=self.to_number,
+            to_number=self.from_number,
+            type=self.TYPE_CHOICES.SENT,
+            check_reply=check_reply
+        ).order_by('-sent_at').first()
 
     def has_contact_relation(self):
         from r3sourcer.apps.core.models import Contact
