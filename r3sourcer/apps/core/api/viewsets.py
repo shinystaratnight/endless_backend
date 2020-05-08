@@ -136,14 +136,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return data
 
     def prepare_related_data(self, data, is_create=False):
-        data = self._prepare_internal_data(data, is_create=False)
-
-        for phone_field in self.phone_fields:
-            phone = data.get(phone_field)
-            if phone and phone.startswith('0'):
-                data[phone_field] = '+61{}'.format(phone[1:])
-
-        return data
+        return self._prepare_internal_data(data, is_create=is_create)
 
     def _prepare_internal_data(self, data, is_create=False):
         res = {}
@@ -156,11 +149,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
             if key in self._exclude_data or (self.exclude_empty and is_empty and (key != 'id' or len(data) > 1)):
                 continue
 
-            if isinstance(val, dict):
-                val = {k: v for k, v in val.items() if k not in self.picture_fields}
-
-                res[key] = self._prepare_internal_data(val)
-            elif isinstance(val, list):
+            if isinstance(val, (dict, list)):
                 res[key] = self._prepare_internal_data(val)
             else:
                 res[key] = val
