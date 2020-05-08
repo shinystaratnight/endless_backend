@@ -1,9 +1,12 @@
+from rest_framework import serializers
+
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
+from r3sourcer.apps.core.api.languages.serializers import LanguageSerializer
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
-from r3sourcer.apps.core.models import Contact, Company
+from r3sourcer.apps.core.models import Contact, Company, Language
 from r3sourcer.apps.core.utils.text import pluralize
 from r3sourcer.apps.core_adapter.utils import api_reverse_lazy
-from r3sourcer.apps.sms_interface.models import SMSMessage
+from r3sourcer.apps.sms_interface.models import SMSMessage, SMSTemplate
 
 
 class SMSMessageSerializer(ApiBaseModelSerializer):
@@ -92,3 +95,23 @@ class SMSLogSerializer(ApiBaseModelSerializer):
     def get_cost(self, obj):
         segment_cost = obj.company and hasattr(obj.company, 'sms_balance') and obj.company.sms_balance.segment_cost
         return segment_cost * obj.segments if segment_cost else 0
+
+
+class SMSTemplateSerializer(serializers.ModelSerializer):
+    language = serializers.PrimaryKeyRelatedField(queryset=Language.objects.all(), required=True)
+
+    class Meta:
+        model = SMSTemplate
+        fields = (
+            'id',
+            'updated_at',
+            'created_at',
+            'name',
+            'slug',
+            'message_text_template',
+            'reply_timeout',
+            'delivery_timeout',
+            'type',
+            'language',
+            'company_id',
+        )
