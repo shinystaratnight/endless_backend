@@ -98,7 +98,8 @@ class SMSLogSerializer(ApiBaseModelSerializer):
 
 
 class SMSTemplateSerializer(serializers.ModelSerializer):
-    language = serializers.PrimaryKeyRelatedField(queryset=Language.objects.all(), required=True)
+    language = LanguageSerializer(read_only=True)
+    language_id = serializers.PrimaryKeyRelatedField(write_only=True, queryset=Language.objects.all())
 
     class Meta:
         model = SMSTemplate
@@ -112,6 +113,17 @@ class SMSTemplateSerializer(serializers.ModelSerializer):
             'reply_timeout',
             'delivery_timeout',
             'type',
-            'language',
+            'language_id',
             'company_id',
+            'language',
         )
+
+    def create(self, validated_data):
+        language = validated_data.pop('language_id')
+        template = SMSTemplate.objects.create(**validated_data, language=language)
+        return template
+
+    def update(self, instance, validated_data):
+        instance.language = validated_data['language_id']
+        instance.save()
+        return instance

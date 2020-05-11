@@ -49,6 +49,7 @@ class SMSMessageTemplateViewset(mixins.ListModelMixin,
                                 mixins.CreateModelMixin,
                                 mixins.UpdateModelMixin,
                                 mixins.DestroyModelMixin,
+                                mixins.RetrieveModelMixin,
                                 viewsets.GenericViewSet):
     queryset = SMSTemplate.objects.all()
     permission_classes = [permissions.IsAuthenticated]
