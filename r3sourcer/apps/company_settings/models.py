@@ -7,7 +7,12 @@ from r3sourcer.apps.myob.models import MYOBCompanyFile
 
 
 class CompanySettings(UUIDModel):
-    company = models.OneToOneField('core.Company', blank=True, null=True, related_name='company_settings')
+    company = models.OneToOneField(
+        'core.Company',
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name='company_settings')
     logo = models.ImageField(null=True, blank=True)
     color_scheme = models.CharField(null=True, blank=True, max_length=32)
     font = models.CharField(null=True, blank=True, max_length=32)
@@ -46,7 +51,12 @@ class MYOBAccount(UUIDModel):
 
 
 class MYOBSettings(UUIDModel):
-    company = models.OneToOneField('core.Company', blank=True, null=True, related_name='myob_settings')
+    company = models.OneToOneField(
+        'core.Company',
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name='myob_settings')
 
     # form fields
     invoice_company_file = models.ForeignKey(MYOBCompanyFile,

@@ -62,12 +62,12 @@ class Jobsite(CategoryFolderMixin,
         'core.Company',
         related_name="jobsites",
         verbose_name=_("Master company"),
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE
     )
 
     regular_company = models.ForeignKey(
         'core.Company',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="jobsites_regular",
         verbose_name=_("Client"),
     )
@@ -1641,7 +1641,7 @@ class TimeSheetIssue(
 class BlackList(UUIDModel):
 
     company = models.ForeignKey(
-        core_models.Company,
+        'core.Company',
         related_name="blacklists",
         on_delete=models.CASCADE,
         verbose_name=_("Company"),
@@ -1746,7 +1746,7 @@ class FavouriteList(UUIDModel):
     )
 
     company = models.ForeignKey(
-        core_models.Company,
+        'core.Company',
         related_name="favouritelists",
         verbose_name=_("Company"),
         blank=True,
@@ -2036,7 +2036,7 @@ class Payslip(UUIDModel):
     )
 
     company = models.ForeignKey(
-        core_models.Company,
+        'core.Company',
         on_delete=models.SET_NULL,
         verbose_name=_("Company"),
         related_name="payslips",
@@ -2107,7 +2107,7 @@ class Payslip(UUIDModel):
 class PayslipRule(core_models.AbstractPayRuleMixin, UUIDModel):
 
     company = models.ForeignKey(
-        core_models.Company,
+        'core.Company',
         related_name="payslip_rules",
         verbose_name=_("Company"),
         on_delete=models.CASCADE
