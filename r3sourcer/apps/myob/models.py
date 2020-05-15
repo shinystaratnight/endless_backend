@@ -136,7 +136,12 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
     )
 
     user = models.ForeignKey(User, related_name='auth_data', blank=True, null=True)
-    company = models.ForeignKey(Company, related_name='auth_data', blank=True, null=True)
+    company = models.ForeignKey(
+        'core.Company',
+        on_delete=models.CASCADE,
+        related_name='auth_data',
+        blank=True,
+        null=True)
 
     class Meta:
         verbose_name = _("MYOB OAuth2 Data")
@@ -300,7 +305,7 @@ class MYOBSyncObject(UUIDModel, models.Model):
     )
 
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         on_delete=models.CASCADE,
         verbose_name=_("Company"),
         related_name='sync_objects',

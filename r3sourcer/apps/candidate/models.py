@@ -952,7 +952,7 @@ class Subcontractor(UUIDModel):
     )
 
     company = models.OneToOneField(
-        core_models.Company,
+        'core.Company',
         on_delete=models.CASCADE,
         parent_link=True,
         null=True,

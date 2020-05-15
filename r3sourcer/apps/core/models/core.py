@@ -335,7 +335,7 @@ class ContactRelationship(UUIDModel):
     )
 
     company = models.ForeignKey(
-        'Company',
+        'core.Company',
         related_name="contact_relations",
         verbose_name=_("Company"),
         on_delete=models.CASCADE
@@ -1360,7 +1360,7 @@ class CompanyRel(UUIDModel,
         'core.Company',
         related_name="master_companies",
         verbose_name=_("Master company"),
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE
     )
 
     regular_company = models.ForeignKey(
@@ -1374,7 +1374,7 @@ class CompanyRel(UUIDModel,
         'core.CompanyContact',
         related_name="company_accounts",
         verbose_name=_("Primary Contact"),
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )
@@ -1469,7 +1469,7 @@ class CompanyContactRelationship(TimeZoneUUIDModel,
         'core.Company',
         related_name="relationships",
         verbose_name=_("Company"),
-        on_delete=models.PROTECT
+        on_delete=models.CASCADE
     )
 
     company_contact = models.ForeignKey(
@@ -1539,7 +1539,8 @@ class CompanyIndustryRel(UUIDModel):
     company = models.ForeignKey(
         'core.Company',
         related_name='company_industry_rels',
-        verbose_name=_("Company")
+        verbose_name=_("Company"),
+        on_delete=models.CASCADE,
     )
 
     industry = models.ForeignKey(
@@ -1580,7 +1581,7 @@ class CompanyAddress(TimeZoneUUIDModel, MasterCompanyLookupMixin):
     )
 
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         related_name='company_addresses',
         on_delete=models.CASCADE,
         verbose_name=_("Company"),
@@ -1825,7 +1826,7 @@ class CompanyTradeReference(UUIDModel):
     trade_reference = models.TextField(verbose_name=_("Trade Reference"))
 
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         related_name="company_trade_references",
         on_delete=models.CASCADE,
         verbose_name=_("Company")
@@ -1952,7 +1953,7 @@ class AbstractBaseOrder(TimeZoneUUIDModel,
 
     provider_company = models.ForeignKey(  # master
         'core.Company',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Provider Company"),
         related_name="provider_%(class)ss",
     )
@@ -2440,7 +2441,7 @@ class SiteCompany(
     company = models.ForeignKey(
         'core.Company',
         related_name="site_companies",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Company")
     )
 
@@ -2505,7 +2506,7 @@ class AbstractPayRuleMixin(models.Model):
 class InvoiceRule(AbstractPayRuleMixin, UUIDModel):
 
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         related_name="invoice_rules",
         verbose_name=_("Company"),
         on_delete=models.CASCADE

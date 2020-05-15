@@ -350,7 +350,7 @@ class AcceptanceTestRelationship(UUIDModel):
     )
 
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         on_delete=models.CASCADE,
         related_name='acceptance_test_relations',
         verbose_name=_("Company")

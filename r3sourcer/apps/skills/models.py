@@ -63,9 +63,9 @@ class Skill(MYOBMixin, UUIDModel):
     )
 
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         related_name='skills',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_('Company')
     )
 
