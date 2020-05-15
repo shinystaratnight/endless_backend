@@ -157,7 +157,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         blank=True,
         related_name='candidate_contacts',
         verbose_name=_('Recruitment agent'),
-        on_delete=models.PROTECT
+        on_delete=models.SET_NULL
     )
 
     residency = models.PositiveSmallIntegerField(

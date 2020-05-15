@@ -328,7 +328,7 @@ class Contact(CategoryFolderMixin,
 class ContactRelationship(UUIDModel):
 
     contact = models.ForeignKey(
-        Contact,
+        'core.Contact',
         related_name="contact_relations",
         verbose_name=_("Contact"),
         on_delete=models.CASCADE
@@ -352,7 +352,7 @@ class ContactRelationship(UUIDModel):
 class ContactUnavailability(UUIDModel):
 
     contact = models.ForeignKey(
-        Contact,
+        'core.Contact',
         related_name="contact_unavailabilities",
         verbose_name=_("Contact"),
         on_delete=models.CASCADE
@@ -765,7 +765,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
 
     contact = models.ForeignKey(
         'core.Contact',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="company_contact",
         verbose_name=_("Contact")
     )
@@ -800,9 +800,9 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     )
 
     approved_by_primary_contact = models.ForeignKey(
-        'Contact',
+        'core.Contact',
         verbose_name=_("Approved by primary contact"),
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         editable=False,
@@ -818,7 +818,7 @@ class CompanyContact(UUIDModel, MasterCompanyLookupMixin):
     approved_by_staff = models.ForeignKey(
         'core.Contact',
         verbose_name=_("Approved by staff"),
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         editable=False,
@@ -1476,7 +1476,7 @@ class CompanyContactRelationship(TimeZoneUUIDModel,
         CompanyContact,
         related_name="relationships",
         verbose_name=_("Company Contact"),
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True
     )

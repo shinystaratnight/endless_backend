@@ -22,6 +22,8 @@ class SMSTemplate(TemplateMessage):
         verbose_name=_("Master company"),
         on_delete=models.CASCADE,
         related_name='sms_templates',
+        null=True,
+        blank=True
     )
     language = models.ForeignKey(
         'core.Language',

@@ -8,7 +8,7 @@ class ContactBankAccount(UUIDModel):
     contact = models.ForeignKey(
         'core.Contact',
         related_name="bank_accounts",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name="Contact"
     )
     layout = models.ForeignKey(
