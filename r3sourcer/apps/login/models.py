@@ -3,7 +3,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import Contact, Role
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.core.mixins import GenerateAuthTokenMixin
 
@@ -23,7 +22,7 @@ class TokenLogin(UUIDModel,
     }
 
     contact = models.ForeignKey(
-        Contact,
+        'core.Contact',
         related_name="extranet_logins",
         verbose_name=_("Contact"),
     )
@@ -53,7 +52,7 @@ class TokenLogin(UUIDModel,
     )
 
     role = models.ForeignKey(
-        Role,
+        'core.Role',
         on_delete=models.SET_NULL,
         verbose_name=_('User role'),
         null=True,
