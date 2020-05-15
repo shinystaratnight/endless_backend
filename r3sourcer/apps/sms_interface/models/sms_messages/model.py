@@ -99,6 +99,7 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
     )
     company = models.ForeignKey(
         'core.Company',
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name=_('Company'),

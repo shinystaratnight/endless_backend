@@ -117,7 +117,12 @@ class Subscription(CompanyTimeZoneMixin):
 
 
 class SMSBalance(models.Model):
-    company = models.OneToOneField('core.Company', blank=True, null=True, related_name='sms_balance')
+    company = models.OneToOneField(
+        'core.Company',
+        on_delete=models.CASCADE,
+        blank=True,
+        null=True,
+        related_name='sms_balance')
     balance = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
@@ -162,7 +167,9 @@ class Payment(CompanyTimeZoneMixin):
         ('paid', 'Paid'),
         ('not_paid', 'Not paid')
     )
-    company = models.ForeignKey('core.Company')
+    company = models.ForeignKey(
+        'core.Company',
+        on_delete=models.CASCADE)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = ref.DTField()
     amount = models.IntegerField()

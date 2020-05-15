@@ -160,7 +160,8 @@ class Form(UUIDModel):
         verbose_name=_("Company"),
         related_name='forms',
         null=True,
-        blank=True
+        blank=True,
+        on_delete=models.SET_NULL,
     )
 
     builder = models.ForeignKey(

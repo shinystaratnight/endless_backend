@@ -396,9 +396,10 @@ class WorkflowObject(UUIDModel):
 
 class CompanyWorkflowNode(UUIDModel):
     company = models.ForeignKey(
-        Company,
+        'core.Company',
         verbose_name=_('Company'),
-        related_name='company_workflow_nodes'
+        related_name='company_workflow_nodes',
+        on_delete=models.CASCADE,
     )
 
     workflow_node = models.ForeignKey(

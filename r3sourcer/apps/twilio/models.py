@@ -29,6 +29,7 @@ class TwilioCredential(UUIDModel, DeadlineCheckingMixin):
 
     company = models.ForeignKey(
         'core.Company',
+        on_delete=models.CASCADE,
         verbose_name=_("Company"),
         related_name='twilio_credentials'
     )
