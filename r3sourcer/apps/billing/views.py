@@ -8,6 +8,7 @@ from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
+from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -314,7 +315,13 @@ class TwilioAutoChargeView(APIView):
 
 class SubscriptionTypeView(APIView):
     def get(self, *args, **kwargs):
-        country_code = self.request.user.company.get_hq_address().address.country.code2
+        company_address = self.request.user.company.get_hq_address()
+        if not company_address:
+            company_address = self.request.user.company.company_addresses.first()
+        if not company_address:
+            raise NotFound(detail='Company address not found')
+
+        country_code = company_address.address.country.code2
         vats = VAT.objects.filter(country_id=country_code)
         vat_serializer = VATSerializer(vats, many=True)
         subscription_types = SubscriptionType.objects.all()
