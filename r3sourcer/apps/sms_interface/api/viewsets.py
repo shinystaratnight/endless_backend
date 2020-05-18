@@ -1,6 +1,7 @@
 import logging
 
-from rest_framework import viewsets, mixins, permissions
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import viewsets, mixins, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
@@ -52,6 +53,9 @@ class SMSMessageTemplateViewset(mixins.ListModelMixin,
                                 viewsets.GenericViewSet):
     queryset = SMSTemplate.objects.all()
     permission_classes = [permissions.IsAuthenticated]
+    filter_backends = (DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter)
+    ordering_fields = ('language', 'name', 'slug')
+    search_fields = ['language__alpha_2', 'language__name']
 
     def get_queryset(self):
         return self.queryset.filter(
