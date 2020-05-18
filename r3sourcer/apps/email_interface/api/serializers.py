@@ -1,8 +1,22 @@
 from rest_framework import serializers
 
+from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.languages.serializers import LanguageSerializer
-from r3sourcer.apps.core.models import Language
-from r3sourcer.apps.email_interface.models import EmailTemplate
+from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
+from r3sourcer.apps.core.models import Language, Contact, Company
+from r3sourcer.apps.email_interface.models import EmailTemplate, EmailMessage
+
+
+class EmailMessageSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('bodies',)
+
+    class Meta:
+        model = EmailMessage
+        fields = '__all__'
+
+    def get_bodies(self, obj):
+        return [{'content': x.content} for x in obj.bodies.all()]
 
 
 class EmailTemplateSerializer(serializers.ModelSerializer):
