@@ -900,7 +900,7 @@ class BankAccount(UUIDModel):
     contact = models.ForeignKey(
         'core.Contact',
         related_name="bank_accounts_old",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name="Contact"
     )
 
