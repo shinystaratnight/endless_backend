@@ -192,15 +192,7 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
             'state__number', flat=True
         )
 
-        if new_state and new_state.initial:
-            is_initial_exists = WorkflowObject.objects.filter(
-                object_id=self.pk, state=new_state,
-                state__company_workflow_nodes__company=self.get_closest_company()
-            ).exists()
-        else:
-            is_initial_exists = False
-
-        if new_state is None or new_state.number in active_numbers or is_initial_exists:
+        if new_state is None or new_state.number in active_numbers:
             return False
 
         result = True
