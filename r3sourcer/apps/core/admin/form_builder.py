@@ -89,10 +89,14 @@ class FormBuilderAdmin(admin.ModelAdmin):
 
 
 class FormFieldGroupAdmin(PolymorphicInlineSupportMixin, admin.ModelAdmin):
-
+    list_display = ('name', 'form', 'company')
     list_filter = ('form',)
 
     inlines = [FormFieldInline]
+
+    @classmethod
+    def company(cls, obj):
+        return obj.form.company
 
 
 admin.site.register(models.FormBuilder, FormBuilderAdmin)
