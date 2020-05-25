@@ -829,6 +829,7 @@ class CompanyContactRenderSerializer(core_mixins.ApiContentTypeFieldMixin, Compa
         fields = (
             'id', 'job_title', 'rating_unreliable', 'legacy_myob_card_number', 'active',
             'receive_job_confirmation_sms', 'termination_date', 'created_at', 'updated_at',
+            'message_by_email', 'message_by_sms',
             {
                 'contact': (
                     'id', 'first_name', 'last_name', 'title', 'email', 'phone_mobile', 'is_available', 'picture',
