@@ -15,7 +15,7 @@ from django.core.cache import cache
 from django.core.validators import MinLengthValidator
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Q, Sum, F
+from django.db.models import Q, Sum, F, ProtectedError
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from rest_framework.exceptions import APIException
@@ -1569,7 +1569,23 @@ class CompanyIndustryRel(UUIDModel):
                 qs.update(default=False)
         else:
             self.default = True
+
         super(CompanyIndustryRel, self).save(*args, **kwargs)
+        from r3sourcer.apps.skills.models import Skill
+        for skill_name in self.industry.skill_names.all():
+            skill, _ = Skill.objects.get_or_create(name=skill_name,
+                                                   company=self.company,
+                                                   active=False)
+            skill.save()
+
+    def delete(self, using=None, keep_parents=False):
+        for skill_name in self.industry.skill_names.all():
+            for skill in skill_name.skills.all():
+                try:
+                    skill.delete()
+                except ProtectedError:
+                    continue
+        super().delete()
 
 
 class CompanyAddress(TimeZoneUUIDModel, MasterCompanyLookupMixin):
