@@ -36,6 +36,7 @@ class SkillName(UUIDModel):
         'pricing.Industry',
         on_delete=models.PROTECT,
         verbose_name=_('Industry'),
+        related_name='skill_names'
     )
 
     class Meta:
@@ -59,7 +60,7 @@ class Skill(MYOBMixin, UUIDModel):
         SkillName,
         related_name='skills',
         on_delete=models.PROTECT,
-        verbose_name=_('Skill Name')
+        verbose_name=_('Skill Name'),
     )
 
     company = models.ForeignKey(
