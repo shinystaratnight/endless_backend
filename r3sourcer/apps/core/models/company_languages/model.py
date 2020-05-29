@@ -1,3 +1,4 @@
+from django.conf import settings
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
 
@@ -41,6 +42,10 @@ class CompanyLanguage(models.Model):
             default_sms_templates = DefaultSMSTemplate.objects.filter(
                 language=self.language
             ).exclude(slug__in=[x.slug for x in sms_templates]).all()
+            if not default_sms_templates:
+                default_sms_templates = DefaultSMSTemplate.objects.filter(
+                    language_id=settings.DEFAULT_LANGUAGE
+                ).exclude(slug__in=[x.slug for x in sms_templates]).all()
             new_sms_templates = []
             for sms_template in default_sms_templates:
                 obj = SMSTemplate(
@@ -61,6 +66,10 @@ class CompanyLanguage(models.Model):
             default_email_templates = DefaultEmailTemplate.objects.filter(
                 language=self.language
             ).exclude(slug__in=[x.slug for x in email_templates]).all()
+            if not default_email_templates:
+                default_email_templates = DefaultEmailTemplate.objects.filter(
+                    language_id=settings.DEFAULT_LANGUAGE
+                ).exclude(slug__in=[x.slug for x in email_templates]).all()
             new_email_templates = []
             for email_template in default_email_templates:
                 obj = EmailTemplate(
