@@ -1152,6 +1152,9 @@ class Company(CategoryFolderMixin,
 
     default_phone_prefix = models.CharField(max_length=3, null=True, blank=True)
 
+    myob_card_id = models.CharField(max_length=15, blank=True)
+    old_myob_card_id = models.CharField(max_length=15, blank=True, null=True, editable=False)
+
     class Meta:
         verbose_name = _("Company")
         verbose_name_plural = _("Companies")
@@ -1300,6 +1303,9 @@ class Company(CategoryFolderMixin,
         if just_added and not self.short_name:
             self.short_name = self.name
 
+        if not self.myob_card_id:
+            self.myob_card_id = self.get_myob_card_number()
+
         super(Company, self).save(*args, **kwargs)
 
         if not hasattr(self, 'company_settings'):
@@ -1332,6 +1338,17 @@ class Company(CategoryFolderMixin,
                                                language_id=settings.DEFAULT_LANGUAGE,
                                                default=True)
             company_language.save()
+
+        if not just_added:
+            origin = Company.objects.get(pk=self.pk)
+            if origin.myob_card_id != self.myob_card_id:
+                self.old_myob_card_id = origin.myob_card_id
+            super(Company, self).save(*args, **kwargs)
+
+    def get_myob_card_number(self):
+        if not self.myob_card_id:
+            return str(self.id)[-15:]
+        return self.myob_card_id
 
     def get_closest_company(self):
         return self.get_closest_master_company()

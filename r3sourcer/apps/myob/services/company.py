@@ -29,6 +29,32 @@ class CompanySync(SalespersonMixin, BaseSync):
                                              myob_field='tolower(CompanyName)')
         return resp
 
+    def _get_myob_existing_resp(self, instance, myob_card_number, sync_obj=None, field_name='DisplayID', resource=None):
+        """
+        Search remote resource by field.
+
+        :param instance: Model subclass instance
+        :param myob_card_number: str Remote ID (DisplayID)
+        :param sync_obj: MYOBSyncObject instance
+        :param field_name: str Field name for filtering
+        :param resource: class self.client.api
+        :return:
+        """
+        old_myob_card_number = instance.old_myob_card_id
+        if old_myob_card_number:
+            myob_card_number = old_myob_card_number
+
+        myob_resp = self._get_object_by_field(myob_card_number, myob_field=field_name, resource=resource)
+        if not myob_resp or not myob_resp['Count']:
+            old_myob_card = self._find_old_myob_card(instance, resource=resource)
+            if old_myob_card:
+                myob_resp = old_myob_card
+                if myob_resp['Count']:
+                    myob_card_number = old_myob_card['Items'][0][field_name]
+                    old_myob_card_number = myob_card_number
+
+        return myob_card_number, old_myob_card_number, myob_resp
+
     def _sync_to(self, company, sync_obj=None, partial=False):
         myob_card_number, old_myob_card_number, myob_client_resp = self._get_myob_existing_resp(
             company, company.get_myob_card_number(), sync_obj
