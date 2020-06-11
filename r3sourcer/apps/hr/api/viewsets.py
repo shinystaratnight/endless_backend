@@ -943,6 +943,24 @@ class JobViewset(BaseApiViewset):
     def perform_create(self, serializer):
         self.perform_update(serializer)
 
+    @action(methods=['get'], detail=False)
+    def client_contact_job(self, request, *args, **kwargs):
+        role_id = request.query_params.get('role')
+        if not role_id:
+            raise exceptions.ValidationError({'role': _('role is required!')})
+
+        try:
+            role = Role.objects.get(id=role_id)
+        except Role.DoesNotExist:
+            raise exceptions.ValidationError({'role': _('role not found!')})
+
+        client_contact = role.company_contact_rel.company_contact
+        if not client_contact:
+            raise exceptions.ValidationError({'client_contact': _('User has no company_contact!')})
+        queryset = self.queryset.filter(customer_representative=client_contact)
+
+        return self._paginate(request, job_serializers.JobSerializer, queryset)
+
 
 class TimeSheetCandidateViewset(BaseTimeSheetViewsetMixin,
                                 BaseViewsetMixin,
