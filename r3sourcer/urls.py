@@ -4,7 +4,6 @@ from django.conf.urls.static import static
 from django.contrib import admin
 from rest_framework_swagger.views import get_swagger_view
 
-from r3sourcer.apps.candidate.api.candidate_contact_languages.urls import router as candidate_contact_language_router
 from r3sourcer.apps.core.api.contact_languages.urls import router as contact_language_router
 from r3sourcer.apps.core.api.company_languages.urls import router as company_language_router
 from r3sourcer.apps.core.api.bank_account_layouts.urls import router as bank_account_layout_router
@@ -52,7 +51,6 @@ _urlpatterns = [
     url(r'^oauth2/', include('oauth2_provider_jwt.urls', namespace='oauth2_provider')),
     url(r'^swagger/', swagger_view),
     # new api endpoints - refactor this in future
-    url(r'^', include(candidate_contact_language_router.urls)),
     url(r'^', include(contact_language_router.urls)),
     url(r'^', include(company_language_router.urls)),
     url(r'^', include(bank_account_layout_router.urls)),

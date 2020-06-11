@@ -308,7 +308,7 @@ class Contact(CategoryFolderMixin,
             default_language = master_company.languages.filter(default=True).first()
             if default_language:
                 contact_language = ContactLanguage(
-                    candidate_contact=self,
+                    contact=self,
                     language_id=default_language.language_id,
                     default=True,
                 )
