@@ -230,12 +230,8 @@ def send_contact_verify_sms(self, contact_id, manager_id):
                 related_obj=contact,
                 master_company=master_company
             )
-            try:
-                candidate_contact_id = contact.candidate_contacts.id
-            except ObjectDoesNotExist:
-                candidate_contact_id = None
             sms_template = get_sms_template(company_id=master_company.id,
-                                            candidate_contact_id=candidate_contact_id,
+                                            contact_id=contact.id,
                                             slug=sms_tpl)
             logger.info('Sending phone verify SMS to %s.', contact)
 
@@ -344,7 +340,7 @@ def send_generated_password_sms(contact_id, new_password=None):
     master_company = contact.get_closest_company()
     sms_tpl = 'generated-password'
     sms_template = get_sms_template(company_id=master_company.id,
-                                    candidate_contact_id=contact.candidate_contacts.id,
+                                    contact_id=contact.id,
                                     slug=sms_tpl)
     sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_id=sms_template.id, **data_dict)
 

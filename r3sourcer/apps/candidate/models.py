@@ -510,18 +510,6 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
             self.create_state(10)
 
-            # add master company language as candidate default language
-            candidate_default_language = self.languages.filter(default=True).first()
-            if not candidate_default_language:
-                default_language = master_company.languages.filter(default=True).first()
-                if default_language:
-                    candidate_language = CandidateContactLanguage(
-                        candidate_contact=self,
-                        language_id=default_language.language_id,
-                        default=True,
-                    )
-                    candidate_language.save()
-
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         related_objs = reply_sms.get_related_objects()
 
@@ -1037,8 +1025,8 @@ class CandidateContactLanguage(models.Model):
              update_fields=None):
 
         if self.default is True:
-            CandidateContactLanguage.objects \
-                                    .filter(candidate_contact=self.candidate_contact, default=True)\
-                                    .update(default=False)
+            ContactLanguage.objects \
+                           .filter(candidate_contact=self.candidate_contact, default=True)\
+                           .update(default=False)
 
         super().save(force_insert, force_update, using, update_fields)

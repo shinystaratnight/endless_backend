@@ -89,7 +89,7 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
     }
 
     sms_template = get_sms_template(company_id=master_company.id,
-                                    candidate_contact_id=job_offer.candidate_contact.id,
+                                    contact_id=job_offer.candidate_contact.contact_id,
                                     slug=tpl_id)
     sent_message = sms_interface.send_tpl(to_number=job_offer.candidate_contact.contact.phone_mobile,
                                           tpl_id=sms_template.id,
@@ -198,7 +198,7 @@ def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
             master_company = job_offer.shift.date.job.jobsite.master_company
 
             sms_template = get_sms_template(company_id=master_company.id,
-                                            candidate_contact_id=job_offer.candidate_contact.id,
+                                            contact_id=job_offer.candidate_contact.contact_id,
                                             slug=tpl_id)
             sms_interface.send_tpl(to_number=recipients.get(recipient),
                                    tpl_id=sms_template.id,
@@ -397,7 +397,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                     sms_tpl = events_dict[event].get('sms_old_tpl', sms_tpl)
 
                 sms_template = get_sms_template(company_id=master_company.id,
-                                                candidate_contact_id=recipient.contact.candidate_contacts.id,
+                                                contact_id=recipient.contact.id,
                                                 slug=sms_tpl)
                 sms_interface.send_tpl(to_number=recipient.contact.phone_mobile,
                                        tpl_id=sms_template.id,
@@ -476,7 +476,7 @@ def send_supervisor_timesheet_message(
                 return
 
             sms_template = get_sms_template(company_id=master_company.id,
-                                            candidate_contact_id=None,
+                                            contact_id=supervisor.contact_id,
                                             slug=sms_tpl)
 
             sms_interface.send_tpl(to_number=supervisor.contact.phone_mobile,
@@ -700,7 +700,7 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
                     return
 
                 sms_template = get_sms_template(company_id=master_company.id,
-                                                candidate_contact_id=recipient.contact.candidate_contacts.id,
+                                                contact_id=recipient.contact.id,
                                                 slug=sms_tpl)
 
                 sms_interface.send_tpl(to_number=recipient.contact.phone_mobile,
@@ -759,7 +759,7 @@ def send_going_to_work_sms(self, time_sheet_id):
 
             sms_tpl ='candidate-going-to-work'
             sms_template = get_sms_template(company_id=time_sheet.master_company.id,
-                                            candidate_contact_id=candidate_contact.id,
+                                            contact_id=candidate_contact.contact_id,
                                             slug=sms_tpl)
             sent_message = sms_interface.send_tpl(to_number=candidate_contact.contact.phone_mobile,
                                                   tpl_id=sms_template.id,
@@ -857,7 +857,7 @@ def send_job_confirmation_sms(self, job_id):
         master_company = jobsite.master_company
         sms_tpl = 'job-confirmed'
         sms_template = get_sms_template(company_id=master_company.id,
-                                        candidate_contact_id=job.customer_representative.contact.candidate_contacts.id,
+                                        contact_id=job.customer_representative.contact.id,
                                         slug=sms_tpl)
         sms_interface.send_tpl(to_number=job.customer_representative.contact.phone_mobile,
                                tpl_id=sms_template.id,
