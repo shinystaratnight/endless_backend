@@ -1,25 +1,25 @@
 from django.core.exceptions import ObjectDoesNotExist, ValidationError
 from rest_framework import serializers
 
-from r3sourcer.apps.candidate.models import CandidateContactLanguage, CandidateContact
 from r3sourcer.apps.core.api.languages.serializers import LanguageSerializer
 from r3sourcer.apps.core.models import Language
+from r3sourcer.apps.core.models.core import ContactLanguage, Contact
 
 
-class CandidateContactLanguageSerializer(serializers.ModelSerializer):
+class ContactLanguageSerializer(serializers.ModelSerializer):
     language_id = serializers.CharField(write_only=True)
-    candidate_contact_id = serializers.CharField(write_only=True)
+    contact_id = serializers.CharField(write_only=True)
     language = LanguageSerializer(read_only=True)
-    candidate_contact = serializers.SerializerMethodField(read_only=True)
+    contact = serializers.SerializerMethodField(read_only=True)
 
     class Meta:
-        model = CandidateContactLanguage
+        model = ContactLanguage
         fields = (
             'language_id',
-            'candidate_contact_id',
+            'contact_id',
             'default',
             'language',
-            'candidate_contact',
+            'contact',
         )
 
     @classmethod
@@ -31,14 +31,14 @@ class CandidateContactLanguageSerializer(serializers.ModelSerializer):
         return value
 
     @classmethod
-    def validate_candidate_contact_id(cls, value):
+    def validate_contact_id(cls, value):
         try:
-            CandidateContact.objects.get(pk=value)
+            Contact.objects.get(pk=value)
         except ObjectDoesNotExist:
-            raise ValidationError('Candidate contact with pk = {} does not exist'.format(value))
+            raise ValidationError('Contact with pk = {} does not exist'.format(value))
         return value
 
     @classmethod
-    def get_candidate_contact(self, obj):
-        return {'id': obj.candidate_contact_id,
-                '__str__': str(obj.candidate_contact)}
+    def get_contact(cls, obj):
+        return {'id': obj.contact_id,
+                '__str__': str(obj.contact)}

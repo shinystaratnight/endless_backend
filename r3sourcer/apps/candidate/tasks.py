@@ -53,7 +53,7 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
 
             master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
             sms_template = get_sms_template(company_id=master_company.id,
-                                            candidate_contact_id=candidate.id,
+                                            contact_id=candidate.contact_id,
                                             slug=sms_tpl)
             sms_interface.send_tpl(to_number=candidate.contact.phone_mobile,
                                    tpl_id=sms_template.id,
