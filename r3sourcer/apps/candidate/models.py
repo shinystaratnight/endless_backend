@@ -510,18 +510,6 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
             self.create_state(10)
 
-            # add master company language as candidate default language
-            candidate_default_language = self.languages.filter(default=True).first()
-            if not candidate_default_language:
-                default_language = master_company.languages.filter(default=True).first()
-                if default_language:
-                    candidate_language = CandidateContactLanguage(
-                        candidate_contact=self,
-                        language_id=default_language.language_id,
-                        default=True,
-                    )
-                    candidate_language.save()
-
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         related_objs = reply_sms.get_related_objects()
 
@@ -1011,34 +999,3 @@ class CandidateContactAnonymous(CandidateContact):
 
     def __str__(self):
         return 'Anonymous Candidate'
-
-
-class CandidateContactLanguage(models.Model):
-    candidate_contact = models.ForeignKey(
-        'candidate.CandidateContact',
-        related_name='languages',
-        verbose_name=_('Candidate Contact language'),
-        on_delete=models.CASCADE
-    )
-    language = models.ForeignKey(
-        'core.Language',
-        related_name="candidate_contacts",
-        verbose_name=_("Language"),
-        on_delete=models.PROTECT)
-
-    default = models.BooleanField(default=False)
-
-    class Meta:
-        verbose_name = _("Company language")
-        verbose_name_plural = _("Company languages")
-        unique_together = (("candidate_contact", "language"),)
-
-    def save(self, force_insert=False, force_update=False, using=None,
-             update_fields=None):
-
-        if self.default is True:
-            CandidateContactLanguage.objects \
-                                    .filter(candidate_contact=self.candidate_contact, default=True)\
-                                    .update(default=False)
-
-        super().save(force_insert, force_update, using, update_fields)

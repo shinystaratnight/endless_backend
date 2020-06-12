@@ -303,6 +303,17 @@ class Contact(CategoryFolderMixin,
             self.user.user_permissions.add(*permission_list)
             self.user.save()
 
+        if not self.languages.filter(default=True).first():
+            master_company = self.get_closest_company()
+            default_language = master_company.languages.filter(default=True).first()
+            if default_language:
+                contact_language = ContactLanguage(
+                    contact=self,
+                    language_id=default_language.language_id,
+                    default=True,
+                )
+                contact_language.save()
+
         if not is_adding:
             origin = Contact.objects.get(pk=self.pk)
             if origin.myob_card_id != self.myob_card_id:
@@ -2686,6 +2697,37 @@ class ExtranetNavigation(MPTTModel, UUIDModel):
         return False
 
 
+class ContactLanguage(models.Model):
+    contact = models.ForeignKey(
+        'core.Contact',
+        related_name='languages',
+        verbose_name=_('Contact language'),
+        on_delete=models.CASCADE
+    )
+    language = models.ForeignKey(
+        'core.Language',
+        related_name="contacts",
+        verbose_name=_("Language"),
+        on_delete=models.PROTECT)
+
+    default = models.BooleanField(default=False)
+
+    class Meta:
+        verbose_name = _("Contact language")
+        verbose_name_plural = _("Contact languages")
+        unique_together = (("contact", "language"),)
+
+    def save(self, force_insert=False, force_update=False, using=None,
+             update_fields=None):
+
+        if self.default is True:
+            ContactLanguage.objects \
+                           .filter(contact=self.contact, default=True) \
+                           .update(default=False)
+
+        super().save(force_insert, force_update, using, update_fields)
+
+
 class Role(UUIDModel):
     ROLE_NAMES = Choices(
         ('candidate', _('Candidate')),
@@ -2729,5 +2771,5 @@ __all__ = [
     'Note', 'Tag',
     'VAT', 'InvoiceRule',
     'CurrencyExchangeRates', 'PublicHoliday', 'ExtranetNavigation',
-    'AbstractBaseOrder', 'AbstractOrder', 'Role'
+    'AbstractBaseOrder', 'AbstractOrder', 'ContactLanguage', 'Role'
 ]
