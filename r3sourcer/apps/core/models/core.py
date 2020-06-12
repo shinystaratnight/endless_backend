@@ -303,6 +303,12 @@ class Contact(CategoryFolderMixin,
             self.user.user_permissions.add(*permission_list)
             self.user.save()
 
+        if not is_adding:
+            origin = Contact.objects.get(pk=self.pk)
+            if origin.myob_card_id != self.myob_card_id:
+                self.old_myob_card_id = origin.myob_card_id
+        super().save(*args, **kwargs)
+
         if not self.languages.filter(default=True).first():
             master_company = self.get_closest_company()
             default_language = master_company.languages.filter(default=True).first()
@@ -313,12 +319,6 @@ class Contact(CategoryFolderMixin,
                     default=True,
                 )
                 contact_language.save()
-
-        if not is_adding:
-            origin = Contact.objects.get(pk=self.pk)
-            if origin.myob_card_id != self.myob_card_id:
-                self.old_myob_card_id = origin.myob_card_id
-        super().save(*args, **kwargs)
 
     def get_myob_card_number(self):
         if not self.myob_card_id:
