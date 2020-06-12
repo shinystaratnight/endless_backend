@@ -18,6 +18,7 @@ from mptt.admin import MPTTModelAdmin
 from r3sourcer.apps.core_utils.filters import RelatedDropDownFilter
 from r3sourcer.apps.core_utils.mixins import ExtendedDraggableMPTTAdmin
 from r3sourcer.apps.billing.models import Subscription
+from r3sourcer.helpers.admin.filters import LanguageListFilter
 
 from .. import forms
 from .. import models
@@ -129,6 +130,11 @@ class CompanyIndustryRel(admin.TabularInline):
 class ContactAdmin(admin.ModelAdmin):
 
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
+
+
+class ContactLanguageAdmin(admin.ModelAdmin):
+    list_display = ('contact', 'language')
+    list_filter = (LanguageListFilter,)
 
 
 class AddressAdmin(admin.ModelAdmin):
@@ -379,6 +385,7 @@ if admin.site.is_registered(Site):
 
 admin.site.site_header = "Core Administration"
 admin.site.register(models.Contact, ContactAdmin)
+admin.site.register(models.ContactLanguage, ContactLanguageAdmin)
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
