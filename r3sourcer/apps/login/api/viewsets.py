@@ -283,6 +283,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             country_code = country.code2
             country_phone_prefix = country.phone
 
+        company_settings = request.user.company.company_settings
+
         return Response({
             'status': 'success',
             'data': {
@@ -295,6 +297,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                 'roles': roles,
                 'country_code': country_code,
                 'country_phone_prefix': country_phone_prefix,
+                'allow_job_creation': company_settings.allow_job_creation
             }
         }, status=status.HTTP_200_OK)
 
