@@ -1354,6 +1354,9 @@ class CompanyListSerializer(
                     }
                 ),
                 'groups': ('id', '__str__'),
+                'company_settings': (
+                    'id', 'allow_job_creation', '__str__'
+                )
             }
         )
         extra_kwargs = {
