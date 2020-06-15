@@ -133,6 +133,7 @@ class ContactAdmin(admin.ModelAdmin):
 
 
 class ContactLanguageAdmin(admin.ModelAdmin):
+    search_fields = ('contact', 'language')
     list_display = ('contact', 'language')
     list_filter = (LanguageListFilter,)
 
