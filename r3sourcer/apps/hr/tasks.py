@@ -384,7 +384,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
             else:
                 recipient = time_sheet.supervisor
 
-            master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
+            master_company = time_sheet.master_company
             if candidate.message_by_sms:
                 try:
                     sms_interface = get_sms_service()
