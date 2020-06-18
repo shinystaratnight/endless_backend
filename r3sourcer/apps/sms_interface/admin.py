@@ -1,6 +1,10 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.contrib.admin.helpers import ActionForm
+from django import forms
+from django.forms import model_to_dict
 
 from . import models
+from ..core.models import Language
 from ...helpers.admin.filters import LanguageListFilter, CompanyListFilter
 
 
@@ -15,12 +19,33 @@ class SMSTemplateAdmin(admin.ModelAdmin):
         return obj.language.name
 
 
+class CreateWithLanguage(ActionForm):
+    language_id = forms.ModelChoiceField(Language.objects.all(), required=False)
+
+
+def create_with_languages(modeladmin, request, queryset):
+    if not request.POST.get('language_id'):
+        modeladmin.message_user(request, "Choose language", messages.ERROR)
+        return
+    for obj in queryset:
+        src_template = model_to_dict(obj, exclude=['id', 'language'])
+        new_template = models.DefaultSMSTemplate(**src_template)
+        new_template.language_id = request.POST['language_id']
+        new_template.save()
+    modeladmin.message_user(request, "Successfully copied", messages.SUCCESS)
+
+
+create_with_languages.short_description = 'Copy template with selected language'
+
+
 class DefaultSMSTemplateAdmin(admin.ModelAdmin):
     # prepopulated_fields = {"slug": ("name",)}
     list_display = ['name', 'language_name']
     ordering = ['name', 'language']
     search_fields = ['name']
     list_filter = (LanguageListFilter, 'name')
+    action_form = CreateWithLanguage
+    actions = [create_with_languages]
 
     @classmethod
     def language_name(cls, obj):
