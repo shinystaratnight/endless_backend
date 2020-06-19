@@ -1,5 +1,9 @@
-from django.contrib import admin
+from django.contrib import admin, messages
+from django.contrib.admin.helpers import ActionForm
+from django import forms
+from django.forms import model_to_dict
 
+from r3sourcer.apps.core.models import Language
 from r3sourcer.apps.email_interface import models as email_models
 from r3sourcer.helpers.admin.filters import LanguageListFilter, CompanyListFilter
 
@@ -15,11 +19,32 @@ class EmailTemplateAdmin(admin.ModelAdmin):
         return obj.language.name
 
 
+class CreateWithLanguage(ActionForm):
+    language_id = forms.ModelChoiceField(Language.objects.all(), required=False)
+
+
+def create_with_languages(modeladmin, request, queryset):
+    if not request.POST.get('language_id'):
+        modeladmin.message_user(request, "Choose language", messages.ERROR)
+        return
+    for obj in queryset:
+        src_template = model_to_dict(obj, exclude=['id', 'language'])
+        new_template = email_models.DefaultEmailTemplate(**src_template)
+        new_template.language_id = request.POST['language_id']
+        new_template.save()
+    modeladmin.message_user(request, "Successfully copied", messages.SUCCESS)
+
+
+create_with_languages.short_description = 'Copy template with selected language'
+
+
 class DefaultEmailTemplateAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     list_display = ['name', 'slug', 'language_name']
     ordering = ['slug', 'language']
     list_filter = (LanguageListFilter, 'name')
+    action_form = CreateWithLanguage
+    actions = [create_with_languages]
 
     @classmethod
     def language_name(cls, obj):

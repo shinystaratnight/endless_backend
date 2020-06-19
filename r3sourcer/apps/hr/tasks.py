@@ -467,7 +467,7 @@ def send_supervisor_timesheet_message(
         data_dict['related_objs'].extend(related_timesheets or [])
         data_dict.update(kwargs)
 
-        master_company = core_companies_utils.get_site_master_company(user=supervisor.contact.user)
+        master_company = supervisor.contact.get_closest_company()
         if should_send_sms and supervisor.contact.phone_mobile:
             try:
                 sms_interface = get_sms_service()

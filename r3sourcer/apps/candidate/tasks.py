@@ -51,7 +51,7 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
 
             logger.info('Sending phone verify SMS to %s.', candidate.contact)
 
-            master_company = core_companies_utils.get_site_master_company(user=candidate.contact.user)
+            master_company = candidate.contact.get_closest_company()
             sms_template = get_sms_template(company_id=master_company.id,
                                             contact_id=candidate.contact_id,
                                             slug=sms_tpl)

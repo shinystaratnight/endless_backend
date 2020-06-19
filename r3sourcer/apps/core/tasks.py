@@ -308,7 +308,7 @@ def send_generated_password_email(email, new_password=None):
             'password': new_password,
             'site_url': site_url,
         }
-        master_company = get_site_master_company(user=contact.user)
+        master_company = contact.get_closest_company()
         email_interface.send_tpl(contact.email, master_company, tpl_name='forgot-password', **data_dict)
 
         contact.user.set_password(new_password)
