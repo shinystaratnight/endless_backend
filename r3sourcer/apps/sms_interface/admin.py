@@ -29,10 +29,22 @@ def create_with_languages(modeladmin, request, queryset):
         return
     for obj in queryset:
         src_template = model_to_dict(obj, exclude=['id', 'language'])
+        unique = dict(slug=src_template['slug'],
+                      language_id=request.POST['language_id'])
+        qs = models.DefaultSMSTemplate.objects.filter(**unique)
+        if qs.all():
+            modeladmin.message_user(request,
+                                    'Template with slug <{slug}> and language <{language_id}> already exists'
+                                    .format(**unique),
+                                    messages.ERROR)
+            continue
         new_template = models.DefaultSMSTemplate(**src_template)
         new_template.language_id = request.POST['language_id']
         new_template.save()
-    modeladmin.message_user(request, "Successfully copied", messages.SUCCESS)
+        modeladmin.message_user(request,
+                                "Template with slug <{slug}> and language <language_id> successfully copied"
+                                .format(**unique),
+                                messages.SUCCESS)
 
 
 create_with_languages.short_description = 'Copy template with selected language'

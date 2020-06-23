@@ -47,6 +47,11 @@ class EmailTemplateSerializer(serializers.ModelSerializer):
         return template
 
     def update(self, instance, validated_data):
+        instance.name = validated_data['name']
+        instance.message_text_template = validated_data['message_text_template']
+        instance.message_html_template = validated_data['message_html_template']
+        instance.reply_timeout = validated_data['reply_timeout']
+        instance.delivery_timeout = validated_data['delivery_timeout']
         instance.language = validated_data['language_id']
         instance.save()
         return instance
