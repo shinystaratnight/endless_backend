@@ -653,7 +653,11 @@ class ModelFormField(FormField):
         if issubclass(model, CandidateContact) and 'contact__bank_accounts' in builder.fields:
             master_company = get_site_master_company()
             bank_layout = BankAccountLayout.objects.filter(
-                countries__country=master_company.country, countries__default=True).first()
+                countries__country=master_company.country
+            ).order_by('-countries__default').first()
+
+            if not bank_layout:
+                return
 
             model_fields = []
             for field in bank_layout.fields.all().order_by('order'):
