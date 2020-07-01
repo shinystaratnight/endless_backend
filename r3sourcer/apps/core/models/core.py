@@ -1270,6 +1270,13 @@ class Company(CategoryFolderMixin,
             return 'aud'
 
     @property
+    def country(self):
+        try:
+            return self.company_addresses.order_by('hq').first().address.country
+        except Exception:
+            return Country.objects.get(name='Australia')
+
+    @property
     def active_subscription(self):
         return self.subscriptions.filter(active=True).first()
 

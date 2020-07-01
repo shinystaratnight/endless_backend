@@ -20,7 +20,7 @@ from polymorphic.models import PolymorphicModel
 from r3sourcer.apps.core.models import Country
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.core.utils.address import parse_google_address
-from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact
+from r3sourcer.apps.core.utils.companies import get_master_companies_by_contact, get_site_master_company
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.apps.core_adapter.utils import api_reverse
@@ -232,6 +232,11 @@ class Form(UUIDModel):
             })
         return result_list
 
+    def _is_candidate_bank_account(self, model_class, field_name):
+        from r3sourcer.apps.candidate.models import CandidateContact
+
+        return 'contact__bank_accounts' in field_name and model_class == CandidateContact
+
     def is_valid_model_field_name(self, field_name: str) -> bool:
         """
         Checking model field name for attached content type model.
@@ -245,6 +250,9 @@ class Form(UUIDModel):
         model_class = self.content_type.model_class()
         fields = field_name.split(StorageHelper.LOOKUP_SEPARATOR)
         count = len(fields)
+
+        if self._is_candidate_bank_account(model_class, field_name):
+            return True
 
         for index, _field_name in enumerate(fields):
             if index != count - 1:
@@ -272,7 +280,11 @@ class Form(UUIDModel):
                 'name': group.name,
                 'fields': OrderedDict()
             }
-            for field in FormField.inheritance_objects.filter(group_id=group.id).select_subclasses():
+            fields_qs = FormField.inheritance_objects.filter(
+                group_id=group.id
+            ).exclude(
+                name__startswith='contact__bank_accounts')
+            for field in fields_qs.select_subclasses():
                 group_data['fields'].setdefault(field.name, field.get_form_field())
             group_data['form_cls'] = type('BuilderForm', (forms.Form,), group_data['fields'].copy())
 
@@ -635,6 +647,36 @@ class ModelFormField(FormField):
                         'label': field.verbose_name
                     }
 
+        from r3sourcer.apps.candidate.models import CandidateContact
+        from r3sourcer.apps.core.models import BankAccountLayout
+
+        if issubclass(model, CandidateContact) and 'contact__bank_accounts' in builder.fields:
+            master_company = get_site_master_company()
+            bank_layout = BankAccountLayout.objects.filter(
+                countries__country=master_company.country
+            ).order_by('-countries__default').first()
+
+            if not bank_layout:
+                return
+
+            model_fields = []
+            for field in bank_layout.fields.all().order_by('order'):
+                label = field.field.languages.filter(default=True).first()
+                model_fields.append({
+                    'name': 'contact__bank_accounts__' + field.field.name,
+                    'required': field.required,
+                    'help_text': field.field.description,
+                    'label': label.name
+                })
+
+            yield {
+                'model_fields': model_fields,
+                'name': 'contact__bank_accounts',
+                'required': False,
+                'help_text': '',
+                'label': 'Bank Account'
+            }
+
     @classmethod
     def flatten_model_fields_config(cls, model_fields):
         fields = {}
@@ -646,6 +688,19 @@ class ModelFormField(FormField):
                 fields[model_field['name']] = model_field
 
         return fields
+
+    def _get_bank_account_field(self):
+        return {
+            'key': self.name.replace('__', '.'),
+            'type': 'input',
+            'templateOptions': {
+                'description': self.help_text,
+                'placeholder': self.placeholder,
+                'required': self.required,
+                'label': self.label,
+                'type': 'text'
+            }
+        }
 
     def get_form_field(self) -> forms.Field:
         """
@@ -665,6 +720,9 @@ class ModelFormField(FormField):
 
         :return: dict
         """
+        if 'contact__bank_accounts' in self.name:
+            return self._get_bank_account_field()
+
         ui_all_config = super(ModelFormField, self).get_ui_config()
         ui_config = ui_all_config.get('templateOptions', {})
         form_field = self.get_form_field()
