@@ -661,12 +661,12 @@ class ModelFormField(FormField):
 
             model_fields = []
             for field in bank_layout.fields.all().order_by('order'):
-                label = field.field.languages.filter(default=True).first()
+                label = field.field.languages.order_by('-default').first()
                 model_fields.append({
                     'name': 'contact__bank_accounts__' + field.field.name,
                     'required': field.required,
                     'help_text': field.field.description,
-                    'label': label.name
+                    'label': label.name if label else field.fields.name
                 })
 
             yield {
