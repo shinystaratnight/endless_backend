@@ -8,6 +8,7 @@ from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from .models import TokenLogin
 from ..core.utils.companies import get_site_master_company
+from ..sms_interface.helpers import get_sms_template
 
 logger = get_task_logger(__name__)
 
@@ -24,7 +25,9 @@ def get_contact(contact_id):
 DEFAULT_LOGIN_REDIRECT = '/'
 
 
-def send_login_token(contact, send_func, tpl, redirect_url=DEFAULT_LOGIN_REDIRECT, type_=TokenLogin.TYPES.sms):
+def send_login_token(contact, send_func, tpl, redirect_url, type_=TokenLogin.TYPES.sms):
+    if not redirect_url:
+        redirect_url = DEFAULT_LOGIN_REDIRECT
     with transaction.atomic():
         token_login = TokenLogin.objects.create(contact=contact,
                                                 type=type_,
@@ -34,15 +37,21 @@ def send_login_token(contact, send_func, tpl, redirect_url=DEFAULT_LOGIN_REDIREC
             contact=contact,
             auth_url="%s%s" % (settings.SITE_URL, token_login.auth_url),
             project_url=settings.SITE_URL,
+            related_obj=contact,
         )
 
         logger.info('Prepared Login token for contact %s. URL: %s',
                     contact,
                     data_dict['auth_url'])
+        master_company = get_site_master_company(user=contact.user)
         if type_ in (TokenLogin.TYPES.sms,):
-            send_func(to_number=contact.phone_mobile, tpl_name=tpl, **data_dict)
+            sms_template = get_sms_template(company_id=master_company.id,
+                                            contact_id=contact.id,
+                                            slug=tpl)
+            send_func(to_number=contact.phone_mobile,
+                      tpl_id=sms_template.id,
+                      **data_dict)
         elif type_ in (TokenLogin.TYPES.email,):
-            master_company = get_site_master_company(user=contact.user)
             send_func(contact.email, master_company.id, tpl_name=tpl, **data_dict)
         else:
             raise Exception('Unknown login  token type')
