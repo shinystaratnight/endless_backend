@@ -135,7 +135,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
             {
                 'contact': (
                     'id', 'first_name', 'last_name', 'email', 'phone_mobile', 'is_available', 'picture', 'gender',
-                    'birthday',
+                    'birthday', 'myob_card_id', 'old_myob_card_id',
                     {
                         'address': ('__all__', ),
                     }
@@ -149,7 +149,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                 'superannuation_fund': ('id', 'product_name')
             }
         )
-        read_only_fields = ('candidate_scores',)
+        read_only_fields = ('candidate_scores', 'old_myob_card_id')
 
         related = core_serializers.RELATED_DIRECT
 
