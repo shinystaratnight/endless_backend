@@ -140,13 +140,14 @@ class BaseSMSService(metaclass=ABCMeta):
             logger.info('Process start message: {}'.format(sms_message.from_number))
             return
 
-        if sms_message.is_login():
-            contact = Contact.objects.filter(phone_mobile=sms_message.from_number).last()
-            if contact:
-                login_service = factory.get_instance('login')
-                login_service.send_login_sms(contact)
-                logger.info('Process login message: {}'.format(sms_message.from_number))
-            return
+        # WARNING: Cycle sms sending
+        # if sms_message.is_login():
+        #     contact = Contact.objects.filter(phone_mobile=sms_message.from_number).last()
+        #     if contact:
+        #         login_service = factory.get_instance('login')
+        #         login_service.send_login_sms(contact)
+        #         logger.info('Process login message: {}'.format(sms_message.from_number))
+        #     return
 
         if not sms_message.is_answer():
             self.process_ambiguous_answer(sms_message, sent_message)
