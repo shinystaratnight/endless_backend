@@ -1963,6 +1963,32 @@ class Tag(MPTTModel, UUIDModel):
         return False
 
 
+class TagLanguage(models.Model):
+    tag = models.ForeignKey('core.Tag',
+                            related_name='translations',
+                            on_delete=models.CASCADE,
+                            verbose_name=_('Tag Name')
+                            )
+    value = models.CharField(max_length=127, verbose_name=_("Tag transalation"))
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Tag name language"),
+        on_delete=models.CASCADE,
+        related_name='tag_names',
+    )
+
+    class Meta:
+        verbose_name = _("Tag Language")
+        verbose_name_plural = _("Tag Languages")
+        unique_together = [
+            'tag',
+            'language',
+        ]
+
+    def __str__(self):
+        return self.value
+
+
 class VAT(UUIDModel):
     country = models.ForeignKey(
         'core.Country',
@@ -2775,7 +2801,7 @@ __all__ = [
     'Address', 'FileStorage',
     'Order',
     'AbstractPayRuleMixin', 'Invoice', 'InvoiceLine',
-    'Note', 'Tag',
+    'Note', 'Tag', 'TagLanguage',
     'VAT', 'InvoiceRule',
     'CurrencyExchangeRates', 'PublicHoliday', 'ExtranetNavigation',
     'AbstractBaseOrder', 'AbstractOrder', 'ContactLanguage', 'Role'

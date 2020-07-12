@@ -60,9 +60,11 @@ class SkillTagSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = SkillTag
-        fields = ('id', 'tag', {
-            'skill': ('id', 'name')
-        })
+        fields = (
+            'id',
+            {'tag': ('name', {'translations': ('language', 'value')})},
+            {'skill': ('id', {'name': ('name', {'translations': ('language', 'value')})})},
+        )
 
 
 class SkillNameSerializer(ApiBaseModelSerializer):
@@ -71,9 +73,13 @@ class SkillNameSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = SkillName
-        fields = ('id', 'name', {
-            'industry': ('id', 'type')
-        })
+        fields = (
+            'id',
+            'name',
+            {'industry': ('id', 'type', {'translations': ('language', 'value')}),
+             'translations': ('language', 'value'),
+            },
+        )
 
     def get_active(self, obj):
         try:
