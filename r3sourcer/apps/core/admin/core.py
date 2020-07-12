@@ -236,8 +236,12 @@ class SuperuserAdmin(admin.ModelAdmin):
         return request.user.is_superuser
 
 
+class TagLanguageInline(admin.TabularInline):
+    model = models.TagLanguage
+
+
 class TagAdmin(MPTTModelAdmin):
-    pass
+    inlines = (TagLanguageInline,)
 
 
 class ExtranetNavigationAdmin(ExtendedDraggableMPTTAdmin):

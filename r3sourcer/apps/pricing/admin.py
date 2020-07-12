@@ -50,8 +50,16 @@ class RateCoefficientAdmin(admin.ModelAdmin):
     master_company.short_description = 'Master company'
 
 
-admin.site.register(models.Industry)
+class IndustryLanguageInline(admin.TabularInline):
+    model = models.IndustryLanguage
 
+
+class IndustryAdmin(admin.ModelAdmin):
+    list_display = ['type']
+    inlines = (IndustryLanguageInline,)
+
+
+admin.site.register(models.Industry, IndustryAdmin)
 admin.site.register(models.RateCoefficientGroup)
 admin.site.register(models.RateCoefficient, RateCoefficientAdmin)
 admin.site.register(models.PriceList)

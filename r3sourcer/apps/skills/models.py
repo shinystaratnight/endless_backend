@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
-from r3sourcer.apps.core.models import Tag, Company
+from r3sourcer.apps.core.models import Company
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
@@ -42,6 +42,10 @@ class SkillName(UUIDModel):
     class Meta:
         verbose_name = _("Skill Name")
         verbose_name_plural = _("Skill Names")
+        unique_together = [
+            'name',
+            'industry',
+        ]
 
     def __str__(self):
         return self.name
@@ -54,8 +58,34 @@ class SkillName(UUIDModel):
             ]
 
 
-class Skill(MYOBMixin, UUIDModel):
+class SkillNameLanguage(models.Model):
+    name = models.ForeignKey(
+        'skills.SkillName',
+        related_name='translations',
+        on_delete=models.PROTECT,
+        verbose_name=_('Skill Name'),
+    )
+    value = models.CharField(max_length=127, verbose_name=_("Skill Name transalation"))
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Skill name language"),
+        on_delete=models.CASCADE,
+        related_name='skill_names',
+    )
 
+    class Meta:
+        verbose_name = _("Skill Name Language")
+        verbose_name_plural = _("Skill Name Languages")
+        unique_together = [
+            'name',
+            'language',
+        ]
+
+    def __str__(self):
+        return self.value
+
+
+class Skill(MYOBMixin, UUIDModel):
     name = models.ForeignKey(
         SkillName,
         related_name='skills',
@@ -136,7 +166,7 @@ class Skill(MYOBMixin, UUIDModel):
     )
 
     tags = models.ManyToManyField(
-        Tag,
+        'core.Tag',
         related_name='skills',
         through='SkillTag'
     )
@@ -200,7 +230,7 @@ class Skill(MYOBMixin, UUIDModel):
 class SkillBaseRate(UUIDModel):
 
     skill = models.ForeignKey(
-        Skill,
+        'skills.Skill',
         related_name="skill_rate_defaults",
         verbose_name=_("Skill")
     )
@@ -249,14 +279,14 @@ post_save.connect(SkillBaseRate.set_default_rate, sender=SkillBaseRate)
 
 class SkillTag(UUIDModel):
     tag = models.ForeignKey(
-        Tag,
+        'core.Tag',
         related_name="skill_tags",
         on_delete=models.PROTECT,
         verbose_name=_("Tag")
     )
 
     skill = models.ForeignKey(
-        Skill,
+        'skills.Skill',
         on_delete=models.PROTECT,
         related_name="skill_tags",
         verbose_name=_("Skill")
