@@ -19,8 +19,8 @@ class SkillSerializer(ApiBaseModelSerializer):
             'carrier_list_reserve', 'short_name', 'employment_classification', 'active', 'upper_rate_limit',
             'lower_rate_limit', 'default_rate', 'price_list_upper_rate_limit', 'price_list_lower_rate_limit', 'id',
             'price_list_default_rate', 'company', {
-                'name': ('id', 'name', 'industry')
-            }
+                'name': ('id', 'name', {'industry': ('id', 'type', {'translations': ('language', 'value')})})
+            },
         )
 
     def validate(self, validated_data):
