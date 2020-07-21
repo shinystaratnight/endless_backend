@@ -251,7 +251,8 @@ class TagAdmin(MPTTModelAdmin):
         return qs
 
 
-class CompanyTagAdmin(MPTTModelAdmin):
+class CompanyTagAdmin(admin.ModelAdmin):
+    list_display = ('tag', 'company')
 
     def get_queryset(self, request):
         qs = models.CompanyTag.objects.filter(tag__owner=models.Tag.TAG_OWNER.company)
