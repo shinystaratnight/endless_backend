@@ -1817,19 +1817,66 @@ class TrialSerializer(serializers.Serializer):
         return data
 
 
-class TagSerializer(ApiBaseModelSerializer):
+class LanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = core_models.Language
+        fields = ('name',)
 
+
+class TagTranslationSerializer(serializers.ModelSerializer):
+    language = LanguageSerializer()
+
+    class Meta:
+        model = core_models.TagLanguage
+        fields = (
+            'language',
+            'value',
+        )
+
+
+class TagSerializer(ApiBaseModelSerializer):
+    translation = TagTranslationSerializer(many=True, source='translations', read_only=True)
     method_fields = ('skills', 'children')
 
     class Meta:
         model = core_models.Tag
-        fields = ('id', 'name', 'parent', 'active', 'evidence_required_for_approval', 'confidential')
+        fields = (
+            'id',
+            'name',
+            'parent',
+            'active',
+            'evidence_required_for_approval',
+            'confidential',
+            'owner',
+            'translation',
+        )
+
+    @classmethod
+    def skill_translation(cls, skill):
+        response = []
+        for x in skill.skill.name.translations.all():
+            response.append({
+                'value': x.value,
+                'language': {
+                    'id': x.language.pk,
+                    'name': x.language.name,
+                    '__str__': x.language.__str__()
+                },
+                '__str__': x.__str__()
+            })
+        return response
 
     def get_skills(self, obj):
-        return [{'id': skill.id, '__str__': str(skill.skill)} for skill in obj.skill_tags.all()]
+        if isinstance(obj, core_models.Tag):
+            return [{'id': skill.id, '__str__': str(skill.skill), 'translations': self.skill_translation(skill)}
+                    for skill in obj.skill_tags.all()]
+        return []
 
-    def get_children(self, obj):
-        return [core_field.ApiBaseRelatedField.to_read_only_data(child) for child in obj.children.all()]
+    @classmethod
+    def get_children(cls, obj):
+        if isinstance(obj, core_models.Tag):
+            return [core_field.ApiBaseRelatedField.to_read_only_data(child) for child in obj.children.all()]
+        return []
 
 
 class ContactForgotPasswordSerializer(serializers.Serializer):

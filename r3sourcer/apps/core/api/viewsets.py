@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q, ForeignKey
+from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import viewsets, exceptions, status, fields
@@ -1128,3 +1129,57 @@ class UserViewset(BaseApiViewset):
             'status': 'success',
             'message': _('Password reset instructions were sent to this email address'),
         })
+
+
+class TagViewSet(BaseApiViewset):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        if not self.kwargs.get('pk'):
+            master_company = self.request.user.contact.get_closest_company().get_closest_master_company()
+            qs = qs.filter(company_tags__company_id=master_company.pk)
+            system_tag_qs = models.Tag.objects.filter(owner=models.Tag.TAG_OWNER.system)
+            qs = qs.union(system_tag_qs)
+        return qs
+
+    def update(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        if instance.owner == models.Tag.TAG_OWNER.system \
+                or not instance.company_tags.all():
+            return HttpResponseBadRequest('Forbidden action - edit')
+        if data.get('owner') and data['owner'] == models.Tag.TAG_OWNER.system:
+            return HttpResponseBadRequest(f'Field <owner> cannot be {data["owner"]}')
+
+        serializer = self.get_serializer(instance, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+
+        return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        with transaction.atomic():
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            if serializer.validated_data.get('owner') \
+                    and serializer.validated_data['owner'] == models.Tag.TAG_OWNER.system:
+                return HttpResponseBadRequest(f'Field <owner> cannot be {serializer.validated_data["owner"]}')
+            if self.queryset.filter(owner=models.Tag.TAG_OWNER.system,
+                                    name__iexact=serializer.validated_data['name']).all():
+                return HttpResponseBadRequest(f'Tag already exists {serializer.validated_data["name"]}')
+
+            master_company = self.request.user.contact.get_closest_company().get_closest_master_company()
+            if self.queryset.filter(owner=models.Tag.TAG_OWNER.company,
+                                    name__iexact=serializer.validated_data['name'],
+                                    company_tags__company_id=master_company.pk,
+                                    ).all():
+                return HttpResponseBadRequest(f'Tag already exists {serializer.validated_data["name"]}')
+
+            self.perform_create(serializer)
+            company_tag = models.CompanyTag(
+                tag_id=serializer.data['id'],
+                company_id=master_company.pk,
+            )
+            company_tag.save()
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
