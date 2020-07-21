@@ -1149,7 +1149,7 @@ class TagViewSet(BaseApiViewset):
                 or not instance.company_tags.all():
             return HttpResponseBadRequest('Forbidden action - edit')
         if data.get('owner') and data['owner'] == models.Tag.TAG_OWNER.system:
-            return HttpResponseBadRequest(f'Field <owner> cannot be {data["owner"]}')
+            return HttpResponseBadRequest('Field <owner> cannot be {0}'.format(data['owner']))
 
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
@@ -1163,17 +1163,17 @@ class TagViewSet(BaseApiViewset):
             serializer.is_valid(raise_exception=True)
             if serializer.validated_data.get('owner') \
                     and serializer.validated_data['owner'] == models.Tag.TAG_OWNER.system:
-                return HttpResponseBadRequest(f'Field <owner> cannot be {serializer.validated_data["owner"]}')
+                return HttpResponseBadRequest('Field <owner> cannot be {0}'.format(serializer.validated_data["owner"]))
             if self.queryset.filter(owner=models.Tag.TAG_OWNER.system,
                                     name__iexact=serializer.validated_data['name']).all():
-                return HttpResponseBadRequest(f'Tag already exists {serializer.validated_data["name"]}')
+                return HttpResponseBadRequest('Tag already exists {0}'.format(serializer.validated_data["name"]))
 
             master_company = self.request.user.contact.get_closest_company().get_closest_master_company()
             if self.queryset.filter(owner=models.Tag.TAG_OWNER.company,
                                     name__iexact=serializer.validated_data['name'],
                                     company_tags__company_id=master_company.pk,
                                     ).all():
-                return HttpResponseBadRequest(f'Tag already exists {serializer.validated_data["name"]}')
+                return HttpResponseBadRequest('Tag already exists {0}'.format(serializer.validated_data["name"]))
 
             self.perform_create(serializer)
             company_tag = models.CompanyTag(
