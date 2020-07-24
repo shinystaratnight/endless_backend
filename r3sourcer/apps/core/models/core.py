@@ -1937,6 +1937,10 @@ class Note(UUIDModel):
 
 
 class Tag(MPTTModel, UUIDModel):
+    TAG_OWNER = Choices(
+        ('system', _('System')),
+        ('company', _('Company')),
+    )
     name = models.CharField(max_length=63, verbose_name=_("Tag Name"))
     parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
     active = models.BooleanField(default=True, verbose_name=_('Active'))
@@ -1947,6 +1951,11 @@ class Tag(MPTTModel, UUIDModel):
     confidential = models.BooleanField(
         default=False,
         verbose_name=_('Confidential'),
+    )
+    owner = models.CharField(
+        max_length=10,
+        choices=TAG_OWNER,
+        default=TAG_OWNER.system
     )
 
     objects = TagManager()
@@ -1961,6 +1970,56 @@ class Tag(MPTTModel, UUIDModel):
     @classmethod
     def is_owned(cls):
         return False
+
+
+class CompanyTag(UUIDModel):
+    tag = models.ForeignKey(
+        'core.Tag',
+        related_name="company_tags",
+        on_delete=models.CASCADE,
+        verbose_name=_("Tag")
+    )
+
+    company = models.ForeignKey(
+        'core.Company',
+        on_delete=models.CASCADE,
+        verbose_name=_("Company"),
+        related_name="tags",
+    )
+
+    class Meta:
+        verbose_name = _("Company Tag")
+        verbose_name_plural = _("Company Tags")
+        unique_together = ("tag", "company")
+
+    def __str__(self):
+        return self.tag.name
+
+
+class TagLanguage(models.Model):
+    tag = models.ForeignKey('core.Tag',
+                            related_name='translations',
+                            on_delete=models.CASCADE,
+                            verbose_name=_('Tag Name')
+                            )
+    value = models.CharField(max_length=127, verbose_name=_("Tag transalation"))
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Tag name language"),
+        on_delete=models.CASCADE,
+        related_name='tag_names',
+    )
+
+    class Meta:
+        verbose_name = _("Tag Language")
+        verbose_name_plural = _("Tag Languages")
+        unique_together = [
+            'tag',
+            'language',
+        ]
+
+    def __str__(self):
+        return self.value
 
 
 class VAT(UUIDModel):
@@ -2775,7 +2834,7 @@ __all__ = [
     'Address', 'FileStorage',
     'Order',
     'AbstractPayRuleMixin', 'Invoice', 'InvoiceLine',
-    'Note', 'Tag',
+    'Note', 'Tag', 'TagLanguage', 'CompanyTag',
     'VAT', 'InvoiceRule',
     'CurrencyExchangeRates', 'PublicHoliday', 'ExtranetNavigation',
     'AbstractBaseOrder', 'AbstractOrder', 'ContactLanguage', 'Role'

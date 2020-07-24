@@ -68,6 +68,33 @@ class Industry(UUIDModel):
         return False
 
 
+class IndustryLanguage(models.Model):
+    industry = models.ForeignKey(
+        'pricing.Industry',
+        on_delete=models.PROTECT,
+        verbose_name=_('Industry'),
+        related_name='translations'
+    )
+    value = models.CharField(max_length=127, verbose_name=_("Industry transalation"))
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Industry language"),
+        on_delete=models.CASCADE,
+        related_name='industries',
+    )
+
+    class Meta:
+        verbose_name = _("IndustryLanguage")
+        verbose_name_plural = _("Industry Languages")
+        unique_together = [
+            'industry',
+            'language',
+        ]
+
+    def __str__(self):
+        return self.value
+
+
 class RateCoefficientGroup(UUIDModel):
 
     name = models.CharField(
@@ -457,7 +484,7 @@ __all__ = [
     'PriceListMixin', 'PriceListRateMixin', 'Industry', 'RateCoefficientGroup',
     'RateCoefficient', 'RateCoefficientRel', 'PriceList', 'PriceListRate',
     'PriceListRateCoefficient', 'RateCoefficientModifier',
-    'DynamicCoefficientRule', 'PriceListRateModifier',
+    'DynamicCoefficientRule', 'PriceListRateModifier', 'IndustryLanguage'
 ]
 
 

@@ -3,8 +3,13 @@ from django.contrib import admin
 from . import models
 
 
+class SkillNameLanguageInline(admin.TabularInline):
+    model = models.SkillNameLanguage
+
+
 class SkillNameAdmin(admin.ModelAdmin):
     list_display = ('name', 'industry', )
+    inlines = (SkillNameLanguageInline,)
 
 
 class SkillAdmin(admin.ModelAdmin):

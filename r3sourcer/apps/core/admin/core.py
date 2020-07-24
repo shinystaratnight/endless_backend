@@ -236,8 +236,30 @@ class SuperuserAdmin(admin.ModelAdmin):
         return request.user.is_superuser
 
 
+class TagLanguageInline(admin.TabularInline):
+    model = models.TagLanguage
+
+
 class TagAdmin(MPTTModelAdmin):
-    pass
+    inlines = (TagLanguageInline,)
+
+    def get_queryset(self, request):
+        qs = models.Tag.objects.filter(owner=models.Tag.TAG_OWNER.system)
+        ordering = self.get_ordering(request)
+        if ordering:
+            qs = qs.order_by(*ordering)
+        return qs
+
+
+class CompanyTagAdmin(admin.ModelAdmin):
+    list_display = ('tag', 'company')
+
+    def get_queryset(self, request):
+        qs = models.CompanyTag.objects.filter(tag__owner=models.Tag.TAG_OWNER.company)
+        ordering = self.get_ordering(request)
+        if ordering:
+            qs = qs.order_by(*ordering)
+        return qs
 
 
 class ExtranetNavigationAdmin(ExtendedDraggableMPTTAdmin):
@@ -400,6 +422,7 @@ admin.site.register(models.CompanyContactRelationship, BaseAdmin)
 admin.site.register(models.Invoice, InvoiceAdmin)
 admin.site.register(models.InvoiceLine, InvoiceLineAdmin)
 admin.site.register(models.Tag, TagAdmin)
+admin.site.register(models.CompanyTag, CompanyTagAdmin)
 admin.site.register(models.Note)
 admin.site.register(models.Order)
 admin.site.register(models.SiteCompany, BaseAdmin)

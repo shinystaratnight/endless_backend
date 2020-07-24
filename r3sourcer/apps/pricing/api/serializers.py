@@ -146,7 +146,7 @@ class IndustrySerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = pricing_models.Industry
-        fields = ('__all__',)
+        fields = ('id', 'type', {'translations': ('language', 'value')})
 
 
 class PriceListRateSerializer(ApiBaseModelSerializer):

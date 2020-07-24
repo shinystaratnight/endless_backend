@@ -19,8 +19,8 @@ class SkillSerializer(ApiBaseModelSerializer):
             'carrier_list_reserve', 'short_name', 'employment_classification', 'active', 'upper_rate_limit',
             'lower_rate_limit', 'default_rate', 'price_list_upper_rate_limit', 'price_list_lower_rate_limit', 'id',
             'price_list_default_rate', 'company', {
-                'name': ('id', 'name', 'industry')
-            }
+                'name': ('id', 'name', {'translations': ('language', 'value')}, {'industry': ('id', 'type', {'translations': ('language', 'value')})})
+            },
         )
 
     def validate(self, validated_data):
@@ -60,9 +60,11 @@ class SkillTagSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = SkillTag
-        fields = ('id', 'tag', {
-            'skill': ('id', 'name')
-        })
+        fields = (
+            'id',
+            {'tag': ('name', {'translations': ('language', 'value')})},
+            {'skill': ('id', {'name': ('name', {'translations': ('language', 'value')})})},
+        )
 
 
 class SkillNameSerializer(ApiBaseModelSerializer):
@@ -71,9 +73,13 @@ class SkillNameSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = SkillName
-        fields = ('id', 'name', {
-            'industry': ('id', 'type')
-        })
+        fields = (
+            'id',
+            'name',
+            {'industry': ('id', 'type', {'translations': ('language', 'value')}),
+             'translations': ('language', 'value'),
+            },
+        )
 
     def get_active(self, obj):
         try:
