@@ -251,6 +251,17 @@ class TagAdmin(MPTTModelAdmin):
         return qs
 
 
+class TagCompanyAdmin(MPTTModelAdmin):
+    inlines = (TagLanguageInline,)
+
+    def get_queryset(self, request):
+        qs = models.Tag.objects.filter(owner=models.Tag.TAG_OWNER.company)
+        ordering = self.get_ordering(request)
+        if ordering:
+            qs = qs.order_by(*ordering)
+        return qs
+
+
 class CompanyTagAdmin(admin.ModelAdmin):
     list_display = ('tag', 'company')
 
@@ -422,6 +433,7 @@ admin.site.register(models.CompanyContactRelationship, BaseAdmin)
 admin.site.register(models.Invoice, InvoiceAdmin)
 admin.site.register(models.InvoiceLine, InvoiceLineAdmin)
 admin.site.register(models.Tag, TagAdmin)
+admin.site.register(models.TagCompany, TagCompanyAdmin)
 admin.site.register(models.CompanyTag, CompanyTagAdmin)
 admin.site.register(models.Note)
 admin.site.register(models.Order)
