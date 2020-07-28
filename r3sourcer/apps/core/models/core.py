@@ -1972,12 +1972,19 @@ class Tag(MPTTModel, UUIDModel):
         return False
 
 
+class TagCompany(Tag):
+    class Meta:
+        proxy = True
+        verbose_name = _("Tag owned by company")
+        verbose_name_plural = _("Tags owned by company")
+
+
 class CompanyTag(UUIDModel):
     tag = models.ForeignKey(
-        'core.Tag',
+        'core.TagCompany',
         related_name="company_tags",
         on_delete=models.CASCADE,
-        verbose_name=_("Tag")
+        verbose_name=_("Tag company")
     )
 
     company = models.ForeignKey(
@@ -2834,7 +2841,7 @@ __all__ = [
     'Address', 'FileStorage',
     'Order',
     'AbstractPayRuleMixin', 'Invoice', 'InvoiceLine',
-    'Note', 'Tag', 'TagLanguage', 'CompanyTag',
+    'Note', 'Tag', 'TagLanguage', 'CompanyTag', 'TagCompany',
     'VAT', 'InvoiceRule',
     'CurrencyExchangeRates', 'PublicHoliday', 'ExtranetNavigation',
     'AbstractBaseOrder', 'AbstractOrder', 'ContactLanguage', 'Role'
