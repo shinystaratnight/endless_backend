@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q, ForeignKey
+from django.forms import model_to_dict
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
@@ -1159,11 +1160,10 @@ class TagViewSet(BaseApiViewset):
 
     def create(self, request, *args, **kwargs):
         with transaction.atomic():
-            serializer = self.get_serializer(data=request.data)
+            data = self.prepare_related_data(request.data)
+            serializer = self.get_serializer(data=data)
+            serializer.initial_data['owner'] = models.Tag.TAG_OWNER.company
             serializer.is_valid(raise_exception=True)
-            if serializer.validated_data.get('owner') \
-                    and serializer.validated_data['owner'] == models.Tag.TAG_OWNER.system:
-                return HttpResponseBadRequest('Field <owner> cannot be {0}'.format(serializer.validated_data["owner"]))
             if self.queryset.filter(owner=models.Tag.TAG_OWNER.system,
                                     name__iexact=serializer.validated_data['name']).all():
                 return HttpResponseBadRequest('Tag already exists {0}'.format(serializer.validated_data["name"]))
