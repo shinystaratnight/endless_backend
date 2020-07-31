@@ -12,7 +12,7 @@ class AcceptanceTestSerializer(ApiBaseModelSerializer):
             'test_name', 'description', 'valid_from', 'valid_until', 'is_active', 'id',
             {
                 'acceptance_test_questions': (
-                    'id', 'question', 'details', 'order', 'type',
+                    'id', 'question', 'details', 'order', 'type', 'pictures',
                     {
                         'acceptance_test_answers': ('id',  'answer', 'order', 'score', ),
                     },
@@ -33,7 +33,7 @@ class AcceptanceTestSerializerAll(ApiBaseModelSerializer):
             'test_name', 'description', 'id',
             {
                 'acceptance_test_questions': (
-                    'id', 'question', 'details', 'order', 'type',
+                    'id', 'question', 'details', 'order', 'type', 'pictures',
                     {
                         'acceptance_test_answers': ('id',  'answer', 'order', 'score', ),
                     },
@@ -43,6 +43,13 @@ class AcceptanceTestSerializerAll(ApiBaseModelSerializer):
                 'acceptance_tests_industries': ({'industry': ('id',)},),
             }
         )
+
+
+class AcceptanceTestQuestionPictureSerializerAll(ApiBaseModelSerializer):
+
+    class Meta:
+        model = models.AcceptanceTestQuestionPicture
+        fields = '__all__'
 
 
 class AcceptanceTestWorkflowNodeSerializer(ApiBaseModelSerializer):

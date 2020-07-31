@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from easy_thumbnails.fields import ThumbnailerImageField
 
 from model_utils import Choices
 
@@ -67,6 +68,23 @@ class AcceptanceTest(UUIDModel):
     @property
     def score(self):
         return self.acceptance_test_questions.aggregate(score=models.Avg('acceptance_test_answers__score'))['score']
+
+
+class AcceptanceTestQuestionPicture(UUIDModel):
+    acceptance_test_question = models.ForeignKey(
+        'acceptance_tests.AcceptanceTestQuestion',
+        on_delete=models.CASCADE,
+        related_name='pictures',
+        verbose_name=_("Acceptance Test Question Picture")
+    )
+    picture = ThumbnailerImageField(
+        upload_to='acceptance_test_pictures',
+        max_length=255,
+    )
+
+    class Meta:
+        verbose_name = _("Acceptance Test Question Picture")
+        verbose_name_plural = _("Acceptance Tests Question Pictures")
 
 
 class AcceptanceTestSkill(UUIDModel):
