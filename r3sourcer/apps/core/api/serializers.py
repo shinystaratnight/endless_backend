@@ -1360,7 +1360,6 @@ class CompanyListSerializer(
             }
         )
         extra_kwargs = {
-            'company_settings': {'read_only': True},
             'myob_settings': {'read_only': True},
             'subcontractor': {'read_only': True},
             'groups': {'read_only': True},
