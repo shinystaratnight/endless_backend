@@ -15,6 +15,11 @@ class AcceptanceTestEndpoint(ApiEndpoint):
     search_fields = ('test_name', )
 
 
+class AcceptanceTestQuestionPictureEndpoint(ApiEndpoint):
+    model = models.AcceptanceTestQuestionPicture
+    base_viewset = viewsets.AcceptanceTestQuestionPictureViewset
+
+
 class AcceptanceTestWorkflowNodeEndpoint(ApiEndpoint):
 
     model = models.AcceptanceTestWorkflowNode
@@ -30,6 +35,7 @@ class WorkflowObjectAnswerEndpoint(ApiEndpoint):
 
 router.register(endpoint=AcceptanceTestEndpoint())
 router.register(models.AcceptanceTestQuestion)
+router.register(endpoint=AcceptanceTestQuestionPictureEndpoint())
 router.register(models.AcceptanceTestAnswer)
 router.register(models.AcceptanceTestSkill)
 router.register(models.AcceptanceTestIndustry)
