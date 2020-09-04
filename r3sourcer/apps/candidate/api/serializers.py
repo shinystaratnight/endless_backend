@@ -45,7 +45,7 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
         fields = (
             '__all__',
             {
-                'skill': ('id', 'name', '__str__'),
+                'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__'),
             },
         )
         extra_kwargs = {
@@ -73,7 +73,7 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
         fields = (
             '__all__',
             {
-                'tag': ('id', 'name', 'evidence_required_for_approval', 'active', 'confidential'),
+                'tag': ('id', 'name', 'evidence_required_for_approval', 'active', 'confidential', {'translations': ('language', 'value')}),
                 'verified_by': ('id', 'contact', 'job_title'),
             }
         )
@@ -91,7 +91,6 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                                  core_serializers.ApiBaseModelSerializer):
 
     emergency_contact_phone = serializers.CharField(allow_null=True, required=False)
-    # birthday = serializers.DateField(required=True)
 
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company', 'myob_name')
 

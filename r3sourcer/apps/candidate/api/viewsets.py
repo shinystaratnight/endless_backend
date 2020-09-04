@@ -275,35 +275,36 @@ class CandidateLocationViewset(BaseViewsetMixin,
 
     def update(self, request, *args, **kwargs):
         instance = self.get_object()
+        locations = request.data.get('locations', [])
+        for location in locations:
+            latitude = location.get('latitude')
+            longitude = location.get('longitude')
 
-        latitude = request.data.get('latitude')
-        longitude = request.data.get('longitude')
+            if not latitude:
+                raise exceptions.ValidationError({
+                    'latitude': _('Latitude is required')
+                })
 
-        if not latitude:
-            raise exceptions.ValidationError({
-                'latitude': _('Latitude is required')
-            })
+            if not longitude:
+                raise exceptions.ValidationError({
+                    'longitude': _('Longitude is required')
+                })
 
-        if not longitude:
-            raise exceptions.ValidationError({
-                'longitude': _('Longitude is required')
-            })
+            timesheet_id = location.get('timesheet_id')
+            name = location.get('name')
 
-        timesheet_id = request.data.get('timesheet_id')
-        name = request.data.get('name')
+            if not timesheet_id:
+                now = utc_now()
+                timesheet = TimeSheet.objects.filter(
+                    job_offer__candidate_contact=instance,
+                    shift_started_at__lte=now,
+                    shift_ended_at__gte=now,
+                    going_to_work_confirmation=True
+                ).first()
 
-        if not timesheet_id:
-            now = utc_now()
-            timesheet = TimeSheet.objects.filter(
-                job_offer__candidate_contact=instance,
-                shift_started_at__lte=now,
-                shift_ended_at__gte=now,
-                going_to_work_confirmation=True
-            ).first()
-
-            timesheet_id = timesheet and timesheet.pk
-
-        location_logger.log_instance_location(instance, float(latitude), float(longitude), timesheet_id, name)
+                timesheet_id = timesheet and timesheet.pk
+            log_at = location.get('log_at')
+            location_logger.log_instance_location(instance, float(latitude), float(longitude), timesheet_id, name, log_at)
 
         return Response({'status': 'success'})
 
