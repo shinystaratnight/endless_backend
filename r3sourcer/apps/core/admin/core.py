@@ -9,6 +9,7 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
+import stripe
 from functools import reduce
 
 from mptt.admin import MPTTModelAdmin
@@ -386,6 +387,21 @@ class VATAdmin(admin.ModelAdmin):
         'country',
         'name',
     )
+    exclude = ('stripe_id',)
+
+    def save_model(self, request, obj, form, change):
+        country = obj.get('country_id')
+        stripe.api_key = settings.STRIPE_SECRET_API_KEY
+        tax_obj = stripe.TaxRate.create(
+            display_name="VAT",
+            description=obj.name,
+            jurisdiction=obj.country,
+            percentage=obj.stripe_rate,
+            inclusive=False,
+        )
+        stripe_id = tax_obj.get('id')
+        obj.stripe_id = stripe_id
+        super().save_model(request, obj, form, change)
 
 
 class InvoiceLineAdmin(SuperuserAdmin):

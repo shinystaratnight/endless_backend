@@ -45,16 +45,16 @@ class SubscriptionCreateView(APIView):
         try:
             stripe_account = StripeCountryAccount.objects.get(country=country_code)
         except StripeCountryAccount.DoesNotExist:
-            data = {'error': 'Payment system did not configure '
+            data = {'error': 'Payment system is not configured '
                              'for country {country_code}'.format(country_code=country_code)}
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
-        vat_object = VAT.objects.filter(country=country_code)
-        if not vat_object:
-            data = {'error': 'Tax rate did not configure '
+        vat_qs = VAT.objects.filter(country=country_code)
+        if not vat_qs:
+            data = {'error': 'Tax rate is not configured '
                              'for country {country_code}'.format(country_code=country_code)}
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
-        tax_percent = vat_object.first().stripe_rate
+        vat_object = vat_qs.first()
 
         stripe.api_key = stripe_account.stripe_secret_key
 
@@ -74,13 +74,13 @@ class SubscriptionCreateView(APIView):
         subscription = stripe.Subscription.create(
             customer=company.stripe_customer,
             items=[{"plan": plan.id}],
-            tax_percent=tax_percent,
+            tax_rates=[vat_object.stripe_id],
         )
         current_period_start = None
         current_period_end = None
 
         if isinstance(subscription.current_period_start, int):
-            # TODO change it to fromtimestamp if necessery
+            # TODO change it to fromtimestamp if necessary
             current_period_start = datetime.utcfromtimestamp(subscription.current_period_start)
             current_period_end = datetime.utcfromtimestamp(subscription.current_period_end)
 
