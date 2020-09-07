@@ -390,7 +390,6 @@ class VATAdmin(admin.ModelAdmin):
     exclude = ('stripe_id',)
 
     def save_model(self, request, obj, form, change):
-        country = obj.get('country_id')
         stripe.api_key = settings.STRIPE_SECRET_API_KEY
         tax_obj = stripe.TaxRate.create(
             display_name="VAT",
