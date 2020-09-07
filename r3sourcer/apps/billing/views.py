@@ -74,7 +74,7 @@ class SubscriptionCreateView(APIView):
         subscription = stripe.Subscription.create(
             customer=company.stripe_customer,
             items=[{"plan": plan.id}],
-            tax_rates=[vat_object.stripe_id],
+            default_tax_rates=[vat_object.stripe_id],
         )
         current_period_start = None
         current_period_end = None
