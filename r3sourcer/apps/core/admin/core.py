@@ -18,7 +18,7 @@ from mptt.admin import MPTTModelAdmin
 # Register your models here.
 from r3sourcer.apps.core_utils.filters import RelatedDropDownFilter
 from r3sourcer.apps.core_utils.mixins import ExtendedDraggableMPTTAdmin
-from r3sourcer.apps.billing.models import Subscription
+from r3sourcer.apps.billing.models import Subscription, StripeCountryAccount
 from r3sourcer.helpers.admin.filters import LanguageListFilter
 
 from .. import forms
@@ -390,16 +390,30 @@ class VATAdmin(admin.ModelAdmin):
     exclude = ('stripe_id',)
 
     def save_model(self, request, obj, form, change):
-        stripe.api_key = settings.STRIPE_SECRET_API_KEY
-        tax_obj = stripe.TaxRate.create(
-            display_name="VAT",
-            description=obj.name,
-            jurisdiction=obj.country,
-            percentage=obj.stripe_rate,
-            inclusive=False,
-        )
-        stripe_id = tax_obj.get('id')
-        obj.stripe_id = stripe_id
+        country_id = obj.country_id
+        stripe_accounts = StripeCountryAccount.objects.filter(country=country_id)
+        if not stripe_accounts:
+            raise Exception("No taxes configured for {} country code".format(country_id))
+        stripe_account = stripe_accounts.first()
+        stripe.api_key = stripe_account.stripe_secret_key
+
+        if not change:
+            tax_obj = stripe.TaxRate.create(
+                display_name="VAT",
+                description=obj.name,
+                jurisdiction=obj.country,
+                percentage=obj.stripe_rate,
+                inclusive=False,
+            )
+            stripe_id = tax_obj.get('id')
+            obj.stripe_id = stripe_id
+        if change:
+            stripe.TaxRate.modify(
+                obj.stripe_id,
+                description=obj.name,
+                jurisdiction=obj.country,
+                percentage=obj.stripe_rate,
+            )
         super().save_model(request, obj, form, change)
 
 

@@ -42,13 +42,11 @@ class SubscriptionCreateView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
         country_code = company_address.address.country.code2
-        try:
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
-        except StripeCountryAccount.DoesNotExist:
-            data = {'error': 'Payment system is not configured '
-                             'for country {country_code}'.format(country_code=country_code)}
-            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
-
+        stripe_accounts = StripeCountryAccount.objects.filter(country=country_code)
+        if not stripe_accounts:
+            # using Estonia (EE) account as default
+            stripe_accounts = StripeCountryAccount.objects.filter(country='EE')
+        stripe_account = stripe_accounts.first()
         vat_qs = VAT.objects.filter(country=country_code)
         if not vat_qs:
             data = {'error': 'Tax rate is not configured '
@@ -141,7 +139,7 @@ class StripeCustomerCreateView(APIView):
         company = self.request.user.company
         description = '{}'.format(company.name)
         email = ''
-        default_stripe_account = StripeCountryAccount.objects.get(country="AU")
+        default_stripe_account = StripeCountryAccount.objects.get(country="EE")
         stripe_account = None
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
@@ -162,7 +160,9 @@ class StripeCustomerCreateView(APIView):
         customer = stripe.Customer.create(
             description=description,
             source=self.request.data.get('source'),
-            email=email
+            email=email,
+            address=company.get_hq_address() or '',
+            name=str(company.primary_contact),
         )
         company.stripe_customer = customer.id
         company.save()
