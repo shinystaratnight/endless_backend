@@ -1328,6 +1328,10 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         return self.supervisor_modified_at
 
     @property
+    def today_5_am(self):
+        return self.now_tz.replace(hour=5, minute=0, second=0, microsecond=0)
+
+    @property
     def today_7_am(self):
         return self.now_tz.replace(hour=7, minute=0, second=0, microsecond=0)
 
@@ -1342,6 +1346,10 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     @property
     def today_3_30_pm(self):
         return self.now_tz.replace(hour=15, minute=30, second=0, microsecond=0)
+
+    @property
+    def tomorrow(self):
+        return self.now_tz + timedelta(days=1)
 
     @property
     def master_company(self):

@@ -16,7 +16,8 @@ from r3sourcer.apps.hr.models import (
     TimeSheet, JobsiteUnavailability, CandidateEvaluation, JobOffer, ShiftDate, TimeSheetIssue, BlackList,
     FavouriteList, Job, CarrierList, Shift, JobOfferSMS, NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT
 )
-from r3sourcer.apps.hr.utils.utils import tomorrow
+from r3sourcer.helpers.models.abs.timezone_models import TimeZone
+from r3sourcer.apps.hr.models import TimeSheet
 
 
 tz = timezone(settings.TIME_ZONE)
@@ -81,7 +82,7 @@ class TestJobsite:
 
         ts = TimeSheet.objects.filter(
             job_offer__in=[job_offer],
-            shift_started_at__date__gte=tomorrow()
+            shift_started_at__date__gte=TimeZone.tomorrow_tz()
         ).first()
 
         assert ts.supervisor == company_contact
@@ -95,7 +96,7 @@ class TestJobsite:
 
         ts = TimeSheet.objects.filter(
             job_offer__in=[job_offer],
-            shift_started_at__date__gte=tomorrow()
+            shift_started_at__date__gte=TimeZone.tomorrow_tz()
         ).first()
 
         assert ts.supervisor == company_contact_another
@@ -653,16 +654,16 @@ class TestCarrierList:
 class TestCandidateEvaluation:
     @pytest.mark.parametrize('evaluation,expected', [
         (CandidateEvaluation(was_on_time=True), 0.5),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=1), 1),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=2), 1.5),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=3), 2),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=4), 2.5),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=5), 3),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=1), 1),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=2), 1.5),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=3), 2),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=4), 2.5),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=5), 3),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True), 1),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
-                             level_of_communication=1), 1.5),
+                             evaluation_score=1), 1.5),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
-                             level_of_communication=5), 3.5),
+                             evaluation_score=5), 3.5),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
                              was_motivated=True), 1.5),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
@@ -673,25 +674,25 @@ class TestCandidateEvaluation:
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
                              was_motivated=True, met_expectations=True,
                              representation=True,
-                             level_of_communication=5), 5),
-        (CandidateEvaluation(level_of_communication=5), 0),
-        (CandidateEvaluation(level_of_communication=0), 0),
+                             evaluation_score=5), 5),
+        (CandidateEvaluation(evaluation_score=5), 0),
+        (CandidateEvaluation(evaluation_score=0), 0),
     ])
     def test_get_rating(self, evaluation, expected):
         assert evaluation.get_rating() == expected
 
     @pytest.mark.parametrize('evaluation,expected', [
         (CandidateEvaluation(was_on_time=True), 0.5),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=1), 1),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=2), 1.5),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=3), 2),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=4), 2.5),
-        (CandidateEvaluation(was_on_time=True, level_of_communication=5), 3),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=1), 1),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=2), 1.5),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=3), 2),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=4), 2.5),
+        (CandidateEvaluation(was_on_time=True, evaluation_score=5), 3),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True), 1),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
-                             level_of_communication=1), 1.5),
+                             evaluation_score=1), 1.5),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
-                             level_of_communication=5), 3.5),
+                             evaluation_score=5), 3.5),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
                              was_motivated=True), 1.5),
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
@@ -702,9 +703,9 @@ class TestCandidateEvaluation:
         (CandidateEvaluation(was_on_time=True, had_ppe_and_tickets=True,
                              was_motivated=True, met_expectations=True,
                              representation=True,
-                             level_of_communication=5), 5),
-        (CandidateEvaluation(level_of_communication=5), 2.5),
-        (CandidateEvaluation(level_of_communication=0), 0),
+                             evaluation_score=5), 5),
+        (CandidateEvaluation(evaluation_score=5), 2.5),
+        (CandidateEvaluation(evaluation_score=0), 0),
     ])
     def test_single_evaluation_average(self, evaluation, expected):
         assert evaluation.single_evaluation_average() == expected

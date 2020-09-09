@@ -10,7 +10,7 @@ from django_mock_queries.query import MockSet
 from freezegun import freeze_time
 
 from r3sourcer.apps.core.models import InvoiceRule, Invoice, InvoiceLine
-from r3sourcer.apps.hr.payment import InvoiceService
+from r3sourcer.apps.hr.payment.invoices import InvoiceService
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.pricing.services import CoefficientService

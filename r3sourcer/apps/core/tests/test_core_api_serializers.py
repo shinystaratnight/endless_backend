@@ -12,7 +12,7 @@ from django_mock_queries.query import MockModel, MockSet
 from freezegun import freeze_time
 from rest_framework import serializers, exceptions, relations
 
-from r3sourcer.apps.core.api.fields import ApiBaseRelatedField, ApiDateTimeTzField
+from r3sourcer.apps.core.api.fields import ApiBaseRelatedField
 from r3sourcer.apps.core.api.serializers import (
     ApiMethodFieldsMixin, ApiBaseModelSerializer, AddressSerializer,
     ContactSerializer, CompanySerializer, CompanyContactSerializer,
@@ -370,12 +370,6 @@ class TestApiFullRelatedFieldsMixin:
         instance = serializer.save()
 
         assert instance.name == city_data['name']
-
-    def test_object_datetime_with_tz(self, city):
-        serializer = BaseTestSerializer()
-
-        assert isinstance(serializer.fields['created_at'], ApiDateTimeTzField)
-        assert isinstance(serializer.fields['updated_at'], ApiDateTimeTzField)
 
     def test_self_related_fields(self, city):
         serializer = CompanyTestSerializer()

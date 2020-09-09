@@ -11,36 +11,14 @@ import pytz
 from django_mock_queries.query import MockSet, MockModel
 
 from r3sourcer.apps.sms_interface.models import (
-    FakeSMSManager, SMSMessage, SMSRelatedObject, replace_timezone,
-    RelatedSMSMixin
-)
+    SMSMessage, SMSRelatedObject,
+    )
 
 
 fake_sms_qs = MockSet(
     MockModel(is_fake=False),
     MockModel(is_fake=True)
 )
-
-
-@pytest.mark.django_db
-class TestModels:
-
-    def test_replace_timezone_to_default_utc(self):
-        dt = replace_timezone(timezone.now())
-
-        assert dt.tzinfo == pytz.UTC
-
-    def test_replace_timezone_to_timezone(self, settings):
-        settings.TIME_ZONE = 'Australia/Sydney'
-        tz = pytz.timezone(settings.TIME_ZONE)
-        dt = replace_timezone(datetime.utcnow(), tz)
-
-        assert dt.tzinfo == tz
-
-    def test_replace_timezone_naive_date(self, settings):
-        dt = replace_timezone(date.today())
-
-        assert not isinstance(dt, timezone.datetime)
 
 
 @pytest.mark.django_db
