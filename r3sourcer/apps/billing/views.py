@@ -10,6 +10,7 @@ from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from stripe.error import InvalidRequestError
 
 from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType
 from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, \
@@ -32,38 +33,41 @@ class SubscriptionCreateView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
         company_address = company.get_hq_address()
-        if not company_address:
-            data = {'error': 'Bad company address'}
-            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+        if company_address:
+            country_code = company_address.address.country.code2
+        else:
+            country_code = 'EE'
 
-        country_code = company_address.address.country.code2
+        stripe.api_key = sca.get_stripe_key(country_code)
 
         vat_qs = VAT.objects.filter(country=country_code)
-        if not vat_qs:
-            data = {'error': 'Tax rate is not configured '
-                             'for country {country_code}'.format(country_code=country_code)}
-            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
         vat_object = vat_qs.first()
-        stripe.api_key = sca.get_stripe_key(country_code)
         plan_type = self.request.data['type']
         sub_type = SubscriptionType.objects.get(type=plan_type)
         worker_count = self.request.data['worker_count']
         plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
         product = stripe.Product.create(name=plan_name, type='service')
-        plan = stripe.Plan.create(
-            product=product.id,
-            nickname=plan_name,
-            interval=STRIPE_INTERVALS[plan_type],
-            currency=company.currency,
-            amount=round((int(self.request.data['price']) * 100)),
-        )
-
-        subscription = stripe.Subscription.create(
-            customer=company.stripe_customer,
-            items=[{"plan": plan.id}],
-            default_tax_rates=[vat_object.stripe_id],
-        )
+        try:
+            plan = stripe.Plan.create(
+                product=product.id,
+                nickname=plan_name,
+                interval=STRIPE_INTERVALS[plan_type],
+                currency=company.currency,
+                amount=round((int(self.request.data['price']) * 100)),
+            )
+            from django.conf import settings
+            # temporary next 2 lines
+            if settings.DEBUG:
+                vat_object.stripe_id = 'txr_1HOMtaDloXiJPTCVtYnKdGaL'
+            subscription = stripe.Subscription.create(
+                customer=company.stripe_customer,
+                items=[{"plan": plan.id}],
+                default_tax_rates=[vat_object.stripe_id],
+            )
+        except InvalidRequestError as e:
+            data = {'error': e}
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
         current_period_start = None
         current_period_end = None
 
