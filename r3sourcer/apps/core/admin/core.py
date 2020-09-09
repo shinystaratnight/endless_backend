@@ -13,12 +13,12 @@ import stripe
 from functools import reduce
 
 from mptt.admin import MPTTModelAdmin
-
+from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 
 # Register your models here.
 from r3sourcer.apps.core_utils.filters import RelatedDropDownFilter
 from r3sourcer.apps.core_utils.mixins import ExtendedDraggableMPTTAdmin
-from r3sourcer.apps.billing.models import Subscription, StripeCountryAccount
+from r3sourcer.apps.billing.models import Subscription
 from r3sourcer.helpers.admin.filters import LanguageListFilter
 
 from .. import forms
@@ -390,13 +390,8 @@ class VATAdmin(admin.ModelAdmin):
     exclude = ('stripe_id',)
 
     def save_model(self, request, obj, form, change):
-        country_id = obj.country_id
-        stripe_accounts = StripeCountryAccount.objects.filter(country=country_id)
-        if not stripe_accounts:
-            raise Exception("No taxes configured for {} country code".format(country_id))
-        stripe_account = stripe_accounts.first()
-        stripe.api_key = stripe_account.stripe_secret_key
-
+        country_code2 = obj.country_id
+        stripe.api_key = sca.get_stripe_key(country_code2)
         if not change:
             tax_obj = stripe.TaxRate.create(
                 display_name="VAT",

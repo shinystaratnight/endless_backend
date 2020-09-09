@@ -13,8 +13,6 @@ from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
 from r3sourcer.helpers.datetimes import utc_now
 
-stripe.api_key = settings.STRIPE_SECRET_API_KEY
-
 
 class Subscription(CompanyTimeZoneMixin):
     SUBSCRIPTION_STATUSES = Choices(
@@ -72,10 +70,12 @@ class Subscription(CompanyTimeZoneMixin):
         return "{} with {} workers. Status: {}".format(self.company.name, self.worker_count, self.status)
 
     def sync_status(self):
+        stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.status = subscription.status
 
     def sync_periods(self):
+        stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
         self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
@@ -83,6 +83,7 @@ class Subscription(CompanyTimeZoneMixin):
             self.deactivate(user_id=(str(self.company.get_user().id)))
 
     def deactivate(self, user_id=None):
+        stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         sub = stripe.Subscription.retrieve(self.subscription_id)
         sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
         if user_id:
@@ -268,7 +269,7 @@ class Discount(CompanyTimeZoneMixin):
                 coupon_data.update({
                     'duration_in_months': self.duration_in_months
                 })
-
+            StripeCountryAccount.get_stripe_key_on_company(self.company)
             coupon = stripe.Coupon.create(**coupon_data)
             subscription = stripe.Subscription.retrieve(subscription.subscription_id)
             subscription.coupon = coupon.id
@@ -324,3 +325,29 @@ class StripeCountryAccount(models.Model):
 
     def __str__(self):
         return self.country.name
+
+    @classmethod
+    def get_stripe_key(cls, country_code2='EE'):
+        """
+        return: settings api key for Stripe Country Account
+        default: EE for Estonia Stripe Account
+        """
+        if settings.DEBUG:
+            return settings.STRIPE_SECRET_API_KEY
+        stripe_accounts = cls.objects.filter(country=country_code2)
+        if not stripe_accounts and country_code2 is 'EE':
+            raise Exception("Not Even Estonia account found. Configure stripe accounts!")
+        stripe_account = stripe_accounts.first()
+        api_key = stripe_account.stripe_secret_key
+        return api_key
+
+    @classmethod
+    def get_stripe_key_on_company(cls, company):
+        hq_addr = company.get_hq_address()
+        if hq_addr:
+            country_code = hq_addr.address.country.code2
+        else:
+            country_code = None
+        api_key = cls.get_stripe_key(country_code)
+        return api_key
+

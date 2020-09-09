@@ -11,12 +11,10 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from r3sourcer.apps.billing import models as billing_models
-from r3sourcer.apps.billing.models import StripeCountryAccount
 from r3sourcer.apps.core import models as core_models
-from r3sourcer.apps.core.utils import companies as core_companies_utils
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.sms_interface.helpers import get_sms_template
-
+from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 
 logger = get_task_logger(__name__)
 
@@ -67,18 +65,13 @@ def buy_candidate(candidate_rel_id, user=None):
         candidate_rel = candidate_models.CandidateRel.objects.get(pk=candidate_rel_id)
         candidate_contact = candidate_rel.candidate_contact
         company = candidate_rel.master_company
-        # for country taxes
-        tax_percent = 10.0
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
-            stripe.api_key = stripe_account.stripe_secret_key
-            vat_object = core_models.VAT.objects.filter(country=country_code)
-            if vat_object:
-                tax_percent = vat_object.first().stripe_rate
+        hq_addr = company.get_hq_address()
+        if hq_addr:
+            country_code = hq_addr.address.country.code2
+            stripe.api_key = sca.get_stripe_key(country_code)
+            vat_objects = core_models.VAT.objects.filter(country=country_code)
+            if vat_objects:
+                tax_id = vat_objects.first().stripe_id
     except core_models.Company.DoesNotExist as e:
         logger.exception(e)
 
@@ -90,7 +83,7 @@ def buy_candidate(candidate_rel_id, user=None):
             currency=company.currency,
             description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
         )
-        invoice = stripe.Invoice.create(customer=company.stripe_customer, tax_percent=tax_percent)
+        invoice = stripe.Invoice.create(customer=company.stripe_customer, default_tax_rates=[tax_id])
         invoice.pay()
         billing_models.Payment.objects.create(
             company=company,

@@ -6,7 +6,7 @@ import pytest
 from django.utils import timezone
 from freezegun import freeze_time
 
-from r3sourcer.apps.hr.payment import BasePaymentService, calc_worked_delta
+from r3sourcer.apps.hr.payment.base import BasePaymentService, calc_worked_delta
 
 
 hour_1 = timedelta(hours=1)
