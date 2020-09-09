@@ -1,31 +1,26 @@
 import stripe
 from itertools import chain
-from uuid import UUID # do not delete
 
 from datetime import datetime
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import NotFound
-from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType, \
-    StripeCountryAccount
+from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType
 from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, \
     CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
-from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
+from r3sourcer.apps.billing.tasks import charge_for_sms
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.api.serializers import VATSerializer
 from r3sourcer.apps.core.models import Company, Contact, VAT
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.celeryapp import app
-
-
-stripe.api_key = settings.STRIPE_SECRET_API_KEY
+from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 
 
 class SubscriptionCreateView(APIView):
@@ -42,20 +37,15 @@ class SubscriptionCreateView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
         country_code = company_address.address.country.code2
-        stripe_accounts = StripeCountryAccount.objects.filter(country=country_code)
-        if not stripe_accounts:
-            # using Estonia (EE) account as default
-            stripe_accounts = StripeCountryAccount.objects.filter(country='EE')
-        stripe_account = stripe_accounts.first()
+
         vat_qs = VAT.objects.filter(country=country_code)
         if not vat_qs:
             data = {'error': 'Tax rate is not configured '
                              'for country {country_code}'.format(country_code=country_code)}
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+
         vat_object = vat_qs.first()
-
-        stripe.api_key = stripe_account.stripe_secret_key
-
+        stripe.api_key = sca.get_stripe_key(country_code)
         plan_type = self.request.data['type']
         sub_type = SubscriptionType.objects.get(type=plan_type)
         worker_count = self.request.data['worker_count']
@@ -139,19 +129,11 @@ class StripeCustomerCreateView(APIView):
         company = self.request.user.company
         description = '{}'.format(company.name)
         email = ''
-        default_stripe_account = StripeCountryAccount.objects.get(country="EE")
-        stripe_account = None
-        if company.get_hq_address():
+        country_code = 'EE'
+        hq_addr = company.get_hq_address()
+        if hq_addr:
             country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = default_stripe_account
-
-        if stripe_account is None:
-            stripe_account = default_stripe_account
-
-        stripe.api_key = stripe_account.stripe_secret_key
+        stripe.api_key = sca.get_stripe_key(country_code)
         if company.billing_email:
             email = company.billing_email
         elif company.primary_contact:
@@ -161,7 +143,7 @@ class StripeCustomerCreateView(APIView):
             description=description,
             source=self.request.data.get('source'),
             email=email,
-            address=company.get_hq_address() or '',
+            address=hq_addr,
             name=str(company.primary_contact),
         )
         company.stripe_customer = customer.id
@@ -170,16 +152,11 @@ class StripeCustomerCreateView(APIView):
 
     def put(self, *args, **kwargs):
         company = self.request.user.company
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
-            if stripe_account:
-                stripe.api_key = stripe_account.stripe_secret_key
         if not company.stripe_customer:
             raise ValidationError({"error": _("Company has no stripe account")})
+        if company.get_hq_address():
+            country_code = company.get_hq_address().address.country.code2
+            stripe.api_key = sca.get_stripe_key(country_code)
 
         stripe.Customer.modify(
             company.stripe_customer,
@@ -340,15 +317,12 @@ class SubscriptionTypeView(APIView):
 class StripeCountryAccountView(APIView):
     def get(self, *args, **kwargs):
         company = self.request.user.company
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
-        else:
-            stripe_account = StripeCountryAccount.objects.get(country="AU")
+        hq_addr = company.get_hq_address()
+        country_code = 'EE'
+        if hq_addr:
+            country_code = hq_addr.address.country.code2
+        public_key = sca.get_stripe_key(country_code)
         data = {
-            "public_key": stripe_account.stripe_public_key
+            "public_key": public_key
             }
         return Response(data, status=status.HTTP_200_OK)
