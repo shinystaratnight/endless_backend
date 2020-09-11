@@ -8,12 +8,17 @@ from celery.utils.log import get_task_logger
 
 from django.conf import settings
 
-from r3sourcer.apps.billing.models import Subscription, Payment, SMSBalance, SubscriptionType, StripeCountryAccount
+from r3sourcer.apps.billing.models import (
+                            Subscription,
+                            Payment,
+                            SMSBalance,
+                            SubscriptionType,
+                            StripeCountryAccount as sca,
+    )
 from r3sourcer.apps.core.models import Company, VAT
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.helpers.datetimes import utc_now
 
-stripe.api_key = settings.STRIPE_SECRET_API_KEY
 logger = get_task_logger(__name__)
 
 
@@ -32,18 +37,11 @@ def charge_for_extra_workers():
         subscription = company.active_subscription
         paid_workers = subscription.worker_count
         active_workers = company.active_workers(subscription.current_period_start)
-        # for country taxes
-        tax_percent = 10.0
+        country_code = 'EE'
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
-            stripe.api_key = stripe_account.stripe_secret_key
-            vat_object = VAT.objects.filter(country=country_code)
-            if vat_object:
-                tax_percent = vat_object.first().stripe_rate
+        stripe.api_key = sca.get_stripe_key(country_code)
+        vat_object = VAT.objects.filter(country=country_code)
 
         if active_workers > paid_workers:
             if subscription.subscription_type.type == SubscriptionType.SUBSCRIPTION_TYPES.annual:
@@ -62,7 +60,7 @@ def charge_for_extra_workers():
                                       currency=company.currency,
                                       description='%s extra workers fee' % extra_workers)
             invoice = stripe.Invoice.create(customer=company.stripe_customer,
-                                            tax_percent=tax_percent,
+                                            default_tax_rates=[vat_object.stripe_id],
                                             description='%s extra workers fee' % extra_workers)
             Payment.objects.create(
                 company=company,
@@ -78,38 +76,24 @@ def charge_for_extra_workers():
 def charge_for_sms(company_id, amount, sms_balance_id):
     company = Company.objects.get(id=company_id)
     sms_balance = SMSBalance.objects.get(id=sms_balance_id)
-    # for country taxes
-    tax_percent = 10.0
     country_code = company.get_hq_address().address.country.code2
-    try:
-        stripe_account = StripeCountryAccount.objects.get(country=country_code)
-    except StripeCountryAccount.DoesNotExist:
-        logger.exception('Payment system did not configure '
-                         'for country {country_code}'.format(country_code=country_code))
-        return
-    stripe.api_key = stripe_account.stripe_secret_key
-
-    try:
-        vat_object = VAT.objects.get(country=country_code)
-    except VAT.DoesNotExist:
-        logger.exception('Tax rate did not configure '
-                         'for country {country_code}'.format(country_code=country_code))
-        return
-
+    stripe_secret_key = sca.get_stripe_key(country_code)
+    stripe.api_key = stripe_secret_key
+    vat_object = VAT.objects.get(country=country_code)
     tax_percent = vat_object.stripe_rate
 
     for discount in company.get_active_discounts('sms'):
         amount = discount.apply_discount(amount)
 
     tax_value = tax_percent / 100 + 1
-    stripe.InvoiceItem.create(api_key=stripe_account.stripe_secret_key,
+    stripe.InvoiceItem.create(api_key=stripe_secret_key,
                               customer=company.stripe_customer,
                               amount=round(int(amount * 100 / tax_value)),
                               currency=company.currency,
                               description='Topping up sms balance')
-    invoice = stripe.Invoice.create(api_key=stripe_account.stripe_secret_key,
+    invoice = stripe.Invoice.create(api_key=stripe_secret_key,
                                     customer=company.stripe_customer,
-                                    tax_percent=tax_percent,
+                                    default_tax_rates=[vat_object.stripe_id],
                                     description='Topping up sms balance')
     invoice.pay()
     payment = Payment.objects.create(
@@ -203,14 +187,10 @@ def charge_for_new_amount():
                                   .filter(subscriptions__active=True)
 
     for company in company_list:
+        country_code = 'EE'
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
-            if stripe_account:
-                stripe.api_key = stripe_account.stripe_secret_key
+        stripe.api_key = sca.get_stripe_key(country_code)
         subscription = company.active_subscription
         active_workers = company.active_workers(subscription.current_period_start)
         # active_workers = subscription.worker_count
