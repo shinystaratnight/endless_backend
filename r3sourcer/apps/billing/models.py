@@ -351,3 +351,16 @@ class StripeCountryAccount(models.Model):
         api_key = cls.get_stripe_key(country_code)
         return api_key
 
+    @classmethod
+    def get_stripe_pub(cls, country_code2='EE'):
+        if settings.DEBUG:
+            return settings.STRIPE_PUBLIC_API_KEY
+        stripe_accounts = cls.objects.filter(country=country_code2)
+        if not stripe_accounts and country_code2 is 'EE':
+            raise Exception("Not Even Estonia account found. Configure stripe accounts!")
+        stripe_account = stripe_accounts.first()
+        api_key = stripe_account.stripe_public_key
+        return api_key
+
+
+

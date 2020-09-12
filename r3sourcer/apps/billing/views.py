@@ -325,7 +325,7 @@ class StripeCountryAccountView(APIView):
         country_code = 'EE'
         if hq_addr:
             country_code = hq_addr.address.country.code2
-        public_key = sca.get_stripe_key(country_code)
+        public_key = sca.get_stripe_pub(country_code)
         data = {
             "public_key": public_key
             }
