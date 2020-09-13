@@ -1,31 +1,27 @@
 import stripe
 from itertools import chain
-from uuid import UUID # do not delete
 
 from datetime import datetime
 
-from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import status
 from rest_framework.exceptions import NotFound
-from rest_framework.generics import ListAPIView, ListCreateAPIView, GenericAPIView
+from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from stripe.error import InvalidRequestError
 
-from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType, \
-    StripeCountryAccount
+from r3sourcer.apps.billing.models import Subscription, Payment, Discount, SMSBalance, SubscriptionType
 from r3sourcer.apps.billing.serializers import SubscriptionSerializer, PaymentSerializer, \
     CompanySerializer, DiscountSerializer, SmsBalanceSerializer, SmsAutoChargeSerializer, SubscriptionTypeSerializer
-from r3sourcer.apps.billing.tasks import charge_for_sms, fetch_payments
+from r3sourcer.apps.billing.tasks import charge_for_sms
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.apps.core.api.serializers import VATSerializer
 from r3sourcer.apps.core.models import Company, Contact, VAT
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.celeryapp import app
-
-
-stripe.api_key = settings.STRIPE_SECRET_API_KEY
+from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 
 
 class SubscriptionCreateView(APIView):
@@ -37,50 +33,46 @@ class SubscriptionCreateView(APIView):
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
 
         company_address = company.get_hq_address()
-        if not company_address:
-            data = {'error': 'Bad company address'}
-            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+        if company_address:
+            country_code = company_address.address.country.code2
+        else:
+            country_code = 'EE'
 
-        country_code = company_address.address.country.code2
-        try:
-            stripe_account = StripeCountryAccount.objects.get(country=country_code)
-        except StripeCountryAccount.DoesNotExist:
-            data = {'error': 'Payment system did not configure '
-                             'for country {country_code}'.format(country_code=country_code)}
-            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
+        stripe.api_key = sca.get_stripe_key(country_code)
 
-        vat_object = VAT.objects.filter(country=country_code)
-        if not vat_object:
-            data = {'error': 'Tax rate did not configure '
-                             'for country {country_code}'.format(country_code=country_code)}
-            return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
-        tax_percent = vat_object.first().stripe_rate
+        vat_qs = VAT.objects.filter(country=country_code)
 
-        stripe.api_key = stripe_account.stripe_secret_key
-
+        vat_object = vat_qs.first()
         plan_type = self.request.data['type']
         sub_type = SubscriptionType.objects.get(type=plan_type)
         worker_count = self.request.data['worker_count']
         plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, worker_count)
         product = stripe.Product.create(name=plan_name, type='service')
-        plan = stripe.Plan.create(
-            product=product.id,
-            nickname=plan_name,
-            interval=STRIPE_INTERVALS[plan_type],
-            currency=company.currency,
-            amount=round((int(self.request.data['price']) * 100)),
-        )
-
-        subscription = stripe.Subscription.create(
-            customer=company.stripe_customer,
-            items=[{"plan": plan.id}],
-            tax_percent=tax_percent,
-        )
+        try:
+            plan = stripe.Plan.create(
+                product=product.id,
+                nickname=plan_name,
+                interval=STRIPE_INTERVALS[plan_type],
+                currency=company.currency,
+                amount=round((int(self.request.data['price']) * 100)),
+            )
+            from django.conf import settings
+            # temporary next 2 lines
+            if settings.DEBUG:
+                vat_object.stripe_id = 'txr_1HOMtaDloXiJPTCVtYnKdGaL'
+            subscription = stripe.Subscription.create(
+                customer=company.stripe_customer,
+                items=[{"plan": plan.id}],
+                default_tax_rates=[vat_object.stripe_id],
+            )
+        except InvalidRequestError as e:
+            data = {'error': e}
+            return Response(data, status=status.HTTP_400_BAD_REQUEST)
         current_period_start = None
         current_period_end = None
 
         if isinstance(subscription.current_period_start, int):
-            # TODO change it to fromtimestamp if necessery
+            # TODO change it to fromtimestamp if necessary
             current_period_start = datetime.utcfromtimestamp(subscription.current_period_start)
             current_period_end = datetime.utcfromtimestamp(subscription.current_period_end)
 
@@ -141,19 +133,11 @@ class StripeCustomerCreateView(APIView):
         company = self.request.user.company
         description = '{}'.format(company.name)
         email = ''
-        default_stripe_account = StripeCountryAccount.objects.get(country="AU")
-        stripe_account = None
-        if company.get_hq_address():
+        country_code = 'EE'
+        hq_addr = company.get_hq_address()
+        if hq_addr:
             country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = default_stripe_account
-
-        if stripe_account is None:
-            stripe_account = default_stripe_account
-
-        stripe.api_key = stripe_account.stripe_secret_key
+        stripe.api_key = sca.get_stripe_key(country_code)
         if company.billing_email:
             email = company.billing_email
         elif company.primary_contact:
@@ -162,7 +146,9 @@ class StripeCustomerCreateView(APIView):
         customer = stripe.Customer.create(
             description=description,
             source=self.request.data.get('source'),
-            email=email
+            email=email,
+            address=hq_addr,
+            name=str(company.primary_contact),
         )
         company.stripe_customer = customer.id
         company.save()
@@ -170,16 +156,11 @@ class StripeCustomerCreateView(APIView):
 
     def put(self, *args, **kwargs):
         company = self.request.user.company
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
-            if stripe_account:
-                stripe.api_key = stripe_account.stripe_secret_key
         if not company.stripe_customer:
             raise ValidationError({"error": _("Company has no stripe account")})
+        if company.get_hq_address():
+            country_code = company.get_hq_address().address.country.code2
+            stripe.api_key = sca.get_stripe_key(country_code)
 
         stripe.Customer.modify(
             company.stripe_customer,
@@ -340,15 +321,12 @@ class SubscriptionTypeView(APIView):
 class StripeCountryAccountView(APIView):
     def get(self, *args, **kwargs):
         company = self.request.user.company
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
-            try:
-                stripe_account = StripeCountryAccount.objects.get(country=country_code)
-            except StripeCountryAccount.DoesNotExist:
-                stripe_account = StripeCountryAccount.objects.get(country="AU")
-        else:
-            stripe_account = StripeCountryAccount.objects.get(country="AU")
+        hq_addr = company.get_hq_address()
+        country_code = 'EE'
+        if hq_addr:
+            country_code = hq_addr.address.country.code2
+        public_key = sca.get_stripe_pub(country_code)
         data = {
-            "public_key": stripe_account.stripe_public_key
+            "public_key": public_key
             }
         return Response(data, status=status.HTTP_200_OK)

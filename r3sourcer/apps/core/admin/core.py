@@ -9,10 +9,11 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
+import stripe
 from functools import reduce
 
 from mptt.admin import MPTTModelAdmin
-
+from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 
 # Register your models here.
 from r3sourcer.apps.core_utils.filters import RelatedDropDownFilter
@@ -386,6 +387,29 @@ class VATAdmin(admin.ModelAdmin):
         'country',
         'name',
     )
+    exclude = ('stripe_id',)
+
+    def save_model(self, request, obj, form, change):
+        country_code2 = obj.country_id
+        stripe.api_key = sca.get_stripe_key(country_code2)
+        if not change:
+            tax_obj = stripe.TaxRate.create(
+                display_name="VAT",
+                description=obj.name,
+                jurisdiction=obj.country,
+                percentage=obj.stripe_rate,
+                inclusive=False,
+            )
+            stripe_id = tax_obj.get('id')
+            obj.stripe_id = stripe_id
+        if change:
+            stripe.TaxRate.modify(
+                obj.stripe_id,
+                description=obj.name,
+                jurisdiction=obj.country,
+                percentage=obj.stripe_rate,
+            )
+        super().save_model(request, obj, form, change)
 
 
 class InvoiceLineAdmin(SuperuserAdmin):

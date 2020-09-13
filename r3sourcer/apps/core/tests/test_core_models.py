@@ -12,7 +12,7 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
-from r3sourcer.apps.core.models.core import TemplateMessage
+from r3sourcer.helpers.models.abs import TemplateMessage
 from freezegun import freeze_time
 
 from r3sourcer.apps.core.models import (

@@ -10,36 +10,10 @@ from rest_framework.exceptions import ValidationError
 from rest_framework import fields
 
 from r3sourcer.apps.core.api.fields import (
-    ApiDateTimeTzField, ApiAbsoluteUrlMixin, ApiBaseRelatedField,
+    ApiAbsoluteUrlMixin, ApiBaseRelatedField,
     ApiContactPictureField, ApiBase64ImageField, ApiChoicesField,
     EmptyNullField,
 )
-
-
-@pytest.mark.django_db
-class TestApiDateTimeTzField:
-
-    def test_date_field_returns_date_with_tz(self, settings):
-        settings.TIME_ZONE = 'Australia/Sydney'
-        settings.REST_FRAMEWORK['DATETIME_FORMAT'] = 'iso-8601'
-
-        field = ApiDateTimeTzField()
-
-        time_zone = pytz.timezone(settings.TIME_ZONE)
-        date_time = datetime(2017, 1, 1, tzinfo=pytz.utc).astimezone(time_zone)
-        date_tz_str = field.to_representation(date_time)
-
-        assert date_tz_str == '2017-01-01T11:00:00+11:00'
-
-    def test_date_field_returns_date_without_tz(self, settings):
-        settings.TIME_ZONE = 'Australia/Sydney'
-        settings.REST_FRAMEWORK['DATETIME_FORMAT'] = 'iso-8601'
-
-        field = ApiDateTimeTzField()
-        date_time = datetime(2017, 1, 1)
-        date_tz_str = field.to_representation(date_time)
-
-        assert date_tz_str == '2017-01-01T00:00:00+11:00'
 
 
 class TestApiAbsoluteUrlMixin:

@@ -53,7 +53,7 @@ infi.clickhouse_orm==0.9.8
 googlemaps==2.5.1
 twilio==6.10.3
 weasyprint==0.40
-stripe==1.80.0
+stripe==2.51.0
 Inflector>=2.0.11
 idna<2.8
 sentry-sdk==0.9.5

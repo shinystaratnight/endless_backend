@@ -15,8 +15,7 @@ from r3sourcer.apps.myob.api.wrapper import MYOBAuth, MYOBClient
 from r3sourcer.apps.myob.models import MYOBCompanyFile, MYOBCompanyFileToken, MYOBAuthData
 from r3sourcer.apps.myob.serializers import MYOBCompanyFileSerializer, MYOBAuthDataSerializer
 from r3sourcer.helpers.datetimes import utc_now
-
-stripe.api_key = settings.STRIPE_SECRET_API_KEY
+from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 
 
 class GlobalPermissionListView(ListAPIView):
@@ -278,6 +277,7 @@ class CompanySettingsView(APIView):
 
             email = self.request.data['company_settings'].get('billing_email')
             if email:
+                stripe.api_key = sca.get_stripe_key_on_company(company)
                 customer = stripe.Customer.retrieve(company.stripe_customer)
                 customer.email = email
                 customer.save()
