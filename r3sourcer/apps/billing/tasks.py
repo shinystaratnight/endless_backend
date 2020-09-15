@@ -122,6 +122,7 @@ def fetch_payments():
     companies = Company.objects.all()
 
     for company in companies:
+        stripe.api_key = sca.get_stripe_key_on_company(company)
         if not company.stripe_customer:
             continue
 
