@@ -347,7 +347,7 @@ class StripeCountryAccount(models.Model):
         if hq_addr:
             country_code = hq_addr.address.country.code2
         else:
-            country_code = None
+            country_code = 'EE'
         api_key = cls.get_stripe_key(country_code)
         return api_key
 
@@ -361,6 +361,3 @@ class StripeCountryAccount(models.Model):
         stripe_account = stripe_accounts.first()
         api_key = stripe_account.stripe_public_key
         return api_key
-
-
-
