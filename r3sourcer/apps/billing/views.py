@@ -156,12 +156,12 @@ class StripeCustomerCreateView(APIView):
 
     def put(self, *args, **kwargs):
         company = self.request.user.company
+        country_code = 'EE'
         if not company.stripe_customer:
             raise ValidationError({"error": _("Company has no stripe account")})
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
-            stripe.api_key = sca.get_stripe_key(country_code)
-
+        stripe.api_key = sca.get_stripe_key(country_code)
         stripe.Customer.modify(
             company.stripe_customer,
             source=self.request.data.get('source'),
