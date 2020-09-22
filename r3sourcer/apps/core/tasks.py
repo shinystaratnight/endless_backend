@@ -167,7 +167,7 @@ def send_trial_email(self, contact_id, master_company_id):
 @shared_task()
 def cancel_trial(user_id):
     try:
-        user = core_models.User.objects.get(id=user_id, role__name=core_models.Role.ROLE_NAMES.trial)
+        user = core_models.User.objects.get(id=user_id, role__name=core_models.Role.ROLE_NAMES.manager)
     except core_models.User.DoesNotExist:
         logger.exception('Cannot find trial user')
     else:
