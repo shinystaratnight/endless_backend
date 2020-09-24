@@ -86,13 +86,11 @@ def charge_for_sms(company_id, amount, sms_balance_id):
         amount = discount.apply_discount(amount)
 
     tax_value = tax_percent / 100 + 1
-    stripe.InvoiceItem.create(api_key=stripe_secret_key,
-                              customer=company.stripe_customer,
+    stripe.InvoiceItem.create(customer=company.stripe_customer,
                               amount=round(int(amount * 100 / tax_value)),
                               currency=company.currency,
                               description='Topping up sms balance')
-    invoice = stripe.Invoice.create(api_key=stripe_secret_key,
-                                    customer=company.stripe_customer,
+    invoice = stripe.Invoice.create(customer=company.stripe_customer,
                                     default_tax_rates=[vat_object.stripe_id],
                                     description='Topping up sms balance')
     invoice.pay()
@@ -183,6 +181,7 @@ def send_sms_payment_reminder():
 
 @shared_task
 def charge_for_new_amount():
+    """"creates invoice charges to each company for amount of workers not yet charged"""
     from r3sourcer.apps.billing import STRIPE_INTERVALS
     company_list = Company.objects.filter(type=Company.COMPANY_TYPES.master) \
                                   .filter(subscriptions__active=True)

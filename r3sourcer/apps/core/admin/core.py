@@ -393,8 +393,9 @@ class VATAdmin(admin.ModelAdmin):
         country_code2 = obj.country_id
         stripe.api_key = sca.get_stripe_key(country_code2)
         if not change:
+            # create tax rate
             tax_obj = stripe.TaxRate.create(
-                display_name="VAT",
+                display_name=obj.name,
                 description=obj.name,
                 jurisdiction=obj.country,
                 percentage=obj.stripe_rate,
@@ -403,11 +404,12 @@ class VATAdmin(admin.ModelAdmin):
             stripe_id = tax_obj.get('id')
             obj.stripe_id = stripe_id
         if change:
+            # update tax rate (stripe does not allow to change rate on update)
             stripe.TaxRate.modify(
                 obj.stripe_id,
+                display_name=obj.name,
                 description=obj.name,
                 jurisdiction=obj.country,
-                percentage=obj.stripe_rate,
             )
         super().save_model(request, obj, form, change)
 
