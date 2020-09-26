@@ -1321,13 +1321,13 @@ class GroupSerializer(ApiBaseModelSerializer):
         fields = ('__all__', )
 
 
-class CompanyIndustrySerializer(serializers.ModelSerializer):
+class CompanyIndustrySerializer(ApiBaseModelSerializer):
     id = serializers.ReadOnlyField(source='industry.id')
     __str__ = serializers.ReadOnlyField(source='industry.__str__')
 
     class Meta:
         model = core_models.CompanyIndustryRel
-        fields = ('id', '__str__', 'default', 'industry' )
+        fields = ('id', 'default', {'industry': ('id', {'translations': ('language', 'value')})})
 
 
 class CompanyListSerializer(
