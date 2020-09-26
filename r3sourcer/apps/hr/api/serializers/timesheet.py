@@ -155,7 +155,9 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     def get_position(self, obj):
         if obj:
             position = obj.job_offer.job.position
-            return {'id': position.id, '__str__': str(position)}
+            translations = [{'language': {'id': i.language.alpha_2, 'name': i.language.name},
+                             'value': i.value} for i in position.name.translations.all()]
+            return {'id': position.id, '__str__': str(position), 'translations': translations}
 
     def __format_datetime(self, date_time, default='-'):
         filtered = filter(bool, [date_time])
