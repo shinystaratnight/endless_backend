@@ -56,10 +56,6 @@ class SubscriptionCreateView(APIView):
                 currency=company.currency,
                 amount=round((int(self.request.data['price']) * 100)),
             )
-            from django.conf import settings
-            # temporary next 2 lines
-            if settings.DEBUG:
-                vat_object.stripe_id = 'txr_1HOMtaDloXiJPTCVtYnKdGaL'
             subscription = stripe.Subscription.create(
                 customer=company.stripe_customer,
                 items=[{"plan": plan.id}],
@@ -306,7 +302,7 @@ class SubscriptionTypeView(APIView):
         if not company_address:
             raise NotFound(detail='Company address not found')
 
-        country_code = company_address.address.country.code2
+        country_code = company_address.address.country.code2 or 'EE'
         vats = VAT.objects.filter(country_id=country_code)
         vat_serializer = VATSerializer(vats, many=True)
         subscription_types = SubscriptionType.objects.all()
