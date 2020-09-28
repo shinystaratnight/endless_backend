@@ -728,6 +728,19 @@ class Address(TimeZoneUUIDModel):
             address = '{} {}'.format(address, self.state.name)
         return address
 
+    def get_address_for_stripe(self, hq_addr__name=''):
+        """address broken down as stripe api requires"""
+        # hq_addr name can be retrieved from within method but passed to spare 1 MtoM request
+        line1 = ' '.join((self.street_address, hq_addr__name))
+        return {
+            'line1': line1,
+            'city': self.city,
+            'country': self.country,
+            'line2': self.apartment,
+            'postal_code': self.postal_code,
+            'state': self.state
+        }
+
     def fetch_geo_coord(self, should_save=True):
         if self.latitude and self.longitude:
             return False
