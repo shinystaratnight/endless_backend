@@ -74,6 +74,15 @@ class Subscription(CompanyTimeZoneMixin):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.status = subscription.status
 
+    def update_permissions_on_status(self):
+        this_user = self.company.get_user()
+        end_of_trial = this_user.trial_period_start + datetime.timedelta(days=30)
+        allowed_statuses = ('active', 'incomplete', 'trialing')
+        if self.status not in allowed_statuses and self.now_utc > end_of_trial:
+            self.deactivate(user_id=(str(this_user.id)))
+        elif self.status in allowed_statuses:
+            self.activate(user_id=(str(this_user.id)))
+
     def sync_periods(self):
         stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         subscription = stripe.Subscription.retrieve(self.subscription_id)
@@ -88,6 +97,11 @@ class Subscription(CompanyTimeZoneMixin):
         sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
         if user_id:
             tasks.cancel_subscription_access.apply_async([user_id])
+
+    @staticmethod
+    def activate(self, user_id=None):
+        if user_id:
+            tasks.give_subscription_access.apply_async([user_id])
 
     @property
     def last_time_billed(self):
@@ -332,7 +346,7 @@ class StripeCountryAccount(models.Model):
         return: settings api key for Stripe Country Account
         default: EE for Estonia Stripe Account
         """
-        if settings.DEBUG:
+        if settings.TEST:
             return settings.STRIPE_SECRET_API_KEY
         stripe_accounts = cls.objects.filter(country=country_code2)
         if not stripe_accounts and country_code2 is 'EE':
@@ -353,7 +367,7 @@ class StripeCountryAccount(models.Model):
 
     @classmethod
     def get_stripe_pub(cls, country_code2='EE'):
-        if settings.DEBUG:
+        if settings.TEST:
             return settings.STRIPE_PUBLIC_API_KEY
         stripe_accounts = cls.objects.filter(country=country_code2)
         if not stripe_accounts and country_code2 is 'EE':
