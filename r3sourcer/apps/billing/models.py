@@ -346,7 +346,7 @@ class StripeCountryAccount(models.Model):
         return: settings api key for Stripe Country Account
         default: EE for Estonia Stripe Account
         """
-        if settings.DEBUG:
+        if settings.TEST:
             return settings.STRIPE_SECRET_API_KEY
         stripe_accounts = cls.objects.filter(country=country_code2)
         if not stripe_accounts and country_code2 is 'EE':
@@ -367,7 +367,7 @@ class StripeCountryAccount(models.Model):
 
     @classmethod
     def get_stripe_pub(cls, country_code2='EE'):
-        if settings.DEBUG:
+        if settings.TEST:
             return settings.STRIPE_PUBLIC_API_KEY
         stripe_accounts = cls.objects.filter(country=country_code2)
         if not stripe_accounts and country_code2 is 'EE':
