@@ -189,6 +189,18 @@ def cancel_subscription_access(user_id):
 
 
 @shared_task()
+def give_subscription_access(user_id):
+    try:
+        user = core_models.User.objects.get(id=user_id)
+    except core_models.User.DoesNotExist:
+        logger.exception('Cannot find user')
+    else:
+        perms = user.user_permissions.filter(codename__icontains='_get')
+        user.user_permissions.add(*perms)
+        user.save()
+
+
+@shared_task()
 def terminate_company_contact(company_contact_rel_id):
     try:
         company_contact_rel = core_models.CompanyContactRelationship.objects.get(id=company_contact_rel_id)
