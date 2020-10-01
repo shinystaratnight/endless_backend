@@ -144,7 +144,7 @@ class StripeCustomerCreateView(APIView):
             source=self.request.data.get('source'),
             email=email,
             address=hq_addr.address.get_address_for_stripe(company.name),
-            name=str(company.primary_contact),
+            name=company.name or str(company.primary_contact),
         )
         company.stripe_customer = customer.id
         company.save()
