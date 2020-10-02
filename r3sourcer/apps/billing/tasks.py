@@ -236,6 +236,7 @@ def charge_for_new_amount():
             subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
             stripe.Subscription.modify(subscription_stripe.id,
                                        cancel_at_period_end=False,
+                                       proration_behavior='none',
                                        items=[{
                                            'id': subscription_stripe['items']['data'][0].id,
                                            'plan': plan.id,
