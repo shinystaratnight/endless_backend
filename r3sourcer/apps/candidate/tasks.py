@@ -69,7 +69,7 @@ def buy_candidate(candidate_rel_id, user=None):
         if hq_addr:
             country_code = hq_addr.address.country.code2
             stripe.api_key = sca.get_stripe_key(country_code)
-            vat_objects = core_models.VAT.objects.filter(country=country_code)
+            vat_objects = core_models.VAT.get_vat(country_code)
             if vat_objects:
                 tax_id = vat_objects.first().stripe_id
     except core_models.Company.DoesNotExist as e:

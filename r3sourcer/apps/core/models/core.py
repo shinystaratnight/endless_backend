@@ -2079,6 +2079,10 @@ class VAT(UUIDModel):
     def is_owned(cls):
         return False
 
+    @staticmethod
+    def get_vat(country_code_2):
+        return VAT.objects.filter(country=country_code_2) or VAT.objects.filter(country='EE')
+
 
 class AbstractBaseOrder(TimeZoneUUIDModel,
                         WorkflowProcess,

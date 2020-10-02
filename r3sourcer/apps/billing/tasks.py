@@ -7,6 +7,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from django.conf import settings
+from stripe.error import InvalidRequestError
 
 from r3sourcer.apps.billing.models import (
                             Subscription,
@@ -41,7 +42,7 @@ def charge_for_extra_workers():
         if company.get_hq_address():
             country_code = company.get_hq_address().address.country.code2
         stripe.api_key = sca.get_stripe_key(country_code)
-        vat_object = VAT.objects.filter(country=country_code)
+        vat_object = VAT.get_vat(country_code)
 
         if active_workers > paid_workers:
             if subscription.subscription_type.type == SubscriptionType.SUBSCRIPTION_TYPES.annual:
@@ -79,7 +80,7 @@ def charge_for_sms(company_id, amount, sms_balance_id):
     country_code = company.get_hq_address().address.country.code2
     stripe_secret_key = sca.get_stripe_key(country_code)
     stripe.api_key = stripe_secret_key
-    vat_object = VAT.objects.get(country=country_code)
+    vat_object = VAT.get_vat(country_code).first()
     tax_percent = vat_object.stripe_rate
 
     for discount in company.get_active_discounts('sms'):
@@ -109,14 +110,22 @@ def charge_for_sms(company_id, amount, sms_balance_id):
 
 @shared_task
 def sync_subscriptions():
+    # from contextlib import suppress
+    # with suppress(InvalidRequestError):
     for subscription in Subscription.objects.filter(active=True):
         subscription.sync_status()
+        subscription.update_permissions_on_status()
         subscription.sync_periods()
+        subscription.save()
+    for subscription in Subscription.objects.filter(active=False):
+        subscription.sync_status()
+        subscription.update_permissions_on_status()
         subscription.save()
 
 
 @shared_task()
 def fetch_payments():
+    """creates invoices for not payed payments and downloads invoices from stripe for payed"""
     companies = Company.objects.all()
 
     for company in companies:
@@ -181,7 +190,7 @@ def send_sms_payment_reminder():
 
 @shared_task
 def charge_for_new_amount():
-    """"creates invoice charges to each company for amount of workers not yet charged"""
+    """"adjusts stripe plan to actual worker count"""
     from r3sourcer.apps.billing import STRIPE_INTERVALS
     company_list = Company.objects.filter(type=Company.COMPANY_TYPES.master) \
                                   .filter(subscriptions__active=True)
@@ -227,9 +236,9 @@ def charge_for_new_amount():
             subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
             stripe.Subscription.modify(subscription_stripe.id,
                                        cancel_at_period_end=False,
+                                       proration_behavior='none',
                                        items=[{
-                                           'id': subscription_stripe['items']['data'][
-                                               0].id,
+                                           'id': subscription_stripe['items']['data'][0].id,
                                            'plan': plan.id,
                                            }]
                                        )
