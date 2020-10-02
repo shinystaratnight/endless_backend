@@ -351,7 +351,7 @@ class StripeCountryAccount(models.Model):
         stripe_accounts = cls.objects.filter(country=country_code2)
         if not stripe_accounts and country_code2 is 'EE':
             raise Exception("Not Even Estonia account found. Configure stripe accounts!")
-        stripe_account = stripe_accounts.first()
+        stripe_account = stripe_accounts.first() or stripe_accounts.get(country='EE')
         api_key = stripe_account.stripe_secret_key
         return api_key
 
@@ -372,6 +372,6 @@ class StripeCountryAccount(models.Model):
         stripe_accounts = cls.objects.filter(country=country_code2)
         if not stripe_accounts and country_code2 is 'EE':
             raise Exception("Not Even Estonia account found. Configure stripe accounts!")
-        stripe_account = stripe_accounts.first()
+        stripe_account = stripe_accounts.first() or stripe_accounts.get(country='EE')
         api_key = stripe_account.stripe_public_key
         return api_key
