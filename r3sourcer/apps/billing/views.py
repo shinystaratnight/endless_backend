@@ -40,7 +40,7 @@ class SubscriptionCreateView(APIView):
 
         stripe.api_key = sca.get_stripe_key(country_code)
 
-        vat_qs = VAT.objects.filter(country=country_code)
+        vat_qs = VAT.get_vat(country_code)
 
         vat_object = vat_qs.first()
         plan_type = self.request.data['type']
@@ -303,7 +303,7 @@ class SubscriptionTypeView(APIView):
             raise NotFound(detail='Company address not found')
 
         country_code = company_address.address.country.code2 or 'EE'
-        vats = VAT.objects.filter(country_id=country_code)
+        vats = VAT.get_vat(country_code)
         vat_serializer = VATSerializer(vats, many=True)
         subscription_types = SubscriptionType.objects.all()
         serializer = SubscriptionTypeSerializer(subscription_types, many=True)
