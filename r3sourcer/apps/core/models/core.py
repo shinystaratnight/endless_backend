@@ -2081,7 +2081,8 @@ class VAT(UUIDModel):
 
     @staticmethod
     def get_vat(country_code_2):
-        return VAT.objects.filter(country=country_code_2) or VAT.objects.filter(country='EE')
+        qs = VAT.objects.exclude(name='GNR')
+        return qs.filter(country=country_code_2) or qs.filter(country='EE')
 
 
 class AbstractBaseOrder(TimeZoneUUIDModel,
