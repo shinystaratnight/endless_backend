@@ -99,7 +99,7 @@ class Subscription(CompanyTimeZoneMixin):
             tasks.cancel_subscription_access.apply_async([user_id])
 
     @staticmethod
-    def activate(self, user_id=None):
+    def activate(user_id=None):
         if user_id:
             tasks.give_subscription_access.apply_async([user_id])
 
@@ -351,7 +351,7 @@ class StripeCountryAccount(models.Model):
         stripe_accounts = cls.objects.filter(country=country_code2)
         if not stripe_accounts and country_code2 is 'EE':
             raise Exception("Not Even Estonia account found. Configure stripe accounts!")
-        stripe_account = stripe_accounts.first() or cls.objects.filter(country='EE')
+        stripe_account = stripe_accounts.first() or cls.objects.filter(country='EE').first()
         api_key = stripe_account.stripe_secret_key
         return api_key
 
@@ -372,6 +372,6 @@ class StripeCountryAccount(models.Model):
         stripe_accounts = cls.objects.filter(country=country_code2)
         if not stripe_accounts and country_code2 is 'EE':
             raise Exception("Not Even Estonia account found. Configure stripe accounts!")
-        stripe_account = stripe_accounts.first() or cls.objects.filter(country='EE')
+        stripe_account = stripe_accounts.first() or cls.objects.filter(country='EE').first()
         api_key = stripe_account.stripe_public_key
         return api_key
