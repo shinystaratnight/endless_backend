@@ -261,17 +261,27 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             raise exceptions.AuthenticationFailed()
 
         serializer = ContactLoginSerializer(request.user.contact)
-        roles = [
-            {
-                'id': x.id,
-                'company_id': x.company_contact_rel.company.id if x.company_contact_rel else x.name,
-                'client_contact_id': x.company_contact_rel.company_contact.id if x.company_contact_rel else x.name,
-                '__str__': '{} - {}'.format(
-                    x.name, x.company_contact_rel.company.short_name or x.company_contact_rel.company.name
-                ) if x.company_contact_rel else x.name
-            }
-            for x in self.request.user.role.all().order_by('name')
-        ]
+        roles = []
+        for x in self.request.user.role.all().order_by('name'):
+            if x.company_contact_rel:
+                company_name = x.company_contact_rel.company.name
+                company_shortname = x.company_contact_rel.company.short_name
+                company_id = x.company_contact_rel.company.id
+                client_contact_id = x.company_contact_rel.company_contact.id
+            else:
+                company_id = client_contact_id = company_name = company_shortname = x.name
+            roles.append(
+                {
+                    'id': x.id,
+                    'company_name': company_name,
+                    'company_id': company_id,
+                    'client_contact_id': client_contact_id,
+                    '__str__': '{} - {}'.format(
+                        x.name, company_shortname or company_name
+                    )
+                }
+            )
+
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
         time_zone = request.user.company.get_timezone()
 
