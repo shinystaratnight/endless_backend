@@ -697,8 +697,11 @@ class JobsiteSerializer(
                         'state': ('id', 'name'),
                     }
                 ),
+                'industry': ('id', 'type', {'translations': ('language', 'value')}),
                 'master_company': ('id', ),
-                'regular_company': ('id', 'industries', 'short_name', 'logo'),
+                'regular_company': ('id', 'short_name', 'logo',
+                                    {'industries': ('id', {'translations': ('language', 'value')})},
+                                    ),
                 'portfolio_manager': (
                     'id', 'job_title',
                     {
