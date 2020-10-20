@@ -412,19 +412,21 @@ class CompanyViewset(BaseApiViewset):
                     'legacy_myob_card_number': myob_name
                 }
             )
+        # update industry relations
         industries_objects = data.pop('industries_objects', None)
         company = models.Company.objects.get(pk=kwargs['pk'])
-        if industries_objects:
-            if len(industries_objects) < 2:
-                industries_objects[0]['default'] = True
-
-            for industry in industries_objects:
-                industry_instance = Industry.objects.get(pk=industry['id'])
-                company_industry, _ = models.CompanyIndustryRel.objects.get_or_create(company=company, industry=industry_instance)
-                company_industry.default = industry['default']
-                company_industry.save()
-        else:
+        with transaction.atomic():
             models.CompanyIndustryRel.objects.filter(company=company).delete()
+            if industries_objects:
+                if len(industries_objects) < 2:
+                    industries_objects[0]['default'] = True
+                for industry in industries_objects:
+                    industry_instance = Industry.objects.get(pk=industry['id'])
+                    company_industry, _ = models.CompanyIndustryRel.objects.get_or_create(company=company,
+                                                                                          industry=industry_instance)
+                    company_industry.default = industry['default']
+                    company_industry.save()
+        # end update industry
         serializer = self.get_serializer(instance, data=data, partial=partial)
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
