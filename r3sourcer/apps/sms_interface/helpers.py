@@ -44,14 +44,13 @@ def get_sms(from_number, to_number, text, reply_timeout=None,
     return SMSMessage(**params)
 
 
-def get_sms_template(company_id, contact_id, slug):
+def get_language_list(company_id, contact_id):
     contact_languages = ContactLanguage.objects.filter(contact_id=contact_id).all()
     company_languages = CompanyLanguage.objects.filter(company_id=company_id).all()
     default_candidate_lang, *_ = [x for x in contact_languages if x.default is True] or [None]
     candidate_langs = [x for x in contact_languages if x.default is False]
     default_company_lang, *_ = [x for x in company_languages if x.default is True] or [None]
     same_lang = set([x.language_id for x in company_languages]) & set([x.language_id for x in company_languages])
-    templates = {x.language_id: x for x in SMSTemplate.objects.filter(company_id=company_id, slug=slug).all()}
 
     langs = []
     if default_candidate_lang is not None \
@@ -67,7 +66,12 @@ def get_sms_template(company_id, contact_id, slug):
         langs.append(default_company_lang.language_id)
 
     langs.append(settings.DEFAULT_LANGUAGE)
+    return langs
 
+
+def get_sms_template(company_id, contact_id, slug):
+    templates = {x.language_id: x for x in SMSTemplate.objects.filter(company_id=company_id, slug=slug).all()}
+    langs = get_language_list(company_id, contact_id)
     for lang in langs:
         template = templates.get(lang)
         if template:
