@@ -77,6 +77,11 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
         target_date_and_time = "ASAP"
 
     master_company = job_offer.candidate_contact.contact.get_closest_company()
+
+    sms_template = get_sms_template(company_id=master_company.id,
+                                    contact_id=job_offer.candidate_contact.contact_id,
+                                    slug=tpl_id)
+
     data_dict = {
         'job_offer': job_offer,
         'job': job_offer.job,
@@ -88,9 +93,12 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
         'related_objs': [job_offer.candidate_contact, job_offer.job]
     }
 
-    sms_template = get_sms_template(company_id=master_company.id,
-                                    contact_id=job_offer.candidate_contact.contact_id,
-                                    slug=tpl_id)
+    # get job translation on template
+    template_language = sms_template.language.alpha_2
+    job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
+    job_translation = job_translation[0].get('value', job_offer.job)
+    data_dict['job'] = job_translation
+    # end
     sent_message = sms_interface.send_tpl(to_number=job_offer.candidate_contact.contact.phone_mobile,
                                           tpl_id=sms_template.id,
                                           check_reply=bool(action_sent), **data_dict)

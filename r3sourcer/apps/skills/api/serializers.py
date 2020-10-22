@@ -76,7 +76,7 @@ class SkillNameSerializer(ApiBaseModelSerializer):
         model = SkillName
         fields = (
             'id',
-            'name',
+            {'name': ('name', {'translations': ('language', 'value')})},
             {'industry': ('id', 'type', {'translations': ('language', 'value')}),
              'translations': ('language', 'value'),
             },
