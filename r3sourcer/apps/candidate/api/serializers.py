@@ -165,9 +165,10 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
     def get_average_score(self, obj):
         if not obj:
             return
-
-        score = obj.candidate_scores.get_average_score()
-
+        if obj.candidate_scores:
+            score = obj.candidate_scores.get_average_score()
+        else:
+            score = None
         return score and '{0:.3}'.format(score)
 
     def get_bmi(self, obj):

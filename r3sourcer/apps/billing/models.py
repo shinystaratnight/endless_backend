@@ -80,8 +80,8 @@ class Subscription(CompanyTimeZoneMixin):
         allowed_statuses = ('active', 'incomplete', 'trialing')
         if self.status not in allowed_statuses and self.now_utc > end_of_trial:
             self.deactivate(user_id=(str(this_user.id)))
-        elif self.status in allowed_statuses:
-            self.activate(user_id=(str(this_user.id)))
+        # elif self.status in allowed_statuses:
+        #     self.activate(user_id=(str(this_user.id)))
 
     def sync_periods(self):
         stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)

@@ -10,6 +10,7 @@ from r3sourcer import ref
 from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
+from r3sourcer.apps.core.models import CompanyContactRelationship
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
@@ -502,7 +503,11 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         super().save(*args, **kwargs)
 
         if just_added:
-            self.contact.user.role.add(core_models.Role.objects.create(name=core_models.Role.ROLE_NAMES.candidate))
+            company_contact = self.recruitment_agent
+            company_contact_relation = CompanyContactRelationship.objects.create(company=master_company,
+                                                                                 company_contact=company_contact)
+            self.contact.user.role.add(core_models.Role.objects.create(name=core_models.Role.ROLE_NAMES.candidate,
+                                                                       company_contact_rel=company_contact_relation))
             if not hasattr(self, 'candidate_scores'):
                 from r3sourcer.apps.hr.models import CandidateScore
                 obj = CandidateScore.objects.create(candidate_contact=self)
