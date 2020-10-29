@@ -6,6 +6,7 @@ from rest_framework import exceptions, serializers
 from rest_framework.exceptions import ValidationError
 
 from r3sourcer.apps.candidate import models as candidate_models
+from r3sourcer.apps.candidate.models import VisaType
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_fields
 from r3sourcer.apps.core.utils.companies import get_site_master_company
@@ -354,3 +355,10 @@ class CandidateRelSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:
         fields = '__all__'
         model = candidate_models.CandidateRel
+
+
+class VisaTypeSerializer(core_serializers.ApiBaseModelSerializer):
+
+    class Meta:
+        fields = ('id', 'subclass', 'name', 'general_type', 'work_hours_allowed', 'is_available')
+        model = VisaType

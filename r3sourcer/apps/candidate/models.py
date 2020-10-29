@@ -11,6 +11,7 @@ from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.models import CompanyContactRelationship
+from r3sourcer.apps.core.models.core import Country
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
@@ -72,6 +73,28 @@ class VisaType(UUIDModel):
     @classmethod
     def is_owned(cls):
         return False
+
+
+class CountryVisaTypeRelation(models.Model):
+
+    country = models.ForeignKey(Country,
+                                related_name="countries",
+                                on_delete=models.CASCADE,
+                                verbose_name=_("Country")
+                                )
+
+    visa_type = models.ForeignKey(VisaType,
+                                  related_name="visa_types",
+                                  on_delete=models.CASCADE,
+                                  verbose_name=_("Visa Type")
+                                  )
+
+    class Meta:
+        verbose_name = _("Country Visa Type")
+        verbose_name_plural = _("Country Visa Types")
+
+    def __str__(self):
+        return self.country, self.visa_type
 
 
 class SuperannuationFund(UUIDModel):
