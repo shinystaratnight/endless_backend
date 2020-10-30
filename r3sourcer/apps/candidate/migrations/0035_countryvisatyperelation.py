@@ -23,7 +23,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(migrate_visa_types, migrations.RunPython.noop),
         migrations.CreateModel(
             name='CountryVisaTypeRelation',
             fields=[
@@ -36,4 +35,5 @@ class Migration(migrations.Migration):
                 'verbose_name_plural': 'Country Visa Types',
             },
         ),
+        migrations.RunPython(migrate_visa_types, migrations.RunPython.noop),
     ]
