@@ -94,7 +94,7 @@ class CountryVisaTypeRelation(models.Model):
         verbose_name_plural = _("Country Visa Types")
 
     def __str__(self):
-        return self.country, self.visa_type
+        return str(self.visa_type) + " " + str(self.country)
 
 
 class SuperannuationFund(UUIDModel):
