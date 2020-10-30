@@ -1,3 +1,5 @@
+from r3sourcer.apps.candidate.api.serializers import VisaTypeSerializer
+from r3sourcer.apps.candidate.api.viewsets import VisaTypeViewset
 from r3sourcer.apps.core.api.router import router
 
 from r3sourcer.apps.core.api import endpoints as core_endpoints
@@ -59,8 +61,7 @@ class SuperannuationFundEndpoint(core_endpoints.ApiEndpoint):
 class VisaTypeEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.VisaType
-    serializer_fields = ('id', 'subclass', 'name', 'general_type', 'work_hours_allowed', 'is_available')
-    search_fields = ['name']
+    viewset = VisaTypeViewset
 
 
 class CandidateLocationEndpoint(core_endpoints.ApiEndpoint):

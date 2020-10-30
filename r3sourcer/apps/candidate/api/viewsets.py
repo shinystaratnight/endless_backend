@@ -22,7 +22,9 @@ from r3sourcer.apps.logger.main import location_logger
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.helpers.datetimes import utc_now
 from . import serializers
-from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel
+from .serializers import VisaTypeSerializer
+from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel, VisaType, \
+    CountryVisaTypeRelation
 from ..tasks import buy_candidate
 from ...core.utils.utils import normalize_phone_number
 
@@ -351,3 +353,13 @@ class SuperannuationFundViewset(BaseApiViewset):
 
     http_method_names = ['get']
     permission_classes = [drf_permissions.AllowAny]
+
+
+class VisaTypeViewset(BaseApiViewset):
+    serializer_class = VisaTypeSerializer
+    search_fields = ['name']
+
+    def get_queryset(self):
+        country = self.request.user.company.country
+        visa_country_rel = CountryVisaTypeRelation.objects.filter(country=country)
+        return VisaType.objects.filter(visa_types__in=visa_country_rel)
