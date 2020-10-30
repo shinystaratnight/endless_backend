@@ -18,6 +18,7 @@ class SkillRelAdmin(admin.ModelAdmin):
 
 
 admin.site.register(models.VisaType)
+admin.site.register(models.CountryVisaTypeRelation)
 admin.site.register(models.SuperannuationFund)
 admin.site.register(models.CandidateContact, CandidateContactAdmin)
 admin.site.register(models.TagRel)
