@@ -602,6 +602,7 @@ class Country(UUIDModel, AbstractCountry):
     country_timezone = models.CharField(blank=True, null=False, max_length=255, verbose_name='Country Timezone')
 
     class Meta:
+        ordering = ['name']
         verbose_name = _("Country")
         verbose_name_plural = _("Countries")
 
