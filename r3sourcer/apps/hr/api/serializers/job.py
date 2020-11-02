@@ -427,7 +427,11 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
         fields = (
             '__all__', {
                 'date': ('__all__', {
-                    'job': ('id', 'jobsite', 'position', 'notes'),
+                    'job': ('id',
+                            'jobsite',
+                            {'position': ['id', {'name': ('name', {'translations': ('language', 'value')})},
+                                          ]},
+                            'notes'),
                 }),
             }
         )
