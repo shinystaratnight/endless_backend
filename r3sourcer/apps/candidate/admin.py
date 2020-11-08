@@ -3,8 +3,14 @@ from django.contrib import admin
 from . import models
 
 
+class TaxNumberAdmin(admin.StackedInline):
+    model = models.TaxNumber
+    extra = 0
+
+
 class CandidateContactAdmin(admin.ModelAdmin):
     search_fields = ('contact__first_name', 'contact__last_name', 'profile_price')
+    inlines = (TaxNumberAdmin,)
 
 
 class CandidateRelAdmin(admin.ModelAdmin):
@@ -17,7 +23,13 @@ class SkillRelAdmin(admin.ModelAdmin):
     search_fields = ('candidate_contact__contact__first_name', 'candidate_contact__contact__last_name')
 
 
+class CountryVisaTypeRelationAdmin(admin.ModelAdmin):
+    ordering = ('name',)
+
+
 admin.site.register(models.VisaType)
+admin.site.register(models.TaxNumber)
+admin.site.register(models.TaxNumberType)
 admin.site.register(models.CountryVisaTypeRelation)
 admin.site.register(models.SuperannuationFund)
 admin.site.register(models.CandidateContact, CandidateContactAdmin)
