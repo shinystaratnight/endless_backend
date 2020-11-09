@@ -226,12 +226,6 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         default=REFERRAL_CHOICES.direct
     )
 
-    tax_num = models.CharField(
-        max_length=9,
-        verbose_name=_("Tax File Number"),
-        blank=True
-    )
-
     weight = models.DecimalField(
         max_digits=8,
         decimal_places=2,
