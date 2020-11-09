@@ -330,8 +330,8 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @property
     def tax_file_number(self):
-        """default tax file number or first one"""
-        tax_number = self.tax_number()
+        """default tax file number or last one"""
+        tax_number = self.last_tax_number()
         return tax_number.value
 
     @tax_file_number.setter
@@ -345,8 +345,39 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         tax_number.save()
         self.taxnumber_set.add(tax_number)
 
+    @property
+    def tax_number_validation_pattern(self):
+        return self.last_tax_number().type.regex_validation_pattern
+
+    def last_tax_number(self):
+        return self.taxnumber_set.filter(default=True).last() or self.taxnumber_set.last()
+
+    @property
+    def personal_id(self):
+        """default personal id or last one"""
+        personal_id = self.last_personal_id()
+        return personal_id.value
+
+    @personal_id.setter
+    def personal_id(self, value):
+        country = self.contact.get_closest_company().country
+        personal_id_type, created = PersonalIDType.objects.get_or_create(country=country)
+        personal_id, created = PersonalID.objects.get_or_create(candidate_contact=self,
+                                                                type=personal_id_type,
+                                                                )
+        personal_id.value = value
+        personal_id.save()
+        self.taxnumber_set.add(personal_id)
+
+    @property
+    def personal_id_validation_pattern(self):
+        return self.last_personal_id().type.regex_validation_pattern
+
+    def last_personal_id(self):
+        return self.personal_ids.filter(default=True).last() or self.personal_ids.last()
+
     def update_tax_file_number_default(self):
-        # TODO: use it
+        # TODO: use it, include personal id update
         """set default to last master companies country this contact worked with"""
         from r3sourcer.apps.hr.models import TimeSheet
         last_timesheet = TimeSheet.objects.filter(job_offer__candidate_contact=self).last()
@@ -355,13 +386,6 @@ class CandidateContact(UUIDModel, WorkflowProcess):
             tax_number = self.taxnumber_set.get(type__country=country)
             tax_number.default = True
             tax_number.save()
-
-    @property
-    def tax_number_validation_pattern(self):
-        return self.tax_number().type.regex_validation_pattern
-
-    def tax_number(self):
-        return self.taxnumber_set.filter(default=True).first() or self.taxnumber_set.first()
 
     @property
     def notes(self):
@@ -1060,7 +1084,8 @@ class CandidateContactAnonymous(CandidateContact):
         return 'Anonymous Candidate'
 
 
-class TaxNumberType(models.Model):
+class PersonalNumberType(models.Model):
+    """abstract model for Tax Number Type and Personal ID Type"""
     name = models.CharField(
         max_length=64,
         verbose_name=_('Name')
@@ -1073,6 +1098,12 @@ class TaxNumberType(models.Model):
                                                 max_length=64)
 
     class Meta:
+        abstract = True
+
+
+class TaxNumberType(PersonalNumberType):
+
+    class Meta:
         verbose_name = _("Tax Number Type")
         verbose_name_plural = _("Tax Numbers Type")
 
@@ -1080,25 +1111,59 @@ class TaxNumberType(models.Model):
         return self.name
 
 
-class TaxNumber(UUIDModel):
+class PersonalNumber(UUIDModel):
+    """abstract model for Tax Number and Personal ID"""
     candidate_contact = models.ForeignKey(CandidateContact,
                                           on_delete=models.CASCADE,
                                           verbose_name=_("Candidate Contact")
                                           )
     value = models.CharField(
         max_length=64,
-        verbose_name=_("Tax Number")
+        verbose_name=_("Number")
     )
+
+    default = models.BooleanField(blank=True, default=False)
+
+    class Meta:
+        abstract = True
+
+
+class TaxNumber(PersonalNumber):
+
     type = models.ForeignKey(TaxNumberType,
                              related_name="types",
                              on_delete=models.CASCADE,
                              verbose_name=_("Type")
                              )
-    default = models.BooleanField(blank=True, default=False)
 
     class Meta:
         verbose_name = _("Tax Number")
         verbose_name_plural = _("Tax Numbers")
+
+    def __str__(self):
+        return str(self.value) + " " + str(self.default)
+
+
+class PersonalIDType(PersonalNumberType):
+
+    class Meta:
+        verbose_name = _("Personal ID Type")
+        verbose_name_plural = _("Personal ID Type")
+
+    def __str__(self):
+        return self.name
+
+
+class PersonalID(PersonalNumber):
+    type = models.ForeignKey(PersonalIDType,
+                             related_name="id_types",
+                             on_delete=models.CASCADE,
+                             verbose_name=_("ID Type")
+                             )
+
+    class Meta:
+        verbose_name = _("Personal ID")
+        verbose_name_plural = _("Personal IDs")
 
     def __str__(self):
         return str(self.value) + " " + str(self.default)
