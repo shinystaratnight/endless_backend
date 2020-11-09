@@ -14,7 +14,7 @@ def convert_tax_numbers(apps, _):
     Country = apps.get_model('core', 'Country')
     candidate_contacts = CandidateContact.objects.all()
     for cc in candidate_contacts:
-        country = cc.contact.address.country or Country.objects.get(name="Australia")
+        country = Country.objects.get(name="Australia")
         tax_num_type, _ = TaxNumberType.objects.get_or_create(country=country, name='Tax File Number', max_length=9)
         tax_num = TaxNumber.objects.create(value=cc.tax_num, type=tax_num_type, default=True, candidate_contact=cc)
 
