@@ -15,6 +15,7 @@ from r3sourcer.apps.core.models.core import Country
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
+# from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 
@@ -225,12 +226,6 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         default=REFERRAL_CHOICES.direct
     )
 
-    tax_file_number = models.CharField(
-        max_length=9,
-        verbose_name=_("Tax File Number"),
-        blank=True
-    )
-
     weight = models.DecimalField(
         max_digits=8,
         decimal_places=2,
@@ -332,6 +327,41 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     def __str__(self):
         return str(self.contact)
+
+    @property
+    def tax_file_number(self):
+        """default tax file number or first one"""
+        tax_number = self.tax_number()
+        return tax_number.value
+
+    @tax_file_number.setter
+    def tax_file_number(self, value):
+        country = self.contact.get_closest_company().country
+        tax_number_type, created = TaxNumberType.objects.get_or_create(country=country)
+        tax_number, created = TaxNumber.objects.get_or_create(candidate_contact=self,
+                                                              type=tax_number_type,
+                                                              )
+        tax_number.value = value
+        tax_number.save()
+        self.taxnumber_set.add(tax_number)
+
+    def update_tax_file_number_default(self):
+        # TODO: use it
+        """set default to last master companies country this contact worked with"""
+        from r3sourcer.apps.hr.models import TimeSheet
+        last_timesheet = TimeSheet.objects.filter(job_offer__candidate_contact=self).last()
+        if last_timesheet:
+            country = last_timesheet.master_company.country
+            tax_number = self.taxnumber_set.get(type__country=country)
+            tax_number.default = True
+            tax_number.save()
+
+    @property
+    def tax_number_validation_pattern(self):
+        return self.tax_number().type.regex_validation_pattern
+
+    def tax_number(self):
+        return self.taxnumber_set.filter(default=True).first() or self.taxnumber_set.first()
 
     @property
     def notes(self):
@@ -545,7 +575,8 @@ class CandidateContact(UUIDModel, WorkflowProcess):
             if isinstance(related_object, core_models.WorkflowObject):
                 self._process_sms_workflow_object(related_object)
 
-    def _process_sms_workflow_object(self, workflow_object):
+    @staticmethod
+    def _process_sms_workflow_object(workflow_object):
         if workflow_object.state.number == 11:
             workflow_object.active = True
             workflow_object.save(update_fields=['active'])
@@ -1027,3 +1058,47 @@ class CandidateContactAnonymous(CandidateContact):
 
     def __str__(self):
         return 'Anonymous Candidate'
+
+
+class TaxNumberType(models.Model):
+    name = models.CharField(
+        max_length=64,
+        verbose_name=_('Name')
+    )
+    country = models.OneToOneField(Country,
+                                   on_delete=models.CASCADE,
+                                   verbose_name=_("Country")
+                                  )
+    regex_validation_pattern = models.CharField(verbose_name=_('Tax Number Regex Validation Pattern'),
+                                                max_length=64)
+
+    class Meta:
+        verbose_name = _("Tax Number Type")
+        verbose_name_plural = _("Tax Numbers Type")
+
+    def __str__(self):
+        return self.name
+
+
+class TaxNumber(UUIDModel):
+    candidate_contact = models.ForeignKey(CandidateContact,
+                                          on_delete=models.CASCADE,
+                                          verbose_name=_("Candidate Contact")
+                                          )
+    value = models.CharField(
+        max_length=64,
+        verbose_name=_("Tax Number")
+    )
+    type = models.ForeignKey(TaxNumberType,
+                             related_name="types",
+                             on_delete=models.CASCADE,
+                             verbose_name=_("Type")
+                             )
+    default = models.BooleanField(blank=True, default=False)
+
+    class Meta:
+        verbose_name = _("Tax Number")
+        verbose_name_plural = _("Tax Numbers")
+
+    def __str__(self):
+        return str(self.value) + " " + str(self.default)

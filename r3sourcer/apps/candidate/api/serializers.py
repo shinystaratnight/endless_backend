@@ -96,6 +96,9 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
 
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company', 'myob_name')
 
+    tax_file_number = serializers.CharField(allow_null=True)
+    tax_number_validation_pattern = serializers.CharField(allow_null=True, read_only=True)
+
     def create(self, validated_data):
         contact = validated_data.get('contact', None)
         if not isinstance(contact, core_models.Contact):
@@ -147,7 +150,9 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                 'recruitment_agent': ('id', 'job_title', {
                     'contact': ('id', 'phone_mobile')
                 }),
-                'superannuation_fund': ('id', 'product_name')
+                'superannuation_fund': ('id', 'product_name'),
+                'tax_file_number': ('value',),
+                'tax_number_validation_pattern': ()
             }
         )
         read_only_fields = ('candidate_scores', 'old_myob_card_id')
