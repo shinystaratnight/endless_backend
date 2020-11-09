@@ -16,7 +16,7 @@ def convert_tax_numbers(apps, _):
     for cc in candidate_contacts:
         country = cc.contact.address.country or Country.objects.get(name="Australia")
         tax_num_type, _ = TaxNumberType.objects.get_or_create(country=country, name='Tax File Number', max_length=9)
-        tax_num = TaxNumber.objects.create(value=cc.tax_number, type=tax_num_type, default=True, candidate_contact=cc)
+        tax_num = TaxNumber.objects.create(value=cc.tax_num, type=tax_num_type, default=True, candidate_contact=cc)
 
 
 
@@ -66,9 +66,14 @@ class Migration(migrations.Migration):
             name='type',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='types', to='candidate.TaxNumberType', verbose_name='Type'),
         ),
+        migrations.RenameField(
+            model_name='candidatecontact',
+            old_name='tax_file_number',
+            new_name='tax_num',
+        ),
         migrations.RunPython(convert_tax_numbers),
         migrations.RemoveField(
             model_name='candidatecontact',
-            name='tax_file_number',
+            name='tax_num',
         ),
     ]
