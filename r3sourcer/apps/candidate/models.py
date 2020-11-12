@@ -367,14 +367,14 @@ class CandidateContact(UUIDModel, WorkflowProcess):
                                                                 )
         personal_id.value = value
         personal_id.save()
-        self.personal_id_set.add(personal_id)
+        self.personalid_set.add(personal_id)
 
     @property
     def personal_id_validation_pattern(self):
         return self.last_personal_id().type.regex_validation_pattern
 
     def last_personal_id(self):
-        return self.personal_id_set.filter(default=True).last() or self.personal_id_set.last()
+        return self.personalid_set.filter(default=True).last() or self.personalid_set.last()
 
     def update_tax_file_number_default(self):
         # TODO: use it, include personal id update
