@@ -1133,16 +1133,21 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
 
     @action(methods=['get'], detail=False)
     def client_contact_jobsite(self, request, *args, **kwargs):
+        company_id = request.query_params.get('company')
         role_id = request.query_params.get('role')
-        if not role_id:
-            raise exceptions.ValidationError({'role': _('role is required!')})
-        role = Role.objects.get(id=role_id)
-        client_contact = role.company_contact_rel.company_contact
-        if not client_contact:
-            raise exceptions.ValidationError({'client_contact': _('User has no company_contact!')})
-        queryset = self.queryset.filter(primary_contact=client_contact)
+        if not role_id and not company_id:
+            raise exceptions.ValidationError({'role': _('role or company is required!')})
+        if role_id:
+            role = Role.objects.get(id=role_id)
+            client_contact = role.company_contact_rel.company_contact
+            if not client_contact:
+                raise exceptions.ValidationError({'client_contact': _('User has no company_contact!')})
+            queryset = self.queryset.filter(primary_contact=client_contact)
 
-        return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
+            return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
+        if company_id:
+            queryset = self.queryset.filter(regular_company__id=company_id)
+            return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
 
 
 class ShiftDateViewset(BaseApiViewset):

@@ -600,6 +600,7 @@ class User(UUIDModel,
 class Country(UUIDModel, AbstractCountry):
     currency = CurrencyField(default='USD', choices=CURRENCY_CHOICES)
     country_timezone = models.CharField(blank=True, null=False, max_length=255, verbose_name='Country Timezone')
+    has_separate_personal_id = models.NullBooleanField(blank=True, verbose_name=_('Has Personal ID'))
 
     class Meta:
         ordering = ['name']
