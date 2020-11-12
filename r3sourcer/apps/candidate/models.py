@@ -367,14 +367,14 @@ class CandidateContact(UUIDModel, WorkflowProcess):
                                                                 )
         personal_id.value = value
         personal_id.save()
-        self.taxnumber_set.add(personal_id)
+        self.personal_id_set.add(personal_id)
 
     @property
     def personal_id_validation_pattern(self):
         return self.last_personal_id().type.regex_validation_pattern
 
     def last_personal_id(self):
-        return self.personal_ids.filter(default=True).last() or self.personal_ids.last()
+        return self.personal_id_set.filter(default=True).last() or self.personal_id_set.last()
 
     def update_tax_file_number_default(self):
         # TODO: use it, include personal id update
@@ -1119,7 +1119,7 @@ class PersonalNumber(UUIDModel):
                                           )
     value = models.CharField(
         max_length=64,
-        verbose_name=_("Number")
+        verbose_name=_("Value")
     )
 
     default = models.BooleanField(blank=True, default=False)
@@ -1160,6 +1160,10 @@ class PersonalID(PersonalNumber):
                              on_delete=models.CASCADE,
                              verbose_name=_("ID Type")
                              )
+
+    @property
+    def display_personal_id(self):
+        return self.type.country.has_separate_personal_id
 
     class Meta:
         verbose_name = _("Personal ID")
