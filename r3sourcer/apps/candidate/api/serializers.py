@@ -90,7 +90,9 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
 class TaxNumberSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:
         model = TaxNumber
-        fields = ('__all__',)
+        fields = ('__all__',
+                  {'type': ('name', 'regex_validation_pattern')}
+                  )
 
 
 class PersonalIDSerializer(core_serializers.ApiBaseModelSerializer):
@@ -98,7 +100,10 @@ class PersonalIDSerializer(core_serializers.ApiBaseModelSerializer):
 
     class Meta:
         model = PersonalID
-        fields = ('__all__', {'display_personal_id': ()})
+        fields = ('__all__',
+                  {'display_personal_id': (),
+                   'type': ('name', 'regex_validation_pattern')}
+                  )
 
 
 class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
