@@ -114,7 +114,8 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
     emergency_contact_phone = serializers.CharField(allow_null=True, required=False)
 
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company', 'myob_name',
-                     'taxnumber_list', 'personal_id_list', 'display_personal_id')
+                     'taxnumber_list', 'personal_id_list', 'display_personal_id', 'tax_number_regex',
+                     'personal_id_regex')
 
     tax_file_number = serializers.CharField(write_only=True, allow_null=True, required=False)
     personal_id = serializers.CharField(write_only=True, allow_null=True, required=False)
@@ -231,6 +232,14 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
     def get_display_personal_id(self, obj):
         master_company = obj.get_closest_company()
         return master_company.country.has_separate_personal_id or False
+
+    def get_tax_number_regex(self, obj):
+        country = obj.get_closest_company().country
+        return country.taxnumbertype.regex_validation_pattern if hasattr(country, 'taxnumbertype') else None
+
+    def get_personal_id_regex(self, obj):
+        country = obj.get_closest_company().country
+        return country.personalidtype.regex_validation_pattern if country.has_separate_personal_id else None
 
     def get_workflow_score(self, obj):
         return obj.get_active_states().aggregate(score=Avg('score'))['score']
