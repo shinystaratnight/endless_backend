@@ -510,7 +510,7 @@ prepare-compose:
         exit 1; \
     fi;
 	if test $(JWT_RS256_PUBLIC_KEY_PATH) = "" || ! ls $(JWT_RS256_PUBLIC_KEY_PATH); then \
-        echo "You should define private key for repo `JWT_RS256_PUBLIC_KEY_PATH` in .env"; \
+        echo "You should define public key for repo `JWT_RS256_PUBLIC_KEY_PATH` in .env"; \
         exit 1; \
     fi;
 	sudo cp $(PRIVATE_REPO_KEY) conf/id_rsa
