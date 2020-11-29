@@ -34,3 +34,5 @@ id_rsa
 docker-compose.local.yml
 conf/docker/nginx.conf
 jwtRS256.key*
+jwtRS256
+jwtRS256.pub
