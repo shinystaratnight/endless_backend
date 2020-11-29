@@ -505,7 +505,17 @@ prepare-compose:
         echo "You should define private key for repo `PRIVATE_REPO_KEY` in .env"; \
         exit 1; \
     fi;
+	if test $(JWT_RS256_PRIVATE_KEY_PATH) = "" || ! ls $(JWT_RS256_PRIVATE_KEY_PATH); then \
+        echo "You should define private key for repo `JWT_RS256_PRIVATE_KEY_PATH` in .env"; \
+        exit 1; \
+    fi;
+	if test $(JWT_RS256_PUBLIC_KEY_PATH) = "" || ! ls $(JWT_RS256_PUBLIC_KEY_PATH); then \
+        echo "You should define public key for repo `JWT_RS256_PUBLIC_KEY_PATH` in .env"; \
+        exit 1; \
+    fi;
 	sudo cp $(PRIVATE_REPO_KEY) conf/id_rsa
+	sudo cp $(JWT_RS256_PRIVATE_KEY_PATH) conf/jwtRS256
+	sudo cp $(JWT_RS256_PUBLIC_KEY_PATH) conf/jwtRS256.pub
 	make var/make/webui-app
 	export LOGGER_PASSWORD="$(LOGGER_PASSWORD)" \
 	    && export LOGGER_USER="$(LOGGER_USER)" \

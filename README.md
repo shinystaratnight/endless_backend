@@ -10,12 +10,13 @@
 
 ## Development:
 
-1. Prepare running: `make prepare-compose`;
-2. Generate ssh key for git and add generated public key to your bitbucket ssh keys. Set env `PRIVATE_REPO_KEY` to the private key's path value (.env file);
-3. Build app container: `docker-compose build web`;
-4. Run all containers (rabbit, redis, postgres, clickhouse) as daemon: `docker-compose up -d`;
-5. Stop/Start containers: `docker-compose stop/start`;
-6. Check logs from container: 
+1. Generate ssh key for git and add generated public key to your bitbucket ssh keys. Set env `PRIVATE_REPO_KEY` to the private key's path value (.env file);
+2. Generate ssh keys for JWT and add generated keys to your project root. Set env `JWT_RS256_PRIVATE_KEY_PATH` and `JWT_RS256_PUBLIC_KEY_PATH` to the keys path value (.env file);
+3. Prepare running: `make prepare-compose`;
+4. Build app container: `docker-compose build web`;
+5. Run all containers (rabbit, redis, postgres, clickhouse) as daemon: `docker-compose up -d`;
+6. Stop/Start containers: `docker-compose stop/start`;
+7. Check logs from container:
     - `docker-compose logs -f web` / `docker-compose logs -f postgres` / `docker-compose logs -f nginx` / etc.;
 
 ### Helper commands for developers:
