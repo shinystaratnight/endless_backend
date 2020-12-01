@@ -54,3 +54,16 @@ class TestEmailMessage:
         res = fake_email.get_html_body()
 
         assert res is None
+
+
+@pytest.mark.django_db
+class TestEmailTemplates:
+
+    def test_default_email_templates_create(self, default_email_template):
+        assert models.DefaultEmailTemplate.objects.filter(slug=default_email_template.slug).exists()
+
+    def test_default_email_templates_update(self, default_email_template):
+        template = default_email_template
+        template.subject_template = "Test subject updated"
+        template.save()
+        assert models.DefaultEmailTemplate.objects.filter(subject_template="Test subject updated").exists()

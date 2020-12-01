@@ -48,3 +48,13 @@ def fake_email_html_body(fake_email):
         message=fake_email,
         type=models.HTML_CONTENT_TYPE
     )
+
+
+@pytest.fixture
+def default_email_template():
+    return models.DefaultEmailTemplate.objects.create(
+        name= "Test Email Template",
+        slug= "test-email-template",
+        subject_template= "Test subject",
+        language_id= "en"
+    )
