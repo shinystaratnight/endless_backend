@@ -20,6 +20,7 @@ from r3sourcer.apps.core_utils.filters import RelatedDropDownFilter
 from r3sourcer.apps.core_utils.mixins import ExtendedDraggableMPTTAdmin
 from r3sourcer.apps.billing.models import Subscription
 from r3sourcer.helpers.admin.filters import LanguageListFilter
+from r3sourcer.apps.core.models.core import TaxNumber, PersonalID
 
 from .. import forms
 from .. import models
@@ -129,7 +130,6 @@ class CompanyIndustryRel(admin.TabularInline):
 
 
 class ContactAdmin(admin.ModelAdmin):
-
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
 
 
@@ -140,13 +140,11 @@ class ContactLanguageAdmin(admin.ModelAdmin):
 
 
 class AddressAdmin(admin.ModelAdmin):
-
     search_fields = ('city__name', 'country__name', 'street_address', 'state__name',)
     list_display = ('__str__', 'country', 'city', 'state')
 
 
 class CompanyAdmin(BaseAdminPermissionMixin, admin.ModelAdmin):
-
     list_display = ('name', 'get_industries', 'active_subscription')
     search_fields = ('name',)
     list_filter = ('type',)
@@ -450,6 +448,8 @@ admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
 admin.site.register(models.Address, AddressAdmin)
+admin.site.register(TaxNumber)
+admin.site.register(PersonalID)
 admin.site.register(models.CompanyRel, CompanyRelAdmin)
 admin.site.register(models.CompanyAddress, BaseAdmin)
 admin.site.register(models.CompanyLocalization)
