@@ -151,11 +151,6 @@ class Contact(CategoryFolderMixin,
     phone_mobile_verified = models.BooleanField(verbose_name=_("Mobile Phone Verified"), default=False)
     email_verified = models.BooleanField(verbose_name=_("E-mail Verified"), default=False)
 
-    address = models.ForeignKey(
-        'Address',
-        verbose_name=_("Address"),
-        null=True
-    )
     addresses = models.ManyToManyField(
         'Address',
         verbose_name=_("Addresses"),

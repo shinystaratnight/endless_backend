@@ -128,10 +128,13 @@ class CompanyIndustryRel(admin.TabularInline):
     model = models.CompanyIndustryRel
     extra = 0
 
+class AddressesInline(admin.TabularInline):
+    model = models.Address.contacts.through
+    extra = 0
 
 class ContactAdmin(admin.ModelAdmin):
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
-
+    inlines = [AddressesInline]
 
 class ContactLanguageAdmin(admin.ModelAdmin):
     search_fields = ('contact', 'language')
