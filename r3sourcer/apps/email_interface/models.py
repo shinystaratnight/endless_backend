@@ -87,12 +87,9 @@ class DefaultEmailTemplate(DefaultTemplateABS):
         from r3sourcer.apps.core.models import Company
         super().save(*args, **kwargs)
         templates = []
-        for company in Company.objects.filter(
-                type=Company.COMPANY_TYPES.master,
-                languages__language=self.language
-        ).exclude(
-            sms_templates__slug=self.slug,
-        ).all():
+        for company in Company.objects.filter(type=Company.COMPANY_TYPES.master,
+                                              languages__language=self.language) \
+                                      .exclude(email_templates__slug=self.slug):
             obj = EmailTemplate(
                 name=self.name,
                 slug=self.slug,
