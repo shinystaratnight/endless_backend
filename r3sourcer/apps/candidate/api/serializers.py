@@ -6,8 +6,9 @@ from rest_framework import exceptions, serializers
 from rest_framework.exceptions import ValidationError
 
 from r3sourcer.apps.candidate import models as candidate_models
-from r3sourcer.apps.candidate.models import VisaType, TaxNumber, PersonalID
+from r3sourcer.apps.candidate.models import VisaType
 from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.core.models.core import TaxNumber, PersonalID
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_fields
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.utils import normalize_phone_number
@@ -162,7 +163,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                     'id', 'first_name', 'last_name', 'email', 'phone_mobile', 'is_available', 'picture', 'gender',
                     'birthday', 'myob_card_id', 'old_myob_card_id',
                     {
-                        'address': ('__all__', ),
+                        'addresses': ('__all__', ),
                     }
                 ),
                 'candidate_scores': (
@@ -306,7 +307,7 @@ class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSeriali
             'title', 'first_name', 'birthday', 'email', 'phone_mobile', 'tags',
             'last_name', 'picture', 'agree', 'skills', 'is_subcontractor',
             {
-                'address': ('country', 'state', 'city', 'street_address', 'postal_code'),
+                'addresses': ('country', 'state', 'city', 'street_address', 'postal_code'),
                 'candidate': ('tax_file_number', 'personal_id_number')
             },
         )
