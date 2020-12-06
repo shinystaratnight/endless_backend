@@ -359,7 +359,6 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         return personal_id.value
 
     @personal_id.setter
-        # TODO: use it, include personal id update
     def personal_id(self, value):
         country = self.contact.get_closest_company().country
         personal_id_type, created = PersonalIDType.objects.get_or_create(country=country)
@@ -1091,6 +1090,10 @@ class PersonalNumberType(models.Model):
         max_length=64,
         verbose_name=_('Name')
     )
+    country = models.OneToOneField(Country,
+                                   on_delete=models.CASCADE,
+                                   verbose_name=_("Country")
+                                  )
     regex_validation_pattern = models.CharField(verbose_name=_('Tax Number Regex Validation Pattern'),
                                                 max_length=64)
 
@@ -1106,3 +1109,65 @@ class TaxNumberType(PersonalNumberType):
 
     def __str__(self):
         return self.name
+
+
+class PersonalNumber(UUIDModel):
+    """abstract model for Tax Number and Personal ID"""
+    candidate_contact = models.ForeignKey(CandidateContact,
+                                          on_delete=models.CASCADE,
+                                          verbose_name=_("Candidate Contact")
+                                          )
+    value = models.CharField(
+        max_length=64,
+        verbose_name=_("Value")
+    )
+
+    default = models.BooleanField(blank=True, default=False)
+
+    class Meta:
+        abstract = True
+
+
+class TaxNumber(PersonalNumber):
+
+    type = models.ForeignKey(TaxNumberType,
+                             related_name="types",
+                             on_delete=models.CASCADE,
+                             verbose_name=_("Type")
+                             )
+
+    class Meta:
+        verbose_name = _("Tax Number")
+        verbose_name_plural = _("Tax Numbers")
+
+    def __str__(self):
+        return str(self.value) + " " + str(self.default)
+
+
+class PersonalIDType(PersonalNumberType):
+
+    class Meta:
+        verbose_name = _("Personal ID Type")
+        verbose_name_plural = _("Personal ID Type")
+
+    def __str__(self):
+        return self.name
+
+
+class PersonalID(PersonalNumber):
+    type = models.ForeignKey(PersonalIDType,
+                             related_name="id_types",
+                             on_delete=models.CASCADE,
+                             verbose_name=_("ID Type")
+                             )
+
+    @property
+    def display_personal_id(self):
+        return self.type.country.has_separate_personal_id
+
+    class Meta:
+        verbose_name = _("Personal ID")
+        verbose_name_plural = _("Personal IDs")
+
+    def __str__(self):
+        return str(self.value) + " " + str(self.default)

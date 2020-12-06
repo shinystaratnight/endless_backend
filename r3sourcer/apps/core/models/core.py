@@ -151,12 +151,11 @@ class Contact(CategoryFolderMixin,
     phone_mobile_verified = models.BooleanField(verbose_name=_("Mobile Phone Verified"), default=False)
     email_verified = models.BooleanField(verbose_name=_("E-mail Verified"), default=False)
 
-    addresses = models.ManyToManyField(
+    address = models.ForeignKey(
         'Address',
-        verbose_name=_("Addresses"),
+        verbose_name=_("Address"),
         related_name='contacts',
-        through='ContactAddress',
-        blank=True
+        null=True
     )
 
     files = models.ForeignKey(
@@ -335,50 +334,6 @@ class Contact(CategoryFolderMixin,
                 Q(company_contact__relationships__company__regular_companies__master_company=owner),
                 Q(contact_relations__company=owner),
             ]
-
-class ContactAddress(UUIDModel):
-
-    contact = models.ForeignKey(
-        'Contact',
-        on_delete=models.CASCADE,
-        related_name='contact_address',
-        verbose_name=_("Contact")
-    )
-
-    address = models.ForeignKey(
-        'Address',
-        on_delete=models.CASCADE,
-        related_name='contact_address',
-        verbose_name=_("Address")
-    )
-
-
-class PersonalNumber(UUIDModel):
-    """abstract model for Tax Number and Personal ID"""
-    contact_address = models.OneToOneField(ContactAddress,
-                                           verbose_name=_("Contact address"),
-                                           on_delete=models.CASCADE)
-    value = models.CharField(_("Value"), max_length=64)
-
-    class Meta:
-        abstract = True
-
-    def __str__(self):
-        return self.value
-
-
-class PersonalID(PersonalNumber):
-    """model for Tax Number"""
-    class Meta:
-        verbose_name = _("Personal ID")
-        verbose_name_plural = _("Personal IDs")
-
-
-class TaxNumber(PersonalNumber):
-    """model for Tax Number"""
-    class Meta:
-        verbose_name = _("Tax Number")
-        verbose_name_plural = _("Tax Numbers")
 
 
 class ContactRelationship(UUIDModel):
@@ -645,16 +600,7 @@ class User(UUIDModel,
 class Country(UUIDModel, AbstractCountry):
     currency = CurrencyField(default='USD', choices=CURRENCY_CHOICES)
     country_timezone = models.CharField(blank=True, null=False, max_length=255, verbose_name='Country Timezone')
-
-    #Tax Number Type and Personal ID Type fields
-    display_tax_number = models.BooleanField(_('Display Tax Number'), default=False)
-    tax_number_type = models.CharField(_('Tax number type'), max_length=64, blank=True)
-    tax_number_regex_validation_pattern = models.CharField(_('Tax Number Regex Validation Pattern'),
-                                                           max_length=64, blank=True)
-    display_personal_id = models.BooleanField(_('Display Personal ID'), default=False)
-    personal_id_type = models.CharField(_('Tax number type'), max_length=64, blank=True)
-    personal_id_regex_validation_pattern = models.CharField(_('Personal ID Regex Validation Pattern'),
-                                                            max_length=64, blank=True)
+    has_separate_personal_id = models.NullBooleanField(blank=True, verbose_name=_('Has Personal ID'))
 
     class Meta:
         ordering = ['name']
