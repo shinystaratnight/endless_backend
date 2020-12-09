@@ -15,6 +15,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='contactaddress',
             name='is_active',
-            field=models.BooleanField(default=False, verbose_name='Active'),
+            field=models.BooleanField(default=True, verbose_name='Active'),
         ),
     ]
