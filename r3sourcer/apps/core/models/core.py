@@ -344,41 +344,47 @@ class ContactAddress(UUIDModel):
         related_name='contact_address',
         verbose_name=_("Contact")
     )
-
     address = models.ForeignKey(
         'Address',
         on_delete=models.CASCADE,
         related_name='contact_address',
         verbose_name=_("Address")
     )
+    is_active = models.BooleanField(_("Active"), default=False)
 
+    def __str__(self):
+        return f'{self.contact.last_name} {self.contact.first_name}'
 
-class PersonalNumber(UUIDModel):
-    """abstract model for Tax Number and Personal ID"""
+class PersonalID(UUIDModel):
+    """model for Personal ID"""
     contact_address = models.OneToOneField(ContactAddress,
                                            verbose_name=_("Contact address"),
-                                           on_delete=models.CASCADE)
+                                           related_name='personal_id',
+                                           on_delete=models.CASCADE),
     value = models.CharField(_("Value"), max_length=64)
 
     class Meta:
-        abstract = True
+        verbose_name = _("Personal ID")
+        verbose_name_plural = _("Personal IDs")
 
     def __str__(self):
         return self.value
 
 
-class PersonalID(PersonalNumber):
+class TaxNumber(UUIDModel):
     """model for Tax Number"""
-    class Meta:
-        verbose_name = _("Personal ID")
-        verbose_name_plural = _("Personal IDs")
+    contact_address = models.OneToOneField(ContactAddress,
+                                           verbose_name=_("Contact address"),
+                                           related_name='tax_number',
+                                           on_delete=models.CASCADE)
+    value = models.CharField(_("Value"), max_length=64)
 
-
-class TaxNumber(PersonalNumber):
-    """model for Tax Number"""
     class Meta:
         verbose_name = _("Tax Number")
         verbose_name_plural = _("Tax Numbers")
+
+    def __str__(self):
+        return self.value
 
 
 class ContactRelationship(UUIDModel):
