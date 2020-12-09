@@ -16,8 +16,8 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
     filter_class = candidate_filters.CandidateContactFilter
 
     search_fields = (
-        'contact__title', 'contact__last_name', 'contact__first_name', 'contact__address__city__search_names',
-        'contact__address__street_address',
+        'contact__title', 'contact__last_name', 'contact__first_name',
+        'contact__addresses__city__search_names', 'contact__addresses__street_address',
     )
 
 
