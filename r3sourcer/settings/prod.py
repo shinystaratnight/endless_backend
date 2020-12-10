@@ -255,10 +255,10 @@ THUMBNAIL_PROCESSORS = (
 
 THUMBNAIL_ALIASES = {
     '': {
-        'micro': {'size': (40, 40), 'crop': True},
-        'small': {'size': (120, 120), 'crop': True},
-        'medium': {'size': (240, 240), 'crop': True},
-        'large': {'size': (480, 480), 'crop': True},
+        'micro': {'size': (40, 40), 'autocrop': True, 'crop': False},
+        'small': {'size': (120, 120), 'autocrop': True, 'crop': False},
+        'medium': {'size': (240, 240), 'autocrop': True, 'crop': False},
+        'large': {'size': (480, 480), 'autocrop': True, 'crop': False},
     },
 }
 
@@ -462,7 +462,7 @@ CORS_ORIGIN_REGEX_WHITELIST = (
 )
 
 if DEBUG:
-    CORS_ORIGIN_REGEX_WHITELIST += (r'^(https?://)?(\w+\.)?localhost$', )
+    CORS_ORIGIN_REGEX_WHITELIST += (r'^(http?://)?(\w+\.)?localhost$', )
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(days=1),
