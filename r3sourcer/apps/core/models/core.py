@@ -151,7 +151,7 @@ class Contact(CategoryFolderMixin,
     phone_mobile_verified = models.BooleanField(verbose_name=_("Mobile Phone Verified"), default=False)
     email_verified = models.BooleanField(verbose_name=_("E-mail Verified"), default=False)
 
-    addresses = models.ManyToManyField(
+    address = models.ManyToManyField(
         'Address',
         verbose_name=_("Addresses"),
         related_name='contacts',
@@ -350,38 +350,40 @@ class ContactAddress(UUIDModel):
         related_name='contact_address',
         verbose_name=_("Address")
     )
-    is_active = models.BooleanField(_("Active"), default=False)
+    is_active = models.BooleanField(_("Active"), default=True)
 
     def __str__(self):
         return f'{self.contact.last_name} {self.contact.first_name}'
 
-class PersonalID(UUIDModel):
-    """model for Personal ID"""
-    contact_address = models.OneToOneField(ContactAddress,
-                                           verbose_name=_("Contact address"),
-                                           related_name='personal_id',
-                                           on_delete=models.CASCADE),
-    value = models.CharField(_("Value"), max_length=64)
-
     class Meta:
-        verbose_name = _("Personal ID")
-        verbose_name_plural = _("Personal IDs")
+        verbose_name = _("Contact Address")
+        verbose_name_plural = _("Contact Addresses")
+
+
+class TaxNumber(UUIDModel):
+    """model for Tax Number"""
+    value = models.CharField(_("Value"), max_length=64)
+    contact_address = models.OneToOneField('ContactAddress',
+                                           verbose_name=_("Contact address"),
+                                           related_name='tax_number',
+                                           on_delete=models.CASCADE)
+    class Meta:
+        verbose_name = _("Tax Number")
+        verbose_name_plural = _("Tax Numbers")
 
     def __str__(self):
         return self.value
 
 
-class TaxNumber(UUIDModel):
+class PersonalID(UUIDModel):
     """model for Tax Number"""
-    contact_address = models.OneToOneField(ContactAddress,
-                                           verbose_name=_("Contact address"),
-                                           related_name='tax_number',
-                                           on_delete=models.CASCADE)
     value = models.CharField(_("Value"), max_length=64)
-
+    contact_address = models.OneToOneField('ContactAddress',
+                                           verbose_name=_("Contact address"),
+                                           related_name='personal_id',
+                                           on_delete=models.CASCADE)
     class Meta:
-        verbose_name = _("Tax Number")
-        verbose_name_plural = _("Tax Numbers")
+        verbose_name = _("Personal ID")
 
     def __str__(self):
         return self.value
@@ -2917,8 +2919,9 @@ connect_default_signals(Region)
 connect_default_signals(City)
 
 __all__ = [
-    'Contact', 'ContactRelationship', 'ContactUnavailability', 'CompanyIndustryRel',
-    'User', 'UserManager',
+    'Contact', 'ContactRelationship', 'ContactUnavailability',
+    'ContactAddress', 'TaxNumber', 'PersonalID',
+    'CompanyIndustryRel', 'User', 'UserManager',
     'Country', 'Region', 'City',
     'Company', 'CompanyContact', 'CompanyRel', 'CompanyContactRelationship', 'CompanyContactAddress',
     'CompanyAddress', 'CompanyLocalization', 'CompanyTradeReference', 'BankAccount', 'SiteCompany',

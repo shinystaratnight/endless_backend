@@ -376,6 +376,28 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         return data
 
 
+class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
+
+    def prepare_related_data(self, data, is_create=False):
+        data = super().prepare_related_data(data, is_create)
+
+        if is_create and not data.get('is_active'):
+            data['is_active'] = True
+        return data
+
+    @action(methods=['post'], detail=False)
+    def delete(self, request, *args, **kwargs):
+        ids = request.data
+
+        if not ids:
+            raise exceptions.ParseError(_('Objects not selected'))
+
+        return Response({
+            'status': 'success',
+            'message': _('Deleted successfully'),
+        })
+
+
 class CompanyViewset(BaseApiViewset):
 
     http_method_names = ['post', 'put', 'get', 'delete', 'options']

@@ -753,6 +753,21 @@ class ContactSerializer(ApiContactImageFieldsMixin,
         }
 
 
+class ContactAddressSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.ContactAddress
+        fields = (
+            '__all__',
+            {
+                'contact': (
+                    'id', 'first_name'
+                ),
+                'address': ('__all__', ),
+            }
+        )
+
+
 class ContactPasswordSerializer(UserSerializer):
     confirm_password = serializers.CharField(required=True, write_only=True)
 

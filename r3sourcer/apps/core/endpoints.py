@@ -23,6 +23,20 @@ class ContactEndpoint(ApiEndpoint):
     )
 
 
+class ContactAddressEndpoint(ApiEndpoint):
+    model = models.ContactAddress
+    base_viewset = viewsets.ContactAddressViewset
+    base_serializer = serializers.ContactAddressSerializer
+    filter_class = filters.ContactAddressFilter
+    search_fields = (
+        'contact__title',
+        'contact__first_name',
+        'contact__last_name',
+        'address__city__search_names',
+        'is_active',
+    )
+
+
 class CompanyEndpoint(ApiEndpoint):
     model = models.Company
     base_viewset = viewsets.CompanyViewset
@@ -343,6 +357,7 @@ router.register(endpoint=CompanyLocalizationEndpoint())
 router.register(endpoint=CompanyRelEndpoint())
 router.register(models.CompanyTradeReference)
 router.register(endpoint=ContactEndpoint())
+router.register(endpoint=ContactAddressEndpoint())
 router.register(endpoint=ContactUnavailabilityEndpoint())
 router.register(endpoint=CountryEndpoint())
 router.register(models.FileStorage)
