@@ -22,7 +22,7 @@ jobs:
       # login to Dockerhub
       - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
       # build the application image
-      - run: docker build -t r3sourcer/r3:web-staging .
+      - run: docker build -f conf/docker/Dockerfile -t r3sourcer/r3:web-staging .
       # deploy the image
       - run: docker push r3sourcer/$IMAGE_NAME:web-staging
 
@@ -53,7 +53,7 @@ jobs:
       # login to Dockerhub
       - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
       # build the application image
-      - run: docker build -t r3sourcer/r3:web-production .
+      - run: docker build -f conf/docker/Dockerfile -t r3sourcer/r3:web-production .
       # deploy the image
       - run: docker push r3sourcer/$IMAGE_NAME:web-production
 
