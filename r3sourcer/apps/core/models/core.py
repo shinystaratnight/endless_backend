@@ -153,9 +153,10 @@ class Contact(CategoryFolderMixin,
 
     address = models.ManyToManyField(
         'Address',
-        verbose_name=_("Address"),
+        verbose_name=_("Addresses"),
         related_name='contacts',
-        null=True
+        through='ContactAddress',
+        blank=True
     )
 
     files = models.ForeignKey(
@@ -652,7 +653,16 @@ class User(UUIDModel,
 class Country(UUIDModel, AbstractCountry):
     currency = CurrencyField(default='USD', choices=CURRENCY_CHOICES)
     country_timezone = models.CharField(blank=True, null=False, max_length=255, verbose_name='Country Timezone')
-    has_separate_personal_id = models.NullBooleanField(blank=True, verbose_name=_('Has Personal ID'))
+
+    #Tax Number Type and Personal ID Type fields
+    display_tax_number = models.BooleanField(_('Display Tax Number'), default=False)
+    tax_number_type = models.CharField(_('Tax number type'), max_length=64, blank=True)
+    tax_number_regex_validation_pattern = models.CharField(_('Tax Number Regex Validation Pattern'),
+                                                           max_length=64, blank=True)
+    display_personal_id = models.BooleanField(_('Display Personal ID'), default=False)
+    personal_id_type = models.CharField(_('Tax number type'), max_length=64, blank=True)
+    personal_id_regex_validation_pattern = models.CharField(_('Personal ID Regex Validation Pattern'),
+                                                            max_length=64, blank=True)
 
     class Meta:
         ordering = ['name']
