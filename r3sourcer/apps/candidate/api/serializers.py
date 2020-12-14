@@ -6,7 +6,7 @@ from rest_framework import exceptions, serializers
 from rest_framework.exceptions import ValidationError
 
 from r3sourcer.apps.candidate import models as candidate_models
-from r3sourcer.apps.candidate.models import VisaType, TaxNumber, PersonalID
+from r3sourcer.apps.candidate.models import VisaType
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.api import serializers as core_serializers, mixins as core_mixins, fields as core_fields
 from r3sourcer.apps.core.utils.companies import get_site_master_company
@@ -87,25 +87,6 @@ class TagRelSerializer(core_serializers.ApiBaseModelSerializer):
         return data
 
 
-class TaxNumberSerializer(core_serializers.ApiBaseModelSerializer):
-    class Meta:
-        model = TaxNumber
-        fields = ('__all__',
-                  {'type': ('name', 'regex_validation_pattern')}
-                  )
-
-
-class PersonalIDSerializer(core_serializers.ApiBaseModelSerializer):
-    display_personal_id = serializers.ReadOnlyField()
-
-    class Meta:
-        model = PersonalID
-        fields = ('__all__',
-                  {'display_personal_id': (),
-                   'type': ('name', 'regex_validation_pattern')}
-                  )
-
-
 class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                                  core_mixins.WorkflowLatestStateMixin,
                                  core_mixins.ApiContentTypeFieldMixin,
@@ -114,11 +95,8 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
     emergency_contact_phone = serializers.CharField(allow_null=True, required=False)
 
     method_fields = ('average_score', 'bmi', 'skill_list', 'tag_list', 'workflow_score', 'master_company', 'myob_name',
-                     'taxnumber_list', 'personal_id_list', 'display_personal_id', 'tax_number_regex',
-                     'personal_id_regex')
-
-    tax_file_number = serializers.CharField(write_only=True, allow_null=True, required=False)
-    personal_id = serializers.CharField(write_only=True, allow_null=True, required=False)
+                     'display_tax_number', 'tax_number_type', 'tax_number', 'tax_number_regex',
+                     'display_personal_id', 'personal_id_type', 'personal_id', 'personal_id_regex')
 
     def create(self, validated_data):
         contact = validated_data.get('contact', None)
@@ -162,7 +140,10 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                     'id', 'first_name', 'last_name', 'email', 'phone_mobile', 'is_available', 'picture', 'gender',
                     'birthday', 'myob_card_id', 'old_myob_card_id',
                     {
-                        'address': ('__all__', ),
+                        'contact_address': (
+                            {'address': ('country', 'state', 'city', 'street_address', 'postal_code'),},                            {'tax_number': ('value'),},
+                            'is_active'
+                        ),
                     }
                 ),
                 'candidate_scores': (
@@ -172,8 +153,6 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                     'contact': ('id', 'phone_mobile')
                 }),
                 'superannuation_fund': ('id', 'product_name'),
-                'tax_file_number': ('value', 'default'),
-                'personal_id': ('value', 'default')
             }
         )
         read_only_fields = ('candidate_scores', 'old_myob_card_id')
@@ -216,31 +195,6 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
 
         return TagRelSerializer(obj.tag_rels.all(), many=True, fields=['id', 'tag']).data
 
-    def get_taxnumber_list(self, obj):
-        if not obj:
-            return
-
-        return TaxNumberSerializer(obj.taxnumber_set.all(), many=True, fields=['id', 'type', 'value', 'default']).data
-
-    def get_personal_id_list(self, obj):
-        if not obj:
-            return
-
-        return PersonalIDSerializer(obj.personalid_set.all(), many=True, fields=['id', 'type', 'display_personal_id',
-                                                                                 'value', 'default']).data
-
-    def get_display_personal_id(self, obj):
-        master_company = obj.get_closest_company()
-        return master_company.country.has_separate_personal_id or False
-
-    def get_tax_number_regex(self, obj):
-        country = obj.get_closest_company().country
-        return country.taxnumbertype.regex_validation_pattern if hasattr(country, 'taxnumbertype') else None
-
-    def get_personal_id_regex(self, obj):
-        country = obj.get_closest_company().country
-        return country.personalidtype.regex_validation_pattern if country.has_separate_personal_id else None
-
     def get_workflow_score(self, obj):
         return obj.get_active_states().aggregate(score=Avg('score'))['score']
 
@@ -254,6 +208,35 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
 
     def _get_sync_object(self, obj):
         return MYOBSyncObject.objects.filter(record=obj.id).first()
+
+    def get_active_address(self, obj):
+        return obj.contact.contact_address.filter(is_active=True).first().address
+
+    def get_display_tax_number(self, obj):
+        return self.get_active_address(obj).country.display_tax_number
+
+    def get_tax_number_type(self, obj):
+        return self.get_active_address(obj).country.tax_number_type
+
+    def get_tax_number(self, obj):
+        contact_address = self.get_active_address(obj).contact_address.first()
+        return contact_address.tax_number.value if hasattr(contact_address, 'tax_number') else None
+
+    def get_tax_number_regex(self, obj):
+        return self.get_active_address(obj).country.tax_number_regex_validation_pattern
+
+    def get_display_personal_id(self, obj):
+        return self.get_active_address(obj).country.display_personal_id
+
+    def get_personal_id_type(self, obj):
+        return self.get_active_address(obj).country.personal_id_type
+
+    def get_personal_id(self, obj):
+        contact_address = self.get_active_address(obj).contact_address.first()
+        return contact_address.personal_id.value if hasattr(contact_address, 'personal_id') else None
+
+    def get_personal_id_regex(self, obj):
+        return self.get_active_address(obj).country.personal_id_regex_validation_pattern
 
 
 class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):
@@ -306,9 +289,11 @@ class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSeriali
             'title', 'first_name', 'birthday', 'email', 'phone_mobile', 'tags',
             'last_name', 'picture', 'agree', 'skills', 'is_subcontractor',
             {
-                'address': ('country', 'state', 'city', 'street_address', 'postal_code'),
-                'candidate': ('tax_file_number', 'personal_id_number')
-            },
+                'contact_address': (
+                    {'address': ('country', 'state', 'city', 'street_address', 'postal_code'),},
+                    'is_active'
+                ),
+            }
         )
 
 

@@ -133,6 +133,17 @@ class ContactAdmin(admin.ModelAdmin):
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
 
 
+class TaxNumberInline(admin.StackedInline):
+    model = models.TaxNumber
+    extra = 0
+
+class PersonalIDInline(admin.StackedInline):
+    model = models.PersonalID
+    extra = 0
+
+class ContactAddressAdmin(admin.ModelAdmin):
+    inlines = [TaxNumberInline, PersonalIDInline]
+
 class ContactLanguageAdmin(admin.ModelAdmin):
     search_fields = ('contact', 'language')
     list_display = ('contact', 'language')
@@ -445,6 +456,7 @@ if admin.site.is_registered(Site):
 
 admin.site.site_header = "Core Administration"
 admin.site.register(models.Contact, ContactAdmin)
+admin.site.register(models.ContactAddress, ContactAddressAdmin)
 admin.site.register(models.ContactLanguage, ContactLanguageAdmin)
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)

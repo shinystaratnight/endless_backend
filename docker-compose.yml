@@ -17,6 +17,7 @@ services:
       - "6379:6379"
 
   clickhouse:
+    restart: always
     image: "yandex/clickhouse-server:18"
     volumes:
       - ./users.xml:/etc/clickhouse-server/users.xml

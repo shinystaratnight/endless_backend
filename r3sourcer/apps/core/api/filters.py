@@ -358,6 +358,17 @@ class ContactFilter(FilterSet):
         return queryset.filter(candidate_contacts__isnull=not value)
 
 
+class ContactAddressFilter(FilterSet):
+    contact = UUIDFilter(method='filter_contact')
+
+    class Meta:
+        model = models.ContactAddress
+        fields = ['contact', 'is_active']
+
+    def filter_contact(self, queryset, name, value):
+        return queryset.filter(contact__id=value)
+
+
 class TagFilter(FilterSet):
     exclude = UUIDFilter(method='exclude_by_candidate')
     skill = UUIDFilter(method='filter_skill')

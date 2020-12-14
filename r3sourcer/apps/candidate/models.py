@@ -328,64 +328,65 @@ class CandidateContact(UUIDModel, WorkflowProcess):
     def __str__(self):
         return str(self.contact)
 
-    @property
-    def tax_file_number(self):
-        """default tax file number or last one"""
-        tax_number = self.last_tax_number()
-        return tax_number.value
+    # @property
+    # def tax_file_number(self):
+    #     """default tax file number or last one"""
+    #     tax_number = self.last_tax_number()
+    #     return tax_number.value
 
-    @tax_file_number.setter
-    def tax_file_number(self, value):
-        country = self.contact.get_closest_company().country
-        tax_number_type, created = TaxNumberType.objects.get_or_create(country=country)
-        tax_number, created = TaxNumber.objects.get_or_create(candidate_contact=self,
-                                                              type=tax_number_type,
-                                                              )
-        tax_number.value = value
-        tax_number.save()
-        self.taxnumber_set.add(tax_number)
+    # @tax_file_number.setter
+    # def tax_file_number(self, value):
+    #     country = self.contact.get_closest_company().country
+    #     tax_number_type, created = TaxNumberType.objects.get_or_create(country=country)
+    #     tax_number, created = models.TaxNumber.objects.get_or_create(candidate_contact=self,
+    #                                                           type=tax_number_type,
+    #                                                           )
+    #     tax_number.value = value
+    #     tax_number.save()
+    #     self.taxnumber_set.add(tax_number)
 
-    @property
-    def tax_number_validation_pattern(self):
-        return self.last_tax_number().type.regex_validation_pattern
+    # @property
+    # def tax_number_validation_pattern(self):
+    #     return self.last_tax_number().type.regex_validation_pattern
 
-    def last_tax_number(self):
-        return self.taxnumber_set.filter(default=True).last() or self.taxnumber_set.last()
+    # def last_tax_number(self):
+    #     return self.taxnumber_set.filter(default=True).last() or self.taxnumber_set.last()
 
-    @property
-    def personal_id(self):
-        """default personal id or last one"""
-        personal_id = self.last_personal_id()
-        return personal_id.value
+    # @property
+    # def personal_id(self):
+    #     """default personal id or last one"""
+    #     personal_id = self.last_personal_id()
+    #     return personal_id.value
 
-    @personal_id.setter
-    def personal_id(self, value):
-        country = self.contact.get_closest_company().country
-        personal_id_type, created = PersonalIDType.objects.get_or_create(country=country)
-        personal_id, created = PersonalID.objects.get_or_create(candidate_contact=self,
-                                                                type=personal_id_type,
-                                                                )
-        personal_id.value = value
-        personal_id.save()
-        self.personalid_set.add(personal_id)
+    # @personal_id.setter
+    #     # TODO: use it, include personal id update
+    # def personal_id(self, value):
+    #     country = self.contact.get_closest_company().country
+    #     personal_id_type, created = models.PersonalIDType.objects.get_or_create(country=country)
+    #     personal_id, created = models.PersonalID.objects.get_or_create(candidate_contact=self,
+    #                                                             type=personal_id_type,
+    #                                                             )
+    #     personal_id.value = value
+    #     personal_id.save()
+    #     self.personalid_set.add(personal_id)
 
-    @property
-    def personal_id_validation_pattern(self):
-        return self.last_personal_id().type.regex_validation_pattern
+    # @property
+    # def personal_id_validation_pattern(self):
+    #     return self.last_personal_id().type.regex_validation_pattern
 
-    def last_personal_id(self):
-        return self.personalid_set.filter(default=True).last() or self.personalid_set.last()
+    # def last_personal_id(self):
+    #     return self.personalid_set.filter(default=True).last() or self.personalid_set.last()
 
-    def update_tax_file_number_default(self):
-        # TODO: use it, include personal id update
-        """set default to last master companies country this contact worked with"""
-        from r3sourcer.apps.hr.models import TimeSheet
-        last_timesheet = TimeSheet.objects.filter(job_offer__candidate_contact=self).last()
-        if last_timesheet:
-            country = last_timesheet.master_company.country
-            tax_number = self.taxnumber_set.get(type__country=country)
-            tax_number.default = True
-            tax_number.save()
+    # def update_tax_file_number_default(self):
+    #     # TODO: use it, include personal id update
+    #     """set default to last master companies country this contact worked with"""
+    #     from r3sourcer.apps.hr.models import TimeSheet
+    #     last_timesheet = TimeSheet.objects.filter(job_offer__candidate_contact=self).last()
+    #     if last_timesheet:
+    #         country = last_timesheet.master_company.country
+    #         tax_number = self.taxnumber_set.get(type__country=country)
+    #         tax_number.default = True
+    #         tax_number.save()
 
     @property
     def notes(self):
@@ -482,11 +483,12 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @workflow_function
     def is_address_set(self):
-        return bool(self.contact.address and
-                    self.contact.address.street_address and
-                    self.contact.address.city and
-                    self.contact.address.postal_code and
-                    self.contact.address.state)
+        contact_address = self.contact.contact_address.filter(is_active=True).first()
+        return bool(contact_address and
+                    contact_address.address.street_address and
+                    contact_address.address.city and
+                    contact_address.address.postal_code and
+                    contact_address.address.state)
     is_address_set.short_description = _('Address must be set.')
 
     @workflow_function
