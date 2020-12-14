@@ -6,6 +6,7 @@ import pytest
 
 from django.utils import timezone
 
+from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.email_interface.exceptions import EmailBaseServiceError
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.services import BaseEmailService, FakeEmailService, SMTPEmailService
@@ -133,8 +134,9 @@ class TestEmailServices:
         )
 
     @mock.patch.object(EmailTestService, 'send')
-    def test_send_tpl_slug(self, mock_send, service, email_template):
-        service.send_tpl('test@test.com', tpl_name='email-template')
+    @mock.patch.object(Company, 'languages')
+    def test_send_tpl_slug(self, mock_company, mock_send, service, email_template):
+        service.send_tpl('test@test.com', mock_company, tpl_name='email-template')
 
         mock_send.assert_called_with(
             'test@test.com', 'subject', 'template',
@@ -143,8 +145,9 @@ class TestEmailServices:
 
     @mock.patch('r3sourcer.apps.email_interface.services.logger')
     @mock.patch.object(EmailTestService, 'send')
-    def test_send_tpl_not_found(self, mock_send, mock_log, service):
-        service.send_tpl('test@test.com', 'sms')
+    @mock.patch.object(Company, 'languages')
+    def test_send_tpl_not_found(self, mock_company, mock_send, mock_log, service):
+        service.send_tpl('test@test.com', mock_company, 'sms')
 
         assert mock_log.exception.called
         assert not mock_send.called
