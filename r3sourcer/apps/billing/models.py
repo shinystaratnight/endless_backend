@@ -163,6 +163,7 @@ class SMSBalance(models.Model):
         if Decimal(self.balance) - self.segment_cost < 0:
             self.company.sms_enabled = False
             self.company.save()
+            tasks.send_sms_balance_ran_out_email.delay(self.company.id)
 
         if not self.company.sms_enabled and Decimal(self.balance) - self.segment_cost > 0:
             self.company.sms_enabled = True
