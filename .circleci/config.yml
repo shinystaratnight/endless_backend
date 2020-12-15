@@ -1,0 +1,102 @@
+version: 2
+jobs:
+
+  # test:
+  #   docker:
+  #     - image: circleci/python:3.8
+  #   steps:
+  #     - checkout
+  #     - run:
+  #         name: Setup virtualenv
+  #         command: |
+  #           python3 -m venv venv
+  #           . venv/bin/activate
+  #           pip install --upgrade pip
+  #           pip install --no-cache-dir -r dependencies/pip_py3.txt
+
+
+  build-staging:
+    machine: true
+    steps:
+      - checkout
+      # login to Dockerhub
+      - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
+      # build the application image
+      - run: docker build -f conf/docker/Dockerfile -t r3sourcer/r3:web-staging .
+      # deploy the image
+      - run: docker push r3sourcer/$IMAGE_NAME:web-staging
+
+
+  deploy-staging:
+    machine: true
+    steps:
+      # login to Dockerhub
+      - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
+      - add_ssh_keys:
+          fingerprints:
+            - "78:78:62:31:8f:99:a6:ae:e2:29:bf:23:80:d3:33:25"
+      - run:
+          name: fix host authenticity for staging server
+          command: ssh-keyscan r3sourcertest.com >> ~/.ssh/known_hosts
+      - run:
+          name: Deploy Staging Over SSH
+          command: |
+            ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
+            ssh ubuntu@r3sourcertest.com "docker pull r3sourcer/$IMAGE_NAME:web-staging"
+            # ssh ubuntu@r3sourcertest.com "docker restart r3sourcer/$IMAGE_NAME:web-staging"
+
+
+  build-production:
+    machine: true
+    steps:
+      - checkout
+      # login to Dockerhub
+      - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
+      # build the application image
+      - run: docker build -f conf/docker/Dockerfile -t r3sourcer/r3:web-production .
+      # deploy the image
+      - run: docker push r3sourcer/$IMAGE_NAME:web-production
+
+
+  deploy-production:
+    machine: true
+    steps:
+      # login to Dockerhub
+      - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
+      - add_ssh_keys:
+          fingerprints:
+            - "78:78:62:31:8f:99:a6:ae:e2:29:bf:23:80:d3:33:25"
+      - run:
+          name: fix host authenticity for staging server
+          command: ssh-keyscan r3sourcertest.com >> ~/.ssh/known_hosts
+      - run:
+          name: Deploy Staging Over SSH
+          command: |
+            ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
+            ssh ubuntu@r3sourcertest.com "docker pull r3sourcer/$IMAGE_NAME:web-production"
+            # ssh ubuntu@r3sourcertest.com "docker restart r3sourcer/$IMAGE_NAME:web-production"
+
+workflows:
+  version: 2
+  build-and-deploy:
+    jobs:
+      - build-staging:
+          filters:
+            branches:
+              only: develop
+      - deploy-staging:
+          requires:
+              - build-staging
+          filters:
+            branches:
+              only: develop
+      - build-production:
+          filters:
+            branches:
+              only: master
+      - deploy-production:
+          requires:
+              - build-staging
+          filters:
+            branches:
+              only: master
