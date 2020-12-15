@@ -457,7 +457,8 @@ def send_sms_balance_is_low_email(master_company_id, template='sms-balance-is-lo
         data_dict = dict(
             contact=primary_contact,
             master_company_url=site_url,
-            subdomain=domain
+            subdomain=domain,
+            currency=master_company.currency,
         )
 
         logger.info('Sending Sms Balance Is Low e-mail to %s.', primary_contact)
