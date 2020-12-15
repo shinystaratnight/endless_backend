@@ -422,7 +422,7 @@ def send_sms_balance_ran_out_email(master_company_id, template='sms-balance-ran-
         domain = domain_parts.netloc or domain_parts.path
         domain = domain.split('.')[0]
         site_url = core_companies_utils.get_site_url(master_company=master_company)
-        primary_contact = master_company.primary_contact
+        primary_contact = master_company.primary_contact.contact
 
         data_dict = dict(
             contact=primary_contact,
@@ -452,7 +452,7 @@ def send_sms_balance_is_low_email(master_company_id, template='sms-balance-is-lo
         domain = domain_parts.netloc or domain_parts.path
         domain = domain.split('.')[0]
         site_url = core_companies_utils.get_site_url(master_company=master_company)
-        primary_contact = master_company.primary_contact
+        primary_contact = master_company.primary_contact.contact
 
         data_dict = dict(
             contact=primary_contact,
