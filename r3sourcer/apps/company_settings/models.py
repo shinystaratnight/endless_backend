@@ -21,6 +21,7 @@ class CompanySettings(UUIDModel):
     sms_enabled = models.BooleanField(default=True)
     pre_shift_sms_enabled = models.BooleanField(default=True)
     pre_shift_sms_delta = models.PositiveIntegerField(default=90)
+    low_sms_balance_limit = models.PositiveIntegerField(default=20)
     invoice_template = models.TextField(null=True, blank=True, default='')
     advance_state_saving = models.BooleanField(default=False)
     allow_job_creation = models.BooleanField(default=True)
