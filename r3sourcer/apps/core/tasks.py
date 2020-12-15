@@ -433,3 +433,33 @@ def send_sms_balance_ran_out_email(master_company_id, template='sms-balance-ran-
         logger.info('Sending Sms Balance Ran Out e-mail to %s.', primary_contact)
 
         email_interface.send_tpl(primary_contact.email, master_company, tpl_name=template, **data_dict)
+
+
+@shared_task()
+def send_sms_balance_is_low_email(master_company_id, template='sms-balance-is-low'):
+    from r3sourcer.apps.email_interface.utils import get_email_service
+
+    try:
+        email_interface = get_email_service()
+    except ImportError:
+        logger.exception('Cannot load E-mail service')
+        return
+
+    with transaction.atomic():
+        master_company = core_models.Company.objects.get(id=master_company_id)
+        domain = core_companies_utils.get_company_domain(master_company)
+        domain_parts = urlparse(domain)
+        domain = domain_parts.netloc or domain_parts.path
+        domain = domain.split('.')[0]
+        site_url = core_companies_utils.get_site_url(master_company=master_company)
+        primary_contact = master_company.primary_contact
+
+        data_dict = dict(
+            contact=primary_contact,
+            master_company_url=site_url,
+            subdomain=domain
+        )
+
+        logger.info('Sending Sms Balance Is Low e-mail to %s.', primary_contact)
+
+        email_interface.send_tpl(primary_contact.email, master_company, tpl_name=template, **data_dict)
