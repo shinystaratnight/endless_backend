@@ -73,10 +73,15 @@ class FormFieldInLine(admin.StackedInline):
     extra = 0
 
 
+class FormLanguageInline(admin.TabularInline):
+    model = models.FormLanguage
+    extra = 0
+
+
 class FormAdmin(admin.ModelAdmin):
 
     list_display = ('builder', 'company')
-    inlines = [FormFieldGroupInLine]
+    inlines = [FormFieldGroupInLine, FormLanguageInline]
 
 
 class FormBuilderAdmin(admin.ModelAdmin):
