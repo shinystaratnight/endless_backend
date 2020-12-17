@@ -34,7 +34,7 @@ jobs:
       - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
       - add_ssh_keys:
           fingerprints:
-            - "78:78:62:31:8f:99:a6:ae:e2:29:bf:23:80:d3:33:25"
+            - "3c:ee:bd:12:7e:09:da:39:f0:60:d3:ed:f2:74:a7:1c"
       - run:
           name: fix host authenticity for staging server
           command: ssh-keyscan r3sourcertest.com >> ~/.ssh/known_hosts
@@ -65,7 +65,7 @@ jobs:
       - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
       - add_ssh_keys:
           fingerprints:
-            - "78:78:62:31:8f:99:a6:ae:e2:29:bf:23:80:d3:33:25"
+            - "3c:ee:bd:12:7e:09:da:39:f0:60:d3:ed:f2:74:a7:1c"
       - run:
           name: fix host authenticity for staging server
           command: ssh-keyscan r3sourcertest.com >> ~/.ssh/known_hosts
@@ -93,10 +93,10 @@ workflows:
       - build-production:
           filters:
             branches:
-              only: django_dotenv
-      - deploy-production:
-          requires:
-              - build-staging
-          filters:
-            branches:
-              only: django_dotenv
+              only: master
+      # - deploy-production:
+      #     requires:
+      #         - build-staging
+      #     filters:
+      #       branches:
+      #         only: master
