@@ -2,7 +2,7 @@
 pycountry
 
 # other eggs
-Django==1.11.17
+Django==1.11.29
 psycopg2-binary==2.8.3
 django-money==0.10.2
 django-money-rates==0.3.1
@@ -42,11 +42,11 @@ invoke==0.13.0
 Jinja2==2.9.5
 kombu==4.6.5
 MarkupSafe==0.23
-raven==5.27.1
+#raven==5.27.1
 redis==3.4.1
 six==1.10.0
 tolerance==0.1.2
-uWSGI==2.0.15
+uWSGI==2.0.19.1
 wheel==0.29.0
 django_compressor==2.1
 infi.clickhouse_orm==0.9.8
@@ -56,7 +56,7 @@ weasyprint==0.40
 stripe==2.51.0
 Inflector>=2.0.11
 idna<2.8
-sentry-sdk==0.9.5
+sentry-sdk==0.19.5
 timezonefinder==4.1.0
 django-rest-swagger==2.2.0
 django-phonenumber-field==3.0.1
@@ -68,3 +68,5 @@ git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails
 # TODO: uncomment this after redbeat support timezones
 # celery-redbeat==0.11.0
 git+https://github.com/sempr/redbeat#egg=celery-redbeat
+
+django-dotenv==1.4.2            # https://github.com/jpadilla/django-dotenv

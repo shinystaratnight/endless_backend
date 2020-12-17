@@ -7,8 +7,9 @@
 *.vim
 .DS_Store
 .idea/**
-\.env
-\.env_test
+\.env*
+id_rsa
+jwtRS256*
 
 \.venv
 .sass-cache/
@@ -30,9 +31,5 @@ __pycache__
 .cache
 webui-app
 /users.xml
-id_rsa
-docker-compose.local.yml
 conf/docker/nginx.conf
-jwtRS256.key*
-jwtRS256
-jwtRS256.pub
+docker-compose.local.yml

@@ -62,8 +62,8 @@ services:
     environment:
       - C_FORCE_ROOT=1
     env_file:
-      - env_defaults
-      - .env
+      - .env_defaults
+      - .env.prod
     volumes:
       - ./var/www/:/app/var/www/
       - ./r3sourcer/:/app/r3sourcer
