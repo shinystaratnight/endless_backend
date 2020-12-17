@@ -997,6 +997,33 @@ class FormViewSet(BaseApiViewset):
     serializer_class = serializers.FormSerializer
     permission_classes = (IsAuthenticated,)
 
+    def update(self, request, *args, **kwargs):
+        from r3sourcer.apps.core.models.languages.model import Language
+        from r3sourcer.apps.core.models.form_builder import FormLanguage
+        form_obj = self.get_object()
+        language_id = request.data.get('language_id')
+        title = request.data.get('title', "")
+        short_description = request.data.get('short_description', "")
+        button_text = request.data.get('save_button_text', "")
+        result_messages = request.data.get('submit_message', "")
+        if language_id:
+            try:
+                # check if language exists
+                language_obj = Language.objects.get(alpha_2=language_id)
+                # create or update form_language object
+                FormLanguage.objects.update_or_create(form=form_obj, language=language_obj,
+                                                    defaults={'title': title,
+                                                              'short_description': short_description,
+                                                              'button_text': button_text,
+                                                              'result_messages': result_messages})
+                # updating active language
+                form_obj.active_language = language_obj
+                form_obj.save()
+            except Language.DoesNotExist:
+                raise ValidationError('Language with alpha_2 = {} does not exist'.format(language_id))
+
+        return super().update(request, *args, **kwargs)
+
     def create(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
 

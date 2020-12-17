@@ -6,16 +6,19 @@ from django.utils import timezone
 import freezegun
 import pytest
 
+from r3sourcer.apps.core.models import Language
 from r3sourcer.apps.email_interface import models
 
 
 @pytest.fixture
 def email_template():
+    lang, _ = Language.objects.get_or_create(alpha_2='en', name='English')
     return models.EmailTemplate.objects.create(
         name='Email Template',
         type=models.EmailTemplate.EMAIL,
         message_text_template='template',
-        subject_template='subject'
+        subject_template='subject',
+        language=lang
     )
 
 

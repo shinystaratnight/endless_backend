@@ -1,4 +1,4 @@
-FROM python:3.8-buster
+FROM python:3.8
 
 ARG PRIVATE_REPO_KEY
 ARG USER_APP
@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install -y nodejs-legacy npm
 RUN npm i -g bower
 RUN mkdir -p r3sourcer var/log var/run var/www var/tmp
 RUN pip install virtualenv
-RUN virtualenv -p /usr/local/bin/python3.5 venv/py3
+RUN virtualenv -p /usr/local/bin/python3.8 venv/py3
 RUN ln -s venv/py3/bin bin
 RUN bin/pip install -r dependencies/pip_py3.txt && bin/pip install -e .
 

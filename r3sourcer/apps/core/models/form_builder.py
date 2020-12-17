@@ -31,6 +31,7 @@ __all__ = [
     'Form',
     'FormField',
     'FormFieldGroup',
+    'FormLanguage',
 
     'ModelFormField',
     'SelectFormField',
@@ -149,11 +150,6 @@ class FormBuilderExtraFields(UUIDModel):
 
 
 class Form(UUIDModel):
-    title = models.CharField(
-        verbose_name=_("Title"),
-        max_length=1024,
-        default=''
-    )
 
     company = models.ForeignKey(
         'core.Company',
@@ -175,23 +171,12 @@ class Form(UUIDModel):
         default=True
     )
 
-    short_description = models.TextField(
-        verbose_name=_("Short description"),
-        default='',
-        blank=True
-    )
-
-    save_button_text = models.CharField(
-        verbose_name=_("Button text"),
-        max_length=512,
-        default='Save'
-    )
-
-    submit_message = models.TextField(
-        verbose_name=_("Result message"),
-        help_text=_("Would be used for display user message after saving"),
-        default=''
-    )
+    active_language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Active Language"),
+        related_name="forms",
+        default='en',
+        on_delete=models.PROTECT)
 
     class Meta:
         unique_together = (
@@ -209,10 +194,15 @@ class Form(UUIDModel):
             })
 
     def __str__(self):
-        return '{title}: {builder}'.format(
-            title=self.title,
-            builder=self.builder,
-        )
+        return f'{self.builder}'
+
+    def get_translations(self):
+        translations = []
+        for translation in self.translations.all():
+            translations.append({translation.language.pk: [translation.language.name,
+                                 translation.title, translation.short_description,
+                                 translation.button_text, translation.result_messages]})
+        return translations
 
     def get_company_links(self, contact):
         """
@@ -1086,3 +1076,32 @@ class RelatedFormField(FormField):
     class Meta:
         verbose_name = _("Related field")
         verbose_name_plural = _("Related fields")
+
+
+class FormLanguage(UUIDModel):
+    form = models.ForeignKey(
+        Form,
+        on_delete=models.PROTECT,
+        verbose_name=_('Form'),
+        related_name='translations'
+    )
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Form language"),
+        on_delete=models.CASCADE,
+        related_name='formlanguages',
+    )
+    title = models.CharField(max_length=64, verbose_name=_("Form Title"), default="Application Form")
+    short_description = models.CharField(max_length=255, verbose_name=_("Form Short Description"), default="New application form")
+    button_text = models.CharField(max_length=32, verbose_name=_("Form Button Text"), default="Save")
+    result_messages = models.CharField(max_length=255, verbose_name=_("Form Result Message"), default="Your form has been saved")
+
+    class Meta:
+        verbose_name = _("Form translations")
+        unique_together = [
+            'form',
+            'language',
+        ]
+
+    def __str__(self):
+        return str(self.language)
