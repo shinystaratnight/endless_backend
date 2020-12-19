@@ -324,35 +324,35 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             shift_time = self.instance.job_offer.shift.time
             shift_date = datetime.combine(self.instance.job_offer.shift.date.shift_date, shift_time, UTC)
             #1
-            if shift_started_at >= shift_date - timedelta(hours=4):
+            if shift_started_at < shift_date - timedelta(hours=4):
                 raise serializers.ValidationError({'shift_started_at':
                     _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
             #2
-            if shift_started_at <= shift_date + timedelta(hours=24):
+            if shift_started_at > shift_date + timedelta(hours=24):
                 raise serializers.ValidationError({'shift_started_at':
                     _('Shift starting time can not be later than 24 hours after default shift starting time.')})
             #3
-            if shift_ended_at <= shift_started_at:
+            if shift_ended_at < shift_started_at:
                 raise serializers.ValidationError({'shift_started_at':
                     _('Incorrect shift starting or ending time.')})
             #4
-            if break_ended_at >= break_started_at:
+            if break_ended_at < break_started_at:
                 raise serializers.ValidationError({'break_started_at':
                     _('Incorrect break starting or ending time.')})
             #5
-            if shift_started_at <= break_started_at:
+            if shift_started_at > break_started_at:
                 raise serializers.ValidationError({'break_started_at':
                     _('Break must start after shift starting time.')})
             #6
-            if shift_ended_at >= break_ended_at:
+            if shift_ended_at < break_ended_at:
                 raise serializers.ValidationError({'break_ended_at':
                     _('Break must end before shift ending time.')})
             #7
-            if (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) <= timedelta(hours=24):
+            if (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) > timedelta(hours=24):
                 raise serializers.ValidationError({'shift_started_at':
                     _('Total working hours must not be longer than 24 hours.')})
             #8
-            if (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) <= timedelta(hours=0):
+            if (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) <= timedelta(0):
                 raise serializers.ValidationError({'shift_started_at':
                     _('Total working hours must be longer than 0 hours.')})
             return data

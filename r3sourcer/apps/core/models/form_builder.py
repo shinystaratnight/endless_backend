@@ -194,7 +194,7 @@ class Form(UUIDModel):
             })
 
     def __str__(self):
-        return f'{self.builder}'
+        return str(self.builder)
 
     def get_translations(self):
         translations = []
