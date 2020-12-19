@@ -45,12 +45,13 @@ class TestActiveWorkers:
 
 class TestChargeForExtraWorkers:
     @mock.patch('r3sourcer.apps.core.models.Company.active_workers')
-    def test_no_extra_workers(self, active_workers, client, user, company, relationship, contact, shift):
+    def test_no_extra_workers(self, active_workers, client, user, company, relationship, contact,
+                              subscription_type_monthly, shift):
         active_workers.return_value = 100
         Subscription.objects.create(
             company=company,
             name='subscription',
-            type='monthly',
+            subscription_type=subscription_type_monthly,
             price=500,
             worker_count=100,
         )
@@ -60,14 +61,15 @@ class TestChargeForExtraWorkers:
         assert Payment.objects.count() == 0
 
     @mock.patch('r3sourcer.apps.core.models.Company.active_workers')
-    def test_extra_workers(self, active_workers, client, user, company, relationship):
+    def test_extra_workers(self, active_workers, client, user, company, relationship,
+                           subscription_type_monthly):
         active_workers.return_value = 110
         company.stripe_customer = 'cus_CnGRCuSr6Fo0Uv'
         company.save()
         Subscription.objects.create(
             company=company,
             name='subscription',
-            type='monthly',
+            subscription_type=subscription_type_monthly,
             price=500,
             worker_count=100,
             active=True,
@@ -79,14 +81,15 @@ class TestChargeForExtraWorkers:
         assert Payment.objects.first().amount == 130
 
     @mock.patch('r3sourcer.apps.core.models.Company.active_workers')
-    def test_extra_workers_annual_subscription(self, active_workers, client, user, company, relationship):
+    def test_extra_workers_annual_subscription(self, active_workers, client, user, company,
+                                               relationship, subscription_type_annual):
         active_workers.return_value = 110
         company.stripe_customer = 'cus_CnGRCuSr6Fo0Uv'
         company.save()
         Subscription.objects.create(
             company=company,
             name='subscription',
-            type='annual',
+            subscription_type=subscription_type_annual,
             price=500,
             worker_count=100,
             active=True,
@@ -102,7 +105,7 @@ class TestChargeForSMS:
     @mock.patch.object(stripe.InvoiceItem, 'create')
     @mock.patch.object(stripe.Invoice, 'create')
     @mock.patch.object(Subscription, 'deactivate')
-    def test_charge(self, mocked_invoice_item, mocked_invoice, mocked_subscription, client, user, company, relationship):
+    def test_charge(self, mocked_invoice, client, user, company, relationship, company_address):
         mocked_value = {'id': 'stripe_id'}
         mocked_invoice.return_value = mocked_value
         initial_payment_count = Payment.objects.count()
