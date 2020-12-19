@@ -378,24 +378,18 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
 class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
 
-    def prepare_related_data(self, data, is_create=False):
-        data = super().prepare_related_data(data, is_create)
-
-        if is_create and not data.get('is_active'):
-            data['is_active'] = True
-        return data
-
-    @action(methods=['post'], detail=False)
-    def delete(self, request, *args, **kwargs):
-        ids = request.data
-
-        if not ids:
-            raise exceptions.ParseError(_('Objects not selected'))
-
-        return Response({
-            'status': 'success',
-            'message': _('Deleted successfully'),
-        })
+    def perform_destroy(self, instance):
+        instance = self.get_object()
+        # prevent deleting the only address
+        if models.ContactAddress.objects.filter(contact=instance.contact).count() == 1:
+            raise exceptions.ValidationError({'non_field_errors': _("You cannot delete the only address")})
+        # set another active address
+        super().perform_destroy(instance)
+        if instance.is_active:
+            last_address = models.ContactAddress.objects.filter(contact=instance.contact).last()
+            if last_address:
+                last_address.is_active = True
+                last_address.save()
 
 
 class CompanyViewset(BaseApiViewset):

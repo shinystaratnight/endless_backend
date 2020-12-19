@@ -210,33 +210,46 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
         return MYOBSyncObject.objects.filter(record=obj.id).first()
 
     def get_active_address(self, obj):
-        return obj.contact.contact_address.filter(is_active=True).first().address
+        active_addres = obj.contact.contact_address.filter(is_active=True).first()
+        return active_addres.address if active_addres else None
 
     def get_display_tax_number(self, obj):
-        return self.get_active_address(obj).country.display_tax_number
+        active_address = self.get_active_address(obj)
+        return active_address.country.display_tax_number if active_address else None
 
     def get_tax_number_type(self, obj):
-        return self.get_active_address(obj).country.tax_number_type
+        active_address = self.get_active_address(obj)
+        return active_address.country.tax_number_type if active_address else None
 
     def get_tax_number(self, obj):
-        contact_address = self.get_active_address(obj).contact_address.first()
+        if self.get_active_address(obj):
+            contact_address = self.get_active_address(obj).contact_address.first()
+        else:
+            return None
         return contact_address.tax_number.value if hasattr(contact_address, 'tax_number') else None
 
     def get_tax_number_regex(self, obj):
-        return self.get_active_address(obj).country.tax_number_regex_validation_pattern
+        active_address = self.get_active_address(obj)
+        return active_address.country.tax_number_regex_validation_pattern if active_address else None
 
     def get_display_personal_id(self, obj):
-        return self.get_active_address(obj).country.display_personal_id
+        active_address = self.get_active_address(obj)
+        return active_address.country.display_personal_id if active_address else None
 
     def get_personal_id_type(self, obj):
-        return self.get_active_address(obj).country.personal_id_type
+        active_address = self.get_active_address(obj)
+        return active_address.country.personal_id_type if active_address else None
 
     def get_personal_id(self, obj):
-        contact_address = self.get_active_address(obj).contact_address.first()
+        if self.get_active_address(obj):
+            contact_address = self.get_active_address(obj).contact_address.first()
+        else:
+            return None
         return contact_address.personal_id.value if hasattr(contact_address, 'personal_id') else None
 
     def get_personal_id_regex(self, obj):
-        return self.get_active_address(obj).country.personal_id_regex_validation_pattern
+        active_address = self.get_active_address(obj)
+        return active_address.country.personal_id_regex_validation_pattern if active_address else None
 
 
 class CandidateContactRegisterSerializer(core_serializers.ContactRegisterSerializer):
