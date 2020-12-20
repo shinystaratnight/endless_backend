@@ -378,6 +378,22 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
 class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
 
+    def clear_active_contactaddresses(self, instance):
+        """ if new address is active make all old adresses not active """
+        if instance.is_active:
+            for address in models.ContactAddress.objects.filter(contact=instance.contact) \
+                                                        .exclude(pk=instance.pk):
+                address.is_active=False
+                address.save()
+
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        self.clear_active_contactaddresses(instance)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        self.clear_active_contactaddresses(instance)
+
     def perform_destroy(self, instance):
         instance = self.get_object()
         # prevent deleting the only address

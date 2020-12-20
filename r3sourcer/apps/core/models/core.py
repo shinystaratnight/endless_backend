@@ -368,13 +368,6 @@ class ContactAddress(UUIDModel):
             latitude=F('address__latitude')
         ).values_list('longitude', 'latitude').get()
 
-    def save(self, *args, **kwargs):
-        if self.is_active:
-            for address in ContactAddress.objects.filter(contact=self.contact):
-                address.is_active=False
-                address.save()
-        super().save(*args, **kwargs)
-
 
 class TaxNumber(UUIDModel):
     """model for Tax Number"""
