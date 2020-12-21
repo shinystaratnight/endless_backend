@@ -376,7 +376,7 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         return data
 
 
-class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
+class ContactAddressViewset(BaseApiViewset):
 
     def clear_active_contactaddresses(self, instance):
         """ if new address is active make all old adresses not active """
@@ -391,6 +391,20 @@ class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
         self.clear_active_contactaddresses(instance)
 
     def perform_update(self, serializer):
+        instance = self.get_object()
+
+        # update tax_number
+        if self.request.data.get('set_tax_number'):
+            value = self.request.data.pop('set_tax_number')
+            models.TaxNumber.objects.update_or_create(contact_address=instance,
+                                                      defaults={'value': value})
+
+        # update personal_id
+        if self.request.data.get('set_personal_id'):
+            value = self.request.data.pop('set_personal_id')
+            models.PersonalID.objects.update_or_create(contact_address=instance,
+                                                       defaults={'value': value})
+
         instance = serializer.save()
         self.clear_active_contactaddresses(instance)
 
