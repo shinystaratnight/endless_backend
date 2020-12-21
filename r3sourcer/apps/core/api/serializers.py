@@ -754,6 +754,8 @@ class ContactSerializer(ApiContactImageFieldsMixin,
 
 
 class ContactAddressSerializer(ApiBaseModelSerializer):
+    set_tax_number = serializers.CharField(required=True, write_only=True)
+    set_personal_id = serializers.CharField(required=True, write_only=True)
 
     class Meta:
         model = core_models.ContactAddress
