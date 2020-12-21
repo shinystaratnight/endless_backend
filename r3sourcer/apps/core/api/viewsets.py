@@ -386,13 +386,7 @@ class ContactAddressViewset(BaseApiViewset):
                 address.is_active=False
                 address.save()
 
-    def perform_create(self, serializer):
-        instance = serializer.save()
-        self.clear_active_contactaddresses(instance)
-
-    def perform_update(self, serializer):
-        instance = self.get_object()
-
+    def update_tax_number_personal_id(self, instance):
         # update tax_number
         if self.request.data.get('set_tax_number'):
             value = self.request.data.pop('set_tax_number')
@@ -405,8 +399,16 @@ class ContactAddressViewset(BaseApiViewset):
             models.PersonalID.objects.update_or_create(contact_address=instance,
                                                        defaults={'value': value})
 
+    def perform_create(self, serializer):
         instance = serializer.save()
         self.clear_active_contactaddresses(instance)
+        self.update_tax_number_personal_id(instance)
+
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        instance = serializer.save()
+        self.clear_active_contactaddresses(instance)
+        self.update_tax_number_personal_id(instance)
 
     def perform_destroy(self, instance):
         instance = self.get_object()
