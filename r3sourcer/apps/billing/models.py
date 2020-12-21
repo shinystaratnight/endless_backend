@@ -80,6 +80,7 @@ class Subscription(CompanyTimeZoneMixin):
         allowed_statuses = ('active', 'incomplete', 'trialing')
         if self.status not in allowed_statuses and self.now_utc > end_of_trial:
             self.deactivate(user_id=(str(this_user.id)))
+            self.active = False
         # elif self.status in allowed_statuses:
         #     self.activate(user_id=(str(this_user.id)))
 
