@@ -38,9 +38,7 @@ def charge_for_extra_workers():
         subscription = company.active_subscription
         paid_workers = subscription.worker_count
         active_workers = company.active_workers(subscription.current_period_start)
-        country_code = 'EE'
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
+        country_code = company.get_country_code()
         stripe.api_key = sca.get_stripe_key(country_code)
         vat_object = VAT.get_vat(country_code)
 
@@ -196,9 +194,7 @@ def charge_for_new_amount():
                                   .filter(subscriptions__active=True)
 
     for company in company_list:
-        country_code = 'EE'
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
+        country_code = company.get_country_code()
         stripe.api_key = sca.get_stripe_key(country_code)
         subscription = company.active_subscription
         active_workers = company.active_workers(subscription.current_period_start)

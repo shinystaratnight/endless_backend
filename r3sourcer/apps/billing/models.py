@@ -357,11 +357,7 @@ class StripeCountryAccount(models.Model):
 
     @classmethod
     def get_stripe_key_on_company(cls, company):
-        hq_addr = company.get_hq_address()
-        if hq_addr:
-            country_code = hq_addr.address.country.code2
-        else:
-            country_code = 'EE'
+        country_code = company.get_country_code()
         api_key = cls.get_stripe_key(country_code)
         return api_key
 
