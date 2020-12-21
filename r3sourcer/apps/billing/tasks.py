@@ -203,7 +203,7 @@ def charge_for_new_amount():
             total_amount = subscription.subscription_type.start_range_price_monthly
         else:
             total_amount = subscription.subscription_type.start_range_price_annual
-        start_workers = 5
+        start_workers = settings.SUBSCRIPTION_START_WORKERS
         if active_workers > start_workers:
             total_amount += (active_workers - start_workers) * subscription.subscription_type.step_change_val
         if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.annual:
