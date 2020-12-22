@@ -95,13 +95,16 @@ class Subscription(CompanyTimeZoneMixin):
         stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.status = subscription.status
+        if subscription.status not in self.ALLOWED_STATUSES:
+            self.active = False
+        else:
+            self.active = True
 
     def update_permissions_on_status(self):
         this_user = self.company.get_user()
         end_of_trial = this_user.trial_period_start + datetime.timedelta(days=30)
         if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
             self.deactivate(user_id=(str(this_user.id)))
-            self.active = False
         # elif self.status in allowed_statuses:
         #     self.activate(user_id=(str(this_user.id)))
 
