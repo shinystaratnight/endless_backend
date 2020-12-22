@@ -376,26 +376,52 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         return data
 
 
-class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
+class ContactAddressViewset(BaseApiViewset):
 
-    def prepare_related_data(self, data, is_create=False):
-        data = super().prepare_related_data(data, is_create)
+    def clear_active_contactaddresses(self, instance):
+        """ if new address is active make all old adresses not active """
+        if instance.is_active:
+            for address in models.ContactAddress.objects.filter(contact=instance.contact) \
+                                                        .exclude(pk=instance.pk):
+                address.is_active=False
+                address.save()
 
-        if is_create and not data.get('is_active'):
-            data['is_active'] = True
-        return data
+    def update_tax_number_personal_id(self, instance):
+        # update tax_number
+        if self.request.data.get('set_tax_number'):
+            value = self.request.data.pop('set_tax_number')
+            models.TaxNumber.objects.update_or_create(contact_address=instance,
+                                                      defaults={'value': value})
 
-    @action(methods=['post'], detail=False)
-    def delete(self, request, *args, **kwargs):
-        ids = request.data
+        # update personal_id
+        if self.request.data.get('set_personal_id'):
+            value = self.request.data.pop('set_personal_id')
+            models.PersonalID.objects.update_or_create(contact_address=instance,
+                                                       defaults={'value': value})
 
-        if not ids:
-            raise exceptions.ParseError(_('Objects not selected'))
+    def perform_create(self, serializer):
+        instance = serializer.save()
+        self.clear_active_contactaddresses(instance)
+        self.update_tax_number_personal_id(instance)
 
-        return Response({
-            'status': 'success',
-            'message': _('Deleted successfully'),
-        })
+    def perform_update(self, serializer):
+        instance = self.get_object()
+        instance = serializer.save()
+        self.clear_active_contactaddresses(instance)
+        self.update_tax_number_personal_id(instance)
+
+    def perform_destroy(self, instance):
+        instance = self.get_object()
+        # prevent deleting the only address
+        if models.ContactAddress.objects.filter(contact=instance.contact).count() == 1:
+            raise exceptions.ValidationError({'non_field_errors': _("You cannot delete the only address")})
+        # set another active address
+        super().perform_destroy(instance)
+        if instance.is_active:
+            last_address = models.ContactAddress.objects.filter(contact=instance.contact).last()
+            if last_address:
+                last_address.is_active = True
+                last_address.save()
 
 
 class CompanyViewset(BaseApiViewset):

@@ -42,8 +42,9 @@ jobs:
           name: Deploy Staging Over SSH
           command: |
             ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
-            ssh ubuntu@r3sourcertest.com "docker pull r3sourcer/$IMAGE_NAME:web-staging"
-            # ssh ubuntu@r3sourcertest.com "docker restart r3sourcer/$IMAGE_NAME:web-staging"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml up -d"
 
 
   build-production:
@@ -73,8 +74,10 @@ jobs:
           name: Deploy Staging Over SSH
           command: |
             ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
-            ssh ubuntu@r3sourcertest.com "docker pull r3sourcer/$IMAGE_NAME:web-production"
-            # ssh ubuntu@r3sourcertest.com "docker restart r3sourcer/$IMAGE_NAME:web-production"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml up -d"
+
 
 workflows:
   version: 2
@@ -94,9 +97,9 @@ workflows:
           filters:
             branches:
               only: master
-      # - deploy-production:
-      #     requires:
-      #         - build-staging
-      #     filters:
-      #       branches:
-      #         only: master
+      - deploy-production:
+          requires:
+              - build-production
+          filters:
+            branches:
+              only: master
