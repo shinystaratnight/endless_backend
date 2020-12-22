@@ -189,7 +189,9 @@ def subscription(db, company, subscription_type_monthly):
         subscription_type=subscription_type_monthly,
         price=100,
         worker_count=10,
+        active=True,
         status='active',
+        subscription_id='sub_IcQQankIwgFG0x'
     )
 
 
@@ -198,4 +200,18 @@ def company_contact_rel(db, primary_contact, company):
     return CompanyContactRelationship.objects.create(
         company_contact=primary_contact,
         company=company
+    )
+
+
+@pytest.fixture
+def canceled_subscription(db, company, subscription_type_monthly):
+    return Subscription.objects.create(
+        company=company,
+        name='Subscription',
+        subscription_type=subscription_type_monthly,
+        price=100,
+        worker_count=10,
+        active=False,
+        status='canceled',
+        subscription_id='sub_IcQPoFaGvbP1BB'
     )

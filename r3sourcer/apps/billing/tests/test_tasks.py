@@ -139,3 +139,20 @@ class TestFetchPayments:
         assert Payment.objects.get(id=payment.id).status == 'paid'
         assert SMSBalance.objects.get(id=company.sms_balance.id).balance == initial_balance + payment.amount
         assert Company.objects.get(id=company.id).sms_enabled
+
+
+class TestSubscriptions:
+
+    def test_sync_subscriptions_active(self, subscription):
+        assert subscription.active is True
+        sync_subscriptions()
+        subscription.refresh_from_db()
+        assert subscription.status == "canceled"
+        assert subscription.active is False
+
+    def test_sync_subscriptions_canceled(self, canceled_subscription):
+        assert canceled_subscription.active is False
+        sync_subscriptions()
+        canceled_subscription.refresh_from_db()
+        assert canceled_subscription.status == "active"
+        assert canceled_subscription.active is True
