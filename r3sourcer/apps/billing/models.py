@@ -102,9 +102,10 @@ class Subscription(CompanyTimeZoneMixin):
 
     def update_permissions_on_status(self):
         this_user = self.company.get_user()
-        end_of_trial = this_user.trial_period_start + datetime.timedelta(days=30)
-        if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
-            self.deactivate(user_id=(str(this_user.id)))
+        if this_user.trial_period_start:
+            end_of_trial = this_user.trial_period_start + datetime.timedelta(days=30)
+            if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
+                self.deactivate(user_id=(str(this_user.id)))
         # elif self.status in allowed_statuses:
         #     self.activate(user_id=(str(this_user.id)))
 
