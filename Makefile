@@ -15,7 +15,7 @@ DOCKER_BASE_DIR = /app
 PG_VERSION = 9.6
 LANG = 'en-au'
 
-include env_defaults
+include .env_defaults
 -include .env
 
 PG_LOGIN = -h $(POSTGRES_HOST) -p $(POSTGRES_PORT) -U $(POSTGRES_USERNAME)
@@ -88,7 +88,7 @@ all: \
   var/make/webui-app
 
 .env:
-	cp env_defaults .env
+	cp .env_defaults .env
 	echo "SYSTEM_USER=$(USER)" >> .env
 
 var/make:
@@ -349,7 +349,7 @@ run-container:
             --volume "$(CURRENT_PATH)/conf:$(DOCKER_BASE_DIR)/conf" \
             --volume "$(CURRENT_PATH)/docker-entrypoint.sh:$(DOCKER_BASE_DIR)/docker-entrypoint.sh" \
             --volume "$(NGINX_SITE_VOLUME):$(DOCKER_BASE_DIR)/var/www/:rw" \
-            --env-file "env_defaults" --env-file ".env" \
+            --env-file ".env_defaults" --env-file ".env" \
             -e WEBUI_APP_DIR=$(WEBUI_APP_DIR) \
             --name r3sourcer-$(DOCKER_APP_NAME) \
             --restart on-failure \
@@ -365,7 +365,7 @@ run-container:
             --volume "$(CURRENT_PATH)/conf:$(DOCKER_BASE_DIR)/conf" \
             --volume "$(CURRENT_PATH)/docker-entrypoint.sh:$(DOCKER_BASE_DIR)/docker-entrypoint.sh" \
             --volume "$(NGINX_SITE_VOLUME):$(DOCKER_BASE_DIR)/var/www/:rw" \
-            --env-file "env_defaults" --env-file ".env" \
+            --env-file ".env_defaults" --env-file ".env" \
             -e WEBUI_APP_DIR=$(WEBUI_APP_DIR) \
             --name r3sourcer-$(DOCKER_APP_NAME) \
             --restart on-failure \
@@ -475,7 +475,7 @@ var/make/webui-app:
             --name webui-$(DOCKER_APP_NAME) \
             -v $(NGINX_SITE_VOLUME)$(WEBUI_APP_DIR):/www/ \
             -v $(shell pwd)/$(WEBUI_APP_DIR)/:/code/ \
-            --env-file "env_defaults" --env-file ".env" \
+            --env-file ".env_defaults" --env-file ".env" \
             webui-$(DOCKER_APP_NAME)-image; \
 	fi; \
 	echo "WEB-UI successfully installed.";
@@ -582,7 +582,7 @@ media_backup:
 	aws s3 cp var/media_backups/media.tar.gz $(S3_BACKUP_FOLDER)Media/media_$(CURRENT_DATETIME).tar.gz
 
 media_backup_clean:
-	rm var/media_backups/media.tar.gz
+	rm -f var/media_backups/media.tar.gz
 
 get_backups_from_remote:
 	mkdir -p var/backups/from_remote
