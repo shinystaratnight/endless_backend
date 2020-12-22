@@ -197,27 +197,7 @@ def charge_for_new_amount():
         country_code = company.get_country_code()
         stripe.api_key = sca.get_stripe_key(country_code)
         subscription = company.active_subscription
-        active_workers = company.active_workers(subscription.current_period_start)
-        # active_workers = subscription.worker_count
-        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.monthly:
-            total_amount = subscription.subscription_type.start_range_price_monthly
-        else:
-            total_amount = subscription.subscription_type.start_range_price_annual
-        start_workers = settings.SUBSCRIPTION_START_WORKERS
-        if active_workers > start_workers:
-            total_amount += (active_workers - start_workers) * subscription.subscription_type.step_change_val
-        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.annual:
-            if subscription.subscription_type.percentage_discount:
-                total_amount = (total_amount * 12) - (total_amount * 12 / 100 * subscription.subscription_type.percentage_discount)
-            else:
-                total_amount = total_amount * 12 * .75
-        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.monthly:
-            if subscription.subscription_type.percentage_discount:
-                total_amount = total_amount - (
-                total_amount / 100 * subscription.subscription_type.percentage_discount)
-            else:
-                total_amount = total_amount
-        amount = total_amount
+        amount = subscription.get_total_subscription_amount()
         if not subscription.price == amount:
             plan_type = subscription.subscription_type.type
             plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type,
