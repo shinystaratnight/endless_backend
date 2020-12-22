@@ -18,6 +18,7 @@ from r3sourcer.apps.billing.models import (
     )
 from r3sourcer.apps.core.models import Company, VAT
 from r3sourcer.apps.email_interface.utils import get_email_service
+from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.helpers.datetimes import utc_now
 
 logger = get_task_logger(__name__)
@@ -189,7 +190,6 @@ def send_sms_payment_reminder():
 @shared_task
 def charge_for_new_amount():
     """"adjusts stripe plan to actual worker count"""
-    from r3sourcer.apps.billing import STRIPE_INTERVALS
     company_list = Company.objects.filter(type=Company.COMPANY_TYPES.master) \
                                   .filter(subscriptions__active=True)
 
