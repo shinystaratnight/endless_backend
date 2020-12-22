@@ -10,7 +10,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 def set_env(*args):
     configs = list(args)
     if not configs:
-        configs = ['env_defaults', '.env']
+        configs = ['.env_defaults', '.env']
 
     for config in configs:
         if os.path.isfile(os.path.join(BASE_DIR, config)):
@@ -27,7 +27,7 @@ def django():
     """
 
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "r3sourcer.settings.prod")
-    set_env('env_defaults', '.env', '.env_test')
+    set_env('.env_defaults', '.env', '.env_test')
 
     from django.core.management import execute_from_command_line
 
@@ -71,7 +71,7 @@ def test(app):
 @click.command()
 def py_test():
     os.chdir(BASE_DIR)
-    set_env('env_defaults', '.env', '.env_test')
+    set_env('.env_defaults', '.env', '.env_test')
     run('pytest')
 
 

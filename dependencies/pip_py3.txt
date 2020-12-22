@@ -70,3 +70,5 @@ git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails
 git+https://github.com/sempr/redbeat#egg=celery-redbeat
 
 django-dotenv==1.4.2            # https://github.com/jpadilla/django-dotenv
+boto3==1.16.40                  # https://github.com/boto/boto3
+django-storages==1.9.1          # https://github.com/jschneier/django-storages
