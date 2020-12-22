@@ -15,6 +15,7 @@ from r3sourcer.helpers.datetimes import utc_now
 
 
 class Subscription(CompanyTimeZoneMixin):
+    ALLOWED_STATUSES = ('active', 'incomplete', 'trialing')
     SUBSCRIPTION_STATUSES = Choices(
         ('active', 'Active'),
         ('past_due', 'Past due'),
@@ -98,8 +99,7 @@ class Subscription(CompanyTimeZoneMixin):
     def update_permissions_on_status(self):
         this_user = self.company.get_user()
         end_of_trial = this_user.trial_period_start + datetime.timedelta(days=30)
-        allowed_statuses = ('active', 'incomplete', 'trialing')
-        if self.status not in allowed_statuses and self.now_utc > end_of_trial:
+        if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
             self.deactivate(user_id=(str(this_user.id)))
             self.active = False
         # elif self.status in allowed_statuses:
