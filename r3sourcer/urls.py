@@ -61,5 +61,5 @@ urlpatterns = [
     url('^{}'.format(settings.DJANGO_STUFF_URL_PREFIX), include(_urlpatterns))
 ]
 
-if settings.DEBUG:
+if settings.DEBUG and not settings.AWS_STORAGE_BUCKET_NAME:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
