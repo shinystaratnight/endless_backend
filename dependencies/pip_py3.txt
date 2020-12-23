@@ -42,11 +42,11 @@ invoke==0.13.0
 Jinja2==2.9.5
 kombu==4.6.5
 MarkupSafe==0.23
-#raven==5.27.1
+# raven==5.27.1
 redis==3.4.1
 six==1.10.0
 tolerance==0.1.2
-uWSGI==2.0.19.1
+# uWSGI==2.0.19.1
 wheel==0.29.0
 django_compressor==2.1
 infi.clickhouse_orm==0.9.8
@@ -72,3 +72,15 @@ git+https://github.com/sempr/redbeat#egg=celery-redbeat
 django-dotenv==1.4.2            # https://github.com/jpadilla/django-dotenv
 boto3==1.16.40                  # https://github.com/boto/boto3
 django-storages==1.9.1          # https://github.com/jschneier/django-storages
+
+# Test utitilies
+pytest==3.6.3
+pytest-django==3.3.2
+pytest-cov==2.5.1
+pytest-env==0.6.2
+mock==2.0.0
+django_mock_queries==2.0.1
+freezegun==0.3.10
+pytest-faker==2.0.0
+requests-mock==1.5.0
+ipython
