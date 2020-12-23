@@ -5,7 +5,7 @@ import stripe
 
 from django.utils import timezone
 
-from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms, fetch_payments
+from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms, fetch_payments, sync_subscriptions
 from r3sourcer.apps.billing.models import SMSBalance, Payment, Subscription
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import User, Company
@@ -16,13 +16,13 @@ class TestActiveWorkers:
     def test_active_workers_zero(self, client, user, company, relationship):
         assert company.active_workers() == 0
 
-    def test_active_workers(self, client, user, company, relationship, contact, shift):
+    def test_active_workers(self, client, user, company, relationship, primary_contact, shift):
         user2 = User.objects.create_user(
             email='test2@test.tt', phone_mobile='+12345678902',
             password='test1234'
         )
         contact2 = user2.contact
-        cc1 = CandidateContact.objects.create(contact=contact)
+        cc1 = CandidateContact.objects.create(contact=primary_contact)
         cc2 = CandidateContact.objects.create(contact=contact2)
         job_offer1 = JobOffer.objects.create(
             candidate_contact=cc1,
@@ -64,7 +64,7 @@ class TestChargeForExtraWorkers:
     def test_extra_workers(self, active_workers, client, user, company, relationship,
                            subscription_type_monthly):
         active_workers.return_value = 110
-        company.stripe_customer = 'cus_CnGRCuSr6Fo0Uv'
+        company.stripe_customer = 'cus_IcPJnMwIAifS1J'
         company.save()
         Subscription.objects.create(
             company=company,
@@ -84,7 +84,7 @@ class TestChargeForExtraWorkers:
     def test_extra_workers_annual_subscription(self, active_workers, client, user, company,
                                                relationship, subscription_type_annual):
         active_workers.return_value = 110
-        company.stripe_customer = 'cus_CnGRCuSr6Fo0Uv'
+        company.stripe_customer = 'cus_IcPJnMwIAifS1J'
         company.save()
         Subscription.objects.create(
             company=company,
@@ -105,7 +105,7 @@ class TestChargeForSMS:
     @mock.patch.object(stripe.InvoiceItem, 'create')
     @mock.patch.object(stripe.Invoice, 'create')
     @mock.patch.object(Subscription, 'deactivate')
-    def test_charge(self, mocked_invoice, client, user, company, relationship, company_address):
+    def test_charge(self, mocked_invoice, client, user, company, relationship):#, company_address):
         mocked_value = {'id': 'stripe_id'}
         mocked_invoice.return_value = mocked_value
         initial_payment_count = Payment.objects.count()
