@@ -5,12 +5,13 @@ import pytest
 from unittest.mock import patch
 
 from r3sourcer.apps.core.models import (
-    User, Company, CompanyContact, CompanyContactRelationship, Country, Region, City, Address
+    User, Company, CompanyContact, CompanyContactRelationship, Country, Region, City, Address,
+    CompanyAddress,
 )
 from r3sourcer.apps.hr.models import Shift, ShiftDate, Job, Jobsite
 from r3sourcer.apps.skills.models import Skill, SkillName
 from r3sourcer.apps.pricing.models import Industry
-from r3sourcer.apps.billing.models import Payment, Subscription
+from r3sourcer.apps.billing.models import Payment, Subscription, SubscriptionType
 
 
 @pytest.fixture
@@ -51,13 +52,14 @@ def relationship(db, company, primary_contact):
 
 
 @pytest.fixture
-def master_company(db):
+def master_company(db, primary_contact):
     return Company.objects.create(
         name='Master',
         business_id='123',
         registered_for_gst=True,
         type=Company.COMPANY_TYPES.master,
-        timesheet_approval_scheme=Company.TIMESHEET_APPROVAL_SCHEME.PIN
+        timesheet_approval_scheme=Company.TIMESHEET_APPROVAL_SCHEME.PIN,
+        primary_contact=primary_contact
     )
 
 
@@ -166,14 +168,30 @@ def payment(db, company):
 
 
 @pytest.fixture
-def subscription(db, company):
+def subscription_type_monthly(db):
+    return SubscriptionType.objects.create(
+        type='monthly'
+    )
+
+
+@pytest.fixture
+def subscription_type_annual(db):
+    return SubscriptionType.objects.create(
+        type='annual'
+    )
+
+
+@pytest.fixture
+def subscription(db, company, subscription_type_monthly):
     return Subscription.objects.create(
         company=company,
         name='Subscription',
-        type='monthly',
+        subscription_type=subscription_type_monthly,
         price=100,
         worker_count=10,
+        active=True,
         status='active',
+        subscription_id='sub_IcQQankIwgFG0x'
     )
 
 
@@ -182,4 +200,18 @@ def company_contact_rel(db, primary_contact, company):
     return CompanyContactRelationship.objects.create(
         company_contact=primary_contact,
         company=company
+    )
+
+
+@pytest.fixture
+def canceled_subscription(db, company, subscription_type_monthly):
+    return Subscription.objects.create(
+        company=company,
+        name='Subscription',
+        subscription_type=subscription_type_monthly,
+        price=100,
+        worker_count=10,
+        active=False,
+        status='canceled',
+        subscription_id='sub_IcQPoFaGvbP1BB'
     )

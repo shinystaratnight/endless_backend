@@ -18,6 +18,7 @@ from r3sourcer.apps.billing.models import (
     )
 from r3sourcer.apps.core.models import Company, VAT
 from r3sourcer.apps.email_interface.utils import get_email_service
+from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.helpers.datetimes import utc_now
 
 logger = get_task_logger(__name__)
@@ -27,7 +28,7 @@ logger = get_task_logger(__name__)
 def charge_for_extra_workers():
     """
     Checks number of active workers. If that number is bigger that number of workers from client's plan
-    then it charges extra fee for every worker.
+    then it charges extra fee for every worker and adjust subscription plan to number of active workers.
     """
     today = utc_now().date()
     company_list = Company.objects.filter(type=Company.COMPANY_TYPES.master) \
@@ -38,24 +39,23 @@ def charge_for_extra_workers():
         subscription = company.active_subscription
         paid_workers = subscription.worker_count
         active_workers = company.active_workers(subscription.current_period_start)
-        country_code = 'EE'
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
+        country_code = company.get_country_code()
         stripe.api_key = sca.get_stripe_key(country_code)
         vat_object = VAT.get_vat(country_code)
+        plan_type = subscription.subscription_type.type
 
         if active_workers > paid_workers:
-            if subscription.subscription_type.type == SubscriptionType.SUBSCRIPTION_TYPES.annual:
+            if plan_type == SubscriptionType.SUBSCRIPTION_TYPES.annual:
                 extra_worker_fee = settings.ANNUAL_EXTRA_WORKER_FEE
             else:
                 extra_worker_fee = settings.MONTHLY_EXTRA_WORKER_FEE
 
             extra_workers = active_workers - paid_workers
-            amount = (extra_workers) * extra_worker_fee
+            amount = extra_workers * extra_worker_fee
 
             for discount in company.get_active_discounts('extra_workers'):
                 amount = discount.apply_discount(amount)
-
+            # charge for additional workers
             stripe.InvoiceItem.create(customer=company.stripe_customer,
                                       amount=round((amount * 100) / 1.1),
                                       currency=company.currency,
@@ -71,6 +71,29 @@ def charge_for_extra_workers():
                 invoice_url=invoice['invoice_pdf'],
                 status=invoice['status']
                 )
+            # adjust the monthly subscription plan to number of active workers
+            if plan_type == SubscriptionType.SUBSCRIPTION_TYPES.monthly:
+                amount = subscription.get_total_subscription_amount()
+                if not subscription.price == amount:
+                    plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type, active_workers)
+                    plan = stripe.Plan.create(
+                        product=settings.STRIPE_PRODUCT_ID,
+                        nickname=plan_name,
+                        interval=STRIPE_INTERVALS[plan_type],
+                        currency=company.currency,
+                        amount=round((int(amount) * 100) / 1.1),
+                    )
+                    subscription_stripe = stripe.Subscription.retrieve(subscription.subscription_id)
+                    stripe.Subscription.modify(subscription_stripe.id,
+                                               cancel_at_period_end=False,
+                                               proration_behavior='none',
+                                               items=[{
+                                                   'id': subscription_stripe['items']['data'][0].id,
+                                                   'plan': plan.id,
+                                               }]
+                                               )
+                    subscription.price = amount
+                    subscription.save()
 
 
 @shared_task
@@ -191,37 +214,14 @@ def send_sms_payment_reminder():
 @shared_task
 def charge_for_new_amount():
     """"adjusts stripe plan to actual worker count"""
-    from r3sourcer.apps.billing import STRIPE_INTERVALS
     company_list = Company.objects.filter(type=Company.COMPANY_TYPES.master) \
                                   .filter(subscriptions__active=True)
 
     for company in company_list:
-        country_code = 'EE'
-        if company.get_hq_address():
-            country_code = company.get_hq_address().address.country.code2
+        country_code = company.get_country_code()
         stripe.api_key = sca.get_stripe_key(country_code)
         subscription = company.active_subscription
-        active_workers = company.active_workers(subscription.current_period_start)
-        # active_workers = subscription.worker_count
-        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.monthly:
-            total_amount = subscription.subscription_type.start_range_price_monthly
-        else:
-            total_amount = subscription.subscription_type.start_range_price_annual
-        start_workers = 5
-        if active_workers > start_workers:
-            total_amount += (active_workers - start_workers) * subscription.subscription_type.step_change_val
-        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.annual:
-            if subscription.subscription_type.percentage_discount:
-                total_amount = (total_amount * 12) - (total_amount * 12 / 100 * subscription.subscription_type.percentage_discount)
-            else:
-                total_amount = total_amount * 12 * .75
-        if subscription.subscription_type.type == subscription.subscription_type.SUBSCRIPTION_TYPES.monthly:
-            if subscription.subscription_type.percentage_discount:
-                total_amount = total_amount - (
-                total_amount / 100 * subscription.subscription_type.percentage_discount)
-            else:
-                total_amount = total_amount
-        amount = total_amount
+        amount = subscription.get_total_subscription_amount()
         if not subscription.price == amount:
             plan_type = subscription.subscription_type.type
             plan_name = 'R3sourcer {} plan for {} workers'.format(plan_type,

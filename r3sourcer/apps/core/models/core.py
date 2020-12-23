@@ -336,6 +336,7 @@ class Contact(CategoryFolderMixin,
                 Q(contact_relations__company=owner),
             ]
 
+
 class ContactAddress(UUIDModel):
 
     contact = models.ForeignKey(
@@ -353,7 +354,7 @@ class ContactAddress(UUIDModel):
     is_active = models.BooleanField(_("Active"), default=True)
 
     def __str__(self):
-        return f'{self.contact.last_name} {self.contact.first_name}'
+        return '{} {}'.format(self.contact.last_name, self.contact.first_name)
 
     class Meta:
         verbose_name = _("Contact Address")
@@ -1463,6 +1464,13 @@ class Company(CategoryFolderMixin,
         if hq_address:
             return master_company.tz
         return pytz.timezone(settings.TIME_ZONE)
+    # TODO: use this everywhere
+
+    def get_country_code(self):
+        hq_address = self.get_hq_address()
+        if hq_address:
+            return hq_address.address.country.code2
+        return 'EE' # TODO: refactor this
 
     @classmethod
     def owned_by_lookups(cls, owner):

@@ -10,7 +10,8 @@ from django.core.files.base import ContentFile
 
 from r3sourcer.apps.candidate.models import CandidateContact, CandidateRel
 from r3sourcer.apps.core import models
-from r3sourcer.apps.core.models.core import Role
+from r3sourcer.apps.core.models.core import Role, CompanyAddress, ContactAddress
+from r3sourcer.apps.email_interface.models import EmailTemplate
 
 
 @pytest.fixture
@@ -95,7 +96,10 @@ def contact(db, user, contact_data, contact_address):
     )
     for key in keys:
         setattr(contact, key, contact_data[key])
-    contact.address = contact_address
+    ContactAddress.objects.create(
+        contact=contact,
+        address=contact_address
+    )
     contact.save()
     return contact
 
@@ -443,4 +447,22 @@ def kr_localization(db):
         field_name='business_id',
         verbose_value='KBN',
         help_text='Korean Business Number'
+    )
+
+
+@pytest.fixture
+def hq_company_address(company, address):
+    return CompanyAddress.objects.create(
+        company=company, address=address, hq=True
+    )
+
+
+@pytest.fixture
+def email_test_message_template(company):
+    return EmailTemplate(
+        name="Test template",
+        subject_template="Hello from [[domain]]",
+        message_text_template="Hello [[user]]",
+        message_html_template="Hello [[user__email]]",
+        language_id='en'
     )
