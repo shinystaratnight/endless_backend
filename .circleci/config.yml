@@ -19,10 +19,10 @@ jobs:
     machine: true
     steps:
       - checkout
+      # build the application image
+      - run: docker build -f conf/docker/Dockerfile.prod -t r3sourcer/r3:web-staging .
       # login to Dockerhub
       - run: echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin
-      # build the application image
-      - run: docker build -f conf/docker/Dockerfile -t r3sourcer/r3:web-staging .
       # deploy the image
       - run: docker push r3sourcer/$IMAGE_NAME:web-staging
 
@@ -44,6 +44,7 @@ jobs:
             ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml pull web"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml up -d"
 
 
@@ -76,6 +77,7 @@ jobs:
             ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml pull web"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml up -d"
 
 
@@ -103,3 +105,13 @@ workflows:
           filters:
             branches:
               only: master
+      - build-staging:
+          filters:
+            branches:
+              only: Dockerfile_test
+      - deploy-staging:
+          requires:
+              - build-staging
+          filters:
+            branches:
+              only: Dockerfile_test

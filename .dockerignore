@@ -1,0 +1,6 @@
+/venv/*
+/var/*
+/webui-app/*
+.env*
+id_rsa
+jwtRS256*
