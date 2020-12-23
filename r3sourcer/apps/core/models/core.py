@@ -354,11 +354,20 @@ class ContactAddress(UUIDModel):
     is_active = models.BooleanField(_("Active"), default=True)
 
     def __str__(self):
-        return f'{self.contact.last_name} {self.contact.first_name}'
+        return '{} {}'.format(self.contact.last_name, self.contact.first_name)
 
     class Meta:
         verbose_name = _("Contact Address")
         verbose_name_plural = _("Contact Addresses")
+
+    @property
+    def geo(self):
+        return self.__class__.objects.filter(
+            pk=self.pk,
+        ).annotate(
+            longitude=F('address__longitude'),
+            latitude=F('address__latitude')
+        ).values_list('longitude', 'latitude').get()
 
 
 class TaxNumber(UUIDModel):

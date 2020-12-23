@@ -754,6 +754,8 @@ class ContactSerializer(ApiContactImageFieldsMixin,
 
 
 class ContactAddressSerializer(ApiBaseModelSerializer):
+    set_tax_number = serializers.CharField(required=True, write_only=True)
+    set_personal_id = serializers.CharField(required=True, write_only=True)
 
     class Meta:
         model = core_models.ContactAddress
@@ -1543,15 +1545,23 @@ class FormFieldSerializer(ApiBaseModelSerializer):
         fields = '__all__'
 
 
-class FormSerializer(ApiBaseModelSerializer):
+class LanguageSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = core_models.Language
+        fields = ('name',)
 
-    method_fields = ('model_fields', 'groups', 'company_links', 'extra_fields')
+
+class FormSerializer(ApiBaseModelSerializer):
+    language_id = serializers.CharField(write_only=True, required=False)
+    active_language = LanguageSerializer(read_only=True)
+
+    method_fields = ('model_fields', 'groups', 'company_links', 'extra_fields', 'translations')
 
     class Meta:
         model = core_models.Form
         fields = (
-            'id', 'title', 'company', 'builder', 'is_active',
-            'short_description', 'save_button_text', 'submit_message'
+            'id', 'company', 'builder', 'is_active',
+            'active_language', 'language_id'
         )
 
     def validate(self, attrs):
@@ -1601,6 +1611,8 @@ class FormSerializer(ApiBaseModelSerializer):
     def get_company_links(self, obj):
         return obj.get_company_links(self.context['request'].user.contact)
 
+    def get_translations(self, obj):
+        return obj.get_translations()
 
 class FormRenderSerializer(ApiBaseModelSerializer):
 
@@ -1866,12 +1878,6 @@ class TrialSerializer(serializers.Serializer):
         except Site.DoesNotExist:
             pass
         return data
-
-
-class LanguageSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = core_models.Language
-        fields = ('name',)
 
 
 class TagTranslationSerializer(serializers.ModelSerializer):

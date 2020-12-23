@@ -13,7 +13,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -30,7 +31,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -47,7 +49,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -64,7 +67,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -81,7 +85,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -98,7 +103,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -115,7 +121,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -132,7 +139,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -149,7 +157,8 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
   }
 },
 {
@@ -166,7 +175,44 @@
     "reply_timeout": 0,
     "delivery_timeout": 10,
     "company": null,
-    "type": "email"
+    "type": "email",
+    "language": "en"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
+  "pk": "d4a563fd-248e-447b-8655-b7d72f6d28b5",
+  "fields": {
+    "updated_at": "2020-12-14T08:44:26.643Z",
+    "created_at": "2020-12-14T12:30:12.244Z",
+    "name": "Sms balance ran out",
+    "slug": "sms-balance-ran-out",
+    "subject_template": "Sms balance has ran out",
+    "message_text_template": "Dear [[contact__first_name]], Your sms balance in R3sourcer has ran out, please top-up your balance now to re-activate services. No sms are getting currently sent out and functionality is limited. Best Regards, R3sourcer Team\n",
+    "message_html_template": "<div style=\"max-width: 850px; color: #333; font-family: Arial, sans-serif;\">\n\t<div style=\"text-align: center;\theight: 66px; background-image: linear-gradient(to top, #0061a2, #28a3fc); background-color: #28a3fc;\">\n\t\t<img style=\"height: 34px; margin-top: 16px;\" src=\"https://r3sourcer.com/assets/img/new-software-white.png\" alt=\"R3sourcer\">\n\t</div>\n\n\t<div style=\"margin-top: 24px; margin-bottom: 16px; font-size: 22px;\tline-height: 28px; text-align: center; color: #333\">\n\t\t<span>Sms balance has ran out</span>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\"></div>\n\t<div style=\"max-width: 500px; margin: 0 auto\">\n\n\t\t<div style=\"font-size: 14px; line-height: 18px; color: #333; margin-top: 28px;\">\n\t\t\t<p>Dear [[contact__first_name]],</p>\n\t\t\t<p>Your sms balance in R3sourcer has ran out, please top-up your balance now to re-activate services. No sms are getting currently sent out and functionality is limited.</p>\n\t\t</div>\n\t</div>\n\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc; margin-top: 16px;\"></div>\n\t<div style=\"margin-top: 16px; font-size: 14px; line-height: 18px; text-align: center; color: #333\">\n\t\tBest Regards, <br>\n\t\tR3sourcer Team\n\t</div>\n</div>",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email",
+    "language": "en"
+  }
+},
+{
+  "model": "email_interface.emailtemplate",
+  "pk": "45cd2c22-1faf-41c5-bf10-93d48284efd5",
+  "fields": {
+    "updated_at": "2020-12-04T08:44:26.643Z",
+    "created_at": "2020-12-14T12:30:12.244Z",
+    "name": "Sms Balance Is Low",
+    "slug": "sms-balance-is-low",
+    "subject_template": "Sms balance is low",
+    "message_text_template": "Dear [[contact__first_name]], Your sms balance in R3sourcer has dropped below $(currency should be country specific)20, please top-up your balance now to avoid service suspension. No sms will be sent out if this happens and functionality will be limited. Best Regards, R3sourcer Team\n",
+    "message_html_template": "<div style=\"max-width: 850px; color: #333; font-family: Arial, sans-serif;\">\n\t<div style=\"text-align: center;\theight: 66px; background-image: linear-gradient(to top, #0061a2, #28a3fc); background-color: #28a3fc;\">\n\t\t<img style=\"height: 34px; margin-top: 16px;\" src=\"https://r3sourcer.com/assets/img/new-software-white.png\" alt=\"R3sourcer\">\n\t</div>\n\n\t<div style=\"margin-top: 24px; margin-bottom: 16px; font-size: 22px;\tline-height: 28px; text-align: center; color: #333\">\n\t\t<span>Sms balance has ran out</span>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\"></div>\n\t<div style=\"max-width: 500px; margin: 0 auto\">\n\n\t\t<div style=\"font-size: 14px; line-height: 18px; color: #333; margin-top: 28px;\">\n\t\t\t<p>Dear [[contact__first_name]],</p>\n\t\t\t<p>Your sms balance in R3sourcer has dropped below $(currency should be country specific)20, please top-up your balance now to avoid service suspension. No sms will be sent out if this happens and functionality will be limited.</p>\n\t\t</div>\n\t</div>\n\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc; margin-top: 16px;\"></div>\n\t<div style=\"margin-top: 16px; font-size: 14px; line-height: 18px; text-align: center; color: #333\">\n\t\tBest Regards, <br>\n\t\tR3sourcer Team\n\t</div>\n</div>",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "company": null,
+    "type": "email",
+    "language": "en"
   }
 }
 ]
