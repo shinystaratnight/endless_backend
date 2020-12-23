@@ -15,6 +15,7 @@ from r3sourcer.helpers.datetimes import utc_now
 
 
 class Subscription(CompanyTimeZoneMixin):
+    ALLOWED_STATUSES = ('active', 'incomplete', 'trialing')
     SUBSCRIPTION_STATUSES = Choices(
         ('active', 'Active'),
         ('past_due', 'Past due'),
@@ -69,17 +70,42 @@ class Subscription(CompanyTimeZoneMixin):
     def __str__(self):
         return "{} with {} workers. Status: {}".format(self.company.name, self.worker_count, self.status)
 
+    def get_total_subscription_amount(self):
+        active_workers = self.company.active_workers(self.current_period_start)
+        if self.subscription_type.type == self.subscription_type.SUBSCRIPTION_TYPES.monthly:
+            total_amount = self.subscription_type.start_range_price_monthly
+        else:
+            total_amount = self.subscription_type.start_range_price_annual
+        start_workers = settings.SUBSCRIPTION_START_WORKERS
+        if active_workers > start_workers:
+            total_amount += (active_workers - start_workers) * self.subscription_type.step_change_val
+        if self.subscription_type.type == self.subscription_type.SUBSCRIPTION_TYPES.annual:
+            if self.subscription_type.percentage_discount:
+                total_amount = (total_amount * 12) - (total_amount * 12 / 100 * self.subscription_type.percentage_discount)
+            else:
+                total_amount = total_amount * 12 * settings.SUBSCRIPTION_DEFAULT_DISCOUNT
+        if self.subscription_type.type == self.subscription_type.SUBSCRIPTION_TYPES.monthly:
+            if self.subscription_type.percentage_discount:
+                total_amount = total_amount - (total_amount / 100 * self.subscription_type.percentage_discount)
+            else:
+                total_amount = total_amount
+        return total_amount
+
     def sync_status(self):
         stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.status = subscription.status
+        if subscription.status not in self.ALLOWED_STATUSES:
+            self.active = False
+        else:
+            self.active = True
 
     def update_permissions_on_status(self):
         this_user = self.company.get_user()
-        end_of_trial = this_user.trial_period_start + datetime.timedelta(days=30)
-        allowed_statuses = ('active', 'incomplete', 'trialing')
-        if self.status not in allowed_statuses and self.now_utc > end_of_trial:
-            self.deactivate(user_id=(str(this_user.id)))
+        if this_user.trial_period_start:
+            end_of_trial = this_user.trial_period_start + datetime.timedelta(days=30)
+            if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
+                self.deactivate(user_id=(str(this_user.id)))
         # elif self.status in allowed_statuses:
         #     self.activate(user_id=(str(this_user.id)))
 
@@ -361,11 +387,7 @@ class StripeCountryAccount(models.Model):
 
     @classmethod
     def get_stripe_key_on_company(cls, company):
-        hq_addr = company.get_hq_address()
-        if hq_addr:
-            country_code = hq_addr.address.country.code2
-        else:
-            country_code = 'EE'
+        country_code = company.get_country_code()
         api_key = cls.get_stripe_key(country_code)
         return api_key
 

@@ -172,7 +172,7 @@ class TestContact:
 class TestAddress:
 
     def test_address_str(self, address):
-        address_str = 'street0\n1110 city\nAustralia'
+        address_str = 'street0 \n1110 city\nAustralia'
         assert str(address) == address_str
 
     def test_address_full(self, address):
@@ -327,6 +327,11 @@ class TestCompany:
         assert len(reg_companies) == 1
         assert company_rel.regular_company in reg_companies
 
+    def test_get_country_code(self, company, hq_company_address):
+        assert company.get_country_code() == 'AU'
+
+    def test_default_get_country_code(self, company):
+        assert company.get_country_code() == 'EE'
 
 @pytest.mark.django_db
 class TestCompanyAddress:
@@ -536,7 +541,7 @@ class TestCompanyContactRelationship:
 class TestInvoice:
     def test_invoice_number(self, company, company_regular):
         invoice_rule = company_regular.invoice_rules.first()
-        invoice_rule.serial_number = 'TEST'
+        invoice_rule.serial_number = 'TST'
         invoice_rule.starting_number = 100
         invoice_rule.save()
 
@@ -548,7 +553,7 @@ class TestInvoice:
             tax=5,
             myob_number='test'
         )
-        assert 'TEST00000001'
+        assert invoice.number == '00001'
 
     def test_invoice_number_without_serial_number(self, company, company_regular):
         invoice_rule = company_regular.invoice_rules.first()
@@ -564,50 +569,40 @@ class TestInvoice:
             tax=5,
             myob_number='test'
         )
-        assert invoice.number == '00000001'
-
-
-@pytest.fixture
-def sms_test_message_template():
-    return TemplateMessage(
-        name="Test template",
-        subject_template="Hello from [[domain]]",
-        message_text_template="Hello [[user]]",
-        message_html_template="Hello [[user__email]]",
-    )
+        assert invoice.number == '00001'
 
 
 class TestTemplateMessage:
-    def test_template_message_str(self, sms_test_message_template):
-        assert str(sms_test_message_template) == "Test template"
+    def test_template_message_str(self, email_test_message_template):
+        assert str(email_test_message_template) == "Test template"
 
-    def test_compile(self, sms_test_message_template, user):
+    def test_compile(self, email_test_message_template, user):
         params = {
             "user": user,
             "domain": "test.com"
         }
 
-        result = sms_test_message_template.compile(**params)
-        assert result["id"] == sms_test_message_template.id
+        result = email_test_message_template.compile(**params)
+        assert result["id"] == email_test_message_template.id
         assert result["subject"] == "Hello from test.com"
         assert result["html"] == "Hello {}".format(user.email)
 
-    def test_compile_string(self, sms_test_message_template):
+    def test_compile_string(self, email_test_message_template):
         params = {
             "user": "New user"
         }
-        compiled, = sms_test_message_template.compile_string(
-            sms_test_message_template.message_text_template,
+        compiled, = email_test_message_template.compile_string(
+            email_test_message_template.message_text_template,
             **params
         )
         assert compiled == "Hello New user"
 
-    def test_get_dict_values(self, sms_test_message_template, user):
+    def test_get_dict_values(self, email_test_message_template, user):
         params = {
             "user": user
         }
-        values_dict = sms_test_message_template.get_dict_values(
-            params, *[sms_test_message_template.message_html_template])
+        values_dict = email_test_message_template.get_dict_values(
+            params, *[email_test_message_template.message_html_template])
         assert "user__email" in values_dict.keys()
         assert values_dict["user__email"] == user.email
 
