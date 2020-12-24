@@ -10,14 +10,15 @@
 
 ## Development:
 
-1. Generate ssh key for git and add generated public key to your bitbucket ssh keys. Set env `PRIVATE_REPO_KEY` to the private key's path value (.env file);
-2. Generate ssh keys for JWT and add generated keys to your project root. Set env `JWT_RS256_PRIVATE_KEY_PATH` and `JWT_RS256_PUBLIC_KEY_PATH` to the keys path value (.env file);
-3. Prepare running: `make prepare-compose`;
-4. Build app container: `docker-compose build web`;
-5. Run all containers (rabbit, redis, postgres, clickhouse) as daemon: `docker-compose up -d`;
-6. Stop/Start containers: `docker-compose stop/start`;
-7. Check logs from container:
-    - `docker-compose logs -f web` / `docker-compose logs -f postgres` / `docker-compose logs -f nginx` / etc.;
+1. Generate ssh key for git and add generated public key to your bitbucket ssh keys. Set env PRIVATE_REPO_KEY to the private key's path value (.env file);
+2. Generate ssh keys for JWT and add generated keys to "keys" folder in your project root.
+3. Run docker-compose -f docker-compose.dev.yml build;
+4. Run all containers  as daemon: 
+docker-compose -f docker-compose.dev.yml up -d;
+5. Stop/Start containers:
+docker-compose -f docker-compose.dev.yml stop/start;
+6. Check logs from container:
+docker-compose -f docker-compose.dev.yml logs -f service_name;
 
 ### Helper commands for developers:
 
@@ -25,16 +26,6 @@
 2. Migrate: `docker-compose exec web bin/django migrate`;
 3. Execute bash commands: `docker-compose exec web ls -la`;
 4. Attach to bash: `docker-compose exec web bash`;
-
-
-## Deployment
-
-1. Run `make .env`. Change `.env` content for your settings (see `env_defaults`);
-
-2 Generate ssh key for git and add generated public key to your bitbucket ssh keys. Set env `PRIVATE_REPO_KEY` to the private key's path value;
-
-3. Keep unique value for `DOCKER_APP_NAME` in  `.env` for all existing instances.
-
 
 # Nginx configuration
 
@@ -49,48 +40,8 @@ For using Docker nginx server set env variable `USE_NGINX_DOCKER` to `1` (defaul
     * `0` - disable HTTPS;
     * `1` - enable HTTPS.
 
-# Docker network settings
-
-### Static ip containers configuration
-
-- `DOCKER_SUB_NET_ROUTE` subnet. During network creation Engine creates a non-overlapping subnetwork for the network by default. This subnetwork is not a subdivision of an existing network. It is purely for ip-addressing purposes. `DOCKER_SUB_NET_ROUTE` will override this default value and specify subnetwork values using the --subnet option.
-
-- `DOCKER_SUB_NET_NAME` local subnet name, would be created if doesn't exists.
-
-- `POSTGRES_CONTAINER_IP` IP-address of the postgres container
-
-- `REDIS_CONTAINER_IP` IP-address of the redis container
-
-- `RABBIT_MQ_CONTAINER_IP` IP-address of the rabbit mq container
-
-- `MEMCACHED_CONTAINER_IP` IP-address of the memcached container
-
-- `NGINX_CONTAINER_IP` IP-address of the nginx container
-
-- `CLICKHOUSE_CONTAINER_IP` IP-address of the app container
-
-- `REMOTE_CONTAINER_IP` IP-address of the app container
-
-- `NETWORK_NAME` - subnet name for connecting with clickhouse.
-
-If you want to run multiple `endless_project/forks` instances you should keep env `REMOTE_CONTAINER_IP` as unique value for all instances, also use same `DOCKER_SUB_NET_ROUTE`, `DOCKER_SUB_NET_NAME`.
-
-### Variables
-##### Container names:
-* `DOCKER_POSTGRES_NAME` - postgres container name (default: `postgres`).
-* `DOCKER_MEMCACHED_NAME` - memcached container name (default: `memcached`).
-* `DOCKER_REDIS_NAME` - redis container name (default: `redis`).
-* `DOCKER_CLICKHOUSE_NAME` - clickhouse container name (default: `clickhouse`).
-* `DOCKER_RABBIT_MQ_NAME` - rabbit mq container name (default: `rabbit_mq`).
-* `DOCKER_APP_NAME` - app container name, formatted str `r3sourcer-%s` (default: `core` => `r3sourcer-cms`). This name should be unique for the docker running containers.
-##### Port binding:
-* `DOCKER_NGINX_HTTP_PORT` - docker nginx HTTP port (default: 80). Binding localhost port to docker container (`80` => `nginx-docker`)
-* `DOCKER_NGINX_HTTPS_PORT` - docker nginx HTTPS port (default: 443). Binding localhost port to docker container (`443` => `nginx-docker`)
-* `DOCKER_POSTGRES_PORT` - docker postgres port (default: `null`). Binding localhost port to docker postgres container (example: `5432` => `postgres-docker`). We can use `PostgreSQL` functionality without installation package in your system.
-* `DOCKER_MEMCACHED_PORT` - docker memcached port (default: `null`). See `DOCKER_POSTGRES_PORT`.
-* `DOCKER_REDIS_PORT` - docker redis port (default: `null`). See `DOCKER_POSTGRES_PORT`.
-* `DOCKER_RABBIT_MQ_PORT` - docker rabbit mq port (default: `null`). See `DOCKER_POSTGRES_PORT`.
 #### Extra settings:
+
 * `USE_NGINX_DOCKER` - we can use nginx server without docker (choices: `0`, `1`. Default: `1`):
     * `0`- use nginx from system;
     * `1`- use docker nginx;

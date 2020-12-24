@@ -7,7 +7,7 @@
 *.vim
 .DS_Store
 .idea/**
-\.env*
+\.env
 id_rsa
 jwtRS256*
 

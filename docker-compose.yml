@@ -86,7 +86,7 @@ services:
       - .env_defaults
       - .env
     volumes:
-      -  /home/ubuntu/endless_project/var/www/:/app/var/www/
+      - /home/ubuntu/endless_project/var/www/:/app/var/www/
       - ./keys:/app/keys
     command: "./docker-entrypoint.sh"
 ##########
