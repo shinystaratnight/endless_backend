@@ -32,4 +32,3 @@ __pycache__
 webui-app
 /users.xml
 conf/docker/nginx.conf
-docker-compose.local.yml
