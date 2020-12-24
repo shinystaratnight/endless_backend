@@ -1,6 +1,11 @@
 /venv/*
 /var/*
 /webui-app/*
-.env*
-id_rsa
-jwtRS256*
+/DB_structure/*
+/.circleci/*
+docker-compose.*
+.git
+.gitignore
+README.md
+pytest.ini
+.coveragerc
