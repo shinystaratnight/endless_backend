@@ -42,8 +42,8 @@ jobs:
           name: Deploy Staging Over SSH
           command: |
             ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
-            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web"
-            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web celery celery-beat"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web celery celery-beat"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml pull web"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml up -d"
 
@@ -75,8 +75,8 @@ jobs:
           name: Deploy Staging Over SSH
           command: |
             ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
-            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web"
-            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web celery celery-beat"
+            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web celery celery-beat"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml pull web"
             ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml up -d"
 
@@ -105,13 +105,3 @@ workflows:
           filters:
             branches:
               only: master
-      - build-staging:
-          filters:
-            branches:
-              only: Dockerfile_test
-      - deploy-staging:
-          requires:
-              - build-staging
-          filters:
-            branches:
-              only: Dockerfile_test
