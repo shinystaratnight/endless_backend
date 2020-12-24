@@ -76,6 +76,7 @@ INSTALLED_APPS = [
     'easy_select2',
     'polymorphic',
     'corsheaders',
+    'storages',
 
     'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',
@@ -225,10 +226,8 @@ USE_TZ = True
 DJANGO_STUFF_URL_PREFIX = env('DJANGO_STUFF_URL_PREFIX', '')
 
 STATIC_URL = '/{}static/'.format(DJANGO_STUFF_URL_PREFIX)
-MEDIA_URL = '/{}media/'.format(DJANGO_STUFF_URL_PREFIX)
-
-MEDIA_ROOT = root('var', 'www', 'media')
 STATIC_ROOT = root('var', 'www', 'static')
+
 
 LANGUAGES = [
     (LANGUAGE_CODE, _('English')),
@@ -520,3 +519,22 @@ LOGGING = {
 
 DEFAULT_PHONE_NUMBER_COUNTRY_CODE = 'AU'
 MAXIMUM_ACCEPTANCE_TEST_PICTURES = 2
+SUBSCRIPTION_START_WORKERS = 5
+SUBSCRIPTION_DEFAULT_DISCOUNT = 0.75
+
+# AWS S3 settings
+AWS_STORAGE_BUCKET_NAME=env('AWS_STORAGE_BUCKET_NAME')
+
+if AWS_STORAGE_BUCKET_NAME:
+    AWS_ACCESS_KEY_ID=env('AWS_ACCESS_KEY_ID')
+    AWS_SECRET_ACCESS_KEY=env('AWS_SECRET_ACCESS_KEY')
+    # AWS_S3_CUSTOM_DOMAIN = '%s.s3.amazonaws.com' % AWS_STORAGE_BUCKET_NAME
+    AWS_S3_OBJECT_PARAMETERS = {
+        'CacheControl': 'max-age=86400',
+    }
+    AWS_DEFAULT_ACL = 'public-read'
+    DEFAULT_FILE_STORAGE = 'r3sourcer.settings.storage_backends.MediaStorage'
+    THUMBNAIL_DEFAULT_STORAGE = DEFAULT_FILE_STORAGE
+else:
+    MEDIA_URL = '/{}media/'.format(DJANGO_STUFF_URL_PREFIX)
+    MEDIA_ROOT = root('var', 'www', 'media')

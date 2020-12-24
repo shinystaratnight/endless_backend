@@ -79,7 +79,7 @@ def buy_candidate(candidate_rel_id, user=None):
         amount = int(candidate_contact.profile_price * 100)
         stripe.InvoiceItem.create(
             customer=company.stripe_customer,
-            amount=round(amount / 1.1),
+            amount=round(amount),
             currency=company.currency,
             description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
         )

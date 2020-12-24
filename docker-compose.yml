@@ -1,11 +1,27 @@
 version: '2'
 services:
 
+  # postgres:
+  #   restart: always
+  #   image: "postgres:9.6"
+  #   env_file:
+  #     - .env
+  #   ports:
+  #     - "5432:5432"
+
+#########
+# REDIS #
+#########
+
   redis:
     restart: always
     image: "redis:4-alpine"
     ports:
       - "6379:6379"
+
+##############
+# CLISCHOUSE #
+##############
 
   clickhouse:
     restart: always
@@ -19,12 +35,20 @@ services:
       - "9000:9000"
       - "9009:9009"
 
+############
+# RABBITMQ #
+############
+
   rabbitmq:
     restart: always
     image: "rabbitmq:3"
     ports:
       - 15672:15672
       - 5672:5672
+
+############
+# FRONTEND #
+############
 
   nginx:
     restart: always
@@ -33,7 +57,7 @@ services:
       - "80:80"
       - "443:443"
     env_file:
-      - env_defaults
+      - .env_defaults
       - .env
     volumes:
       - ./var/www/static/:/app/static/
@@ -42,8 +66,13 @@ services:
       - ./conf/docker/nginx.conf:/etc/nginx/conf.d/default.conf
       - /etc/letsencrypt:/etc/letsencrypt
 
+###########
+# BACKEND #
+###########
   web:
     restart: always
+    #image: r3sourcer/r3:web-staging
+    container_name: r3sourcer_web
     build:
       context: .
       dockerfile: conf/docker/Dockerfile
@@ -55,15 +84,17 @@ services:
       - redis
       - rabbitmq
       - clickhouse
+    #   - postgres
     depends_on:
       - redis
       - clickhouse
       - rabbitmq
+      # - postgres
     environment:
       - C_FORCE_ROOT=1
     env_file:
       - .env_defaults
-      - .env.prod
+      - .env
     volumes:
       - ./var/www/:/app/var/www/
       - ./r3sourcer/:/app/r3sourcer
