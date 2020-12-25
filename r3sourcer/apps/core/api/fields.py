@@ -5,6 +5,7 @@ import six
 import uuid
 from datetime import timedelta
 
+from django.conf import settings
 from django.contrib.sites.models import Site
 from django.core.files.base import ContentFile
 from imghdr import what
@@ -94,13 +95,19 @@ class ApiBase64ImageField(ApiBase64FileField, serializers.ImageField):
         return extension
 
 
-class ApiContactPictureField(ApiBase64ImageField):
+class ApiContactPictureField(ApiAbsoluteUrlMixin, ApiBase64ImageField):
 
     def to_representation(self, value):
-        data = {
-            'thumb': get_thumbnail_picture(value, 'micro'),
-            'origin': get_thumbnail_picture(value, 'large'),
-        }
+        if settings.AWS_STORAGE_BUCKET_NAME:
+            data = {
+                'thumb': get_thumbnail_picture(value, 'micro'),
+                'origin': get_thumbnail_picture(value, 'large'),
+            }
+        else:
+            data = {
+                'thumb': self.get_absolute(get_thumbnail_picture(value, 'micro')),
+                'origin': self.get_absolute(get_thumbnail_picture(value, 'large')),
+            }
 
         return data
 
