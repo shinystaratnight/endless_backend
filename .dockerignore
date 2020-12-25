@@ -2,7 +2,6 @@
 /var/*
 /webui-app/*
 /DB_structure/*
-/dependencies/*
 /.circleci/*
 docker-compose.*
 .git
