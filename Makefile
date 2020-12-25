@@ -576,14 +576,14 @@ regular_backup:
 	$(call create_backup,regular,$(CURRENT_DATETIME).tar.gz)
 
 media_backup:
-	mkdir -p var/media_backups/
+	mkdir -p media_backup
 	make media_backup_clean
-	tar -czf var/media_backups/media.tar.gz var/www/media/
-	aws s3 cp var/media_backups/media.tar.gz $(S3_BACKUP_FOLDER)Media/media_$(CURRENT_DATETIME).tar.gz
+	tar -czf media_backup/media.tar.gz /home/ubuntu/endless_project/var/www/media/
+	aws s3 cp media_backup/media.tar.gz $(S3_BACKUP_FOLDER)Media/media_$(CURRENT_DATETIME).tar.gz
 
 media_backup_clean:
-	rm -f var/media_backups/media.tar.gz
+    rm -f media_backup/media.tar.gz
 
 get_backups_from_remote:
-	mkdir -p var/backups/from_remote
-	aws s3 sync $(S3_BACKUP_FOLDER) var/backups/from_remote
+    mkdir -p media_backup/from_remote
+    aws s3 sync $(S3_BACKUP_FOLDER) media_backup/from_remote
