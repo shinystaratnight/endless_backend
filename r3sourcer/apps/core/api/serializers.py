@@ -545,9 +545,6 @@ class ApiBaseModelSerializer(ApiFieldsMixin,
 
 class AddressSerializer(ApiBaseModelSerializer):
 
-    method_fields = ['display_tax_number', 'tax_number_type', 'tax_number', 'tax_number_regex',
-                     'display_personal_id', 'personal_id_type', 'personal_id', 'personal_id_regex']
-
     class Meta:
         model = core_models.Address
         fields = '__all__'
@@ -576,31 +573,6 @@ class AddressSerializer(ApiBaseModelSerializer):
                 "Country has no '%s' city" % str(value))
         return value
 
-    def get_display_tax_number(self, obj):
-        return obj.country.display_tax_number
-
-    def get_tax_number_type(self, obj):
-        return obj.country.tax_number_type
-
-    def get_tax_number(self, obj):
-        contact_address = obj.contact_address.first()
-        return contact_address.tax_number.value if hasattr(contact_address, 'tax_number') else None
-
-    def get_tax_number_regex(self, obj):
-        return obj.country.tax_number_regex_validation_pattern
-
-    def get_display_personal_id(self, obj):
-        return obj.country.display_personal_id
-
-    def get_personal_id_type(self, obj):
-        return obj.country.personal_id_type
-
-    def get_personal_id(self, obj):
-        contact_address = obj.contact_address.first()
-        return contact_address.personal_id.value if hasattr(contact_address, 'personal_id') else None
-
-    def get_personal_id_regex(self, obj):
-        return obj.country.personal_id_regex_validation_pattern
 
 class UserSerializer(ApiBaseModelSerializer):
 

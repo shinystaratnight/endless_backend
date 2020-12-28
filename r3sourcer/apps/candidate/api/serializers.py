@@ -215,27 +215,27 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
         return MYOBSyncObject.objects.filter(record=obj.id).first()
 
     def get_display_tax_number(self, obj):
-        active_address = obj.contact.active_address()
+        active_address = obj.contact.active_address
         return active_address.country.display_tax_number if active_address else None
 
     def get_tax_number_type(self, obj):
-        active_address = obj.contact.active_address()
+        active_address = obj.contact.active_address
         return active_address.country.tax_number_type if active_address else None
 
     def get_tax_number_regex(self, obj):
-        active_address = obj.contact.active_address()
+        active_address = obj.contact.active_address
         return active_address.country.tax_number_regex_validation_pattern if active_address else None
 
     def get_display_personal_id(self, obj):
-        active_address = obj.contact.active_address()
+        active_address = obj.contact.active_address
         return active_address.country.display_personal_id if active_address else None
 
     def get_personal_id_type(self, obj):
-        active_address = obj.contact.active_address()
+        active_address = obj.contact.active_address
         return active_address.country.personal_id_type if active_address else None
 
     def get_personal_id_regex(self, obj):
-        active_address = obj.contact.active_address()
+        active_address = obj.contact.active_address
         return active_address.country.personal_id_regex_validation_pattern if active_address else None
 
     def get_address(self, obj):
