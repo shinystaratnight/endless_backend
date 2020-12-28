@@ -328,20 +328,17 @@ class CandidateContact(UUIDModel, WorkflowProcess):
     def __str__(self):
         return str(self.contact)
 
-    def active_address(self):
-        return self.contact.contact_address.filter(is_active=True).first()
-
     @property
     def tax_number(self):
         """ tax number from active address """
-        contact_address = self.active_address()
+        contact_address = self.contact.active_contact_address()
         if contact_address:
             return contact_address.tax_number.value if hasattr(contact_address, 'tax_number') else None
         return None
 
     @tax_number.setter
     def tax_number(self, value):
-        contact_address = self.active_address()
+        contact_address = self.contact.active_contact_address()
         if contact_address:
             core_models.TaxNumber.objects.update_or_create(contact_address=contact_address,
                                                            defaults={'value': value})
@@ -351,14 +348,14 @@ class CandidateContact(UUIDModel, WorkflowProcess):
     @property
     def personal_id(self):
         """ personal id from active address """
-        contact_address = self.active_address()
+        contact_address = self.contact.active_contact_address()
         if contact_address:
             return contact_address.personal_id.value if hasattr(contact_address, 'personal_id') else None
         return None
 
     @personal_id.setter
     def personal_id(self, value):
-        contact_address = self.active_address()
+        contact_address = self.contact.active_contact_address()
         if contact_address:
             core_models.PersonalID.objects.update_or_create(contact_address=contact_address,
                                                             defaults={'value': value})

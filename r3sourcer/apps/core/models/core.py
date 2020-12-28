@@ -188,7 +188,19 @@ class Contact(CategoryFolderMixin,
         return self.contact_address.filter(is_active=True).first()
 
     def active_address(self):
-        return self.active_contact_address.address if self.active_contact_address else None
+        active_contact_address = self.active_contact_address()
+        return active_contact_address.address if active_contact_address else None
+
+    def get_active_address(self):
+        active_address = self.active_address()
+        if active_address:
+            return {"country": active_address.country.name,
+                    "state": active_address.state.name,
+                    "city": active_address.city.name,
+                    "street_address": active_address.street_address,
+                    "postal_code": active_address.postal_code,
+                    "__str__": active_address.__str__(),
+                    }
 
     @property
     def notes(self):
