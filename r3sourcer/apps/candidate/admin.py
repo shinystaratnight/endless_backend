@@ -20,6 +20,10 @@ class SkillRelAdmin(admin.ModelAdmin):
 class CountryVisaTypeRelationAdmin(admin.ModelAdmin):
     ordering = ('name',)
 
+class FormalityAdmin(admin.ModelAdmin):
+    list_display = ('candidate_contact', 'country')
+    search_fields = ('candidate_contact__contact__first_name', 'candidate_contact__contact__last_name')
+
 
 admin.site.register(models.VisaType)
 admin.site.register(models.CountryVisaTypeRelation)
@@ -31,3 +35,4 @@ admin.site.register(models.InterviewSchedule)
 admin.site.register(models.CandidateRel, CandidateRelAdmin)
 admin.site.register(models.Subcontractor)
 admin.site.register(models.SubcontractorCandidateRelation)
+admin.site.register(models.Formality, FormalityAdmin)

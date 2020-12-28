@@ -11,11 +11,9 @@ from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.models import CompanyContactRelationship
-from r3sourcer.apps.core.models.core import Country
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
-# from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 
@@ -78,7 +76,7 @@ class VisaType(UUIDModel):
 
 class CountryVisaTypeRelation(models.Model):
 
-    country = models.ForeignKey(Country,
+    country = models.ForeignKey('core.Country',
                                 related_name="countries",
                                 on_delete=models.CASCADE,
                                 verbose_name=_("Country")
@@ -330,37 +328,39 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @property
     def tax_number(self):
-        """ tax number from active address """
-        contact_address = self.contact.active_contact_address()
-        if contact_address:
-            return contact_address.tax_number.value if hasattr(contact_address, 'tax_number') else None
+        """ tax number for company country """
+        country = self.get_closest_company().country
+        contact_formalities = Formality.objects.filter(candidate_contact=self)
+        if contact_formalities:
+            contact_country_formality = contact_formalities.filter(country=country).first()
+            if contact_country_formality:
+                return contact_country_formality.tax_number
+            return contact_formalities.first().tax_number
         return None
 
     @tax_number.setter
     def tax_number(self, value):
-        contact_address = self.contact.active_contact_address()
-        if contact_address:
-            core_models.TaxNumber.objects.update_or_create(contact_address=contact_address,
-                                                           defaults={'value': value})
-        else:
-            raise Exception("Contact does not have active address!")
+        country = self.get_closest_company().country
+        Formality.objects.update_or_create(candidate_contact=self, country=country,
+                                           defaults={'tax_number': value})
 
     @property
     def personal_id(self):
-        """ personal id from active address """
-        contact_address = self.contact.active_contact_address()
-        if contact_address:
-            return contact_address.personal_id.value if hasattr(contact_address, 'personal_id') else None
+        """ personal ID for company country """
+        country = self.get_closest_company().country
+        contact_formalities = Formality.objects.filter(candidate_contact=self)
+        if contact_formalities:
+            contact_country_formality = contact_formalities.filter(country=country).first()
+            if contact_country_formality:
+                return contact_country_formality.personal_id
+            return contact_formalities.first().personal_id
         return None
 
     @personal_id.setter
     def personal_id(self, value):
-        contact_address = self.contact.active_contact_address()
-        if contact_address:
-            core_models.PersonalID.objects.update_or_create(contact_address=contact_address,
-                                                            defaults={'value': value})
-        else:
-            raise Exception("Contact does not have active address!")
+        country = self.get_closest_company().country
+        Formality.objects.update_or_create(candidate_contact=self, country=country,
+                                           defaults={'personal_id': value})
 
     @property
     def notes(self):
@@ -1058,3 +1058,24 @@ class CandidateContactAnonymous(CandidateContact):
 
     def __str__(self):
         return 'Anonymous Candidate'
+
+
+class Formality(UUIDModel):
+    """model for Formalities"""
+    candidate_contact = models.ForeignKey(CandidateContact,
+                                          verbose_name=_("Contact"),
+                                          on_delete=models.CASCADE)
+    country = models.ForeignKey('core.Country',
+                                related_name="formalities",
+                                on_delete=models.CASCADE,
+                                verbose_name=_("Country")
+                                )
+    tax_number = models.CharField(_("Tax Number"), max_length=64, null=True, blank=True)
+    personal_id = models.CharField(_("Personal ID"), max_length=64, null=True, blank=True)
+
+    class Meta:
+        verbose_name = _("Formality")
+        verbose_name_plural = _("Formalities")
+
+    def __str__(self):
+        return str(self.candidate_contact)
