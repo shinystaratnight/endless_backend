@@ -93,7 +93,9 @@ class ContactMapper:
         }
         if contact_obj.phone_mobile:
             myob_address['Phone1'] = str(contact_obj.phone_mobile)
-        myob_address.update(self._map_address_to_myob(contact_obj.address))
+        contact_active_address = contact_obj.active_address()
+        if contact_active_address:
+            myob_address.update(self._map_address_to_myob(contact_active_address))
 
         first_name = contact_obj.first_name
         last_name = contact_obj.last_name

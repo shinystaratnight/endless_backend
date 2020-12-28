@@ -677,7 +677,8 @@ class ContactSerializer(ApiContactImageFieldsMixin,
         'company_contact': 'contact',
     }
 
-    method_fields = ('job_title', 'availability', 'is_candidate_contact', 'is_company_contact', 'master_company')
+    method_fields = ('job_title', 'availability', 'is_candidate_contact', 'is_company_contact',
+                     'master_company', 'address')
 
     def get_job_title(self, obj):
         return obj.get_job_title() if obj and obj.is_company_contact() else None
@@ -694,6 +695,9 @@ class ContactSerializer(ApiContactImageFieldsMixin,
     def get_master_company(self, obj):
         master_company = obj.get_closest_company()
         return master_company and core_field.ApiBaseRelatedField.to_read_only_data(master_company)
+
+    def get_address(self, obj):
+        return obj.get_active_address()
 
     def to_representation(self, instance):
         data = super(ContactSerializer, self).to_representation(instance)
