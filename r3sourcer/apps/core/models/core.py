@@ -185,6 +185,26 @@ class Contact(CategoryFolderMixin,
         return name
 
     @property
+    def active_contact_address(self):
+        return self.contact_address.filter(is_active=True).first()
+
+    @property
+    def active_address(self):
+        active_contact_address = self.active_contact_address
+        return active_contact_address.address if active_contact_address else None
+
+    def get_active_address(self):
+        active_address = self.active_address
+        if active_address:
+            return {"country": active_address.country.name,
+                    "state": active_address.state.name,
+                    "city": active_address.city.name,
+                    "street_address": active_address.street_address,
+                    "postal_code": active_address.postal_code,
+                    "__str__": active_address.__str__(),
+                    }
+
+    @property
     def notes(self):
         return Note.objects.filter(
             content_type__model=self.__class__.__name__,
@@ -368,35 +388,6 @@ class ContactAddress(UUIDModel):
             longitude=F('address__longitude'),
             latitude=F('address__latitude')
         ).values_list('longitude', 'latitude').get()
-
-
-class TaxNumber(UUIDModel):
-    """model for Tax Number"""
-    value = models.CharField(_("Value"), max_length=64)
-    contact_address = models.OneToOneField('ContactAddress',
-                                           verbose_name=_("Contact address"),
-                                           related_name='tax_number',
-                                           on_delete=models.CASCADE)
-    class Meta:
-        verbose_name = _("Tax Number")
-        verbose_name_plural = _("Tax Numbers")
-
-    def __str__(self):
-        return self.value
-
-
-class PersonalID(UUIDModel):
-    """model for Tax Number"""
-    value = models.CharField(_("Value"), max_length=64)
-    contact_address = models.OneToOneField('ContactAddress',
-                                           verbose_name=_("Contact address"),
-                                           related_name='personal_id',
-                                           on_delete=models.CASCADE)
-    class Meta:
-        verbose_name = _("Personal ID")
-
-    def __str__(self):
-        return self.value
 
 
 class ContactRelationship(UUIDModel):
@@ -2937,8 +2928,7 @@ connect_default_signals(City)
 
 __all__ = [
     'Contact', 'ContactRelationship', 'ContactUnavailability',
-    'ContactAddress', 'TaxNumber', 'PersonalID',
-    'CompanyIndustryRel', 'User', 'UserManager',
+    'ContactAddress', 'CompanyIndustryRel', 'User', 'UserManager',
     'Country', 'Region', 'City',
     'Company', 'CompanyContact', 'CompanyRel', 'CompanyContactRelationship', 'CompanyContactAddress',
     'CompanyAddress', 'CompanyLocalization', 'CompanyTradeReference', 'BankAccount', 'SiteCompany',
