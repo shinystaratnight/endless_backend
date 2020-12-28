@@ -184,6 +184,12 @@ class Contact(CategoryFolderMixin,
             name = '{} {}'.format(self.title, name)
         return name
 
+    def active_contact_address(self):
+        return self.contact_address.filter(is_active=True).first()
+
+    def active_address(self):
+        return self.active_contact_address.address if self.active_contact_address else None
+
     @property
     def notes(self):
         return Note.objects.filter(
