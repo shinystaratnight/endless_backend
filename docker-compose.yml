@@ -1,4 +1,4 @@
-version: '2'
+version: '2.0'
 services:
 
 #########
@@ -11,7 +11,8 @@ services:
     ports:
       - "6379:6379"
     networks:
-      - r3-network
+      r3-network:
+        ipv4_address: 192.168.100.2
 
 ##############
 # CLISCHOUSE #
@@ -29,7 +30,8 @@ services:
       - "9000:9000"
       - "9009:9009"
     networks:
-      - r3-network
+      r3-network:
+        ipv4_address: 192.168.100.3
 
 ############
 # RABBITMQ #
@@ -42,7 +44,8 @@ services:
       - 15672:15672
       - 5672:5672
     networks:
-      - r3-network
+      r3-network:
+        ipv4_address: 192.168.100.4
 
 ############
 # FRONTEND #
@@ -65,7 +68,8 @@ services:
       - /home/ubuntu/endless_project/conf/docker/nginx.conf:/etc/nginx/conf.d/default.conf
       - /etc/letsencrypt:/etc/letsencrypt
     networks:
-      - r3-network
+      r3-network:
+        ipv4_address: 192.168.100.5
 
 ###########
 # BACKEND #
@@ -73,7 +77,7 @@ services:
 
   web:
     restart: always
-    image: &img r3sourcer/r3:web-production     # TODO set appropriate image name
+    image: &img r3sourcer/r3:web-staging     # TODO set appropriate image name
     container_name: r3sourcer_web
     dns:
       - 8.8.8.8
@@ -93,7 +97,8 @@ services:
       - ./keys:/app/keys
     command: "./docker-entrypoint.sh"
     networks:
-      - r3-network
+      r3-network:
+        ipv4_address: 192.168.100.6
 
 ##########
 # CELERY #
@@ -111,7 +116,8 @@ services:
       - ./.env_defaults
       - ./.env
     networks:
-      - r3-network
+      r3-network:
+        ipv4_address: 192.168.100.7
 
 ###############
 # CELERY BEAT #
@@ -129,8 +135,12 @@ services:
       - ./.env_defaults
       - ./.env
     networks:
-      - r3-network
+      r3-network:
+        ipv4_address: 192.168.100.8
 
 networks:
   r3-network:
     driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.100.0/24

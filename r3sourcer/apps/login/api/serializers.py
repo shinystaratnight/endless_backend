@@ -61,12 +61,11 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
     contact_type = serializers.CharField(source='get_role', read_only=True)
     contact_id = serializers.UUIDField(source='get_role_id', read_only=True)
 
-    image_fields = ('picture', )
     method_fields = ('company', 'company_id', 'candidate_contact')
 
     class Meta:
         model = Contact
-        fields = ('id', 'name', 'contact_type', 'contact_id', 'picture', 'email')
+        fields = ('id', 'name', 'contact_type', 'contact_id', 'email')
 
     def get_name(self, obj):
         return str(obj)
