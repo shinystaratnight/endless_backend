@@ -151,32 +151,6 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
 
         return self.paginated(queryset.distinct().order_by('-shift_started_at'))
 
-    # def update(self, request, *args, **kwargs):
-
-    #     form_obj = self.get_object()
-    #     shift_started_at = request.data.get('shift_started_at')
-    #     title = request.data.get('title', "")
-    #     short_description = request.data.get('short_description', "")
-    #     button_text = request.data.get('save_button_text', "")
-    #     result_messages = request.data.get('submit_message', "")
-    #     if language_id:
-    #         try:
-    #             # check if language exists
-    #             language_obj = Language.objects.get(alpha_2=language_id)
-    #             # create or update form_language object
-    #             FormLanguage.objects.update_or_create(form=form_obj, language=language_obj,
-    #                                                 defaults={'title': title,
-    #                                                           'short_description': short_description,
-    #                                                           'button_text': button_text,
-    #                                                           'result_messages': result_messages})
-    #             # updating active language
-    #             form_obj.active_language = language_obj
-    #             form_obj.save()
-    #         except Language.DoesNotExist:
-    #             raise ValidationError('Language with alpha_2 = {} does not exist'.format(language_id))
-
-    #     return super().update(request, *args, **kwargs)
-
     @action(methods=['get'], detail=False)
     def unapproved(self, request, *args, **kwargs):  # pragma: no cover
         return self.paginated(self.get_unapproved_queryset(request))
