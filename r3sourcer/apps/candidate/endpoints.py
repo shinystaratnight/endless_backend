@@ -76,6 +76,14 @@ class SkillRateCoefficientRelEndpoint(core_endpoints.ApiEndpoint):
     model = candidate_models.SkillRateCoefficientRel
 
 
+class FormalityEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.Formality
+    base_viewset = candidate_viewsets.FormalityViewset
+    serializer = candidate_serializers.FormalitySerializer
+    filter_class = candidate_filters.FormalityFilter
+
+
 router.register(endpoint=VisaTypeEndpoint())
 router.register(endpoint=SuperannuationFundEndpoint())
 router.register(endpoint=CandidateContactEndpoint())
@@ -87,3 +95,4 @@ router.register(candidate_models.CandidateRel)
 router.register(endpoint=SubcontractorCandidateRelationEndpoint())
 router.register(endpoint=CandidateLocationEndpoint(), url='candidate/location')
 router.register(endpoint=SkillRateCoefficientRelEndpoint())
+router.register(endpoint=FormalityEndpoint())
