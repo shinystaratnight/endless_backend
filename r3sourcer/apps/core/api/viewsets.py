@@ -376,7 +376,14 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         return data
 
 
-class ContactAddressViewset(BaseApiViewset):
+class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
+
+    def prepare_related_data(self, data, is_create=False):
+        data = super().prepare_related_data(data, is_create)
+
+        if is_create and not data.get('is_active'):
+            data['is_active'] = True
+        return data
 
     def list(self, request, *args, **kwargs):
         # check include_all parameter
