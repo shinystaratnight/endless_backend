@@ -59,6 +59,9 @@ class CandidateContactViewset(BaseApiViewset):
 
         country_code = master_company.get_hq_address().address.country.code2
 
+        if isinstance(data, str):
+            return data
+
         for field in contact._meta.fields:
             if not isinstance(field, PhoneNumberField):
                 continue
