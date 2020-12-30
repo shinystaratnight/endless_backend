@@ -734,6 +734,9 @@ class ContactAddressSerializer(ApiBaseModelSerializer):
         model = core_models.ContactAddress
         fields = (
             '__all__',
+            {
+                'address': ('__all__', ),
+            }
         )
 
 
