@@ -416,7 +416,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @workflow_function
     def is_formalities_filled(self):
-        return bool(self.tax_file_number and
+        return bool(self.tax_number and
                     self.superannuation_fund and
                     self.superannuation_membership_number and
                     self.bank_account and

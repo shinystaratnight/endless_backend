@@ -71,7 +71,7 @@ def candidate_data(employment_classification, bank_account, superannuation_fund)
         transportation_to_work=True,
         strength=1,
         language=5,
-        tax_file_number="123456",
+        tax_number="123456",
         bank_account=bank_account,
         emergency_contact_name="emergency name",
         emergency_contact_phone="+41789232323",
@@ -92,7 +92,7 @@ def candidate(db, contact, candidate_data):
     rc.candidate_scores.save(update_fields=['reliability', 'loyalty'])
 
     keys = [
-        'height', 'weight', 'transportation_to_work', 'strength', 'language', 'tax_file_number', 'superannuation_fund',
+        'height', 'weight', 'transportation_to_work', 'strength', 'language', 'tax_number', 'superannuation_fund',
         'bank_account', 'emergency_contact_name', 'emergency_contact_phone', 'superannuation_membership_number',
         'employment_classification'
     ]

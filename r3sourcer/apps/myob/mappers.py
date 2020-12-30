@@ -485,7 +485,7 @@ class CandidateMapper(StandardPayMapMixin, ContactMapper):
                 }
             }
 
-            tax_file_num = candidate_contact.tax_file_number
+            tax_file_num = candidate_contact.tax_number
             if tax_file_num and len(tax_file_num) == 9:
                 data['Tax'].update({
                     'TaxFileNumber': '{} {} {}'.format(
