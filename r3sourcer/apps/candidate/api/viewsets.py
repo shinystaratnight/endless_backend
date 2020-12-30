@@ -22,9 +22,8 @@ from r3sourcer.apps.logger.main import location_logger
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.helpers.datetimes import utc_now
 from . import serializers
-from .serializers import VisaTypeSerializer
 from ..models import Subcontractor, CandidateContact, CandidateContactAnonymous, CandidateRel, VisaType, \
-    CountryVisaTypeRelation
+                     CountryVisaTypeRelation, Formality
 from ..tasks import buy_candidate
 from ...core.utils.utils import normalize_phone_number
 
@@ -356,10 +355,28 @@ class SuperannuationFundViewset(BaseApiViewset):
 
 
 class VisaTypeViewset(BaseApiViewset):
-    serializer_class = VisaTypeSerializer
+    serializer_class = serializers.VisaTypeSerializer
     search_fields = ['name']
 
     def get_queryset(self):
         country = self.request.user.company.country
         visa_country_rel = CountryVisaTypeRelation.objects.filter(country=country)
         return VisaType.objects.filter(visa_types__in=visa_country_rel)
+
+
+class FormalityViewset(BaseApiViewset):
+    http_method_names = ['get', 'post', 'delete']
+
+    def perform_create(self, serializer):
+        candidate_contact = self.request.data.get('candidate_contact')
+        country = self.request.data.get('country')
+        tax_number = self.request.data.get('tax_number', None)
+        personal_id = self.request.data.get('personal_id', None)
+        # update tax_number
+        if tax_number:
+            Formality.objects.update_or_create(candidate_contact_id=candidate_contact, country_id=country,
+                                               defaults={'tax_number': tax_number})
+        # update personal_id
+        if personal_id:
+            Formality.objects.update_or_create(candidate_contact_id=candidate_contact, country_id=country,
+                                               defaults={'personal_id': personal_id})

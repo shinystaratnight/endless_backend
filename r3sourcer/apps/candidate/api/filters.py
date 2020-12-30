@@ -1,9 +1,11 @@
 from django.db.models import Q
 from django.utils.translation import ugettext_lazy as _
-from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoiceFilter, BooleanFilter
+from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoiceFilter, \
+                           BooleanFilter, UUIDFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 
-from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, TagRel, CandidateContactAnonymous
+from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, TagRel, \
+                                            CandidateContactAnonymous, Formality
 from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Tag
 from r3sourcer.apps.core_adapter.filters import DateRangeFilter, RangeNumberFilter
@@ -94,3 +96,18 @@ class TagRelFilter(FilterSet):
     class Meta:
         model = TagRel
         fields = ['candidate_contact', 'tag__confidential']
+
+
+class FormalityFilter(FilterSet):
+    candidate = UUIDFilter(method='filter_candidate_contact')
+    country = CharFilter(method='filter_country')
+
+    class Meta:
+        model = Formality
+        fields = ['candidate', 'country']
+
+    def filter_candidate_contact(self, queryset, name, value):
+        return queryset.filter(candidate_contact__id=value)
+
+    def filter_country(self, queryset, name, value):
+        return queryset.filter(Q(country__code2=value.upper()) if len(value) == 2 else Q(country_id=value))

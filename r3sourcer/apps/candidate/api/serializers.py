@@ -400,3 +400,10 @@ class VisaTypeSerializer(core_serializers.ApiBaseModelSerializer):
     class Meta:
         fields = ('id', 'subclass', 'name', 'general_type', 'work_hours_allowed', 'is_available')
         model = VisaType
+
+
+class FormalitySerializer(core_serializers.ApiBaseModelSerializer):
+
+    class Meta:
+        fields = '__all__'
+        model = candidate_models.Formality
