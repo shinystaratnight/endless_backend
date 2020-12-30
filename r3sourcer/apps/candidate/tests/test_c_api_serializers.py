@@ -22,7 +22,7 @@ class TestCandidateContactSerializer:
     def test_can_create_contact(self, contact, serializer_obj):
         candidate_contact_data = {
             'contact': contact,
-            'tax_file_number': '123'
+            'tax_number': '123'
         }
         instance = serializer_obj.create(candidate_contact_data)
 
@@ -31,7 +31,7 @@ class TestCandidateContactSerializer:
 
     def test_create_contact_without_contact(self, contact, serializer_obj):
         candidate_contact_data = {
-            'tax_file_number': '123'
+            'tax_number': '123'
         }
         with pytest.raises(Exception):
             serializer_obj.create(candidate_contact_data)
@@ -67,7 +67,7 @@ class TestCandidateContactSerializer:
                                            serializer_obj):
         candidate_contact_data = {
             'contact': contact,
-            'tax_file_number': '123'
+            'tax_number': '123'
         }
         with pytest.raises(ValidationError):
             serializer_obj.create(candidate_contact_data)

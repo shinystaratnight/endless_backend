@@ -232,7 +232,7 @@ class TestCandidateContact:
             candidate_scores=score
         )
         keys = ('height weight transportation_to_work strength language'
-                ' tax_file_number bank_account'
+                ' tax_number bank_account'
                 ' emergency_contact_name emergency_contact_phone'
                 ' employment_classification').split()
         for key in keys:
