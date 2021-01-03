@@ -1079,3 +1079,12 @@ class Formality(UUIDModel):
 
     def __str__(self):
         return str(self.candidate_contact)
+
+    def get_formality_attributes(self):
+            return {"display_tax_number": self.country.display_tax_number,
+                    "tax_number_type": self.country.tax_number_type,
+                    "tax_number_regex_validation_pattern": self.country.tax_number_regex_validation_pattern,
+                    "display_personal_id": self.country.display_personal_id,
+                    "personal_id_type": self.country.personal_id_type,
+                    "personal_id_regex_validation_pattern": self.country.personal_id_regex_validation_pattern,
+                    }
