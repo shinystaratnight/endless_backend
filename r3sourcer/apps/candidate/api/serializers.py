@@ -403,7 +403,33 @@ class VisaTypeSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class FormalitySerializer(core_serializers.ApiBaseModelSerializer):
+    method_fields = ('display_tax_number', 'tax_number_type', 'tax_number_regex',
+                     'display_personal_id', 'personal_id_type', 'personal_id_regex')
 
     class Meta:
         fields = '__all__'
         model = candidate_models.Formality
+
+    def get_display_tax_number(self, obj):
+        active_address = obj.candidate_contact.contact.active_address
+        return active_address.country.display_tax_number if active_address else None
+
+    def get_tax_number_type(self, obj):
+        active_address = obj.candidate_contact.contact.active_address
+        return active_address.country.tax_number_type if active_address else None
+
+    def get_tax_number_regex(self, obj):
+        active_address = obj.candidate_contact.contact.active_address
+        return active_address.country.tax_number_regex_validation_pattern if active_address else None
+
+    def get_display_personal_id(self, obj):
+        active_address = obj.candidate_contact.contact.active_address
+        return active_address.country.display_personal_id if active_address else None
+
+    def get_personal_id_type(self, obj):
+        active_address = obj.candidate_contact.contact.active_address
+        return active_address.country.personal_id_type if active_address else None
+
+    def get_personal_id_regex(self, obj):
+        active_address = obj.candidate_contact.contact.active_address
+        return active_address.country.personal_id_regex_validation_pattern if active_address else None
