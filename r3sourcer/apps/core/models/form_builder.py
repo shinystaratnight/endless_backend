@@ -185,6 +185,26 @@ class Form(UUIDModel):
         verbose_name = _("Form")
         verbose_name_plural = _("Forms")
 
+    @property
+    def title(self):
+        """ Form title getter """
+        return self.translations.filter(language=self.active_language).first().title
+
+    @property
+    def short_description(self):
+        """ Form short_description getter """
+        return self.translations.filter(language=self.active_language).first().short_description
+
+    @property
+    def save_button_text(self):
+        """ Form button_text getter """
+        return self.translations.filter(language=self.active_language).first().button_text
+
+    @property
+    def submit_message(self):
+        """ Form result_messages getter """
+        return self.translations.filter(language=self.active_language).first().result_messages
+
     def clean(self):
         super(Form, self).clean()
         if self.company_id is None and Form.objects.exclude(id=self.id).filter(
