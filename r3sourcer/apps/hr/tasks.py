@@ -97,7 +97,7 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
     template_language = sms_template.language.alpha_2
     job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
     job_translation = job_translation[0].get('value', job_offer.job)
-    data_dict['job'] = job_translation
+    data_dict['job_translation'] = job_translation
     # end
     sent_message = sms_interface.send_tpl(to_number=job_offer.candidate_contact.contact.phone_mobile,
                                           tpl_id=sms_template.id,
