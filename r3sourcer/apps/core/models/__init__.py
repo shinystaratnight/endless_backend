@@ -16,3 +16,4 @@ from .bank_account_layout_fields import *
 from .bank_account_layout_country import *
 from .contact_bank_accounts import *
 from .contact_bank_account_fields import *
+from .unit_of_measurement import *
