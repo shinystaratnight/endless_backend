@@ -213,10 +213,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
         return MYOBSyncObject.objects.filter(record=obj.id).first()
 
     def get_formality_attributes(self, obj):
-        country = obj.get_closest_company().country
-        formality = obj.formality_set.filter(country=country, candidate_contact=obj) \
-                                     .first()
-        return formality.get_formality_attributes() if formality else None
+        return obj.get_formality_attributes()
 
     def get_address(self, obj):
         return obj.contact.get_active_address()
