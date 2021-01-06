@@ -661,7 +661,7 @@ class Country(UUIDModel, AbstractCountry):
     tax_number_regex_validation_pattern = models.CharField(_('Tax Number Regex Validation Pattern'),
                                                            max_length=64, blank=True)
     display_personal_id = models.BooleanField(_('Display Personal ID'), default=False)
-    personal_id_type = models.CharField(_('Tax number type'), max_length=64, blank=True)
+    personal_id_type = models.CharField(_('Personal ID number type'), max_length=64, blank=True)
     personal_id_regex_validation_pattern = models.CharField(_('Personal ID Regex Validation Pattern'),
                                                             max_length=64, blank=True)
 
