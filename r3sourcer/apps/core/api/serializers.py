@@ -1677,7 +1677,7 @@ class ModelFormFieldSerializer(BaseFormFieldSerializer):
         model = core_models.ModelFormField
         fields = (
             'id', 'group', 'name', 'label', 'placeholder', 'class_name',
-            'required', 'position', 'help_text'
+            'required', 'position', 'help_text', 'regex'
         )
 
 
