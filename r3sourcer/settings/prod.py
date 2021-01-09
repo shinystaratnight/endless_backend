@@ -458,7 +458,8 @@ def CAN_LOGIN_AS(request, target_user): return request.user
 
 CORS_ORIGIN_REGEX_WHITELIST = (
     r'^(https?://)?(\w+\.)?r3sourcer(test)?\.com$',
-    # r'^(https?://)?r3sourcersoft(test)?\.com$',
+    r'^(https?://)?r3sourcersoft(test)?\.com$',
+    r'^(https?://)?(\w+\.)?amazonaws\.com$',
 )
 
 # if DEBUG:
