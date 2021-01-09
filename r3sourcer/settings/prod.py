@@ -455,7 +455,7 @@ SMS_SEGMENT_SIZE = 160
 
 def CAN_LOGIN_AS(request, target_user): return request.user
 
-
+CORS_ALLOW_CREDENTIALS = True
 CORS_ORIGIN_REGEX_WHITELIST = (
     r'^(https?://)?(\w+\.)?r3sourcer(test)?\.com$',
     r'^(https?://)?r3sourcersoft(test)?\.com$',
