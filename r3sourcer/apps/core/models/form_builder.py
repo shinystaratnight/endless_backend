@@ -44,6 +44,7 @@ __all__ = [
     'CheckBoxFormField',
     'RadioButtonsFormField',
     'RelatedFormField',
+    # 'RegexFormField',
     'FormBuilderExtraFields',
     'transform_ui_choices'
 ]
@@ -247,6 +248,11 @@ class Form(UUIDModel):
 
         return 'contact__bank_accounts' in field_name and model_class == CandidateContact
 
+    def _is_formality(self, model_class, field_name):
+        from r3sourcer.apps.candidate.models import CandidateContact
+
+        return 'formalities' in field_name and model_class == CandidateContact
+
     def is_valid_model_field_name(self, field_name: str) -> bool:
         """
         Checking model field name for attached content type model.
@@ -263,6 +269,8 @@ class Form(UUIDModel):
 
         if self._is_candidate_bank_account(model_class, field_name):
             return True
+        # if self._is_formality(model_class, field_name):
+        #     return True
 
         for index, _field_name in enumerate(fields):
             if index != count - 1:
@@ -290,10 +298,9 @@ class Form(UUIDModel):
                 'name': group.name,
                 'fields': OrderedDict()
             }
-            fields_qs = FormField.inheritance_objects.filter(
-                group_id=group.id
-            ).exclude(
-                name__startswith='contact__bank_accounts')
+            fields_qs = FormField.inheritance_objects.filter(group_id=group.id) \
+                .exclude(name__startswith='contact__bank_accounts') \
+                .exclude(name__startswith='formalities')
             for field in fields_qs.select_subclasses():
                 group_data['fields'].setdefault(field.name, field.get_form_field())
             group_data['form_cls'] = type('BuilderForm', (forms.Form,), group_data['fields'].copy())
@@ -563,6 +570,13 @@ class FormField(PolymorphicModel):
         blank=True
     )
 
+    regex = models.CharField(
+        verbose_name=_("Regex Pattern"),
+        default='',
+        max_length=255,
+        blank=True
+    )
+
     inheritance_objects = InheritanceManager()
 
     class Meta:
@@ -578,6 +592,7 @@ class FormField(PolymorphicModel):
                 'required': self.required,
                 'label': self.label,
                 'type': self.input_type,
+                'regex': self.regex,
             }
         }
 
@@ -591,7 +606,7 @@ class FormField(PolymorphicModel):
     def get_serializer_fields(cls):
         return (
                    'id', 'group', 'name', 'label', 'placeholder', 'class_name',
-                   'required', 'position', 'help_text'
+                   'required', 'position', 'help_text', 'regex'
                ) + cls.extended_fields
 
     def __str__(self):
@@ -687,6 +702,33 @@ class ModelFormField(FormField):
                 'label': 'Bank Account'
             }
 
+        if issubclass(model, CandidateContact) and 'formalities' in builder.fields:
+            country = get_site_master_company().country
+
+            model_fields = []
+            if country.display_tax_number:
+                model_fields.append({
+                    'name': 'formalities__tax_number',
+                    'required': "False",
+                    'label': country.tax_number_type,
+                    "regex": country.tax_number_regex_validation_pattern
+                })
+            if country.display_personal_id:
+                model_fields.append({
+                    'name': 'formalities__personal_id',
+                    'required': "False",
+                    'label': country.personal_id_type,
+                    "regex": country.personal_id_regex_validation_pattern
+                })
+            yield {
+                'model_fields': model_fields,
+                'name': 'formalities',
+                'required': False,
+                'type': 'input',
+                'help_text': '',
+                'label': 'Formalities'
+            }
+
     @classmethod
     def flatten_model_fields_config(cls, model_fields):
         fields = {}
@@ -712,6 +754,20 @@ class ModelFormField(FormField):
             }
         }
 
+    def _get_formality_field(self):
+        return {
+            'key': self.name.replace('__', '.'),
+            'type': 'input',
+            'templateOptions': {
+                'description': self.help_text,
+                'placeholder': self.placeholder,
+                'required': self.required,
+                'label': self.label,
+                'regex': self.regex,
+                'type': 'input'
+            }
+        }
+
     def get_form_field(self) -> forms.Field:
         """
         Return form field from model meta options.
@@ -732,6 +788,9 @@ class ModelFormField(FormField):
         """
         if 'contact__bank_accounts' in self.name:
             return self._get_bank_account_field()
+
+        if 'formalities' in self.name:
+            return self._get_formality_field()
 
         ui_all_config = super(ModelFormField, self).get_ui_config()
         ui_config = ui_all_config.get('templateOptions', {})
@@ -1097,6 +1156,27 @@ class RelatedFormField(FormField):
         verbose_name = _("Related field")
         verbose_name_plural = _("Related fields")
 
+# class RegexFormField(FormField):
+#     input_type = 'regex-input'
+#     extended_fields = ('regex',)
+
+#     regex = models.CharField(
+#         verbose_name=_("Regex Pattern"),
+#         default='',
+#         max_length=255,
+#         blank=True
+#     )
+
+#     def get_ui_config(self):
+#         ui_config = super().get_ui_config()
+#         ui_config['templateOptions'].update(**{
+#             'regex': self.regex
+#         })
+#         return ui_config
+
+#     class Meta:
+#         verbose_name = _("Regex field")
+#         verbose_name_plural = _("Regex fields")
 
 class FormLanguage(UUIDModel):
     form = models.ForeignKey(

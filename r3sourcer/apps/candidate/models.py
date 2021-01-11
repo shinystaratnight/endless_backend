@@ -610,6 +610,16 @@ class CandidateContact(UUIDModel, WorkflowProcess):
                 models.Q(candidate_rels__master_company=owner)
             ]
 
+    def get_formality_attributes(self):
+            country = self.get_closest_company().country
+            return {"display_tax_number": country.display_tax_number,
+                    "tax_number_type": country.tax_number_type,
+                    "tax_number_regex_validation_pattern": country.tax_number_regex_validation_pattern,
+                    "display_personal_id": country.display_personal_id,
+                    "personal_id_type": country.personal_id_type,
+                    "personal_id_regex_validation_pattern": country.personal_id_regex_validation_pattern,
+                    }
+
 
 class TagRel(UUIDModel):
     tag = models.ForeignKey(
@@ -1063,6 +1073,7 @@ class CandidateContactAnonymous(CandidateContact):
 class Formality(UUIDModel):
     """model for Formalities"""
     candidate_contact = models.ForeignKey(CandidateContact,
+                                          related_name="formalities",
                                           verbose_name=_("Contact"),
                                           on_delete=models.CASCADE)
     country = models.ForeignKey('core.Country',
