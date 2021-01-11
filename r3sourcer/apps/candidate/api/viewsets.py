@@ -57,7 +57,12 @@ class CandidateContactViewset(BaseApiViewset):
         if not master_company:
             raise ValidationError(_('Master company not found'))
 
-        country_code = master_company.get_hq_address().address.country.code2
+        company_hq_address = master_company.get_hq_address()
+        if company_hq_address:
+            country_code = company_hq_address.address.country.code2
+        else:
+            raise exceptions.ValidationError({'non_field_errors':
+                _('Please enter the HQ address of your company first')})
 
         if isinstance(data, str):
             return data
