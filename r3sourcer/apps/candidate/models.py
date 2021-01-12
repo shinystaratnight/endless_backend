@@ -10,7 +10,7 @@ from r3sourcer import ref
 from r3sourcer.apps.activity.models import Activity
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
-from r3sourcer.apps.core.models import CompanyContactRelationship
+from r3sourcer.apps.core.models import CompanyContactRelationship, UnitOfMeasurement
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
@@ -727,7 +727,13 @@ class SkillRel(UUIDModel):
         default=PRIOR_EXPERIENCE_CHOICES.inexperienced
     )
 
-    hourly_rate = models.DecimalField(
+    uom = models.ForeignKey(
+        UnitOfMeasurement,
+        verbose_name=_("Unit of measurement"),
+        null=True
+    )
+
+    rate = models.DecimalField(
         decimal_places=2,
         max_digits=8,
         verbose_name=_("Skill Rate"),

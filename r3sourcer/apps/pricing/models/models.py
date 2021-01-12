@@ -9,7 +9,7 @@ from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import Company
+from r3sourcer.apps.core.models import Company, UnitOfMeasurement
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models.rules import all_rules, AllowanceWorkRule
@@ -276,6 +276,12 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
         Skill,
         related_name='price_list_rates',
         verbose_name=_('Skill'),
+    )
+
+    uom = models.ForeignKey(
+        UnitOfMeasurement,
+        verbose_name=_("Unit of measurement"),
+        null=True
     )
 
     default_rate = models.BooleanField(
