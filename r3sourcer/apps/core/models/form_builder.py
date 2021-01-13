@@ -852,6 +852,9 @@ class ModelFormField(FormField):
                 })
             if isinstance(form_field, (forms.ModelMultipleChoiceField, forms.MultipleChoiceField)):
                 ui_config['multiple'] = True
+        # change Street Address field type to address
+        if ui_config['label'] == 'Street Address':
+            ui_all_config['type'] = 'address'
 
         ui_all_config['templateOptions'] = ui_config
         ui_all_config['key'] = ui_all_config['key'].replace('__', '.')
