@@ -686,7 +686,6 @@ class ContactSerializer(ApiContactImageFieldsMixin,
                     'address': getattr(e, 'messages', _('Cannot create Contact without address'))
                 })
         contact = core_models.Contact.objects.create(**validated_data)
-        CandidateContact.objects.create(address=address, contact=contact, is_active=True)
         return contact
 
     def validate(self, data):
