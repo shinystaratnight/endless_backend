@@ -142,7 +142,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                     'birthday', 'myob_card_id', 'old_myob_card_id',
                     {
                         'contact_address': (
-                            {'address': ('country', 'state', 'city', 'street_address', 'postal_code'),},
+                            {'address': ('id', 'country', 'state', 'city', 'street_address', 'postal_code'),},
                             'is_active'
                         ),
                     }
