@@ -1031,31 +1031,29 @@ class FormViewSet(BaseApiViewset):
     permission_classes = (IsAuthenticated,)
 
     def update(self, request, *args, **kwargs):
-        from r3sourcer.apps.core.models.languages.model import Language
-        from r3sourcer.apps.core.models.form_builder import FormLanguage
+        data = self.prepare_related_data(request.data)
+        partial = kwargs.pop('partial', False)
         form_obj = self.get_object()
-        language_id = request.data.get('language_id')
-        title = request.data.get('title', "")
-        short_description = request.data.get('short_description', "")
-        button_text = request.data.get('save_button_text', "")
-        result_messages = request.data.get('submit_message', "")
-        if language_id:
-            try:
-                # check if language exists
-                language_obj = Language.objects.get(alpha_2=language_id)
-                # create or update form_language object
-                FormLanguage.objects.update_or_create(form=form_obj, language=language_obj,
-                                                    defaults={'title': title,
-                                                              'short_description': short_description,
-                                                              'button_text': button_text,
-                                                              'result_messages': result_messages})
-                # updating active language
-                form_obj.active_language = language_obj
-                form_obj.save()
-            except Language.DoesNotExist:
-                raise ValidationError('Language with alpha_2 = {} does not exist'.format(language_id))
+        # update translations
+        translation_objects = data.pop('translations', None)
+        form = models.Form.objects.get(pk=kwargs['pk'])
+        with transaction.atomic():
+            models.FormLanguage.objects.filter(form=form).delete()
+            for translation in translation_objects:
+                language = models.Language.objects.get(alpha_2=translation['language']['id'])
+                models.FormLanguage.objects.create(form=form,
+                                                   language=language,
+                                                   title=translation['title'],
+                                                   short_description=translation['short_description'],
+                                                   button_text=translation['button_text'],
+                                                   result_messages=translation['result_messages']
+                                                   )
+        # end update translations
+        serializer = self.get_serializer(form_obj, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
-        return super().update(request, *args, **kwargs)
+        return Response({'status': 'success'}, status=status.HTTP_200_OK)
 
     def create(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
