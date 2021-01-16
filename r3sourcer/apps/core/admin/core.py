@@ -131,6 +131,9 @@ class ContactAdmin(admin.ModelAdmin):
 
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
 
+class ContactAddressAdmin(admin.ModelAdmin):
+
+    search_fields = ('contact__first_name', 'contact__last_name', 'contact__email', 'contact__phone_mobile')
 
 class ContactLanguageAdmin(admin.ModelAdmin):
     search_fields = ('contact', 'language')
@@ -444,7 +447,7 @@ if admin.site.is_registered(Site):
 
 admin.site.site_header = "Core Administration"
 admin.site.register(models.Contact, ContactAdmin)
-admin.site.register(models.ContactAddress)
+admin.site.register(models.ContactAddress, ContactAddressAdmin)
 admin.site.register(models.ContactLanguage, ContactLanguageAdmin)
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
