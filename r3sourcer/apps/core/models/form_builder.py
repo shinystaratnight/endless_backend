@@ -44,7 +44,6 @@ __all__ = [
     'CheckBoxFormField',
     'RadioButtonsFormField',
     'RelatedFormField',
-    # 'RegexFormField',
     'FormBuilderExtraFields',
     'transform_ui_choices'
 ]
@@ -216,14 +215,6 @@ class Form(UUIDModel):
 
     def __str__(self):
         return str(self.builder)
-
-    def get_translations(self):
-        translations = []
-        for translation in self.translations.all():
-            translations.append({translation.language.pk: [translation.language.name,
-                                 translation.title, translation.short_description,
-                                 translation.button_text, translation.result_messages]})
-        return translations
 
     def get_company_links(self, contact):
         """
@@ -1158,28 +1149,6 @@ class RelatedFormField(FormField):
     class Meta:
         verbose_name = _("Related field")
         verbose_name_plural = _("Related fields")
-
-# class RegexFormField(FormField):
-#     input_type = 'regex-input'
-#     extended_fields = ('regex',)
-
-#     regex = models.CharField(
-#         verbose_name=_("Regex Pattern"),
-#         default='',
-#         max_length=255,
-#         blank=True
-#     )
-
-#     def get_ui_config(self):
-#         ui_config = super().get_ui_config()
-#         ui_config['templateOptions'].update(**{
-#             'regex': self.regex
-#         })
-#         return ui_config
-
-#     class Meta:
-#         verbose_name = _("Regex field")
-#         verbose_name_plural = _("Regex fields")
 
 class FormLanguage(UUIDModel):
     form = models.ForeignKey(
