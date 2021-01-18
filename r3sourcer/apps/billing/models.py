@@ -11,6 +11,7 @@ from model_utils import Choices
 from r3sourcer import ref
 from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
+from r3sourcer.apps.email_interface.models import EmailTemplate, DefaultEmailTemplate
 from r3sourcer.helpers.datetimes import utc_now
 
 
@@ -401,3 +402,8 @@ class StripeCountryAccount(models.Model):
         stripe_account = stripe_accounts.first() or cls.objects.filter(country='EE').first()
         api_key = stripe_account.stripe_public_key
         return api_key
+
+
+class SMSBalanceLimits(models.Model):
+    low_balance_limit = models.PositiveIntegerField(default=20)
+    email_template = models.ForeignKey(DefaultEmailTemplate)
