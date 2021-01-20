@@ -405,5 +405,6 @@ class StripeCountryAccount(models.Model):
 
 
 class SMSBalanceLimits(models.Model):
+    name = models.CharField(max_length=255, unique=True)
     low_balance_limit = models.PositiveIntegerField(default=20)
     email_template = models.ForeignKey(DefaultEmailTemplate)
