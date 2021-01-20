@@ -420,6 +420,11 @@ def send_sms_balance_ran_out_email(master_company_id, template='sms-balance-ran-
         domain = core_companies_utils.get_company_domain(master_company)
         domain_parts = urlparse(domain)
         domain = domain_parts.netloc or domain_parts.path
+        # fixed TypeError: a bytes-like object is required, not 'str'
+        try:
+            domain = domain.decode()
+        except (UnicodeDecodeError, AttributeError):
+            pass
         domain = domain.split('.')[0]
         site_url = core_companies_utils.get_site_url(master_company=master_company)
         primary_contact = master_company.primary_contact.contact
