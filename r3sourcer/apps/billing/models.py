@@ -11,6 +11,7 @@ from model_utils import Choices
 from r3sourcer import ref
 from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
+from r3sourcer.apps.email_interface.models import EmailTemplate, DefaultEmailTemplate
 from r3sourcer.helpers.datetimes import utc_now
 
 
@@ -186,13 +187,17 @@ class SMSBalance(models.Model):
         if self.balance <= self.top_up_limit and self.auto_charge is True:
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
 
-        if Decimal(self.balance) < self.company.company_settings.low_sms_balance_limit:
-            tasks.send_sms_balance_is_low_email.delay(self.company.id)
+        low_limit = SMSBalanceLimits.objects.filter(name="Low").first()
+        if low_limit and Decimal(self.balance) < low_limit.low_balance_limit:
+            tasks.send_sms_balance_is_low_email.delay(self.company.id, template=low_limit.email_template.slug)
+
+        ran_out_limit = SMSBalanceLimits.objects.filter(name="Ran out").first()
+        if ran_out_limit and Decimal(self.balance) < ran_out_limit.low_balance_limit:
+            tasks.send_sms_balance_ran_out_email.delay(self.company.id, template=ran_out_limit.email_template.slug)
 
         if Decimal(self.balance) - self.segment_cost < 0:
             self.company.sms_enabled = False
             self.company.save()
-            tasks.send_sms_balance_ran_out_email.delay(self.company.id)
 
         if not self.company.sms_enabled and Decimal(self.balance) - self.segment_cost > 0:
             self.company.sms_enabled = True
@@ -401,3 +406,9 @@ class StripeCountryAccount(models.Model):
         stripe_account = stripe_accounts.first() or cls.objects.filter(country='EE').first()
         api_key = stripe_account.stripe_public_key
         return api_key
+
+
+class SMSBalanceLimits(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    low_balance_limit = models.PositiveIntegerField(default=20)
+    email_template = models.ForeignKey(DefaultEmailTemplate)

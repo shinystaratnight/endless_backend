@@ -36,9 +36,13 @@ class PaymentAdmin(admin.ModelAdmin):
     search_fields = ('company__name',)
 
 
+class SMSBalanceLimitsAdmin(admin.ModelAdmin):
+    list_display = ('name', 'low_balance_limit', 'email_template')
+
 admin.site.register(models.SMSBalance, SMSBalanceAdmin)
 admin.site.register(models.Subscription, TSubscriptionAdmin)
 admin.site.register(models.SubscriptionType, SubscriptionTypeAdmin)
 admin.site.register(models.Payment, PaymentAdmin)
 admin.site.register(models.Discount)
 admin.site.register(models.StripeCountryAccount)
+admin.site.register(models.SMSBalanceLimits, SMSBalanceLimitsAdmin)
