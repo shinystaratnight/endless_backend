@@ -1054,7 +1054,10 @@ class FormViewSet(BaseApiViewset):
         serializer.is_valid(raise_exception=True)
         self.perform_update(serializer)
 
-        return Response({'status': 'success'}, status=status.HTTP_200_OK)
+        if getattr(form_obj, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
