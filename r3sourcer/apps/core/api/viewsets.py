@@ -1040,7 +1040,8 @@ class FormViewSet(BaseApiViewset):
         with transaction.atomic():
             models.FormLanguage.objects.filter(form=form).delete()
             for translation in translation_objects:
-                language = models.Language.objects.get(alpha_2=translation['language']['id'])
+                language_id = translation['language'] if isinstance(translation['language'], str) else translation['language']['id']
+                language = models.Language.objects.get(alpha_2=language_id)
                 models.FormLanguage.objects.create(form=form,
                                                    language=language,
                                                    title=translation['title'],
