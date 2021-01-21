@@ -61,6 +61,32 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
     contact_type = serializers.CharField(source='get_role', read_only=True)
     contact_id = serializers.UUIDField(source='get_role_id', read_only=True)
 
+    image_fields = ('picture', )
+    method_fields = ('company', 'company_id', 'candidate_contact')
+
+    class Meta:
+        model = Contact
+        fields = ('id', 'name', 'contact_type', 'contact_id', 'picture', 'email')
+
+    def get_name(self, obj):
+        return str(obj)
+
+    def get_company(self, obj):
+        return obj.get_closest_company().name
+
+    def get_company_id(self, obj):
+        return str(obj.get_closest_company().id)
+
+    def get_candidate_contact(self, obj):
+        if obj.is_candidate_contact():
+            return str(obj.candidate_contacts.pk)
+
+
+class TokenPayloadSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer):
+    name = serializers.SerializerMethodField()
+    contact_type = serializers.CharField(source='get_role', read_only=True)
+    contact_id = serializers.UUIDField(source='get_role_id', read_only=True)
+
     method_fields = ('company', 'company_id', 'candidate_contact')
 
     class Meta:
