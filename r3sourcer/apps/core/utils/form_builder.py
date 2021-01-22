@@ -267,7 +267,10 @@ class RelatedFieldHelper(object):
                 try:
                     related_field.save_related(name)
                     if isinstance(related_field.value, models.Model):
-                        related_fields[name] = related_field.value.pk
+                        if name == 'address':
+                            related_fields[name] = [related_field.value.pk]
+                        else:
+                            related_fields[name] = related_field.value.pk
                     else:
                         related_fields[name] = related_field.value
                 except ValidationError as e:
@@ -300,7 +303,16 @@ class RelatedFieldHelper(object):
             })
             raise exceptions.ValidationError(errors)
 
-        self.value = model_form.save()
+        form_obj = model_form.save(commit=False)
+        form_obj.save()
+        # create ContactAddress instance if address atribute exists
+        if hasattr(form_obj, 'address'):
+            from r3sourcer.apps.core.models import ContactAddress
+            ContactAddress.objects.create(contact=form_obj,
+                                          address=self.related_fields['address'].value,
+                                          is_active=True)
+
+        self.value = form_obj
 
     def get_modelform(self, data, files=None, required_fields=None):
         fields = [name for name, field in self.simple_fields.items()]

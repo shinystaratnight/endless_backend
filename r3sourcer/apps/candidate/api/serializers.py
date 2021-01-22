@@ -142,7 +142,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                     'birthday', 'myob_card_id', 'old_myob_card_id',
                     {
                         'contact_address': (
-                            {'address': ('country', 'state', 'city', 'street_address', 'postal_code'),},
+                            {'address': ('id', 'country', 'state', 'city', 'street_address', 'postal_code'),},
                             'is_active'
                         ),
                     }
@@ -213,7 +213,10 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
         return MYOBSyncObject.objects.filter(record=obj.id).first()
 
     def get_formality_attributes(self, obj):
-        return obj.get_formality_attributes()
+        if hasattr(obj, 'pk'):
+            return obj.get_formality_attributes()
+        else:
+            return None
 
     def get_address(self, obj):
         return obj.contact.get_active_address()
@@ -383,8 +386,11 @@ class FormalitySerializer(core_serializers.ApiBaseModelSerializer):
     method_fields = ['formality_attributes']
 
     class Meta:
-        fields = '__all__'
+        fields = ["candidate_contact", "country", "tax_number", "personal_id"]
         model = candidate_models.Formality
 
     def get_formality_attributes(self, obj):
-        return obj.get_formality_attributes()
+        if hasattr(obj, 'pk'):
+            return obj.get_formality_attributes()
+        else:
+            return None
