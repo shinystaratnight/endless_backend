@@ -11,8 +11,12 @@ class SkillNameAdmin(admin.ModelAdmin):
     list_display = ('name', 'industry', )
     inlines = (SkillNameLanguageInline,)
 
+class SkillRateRangeInline(admin.TabularInline):
+    model = models.SkillRateRange
+    extra = 0
 
 class SkillAdmin(admin.ModelAdmin):
+    inlines = [SkillRateRangeInline]
     list_display = ('name', 'company', 'industry', )
 
     def industry(self, obj):

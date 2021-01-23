@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
-from r3sourcer.apps.core.models import Company
+from r3sourcer.apps.core.models import Company, UnitOfMeasurement
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
@@ -123,48 +123,6 @@ class Skill(MYOBMixin, UUIDModel):
     )
     active = models.BooleanField(default=True, verbose_name=_("Active"))
 
-    upper_rate_limit = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    lower_rate_limit = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    default_rate = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    price_list_upper_rate_limit = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    price_list_lower_rate_limit = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    price_list_default_rate = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
     tags = models.ManyToManyField(
         'core.Tag',
         related_name='skills',
@@ -174,30 +132,6 @@ class Skill(MYOBMixin, UUIDModel):
     class Meta:
         verbose_name = _("Skill")
         verbose_name_plural = _("Skills")
-
-    def clean(self, *args, **kwargs):
-        have_default_base_rate = self.default_rate
-        have_default_price_list_rate = self.price_list_default_rate
-        is_limits_set = (
-            self.upper_rate_limit and self.lower_rate_limit and
-            self.price_list_lower_rate_limit and self.price_list_upper_rate_limit
-        )
-
-        if self.active:
-            if not have_default_base_rate and not have_default_price_list_rate:
-                raise ValidationError(
-                    "Skill can't be active. It doesn't have default price list rate and defalut base rate."
-                )
-            elif not have_default_base_rate:
-                raise ValidationError("Skill can't be active. It doesn't have default base rate.")
-            elif not have_default_price_list_rate and self.company.purpose == 'hire':
-                raise ValidationError("Skill can't be active. It doesn't have default price list rate.")
-
-        super(Skill, self).clean(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super(Skill, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name.name
@@ -307,3 +241,85 @@ class SkillTag(UUIDModel):
                 models.Q(skill__company=owner),
                 models.Q(skill__company__regular_companies__master_company=owner)
             ]
+
+
+class SkillRateRange(MYOBMixin, UUIDModel):
+
+    skill = models.ForeignKey(
+        Skill,
+        related_name="skill_rate_ranges",
+        verbose_name=_("Skill")
+    )
+
+    uom = models.ForeignKey(
+        UnitOfMeasurement,
+        related_name='skill_rate_ranges',
+        on_delete=models.PROTECT,
+        verbose_name=_('Unit of measurement'),
+    )
+
+    upper_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    lower_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    default_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    price_list_upper_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    price_list_lower_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    price_list_default_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+
+    class Meta:
+        verbose_name = _("Skill Rate Range")
+        verbose_name_plural = _("Skill Rate Ranges")
+        unique_together = ("skill", "uom")
+
+    def __str__(self):
+        return self.skill.name.name
+
+    def clean(self, *args, **kwargs):
+        have_default_base_rate = self.default_rate
+        have_default_price_list_rate = self.price_list_default_rate
+
+        if not have_default_base_rate:
+            raise ValidationError({'default_rate': ["Please add default base rate."]})
+        elif not have_default_price_list_rate and self.skill.company.purpose == 'hire':
+            raise ValidationError({'price_list_default_rate': ["Please add default price list rate."]})
+
+        super().clean(*args, **kwargs)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
