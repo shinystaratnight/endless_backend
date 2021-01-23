@@ -41,10 +41,10 @@ class Migration(migrations.Migration):
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
                 ('upper_rate_limit', models.DecimalField(blank=True, decimal_places=2, max_digits=16, null=True)),
                 ('lower_rate_limit', models.DecimalField(blank=True, decimal_places=2, max_digits=16, null=True)),
-                ('default_rate', models.DecimalField(blank=True, decimal_places=2, max_digits=16, null=True)),
+                ('default_rate', models.DecimalField(decimal_places=2, max_digits=16)),
                 ('price_list_upper_rate_limit', models.DecimalField(blank=True, decimal_places=2, max_digits=16, null=True)),
                 ('price_list_lower_rate_limit', models.DecimalField(blank=True, decimal_places=2, max_digits=16, null=True)),
-                ('price_list_default_rate', models.DecimalField(blank=True, decimal_places=2, max_digits=16, null=True)),
+                ('price_list_default_rate', models.DecimalField(decimal_places=2, max_digits=16)),
             ],
             options={
                 'verbose_name': 'Skill Rate Range',

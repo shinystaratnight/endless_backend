@@ -275,8 +275,6 @@ class SkillRateRange(MYOBMixin, UUIDModel):
     default_rate = models.DecimalField(
         decimal_places=2,
         max_digits=16,
-        blank=True,
-        null=True
     )
 
     price_list_upper_rate_limit = models.DecimalField(
@@ -296,8 +294,6 @@ class SkillRateRange(MYOBMixin, UUIDModel):
     price_list_default_rate = models.DecimalField(
         decimal_places=2,
         max_digits=16,
-        blank=True,
-        null=True
     )
 
 
@@ -308,18 +304,3 @@ class SkillRateRange(MYOBMixin, UUIDModel):
 
     def __str__(self):
         return self.skill.name.name
-
-    def clean(self, *args, **kwargs):
-        have_default_base_rate = self.default_rate
-        have_default_price_list_rate = self.price_list_default_rate
-
-        if not have_default_base_rate:
-            raise ValidationError({'default_rate': ["Please add default base rate."]})
-        elif not have_default_price_list_rate and self.skill.company.purpose == 'hire':
-            raise ValidationError({'price_list_default_rate': ["Please add default price list rate."]})
-
-        super().clean(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super().save(*args, **kwargs)
