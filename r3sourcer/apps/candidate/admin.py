@@ -3,7 +3,13 @@ from django.contrib import admin
 from . import models
 
 
+class FormalityInline(admin.TabularInline):
+    model = models.Formality
+    extra = 0
+
+
 class CandidateContactAdmin(admin.ModelAdmin):
+    inlines = [FormalityInline]
     search_fields = ('contact__first_name', 'contact__last_name', 'profile_price')
 
 
@@ -20,10 +26,6 @@ class SkillRelAdmin(admin.ModelAdmin):
 class CountryVisaTypeRelationAdmin(admin.ModelAdmin):
     ordering = ('name',)
 
-class FormalityAdmin(admin.ModelAdmin):
-    list_display = ('candidate_contact', 'country')
-    search_fields = ('candidate_contact__contact__first_name', 'candidate_contact__contact__last_name')
-
 
 admin.site.register(models.VisaType)
 admin.site.register(models.CountryVisaTypeRelation)
@@ -35,4 +37,3 @@ admin.site.register(models.InterviewSchedule)
 admin.site.register(models.CandidateRel, CandidateRelAdmin)
 admin.site.register(models.Subcontractor)
 admin.site.register(models.SubcontractorCandidateRelation)
-admin.site.register(models.Formality, FormalityAdmin)
