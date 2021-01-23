@@ -1,3 +1,5 @@
+from django.db import models
+
 
 class ContactLookupField(object):
     """Virtual field used to lookup contact model fields"""

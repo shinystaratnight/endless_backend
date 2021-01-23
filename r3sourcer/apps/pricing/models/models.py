@@ -36,19 +36,6 @@ class PriceListMixin(models.Model):
         abstract = True
 
 
-class PriceListRateMixin(models.Model):
-
-    hourly_rate = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        verbose_name=_("Hourly Rate"),
-        default=0.00
-    )
-
-    class Meta:
-        abstract = True
-
-
 class Industry(UUIDModel):
 
     type = models.CharField(
@@ -261,7 +248,7 @@ class PriceList(PriceListMixin, TimeZoneUUIDModel):
         ).values_list('longitude', 'latitude').get()
 
 
-class PriceListRate(PriceListRateMixin, UUIDModel):
+class PriceListRate(UUIDModel):
 
     price_list = models.ForeignKey(
         PriceList,
@@ -278,6 +265,13 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
         verbose_name=_('Skill'),
     )
 
+    rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        verbose_name=_("Rate"),
+        default=0.00
+    )
+
     uom = models.ForeignKey(
         UnitOfMeasurement,
         verbose_name=_("Unit of measurement"),
@@ -292,7 +286,7 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
     class Meta:
         verbose_name = _('Price List Rate')
         verbose_name_plural = _('Price List Rates')
-        unique_together = ('price_list', 'skill', 'hourly_rate')
+        unique_together = ('price_list', 'skill', 'uom', 'rate')
 
     @classmethod
     def set_default_rate(cls, sender, instance, created, **kwargs):
@@ -301,20 +295,22 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
             instance.save()
 
     def save(self, *args, **kwargs):
-        if not self.hourly_rate:
-            self.hourly_rate = self.skill.price_list_default_rate
+        skill_rate_range = self.skill.skill_rate_ranges.filter(uom=self.uom).first()
+        if skill_rate_range:
+            if not self.rate:
+                self.rate = skill_rate_range.price_list_default_rate
 
-        if self.skill.price_list_lower_rate_limit and self.hourly_rate < self.skill.price_list_lower_rate_limit:
-            raise ValidationError(_('Hourly rate cannot be lower than {limit}').format(
-                limit=self.skill.price_list_lower_rate_limit
-            ))
+            if skill_rate_range.price_list_lower_rate_limit and self.rate < skill_rate_range.price_list_lower_rate_limit:
+                raise ValidationError(_('Hourly rate cannot be lower than {limit}').format(
+                    limit=skill_rate_range.price_list_lower_rate_limit
+                ))
 
-        if self.skill.price_list_upper_rate_limit and self.hourly_rate > self.skill.price_list_upper_rate_limit:
-            raise ValidationError(_('Hourly rate cannot be upper than {limit}').format(
-                limit=self.skill.price_list_upper_rate_limit
-            ))
+            if skill_rate_range.price_list_upper_rate_limit and self.rate > skill_rate_range.price_list_upper_rate_limit:
+                raise ValidationError(_('Hourly rate cannot be upper than {limit}').format(
+                    limit=skill_rate_range.price_list_upper_rate_limit
+                ))
 
-        super(PriceListRate, self).save(*args, **kwargs)
+        super().save(*args, **kwargs)
 
         if self.default_rate:
             default_rates = self.skill.price_list_rates.filter(default_rate=True).exclude(pk=self.pk)
@@ -322,7 +318,7 @@ class PriceListRate(PriceListRateMixin, UUIDModel):
                 default_rates.update(default_rate=False)
 
     def __str__(self):
-        return _('{}: ${}/h').format(str(self.skill), str(self.hourly_rate))
+        return _('{}: ${}/h').format(str(self.skill), str(self.rate))
 
 
 class PriceListRateCoefficient(UUIDModel):
@@ -487,7 +483,7 @@ class PriceListRateModifier(UUIDModel):
 
 
 __all__ = [
-    'PriceListMixin', 'PriceListRateMixin', 'Industry', 'RateCoefficientGroup',
+    'PriceListMixin', 'Industry', 'RateCoefficientGroup',
     'RateCoefficient', 'RateCoefficientRel', 'PriceList', 'PriceListRate',
     'PriceListRateCoefficient', 'RateCoefficientModifier',
     'DynamicCoefficientRule', 'PriceListRateModifier', 'IndustryLanguage'
