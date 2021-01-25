@@ -32,6 +32,7 @@ from model_utils import Choices
 from mptt.models import MPTTModel, TreeForeignKey
 from phonenumber_field.modelfields import PhoneNumberField
 
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_company
 from r3sourcer.helpers.datetimes import utc_now
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
@@ -196,7 +197,8 @@ class Contact(CategoryFolderMixin,
     def get_active_address(self):
         active_address = self.active_address
         if active_address:
-            return {"country": active_address.country.name,
+            return {"id": active_address.id,
+                    "country": active_address.country.name,
                     "state": active_address.state.name,
                     "city": active_address.city.name,
                     "street_address": active_address.street_address,
@@ -568,6 +570,9 @@ class User(UUIDModel,
     def is_candidate(self) -> bool:
         return hasattr(self.contact, 'candidate_contacts')
 
+    def is_contact(self) -> bool:
+        return hasattr(self, 'contact')
+
     def is_manager(self) -> bool:
         if self.contact.company_contact.first():
             return self.contact.company_contact.first().role == MANAGER
@@ -584,7 +589,7 @@ class User(UUIDModel,
             return MANAGER
         elif self.is_client():
             return CLIENT
-        elif self.is_candidate():
+        elif self.is_candidate() or self.is_contact():
             return CANDIDATE
         raise ValidationError("Unknown user role")
 
@@ -625,6 +630,8 @@ class User(UUIDModel,
                     return self.contact.company_contact.first().relationships.first().company
             elif self.is_candidate():
                 return self.contact.candidate_contacts.candidate_rels.first().master_company
+            elif self.is_contact():
+                return get_site_master_company(request=self.request)
             else:
                 raise APIException("Unknown user's role.")
         except AttributeError:
