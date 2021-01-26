@@ -247,10 +247,10 @@ class SkillTag(UUIDModel):
 class WorkType(UUIDModel):
     """Model for storing work types"""
 
-    skill = models.ForeignKey(
-        Skill,
+    skill_name = models.ForeignKey(
+        SkillName,
         on_delete=models.CASCADE,
-        verbose_name=_('Skill'),
+        verbose_name=_('Skill Name'),
         related_name='work_types'
     )
     name = models.CharField(max_length=127, verbose_name=_("Type of work"))
@@ -259,7 +259,7 @@ class WorkType(UUIDModel):
         verbose_name = _("Type of work")
         verbose_name_plural = _("Types of work")
         unique_together = [
-            'skill',
+            'skill_name',
             'name',
         ]
 

@@ -7,10 +7,13 @@ class SkillNameLanguageInline(admin.TabularInline):
     model = models.SkillNameLanguage
     extra = 0
 
+class WorkTypeInline(admin.TabularInline):
+    model = models.WorkType
+    extra = 0
 
 class SkillNameAdmin(admin.ModelAdmin):
     list_display = ('name', 'industry', )
-    inlines = [SkillNameLanguageInline]
+    inlines = [SkillNameLanguageInline, WorkTypeInline]
 
 
 class WorkTypeLanguageInline(admin.TabularInline):
@@ -19,7 +22,7 @@ class WorkTypeLanguageInline(admin.TabularInline):
 
 
 class WorkTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'skill', )
+    list_display = ('name', 'skill_name', )
     inlines = [WorkTypeLanguageInline]
 
 
