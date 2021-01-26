@@ -9,8 +9,8 @@ class FormalityInline(admin.TabularInline):
 
 
 class CandidateContactAdmin(admin.ModelAdmin):
-    inlines = [FormalityInline]
     search_fields = ('contact__first_name', 'contact__last_name', 'profile_price')
+    inlines = [FormalityInline]
 
 
 class CandidateRelAdmin(admin.ModelAdmin):
@@ -18,9 +18,15 @@ class CandidateRelAdmin(admin.ModelAdmin):
                      'candidate_contact__contact__last_name')
 
 
+class SkillRateInline(admin.TabularInline):
+    model = models.SkillRate
+    extra = 0
+
+
 class SkillRelAdmin(admin.ModelAdmin):
     list_display = ('candidate_contact', 'skill')
     search_fields = ('candidate_contact__contact__first_name', 'candidate_contact__contact__last_name')
+    inlines = [SkillRateInline]
 
 
 class CountryVisaTypeRelationAdmin(admin.ModelAdmin):

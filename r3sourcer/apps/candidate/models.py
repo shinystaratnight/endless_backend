@@ -389,7 +389,9 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @workflow_function
     def is_skill_rate_defined(self):
-        return self.candidate_skills.filter(score__gt=0, skill__active=True, hourly_rate__gt=0).count() > 0
+        for skill in self.candidate_skills.filter(score__gt=0, skill__active=True):
+            if skill.skill_rates.filter(rate__gt=0):
+                return True
     is_skill_rate_defined.short_description = _("At least one active skill hourly rate must be higher that 0")
 
     @workflow_function
@@ -727,6 +729,45 @@ class SkillRel(UUIDModel):
         default=PRIOR_EXPERIENCE_CHOICES.inexperienced
     )
 
+    class Meta:
+        verbose_name = _("Candidate Skill")
+        verbose_name_plural = _("Candidate Skills")
+        unique_together = ("skill", "candidate_contact")
+
+    def __str__(self):
+        return '{}: {} ({}*)'.format(
+            str(self.candidate_contact), str(self.skill), str(self.score))
+
+    def get_valid_rate(self):
+        skill_rate = self.skill_rates.filter(uom__default=True).first()
+        return skill_rate.rate if skill_rate else None
+
+    def get_myob_name(self):
+        return '{} {}'.format(str(self.skill.get_myob_name()), str(self.get_valid_rate()))
+
+    @classmethod
+    def is_owned(cls):
+        return False
+
+    # def save(self, *args, **kwargs):
+    #     if self._state.adding:
+    #         skill_rate_range = self.skill.skill_rate_ranges.filter(uom=self.uom).first()
+    #         if skill_rate_range and not self.rate:
+    #             self.rate = skill_rate_range.default_rate or 0
+
+    #     super().save(*args, **kwargs)
+
+    #    self.candidate_contact.candidate_scores.recalc_scores()
+
+
+class SkillRate(UUIDModel):
+
+    skill_rel = models.ForeignKey(
+        SkillRel,
+        related_name="skill_rates",
+        verbose_name=_("Skill")
+    )
+
     uom = models.ForeignKey(
         UnitOfMeasurement,
         verbose_name=_("Unit of measurement"),
@@ -740,32 +781,12 @@ class SkillRel(UUIDModel):
     )
 
     class Meta:
-        verbose_name = _("Candidate Skill")
-        verbose_name_plural = _("Candidate Skills")
-        unique_together = ("skill", "candidate_contact")
+        verbose_name = _("Skill rate")
+        verbose_name_plural = _("Skill rates")
+        unique_together = ("skill_rel", "uom")
 
     def __str__(self):
-        return '{}: {} ({}*)'.format(
-            str(self.candidate_contact), str(self.skill), str(self.score))
-
-    def get_valid_rate(self):
-        return self.hourly_rate
-
-    def get_myob_name(self):
-        return '{} {}'.format(str(self.skill.get_myob_name()), str(self.hourly_rate))
-
-    @classmethod
-    def is_owned(cls):
-        return False
-
-    def save(self, *args, **kwargs):
-        if self._state.adding:
-            if not self.hourly_rate:
-                self.hourly_rate = self.skill.default_rate or 0
-
-        super().save(*args, **kwargs)
-
-        self.candidate_contact.candidate_scores.recalc_scores()
+        return f'{self.skill_rel}/{self.uom}'
 
 
 class SkillRateCoefficientRel(UUIDModel):
