@@ -11,7 +11,7 @@ from model_utils import Choices
 
 from r3sourcer.apps.core.models import Company, UnitOfMeasurement
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
-from r3sourcer.apps.skills.models import Skill
+from r3sourcer.apps.skills.models import Skill, WorkType
 from r3sourcer.apps.pricing.models.rules import all_rules, AllowanceWorkRule
 
 
@@ -265,6 +265,14 @@ class PriceListRate(UUIDModel):
         verbose_name=_('Skill'),
     )
 
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="price_list_rates",
+        verbose_name=_("WorkType"),
+        blank=True,
+        null=True
+    )
+
     rate = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -286,7 +294,7 @@ class PriceListRate(UUIDModel):
     class Meta:
         verbose_name = _('Price List Rate')
         verbose_name_plural = _('Price List Rates')
-        unique_together = ('price_list', 'skill', 'uom', 'rate')
+        unique_together = ('price_list', 'skill', 'uom', 'worktype')
 
     @classmethod
     def set_default_rate(cls, sender, instance, created, **kwargs):
@@ -399,11 +407,11 @@ class RateCoefficientModifier(UUIDModel):
             str(self.fixed_addition)
         )
 
-    def calc(self, hourly_rate):
+    def calc(self, rate):
         if self.fixed_override > 0:
             return self.fixed_override
         else:
-            return hourly_rate * self.multiplier + self.fixed_addition
+            return rate * self.multiplier + self.fixed_addition
 
     @classmethod
     def owned_by_lookups(cls, owner):
