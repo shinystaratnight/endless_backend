@@ -152,6 +152,7 @@ class Skill(MYOBMixin, UUIDModel):
 
         return name[:6]
 
+
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
@@ -161,7 +162,7 @@ class Skill(MYOBMixin, UUIDModel):
             ]
 
 
-class SkillBaseRate(UUIDModel):
+class SkillBaseRate(UUIDModel):   # TODO delete SkillBaseRate model after uom rates changes will be completed
 
     skill = models.ForeignKey(
         'skills.Skill',
@@ -243,18 +244,84 @@ class SkillTag(UUIDModel):
             ]
 
 
+class WorkType(UUIDModel):
+    """Model for storing work types"""
+
+    skill = models.ForeignKey(
+        Skill,
+        on_delete=models.CASCADE,
+        verbose_name=_('Skill'),
+        related_name='work_types'
+    )
+    name = models.CharField(max_length=127, verbose_name=_("Type of work"))
+
+    class Meta:
+        verbose_name = _("Type of work")
+        verbose_name_plural = _("Types of work")
+        unique_together = [
+            'skill',
+            'name',
+        ]
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def translation(self, language='en'):
+        """ Form translation getter """
+        trans = self.translations.filter(language=self.language).first()
+        return trans.name if trans else None
+
+
+
+class WorkTypeLanguage(models.Model):
+    """Model for storing work type translations"""
+
+    name = models.ForeignKey(
+        WorkType,
+        related_name='translations',
+        on_delete=models.CASCADE,
+        verbose_name=_('Work Name'),
+    )
+    value = models.CharField(max_length=127, verbose_name=_("Transalation"))
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Language"),
+        on_delete=models.CASCADE,
+        related_name='work_types',
+    )
+
+    class Meta:
+        verbose_name = _("Work Transalation")
+        verbose_name_plural = _("Work Transalations")
+        unique_together = [
+            'name',
+            'language',
+        ]
+
+    def __str__(self):
+        return self.value
+
+
 class SkillRateRange(MYOBMixin, UUIDModel):
+    """Model for storing rate ranges"""
 
     skill = models.ForeignKey(
         Skill,
         related_name="skill_rate_ranges",
         verbose_name=_("Skill")
     )
-
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="skill_rate_ranges",
+        verbose_name=_("WorkType"),
+        blank=True,
+        null=True
+    )
     uom = models.ForeignKey(
         UnitOfMeasurement,
         related_name='skill_rate_ranges',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_('Unit of measurement'),
     )
 
@@ -264,33 +331,28 @@ class SkillRateRange(MYOBMixin, UUIDModel):
         blank=True,
         null=True
     )
-
     lower_rate_limit = models.DecimalField(
         decimal_places=2,
         max_digits=16,
         blank=True,
         null=True
     )
-
     default_rate = models.DecimalField(
         decimal_places=2,
         max_digits=16,
     )
-
     price_list_upper_rate_limit = models.DecimalField(
         decimal_places=2,
         max_digits=16,
         blank=True,
         null=True
     )
-
     price_list_lower_rate_limit = models.DecimalField(
         decimal_places=2,
         max_digits=16,
         blank=True,
         null=True
     )
-
     price_list_default_rate = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -300,7 +362,7 @@ class SkillRateRange(MYOBMixin, UUIDModel):
     class Meta:
         verbose_name = _("Skill Rate Range")
         verbose_name_plural = _("Skill Rate Ranges")
-        unique_together = ("skill", "uom")
+        unique_together = ("skill", "worktype", "uom")
 
     def __str__(self):
-        return self.skill.name.name
+        return f"{self.skill.name.name} rate range"
