@@ -4,6 +4,7 @@ import mock
 import stripe
 
 from django.utils import timezone
+from stripe.error import InvalidRequestError
 
 from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms, fetch_payments, sync_subscriptions
 from r3sourcer.apps.billing.models import SMSBalance, Payment, Subscription
@@ -139,6 +140,32 @@ class TestFetchPayments:
         assert Payment.objects.get(id=payment.id).status == 'paid'
         assert SMSBalance.objects.get(id=company.sms_balance.id).balance == initial_balance + payment.amount
         assert Company.objects.get(id=company.id).sms_enabled
+
+    @mock.patch.object(stripe.Invoice, 'retrieve')
+    @mock.patch.object(stripe.Invoice, 'list')
+    def test_fetch_removed_payments(self, mocked_invoice_retrieve, mocked_invoice_list, client, user, company):
+        mocked_invoice_retrieve.return_value = InvalidRequestError(
+            http_status=404,
+            code='resource_missing',
+            message='error',
+            param=()
+        )
+        mocked_invoice_list.return_value = {'paid': True}
+        payment = Payment.objects.create(
+            company=company,
+            type=Payment.PAYMENT_TYPES.sms,
+            amount=100,
+            status=Payment.PAYMENT_STATUSES.not_paid,
+            stripe_id='stripeid'
+        )
+        company.stripe_customer = 'stripe_customer'
+        company.sms_enabled = False
+        company.sms_balance.last_payment = payment
+        company.sms_balance.save()
+        company.save()
+        fetch_payments()
+
+        assert Payment.objects.filter(id=payment.id).count() == 0
 
 
 class TestSubscriptions:
