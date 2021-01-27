@@ -459,14 +459,18 @@ def send_supervisor_timesheet_message(
             role=role
         )
 
-        company_rel = supervisor.relationships.all().first()
-        if company_rel:
-            primary_contact = company_rel.company_contact or company_rel.company.primary_contact
+        if related_timesheets:
+            timesheet = related_timesheets.first()
+            portfolio_manager = timesheet.job_offer.shift.date.job.jobsite.portfolio_manager
+        else:
+            company_rel = supervisor.relationships.all().first()
+            if company_rel:
+                portfolio_manager = company_rel.manager
 
         site_url = core_companies_utils.get_site_url(user=supervisor.contact.user)
         data_dict = dict(
             supervisor=supervisor,
-            portfolio_manager=primary_contact,
+            portfolio_manager=portfolio_manager,
             get_url="%s%s" % (site_url, extranet_login.auth_url),
             site_url=site_url,
             related_obj=supervisor,
