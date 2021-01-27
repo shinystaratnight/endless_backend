@@ -1,29 +1,25 @@
 from django.contrib import admin
+import nested_admin
 
 from . import models
 
 
-class SkillNameLanguageInline(admin.TabularInline):
+class SkillNameLanguageInline(nested_admin.NestedTabularInline):
     model = models.SkillNameLanguage
     extra = 0
 
-class WorkTypeInline(admin.TabularInline):
-    model = models.WorkType
-    extra = 0
-
-class SkillNameAdmin(admin.ModelAdmin):
-    list_display = ('name', 'industry', )
-    inlines = [SkillNameLanguageInline, WorkTypeInline]
-
-
-class WorkTypeLanguageInline(admin.TabularInline):
+class WorkTypeLanguageInline(nested_admin.NestedTabularInline):
     model = models.WorkTypeLanguage
     extra = 0
 
-
-class WorkTypeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'skill_name', )
+class WorkTypeInline(nested_admin.NestedTabularInline):
+    model = models.WorkType
+    extra = 0
     inlines = [WorkTypeLanguageInline]
+
+class SkillNameAdmin(nested_admin.NestedModelAdmin):
+    list_display = ('name', 'industry', )
+    inlines = [SkillNameLanguageInline, WorkTypeInline]
 
 
 class SkillRateRangeInline(admin.TabularInline):
@@ -44,4 +40,3 @@ admin.site.register(models.Skill, SkillAdmin)
 admin.site.register(models.SkillName, SkillNameAdmin)
 admin.site.register(models.SkillBaseRate)
 admin.site.register(models.SkillTag)
-admin.site.register(models.WorkType, WorkTypeAdmin)
