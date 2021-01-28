@@ -83,3 +83,10 @@ class SkillNameFilter(FilterSet):
             return queryset.filter(
                 skills__active=value,
             )
+
+
+class SkillRateRangeFilter(FilterSet):
+
+    class Meta:
+        model = skills_models.SkillRateRange
+        fields = ['skill', 'worktype', 'uom']
