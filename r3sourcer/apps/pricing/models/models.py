@@ -326,7 +326,7 @@ class PriceListRate(UUIDModel):
                 default_rates.update(default_rate=False)
 
     def __str__(self):
-        return _('{}: ${}/h').format(str(self.skill), str(self.rate))
+        return f"{self.skill}-{self.worktype}-{self.uom}-{self.rate}"
 
 
 class PriceListRateCoefficient(UUIDModel):

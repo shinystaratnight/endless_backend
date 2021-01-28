@@ -158,14 +158,17 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
 
     def validate(self, data):
         skill = data.get('skill')
-
-        is_lower = skill.price_list_lower_rate_limit and data.get('hourly_rate') < skill.price_list_lower_rate_limit
-        is_upper = skill.price_list_upper_rate_limit and data.get('hourly_rate') > skill.price_list_upper_rate_limit
+        uom = data.get('uom')
+        skill_rate_range = skill.skill_rate_ranges.filter(uom=uom).first()
+        if skill_rate_range:
+            lower_limit = skill_rate_range.price_list_lower_rate_limit
+            upper_limit = skill_rate_range.price_list_upper_rate_limit
+            is_lower = lower_limit and data.get('rate') < lower_limit
+            is_upper = upper_limit and data.get('rate') > upper_limit
         if is_lower or is_upper:
             raise exceptions.ValidationError({
-                'hourly_rate': _('Hourly rate should be between {lower_limit} and {upper_limit}').format(
-                    lower_limit=skill.price_list_lower_rate_limit, upper_limit=skill.price_list_upper_rate_limit,
-                )
+                'hourly_rate': _('Hourly rate should be between {} and {}')
+                    .format(lower_limit, upper_limit)
             })
 
         return data
