@@ -171,6 +171,8 @@ class SMSBalance(models.Model):
     last_payment = models.ForeignKey('Payment', blank=True, null=True)
     cost_of_segment = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     auto_charge = models.BooleanField(default=False, verbose_name=_('Auto Charge'))
+    low_balance_sent = models.BooleanField(default=False)
+    ran_out_balance_sent = models.BooleanField(default=False)
 
     @property
     def segment_cost(self):
@@ -188,12 +190,21 @@ class SMSBalance(models.Model):
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
 
         low_limit = SMSBalanceLimits.objects.filter(name="Low").first()
-        if low_limit and Decimal(self.balance) < low_limit.low_balance_limit:
+        if low_limit and Decimal(self.balance) < low_limit.low_balance_limit and self.low_balance_sent is False:
             tasks.send_sms_balance_is_low_email.delay(self.company.id, template=low_limit.email_template.slug)
+            self.low_balance_sent = True
+
+        if low_limit and Decimal(self.balance) > low_limit.low_balance_limit and self.low_balance_sent is True:
+            self.low_balance_sent = False
 
         ran_out_limit = SMSBalanceLimits.objects.filter(name="Ran out").first()
-        if ran_out_limit and Decimal(self.balance) < ran_out_limit.low_balance_limit:
+        if ran_out_limit and Decimal(self.balance) < ran_out_limit.low_balance_limit and self.ran_out_balance_sent is False:
             tasks.send_sms_balance_ran_out_email.delay(self.company.id, template=ran_out_limit.email_template.slug)
+            self.ran_out_balance_sent = True
+
+        if ran_out_limit and Decimal(self.balance) > ran_out_limit.low_balance_limit and self.ran_out_balance_sent is\
+                True:
+            self.ran_out_balance_sent = False
 
         if Decimal(self.balance) - self.segment_cost < 0:
             self.company.sms_enabled = False

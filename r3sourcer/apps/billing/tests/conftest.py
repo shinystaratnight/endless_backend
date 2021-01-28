@@ -11,7 +11,7 @@ from r3sourcer.apps.core.models import (
 from r3sourcer.apps.hr.models import Shift, ShiftDate, Job, Jobsite
 from r3sourcer.apps.skills.models import Skill, SkillName
 from r3sourcer.apps.pricing.models import Industry
-from r3sourcer.apps.billing.models import Payment, Subscription, SubscriptionType
+from r3sourcer.apps.billing.models import Payment, Subscription, SubscriptionType, SMSBalanceLimits
 
 
 @pytest.fixture
@@ -215,3 +215,13 @@ def canceled_subscription(db, company, subscription_type_monthly):
         status='canceled',
         subscription_id='sub_IcQPoFaGvbP1BB'
     )
+
+
+@pytest.fixture
+def low_balance_limit(db):
+    return SMSBalanceLimits.objects.filter(name="Low").first()
+
+
+@pytest.fixture
+def ran_out_balance_limit(db):
+    return SMSBalanceLimits.objects.filter(name="Ran out").first()
