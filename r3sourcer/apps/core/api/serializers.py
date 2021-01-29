@@ -1395,6 +1395,7 @@ class CompanyListSerializer(
                 ]
             },
             'sms_balance': {'required': False},
+            'company_settings': {'required': False},
         }
 
     def get_company_rel(self, company):
