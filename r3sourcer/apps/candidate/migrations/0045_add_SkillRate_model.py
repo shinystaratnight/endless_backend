@@ -57,7 +57,7 @@ class Migration(migrations.Migration):
         ),
         migrations.AlterUniqueTogether(
             name='skillrate',
-            unique_together=set([('skill_rel', 'uom')]),
+            unique_together=set([('skill_rel', 'worktype', 'uom')]),
         ),
         migrations.RunPython(move_rates_to_skillrate),
         migrations.RemoveField(

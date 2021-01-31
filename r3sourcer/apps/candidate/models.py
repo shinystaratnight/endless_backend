@@ -786,7 +786,7 @@ class SkillRate(UUIDModel):
     class Meta:
         verbose_name = _("Skill rate")
         verbose_name_plural = _("Skill rates")
-        unique_together = ("skill_rel", "uom")
+        unique_together = ("skill_rel", "worktype", "uom")
 
     def __str__(self):
         return f'{self.skill_rel}-{self.worktype}' if self.worktype else f'{self.skill_rel}'
