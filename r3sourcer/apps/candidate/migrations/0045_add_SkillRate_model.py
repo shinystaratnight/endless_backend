@@ -47,6 +47,11 @@ class Migration(migrations.Migration):
         ),
         migrations.AddField(
             model_name='skillrate',
+            name='worktype',
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='skill_rates', to='skills.WorkType', verbose_name='Type of work'),
+        ),
+        migrations.AddField(
+            model_name='skillrate',
             name='uom',
             field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.CASCADE, to='core.UnitOfMeasurement', verbose_name='Unit of measurement'),
         ),

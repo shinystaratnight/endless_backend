@@ -14,6 +14,7 @@ from r3sourcer.apps.core.models import CompanyContactRelationship, UnitOfMeasure
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
+from r3sourcer.apps.skills.models import WorkType
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 
@@ -749,15 +750,9 @@ class SkillRel(UUIDModel):
     def is_owned(cls):
         return False
 
-    # def save(self, *args, **kwargs):
-    #     if self._state.adding:
-    #         skill_rate_range = self.skill.skill_rate_ranges.filter(uom=self.uom).first()
-    #         if skill_rate_range and not self.rate:
-    #             self.rate = skill_rate_range.default_rate or 0
-
-    #     super().save(*args, **kwargs)
-
-    #    self.candidate_contact.candidate_scores.recalc_scores()
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        self.candidate_contact.candidate_scores.recalc_scores()
 
 
 class SkillRate(UUIDModel):
@@ -765,7 +760,15 @@ class SkillRate(UUIDModel):
     skill_rel = models.ForeignKey(
         SkillRel,
         related_name="skill_rates",
-        verbose_name=_("Skill")
+        verbose_name=_("Candidate Skill")
+    )
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="skill_rates",
+        verbose_name=_("Type of work"),
+        blank=True,
+        null=True
     )
 
     uom = models.ForeignKey(
@@ -786,7 +789,7 @@ class SkillRate(UUIDModel):
         unique_together = ("skill_rel", "uom")
 
     def __str__(self):
-        return f'{self.skill_rel}/{self.uom}'
+        return f'{self.skill_rel}-{self.worktype}' if self.worktype else f'{self.skill_rel}'
 
 
 class SkillRateCoefficientRel(UUIDModel):

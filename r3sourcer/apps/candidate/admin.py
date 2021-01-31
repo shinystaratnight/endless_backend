@@ -22,11 +22,21 @@ class SkillRateInline(admin.TabularInline):
     model = models.SkillRate
     extra = 0
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "worktype":
+            kwargs["queryset"] = models.WorkType.objects.filter(skill_name=request._obj_.skill.name)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 class SkillRelAdmin(admin.ModelAdmin):
     list_display = ('candidate_contact', 'skill')
     search_fields = ('candidate_contact__contact__first_name', 'candidate_contact__contact__last_name')
     inlines = [SkillRateInline]
+
+    def get_form(self, request, obj=None, **kwargs):
+        # just save obj reference for future processing in Inline
+        request._obj_ = obj
+        return super().get_form(request, obj, **kwargs)
 
 
 class CountryVisaTypeRelationAdmin(admin.ModelAdmin):

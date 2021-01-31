@@ -453,7 +453,7 @@ class Job(core_models.AbstractBaseOrder):
         return self.customer_company.price_lists.filter(
             models.Q(
                 price_list_rates__skill=self.position,
-                price_list_rates__hourly_rate__gt=0
+                price_list_rates__rate__gt=0
             ),
             models.Q(valid_until__gte=self.now_utc.date()) | models.Q(valid_until__isnull=True),
             effective=True, valid_from__lte=self.now_utc.date(),
