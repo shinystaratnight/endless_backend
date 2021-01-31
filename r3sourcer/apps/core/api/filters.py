@@ -306,10 +306,16 @@ class WorkflowObjectFilter(FilterSet):
 
 
 class CountryFilter(FilterSet):
+    company = UUIDFilter(method='filter_company')
 
     class Meta:
         model = models.Country
-        fields = ('code2',)
+        fields = ('code2', 'company')
+
+    def filter_company(self, queryset, name, value):
+        company_counries = models.CompanyAddress.objects.filter(company_id=value).order_by('hq')
+        countries = [ca.address.country.code2 for ca in company_counries]
+        return queryset.filter(code2__in=countries)
 
 
 class RegionFilter(FilterSet):
