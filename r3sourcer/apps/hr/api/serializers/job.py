@@ -429,6 +429,7 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
                 'date': ('__all__', {
                     'job': ('id',
                             'jobsite',
+                            'default_shift_starting_time',
                             {'position': ['id', {'name': ('name', {'translations': ('language', 'value')})},
                                           ]},
                             'notes'),
