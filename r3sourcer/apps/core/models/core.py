@@ -198,9 +198,9 @@ class Contact(CategoryFolderMixin,
         active_address = self.active_address
         if active_address:
             return {"id": active_address.id,
-                    "country": active_address.country.name,
-                    "state": active_address.state.name,
-                    "city": active_address.city.name,
+                    "country": str(active_address.country),
+                    "state": str(active_address.state),
+                    "city": str(active_address.city),
                     "street_address": active_address.street_address,
                     "postal_code": active_address.postal_code,
                     "__str__": active_address.__str__(),
