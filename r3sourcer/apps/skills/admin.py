@@ -31,14 +31,14 @@ class SkillRateRangeInline(admin.TabularInline):
     extra = 0
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "worktype":
+        if db_field.name == "worktype" and request._obj_:
             kwargs["queryset"] = models.WorkType.objects.filter(skill_name=request._obj_.name)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class SkillAdmin(admin.ModelAdmin):
     list_display = ('name', 'company', 'industry', )
-    search_fields = ['name', 'company']
+    search_fields = ['name__name', 'company__name']
     list_filter = (('company', ObjectRelatedDropdownFilter),)
     inlines = [SkillRateRangeInline]
 

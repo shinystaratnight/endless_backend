@@ -23,7 +23,7 @@ class SkillRateInline(admin.TabularInline):
     extra = 0
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "worktype":
+        if db_field.name == "worktype" and request._obj_:
             kwargs["queryset"] = models.WorkType.objects.filter(skill_name=request._obj_.skill.name)
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 

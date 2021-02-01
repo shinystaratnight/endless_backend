@@ -62,12 +62,17 @@ class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Ap
         fields = (
             '__all__',
         )
+        extra_kwargs = {
+            'worktype': {'required': False}
+        }
 
     def validate(self, data):
         skill_rel = data.get('skill_rel')
         uom = data.get('uom')
         worktype = data.get('worktype')
-        skill_rate_range = skill_rel.skill.skill_rate_ranges.filter(uom=uom, worktype=worktype).first()
+        skill_rate_range = skill_rel.skill.skill_rate_ranges.filter(uom=uom, worktype=worktype)
+        print(skill_rate_range)
+        skill_rate_range = skill_rate_range.first()
         if skill_rate_range:
             lower_limit = skill_rate_range.lower_rate_limit
             upper_limit = skill_rate_range.upper_rate_limit
