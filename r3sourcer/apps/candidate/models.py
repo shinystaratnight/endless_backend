@@ -8,12 +8,15 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer import ref
 from r3sourcer.apps.activity.models import Activity
+from r3sourcer.apps.candidate.tasks import send_candidate_consent_message
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.models import CompanyContactRelationship
-from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.core.utils.companies import get_site_master_company, get_site_url
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
+from r3sourcer.apps.login.models import TokenLogin
+from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 
@@ -603,6 +606,23 @@ class CandidateContact(UUIDModel, WorkflowProcess):
                 return candidate_skill_rate
         return None
 
+    def send_consent_message(self, rel_id):
+        sign_navigation = core_models.ExtranetNavigation.objects.filter(name="Candidate Consent").first()
+        role = self.contact.user.role.get(name=core_models.Role.ROLE_NAMES.candidate)
+        extranet_login = TokenLogin.objects.create(
+            contact=self.contact,
+            redirect_to='{}{}/consent'.format(sign_navigation.url, rel_id),
+            role=role
+        )
+
+        site_url = get_site_url(user=self.contact.user)
+        data_dict = {
+            'candidate_consent_url': "%s%s" % (site_url, extranet_login.auth_url),
+            'related_objs': [extranet_login],
+        }
+
+        send_candidate_consent_message.delay(self.id, rel_id, data_dict)
+
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, core_models.Company):
@@ -870,6 +890,11 @@ class CandidateRel(UUIDModel):
     active = models.BooleanField(
         default=True,
         verbose_name=_("Active")
+    )
+
+    sharing_data_consent = models.BooleanField(
+        default=False,
+        verbose_name=_("Candidate Consent")
     )
 
     class Meta:
