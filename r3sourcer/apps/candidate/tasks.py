@@ -13,8 +13,10 @@ from celery.utils.log import get_task_logger
 from r3sourcer.apps.billing import models as billing_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.candidate import models as candidate_models
+from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.sms_interface.helpers import get_sms_template
 from r3sourcer.apps.billing.models import StripeCountryAccount as sca
+from r3sourcer.apps.sms_interface.utils import get_sms_service
 
 logger = get_task_logger(__name__)
 
@@ -63,6 +65,8 @@ def buy_candidate(candidate_rel_id, user=None):
     from r3sourcer.apps.logger.main import endless_logger
     try:
         candidate_rel = candidate_models.CandidateRel.objects.get(pk=candidate_rel_id)
+        if not candidate_rel.sharing_data_consent:
+            pass
         candidate_contact = candidate_rel.candidate_contact
         company = candidate_rel.master_company
         hq_addr = company.get_hq_address()
@@ -74,6 +78,9 @@ def buy_candidate(candidate_rel_id, user=None):
                 tax_id = vat_objects.first().stripe_id
     except core_models.Company.DoesNotExist as e:
         logger.exception(e)
+    except ImportError:
+        logger.exception('Cannot load SMS service')
+        return
 
     try:
         amount = int(candidate_contact.profile_price * 100)
@@ -158,3 +165,40 @@ def update_superannuation_fund_list():
 
     if len(batch) > 0:
         candidate_models.SuperannuationFund.objects.bulk_create(batch)
+
+
+@shared_task()
+def send_candidate_consent_message(candidaterel_id, data_dict):
+    try:
+        candidate_rel = candidate_models.CandidateRel.objects.get(id=candidaterel_id)
+    except candidate_models.CandidateRel.DoesNotExist:
+        logger.exception('There is no CandidateRel with the id={}'.format(candidaterel_id))
+    try:
+        candidate_contact = candidate_models.CandidateContact.objects.get(id=candidate_rel.candidate_contact_id)
+    except candidate_models.CandidateContact.DoesNotExist:
+        logger.exception('There is no CandidateContact with the id={}'.format(candidate_rel.candidate_contact_id))
+
+    if candidate_contact.message_by_sms:
+        try:
+            sms_interface = get_sms_service()
+        except ImportError:
+            logger.exception('Cannot load SMS service')
+            return
+
+        sms_template = get_sms_template(company_id=candidate_rel.master_company_id,
+                                        contact_id=candidate_contact.contact.id,
+                                        slug='consent-sms-message')
+        sms_interface.send_tpl(to_number=candidate_contact.contact.phone_mobile,
+                               tpl_id=sms_template.id,
+                               check_reply=False,
+                               **data_dict)
+
+    if candidate_contact.message_by_email:
+        try:
+            email_interface = get_email_service()
+        except ImportError:
+            logger.exception('Cannot load SMS service')
+            return
+
+        email_interface.send_tpl(candidate_contact.contact.email, candidate_rel.master_company, tpl_name='consent-sms-message',
+                                 **data_dict)
