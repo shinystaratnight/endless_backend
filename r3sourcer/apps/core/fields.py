@@ -1,3 +1,5 @@
+from django.db import models
+
 
 class ContactLookupField(object):
     """Virtual field used to lookup contact model fields"""
@@ -71,3 +73,16 @@ class ContactLookupField(object):
 
     def formfield(self):
         return self.lookup_field.formfield()
+
+
+class AliasField(models.Field):
+
+    def contribute_to_class(self, cls, name, private_only=False):
+        '''
+            virtual_only is deprecated in favor of private_only
+        '''
+        super(AliasField, self).contribute_to_class(cls, name, private_only=True)
+        setattr(cls, name, self)
+
+    def __get__(self, instance, instance_type=None):
+        return getattr(instance, self.db_column)

@@ -12,7 +12,6 @@ class SkillEndpoint(ApiEndpoint):
     filter_class = skills_filters.SkillFilter
     serializer = skill_serializer.SkillSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
-
     search_fields = ('name__name', )
 
 
@@ -43,8 +42,24 @@ class SkillNameEndpoint(ApiEndpoint):
     base_viewset = skill_viewset.SkillNameViewSet
     filter_class = skills_filters.SkillNameFilter
     serializer = skill_serializer.SkillNameSerializer
-
     search_fields = ('name', )
+
+
+class SkillRateRangeEndpoint(ApiEndpoint):
+
+    model = models.SkillRateRange
+    base_viewset = skill_viewset.SkillRateRangeViewSet
+    filter_class = skills_filters.SkillRateRangeFilter
+    serializer = skill_serializer.SkillRateRangeSerializer
+    search_fields = ('skill__name__name', 'worktype__name',)
+
+
+class WorkTypeEndpoint(ApiEndpoint):
+
+    model = models.WorkType
+    base_viewset = skill_viewset.WorkTypeViewSet
+    serializer = skill_serializer.WorkTypeSerializer
+    search_fields = ('skill_name__name', 'name',)
 
 
 router.register(endpoint=SkillNameEndpoint())
@@ -52,3 +67,5 @@ router.register(endpoint=SkillEndpoint())
 router.register(endpoint=SkillBaseRateEndpoint())
 router.register(endpoint=EmploymentClassificationEndpoint())
 router.register(endpoint=SkillTagEndpoint())
+router.register(endpoint=SkillRateRangeEndpoint())
+router.register(endpoint=WorkTypeEndpoint())

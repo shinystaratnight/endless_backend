@@ -2002,3 +2002,12 @@ class VATSerializer(ApiBaseModelSerializer):
         fields = (
             '__all__',
         )
+
+
+class UomSerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.UnitOfMeasurement
+        fields = (
+            'id', 'name', 'short_name', 'default',
+            {'translations': ('id', 'language', 'name', 'short_name')},
+        )

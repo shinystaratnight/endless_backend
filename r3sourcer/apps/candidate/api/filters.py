@@ -4,7 +4,7 @@ from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoi
                            BooleanFilter, UUIDFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 
-from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, TagRel, \
+from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, SkillRate, TagRel, \
                                             CandidateContactAnonymous, Formality
 from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Tag
@@ -89,6 +89,13 @@ class SkillRelFilter(FilterSet):
     class Meta:
         model = SkillRel
         fields = ['candidate_contact']
+
+
+class SkillRateFilter(FilterSet):
+
+    class Meta:
+        model = SkillRate
+        fields = ['skill_rel', 'worktype', 'uom__name']
 
 
 class TagRelFilter(FilterSet):

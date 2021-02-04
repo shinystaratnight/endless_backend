@@ -48,22 +48,40 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
             {
                 'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__'),
             },
+            {'skill_rates': ('id')},
         )
         extra_kwargs = {
             'score': {'max_value': Decimal(5)},
         }
 
-    def validate(self, data):
-        skill = data.get('skill')
 
-        is_lower = skill.lower_rate_limit and data.get('hourly_rate') < skill.lower_rate_limit
-        is_upper = skill.upper_rate_limit and data.get('hourly_rate') > skill.upper_rate_limit
-        if is_lower or is_upper:
-            raise exceptions.ValidationError({
-                'hourly_rate': _('Hourly rate should be between {lower_limit} and {upper_limit}').format(
-                    lower_limit=skill.lower_rate_limit, upper_limit=skill.upper_rate_limit,
-                )
-            })
+
+class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = candidate_models.SkillRate
+        fields = (
+            '__all__',
+        )
+        extra_kwargs = {
+            'worktype': {'required': False}
+        }
+
+    def validate(self, data):
+        skill_rel = data.get('skill_rel')
+        uom = data.get('uom')
+        worktype = data.get('worktype')
+        skill_rate_range = skill_rel.skill.skill_rate_ranges.filter(uom=uom, worktype=worktype)
+        skill_rate_range = skill_rate_range.first()
+        if skill_rate_range:
+            lower_limit = skill_rate_range.lower_rate_limit
+            upper_limit = skill_rate_range.upper_rate_limit
+            is_lower = lower_limit and data.get('rate') < lower_limit
+            is_upper = upper_limit and data.get('rate') > upper_limit
+            if is_lower or is_upper:
+                raise exceptions.ValidationError({
+                    'hourly_rate': _('Hourly rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
 
         return data
 

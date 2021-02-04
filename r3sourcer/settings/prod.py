@@ -78,6 +78,7 @@ INSTALLED_APPS = [
     'polymorphic',
     'corsheaders',
     'storages',
+    'nested_admin',
 
     'r3sourcer.importer',
     'r3sourcer.apps.sms_interface',

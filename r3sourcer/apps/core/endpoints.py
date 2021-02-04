@@ -344,6 +344,12 @@ class TagEndpoint(ApiEndpoint):
     serializer_fields = ('id', 'name', 'parent', 'active', 'evidence_required_for_approval', 'confidential')
 
 
+class UomEndpoint(ApiEndpoint):
+
+    model = models.UnitOfMeasurement
+    serializer = serializers.UomSerializer
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(endpoint=AddressEndpoint())
@@ -391,3 +397,4 @@ router.register(endpoint=RelatedFormFieldEndpoint())
 router.register(endpoint=ContentTypeEndpoint())
 router.register(endpoint=InvoiceRuleEndpoint())
 router.register(endpoint=UserEndpoint())
+router.register(endpoint=UomEndpoint())
