@@ -24,7 +24,6 @@ class Migration(migrations.Migration):
     dependencies = [
         ('core', '0142_auto_20210109_1110'),
         ('candidate', '0044_auto_20210105_0705'),
-        ('skills', '0025_worktype_worktypelanguage'),
     ]
 
     operations = [
