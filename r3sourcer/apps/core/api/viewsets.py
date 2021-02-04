@@ -1223,9 +1223,7 @@ class TagViewSet(BaseApiViewset):
         qs = super().get_queryset()
         if not self.kwargs.get('pk'):
             master_company = self.request.user.contact.get_closest_company().get_closest_master_company()
-            qs = qs.filter(company_tags__company_id=master_company.pk)
-            system_tag_qs = models.Tag.objects.filter(owner=models.Tag.TAG_OWNER.system)
-            qs = qs.union(system_tag_qs)
+            qs = qs.filter(Q(company_tags__company_id=master_company.pk) | Q(owner=models.Tag.TAG_OWNER.system))
         return qs
 
     def update(self, request, *args, **kwargs):

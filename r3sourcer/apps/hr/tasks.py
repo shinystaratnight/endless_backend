@@ -460,7 +460,7 @@ def send_supervisor_timesheet_message(
         )
 
         if related_timesheets:
-            timesheet = related_timesheets.first()
+            timesheet = related_timesheets[0]
             portfolio_manager = timesheet.job_offer.shift.date.job.jobsite.portfolio_manager
         else:
             company_rel = supervisor.relationships.all().first()
@@ -640,7 +640,7 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
     if timesheets.exists():
         send_supervisor_timesheet_message(
             supervisor, supervisor.message_by_sms, supervisor.message_by_email, 'supervisor-timesheet-sign-reminder',
-            related_timesheets=timesheets
+            related_timesheets=list(timesheets)
         )
 
 

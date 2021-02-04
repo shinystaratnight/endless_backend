@@ -163,7 +163,6 @@ def fetch_payments():
             continue
 
         payments = Payment.objects.filter(invoice_url__isnull=True)
-        not_paid_payments = Payment.objects.filter(status=Payment.PAYMENT_STATUSES.not_paid)
 
         for invoice in invoices:
             if not Payment.objects.filter(stripe_id=invoice['id']).exists():
@@ -175,14 +174,25 @@ def fetch_payments():
                 )
 
         for payment in payments:
-            invoice = stripe.Invoice.retrieve(payment.stripe_id)
+            try:
+                invoice = stripe.Invoice.retrieve(payment.stripe_id)
+            except InvalidRequestError as ex:
+                if ex.http_status == 404 and ex.code == 'resource_missing':
+                    payment.delete()
+                    continue
 
             if invoice['invoice_pdf']:
                 payment.invoice_url = invoice['invoice_pdf']
                 payment.save()
 
+        not_paid_payments = Payment.objects.filter(status=Payment.PAYMENT_STATUSES.not_paid)
         for payment in not_paid_payments:
-            invoice = stripe.Invoice.retrieve(payment.stripe_id)
+            try:
+                invoice = stripe.Invoice.retrieve(payment.stripe_id)
+            except InvalidRequestError as ex:
+                if ex.http_status == 404 and ex.code == 'resource_missing':
+                    payment.delete()
+                    continue
 
             if invoice['paid']:
                 payment.status = Payment.PAYMENT_STATUSES.paid
