@@ -52,6 +52,11 @@ class Migration(migrations.Migration):
             name='worktype',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='skill_rate_ranges', to='skills.WorkType', verbose_name='WorkType'),
         ),
+        migrations.AddField(
+            model_name='skillname',
+            name='has_worktypes',
+            field=models.BooleanField(default=False, verbose_name='Has types of work'),
+        ),
         migrations.AlterUniqueTogether(
             name='skillraterange',
             unique_together=set([('skill', 'worktype', 'uom')]),

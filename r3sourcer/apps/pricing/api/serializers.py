@@ -154,7 +154,7 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
     class Meta:
         model = pricing_models.PriceListRate
         fields = ('__all__',
-                  {'skill': ('id', {'name': ('name', {'translations': ('language', 'value')})})},)
+                  {'skill': ('id', {'name': ('name', 'has_worktypes', {'translations': ('language', 'value')})})},)
 
     def validate(self, data):
         skill = data.get('skill')

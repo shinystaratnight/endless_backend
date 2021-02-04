@@ -31,6 +31,7 @@ class EmploymentClassification(UUIDModel):
 class SkillName(UUIDModel):
 
     name = models.CharField(max_length=127, verbose_name=_("Skill Name"))
+    has_worktypes = models.BooleanField(default=False, verbose_name=_("Has types of work"))
 
     industry = models.ForeignKey(
         'pricing.Industry',

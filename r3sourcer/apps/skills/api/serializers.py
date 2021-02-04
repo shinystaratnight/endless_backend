@@ -17,7 +17,7 @@ class SkillSerializer(ApiBaseModelSerializer):
         model = Skill
         fields = (
             'id', 'company', 'carrier_list_reserve', 'short_name', 'employment_classification', 'active',
-            {'name': ('id', 'name', {'translations': ('language', 'value')},
+            {'name': ('id', 'name', 'has_worktypes', {'translations': ('language', 'value')},
                          {'industry': ('id', 'type', {'translations': ('language', 'value')})})
             },
             {'skill_rate_ranges': ('id','uom', 'worktype',
@@ -46,7 +46,7 @@ class SkillNameSerializer(ApiBaseModelSerializer):
     class Meta:
         model = SkillName
         fields = (
-            'id',
+            'id', 'has_worktypes',
             {'name': ('name', {'translations': ('language', 'value')})},
             {'industry': ('id', 'type', {'translations': ('language', 'value')}),
              'translations': ('language', 'value'),
