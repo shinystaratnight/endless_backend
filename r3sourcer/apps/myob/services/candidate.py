@@ -159,9 +159,9 @@ class CandidateSync(BaseCategoryMixin,
         for payroll_wage_cat in payroll_details['Wage']['WageCategories']:
             wage_categories.add(payroll_wage_cat['UID'])
 
-        candidate_skill_rate = candidate_contact.candidate_skills.all().order_by('-hourly_rate').first()
+        candidate_skill_rate = candidate_contact.candidate_skills.all().order_by('-rate').first()
 
-        base_hourly_rate = candidate_skill_rate and candidate_skill_rate.hourly_rate
+        base_rate = candidate_skill_rate and candidate_skill_rate.rate
 
         data = self.mapper.map_extra_info(
             candidate_contact,
@@ -171,7 +171,7 @@ class CandidateSync(BaseCategoryMixin,
             tax_table=tax_table,
             withholding_rate=withholding_rate,
             superannuation_category=superannuation_category,
-            base_hourly_rate=base_hourly_rate
+            base_hourly_rate=base_rate
         )
         data = self._get_data_to_update(payroll_details, data, deep=True)
 

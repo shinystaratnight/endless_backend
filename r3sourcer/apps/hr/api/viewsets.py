@@ -564,29 +564,46 @@ class JobViewset(BaseApiViewset):
         if search_term:
             candidate_contacts = self.search_candidate_contacts(candidate_contacts, search_term)
 
-        # do:
-        # filter overpriced candidates
-        overpriced = request.GET.get('overpriced', 'False') == 'True'
-        overpriced_candidates = []
-        if job.position.default_rate:
-            overpriced_qry = Q(
-                candidate_skills__skill=job.position,
-                candidate_skills__score__gt=0
-            )
-            hourly_rate = job.position.default_rate
-            overpriced_candidates = candidate_contacts.filter(
-                overpriced_qry,
-                candidate_skills__hourly_rate__gt=hourly_rate,
-            ).values_list('id', flat=True)
+        # # filter overpriced candidates
+        # overpriced = request.GET.get('overpriced', 'False') == 'True'
+        # overpriced_candidates = []
+        # skill_rate_range = job.position.skill_rate_ranges.all()
+        # if skill_rate_range:
 
-            if not overpriced:
-                candidate_contacts = candidate_contacts.filter(
-                    overpriced_qry,
-                    candidate_skills__hourly_rate__lte=hourly_rate,
-                )
-        # end
+        #     overpriced_qry = Q(
+        #         candidate_skills__skill=job.position,
+        #         candidate_skills__score__gt=0
+        #     )
+        #     rate = job.position.default_rate
+        #     overpriced_candidates = candidate_contacts.filter(
+        #         overpriced_qry,
+        #         candidate_skills__rate__gt=rate,
+        #     ).values_list('id', flat=True)
 
-        # do:
+        #     if not overpriced:
+        #         candidate_contacts = candidate_contacts.filter(
+        #             overpriced_qry,
+        #             candidate_skills__rate__lte=rate,
+        #         )
+        # # end
+
+        # # filter partially available
+        # uom_ids = request.query_params.getlist('shifts')
+        # uom_candidates = {}
+        # if single_shifts:
+        #     partially_available_candidates = job_utils.get_partially_available_candidates(
+        #         candidate_contacts, single_shifts
+        #     )
+
+        #     if not partially_available:
+        #         candidate_contacts = candidate_contacts.exclude(
+        #             id__in=partially_available_candidates.keys()
+        #         )
+        #     else:
+        #         for r_id, data in partially_available_candidates.items():
+        #             data['shifts'] = [shift for shift in single_shifts if shift.id in data['shifts']]
+        # # end
+
         # filter partially available
         partially_available = request.GET.get('available', 'False') == 'True'
         partially_available_candidates = {}
@@ -686,7 +703,7 @@ class JobViewset(BaseApiViewset):
 
         context = {
             'partially_available_candidates': partially_available_candidates,
-            'overpriced': overpriced_candidates,
+            # 'overpriced': overpriced_candidates,
             'job': job,
             'favourite_list': favourite_list,
             'booked_before_list': booked_before_list,
@@ -701,7 +718,7 @@ class JobViewset(BaseApiViewset):
             '__str__': str(job),
             'jobsite': str(job.jobsite),
             'position': str(job.position),
-            'default_rate': job.position.default_rate,
+            # 'default_rate': job.position.default_rate,
         }
         if jobsite_address:
             job_ctx.update({

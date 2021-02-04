@@ -341,6 +341,7 @@ class Job(core_models.AbstractBaseOrder):
         blank=True
     )
 
+    # TODO delete this field after uoms task finished
     hourly_rate_default = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -465,10 +466,10 @@ class Job(core_models.AbstractBaseOrder):
         return bool(self.work_start_date)
     is_start_date_set.short_description = _('Work Start Date')
 
-    @workflow_function
-    def is_default_rate_set(self):
-        return self.hourly_rate_default is not None or self.hourly_rate_default <= 0
-    is_default_rate_set.short_description = _('Default hourly rate')
+    # @workflow_function
+    # def is_default_rate_set(self):
+    #     return self.hourly_rate_default is not None or self.hourly_rate_default <= 0
+    # is_default_rate_set.short_description = _('Default hourly rate')
 
     @workflow_function
     def is_all_sd_filled(self):
