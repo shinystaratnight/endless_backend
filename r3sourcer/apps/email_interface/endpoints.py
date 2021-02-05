@@ -11,6 +11,7 @@ class EmailTemplateEndpoint(ApiEndpoint):
     model = EmailTemplate
     base_viewset = viewsets.EmailMessageTemplateViewset
     serializer = EmailTemplateSerializer
+    search_fields = ('name', 'slug')
 
 
 class EmailMessageApiEndpoint(ApiEndpoint):
@@ -19,8 +20,7 @@ class EmailMessageApiEndpoint(ApiEndpoint):
     serializer = EmailMessageSerializer
     base_viewset = viewsets.EmailMessageViewset
     filter_class = EmailMessageFilter
-
-    search_fields = ('from_number', 'to_number')
+    search_fields = ('sender_email', 'from_email', 'to_addresses', 'subject')
 
 
 router.register(endpoint=EmailMessageApiEndpoint())
