@@ -249,8 +249,9 @@ class CandidateContactViewset(BaseApiViewset):
         return Response(serializer.data, status=status.HTTP_200_OK)
 
     @action(methods=['post'], detail=True)
-    def consent(self, request, pk, agree=False, *args, **kwargs):
+    def consent(self, request, pk, *args, **kwargs):
         candidate_rel = get_object_or_404(CandidateRel.objects, pk=pk)
+        agree = request.data.get('agree')
 
         if agree is True:
             candidate_rel.sharing_data_consent = agree
