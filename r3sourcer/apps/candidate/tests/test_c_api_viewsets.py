@@ -457,3 +457,56 @@ class TestCandidatesLocationAPITestCase(BaseTestCase):
             resp = self.make_request(data={"job_id": data['job'].id})
             location_mock.assert_called_with([data['timesheet'].id])
             self.assertEqual(resp.status_code, 200)
+
+
+def load_data():
+    # Load fixtures
+    from django.core.management import call_command
+    call_command("loaddata", "test_data")
+
+
+class TestConsentAPITestCase(BaseTestCase):
+    view_name = 'api:candidate/candidatecontacts-consent'
+
+    def get_url(self, view_name=None, args=None, kwargs=None):
+        return reverse(view_name or self.view_name,
+                       kwargs=kwargs or self.get_view_kwargs())
+
+    def get_allowed_users(self):
+        if self.request_user is not None:
+            return [self.request_user]
+        return [core_models.User.objects.create_superuser(
+            email='test@test.mm',
+            phone_mobile='+79274567890',
+            password='test1234'
+            )]
+
+    def setUp(self):
+        super().setUp()
+        self.request_user = None
+        load_data()
+
+    def test_give_consent(self):
+        candidate_rel = CandidateRel.objects.get(pk="d4536e9c-0d7c-4178-9943-94aafe000952")
+        resp = self.make_request(method='POST', view_kwargs={"pk": "d4536e9c-0d7c-4178-9943-94aafe000952"}, data={"agree": True})
+
+        self.assertEqual(resp.status_code, 200)
+
+        candidate_rel.refresh_from_db()
+        self.assertEqual(candidate_rel.sharing_data_consent, True)
+
+    def test_doesnt_give_consent(self):
+        candidate_rel = CandidateRel.objects.get(pk="d4536e9c-0d7c-4178-9943-94aafe000952")
+        resp = self.make_request(method='POST', view_kwargs={"pk": candidate_rel.pk}, data={"agree": False})
+
+        self.assertEqual(resp.status_code, 200)
+
+        candidate_rel.refresh_from_db()
+        self.assertEqual(candidate_rel.sharing_data_consent, False)
+
+    def test_not_existing_candidaterel(self):
+        resp = self.make_request(method='POST',
+                                 view_kwargs={"pk": "d4536e9c-0d7c-4178-9943-94aafe000951"},
+                                 data={"agree": False})
+
+        self.assertEqual(resp.status_code, 404)
