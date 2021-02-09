@@ -4,7 +4,7 @@ from filer.models import File
 
 from model_utils import Choices
 
-from r3sourcer.helpers.models.abs import TemplateMessage, UUIDModel, DefaultTemplateABS
+from r3sourcer.helpers.models.abs import TemplateMessage, UUIDModel, DefaultTemplateABS, TimeZoneUUIDModel
 
 TEXT_CONTENT_TYPE = 'text/plain'
 HTML_CONTENT_TYPE = 'text/html'
@@ -102,7 +102,7 @@ class DefaultEmailTemplate(DefaultTemplateABS):
         EmailTemplate.objects.bulk_create(templates)
 
 
-class EmailMessage(UUIDModel, models.Model):
+class EmailMessage(TimeZoneUUIDModel):
 
     STATE_CHOICES = Choices(
         ('CREATED', _("Created")),
@@ -234,6 +234,12 @@ class EmailMessage(UUIDModel, models.Model):
             return self.bodies.get(type=HTML_CONTENT_TYPE).content
         except EmailBody.DoesNotExist:
             return None
+
+    @classmethod
+    def owned_by_lookups(cls, owner):
+        from r3sourcer.apps.core.models import Company
+        if isinstance(owner, Company):
+            return [models.Q(template__company=owner)]
 
 
 class EmailBody(UUIDModel, models.Model):
