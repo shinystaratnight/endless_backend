@@ -82,6 +82,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
         page = self.paginate_queryset(queryset)
         if page is not None:
+
             serializer = serializer_class(page, many=True, fields=fields, context=serializer_context)
             data = self.process_response_data(serializer.data, page)
             return self.get_paginated_response(data)
@@ -647,6 +648,10 @@ class CompanyViewset(BaseApiViewset):
 
 class CompanyContactViewset(BaseApiViewset):
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(contact__user__is_active=True)
+
     def get_serializer_context(self):
         context = super(CompanyContactViewset, self).get_serializer_context()
         user = context['request'].user
@@ -685,11 +690,9 @@ class CompanyContactViewset(BaseApiViewset):
             if has_jobs or has_jobsites or instance.supervised_time_sheets.exists():
                 raise ValidationError({'non_field_errors': _('Cannot delete')})
 
-            rels = instance.relationships.all()
-            models.Role.objects.filter(company_contact_rel__in=rels).delete()
-            rels.delete()
-
-            super().perform_destroy(instance)
+            # mark user as inactive
+            instance.contact.user.is_active = False
+            instance.contact.user.save()
 
     def prepare_related_data(self, data, is_create=False):
         if is_create and not data.get('contact'):
@@ -1189,6 +1192,10 @@ class AddressViewset(GoogleAddressMixin, BaseApiViewset):
 
 class CompanyContactRelationshipViewset(BaseApiViewset):
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(company_contact__contact__user__is_active=True)
+
     def perform_destroy(self, instance):
         with transaction.atomic():
             company_contact = instance.company_contact
@@ -1203,9 +1210,9 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
 
             models.Role.objects.filter(company_contact_rel=instance).delete()
 
-            super().perform_destroy(instance)
-
-            company_contact.delete()
+            # mark user as inactive
+            instance.company_contact.contact.user.is_active = False
+            instance.company_contact.contact.user.save()
 
 
 class UserViewset(BaseApiViewset):

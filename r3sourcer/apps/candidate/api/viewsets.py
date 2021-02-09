@@ -29,6 +29,11 @@ from ...core.utils.utils import normalize_phone_number
 
 
 class CandidateContactViewset(BaseApiViewset):
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(contact__user__is_active=True)
+
     def perform_create(self, serializer):
         instance = serializer.save()
 
@@ -46,11 +51,9 @@ class CandidateContactViewset(BaseApiViewset):
 
         if has_joboffers:
             raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
-        # delete all releted models to client contact
-        instance.bank_account = None
-        instance.save()
-        instance.contact.bank_accounts.all().delete()
-        instance.contact.user.delete()
+        # mark user as inactive
+        instance.contact.user.is_active = False
+        instance.contact.user.save()
 
     def validate_contact(self, contact, data):
         master_company = get_site_master_company(request=self.request)
