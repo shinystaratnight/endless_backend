@@ -9,9 +9,12 @@ class FormalityInline(admin.TabularInline):
 
 
 class CandidateContactAdmin(admin.ModelAdmin):
+    list_display = ('contact', 'recruitment_agent', 'is_active')
     search_fields = ('contact__first_name', 'contact__last_name', 'profile_price')
     inlines = [FormalityInline]
 
+    def is_active(self, obj):
+        return obj.contact.user.is_active
 
 class CandidateRelAdmin(admin.ModelAdmin):
     search_fields = ('master_company__name', 'candidate_contact__contact__first_name',

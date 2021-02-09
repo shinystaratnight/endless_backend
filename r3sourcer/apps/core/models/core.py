@@ -224,7 +224,9 @@ class Contact(CategoryFolderMixin,
     get_availability.boolean = True
 
     def is_company_contact(self):
-        return self.company_contact.filter(relationships__active=True).exists()
+        return self.company_contact.filter(relationships__active=True,
+                                           contact__user__is_active=True
+                                           ).exists()
     is_company_contact.boolean = True
 
     def is_candidate_contact(self):
