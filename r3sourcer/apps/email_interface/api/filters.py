@@ -1,4 +1,5 @@
-from django_filters.rest_framework import FilterSet, DateRangeFilter
+from django_filters.rest_framework import FilterSet
+from r3sourcer.apps.core_adapter.filters import DateRangeFilter
 
 from r3sourcer.apps.email_interface.models import EmailMessage
 

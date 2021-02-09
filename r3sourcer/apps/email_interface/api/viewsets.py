@@ -11,9 +11,6 @@ logger = logging.getLogger(__name__)
 class EmailMessageViewset(BaseApiViewset):
     ordering = ('-created_at',)
 
-    def get_queryset(self):
-        return self.queryset.filter(template__company_id=self.request.user.company.id)
-
 
 class EmailMessageTemplateViewset(mixins.ListModelMixin,
                                   mixins.CreateModelMixin,
