@@ -695,6 +695,12 @@ class Shift(TimeZoneUUIDModel):
         ).values_list('longitude', 'latitude').get()
 
     @property
+    def shift_date_at_tz(self):
+        shift_date = datetime.combine(self.date.shift_date, self.time)
+        shift_date_tz = self.tz.localize(shift_date)
+        return shift_date_tz.astimezone(pytz.utc)
+
+    @property
     def job(self):
         return self.date.job
 
