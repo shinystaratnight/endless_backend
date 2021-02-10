@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from pytz import UTC
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils.formats import time_format
@@ -321,8 +320,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         break_ended_at = data.get('break_ended_at', None)
 
         if self.instance.pk:
-            shift_time = self.instance.job_offer.shift.time
-            shift_date = datetime.combine(self.instance.job_offer.shift.date.shift_date, shift_time, UTC)
+            shift_date = self.instance.job_offer.shift.shift_date_at_tz
             #1
             if shift_started_at < shift_date - timedelta(hours=4):
                 raise serializers.ValidationError({'shift_started_at':
