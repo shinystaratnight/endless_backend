@@ -300,7 +300,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         price_list = obj.job.customer_company.get_effective_pricelist_qs(obj.job.position).first()
         if price_list:
             price_list_rate = price_list.price_list_rates.filter(skill=obj.job.position).first()
-            rate = price_list_rate and price_list_rate.hourly_rate
+            rate = price_list_rate and price_list_rate.rate
         else:
             rate = None
 

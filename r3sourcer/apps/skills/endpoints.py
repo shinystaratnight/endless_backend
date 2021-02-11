@@ -58,6 +58,7 @@ class WorkTypeEndpoint(ApiEndpoint):
 
     model = models.WorkType
     base_viewset = skill_viewset.WorkTypeViewSet
+    filter_class = skills_filters.WorkTypeFilter
     serializer = skill_serializer.WorkTypeSerializer
     search_fields = ('skill_name__name', 'name',)
 

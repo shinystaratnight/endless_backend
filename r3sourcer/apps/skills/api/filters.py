@@ -90,3 +90,14 @@ class SkillRateRangeFilter(FilterSet):
     class Meta:
         model = skills_models.SkillRateRange
         fields = ['skill', 'worktype', 'uom']
+
+
+class WorkTypeFilter(FilterSet):
+    skill_name = UUIDFilter(method='filter_skill_name')
+
+    class Meta:
+        model = skills_models.WorkType
+        fields = ['skill_name']
+
+    def filter_skill_name(self, queryset, name, value):
+        return queryset.filter(skill_name=value)
