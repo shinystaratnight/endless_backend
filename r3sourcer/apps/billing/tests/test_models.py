@@ -9,6 +9,7 @@ from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sm
 
 
 class TestSMSBalance:
+
     def test_substract_sms_cost(self, client, user, company, relationship):
         sms_balance = company.sms_balance
         sms_balance.balance = 100
@@ -16,6 +17,44 @@ class TestSMSBalance:
         sms_balance.substract_sms_cost(3)
 
         assert sms_balance.balance == Decimal('99.76')
+
+    def test_send_low_balance_notification(self, client, user, company, relationship, low_balance_limit):
+        sms_balance = company.sms_balance
+        sms_balance.balance = low_balance_limit.low_balance_limit - 1
+        sms_balance.save()
+
+        assert company.sms_balance.low_balance_sent is True
+
+    def test_send_low_balance_notification_twice(self, client, user, company, relationship, low_balance_limit):
+        sms_balance = company.sms_balance
+        sms_balance.balance = low_balance_limit.low_balance_limit - 1
+        sms_balance.save()
+
+        assert company.sms_balance.low_balance_sent is True
+
+        sms_balance.balance = low_balance_limit.low_balance_limit + 10
+        sms_balance.save()
+
+        assert company.sms_balance.low_balance_sent is False
+
+    def test_send_ran_out_notification(self, client, user, company, relationship, ran_out_balance_limit):
+        sms_balance = company.sms_balance
+        sms_balance.balance = ran_out_balance_limit.low_balance_limit - 1
+        sms_balance.save()
+
+        assert company.sms_balance.ran_out_balance_sent is True
+
+    def test_send_ran_out_notification_twice(self, client, user, company, relationship, ran_out_balance_limit):
+        sms_balance = company.sms_balance
+        sms_balance.balance = ran_out_balance_limit.low_balance_limit - 1
+        sms_balance.save()
+
+        assert company.sms_balance.ran_out_balance_sent is True
+
+        sms_balance.balance = ran_out_balance_limit.low_balance_limit + 10
+        sms_balance.save()
+
+        assert company.sms_balance.ran_out_balance_sent is False
 
 
 class TestDiscount:

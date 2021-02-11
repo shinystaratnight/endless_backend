@@ -87,7 +87,7 @@ class UserAdmin(BaseUserAdmin):
 
     readonly_fields = ('date_joined', 'last_login')
 
-    list_display = ('get_full_name', 'email', 'phone_mobile')
+    list_display = ('get_full_name', 'email', 'phone_mobile', 'is_active')
     list_display_links = list_display
     ordering = ('date_joined',)
     search_fields = ('contact__email', 'contact__phone_mobile', 'contact__first_name', 'contact__last_name')
@@ -127,15 +127,19 @@ class CompanyIndustryRel(admin.TabularInline):
     extra = 0
 
 
+class ContactLanguageInlineAdmin(admin.TabularInline):
+    model = models.ContactLanguage
+    extra = 0
+
+
 class ContactAdmin(admin.ModelAdmin):
 
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
+    inlines = [ContactLanguageInlineAdmin]
 
+class ContactAddressAdmin(admin.ModelAdmin):
 
-class ContactLanguageAdmin(admin.ModelAdmin):
-    search_fields = ('contact', 'language')
-    list_display = ('contact', 'language')
-    list_filter = (LanguageListFilter,)
+    search_fields = ('contact__first_name', 'contact__last_name', 'contact__email', 'contact__phone_mobile')
 
 
 class AddressAdmin(admin.ModelAdmin):
@@ -444,8 +448,7 @@ if admin.site.is_registered(Site):
 
 admin.site.site_header = "Core Administration"
 admin.site.register(models.Contact, ContactAdmin)
-admin.site.register(models.ContactAddress)
-admin.site.register(models.ContactLanguage, ContactLanguageAdmin)
+admin.site.register(models.ContactAddress, ContactAddressAdmin)
 admin.site.register(models.User, UserAdmin)
 admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
@@ -453,7 +456,7 @@ admin.site.register(models.Address, AddressAdmin)
 admin.site.register(models.CompanyRel, CompanyRelAdmin)
 admin.site.register(models.CompanyAddress, BaseAdmin)
 admin.site.register(models.CompanyLocalization)
-admin.site.register(models.CompanyContact, BaseAdmin)
+admin.site.register(models.CompanyContact)
 admin.site.register(models.CompanyContactAddress, BaseAdmin)
 admin.site.register(models.CompanyContactRelationship, BaseAdmin)
 admin.site.register(models.Invoice, InvoiceAdmin)

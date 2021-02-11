@@ -82,6 +82,7 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
 
         page = self.paginate_queryset(queryset)
         if page is not None:
+
             serializer = serializer_class(page, many=True, fields=fields, context=serializer_context)
             data = self.process_response_data(serializer.data, page)
             return self.get_paginated_response(data)
@@ -647,6 +648,10 @@ class CompanyViewset(BaseApiViewset):
 
 class CompanyContactViewset(BaseApiViewset):
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(contact__user__is_active=True)
+
     def get_serializer_context(self):
         context = super(CompanyContactViewset, self).get_serializer_context()
         user = context['request'].user
@@ -685,11 +690,9 @@ class CompanyContactViewset(BaseApiViewset):
             if has_jobs or has_jobsites or instance.supervised_time_sheets.exists():
                 raise ValidationError({'non_field_errors': _('Cannot delete')})
 
-            rels = instance.relationships.all()
-            models.Role.objects.filter(company_contact_rel__in=rels).delete()
-            rels.delete()
-
-            super().perform_destroy(instance)
+            # mark user as inactive
+            instance.contact.user.is_active = False
+            instance.contact.user.save()
 
     def prepare_related_data(self, data, is_create=False):
         if is_create and not data.get('contact'):
@@ -1031,31 +1034,33 @@ class FormViewSet(BaseApiViewset):
     permission_classes = (IsAuthenticated,)
 
     def update(self, request, *args, **kwargs):
-        from r3sourcer.apps.core.models.languages.model import Language
-        from r3sourcer.apps.core.models.form_builder import FormLanguage
+        data = self.prepare_related_data(request.data)
+        partial = kwargs.pop('partial', False)
         form_obj = self.get_object()
-        language_id = request.data.get('language_id')
-        title = request.data.get('title', "")
-        short_description = request.data.get('short_description', "")
-        button_text = request.data.get('save_button_text', "")
-        result_messages = request.data.get('submit_message', "")
-        if language_id:
-            try:
-                # check if language exists
-                language_obj = Language.objects.get(alpha_2=language_id)
-                # create or update form_language object
-                FormLanguage.objects.update_or_create(form=form_obj, language=language_obj,
-                                                    defaults={'title': title,
-                                                              'short_description': short_description,
-                                                              'button_text': button_text,
-                                                              'result_messages': result_messages})
-                # updating active language
-                form_obj.active_language = language_obj
-                form_obj.save()
-            except Language.DoesNotExist:
-                raise ValidationError('Language with alpha_2 = {} does not exist'.format(language_id))
+        # update translations
+        translation_objects = data.pop('translations', None)
+        form = models.Form.objects.get(pk=kwargs['pk'])
+        with transaction.atomic():
+            models.FormLanguage.objects.filter(form=form).delete()
+            for translation in translation_objects:
+                language_id = translation['language'] if isinstance(translation['language'], str) else translation['language']['id']
+                language = models.Language.objects.get(alpha_2=language_id)
+                models.FormLanguage.objects.create(form=form,
+                                                   language=language,
+                                                   title=translation['title'],
+                                                   short_description=translation['short_description'],
+                                                   button_text=translation['button_text'],
+                                                   result_messages=translation['result_messages']
+                                                   )
+        # end update translations
+        serializer = self.get_serializer(form_obj, data=data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
 
-        return super().update(request, *args, **kwargs)
+        if getattr(form_obj, '_prefetched_objects_cache', None):
+            instance._prefetched_objects_cache = {}
+
+        return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
@@ -1187,6 +1192,10 @@ class AddressViewset(GoogleAddressMixin, BaseApiViewset):
 
 class CompanyContactRelationshipViewset(BaseApiViewset):
 
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(company_contact__contact__user__is_active=True)
+
     def perform_destroy(self, instance):
         with transaction.atomic():
             company_contact = instance.company_contact
@@ -1201,9 +1210,9 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
 
             models.Role.objects.filter(company_contact_rel=instance).delete()
 
-            super().perform_destroy(instance)
-
-            company_contact.delete()
+            # mark user as inactive
+            instance.company_contact.contact.user.is_active = False
+            instance.company_contact.contact.user.save()
 
 
 class UserViewset(BaseApiViewset):
@@ -1221,9 +1230,7 @@ class TagViewSet(BaseApiViewset):
         qs = super().get_queryset()
         if not self.kwargs.get('pk'):
             master_company = self.request.user.contact.get_closest_company().get_closest_master_company()
-            qs = qs.filter(company_tags__company_id=master_company.pk)
-            system_tag_qs = models.Tag.objects.filter(owner=models.Tag.TAG_OWNER.system)
-            qs = qs.union(system_tag_qs)
+            qs = qs.filter(Q(company_tags__company_id=master_company.pk) | Q(owner=models.Tag.TAG_OWNER.system))
         return qs
 
     def update(self, request, *args, **kwargs):

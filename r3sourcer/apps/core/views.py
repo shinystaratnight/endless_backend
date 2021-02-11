@@ -22,7 +22,7 @@ from r3sourcer.apps.myob.tasks import sync_invoice
 
 class OAuth2JWTTokenMixin():
     def _get_access_token_jwt(self, request, content, domain=None, username=None):
-        from r3sourcer.apps.login.api.serializers import ContactLoginSerializer
+        from r3sourcer.apps.login.api.serializers import TokenPayloadSerializer
 
         extra_data = {}
         issuer = settings.JWT_ISSUER
@@ -36,7 +36,7 @@ class OAuth2JWTTokenMixin():
 
         if not username:
             try:
-                username = json.loads(request.body.decode('utf-8'))['username']
+                username = json.loads(request.data.decode('utf-8'))['username']
             except Exception:
                 username = request.data.get('username') if hasattr(request, 'data') else request.POST.get('username')
 
@@ -58,7 +58,7 @@ class OAuth2JWTTokenMixin():
                 domain = get_site_url(master_company=master_company)
 
             extra_data['origin'] = domain
-            extra_data['contact'] = ContactLoginSerializer(contact).data,
+            extra_data['contact'] = TokenPayloadSerializer(contact).data,
 
         payload = generate_payload(issuer, content['expires_in'], **extra_data)
         token = encode_jwt(payload)

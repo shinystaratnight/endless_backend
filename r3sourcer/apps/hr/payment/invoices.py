@@ -61,7 +61,7 @@ class InvoiceService(BasePaymentService):
 
             lines_iter = self.lines_iter(coeffs_hours,
                                          skill,
-                                         price_list_rate.hourly_rate,
+                                         price_list_rate.rate,
                                          timesheet)
             for raw_line in lines_iter:
                 rate = raw_line['rate']

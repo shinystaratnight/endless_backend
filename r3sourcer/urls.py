@@ -36,6 +36,7 @@ _urlpatterns = [
     url(r'^sms_interface/api/', include('r3sourcer.apps.sms_interface.urls', namespace='sms_interface')),
     url(r'^myob/', include('r3sourcer.apps.myob.urls', namespace='myob')),
     url(r'^admin/', admin_logger.urls),
+    url(r'^_nested_admin/', include('nested_admin.urls')),
     url(r'^journal/(?P<app_path>.+)/(?P<model>.+)/(?P<pk>\d+?)/', journal_detail),
     url(r'^journal/(?P<app_path>.+)/(?P<model>.+)/', journal_list),
     url(r'^', include('r3sourcer.apps.billing.urls', namespace='billing')),

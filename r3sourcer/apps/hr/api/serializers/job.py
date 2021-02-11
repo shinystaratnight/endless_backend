@@ -159,7 +159,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
                     'address': ['__all__'],
                 }],
                 'position': ['id', {'name': ('name', {'translations': ('language', 'value')})},
-                             'upper_rate_limit', 'lower_rate_limit', 'default_rate'],
+                             {'skill_rate_ranges': ('id', 'uom', 'upper_rate_limit', 'lower_rate_limit', 'default_rate')}],
             }
         )
 
@@ -225,31 +225,31 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
 
         return current_state and current_state.number == 20
 
-    def validate(self, validated_data):
-        hourly_rate_default = validated_data.get('hourly_rate_default')
+    # def validate(self, validated_data):
+    #     hourly_rate_default = validated_data.get('hourly_rate_default')
 
-        if hourly_rate_default:
-            skill = validated_data.get('position')
-            is_less_than_min = skill.lower_rate_limit and skill.lower_rate_limit > hourly_rate_default
-            is_more_than_max = skill.upper_rate_limit and skill.upper_rate_limit < hourly_rate_default
+    #     if hourly_rate_default:
+    #         skill = validated_data.get('position')
+    #         is_less_than_min = skill.lower_rate_limit and skill.lower_rate_limit > hourly_rate_default
+    #         is_more_than_max = skill.upper_rate_limit and skill.upper_rate_limit < hourly_rate_default
 
-            if is_less_than_min or is_more_than_max:
-                if is_less_than_min and is_more_than_max:
-                    error_part = _('between {lower} and {upper}')
-                elif is_less_than_min:
-                    error_part = _('more than or equal {lower}')
-                else:
-                    error_part = _('less than or equal {upper}')
+    #         if is_less_than_min or is_more_than_max:
+    #             if is_less_than_min and is_more_than_max:
+    #                 error_part = _('between {lower} and {upper}')
+    #             elif is_less_than_min:
+    #                 error_part = _('more than or equal {lower}')
+    #             else:
+    #                 error_part = _('less than or equal {upper}')
 
-                error_part = error_part.format(
-                    lower=skill.lower_rate_limit, upper=skill.upper_rate_limit
-                )
+    #             error_part = error_part.format(
+    #                 lower=skill.lower_rate_limit, upper=skill.upper_rate_limit
+    #             )
 
-                raise exceptions.ValidationError({
-                    'hourly_rate_default': _('Hourly rate should be {error_part}').format(error_part=error_part)
-                })
+    #             raise exceptions.ValidationError({
+    #                 'hourly_rate_default': _('Hourly rate should be {error_part}').format(error_part=error_part)
+    #             })
 
-        return validated_data
+    #     return validated_data
 
     def get_tags(self, obj):
         tags = core_models.Tag.objects.filter(job_tags__job=obj).distinct()
@@ -429,6 +429,7 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
                 'date': ('__all__', {
                     'job': ('id',
                             'jobsite',
+                            'default_shift_starting_time',
                             {'position': ['id', {'name': ('name', {'translations': ('language', 'value')})},
                                           ]},
                             'notes'),
@@ -499,7 +500,7 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
 
     method_fields = (
         'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'count_timesheets',
-        'hourly_rate', 'color', 'overpriced', 'favourite', 'tags',
+        'hourly_rate', 'color', 'favourite', 'tags',    # 'overpriced',
     )
 
     jos = serializers.IntegerField(read_only=True)
@@ -542,16 +543,16 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
     def get_favourite(self, obj):
         return obj.id in self.context['favourite_list']
 
-    def get_overpriced(self, obj):
-        return obj.id in self.context['overpriced']
+    # def get_overpriced(self, obj):
+    #     return obj.id in self.context['overpriced']
 
     def get_color(self, obj):
         is_partially_avail = obj.id in self.context['partially_available_candidates']
-        if self.get_overpriced(obj):
-            if is_partially_avail:
-                return 5
-            return 3
-        elif is_partially_avail:
+        # if self.get_overpriced(obj):
+        #     if is_partially_avail:
+        #         return 5
+        #     return 3
+        if is_partially_avail:
             return 4
         elif obj.id in self.context['carrier_list'] or obj.id in self.context['booked_before_list']:
             if obj.jos > 0:

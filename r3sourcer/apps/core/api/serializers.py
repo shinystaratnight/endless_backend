@@ -686,7 +686,6 @@ class ContactSerializer(ApiContactImageFieldsMixin,
                     'address': getattr(e, 'messages', _('Cannot create Contact without address'))
                 })
         contact = core_models.Contact.objects.create(**validated_data)
-        CandidateContact.objects.create(address=address, contact=contact, is_active=True)
         return contact
 
     def validate(self, data):
@@ -1396,6 +1395,7 @@ class CompanyListSerializer(
                 ]
             },
             'sms_balance': {'required': False},
+            'company_settings': {'required': False},
         }
 
     def get_company_rel(self, company):
@@ -1522,16 +1522,16 @@ class LanguageSerializer(serializers.ModelSerializer):
 
 
 class FormSerializer(ApiBaseModelSerializer):
-    language_id = serializers.CharField(write_only=True, required=False)
-    active_language = LanguageSerializer(read_only=True)
 
-    method_fields = ('model_fields', 'groups', 'company_links', 'extra_fields', 'translations')
+    method_fields = ('model_fields', 'groups', 'company_links', 'extra_fields')
 
     class Meta:
         model = core_models.Form
         fields = (
             'id', 'company', 'builder', 'is_active',
-            'active_language', 'language_id'
+            {
+                'translations': ('language', 'title', 'short_description', 'button_text', 'result_messages')
+            }
         )
 
     def validate(self, attrs):
@@ -1581,8 +1581,6 @@ class FormSerializer(ApiBaseModelSerializer):
     def get_company_links(self, obj):
         return obj.get_company_links(self.context['request'].user.contact)
 
-    def get_translations(self, obj):
-        return obj.get_translations()
 
 class FormRenderSerializer(ApiBaseModelSerializer):
 
@@ -2003,4 +2001,13 @@ class VATSerializer(ApiBaseModelSerializer):
         model = core_models.VAT
         fields = (
             '__all__',
+        )
+
+
+class UomSerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.UnitOfMeasurement
+        fields = (
+            'id', 'name', 'short_name', 'default',
+            {'translations': ('id', 'language', 'name', 'short_name')},
         )

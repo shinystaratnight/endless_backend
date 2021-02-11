@@ -341,6 +341,7 @@ class Job(core_models.AbstractBaseOrder):
         blank=True
     )
 
+    # TODO delete this field after uoms task finished
     hourly_rate_default = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -453,7 +454,7 @@ class Job(core_models.AbstractBaseOrder):
         return self.customer_company.price_lists.filter(
             models.Q(
                 price_list_rates__skill=self.position,
-                price_list_rates__hourly_rate__gt=0
+                price_list_rates__rate__gt=0
             ),
             models.Q(valid_until__gte=self.now_utc.date()) | models.Q(valid_until__isnull=True),
             effective=True, valid_from__lte=self.now_utc.date(),
@@ -465,10 +466,10 @@ class Job(core_models.AbstractBaseOrder):
         return bool(self.work_start_date)
     is_start_date_set.short_description = _('Work Start Date')
 
-    @workflow_function
-    def is_default_rate_set(self):
-        return self.hourly_rate_default is not None or self.hourly_rate_default <= 0
-    is_default_rate_set.short_description = _('Default hourly rate')
+    # @workflow_function
+    # def is_default_rate_set(self):
+    #     return self.hourly_rate_default is not None or self.hourly_rate_default <= 0
+    # is_default_rate_set.short_description = _('Default hourly rate')
 
     @workflow_function
     def is_all_sd_filled(self):
@@ -692,6 +693,12 @@ class Shift(TimeZoneUUIDModel):
             longitude=F('date__job__jobsite__address__longitude'),
             latitude=F('date__job__jobsite__address__latitude')
         ).values_list('longitude', 'latitude').get()
+
+    @property
+    def shift_date_at_tz(self):
+        shift_date = datetime.combine(self.date.shift_date, self.time)
+        shift_date_tz = self.tz.localize(shift_date)
+        return shift_date_tz.astimezone(pytz.utc)
 
     @property
     def job(self):

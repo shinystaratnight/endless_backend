@@ -2,7 +2,7 @@ from django.utils.translation import ugettext_lazy as _
 from rest_framework import exceptions, serializers
 
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
-from r3sourcer.apps.skills.models import SkillBaseRate, Skill, SkillTag, SkillName
+from r3sourcer.apps.skills.models import SkillBaseRate, Skill, SkillTag, SkillName, SkillRateRange, WorkType
 
 
 class SkillBaseRateSerializer(ApiBaseModelSerializer):
@@ -16,13 +16,72 @@ class SkillSerializer(ApiBaseModelSerializer):
     class Meta:
         model = Skill
         fields = (
-            'carrier_list_reserve', 'short_name', 'employment_classification', 'active', 'upper_rate_limit',
-            'lower_rate_limit', 'default_rate', 'price_list_upper_rate_limit', 'price_list_lower_rate_limit', 'id',
-            'price_list_default_rate', 'company', {
-                'name': ('id', 'name', {'translations': ('language', 'value')},
+            'id', 'company', 'carrier_list_reserve', 'short_name', 'employment_classification', 'active',
+            {'name': ('id', 'name', {'translations': ('language', 'value')},
                          {'industry': ('id', 'type', {'translations': ('language', 'value')})})
             },
+            {'skill_rate_ranges': ('id','uom', 'worktype',
+                                   'upper_rate_limit', 'lower_rate_limit', 'default_rate',
+                                   'price_list_upper_rate_limit', 'price_list_lower_rate_limit',
+                                   'price_list_default_rate'),
+            },
         )
+
+
+class SkillTagSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = SkillTag
+        fields = (
+            'id',
+            {'tag': ('name', {'translations': ('language', 'value')})},
+            {'skill': ('id', {'name': ('name', {'translations': ('language', 'value')})})},
+        )
+
+
+class SkillNameSerializer(ApiBaseModelSerializer):
+
+    method_fields = ('active', 'skill_id', 'carrier_list_reserve')
+
+    class Meta:
+        model = SkillName
+        fields = (
+            'id',
+            {'name': ('name', {'translations': ('language', 'value')})},
+            {'industry': ('id', 'type', {'translations': ('language', 'value')}),
+             'translations': ('language', 'value'),
+            #  'work_types': ('id', 'name', {'translations': ('language', 'value')}),
+            },
+        )
+
+    def get_active(self, obj):
+        try:
+            return self.context['view']._filter_list()[obj.name].active
+        except KeyError:
+            return False
+
+    def get_skill_id(self, obj):
+        try:
+            return self.context['view']._filter_list()[obj.name].id
+        except KeyError:
+            return None
+
+    def get_carrier_list_reserve(self, obj):
+        try:
+            return self.context['view']._filter_list()[obj.name].carrier_list_reserve
+        except KeyError:
+            return None
+
+
+class SkillRateRangeSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = SkillRateRange
+        fields = (
+            'id', 'skill', 'worktype', 'uom',
+            'upper_rate_limit', 'lower_rate_limit', 'default_rate',
+            'price_list_upper_rate_limit', 'price_list_lower_rate_limit', 'price_list_default_rate'
+            )
 
     def validate(self, validated_data):
         lower_rate = validated_data.get('lower_rate_limit')
@@ -57,57 +116,11 @@ class SkillSerializer(ApiBaseModelSerializer):
         return validated_data
 
 
-class SkillTagSerializer(ApiBaseModelSerializer):
+class WorkTypeSerializer(ApiBaseModelSerializer):
 
     class Meta:
-        model = SkillTag
+        model = WorkType
         fields = (
-            'id',
-            {'tag': ('name', {'translations': ('language', 'value')})},
-            {'skill': ('id', {'name': ('name', {'translations': ('language', 'value')})})},
-        )
-
-
-class SkillNameSerializer(ApiBaseModelSerializer):
-
-    method_fields = ('active', 'default_rate', 'price_list_default_rate', 'skill_id', 'carrier_list_reserve')
-
-    class Meta:
-        model = SkillName
-        fields = (
-            'id',
-            {'name': ('name', {'translations': ('language', 'value')})},
-            {'industry': ('id', 'type', {'translations': ('language', 'value')}),
-             'translations': ('language', 'value'),
-            },
-        )
-
-    def get_active(self, obj):
-        try:
-            return self.context['view']._filter_list()[obj.name].active
-        except KeyError:
-            return False
-
-    def get_default_rate(self, obj):
-        try:
-            return self.context['view']._filter_list()[obj.name].default_rate
-        except KeyError:
-            return None
-
-    def get_price_list_default_rate(self, obj):
-        try:
-            return self.context['view']._filter_list()[obj.name].price_list_default_rate
-        except KeyError:
-            return None
-
-    def get_skill_id(self, obj):
-        try:
-            return self.context['view']._filter_list()[obj.name].id
-        except KeyError:
-            return None
-
-    def get_carrier_list_reserve(self, obj):
-        try:
-            return self.context['view']._filter_list()[obj.name].carrier_list_reserve
-        except KeyError:
-            return None
+            'id', 'skill_name', 'name',
+            {'translations': ('language', 'value')},
+            )
