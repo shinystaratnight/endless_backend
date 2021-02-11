@@ -1,4 +1,5 @@
 from django.db import models
+from django.core.exceptions import ValidationError
 
 
 class ContactLookupField(object):
@@ -73,6 +74,22 @@ class ContactLookupField(object):
 
     def formfield(self):
         return self.lookup_field.formfield()
+
+    def to_python(self, value):
+        if isinstance(value, self.lookup_model):
+            return value
+
+        if value is None:
+            return value
+
+        data = {
+            self.lookup_name: value
+        }
+        try:
+            contact = self.lookup_model(**data)
+        except:
+            raise ValidationError
+        return contact
 
 
 class AliasField(models.Field):

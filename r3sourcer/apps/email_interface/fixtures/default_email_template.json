@@ -166,5 +166,47 @@
     "delivery_timeout": 10,
     "language": "en"
   }
+},
+{
+  "model": "email_interface.defaultemailtemplate",
+  "pk": 14,
+  "fields": {
+    "name": "Consent email message",
+    "slug": "consent-email-message",
+    "subject_template": "R3sourcer needs your consent",
+    "message_text_template": "Hello!\nR3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please click on the link below if you agree to! (link in email will have label “I AGREE”). This will trigger candidate exchange and charge company who is buying profile.\n [[candidate_consent_url]]",
+    "message_html_template": "<div style=\"max-width: 850px; color: #333; font-family: Arial, sans-serif;\">\n\t<div style=\"text-align: center;\theight: 66px; background-image: linear-gradient(to top, #0061a2, #28a3fc); background-color: #28a3fc;\">\n\t\t<img style=\"height: 34px; margin-top: 16px;\" src=\"https://r3sourcer.com/assets/img/new-software-white.png\" alt=\"R3sourcer\">\n\t</div>\n\n\t<div style=\"margin-top: 24px; margin-bottom: 16px; font-size: 22px;\tline-height: 28px; text-align: center; color: #333\">\n\t\t<span>R3sourcer needs your consent</span>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\"></div>\n\t<div style=\"max-width: 500px; margin: 0 auto\">\n\n\t\t<div style=\"font-size: 14px; line-height: 18px; color: #333; margin-top: 28px;\">\n\t\t\t<p>Hello!</p>\n\t\t\t<p>R3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please click on the link below if you agree to! (link in email will have label “I AGREE”). This will trigger candidate exchange and charge company who is buying profile.</p>\n\t\t\t<p>[[candidate_consent_url]]</p>\n\t\t</div>\n\t</div>\n\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc; margin-top: 16px;\"></div>\n\t<div style=\"margin-top: 16px; font-size: 14px; line-height: 18px; text-align: center; color: #333\">\n\t\tBest Regards, <br>\n\t\tR3sourcer\n\t</div>\n</div>",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "language": "en"
+  }
+},
+{
+  "model": "email_interface.defaultemailtemplate",
+  "pk": 15,
+  "fields": {
+    "name": "Consent email message",
+    "slug": "consent-email-message",
+    "subject_template": "R3sourcer needs your consent",
+    "message_text_template": "Hello!\nR3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please click on the link below if you agree to! (link in email will have label “I AGREE”). This will trigger candidate exchange and charge company who is buying profile.\n [[candidate_consent_url]]",
+    "message_html_template": "<div style=\"max-width: 850px; color: #333; font-family: Arial, sans-serif;\">\n\t<div style=\"text-align: center;\theight: 66px; background-image: linear-gradient(to top, #0061a2, #28a3fc); background-color: #28a3fc;\">\n\t\t<img style=\"height: 34px; margin-top: 16px;\" src=\"https://r3sourcer.com/assets/img/new-software-white.png\" alt=\"R3sourcer\">\n\t</div>\n\n\t<div style=\"margin-top: 24px; margin-bottom: 16px; font-size: 22px;\tline-height: 28px; text-align: center; color: #333\">\n\t\t<span>R3sourcer needs your consent</span>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\"></div>\n\t<div style=\"max-width: 500px; margin: 0 auto\">\n\n\t\t<div style=\"font-size: 14px; line-height: 18px; color: #333; margin-top: 28px;\">\n\t\t\t<p>Hello!</p>\n\t\t\t<p>R3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please click on the link below if you agree to! (link in email will have label “I AGREE”). This will trigger candidate exchange and charge company who is buying profile.</p>\n\t\t\t<p>[[candidate_consent_url]]</p>\n\t\t</div>\n\t</div>\n\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc; margin-top: 16px;\"></div>\n\t<div style=\"margin-top: 16px; font-size: 14px; line-height: 18px; text-align: center; color: #333\">\n\t\tBest Regards, <br>\n\t\tR3sourcer\n\t</div>\n</div>",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "language": "ru"
+  }
+},
+{
+  "model": "email_interface.defaultemailtemplate",
+  "pk": 16,
+  "fields": {
+    "name": "Consent email message",
+    "slug": "consent-email-message",
+    "subject_template": "R3sourcer needs your consent",
+    "message_text_template": "Hello!\nR3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please click on the link below if you agree to! (link in email will have label “I AGREE”). This will trigger candidate exchange and charge company who is buying profile.\n [[candidate_consent_url]]",
+    "message_html_template": "<div style=\"max-width: 850px; color: #333; font-family: Arial, sans-serif;\">\n\t<div style=\"text-align: center;\theight: 66px; background-image: linear-gradient(to top, #0061a2, #28a3fc); background-color: #28a3fc;\">\n\t\t<img style=\"height: 34px; margin-top: 16px;\" src=\"https://r3sourcer.com/assets/img/new-software-white.png\" alt=\"R3sourcer\">\n\t</div>\n\n\t<div style=\"margin-top: 24px; margin-bottom: 16px; font-size: 22px;\tline-height: 28px; text-align: center; color: #333\">\n\t\t<span>R3sourcer needs your consent</span>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\"></div>\n\t<div style=\"max-width: 500px; margin: 0 auto\">\n\n\t\t<div style=\"font-size: 14px; line-height: 18px; color: #333; margin-top: 28px;\">\n\t\t\t<p>Hello!</p>\n\t\t\t<p>R3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please click on the link below if you agree to! (link in email will have label “I AGREE”). This will trigger candidate exchange and charge company who is buying profile.</p>\n\t\t\t<p>[[candidate_consent_url]]</p>\n\t\t</div>\n\t</div>\n\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc; margin-top: 16px;\"></div>\n\t<div style=\"margin-top: 16px; font-size: 14px; line-height: 18px; text-align: center; color: #333\">\n\t\tBest Regards, <br>\n\t\tR3sourcer\n\t</div>\n</div>",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "language": "et"
+  }
 }
 ]

@@ -610,5 +610,41 @@
         "delivery_timeout": 10,
         "language": "ru"
     }
+},
+{
+    "model": "sms_interface.defaultsmstemplate",
+    "pk": 54,
+    "fields": {
+        "name": "Consent sms message",
+        "slug": "consent-sms-message",
+        "message_text_template": "Hello! R3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please reply YES to this sms if you agree! This will trigger candidate exchange and charge company who is buying profile.",
+        "reply_timeout": 0,
+        "delivery_timeout": 10,
+        "language": "en"
+    }
+},
+{
+    "model": "sms_interface.defaultsmstemplate",
+    "pk": 55,
+    "fields": {
+        "name": "Consent sms message",
+        "slug": "consent-sms-message",
+        "message_text_template": "Hello! R3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please reply YES to this sms if you agree! This will trigger candidate exchange and charge company who is buying profile.",
+        "reply_timeout": 0,
+        "delivery_timeout": 10,
+        "language": "ru"
+    }
+},
+{
+    "model": "sms_interface.defaultsmstemplate",
+    "pk": 56,
+    "fields": {
+        "name": "Consent sms message",
+        "slug": "consent-sms-message",
+        "message_text_template": "Hello! R3sourcer (recruitment portal) has gathered your personal information through our job advertisements. Do you consent us sharing your personal details with future employer in order for you to find your dream job? Please reply YES to this sms if you agree! This will trigger candidate exchange and charge company who is buying profile.",
+        "reply_timeout": 0,
+        "delivery_timeout": 10,
+        "language": "et"
+    }
 }
 ]
