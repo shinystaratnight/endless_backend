@@ -190,7 +190,7 @@ def send_candidate_consent_message(candidaterel_id, data_dict):
                                         slug='consent-sms-message')
         sms_interface.send_tpl(to_number=candidate_contact.contact.phone_mobile,
                                tpl_id=sms_template.id,
-                               check_reply=False,
+                               check_reply=True,
                                **data_dict)
 
     if candidate_contact.message_by_email:
