@@ -6,6 +6,5 @@
 docker-compose.*
 .git
 .gitignore
-README.md
 pytest.ini
 .coveragerc
