@@ -41,19 +41,47 @@ class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
+    default_rate = serializers.DecimalField(max_digits=8, decimal_places=2, write_only=True, required=False)
+
     class Meta:
         model = candidate_models.SkillRel
         fields = (
-            '__all__',
-            {
-                'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__'),
-            },
-            {'skill_rates': ('id')},
+            'pk', 'score', 'candidate_contact', 'prior_experience', 'default_rate',
+            {'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__')},
+            # {'skill_rates': ('id',)},
         )
         extra_kwargs = {
             'score': {'max_value': Decimal(5)},
         }
 
+    def validate(self, data):
+        skill = data.get('skill')
+        default_uom = core_models.UnitOfMeasurement.objects.get(default=True)
+        skill_rate_range = skill.skill_rate_ranges.filter(uom=default_uom, worktype=None).first()
+        if skill_rate_range and data.get('default_rate'):
+            lower_limit = skill_rate_range.lower_rate_limit
+            upper_limit = skill_rate_range.upper_rate_limit
+            is_lower = lower_limit and data.get('default_rate') < lower_limit
+            is_upper = upper_limit and data.get('default_rate') > upper_limit
+            if is_lower or is_upper:
+                raise exceptions.ValidationError({
+                    'rate': _('Default rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
+        return data
+
+    def create(self, validated_data):
+        default_rate = validated_data.pop('default_rate', None)
+        # create SkillRel
+        skill_rel = super().create(validated_data)
+
+        # create default rate for SkillRel
+        if default_rate:
+            default_uom = core_models.UnitOfMeasurement.objects.get(default=True)
+            candidate_models.SkillRate.objects.create(skill_rel=skill_rel,
+                                                      uom=default_uom,
+                                                      rate=default_rate)
+        return skill_rel
 
 
 class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
@@ -78,7 +106,7 @@ class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Ap
             is_upper = upper_limit and data.get('rate') > upper_limit
             if is_lower or is_upper:
                 raise exceptions.ValidationError({
-                    'hourly_rate': _('Hourly rate should be between {} and {}')
+                    'rate': _('Rate should be between {} and {}')
                         .format(lower_limit, upper_limit)
                 })
 
