@@ -1215,16 +1215,6 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
             instance.company_contact.contact.user.save()
 
 
-class UserViewset(BaseApiViewset):
-
-    @action(methods=['post'], detail=False, permission_classes=[AllowAny])
-    def forgot_password(self, request, *args, **kwargs):
-        return Response({
-            'status': 'success',
-            'message': _('Password reset instructions were sent to this email address'),
-        })
-
-
 class TagViewSet(BaseApiViewset):
     def get_queryset(self):
         qs = super().get_queryset()

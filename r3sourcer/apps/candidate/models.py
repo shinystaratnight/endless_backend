@@ -12,7 +12,6 @@ from r3sourcer.apps.candidate.tasks import send_candidate_consent_message
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.models import CompanyContactRelationship, UnitOfMeasurement
-from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.models import CompanyContactRelationship
 from r3sourcer.apps.core.utils.companies import get_site_master_company, get_site_url
 from r3sourcer.apps.core.utils.user import get_default_user

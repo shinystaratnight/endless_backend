@@ -25,7 +25,7 @@ def get_contact(contact_id):
 DEFAULT_LOGIN_REDIRECT = '/'
 
 
-def send_login_token(contact, send_func, tpl, redirect_url, type_=TokenLogin.TYPES.sms):
+def send_login_token(contact, send_func, tpl, redirect_url=None, type_=TokenLogin.TYPES.sms):
     if not redirect_url:
         redirect_url = DEFAULT_LOGIN_REDIRECT
     with transaction.atomic():
@@ -88,7 +88,7 @@ def send_login_email(self, contact_id):
 def send_login_message(username, contact):
     # return
     email_username = is_valid_email(username)
-    mobile_phone_username = is_valid_phone_number(username, country_code=None)
+    mobile_phone_username = is_valid_phone_number(contact.phone_mobile.as_e164, country_code=None)
     if email_username is False and mobile_phone_username is False:
         raise Exception('Invalid email or phone number')
     elif mobile_phone_username is False:
