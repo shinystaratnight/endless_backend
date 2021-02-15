@@ -25,7 +25,7 @@ def get_contact(contact_id):
 DEFAULT_LOGIN_REDIRECT = '/'
 
 
-def send_login_token(contact, send_func, tpl, redirect_url, type_=TokenLogin.TYPES.sms):
+def send_login_token(contact, send_func, tpl, redirect_url=None, type_=TokenLogin.TYPES.sms):
     if not redirect_url:
         redirect_url = DEFAULT_LOGIN_REDIRECT
     with transaction.atomic():
