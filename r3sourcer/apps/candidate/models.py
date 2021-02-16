@@ -615,7 +615,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         role = self.contact.user.role.get(name=core_models.Role.ROLE_NAMES.candidate)
         extranet_login = TokenLogin.objects.create(
             contact=self.contact,
-            redirect_to='{}{}/consent'.format(sign_navigation.url, rel_id),
+            redirect_to='{}{}/'.format(sign_navigation.url, rel_id),
             role=role
         )
 
