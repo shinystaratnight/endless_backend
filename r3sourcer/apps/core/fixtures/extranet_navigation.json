@@ -1962,7 +1962,7 @@
     "created_at": "2021-01-27T07:31:14.621Z",
     "parent": null,
     "name": "Candidate Consent",
-    "url": "/candidate/candidatecontacts/consent/",
+    "url": "/cd/candidate/candidatecontacts/consent/",
     "endpoint": "/candidate/candidatecontacts/consent/",
     "access_level": "candidate",
     "lft": 1,
