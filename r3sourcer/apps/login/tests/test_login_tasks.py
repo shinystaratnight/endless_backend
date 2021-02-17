@@ -33,16 +33,14 @@ class TestSendFuncs:
         assert TokenLogin.objects.filter(contact=contact).count() == 1
 
     @mock.patch('r3sourcer.apps.login.tasks.send_login_email')
-    @mock.patch('r3sourcer.apps.login.tasks.is_valid_phone_number')
-    def test_send_message_for_email(self, mock_valid_phone, mock_email_send, contact):
-        mock_valid_phone.return_value = False
+    def test_send_message_for_email(self, mock_email_send, contact):
         send_login_message(contact.email, contact)
 
         assert mock_email_send.delay.called or mock_email_send.apply_async.called
 
     @mock.patch('r3sourcer.apps.login.tasks.send_login_sms')
     def test_send_message_for_phone_number(self, mock_sms_send, contact):
-        send_login_message(contact.phone_mobile, contact)
+        send_login_message(contact.phone_mobile.as_e164, contact)
 
         assert mock_sms_send.delay.called or mock_sms_send.apply_async.called
 
