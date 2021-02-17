@@ -23,9 +23,9 @@ class Migration(migrations.Migration):
                 data = json.load(json_file)
                 for el in data:
                     try:
-                        ExtranetNavigation.objects.get(pk=el['pk'])
-                    except ExtranetNavigation.DoesNotExist:
                         template = el['fields']
+                        ExtranetNavigation.objects.get(name=template['name'])
+                    except ExtranetNavigation.DoesNotExist:
                         obj = ExtranetNavigation(
                             pk=el['pk'],
                             updated_at=template['updated_at'],
@@ -51,5 +51,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_new_extranet_navigation_from_fixture),
+        # migrations.RunPython(load_new_extranet_navigation_from_fixture),
     ]
