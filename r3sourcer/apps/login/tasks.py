@@ -85,7 +85,6 @@ def send_login_email(self, contact_id):
 
 
 def send_login_message(username, contact):
-    # return
     email_username = is_valid_email(username)
     mobile_phone_username = is_valid_phone_number(username, country_code=None)
     if email_username is False and mobile_phone_username is False:
