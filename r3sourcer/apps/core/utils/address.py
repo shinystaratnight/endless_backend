@@ -1,3 +1,4 @@
+from unidecode import unidecode
 from django.db.models import Q
 from django.utils.text import slugify
 from rest_framework.exceptions import ParseError
@@ -12,6 +13,9 @@ def get_address_parts(address_data):
         for item_type in item['types']:
             if item_type != 'political':
                 address_parts[item_type] = item
+                # converts names to unicode
+                address_parts[item_type]['short_name'] = unidecode(address_parts[item_type]['short_name'])
+                address_parts[item_type]['long_name'] = unidecode(address_parts[item_type]['long_name'])
 
     return address_parts
 
@@ -35,42 +39,47 @@ def parse_google_address(address_data):
     if not address_parts.get('country'):
         raise ParseError('You should enter valid address')
 
+    # get country
     country = Country.objects.get(code2=address_parts['country']['short_name'])
-    region_part_key, *_ = sorted([x for x in address_parts.keys()
-                                  if 'administrative_area_level_' in x])
-    region_part = address_parts.get(region_part_key)
-    try:
-        region = region_part['long_name'].split(' ', 1)[0] if region_part['long_name'].split(' ', 1)[0] else region_part['long_name']
-        region = Region.objects.filter(
-            Q(name__icontains=region) | Q(alternate_names__contains=region_part['short_name']),
-            country=country
-        ).first() if region_part else None
-    except Region.DoesNotExist:
-        region = Region.objects.create(name=region_part['long_name'], country=country, display_name=region_part['short_name'])
-
-    city_part = address_parts.get('locality') or address_parts.get('sublocality')
-    city_search = '%s%s' % (city_part['long_name'].replace(' ', ''), country.name.replace(' ', ''))
-    if region:
-        city = City.objects.filter(
-                Q(search_names__icontains=city_search) | Q(name=city_part['long_name']),
-                country=country, region=region,
-            )
-        if not city:
-            city = City.objects.create(country=country, region=region, name=city_part['long_name'], search_names=city_part['long_name'],
-                                       latitude=location.get('lat', 0), longitude=location.get('lng', 0))
+    # get region
+    region_part_key = sorted([x for x in address_parts.keys()
+                          if 'administrative_area_level_' in x])
+    region_part_key = region_part_key[0] if region_part_key else 'locality'
+    if region_part_key:
+        region_short_name = address_parts.get(region_part_key)['short_name']
+        region_long_name = address_parts.get(region_part_key)['long_name']
+        # sarch for existing region
+        region = Region.objects.filter(Q(name__icontains=region_long_name) | \
+                                       Q(alternate_names__contains=region_short_name),
+                                       country=country) \
+                               .first()
+        # create new region if it doesn't exist
+        if not region:
+            region = Region.objects.create(name=region_long_name,
+                                           country=country,
+                                           display_name=region_short_name,
+                                           alternate_names=region_short_name)
     else:
-        city = City.objects.filter(
-            Q(search_names__icontains=city_search), country=country,
-        )
-    try:
-        if city.count() > 1:
-            city = city.filter(
-                Q(alternate_names__contains=city_part['long_name']) | Q(slug=slugify(city_part['long_name']))
-            ).first()
-        else:
-            city = city.first()
-    except AttributeError:
-        pass
+        region = None
+
+    # get city part
+    city_part = address_parts.get('locality') or address_parts.get('sublocality')
+    city_long_name = city_part['long_name']
+    city_search = '%s%s' % (city_long_name.replace(' ', ''), country.name.replace(' ', ''))
+    # filter by country, region and search_names
+    cities = City.objects.filter(country=country,
+                                 region=region,
+                                 search_names__icontains=city_search)
+    # filter by name
+    city = cities.filter(name=city_long_name).first()
+    # filter by Alternate names
+    if not city:
+        city = cities.filter(alternate_names__contains=city_long_name).first()
+    # create If not exists
+    if not city:
+        city = City.objects.create(country=country, region=region, name=city_long_name, search_names=city_long_name,
+                                   latitude=location.get('lat', 0), longitude=location.get('lng', 0))
+
 
     postal_code = address_parts.get('postal_code', {}).get('long_name')
     address = {
