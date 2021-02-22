@@ -45,22 +45,19 @@ def parse_google_address(address_data):
     region_part_key = sorted([x for x in address_parts.keys()
                           if 'administrative_area_level_' in x])
     region_part_key = region_part_key[0] if region_part_key else 'locality'
-    if region_part_key:
-        region_short_name = address_parts.get(region_part_key)['short_name']
-        region_long_name = address_parts.get(region_part_key)['long_name']
-        # sarch for existing region
-        region = Region.objects.filter(Q(name__icontains=region_long_name) | \
-                                       Q(alternate_names__contains=region_short_name),
-                                       country=country) \
-                               .first()
-        # create new region if it doesn't exist
-        if not region:
-            region = Region.objects.create(name=region_long_name,
-                                           country=country,
-                                           display_name=region_short_name,
-                                           alternate_names=region_short_name)
-    else:
-        region = None
+    region_short_name = address_parts.get(region_part_key)['short_name']
+    region_long_name = address_parts.get(region_part_key)['long_name']
+    # sarch for existing region
+    region = Region.objects.filter(Q(name__icontains=region_long_name) | \
+                                    Q(alternate_names__contains=region_short_name),
+                                    country=country) \
+                           .first()
+    # create new region if it doesn't exist
+    if not region:
+        region = Region.objects.create(name=region_long_name,
+                                        country=country,
+                                        display_name=region_short_name,
+                                        alternate_names=region_short_name)
 
     # get city part
     city_part = address_parts.get('locality') or address_parts.get('sublocality')
