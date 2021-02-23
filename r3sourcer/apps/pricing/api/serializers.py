@@ -168,7 +168,7 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
             is_upper = upper_limit and data.get('rate') > upper_limit
             if is_lower or is_upper:
                 raise exceptions.ValidationError({
-                    'hourly_rate': _('Hourly rate should be between {} and {}')
+                    'rate': _('Rate should be between {} and {}')
                         .format(lower_limit, upper_limit)
                 })
 

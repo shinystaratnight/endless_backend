@@ -27,3 +27,10 @@ class ExtranetCandidateTimesheetEndpoint(ApiEndpoint):
     base_viewset = viewsets.TimeSheetCandidateViewset
     serializer = timesheet_serializers.TimeSheetSerializer
     filter_class = filters.TimesheetFilter
+
+
+class TimeSheetRateEndpoint(ApiEndpoint):
+
+    model = hr_models.TimeSheetRate
+    serializer = timesheet_serializers.TimeSheetRateSerializer
+    filter_class = filters.TimeSheetRateFilter

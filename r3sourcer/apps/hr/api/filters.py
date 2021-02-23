@@ -239,3 +239,12 @@ class JobOfferCandidateFilter(FilterSet):
             candidate_contact__contact=self.request.user.contact, **params).order_by()
         queryset = queryset.annotate(has_previous=Exists(subquery)).filter(has_previous=is_recurring)
         return queryset
+
+
+class TimeSheetRateFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.TimeSheetRate
+        fields = [
+            'timesheet',
+        ]

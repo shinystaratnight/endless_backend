@@ -4,7 +4,7 @@ from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.hr.api import filters as hr_filters, viewsets as hr_viewsets
 from r3sourcer.apps.hr.api.serializers import job as job_serializers, timesheet as timesheet_serializer
 from r3sourcer.apps.hr.endpoints.payment import InvoiceEndpoint
-from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint, ExtranetCandidateTimesheetEndpoint
+from r3sourcer.apps.hr.endpoints.timesheet_endpoint import TimeSheetEndpoint, ExtranetCandidateTimesheetEndpoint, TimeSheetRateEndpoint
 
 
 class JobsiteEndpoint(ApiEndpoint):
@@ -100,6 +100,7 @@ router.register(endpoint=JobTagEndpoint())
 router.register(endpoint=ShiftDateEndpoint())
 router.register(endpoint=ShiftEndpoint())
 router.register(endpoint=TimeSheetEndpoint())
+router.register(endpoint=TimeSheetRateEndpoint())
 router.register(endpoint=ExtranetCandidateTimesheetEndpoint(), url='hr/timesheets-candidate')
 router.register(hr_models.TimeSheetIssue)
 router.register(endpoint=JobOfferEndpoint())

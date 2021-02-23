@@ -4,7 +4,7 @@ from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
 from django.utils.formats import time_format
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import serializers
+from rest_framework import serializers, exceptions
 
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField, ApiContactPictureField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
@@ -14,12 +14,13 @@ from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.api import serializers as sms_serializers
 from r3sourcer.helpers.datetimes import utc_now
-from ...models import TimeSheet, CandidateEvaluation
+from ...models import TimeSheet, CandidateEvaluation, TimeSheetRate
 
 __all__ = [
     'TimeSheetSignatureSerializer',
     'PinCodeSerializer',
     'TimeSheetSerializer',
+    'TimeSheetRateSerializer',
 ]
 
 
@@ -432,3 +433,42 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
     def get_time_zone(self, obj):
         return obj.tz.zone
+
+
+class TimeSheetRateSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = TimeSheetRate
+        fields = (
+            'id', 'value', 'rate', 'timesheet', 'worktype', 'uom'
+        )
+
+    def validate(self, data):
+        timesheet = data.get('timesheet')
+        uom = data.get('uom')
+        worktype = data.get('worktype', None)
+        rate = data.get('rate')
+        value = data.get('value')
+
+        # validate value
+        if value is None or value <= 0:
+            raise exceptions.ValidationError({
+                'value': _('Value must be graeter then 0')
+            })
+
+        # validate rate    TODO choose betweann master company and regular company
+        skill_rate_range = timesheet.job_offer.shift.date.job.position.skill_rate_ranges \
+                                                    .filter(uom=uom, worktype=worktype) \
+                                                    .last()
+        if skill_rate_range:
+            lower_limit = skill_rate_range.price_list_lower_rate_limit
+            upper_limit = skill_rate_range.price_list_upper_rate_limit
+            is_lower = lower_limit and data.get('rate') < lower_limit
+            is_upper = upper_limit and data.get('rate') > upper_limit
+            if is_lower or is_upper:
+                raise exceptions.ValidationError({
+                    'rate': _('Rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
+
+        return data
