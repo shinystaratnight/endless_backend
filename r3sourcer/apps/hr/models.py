@@ -27,7 +27,7 @@ from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.skills.models import Skill, SkillBaseRate
+from r3sourcer.apps.skills.models import Skill, SkillBaseRate, WorkType
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
@@ -1187,11 +1187,11 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         verbose_name=_("Supervisor modified at")
     )
 
-    candidate_rate = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
+    uom_rate = models.ManyToManyField(
+        core_models.UnitOfMeasurement,
+        through='hr.TimeSheetRate',
         blank=True,
-        null=True
+        verbose_name=_("Hourly rate"),
     )
 
     rate_overrides_approved_by = models.ForeignKey(
@@ -2508,3 +2508,46 @@ class JobTag(UUIDModel):
 
     def __str__(self):
         return self.tag.name
+
+
+class TimeSheetRate(UUIDModel):
+    timesheet = models.ForeignKey(
+        TimeSheet,
+        verbose_name=_("TimeSheet"),
+        on_delete=models.CASCADE,
+        related_name='timesheet_rates')
+
+    uom = models.ForeignKey(core_models.UnitOfMeasurement,
+        verbose_name=_('Unit of measurement'),
+        on_delete=models.CASCADE,
+        related_name='timesheet_rates')
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="timesheet_rates",
+        verbose_name=_("Type of work"),
+        blank=True,
+        null=True)
+
+    value = models.DecimalField(
+        _("Timesheet Value"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    rate = models.DecimalField(
+        _("Timesheet Rate"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    class Meta:
+        verbose_name = _("TimeSheet Rate")
+        verbose_name_plural = _("TimeSheet Rates")
+        unique_together = [
+            'uom',
+            'timesheet',
+        ]
+
+    def __str__(self):
+        return f'{self.timesheet}-{self.worktype}'
