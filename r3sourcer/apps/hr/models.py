@@ -341,6 +341,18 @@ class Job(core_models.AbstractBaseOrder):
         blank=True
     )
 
+    WAGE_CHOICES = Choices(
+        (0,'HOURLY', _("Hourly wage")),
+        (1, 'PIECEWORK', _("Piecework wage")),
+        (2, 'COMBINED', _("Combined wage")),
+    )
+
+    wage_type = models.PositiveSmallIntegerField(
+        choices=WAGE_CHOICES,
+        verbose_name=_("Type of wage"),
+        default=WAGE_CHOICES.HOURLY
+    )
+
     # TODO delete this field after uoms task finished
     hourly_rate_default = models.DecimalField(
         decimal_places=2,

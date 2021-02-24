@@ -10,7 +10,6 @@ import uuid
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('core', '0143_merge_20210212_0605'),
         ('skills', '0025_worktype_worktypelanguage'),
         ('hr', '0049_auto_20200515_1812'),
     ]
