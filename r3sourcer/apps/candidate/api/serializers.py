@@ -41,7 +41,6 @@ class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
-    default_rate = serializers.DecimalField(max_digits=8, decimal_places=2, write_only=True, required=False)
 
     class Meta:
         model = candidate_models.SkillRel
@@ -56,8 +55,7 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
 
     def validate(self, data):
         skill = data.get('skill')
-        default_uom = core_models.UnitOfMeasurement.objects.get(default=True)
-        skill_rate_range = skill.skill_rate_ranges.filter(uom=default_uom, worktype=None).first()
+        skill_rate_range = skill.skill_rate_ranges.filter(worktype=None).first()
         if skill_rate_range and data.get('default_rate'):
             lower_limit = skill_rate_range.lower_rate_limit
             upper_limit = skill_rate_range.upper_rate_limit
@@ -68,48 +66,6 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
                     'rate': _('Default rate should be between {} and {}')
                         .format(lower_limit, upper_limit)
                 })
-        return data
-
-    def create(self, validated_data):
-        default_rate = validated_data.pop('default_rate', None)
-        # create SkillRel
-        skill_rel = super().create(validated_data)
-
-        # create default rate for SkillRel
-        if default_rate:
-            default_uom = core_models.UnitOfMeasurement.objects.get(default=True)
-            candidate_models.SkillRate.objects.create(skill_rel=skill_rel,
-                                                      uom=default_uom,
-                                                      rate=default_rate)
-        return skill_rel
-
-
-class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
-    class Meta:
-        model = candidate_models.SkillRate
-        fields = (
-            '__all__',
-        )
-        extra_kwargs = {
-            'worktype': {'required': False}
-        }
-
-    def validate(self, data):
-        skill_rel = data.get('skill_rel')
-        uom = data.get('uom')
-        worktype = data.get('worktype', None)
-        skill_rate_range = skill_rel.skill.skill_rate_ranges.filter(uom=uom, worktype=worktype).first()
-        if skill_rate_range:
-            lower_limit = skill_rate_range.lower_rate_limit
-            upper_limit = skill_rate_range.upper_rate_limit
-            is_lower = lower_limit and data.get('rate') < lower_limit
-            is_upper = upper_limit and data.get('rate') > upper_limit
-            if is_lower or is_upper:
-                raise exceptions.ValidationError({
-                    'rate': _('Rate should be between {} and {}')
-                        .format(lower_limit, upper_limit)
-                })
-
         return data
 
 
