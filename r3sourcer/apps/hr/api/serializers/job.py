@@ -159,7 +159,7 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
                     'address': ['__all__'],
                 }],
                 'position': ['id', {'name': ('name', {'translations': ('language', 'value')})},
-                             {'skill_rate_ranges': ('id', 'uom', 'upper_rate_limit', 'lower_rate_limit', 'default_rate')}],
+                             {'skill_rate_ranges': ('id', 'upper_rate_limit', 'lower_rate_limit', 'default_rate')}],
             }
         )
 

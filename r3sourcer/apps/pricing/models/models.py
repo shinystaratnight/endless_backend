@@ -280,12 +280,6 @@ class PriceListRate(UUIDModel):
         default=0.00
     )
 
-    uom = models.ForeignKey(
-        UnitOfMeasurement,
-        verbose_name=_("Unit of measurement"),
-        null=True
-    )
-
     default_rate = models.BooleanField(
         default=False,
         verbose_name=_("Is Default Rate")
@@ -294,7 +288,7 @@ class PriceListRate(UUIDModel):
     class Meta:
         verbose_name = _('Price List Rate')
         verbose_name_plural = _('Price List Rates')
-        unique_together = ('price_list', 'skill', 'uom', 'worktype')
+        unique_together = ('price_list', 'skill', 'worktype')
 
     @classmethod
     def set_default_rate(cls, sender, instance, created, **kwargs):
@@ -303,7 +297,7 @@ class PriceListRate(UUIDModel):
             instance.save()
 
     def save(self, *args, **kwargs):
-        skill_rate_range = self.skill.skill_rate_ranges.filter(uom=self.uom).first()
+        skill_rate_range = self.skill.skill_rate_ranges.filter(worktype=self.worktype).first()
         if skill_rate_range:
             if not self.rate:
                 self.rate = skill_rate_range.price_list_default_rate
@@ -326,7 +320,7 @@ class PriceListRate(UUIDModel):
                 default_rates.update(default_rate=False)
 
     def __str__(self):
-        return f"{self.skill}-{self.worktype}-{self.uom}-{self.rate}"
+        return f"{self.skill}-{self.worktype}-{self.rate}"
 
 
 class PriceListRateCoefficient(UUIDModel):

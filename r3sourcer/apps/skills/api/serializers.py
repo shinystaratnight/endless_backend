@@ -20,7 +20,7 @@ class SkillSerializer(ApiBaseModelSerializer):
             {'name': ('id', 'name', {'translations': ('language', 'value')},
                          {'industry': ('id', 'type', {'translations': ('language', 'value')})})
             },
-            {'skill_rate_ranges': ('id','uom', 'worktype',
+            {'skill_rate_ranges': ('id', 'worktype',
                                    'upper_rate_limit', 'lower_rate_limit', 'default_rate',
                                    'price_list_upper_rate_limit', 'price_list_lower_rate_limit',
                                    'price_list_default_rate'),
@@ -78,7 +78,7 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
     class Meta:
         model = SkillRateRange
         fields = (
-            'id', 'skill', 'worktype', 'uom',
+            'id', 'skill', 'worktype',
             'upper_rate_limit', 'lower_rate_limit', 'default_rate',
             'price_list_upper_rate_limit', 'price_list_lower_rate_limit', 'price_list_default_rate'
             )

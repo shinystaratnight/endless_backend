@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
-from r3sourcer.apps.core.models import Company, UnitOfMeasurement
+from r3sourcer.apps.core.models import Company, UnitOfMeasurement, UnitOfMeasurement
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
@@ -253,13 +253,19 @@ class WorkType(UUIDModel):
         verbose_name=_('Skill Name'),
         related_name='work_types'
     )
-    name = models.CharField(max_length=127, verbose_name=_("Type of work"))
+    uom = models.ForeignKey(UnitOfMeasurement,
+        verbose_name=_('Unit of measurement'),
+        on_delete=models.CASCADE,
+        related_name='timesheet_rates'
+    )
+    name = models.CharField(max_length=127, verbose_name=_("Skill activity name"))
 
     class Meta:
-        verbose_name = _("Type of work")
-        verbose_name_plural = _("Types of work")
+        verbose_name = _("Skill activity")
+        verbose_name_plural = _("Skill activities")
         unique_together = [
             'skill_name',
+            'uom',
             'name',
         ]
 
@@ -318,13 +324,6 @@ class SkillRateRange(MYOBMixin, UUIDModel):
         blank=True,
         null=True
     )
-    uom = models.ForeignKey(
-        UnitOfMeasurement,
-        related_name='skill_rate_ranges',
-        on_delete=models.CASCADE,
-        verbose_name=_('Unit of measurement'),
-    )
-
     upper_rate_limit = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -362,7 +361,7 @@ class SkillRateRange(MYOBMixin, UUIDModel):
     class Meta:
         verbose_name = _("Skill Rate Range")
         verbose_name_plural = _("Skill Rate Ranges")
-        unique_together = ("skill", "worktype", "uom")
+        unique_together = ("skill", "worktype")
 
     def __str__(self):
         return f"{self.skill.name.name} rate range"

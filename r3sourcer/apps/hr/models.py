@@ -27,7 +27,7 @@ from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.skills.models import Skill, SkillBaseRate
+from r3sourcer.apps.skills.models import Skill, SkillBaseRate, WorkType
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
@@ -339,6 +339,18 @@ class Job(core_models.AbstractBaseOrder):
         verbose_name=_("Transportation to Work"),
         null=True,
         blank=True
+    )
+
+    WAGE_CHOICES = Choices(
+        (0,'HOURLY', _("Hourly wage")),
+        (1, 'PIECEWORK', _("Piecework wage")),
+        (2, 'COMBINED', _("Combined wage")),
+    )
+
+    wage_type = models.PositiveSmallIntegerField(
+        choices=WAGE_CHOICES,
+        verbose_name=_("Type of wage"),
+        default=WAGE_CHOICES.HOURLY
     )
 
     # TODO delete this field after uoms task finished
@@ -1198,6 +1210,13 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         max_digits=16,
         blank=True,
         null=True
+    )
+
+    worktype_rates = models.ManyToManyField(
+        WorkType,
+        through='hr.TimeSheetRate',
+        blank=True,
+        verbose_name=_("Activities rates"),
     )
 
     rate_overrides_approved_by = models.ForeignKey(
@@ -2514,3 +2533,41 @@ class JobTag(UUIDModel):
 
     def __str__(self):
         return self.tag.name
+
+
+class TimeSheetRate(UUIDModel):
+    timesheet = models.ForeignKey(
+        TimeSheet,
+        verbose_name=_("TimeSheet"),
+        on_delete=models.CASCADE,
+        related_name='timesheet_rates')
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="timesheet_rates",
+        verbose_name=_("Type of work"),
+        blank=True,
+        null=True)
+
+    value = models.DecimalField(
+        _("Timesheet Value"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    rate = models.DecimalField(
+        _("Timesheet Rate"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    class Meta:
+        verbose_name = _("TimeSheet Rate")
+        verbose_name_plural = _("TimeSheet Rates")
+        unique_together = [
+            'worktype',
+            'timesheet',
+        ]
+
+    def __str__(self):
+        return f'{self.timesheet}-{self.worktype}'
