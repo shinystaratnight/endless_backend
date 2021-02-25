@@ -1199,11 +1199,18 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         verbose_name=_("Supervisor modified at")
     )
 
-    uom_rate = models.ManyToManyField(
-        core_models.UnitOfMeasurement,
+    candidate_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+
+    worktype_rates = models.ManyToManyField(
+        WorkType,
         through='hr.TimeSheetRate',
         blank=True,
-        verbose_name=_("Hourly rate"),
+        verbose_name=_("Activities rates"),
     )
 
     rate_overrides_approved_by = models.ForeignKey(
@@ -2529,11 +2536,6 @@ class TimeSheetRate(UUIDModel):
         on_delete=models.CASCADE,
         related_name='timesheet_rates')
 
-    uom = models.ForeignKey(core_models.UnitOfMeasurement,
-        verbose_name=_('Unit of measurement'),
-        on_delete=models.CASCADE,
-        related_name='timesheet_rates')
-
     worktype = models.ForeignKey(
         WorkType,
         related_name="timesheet_rates",
@@ -2557,7 +2559,7 @@ class TimeSheetRate(UUIDModel):
         verbose_name = _("TimeSheet Rate")
         verbose_name_plural = _("TimeSheet Rates")
         unique_together = [
-            'uom',
+            'worktype',
             'timesheet',
         ]
 

@@ -445,7 +445,6 @@ class TimeSheetRateSerializer(ApiBaseModelSerializer):
 
     def validate(self, data):
         timesheet = data.get('timesheet')
-        uom = data.get('uom')
         worktype = data.get('worktype', None)
         rate = data.get('rate')
         value = data.get('value')
@@ -458,7 +457,7 @@ class TimeSheetRateSerializer(ApiBaseModelSerializer):
 
         # validate rate    TODO choose betweann master company and regular company
         skill_rate_range = timesheet.job_offer.shift.date.job.position.skill_rate_ranges \
-                                                    .filter(uom=uom, worktype=worktype) \
+                                                    .filter(worktype=worktype) \
                                                     .last()
         if skill_rate_range:
             lower_limit = skill_rate_range.price_list_lower_rate_limit
