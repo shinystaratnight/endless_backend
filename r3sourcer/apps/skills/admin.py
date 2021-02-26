@@ -1,3 +1,5 @@
+from django import forms
+from django.db.models import Q
 from django.contrib import admin
 import nested_admin
 
@@ -17,6 +19,7 @@ class WorkTypeLanguageInline(nested_admin.NestedTabularInline):
 
 class WorkTypeInline(nested_admin.NestedTabularInline):
     model = models.WorkType
+    exclude = ['skill']
     extra = 0
     inlines = [WorkTypeLanguageInline]
 
@@ -32,15 +35,20 @@ class SkillRateRangeInline(admin.TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "worktype" and request._obj_:
-            kwargs["queryset"] = models.WorkType.objects.filter(skill_name=request._obj_.name)
+            kwargs["queryset"] = models.WorkType.objects.filter(Q(skill_name=request._obj_.name) | \
+                                                                Q(skill=request._obj_))
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
+class WorkTypeSkillInline(admin.TabularInline):
+    model = models.WorkType
+    exclude = ['skill_name']
+    extra = 0
 
 class SkillAdmin(admin.ModelAdmin):
     list_display = ('name', 'company', 'industry', )
     search_fields = ['name__name', 'company__name']
     list_filter = (('company', ObjectRelatedDropdownFilter),)
-    inlines = [SkillRateRangeInline]
+    inlines = [WorkTypeSkillInline, SkillRateRangeInline]
 
     def industry(self, obj):
         return obj.name.industry

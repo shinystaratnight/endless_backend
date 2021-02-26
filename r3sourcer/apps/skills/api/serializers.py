@@ -121,6 +121,10 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
     class Meta:
         model = WorkType
         fields = (
-            'id', 'skill_name', 'name',
-            {'translations': ('language', 'value')},
+            'id', 'name', 'uom',
+            {'skill': ('id', '__str__'),
+             'skill_name': ('id', '__str__'),
+             'translations': ('language', 'value')},
             )
+
+        extra_kwargs = {'skill_name': {'read_only': True}}

@@ -1,3 +1,4 @@
+from django.db.models import Q
 from r3sourcer.apps.core.api import viewsets as core_viewsets
 from r3sourcer.apps.skills.models import Skill
 
@@ -34,7 +35,8 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
     def get_queryset(self):
         qs = super().get_queryset()
         qs = qs.filter(
-            skill_name__industry__in=self.request.user.company.industries.all(),
+            Q(skill_name__industry__in=self.request.user.company.industries.all()) |
+            Q(skill__company=self.request.user.company)
         )
         if self.request.query_params.get('ordering'):
             ordering = self.request.query_params.get('ordering')
