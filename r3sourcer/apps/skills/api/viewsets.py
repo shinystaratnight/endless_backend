@@ -42,7 +42,7 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
             ordering = self.request.query_params.get('ordering')
             qs = qs.order_by(*ordering.split(','))
         else:
-            qs = qs.order_by('skill_name')
+            qs = qs.order_by('name')
 
         return qs
 
