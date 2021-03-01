@@ -859,12 +859,6 @@ class JobViewset(BaseApiViewset):
             for new_shift_date_obj in new_shift_dates_objs:
                 self._extend_shift_date(job, new_shift_date_obj, shift_objs, is_autofill)
 
-        shifts = hr_models.Shift.objects.filter(
-            date__job=job,
-            date__shift_date__gte=job.now_utc.date(),
-            date__cancelled=False,
-        ).select_related('date').order_by('date__shift_date', 'time')
-
         candidate_ids = hr_models.JobOffer.objects.filter(
             shift__date__job=job,
             shift__date__cancelled=False,
