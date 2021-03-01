@@ -838,17 +838,18 @@ class JobViewset(BaseApiViewset):
             new_shift_dates = request.data.get('job_shift', [])
             new_shift_dates_objs = []
 
-            for new_shift_date in new_shift_dates:
-                new_shift_date = datetime.datetime.strptime(new_shift_date, '%Y-%m-%d').date()
-                new_shift_date_obj, created = hr_models.ShiftDate.objects.get_or_create(
-                    job=job,
-                    shift_date=new_shift_date,
-                    defaults={
-                        'workers': job.workers,
-                        'hourly_rate': latest_shift_date.hourly_rate,
-                    },
-                )
-                new_shift_dates_objs.append(new_shift_date_obj)
+            if new_shift_dates:
+                for new_shift_date in new_shift_dates:
+                    new_shift_date = datetime.datetime.strptime(new_shift_date, '%Y-%m-%d').date()
+                    new_shift_date_obj, created = hr_models.ShiftDate.objects.get_or_create(
+                        job=job,
+                        shift_date=new_shift_date,
+                        defaults={
+                            'workers': job.workers,
+                            'hourly_rate': latest_shift_date.hourly_rate,
+                        },
+                    )
+                    new_shift_dates_objs.append(new_shift_date_obj)
 
             if is_autofill:
                 shift_objs = hr_models.JobOffer.objects.filter(shift__date=latest_shift_date)
