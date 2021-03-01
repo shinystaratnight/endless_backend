@@ -394,9 +394,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @workflow_function
     def is_skill_rate_defined(self):
-        for skill in self.candidate_skills.filter(score__gt=0, skill__active=True):
-            if skill.skill_rates.filter(rate__gt=0):
-                return True
+        return self.candidate_skills.filter(score__gt=0, skill__active=True, hourly_rate__gt=0).count() > 0
     is_skill_rate_defined.short_description = _("At least one active skill hourly rate must be higher that 0")
 
     @workflow_function
@@ -557,12 +555,12 @@ class CandidateContact(UUIDModel, WorkflowProcess):
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         master_company = self.get_closest_company()
-        if not self.recruitment_agent:
+        if not self.recruitment_agent and master_company:
             self.recruitment_agent = master_company.primary_contact
 
         super().save(*args, **kwargs)
 
-        if just_added:
+        if just_added and master_company:
             company_contact = self.recruitment_agent
             company_contact_relation = CompanyContactRelationship.objects.create(company=master_company,
                                                                                  company_contact=company_contact)

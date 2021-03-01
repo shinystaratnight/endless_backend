@@ -253,13 +253,13 @@ class TestShift:
 class TestTimesheet:
 
     def test_str(self, timesheet):
-        assert str(timesheet) == '01/01/2017 07:00 AM  '
+        assert str(timesheet) == '2017-01-01 07:00:00+00:00 None None'
 
     def test_str_candidate_submitted(self, timesheet):
         timesheet.candidate_submitted_at = make_aware(
             datetime.datetime(2017, 1, 1, 18, 0)
         )
-        assert str(timesheet) == '01/01/2017 07:00 AM 01/01/2017 06:00 PM '
+        assert str(timesheet) == '2017-01-01 07:00:00+00:00 2017-01-01 18:00:00+00:00 None'
 
     def test_str_supervisor_approved(self, timesheet):
         timesheet.candidate_submitted_at = make_aware(
@@ -268,7 +268,7 @@ class TestTimesheet:
         timesheet.supervisor_approved_at = make_aware(
             datetime.datetime(2017, 1, 1, 20, 0)
         )
-        res = '01/01/2017 07:00 AM 01/01/2017 06:00 PM 01/01/2017 08:00 PM'
+        res = '2017-01-01 07:00:00+00:00 2017-01-01 18:00:00+00:00 2017-01-01 20:00:00+00:00'
         assert str(timesheet) == res
 
     def test_get_job_offer(self, timesheet, job_offer):

@@ -23,7 +23,7 @@ class TestTimeSheetSerializer:
     def test_get_company(self, serializer, timesheet, regular_company):
         res = serializer.get_company(timesheet)
 
-        assert res == {'id': regular_company.id, '__str__': str(regular_company)}
+        assert res == {'id': regular_company.id, '__str__': str(regular_company), 'supervisor_approved_scheme': 'BASIC'}
 
     def test_get_company_none(self, serializer, timesheet):
         res = serializer.get_company(None)
@@ -50,7 +50,7 @@ class TestTimeSheetSerializer:
     def test_get_position(self, serializer, timesheet, skill):
         res = serializer.get_position(timesheet)
 
-        assert res == {'id': skill.id, '__str__': str(skill)}
+        assert res == {'id': skill.id, '__str__': str(skill), 'translations': []}
 
     def test_get_position_none(self, serializer, timesheet):
         res = serializer.get_position(None)

@@ -32,6 +32,14 @@ def user_another(db):
 
 
 @pytest.fixture
+def user_primary(db):
+    return core_models.User.objects.create_user(
+        email='test3@test.tt', phone_mobile='+12345678903',
+        password='test2345'
+    )
+
+
+@pytest.fixture
 def contact_data():
     return dict(
         title='Mr.',
@@ -72,6 +80,11 @@ def contact_another(db, user_another, contact_data_another):
 
 
 @pytest.fixture
+def contact_primary(db, user_primary):
+    return user_primary.contact
+
+
+@pytest.fixture
 def candidate_contact(db, contact):
     return candidate_models.CandidateContact.objects.create(
         contact=contact
@@ -94,13 +107,21 @@ def company_contact_another(db, contact_another):
 
 
 @pytest.fixture
-def master_company(db):
+def company_contact_primary(db, contact_primary):
+    return core_models.CompanyContact.objects.create(
+        contact=contact_primary
+    )
+
+
+@pytest.fixture
+def master_company(db, company_contact_primary):
     return core_models.Company.objects.create(
         name='Master',
         business_id='123',
         registered_for_gst=True,
         type=core_models.Company.COMPANY_TYPES.master,
-        timesheet_approval_scheme=core_models.Company.TIMESHEET_APPROVAL_SCHEME.PIN
+        timesheet_approval_scheme=core_models.Company.TIMESHEET_APPROVAL_SCHEME.PIN,
+        primary_contact=company_contact_primary
     )
 
 
