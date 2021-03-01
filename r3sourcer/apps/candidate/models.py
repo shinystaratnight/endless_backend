@@ -394,9 +394,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @workflow_function
     def is_skill_rate_defined(self):
-        for skill in self.candidate_skills.filter(score__gt=0, skill__active=True):
-            if skill.skill_rates.filter(rate__gt=0):
-                return True
+        return self.candidate_skills.filter(score__gt=0, skill__active=True, hourly_rate__gt=0).count() > 0
     is_skill_rate_defined.short_description = _("At least one active skill hourly rate must be higher that 0")
 
     @workflow_function

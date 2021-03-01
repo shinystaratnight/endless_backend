@@ -45,9 +45,8 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
     class Meta:
         model = candidate_models.SkillRel
         fields = (
-            'pk', 'score', 'candidate_contact', 'prior_experience', 'default_rate',
+            'pk', 'score', 'candidate_contact', 'prior_experience', 'hourly_rate',
             {'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__')},
-            # {'skill_rates': ('id',)},
         )
         extra_kwargs = {
             'score': {'max_value': Decimal(5)},
@@ -56,14 +55,14 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
     def validate(self, data):
         skill = data.get('skill')
         skill_rate_range = skill.skill_rate_ranges.filter(worktype=None).first()
-        if skill_rate_range and data.get('default_rate'):
+        if skill_rate_range and data.get('hourly_rate'):
             lower_limit = skill_rate_range.lower_rate_limit
             upper_limit = skill_rate_range.upper_rate_limit
-            is_lower = lower_limit and data.get('default_rate') < lower_limit
-            is_upper = upper_limit and data.get('default_rate') > upper_limit
+            is_lower = lower_limit and data.get('hourly_rate') < lower_limit
+            is_upper = upper_limit and data.get('hourly_rate') > upper_limit
             if is_lower or is_upper:
                 raise exceptions.ValidationError({
-                    'rate': _('Default rate should be between {} and {}')
+                    'rate': _('Hourly rate should be between {} and {}')
                         .format(lower_limit, upper_limit)
                 })
         return data
