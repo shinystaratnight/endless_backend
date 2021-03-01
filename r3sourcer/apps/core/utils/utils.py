@@ -76,5 +76,8 @@ def is_valid_email(email, *args):
 
 
 def is_valid_phone_number(phone_number, country_code):
-    phone = normalize_phone_number(phone_number, country_code)
+    try:
+        phone = normalize_phone_number(phone_number, country_code)
+    except AttributeError as e:
+        return False
     return validate_phone_number(phone, country_code)

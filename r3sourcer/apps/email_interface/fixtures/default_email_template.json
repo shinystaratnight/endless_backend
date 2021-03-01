@@ -208,5 +208,47 @@
     "delivery_timeout": 10,
     "language": "et"
   }
+},
+{
+  "model": "email_interface.defaultemailtemplate",
+  "pk": 17,
+  "fields": {
+    "name": "Login email token",
+    "slug": "login-email-token",
+    "subject_template": "Email login",
+    "message_text_template": "Email login for [[contact]].\nPlease follow this link: [[auth_url]].\nIf the link has expired please request a new one by visiting [[project_url]]",
+    "message_html_template": "<div style=\"max-width: 850px; color: #333; font-family: Arial, sans-serif;\">\n\t<div style=\"text-align: center;\theight: 66px; background-image: linear-gradient(to top, #0061a2, #28a3fc); background-color: #28a3fc;\">\n\t\t<img style=\"height: 34px; margin-top: 16px;\" src=\"https://r3sourcer.com/assets/img/new-software-white.png\" alt=\"R3sourcer\">\n\t</div>\n\t<div style=\"margin-top: 24px; margin-bottom: 16px; font-size: 22px;\tline-height: 28px; text-align: center; color: #333\">\n\t\t<div style=\"height: 32px; width: 42px; margin: 0 auto 12px;\tpadding: 24px 19px;\tborder: 2px solid #333; border-radius: 50%;\">\n\t\t\t<img src=\"https://r3sourcer.com/assets/img/letter.png\" alt=\"Email\" width=\"32\">\n\t\t</div>\n\t\t<span>Email login</span>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\"></div>\n\t<div style=\"margin-top: 28px; margin-bottom: 4px; font-size: 16px; line-height: 24px; font-weight: bold; text-align: center; color: #4f4f4f;\">Email login for [[contact]].</div>\n\t<div style=\"font-size: 14px; line-height: 18px;\ttext-align: center; color: #333\">Please follow this link: </div>\n\t<a style=\"display: block; width: 120px; margin: 20px auto 0; padding: 14px 68px; font-size: 16px; line-height: 21px; font-weight: bold; text-align: center; color: white; border-radius: 50px; background-color: #28a3fc; text-decoration: none !important;\" href=\"[[auth_url]]\" target=\"_blank\">Login</a>\n\t<div style=\"margin-top: 16px; margin-bottom: 26px; font-size: 12px; line-height: 16px; text-align: center; color: #c2c2c2;\">\n\t\t<span style=\"color: #c2c2c2;\">or copy and paste this link into your browser:</span> <br>\n\t\t<a href=\"[[auth_url]]\" style=\"color: #0684e0;\" target=\"_blank\">[[auth_url]]</a>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\">If the link has expired please request a new one by visiting [[project_url]]</div>\n</div>",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "language": "et"
+  }
+},
+{
+  "model": "email_interface.defaultemailtemplate",
+  "pk": 18,
+  "fields": {
+    "name": "Login email token",
+    "slug": "login-email-token",
+    "subject_template": "Email login",
+    "message_text_template": "Email login for [[contact]].\nPlease follow this link: [[auth_url]].\nIf the link has expired please request a new one by visiting [[project_url]]",
+    "message_html_template": "<div style=\"max-width: 850px; color: #333; font-family: Arial, sans-serif;\">\n\t<div style=\"text-align: center;\theight: 66px; background-image: linear-gradient(to top, #0061a2, #28a3fc); background-color: #28a3fc;\">\n\t\t<img style=\"height: 34px; margin-top: 16px;\" src=\"https://r3sourcer.com/assets/img/new-software-white.png\" alt=\"R3sourcer\">\n\t</div>\n\t<div style=\"margin-top: 24px; margin-bottom: 16px; font-size: 22px;\tline-height: 28px; text-align: center; color: #333\">\n\t\t<div style=\"height: 32px; width: 42px; margin: 0 auto 12px;\tpadding: 24px 19px;\tborder: 2px solid #333; border-radius: 50%;\">\n\t\t\t<img src=\"https://r3sourcer.com/assets/img/letter.png\" alt=\"Email\" width=\"32\">\n\t\t</div>\n\t\t<span>Email login</span>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\"></div>\n\t<div style=\"margin-top: 28px; margin-bottom: 4px; font-size: 16px; line-height: 24px; font-weight: bold; text-align: center; color: #4f4f4f;\">Email login for [[contact]].</div>\n\t<div style=\"font-size: 14px; line-height: 18px;\ttext-align: center; color: #333\">Please follow this link: </div>\n\t<a style=\"display: block; width: 120px; margin: 20px auto 0; padding: 14px 68px; font-size: 16px; line-height: 21px; font-weight: bold; text-align: center; color: white; border-radius: 50px; background-color: #28a3fc; text-decoration: none !important;\" href=\"[[auth_url]]\" target=\"_blank\">Login</a>\n\t<div style=\"margin-top: 16px; margin-bottom: 26px; font-size: 12px; line-height: 16px; text-align: center; color: #c2c2c2;\">\n\t\t<span style=\"color: #c2c2c2;\">or copy and paste this link into your browser:</span> <br>\n\t\t<a href=\"[[auth_url]]\" style=\"color: #0684e0;\" target=\"_blank\">[[auth_url]]</a>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\">If the link has expired please request a new one by visiting [[project_url]]</div>\n</div>",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "language": "ru"
+  }
+},
+{
+  "model": "email_interface.defaultemailtemplate",
+  "pk": 19,
+  "fields": {
+    "name": "Login email token",
+    "slug": "login-email-token",
+    "subject_template": "Email login",
+    "message_text_template": "Email login for [[contact]].\nPlease follow this link: [[auth_url]].\nIf the link has expired please request a new one by visiting [[project_url]]",
+    "message_html_template": "<div style=\"max-width: 850px; color: #333; font-family: Arial, sans-serif;\">\n\t<div style=\"text-align: center;\theight: 66px; background-image: linear-gradient(to top, #0061a2, #28a3fc); background-color: #28a3fc;\">\n\t\t<img style=\"height: 34px; margin-top: 16px;\" src=\"https://r3sourcer.com/assets/img/new-software-white.png\" alt=\"R3sourcer\">\n\t</div>\n\t<div style=\"margin-top: 24px; margin-bottom: 16px; font-size: 22px;\tline-height: 28px; text-align: center; color: #333\">\n\t\t<div style=\"height: 32px; width: 42px; margin: 0 auto 12px;\tpadding: 24px 19px;\tborder: 2px solid #333; border-radius: 50%;\">\n\t\t\t<img src=\"https://r3sourcer.com/assets/img/letter.png\" alt=\"Email\" width=\"32\">\n\t\t</div>\n\t\t<span>Email login</span>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\"></div>\n\t<div style=\"margin-top: 28px; margin-bottom: 4px; font-size: 16px; line-height: 24px; font-weight: bold; text-align: center; color: #4f4f4f;\">Email login for [[contact]].</div>\n\t<div style=\"font-size: 14px; line-height: 18px;\ttext-align: center; color: #333\">Please follow this link: </div>\n\t<a style=\"display: block; width: 120px; margin: 20px auto 0; padding: 14px 68px; font-size: 16px; line-height: 21px; font-weight: bold; text-align: center; color: white; border-radius: 50px; background-color: #28a3fc; text-decoration: none !important;\" href=\"[[auth_url]]\" target=\"_blank\">Login</a>\n\t<div style=\"margin-top: 16px; margin-bottom: 26px; font-size: 12px; line-height: 16px; text-align: center; color: #c2c2c2;\">\n\t\t<span style=\"color: #c2c2c2;\">or copy and paste this link into your browser:</span> <br>\n\t\t<a href=\"[[auth_url]]\" style=\"color: #0684e0;\" target=\"_blank\">[[auth_url]]</a>\n\t</div>\n\t<div style=\"width: 60px; height: 2px; margin: 0 auto; background-color: #28a3fc;\">If the link has expired please request a new one by visiting [[project_url]]</div>\n</div>",
+    "reply_timeout": 0,
+    "delivery_timeout": 10,
+    "language": "en"
+  }
 }
 ]

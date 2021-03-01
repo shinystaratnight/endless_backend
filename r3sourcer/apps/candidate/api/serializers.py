@@ -41,47 +41,31 @@ class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
+
     class Meta:
         model = candidate_models.SkillRel
         fields = (
-            '__all__',
-            {
-                'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__'),
-            },
-            {'skill_rates': ('id')},
+            'pk', 'score', 'candidate_contact', 'prior_experience', 'default_rate',
+            {'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__')},
+            # {'skill_rates': ('id',)},
         )
         extra_kwargs = {
             'score': {'max_value': Decimal(5)},
         }
 
-
-
-class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
-    class Meta:
-        model = candidate_models.SkillRate
-        fields = (
-            '__all__',
-        )
-        extra_kwargs = {
-            'worktype': {'required': False}
-        }
-
     def validate(self, data):
-        skill_rel = data.get('skill_rel')
-        uom = data.get('uom')
-        worktype = data.get('worktype', None)
-        skill_rate_range = skill_rel.skill.skill_rate_ranges.filter(uom=uom, worktype=worktype).first()
-        if skill_rate_range:
+        skill = data.get('skill')
+        skill_rate_range = skill.skill_rate_ranges.filter(worktype=None).first()
+        if skill_rate_range and data.get('default_rate'):
             lower_limit = skill_rate_range.lower_rate_limit
             upper_limit = skill_rate_range.upper_rate_limit
-            is_lower = lower_limit and data.get('rate') < lower_limit
-            is_upper = upper_limit and data.get('rate') > upper_limit
+            is_lower = lower_limit and data.get('default_rate') < lower_limit
+            is_upper = upper_limit and data.get('default_rate') > upper_limit
             if is_lower or is_upper:
                 raise exceptions.ValidationError({
-                    'hourly_rate': _('Hourly rate should be between {} and {}')
+                    'rate': _('Default rate should be between {} and {}')
                         .format(lower_limit, upper_limit)
                 })
-
         return data
 
 

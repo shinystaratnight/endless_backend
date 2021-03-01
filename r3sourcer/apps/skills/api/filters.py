@@ -89,7 +89,7 @@ class SkillRateRangeFilter(FilterSet):
 
     class Meta:
         model = skills_models.SkillRateRange
-        fields = ['skill', 'worktype', 'uom']
+        fields = ['skill', 'worktype']
 
 
 class WorkTypeFilter(FilterSet):
