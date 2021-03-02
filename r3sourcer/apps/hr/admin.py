@@ -1,5 +1,5 @@
 from django.contrib import admin
-
+from django.db.models import Q
 from . import models
 
 
@@ -9,7 +9,8 @@ class TimeSheetRateInline(admin.TabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "worktype" and request._obj_:
-            kwargs["queryset"] = models.WorkType.objects.filter(skill_name=request._obj_.job_offer.shift.date.job.position.name)
+            kwargs["queryset"] = models.WorkType.objects.filter(Q(skill_name=request._obj_.job_offer.shift.date.job.position.name) | \
+                                                                Q(skill=request._obj_.job_offer.shift.date.job.position))
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 class TimeSheetAdmin(admin.ModelAdmin):
