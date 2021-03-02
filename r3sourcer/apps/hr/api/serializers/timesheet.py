@@ -99,6 +99,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'going_to_work_reply_sms',
             'going_to_work_confirmation',
             'supervisor',
+            'wage_type',
             'candidate_submitted_at',
             'supervisor_approved_at',
             'supervisor_approved_scheme',

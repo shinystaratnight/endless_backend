@@ -1157,6 +1157,13 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         null=True
     )
 
+    wage_type = models.PositiveSmallIntegerField(
+        choices=Job.WAGE_CHOICES,
+        verbose_name=_("Type of wage"),
+        blank=True,
+        null=True
+    )
+
     def supervisor_signature_path(self, filename):
         """ Supervisor signature upload handler """
 
@@ -1575,6 +1582,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         if just_added:
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
+            # Set wage_type from Job.wage_type
+            if not self.wage_type and self.job_offer:
+                self.wage_type = self.job_offer.job.wage_type
 
             if utc_now() <= self.shift_started_at:
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
