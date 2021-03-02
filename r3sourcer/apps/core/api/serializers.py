@@ -1860,7 +1860,6 @@ class TagTranslationSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(ApiBaseModelSerializer):
-    translation = TagTranslationSerializer(many=True, source='translations', read_only=True)
     method_fields = ('skills', 'children')
 
     class Meta:
@@ -1873,7 +1872,7 @@ class TagSerializer(ApiBaseModelSerializer):
             'evidence_required_for_approval',
             'confidential',
             'owner',
-            'translation',
+            {'translations': ('language', 'value')}
         )
 
     @classmethod
