@@ -316,12 +316,23 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         8. (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) >= 0
             Error → Total working hours must be longer than 0 hours.
         """
+        wage_type = data.get('wage_type')
         shift_started_at = data.get('shift_started_at', None)
         shift_ended_at = data.get('shift_ended_at', None)
         break_started_at = data.get('break_started_at', None)
         break_ended_at = data.get('break_ended_at', None)
 
         if self.instance.pk:
+            # validate sent fields
+            if wage_type in [1,3]:
+                if not data.get('shift_started_at'):
+                    raise exceptions.ValidationError({'shift_started_at': _('You need to fill in the start time of the shift')})
+                if not data.get('shift_ended_at'):
+                    raise exceptions.ValidationError({'shift_ended_at': _('You need to fill in the end time of the shift')})
+            elif wage_type in [2,3]:
+                if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
+                    raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
+
             if shift_started_at and shift_ended_at:
                 shift_date = self.instance.job_offer.shift.shift_date_at_tz
                 #1
