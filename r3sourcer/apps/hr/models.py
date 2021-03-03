@@ -1116,6 +1116,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     job_offer = models.ForeignKey(
         'hr.JobOffer',
+        unique=True,
         on_delete=models.CASCADE,
         related_name='time_sheets',
         verbose_name=_('Job Offer')
@@ -1143,10 +1144,10 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         verbose_name=_("Going to Work")
     )
 
-    shift_started_at = models.DateTimeField(verbose_name=_("Shift Started at"))
+    shift_started_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Shift Started at"))
     break_started_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Break Started at"))
     break_ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Break Ended at"))
-    shift_ended_at = models.DateTimeField(verbose_name=_("Shift Ended at"))
+    shift_ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Shift Ended at"))
 
     supervisor = models.ForeignKey(
         'core.CompanyContact',
@@ -1279,7 +1280,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     class Meta:
         verbose_name = _("Timesheet Entry")
         verbose_name_plural = _("Timesheet Entries")
-        unique_together = ("job_offer", "shift_started_at")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
