@@ -61,6 +61,7 @@ timezonefinder==4.1.0
 django-rest-swagger==2.2.0
 django-phonenumber-field==3.0.1
 phonenumbers==8.10.21
+django-nested-admin==3.3.3
 
 git+https://github.com/yourlabs/django-cities-light.git@stable/3.x.x#egg=django-cities-light
 git+https://github.com/serafxxx/easy-thumbnails#egg=easy-thumbnails

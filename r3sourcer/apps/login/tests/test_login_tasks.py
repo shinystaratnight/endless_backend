@@ -21,11 +21,14 @@ class TestSendFuncs:
 
         assert contact is None
 
-    def test_send_login_token(self, contact):
+    @mock.patch('r3sourcer.apps.login.tasks.get_site_master_company')
+    def test_send_login_token(self, mocked_company, contact, company):
         send_func = mock.Mock()
+        mocked_company.return_value = company
 
-        send_login_token(contact, send_func, '', redirect_url='/')
+        send_login_token(contact, send_func, '', redirect_url='/', type_=TokenLogin.TYPES.email)
 
+        assert mocked_company.called
         assert send_func.called
         assert TokenLogin.objects.filter(contact=contact).count() == 1
 
@@ -37,7 +40,7 @@ class TestSendFuncs:
 
     @mock.patch('r3sourcer.apps.login.tasks.send_login_sms')
     def test_send_message_for_phone_number(self, mock_sms_send, contact):
-        send_login_message(contact.phone_mobile, contact)
+        send_login_message(contact.phone_mobile.as_e164, contact)
 
         assert mock_sms_send.delay.called or mock_sms_send.apply_async.called
 

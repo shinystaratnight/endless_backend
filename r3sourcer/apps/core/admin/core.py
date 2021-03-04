@@ -87,7 +87,7 @@ class UserAdmin(BaseUserAdmin):
 
     readonly_fields = ('date_joined', 'last_login')
 
-    list_display = ('get_full_name', 'email', 'phone_mobile')
+    list_display = ('get_full_name', 'email', 'phone_mobile', 'is_active')
     list_display_links = list_display
     ordering = ('date_joined',)
     search_fields = ('contact__email', 'contact__phone_mobile', 'contact__first_name', 'contact__last_name')
@@ -456,7 +456,7 @@ admin.site.register(models.Address, AddressAdmin)
 admin.site.register(models.CompanyRel, CompanyRelAdmin)
 admin.site.register(models.CompanyAddress, BaseAdmin)
 admin.site.register(models.CompanyLocalization)
-admin.site.register(models.CompanyContact, BaseAdmin)
+admin.site.register(models.CompanyContact)
 admin.site.register(models.CompanyContactAddress, BaseAdmin)
 admin.site.register(models.CompanyContactRelationship, BaseAdmin)
 admin.site.register(models.Invoice, InvoiceAdmin)

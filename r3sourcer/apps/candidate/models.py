@@ -8,12 +8,17 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer import ref
 from r3sourcer.apps.activity.models import Activity
+from r3sourcer.apps.candidate.tasks import send_candidate_consent_message
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
+from r3sourcer.apps.core.models import CompanyContactRelationship, UnitOfMeasurement
 from r3sourcer.apps.core.models import CompanyContactRelationship
-from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.core.utils.companies import get_site_master_company, get_site_url
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
+from r3sourcer.apps.skills.models import WorkType
+from r3sourcer.apps.login.models import TokenLogin
+from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 
@@ -550,12 +555,12 @@ class CandidateContact(UUIDModel, WorkflowProcess):
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         master_company = self.get_closest_company()
-        if not self.recruitment_agent:
+        if not self.recruitment_agent and master_company:
             self.recruitment_agent = master_company.primary_contact
 
         super().save(*args, **kwargs)
 
-        if just_added:
+        if just_added and master_company:
             company_contact = self.recruitment_agent
             company_contact_relation = CompanyContactRelationship.objects.create(company=master_company,
                                                                                  company_contact=company_contact)
@@ -602,6 +607,23 @@ class CandidateContact(UUIDModel, WorkflowProcess):
             if candidate_skill_rate:
                 return candidate_skill_rate
         return None
+
+    def send_consent_message(self, rel_id):
+        sign_navigation = core_models.ExtranetNavigation.objects.filter(name="Candidate Consent").first()
+        role = self.contact.user.role.get(name=core_models.Role.ROLE_NAMES.candidate)
+        extranet_login = TokenLogin.objects.create(
+            contact=self.contact,
+            redirect_to='{}{}/'.format(sign_navigation.url, rel_id),
+            role=role
+        )
+
+        site_url = get_site_url(user=self.contact.user)
+        data_dict = {
+            'candidate_consent_url': "%s%s" % (site_url, extranet_login.auth_url),
+            'related_objs': [extranet_login],
+        }
+
+        send_candidate_consent_message.delay(self.id, rel_id, data_dict)
 
     @classmethod
     def owned_by_lookups(cls, owner):
@@ -730,7 +752,7 @@ class SkillRel(UUIDModel):
     hourly_rate = models.DecimalField(
         decimal_places=2,
         max_digits=8,
-        verbose_name=_("Skill Rate"),
+        verbose_name=_("Skill Rate")
     )
 
     class Meta:
@@ -746,19 +768,14 @@ class SkillRel(UUIDModel):
         return self.hourly_rate
 
     def get_myob_name(self):
-        return '{} {}'.format(str(self.skill.get_myob_name()), str(self.hourly_rate))
+        return '{} {}'.format(str(self.skill.get_myob_name()), str(self.get_valid_rate()))
 
     @classmethod
     def is_owned(cls):
         return False
 
     def save(self, *args, **kwargs):
-        if self._state.adding:
-            if not self.hourly_rate:
-                self.hourly_rate = self.skill.default_rate or 0
-
         super().save(*args, **kwargs)
-
         self.candidate_contact.candidate_scores.recalc_scores()
 
 
@@ -870,6 +887,11 @@ class CandidateRel(UUIDModel):
     active = models.BooleanField(
         default=True,
         verbose_name=_("Active")
+    )
+
+    sharing_data_consent = models.BooleanField(
+        default=False,
+        verbose_name=_("Candidate Consent")
     )
 
     class Meta:

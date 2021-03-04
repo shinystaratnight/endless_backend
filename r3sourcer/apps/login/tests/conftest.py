@@ -10,7 +10,7 @@ from r3sourcer.apps.login.models import TokenLogin
 @pytest.fixture
 def user(db):
     return User.objects.create_user(
-        email='test@test.tt', phone_mobile='+12345678901',
+        email='test@test.tt', phone_mobile='+3727992222',
         password='test1234'
     )
 

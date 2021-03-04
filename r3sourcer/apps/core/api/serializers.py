@@ -1860,7 +1860,6 @@ class TagTranslationSerializer(serializers.ModelSerializer):
 
 
 class TagSerializer(ApiBaseModelSerializer):
-    translation = TagTranslationSerializer(many=True, source='translations', read_only=True)
     method_fields = ('skills', 'children')
 
     class Meta:
@@ -1873,7 +1872,7 @@ class TagSerializer(ApiBaseModelSerializer):
             'evidence_required_for_approval',
             'confidential',
             'owner',
-            'translation',
+            {'translations': ('language', 'value')}
         )
 
     @classmethod
@@ -2001,4 +2000,13 @@ class VATSerializer(ApiBaseModelSerializer):
         model = core_models.VAT
         fields = (
             '__all__',
+        )
+
+
+class UomSerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.UnitOfMeasurement
+        fields = (
+            'id', 'name', 'short_name', 'default',
+            {'translations': ('id', 'language', 'name', 'short_name')},
         )

@@ -41,13 +41,12 @@ class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
 
 
 class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
+
     class Meta:
         model = candidate_models.SkillRel
         fields = (
-            '__all__',
-            {
-                'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__'),
-            },
+            'pk', 'score', 'candidate_contact', 'prior_experience', 'hourly_rate',
+            {'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__')},
         )
         extra_kwargs = {
             'score': {'max_value': Decimal(5)},
@@ -55,16 +54,17 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
 
     def validate(self, data):
         skill = data.get('skill')
-
-        is_lower = skill.lower_rate_limit and data.get('hourly_rate') < skill.lower_rate_limit
-        is_upper = skill.upper_rate_limit and data.get('hourly_rate') > skill.upper_rate_limit
-        if is_lower or is_upper:
-            raise exceptions.ValidationError({
-                'hourly_rate': _('Hourly rate should be between {lower_limit} and {upper_limit}').format(
-                    lower_limit=skill.lower_rate_limit, upper_limit=skill.upper_rate_limit,
-                )
-            })
-
+        skill_rate_range = skill.skill_rate_ranges.filter(worktype=None).first()
+        if skill_rate_range and data.get('hourly_rate'):
+            lower_limit = skill_rate_range.lower_rate_limit
+            upper_limit = skill_rate_range.upper_rate_limit
+            is_lower = lower_limit and data.get('hourly_rate') < lower_limit
+            is_upper = upper_limit and data.get('hourly_rate') > upper_limit
+            if is_lower or is_upper:
+                raise exceptions.ValidationError({
+                    'rate': _('Hourly rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
         return data
 
 

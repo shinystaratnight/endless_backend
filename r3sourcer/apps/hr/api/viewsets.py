@@ -511,6 +511,7 @@ class JobViewset(BaseApiViewset):
     def fillin(self, request, *args, **kwargs):
         job = self.get_object()
 
+        # filter requested shifts
         requested_shift_ids = request.query_params.getlist('shifts')
 
         shifts_q = Q(id__in=requested_shift_ids) if requested_shift_ids else Q()
@@ -555,6 +556,7 @@ class JobViewset(BaseApiViewset):
                     candidate_rels__master_company=job.provider_company, candidate_rels__active=True
                 ).distinct()
 
+            # filter transportation_to_work
             transportation = request.GET.get('transportation_to_work', None)
             if transportation:
                 transportation = int(transportation)
@@ -564,29 +566,27 @@ class JobViewset(BaseApiViewset):
         if search_term:
             candidate_contacts = self.search_candidate_contacts(candidate_contacts, search_term)
 
-        # do:
         # filter overpriced candidates
         overpriced = request.GET.get('overpriced', 'False') == 'True'
         overpriced_candidates = []
-        if job.position.default_rate:
+        skill_rate_range = job.position.skill_rate_ranges.filter(worktype=None).last()
+        if skill_rate_range:
             overpriced_qry = Q(
                 candidate_skills__skill=job.position,
                 candidate_skills__score__gt=0
             )
-            hourly_rate = job.position.default_rate
             overpriced_candidates = candidate_contacts.filter(
                 overpriced_qry,
-                candidate_skills__hourly_rate__gt=hourly_rate,
+                candidate_skills__hourly_rate__gt=skill_rate_range.default_rate,
             ).values_list('id', flat=True)
 
             if not overpriced:
                 candidate_contacts = candidate_contacts.filter(
                     overpriced_qry,
-                    candidate_skills__hourly_rate__lte=hourly_rate,
+                    candidate_skills__hourly_rate__lte=skill_rate_range.default_rate,
                 )
         # end
 
-        # do:
         # filter partially available
         partially_available = request.GET.get('available', 'False') == 'True'
         partially_available_candidates = {}
@@ -701,7 +701,7 @@ class JobViewset(BaseApiViewset):
             '__str__': str(job),
             'jobsite': str(job.jobsite),
             'position': str(job.position),
-            'default_rate': job.position.default_rate,
+            'default_rate': skill_rate_range.default_rate,
         }
         if jobsite_address:
             job_ctx.update({
@@ -821,17 +821,18 @@ class JobViewset(BaseApiViewset):
             new_shift_dates = request.data.get('job_shift', [])
             new_shift_dates_objs = []
 
-            for new_shift_date in new_shift_dates:
-                new_shift_date = datetime.datetime.strptime(new_shift_date, '%Y-%m-%d').date()
-                new_shift_date_obj, created = hr_models.ShiftDate.objects.get_or_create(
-                    job=job,
-                    shift_date=new_shift_date,
-                    defaults={
-                        'workers': job.workers,
-                        'hourly_rate': latest_shift_date.hourly_rate,
-                    },
-                )
-                new_shift_dates_objs.append(new_shift_date_obj)
+            if new_shift_dates:
+                for new_shift_date in new_shift_dates:
+                    new_shift_date = datetime.datetime.strptime(new_shift_date, '%Y-%m-%d').date()
+                    new_shift_date_obj, created = hr_models.ShiftDate.objects.get_or_create(
+                        job=job,
+                        shift_date=new_shift_date,
+                        defaults={
+                            'workers': job.workers,
+                            'hourly_rate': latest_shift_date.hourly_rate,
+                        },
+                    )
+                    new_shift_dates_objs.append(new_shift_date_obj)
 
             if is_autofill:
                 shift_objs = hr_models.JobOffer.objects.filter(shift__date=latest_shift_date)
@@ -840,12 +841,6 @@ class JobViewset(BaseApiViewset):
 
             for new_shift_date_obj in new_shift_dates_objs:
                 self._extend_shift_date(job, new_shift_date_obj, shift_objs, is_autofill)
-
-        shifts = hr_models.Shift.objects.filter(
-            date__job=job,
-            date__shift_date__gte=job.now_utc.date(),
-            date__cancelled=False,
-        ).select_related('date').order_by('date__shift_date', 'time')
 
         candidate_ids = hr_models.JobOffer.objects.filter(
             shift__date__job=job,
@@ -998,9 +993,17 @@ class JobOffersCandidateViewset(
 ):
     def get_queryset(self):
         contact = self.request.user.contact
-        return super().get_queryset().filter(
-            candidate_contact__contact=contact
-        ).order_by('-shift__date__shift_date')
+        #filter duplicated shifts (if a candidate changes decision)
+        latest = hr_models.Shift.objects.prefetch_related('job_offers')\
+            .filter(job_offers__candidate_contact__contact=contact)\
+            .values('id')\
+            .annotate(latest_date=Max('job_offers__updated_at'))\
+            .filter(job_offers__updated_at=F('latest_date'))
+        by = super().get_queryset()\
+            .filter(candidate_contact__contact=contact)\
+            .filter(updated_at__in=latest.values('latest_date'))\
+            .order_by('-shift__date__shift_date')
+        return by
 
 
 class ShiftViewset(BaseApiViewset):

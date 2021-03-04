@@ -1,3 +1,6 @@
+from django.db import models
+from django.core.exceptions import ValidationError
+
 
 class ContactLookupField(object):
     """Virtual field used to lookup contact model fields"""
@@ -71,3 +74,32 @@ class ContactLookupField(object):
 
     def formfield(self):
         return self.lookup_field.formfield()
+
+    def to_python(self, value):
+        if isinstance(value, self.lookup_model):
+            return value
+
+        if value is None:
+            return value
+
+        data = {
+            self.lookup_name: value
+        }
+        try:
+            contact = self.lookup_model(**data)
+        except:
+            raise ValidationError
+        return contact
+
+
+class AliasField(models.Field):
+
+    def contribute_to_class(self, cls, name, private_only=False):
+        '''
+            virtual_only is deprecated in favor of private_only
+        '''
+        super(AliasField, self).contribute_to_class(cls, name, private_only=True)
+        setattr(cls, name, self)
+
+    def __get__(self, instance, instance_type=None):
+        return getattr(instance, self.db_column)

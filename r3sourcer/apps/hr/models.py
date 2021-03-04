@@ -27,7 +27,7 @@ from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.skills.models import Skill, SkillBaseRate
+from r3sourcer.apps.skills.models import Skill, SkillBaseRate, WorkType
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
@@ -341,6 +341,19 @@ class Job(core_models.AbstractBaseOrder):
         blank=True
     )
 
+    WAGE_CHOICES = Choices(
+        (0,'HOURLY', _("Hourly wage")),
+        (1, 'PIECEWORK', _("Piecework wage")),
+        (2, 'COMBINED', _("Combined wage")),
+    )
+
+    wage_type = models.PositiveSmallIntegerField(
+        choices=WAGE_CHOICES,
+        verbose_name=_("Type of wage"),
+        default=WAGE_CHOICES.HOURLY
+    )
+
+    # TODO delete this field after uoms task finished
     hourly_rate_default = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -453,7 +466,7 @@ class Job(core_models.AbstractBaseOrder):
         return self.customer_company.price_lists.filter(
             models.Q(
                 price_list_rates__skill=self.position,
-                price_list_rates__hourly_rate__gt=0
+                price_list_rates__rate__gt=0
             ),
             models.Q(valid_until__gte=self.now_utc.date()) | models.Q(valid_until__isnull=True),
             effective=True, valid_from__lte=self.now_utc.date(),
@@ -465,10 +478,10 @@ class Job(core_models.AbstractBaseOrder):
         return bool(self.work_start_date)
     is_start_date_set.short_description = _('Work Start Date')
 
-    @workflow_function
-    def is_default_rate_set(self):
-        return self.hourly_rate_default is not None or self.hourly_rate_default <= 0
-    is_default_rate_set.short_description = _('Default hourly rate')
+    # @workflow_function
+    # def is_default_rate_set(self):
+    #     return self.hourly_rate_default is not None or self.hourly_rate_default <= 0
+    # is_default_rate_set.short_description = _('Default hourly rate')
 
     @workflow_function
     def is_all_sd_filled(self):
@@ -1103,6 +1116,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     job_offer = models.ForeignKey(
         'hr.JobOffer',
+        unique=True,
         on_delete=models.CASCADE,
         related_name='time_sheets',
         verbose_name=_('Job Offer')
@@ -1130,16 +1144,23 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         verbose_name=_("Going to Work")
     )
 
-    shift_started_at = models.DateTimeField(verbose_name=_("Shift Started at"))
+    shift_started_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Shift Started at"))
     break_started_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Break Started at"))
     break_ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Break Ended at"))
-    shift_ended_at = models.DateTimeField(verbose_name=_("Shift Ended at"))
+    shift_ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Shift Ended at"))
 
     supervisor = models.ForeignKey(
         'core.CompanyContact',
         related_name="supervised_time_sheets",
         on_delete=models.PROTECT,
         verbose_name=_("Supervisor"),
+        blank=True,
+        null=True
+    )
+
+    wage_type = models.PositiveSmallIntegerField(
+        choices=Job.WAGE_CHOICES,
+        verbose_name=_("Type of wage"),
         blank=True,
         null=True
     )
@@ -1199,6 +1220,13 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         null=True
     )
 
+    worktype_rates = models.ManyToManyField(
+        WorkType,
+        through='hr.TimeSheetRate',
+        blank=True,
+        verbose_name=_("Activities rates"),
+    )
+
     rate_overrides_approved_by = models.ForeignKey(
         'core.CompanyContact',
         related_name='timesheet_rate_override_approvals',
@@ -1252,7 +1280,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     class Meta:
         verbose_name = _("Timesheet Entry")
         verbose_name_plural = _("Timesheet Entries")
-        unique_together = ("job_offer", "shift_started_at")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1555,6 +1582,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         if just_added:
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
+            # Set wage_type from Job.wage_type
+            if not self.wage_type and self.job_offer:
+                self.wage_type = self.job_offer.job.wage_type
 
             if utc_now() <= self.shift_started_at:
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
@@ -2513,3 +2543,41 @@ class JobTag(UUIDModel):
 
     def __str__(self):
         return self.tag.name
+
+
+class TimeSheetRate(UUIDModel):
+    timesheet = models.ForeignKey(
+        TimeSheet,
+        verbose_name=_("TimeSheet"),
+        on_delete=models.CASCADE,
+        related_name='timesheet_rates')
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="timesheet_rates",
+        verbose_name=_("Type of work"),
+        blank=True,
+        null=True)
+
+    value = models.DecimalField(
+        _("Timesheet Value"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    rate = models.DecimalField(
+        _("Timesheet Rate"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    class Meta:
+        verbose_name = _("TimeSheet Rate")
+        verbose_name_plural = _("TimeSheet Rates")
+        unique_together = [
+            'worktype',
+            'timesheet',
+        ]
+
+    def __str__(self):
+        return f'{self.timesheet}-{self.worktype}'

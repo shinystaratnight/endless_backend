@@ -8,8 +8,8 @@ from r3sourcer.apps.core.models import Language
 
 class UnitOfMeasurement(UUIDModel):
 
-    name = models.CharField(_("Unit name"), max_length=16)
-    short_name = models.CharField(_("Unit short name"), max_length=32)
+    name = models.CharField(_("Unit name"), max_length=32, unique=True)
+    short_name = models.CharField(_("Unit short name"), max_length=16, unique=True)
     default = models.BooleanField(_("Default unit of measurement"), default=False)
 
     class Meta:

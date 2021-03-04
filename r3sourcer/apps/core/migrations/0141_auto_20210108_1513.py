@@ -20,8 +20,8 @@ class Migration(migrations.Migration):
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('name', models.CharField(max_length=16, verbose_name='Unit name')),
-                ('short_name', models.CharField(max_length=32, verbose_name='Unit short name')),
+                ('name', models.CharField(max_length=32, verbose_name='Unit name', unique=True)),
+                ('short_name', models.CharField(max_length=16, verbose_name='Unit short name', unique=True)),
                 ('default', models.BooleanField(default=False, verbose_name='Default unit of measurement')),
             ],
             options={

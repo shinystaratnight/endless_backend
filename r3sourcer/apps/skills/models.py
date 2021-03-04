@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
-from r3sourcer.apps.core.models import Company
+from r3sourcer.apps.core.models import Company, UnitOfMeasurement, UnitOfMeasurement
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
@@ -123,48 +123,6 @@ class Skill(MYOBMixin, UUIDModel):
     )
     active = models.BooleanField(default=True, verbose_name=_("Active"))
 
-    upper_rate_limit = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    lower_rate_limit = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    default_rate = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    price_list_upper_rate_limit = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    price_list_lower_rate_limit = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
-    price_list_default_rate = models.DecimalField(
-        decimal_places=2,
-        max_digits=16,
-        blank=True,
-        null=True
-    )
-
     tags = models.ManyToManyField(
         'core.Tag',
         related_name='skills',
@@ -174,30 +132,6 @@ class Skill(MYOBMixin, UUIDModel):
     class Meta:
         verbose_name = _("Skill")
         verbose_name_plural = _("Skills")
-
-    def clean(self, *args, **kwargs):
-        have_default_base_rate = self.default_rate
-        have_default_price_list_rate = self.price_list_default_rate
-        is_limits_set = (
-            self.upper_rate_limit and self.lower_rate_limit and
-            self.price_list_lower_rate_limit and self.price_list_upper_rate_limit
-        )
-
-        if self.active:
-            if not have_default_base_rate and not have_default_price_list_rate:
-                raise ValidationError(
-                    "Skill can't be active. It doesn't have default price list rate and defalut base rate."
-                )
-            elif not have_default_base_rate:
-                raise ValidationError("Skill can't be active. It doesn't have default base rate.")
-            elif not have_default_price_list_rate and self.company.purpose == 'hire':
-                raise ValidationError("Skill can't be active. It doesn't have default price list rate.")
-
-        super(Skill, self).clean(*args, **kwargs)
-
-    def save(self, *args, **kwargs):
-        self.full_clean()
-        super(Skill, self).save(*args, **kwargs)
 
     def __str__(self):
         return self.name.name
@@ -218,6 +152,7 @@ class Skill(MYOBMixin, UUIDModel):
 
         return name[:6]
 
+
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
@@ -227,7 +162,7 @@ class Skill(MYOBMixin, UUIDModel):
             ]
 
 
-class SkillBaseRate(UUIDModel):
+class SkillBaseRate(UUIDModel):   # TODO delete SkillBaseRate model after uom rates changes will be completed
 
     skill = models.ForeignKey(
         'skills.Skill',
@@ -307,3 +242,162 @@ class SkillTag(UUIDModel):
                 models.Q(skill__company=owner),
                 models.Q(skill__company__regular_companies__master_company=owner)
             ]
+
+
+class WorkType(UUIDModel):
+    """Model for storing work types"""
+
+    skill_name = models.ForeignKey(
+        SkillName,
+        on_delete=models.CASCADE,
+        verbose_name=_('Skill Name'),
+        related_name='work_types',
+        blank=True,
+        null=True
+    )
+
+    skill = models.ForeignKey(
+        Skill,
+        on_delete=models.CASCADE,
+        verbose_name=_('Skill Name'),
+        related_name='work_types',
+        blank=True,
+        null=True
+    )
+
+    uom = models.ForeignKey(UnitOfMeasurement,
+        verbose_name=_('Unit of measurement'),
+        on_delete=models.CASCADE,
+        related_name='timesheet_rates'
+    )
+    name = models.CharField(max_length=127, verbose_name=_("Skill activity name"))
+
+    class Meta:
+        verbose_name = _("Skill activity")
+        verbose_name_plural = _("Skill activities")
+        unique_together = [
+            'skill_name',
+            'skill',
+            'uom',
+            'name',
+        ]
+
+    def save(self, **kwargs):
+        self.clean()
+        return super().save(**kwargs)
+
+    def clean(self):
+        # Check if object has skill_name or skill but not both
+        if not self.skill_name and not self.skill:
+            raise ValidationError(_('Please set skill or skill_name field.'))
+        if self.skill_name and self.skill:
+            raise ValidationError(_('Please set or skill or skill_name field.'))
+        # Check if object has unique values
+        if self.skill_name and WorkType.objects.exclude(id=self.id) \
+                                               .filter(skill_name=self.skill_name,
+                                                       uom=self.uom,
+                                                       name=self.name) \
+                                               .exists():
+            raise ValidationError(_("Such skill activity exists"))
+        if self.skill and WorkType.objects.exclude(id=self.id) \
+                                          .filter(skill=self.skill,
+                                                  uom=self.uom,
+                                                  name=self.name) \
+                                          .exists():
+            raise ValidationError(_("Such skill activity exists"))
+
+    def __str__(self):
+        return f"{self.name} per {self.uom}"
+
+    @property
+    def translation(self, language='en'):
+        """ Form translation getter """
+        trans = self.translations.filter(language=self.language).first()
+        return trans.name if trans else None
+
+
+class WorkTypeLanguage(models.Model):
+    """Model for storing work type translations"""
+
+    name = models.ForeignKey(
+        WorkType,
+        related_name='translations',
+        on_delete=models.CASCADE,
+        verbose_name=_('Work Name'),
+    )
+    value = models.CharField(max_length=127, verbose_name=_("Transalation"))
+    language = models.ForeignKey(
+        'core.Language',
+        verbose_name=_("Language"),
+        on_delete=models.CASCADE,
+        related_name='work_types',
+    )
+
+    class Meta:
+        verbose_name = _("Work Transalation")
+        verbose_name_plural = _("Work Transalations")
+        unique_together = [
+            'name',
+            'language',
+        ]
+
+    def __str__(self):
+        return self.value
+
+
+class SkillRateRange(MYOBMixin, UUIDModel):
+    """Model for storing rate ranges"""
+
+    skill = models.ForeignKey(
+        Skill,
+        related_name="skill_rate_ranges",
+        verbose_name=_("Skill")
+    )
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="skill_rate_ranges",
+        verbose_name=_("WorkType"),
+        blank=True,
+        null=True
+    )
+    upper_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+    lower_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+    default_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+    )
+    price_list_upper_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+    price_list_lower_rate_limit = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+        blank=True,
+        null=True
+    )
+    price_list_default_rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=16,
+    )
+
+
+    class Meta:
+        verbose_name = _("Skill Rate Range")
+        verbose_name_plural = _("Skill Rate Ranges")
+        unique_together = ("skill", "worktype")
+
+    def __str__(self):
+        return f"{self.skill.name.name} rate range"

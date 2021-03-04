@@ -25,7 +25,7 @@ RESTORE_DB_FILE_PATH = var/backups/$(RESTORE_DB_FILE)
 RESTORE_DB_FOR_DEV_FILE_PATH = var/backups/$(RESTORE_DB_FOR_DEV_FILE)
 
 define docker_exec
-    docker exec $(2) r3sourcer-$(DOCKER_APP_NAME) $(1)
+    docker exec $(2) $(DOCKER_APP_NAME) $(1)
 endef
 
 define docker_compose_exec
@@ -177,7 +177,7 @@ nginx_config/docker:
 full-clean:
 	make clean
 	@for CONTAINER in $(DOCKER_POSTGRES_NAME) $(DOCKER_RABBIT_MQ_NAME) $(DOCKER_REDIS_NAME) \
-	    $(DOCKER_CLICKHOUSE_NAME) nginx r3sourcer-$(DOCKER_APP_NAME); \
+	    $(DOCKER_CLICKHOUSE_NAME) nginx $(DOCKER_APP_NAME); \
 	do \
 		if docker ps -a | grep $$CONTAINER; then \
 		    echo "Remove container: $$CONTAINER"; \
@@ -206,7 +206,7 @@ clean:
 	@rm -rf var/make
 
 drop_db:
-	docker stop r3sourcer-$(DOCKER_APP_NAME)
+	docker stop $(DOCKER_APP_NAME)
 	docker exec $(DOCKER_POSTGRES_NAME) dropdb -U postgres --if-exists $(POSTGRES_DB)
 
 backup_db:
@@ -242,7 +242,7 @@ clone_prod_db:
 	make restore_db_for_dev
 
 test:
-	if (docker ps | grep "r3sourcer-$(DOCKER_APP_NAME)"); then \
+	if (docker ps | grep "$(DOCKER_APP_NAME)"); then \
 	    $(call docker_exec, app test); \
 	elif [ -a ./app ]; then \
 		app test; \
@@ -582,8 +582,8 @@ media_backup:
 	aws s3 cp media_backup/media.tar.gz $(S3_BACKUP_FOLDER)Media/media_$(CURRENT_DATETIME).tar.gz
 
 media_backup_clean:
-    rm -f media_backup/media.tar.gz
+	rm -f media_backup/media.tar.gz
 
 get_backups_from_remote:
-    mkdir -p media_backup/from_remote
-    aws s3 sync $(S3_BACKUP_FOLDER) media_backup/from_remote
+	mkdir -p media_backup/from_remote
+	aws s3 sync $(S3_BACKUP_FOLDER) media_backup/from_remote

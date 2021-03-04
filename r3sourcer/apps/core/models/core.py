@@ -198,9 +198,9 @@ class Contact(CategoryFolderMixin,
         active_address = self.active_address
         if active_address:
             return {"id": active_address.id,
-                    "country": active_address.country.name,
-                    "state": active_address.state.name,
-                    "city": active_address.city.name,
+                    "country": str(active_address.country),
+                    "state": str(active_address.state),
+                    "city": str(active_address.city),
                     "street_address": active_address.street_address,
                     "postal_code": active_address.postal_code,
                     "__str__": active_address.__str__(),
@@ -224,7 +224,9 @@ class Contact(CategoryFolderMixin,
     get_availability.boolean = True
 
     def is_company_contact(self):
-        return self.company_contact.filter(relationships__active=True).exists()
+        return self.company_contact.filter(relationships__active=True,
+                                           contact__user__is_active=True
+                                           ).exists()
     is_company_contact.boolean = True
 
     def is_candidate_contact(self):
@@ -1327,7 +1329,7 @@ class Company(CategoryFolderMixin,
             effective=True,
             valid_until__gte=date.today(),
             price_list_rates__skill__active=True,
-            price_list_rates__hourly_rate__gt=0
+            price_list_rates__rate__gt=0
         )
 
         if position:

@@ -7,6 +7,7 @@ from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 from rest_framework import status, exceptions, permissions as drf_permissions, viewsets, mixins
 from rest_framework.decorators import action
+from rest_framework.generics import get_object_or_404
 from rest_framework.response import Response
 
 from r3sourcer.apps.acceptance_tests.api.serializers import AcceptanceTestCandidateWorkflowSerializer
@@ -29,6 +30,11 @@ from ...core.utils.utils import normalize_phone_number
 
 
 class CandidateContactViewset(BaseApiViewset):
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(contact__user__is_active=True)
+
     def perform_create(self, serializer):
         instance = serializer.save()
 
@@ -46,11 +52,9 @@ class CandidateContactViewset(BaseApiViewset):
 
         if has_joboffers:
             raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
-        # delete all releted models to client contact
-        instance.bank_account = None
-        instance.save()
-        instance.contact.bank_accounts.all().delete()
-        instance.contact.user.delete()
+        # mark user as inactive
+        instance.contact.user.is_active = False
+        instance.contact.user.save()
 
     def validate_contact(self, contact, data):
         master_company = get_site_master_company(request=self.request)
@@ -202,13 +206,17 @@ class CandidateContactViewset(BaseApiViewset):
 
         if candidate_contact.profile_price:
             rel = CandidateRel.objects.create(
-                master_company=company, candidate_contact=candidate_contact, owner=False, active=False,
+                master_company=company,
+                candidate_contact=candidate_contact,
+                owner=False,
+                active=False,
                 company_contact=manager
             )
+            # send a consent message to candidate
+            candidate_contact.send_consent_message(rel.id)
 
-            buy_candidate.apply_async([rel.id, str(request.user.id)])
-
-        return Response({'status': 'success', 'message': _('Please wait for payment to complete')})
+        return Response({'status': 'success', 'message': _('Please wait for candidate to agree sharing their '
+                                                           'information')})
 
     @action(methods=['get'], detail=True)
     def tests(self, request, *args, **kwargs):
@@ -241,6 +249,19 @@ class CandidateContactViewset(BaseApiViewset):
 
         serializer = AcceptanceTestCandidateWorkflowSerializer(tests, many=True, object_id=candidate.id)
 
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @action(methods=['post'], detail=True)
+    def consent(self, request, pk, *args, **kwargs):
+        candidate_rel = get_object_or_404(CandidateRel.objects, pk=pk)
+        agree = request.data.get('agree')
+
+        if agree is True:
+            candidate_rel.sharing_data_consent = agree
+            candidate_rel.save()
+            buy_candidate.apply_async([pk, str(request.user.id)])
+
+        serializer = serializers.CandidateRelSerializer(candidate_rel)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
 

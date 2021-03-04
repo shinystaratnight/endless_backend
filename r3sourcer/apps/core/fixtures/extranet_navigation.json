@@ -1862,11 +1862,11 @@
     "name": "Billing",
     "url": "/billing/",
     "endpoint": "/",
-    "access_level": "manager",
-    "lft": 10,
-    "rght": 11,
-    "tree_id": 4,
-    "level": 1
+    "access_level": "candidate",
+    "lft": 1,
+    "rght": 2,
+    "tree_id": 11,
+    "level": 0
   }
 },
 {
@@ -1952,6 +1952,23 @@
     "rght": 7,
     "tree_id": 2,
     "level": 1
+  }
+},
+{
+  "model": "core.extranetnavigation",
+  "pk": 144,
+  "fields": {
+    "updated_at": "2021-01-27T07:31:14.621Z",
+    "created_at": "2021-01-27T07:31:14.621Z",
+    "parent": null,
+    "name": "Candidate Consent",
+    "url": "/cd/candidate/candidatecontacts/consent/",
+    "endpoint": "/candidate/candidatecontacts/consent/",
+    "access_level": "candidate",
+    "lft": 1,
+    "rght": 2,
+    "tree_id": 11,
+    "level": 0
   }
 }
 ]
