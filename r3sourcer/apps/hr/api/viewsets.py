@@ -1015,9 +1015,17 @@ class JobOffersCandidateViewset(
 ):
     def get_queryset(self):
         contact = self.request.user.contact
-        return super().get_queryset().filter(
-            candidate_contact__contact=contact
-        ).order_by('-shift__date__shift_date')
+        #filter duplicated shifts (if a candidate changes decision)
+        latest = hr_models.Shift.objects.prefetch_related('job_offers')\
+            .filter(job_offers__candidate_contact__contact=contact)\
+            .values('id')\
+            .annotate(latest_date=Max('job_offers__updated_at'))\
+            .filter(job_offers__updated_at=F('latest_date'))
+        by = super().get_queryset()\
+            .filter(candidate_contact__contact=contact)\
+            .filter(updated_at__in=latest.values('latest_date'))\
+            .order_by('-shift__date__shift_date')
+        return by
 
 
 class ShiftViewset(BaseApiViewset):
