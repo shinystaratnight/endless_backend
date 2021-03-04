@@ -1,7 +1,7 @@
 from datetime import date, datetime, timedelta
 
 from django.conf import settings
-from django.db.models import Q
+from django.db.models import Q, Max
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
 
@@ -441,6 +441,11 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
         return obj and (obj.is_fulfilled_annotated if hasattr(obj, 'is_fulfilled_annotated') else obj.is_fulfilled())
 
     def get_workers_details(self, obj):
+        latest = hr_models.JobOffer.objects\
+            .filter(shift=obj) \
+            .values('candidate_contact') \
+            .annotate(latest_date=Max('updated_at'))
+
         qs = obj.job_offers.filter(
             status__in=[
                 hr_models.JobOffer.STATUS_CHOICES.accepted,
@@ -451,9 +456,11 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
         result = {}
         for x in qs:
             storage = result.setdefault(x.status, [])
-            storage.append({
-                'id': x.candidate_contact.id,
-                'name': str(x.candidate_contact)})
+            if {'candidate_contact': x.candidate_contact.id, 'latest_date': x.updated_at} in latest:
+                storage.append({
+                    'id': x.candidate_contact.id,
+                    'name': str(x.candidate_contact)
+                })
 
         return {
             'accepted': result.get(hr_models.JobOffer.STATUS_CHOICES.accepted, []),
