@@ -1116,6 +1116,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     job_offer = models.ForeignKey(
         'hr.JobOffer',
+        unique=True,
         on_delete=models.CASCADE,
         related_name='time_sheets',
         verbose_name=_('Job Offer')
@@ -1143,16 +1144,23 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         verbose_name=_("Going to Work")
     )
 
-    shift_started_at = models.DateTimeField(verbose_name=_("Shift Started at"))
+    shift_started_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Shift Started at"))
     break_started_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Break Started at"))
     break_ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Break Ended at"))
-    shift_ended_at = models.DateTimeField(verbose_name=_("Shift Ended at"))
+    shift_ended_at = models.DateTimeField(null=True, blank=True, verbose_name=_("Shift Ended at"))
 
     supervisor = models.ForeignKey(
         'core.CompanyContact',
         related_name="supervised_time_sheets",
         on_delete=models.PROTECT,
         verbose_name=_("Supervisor"),
+        blank=True,
+        null=True
+    )
+
+    wage_type = models.PositiveSmallIntegerField(
+        choices=Job.WAGE_CHOICES,
+        verbose_name=_("Type of wage"),
         blank=True,
         null=True
     )
@@ -1272,7 +1280,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     class Meta:
         verbose_name = _("Timesheet Entry")
         verbose_name_plural = _("Timesheet Entries")
-        unique_together = ("job_offer", "shift_started_at")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -1575,6 +1582,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         if just_added:
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
+            # Set wage_type from Job.wage_type
+            if not self.wage_type and self.job_offer:
+                self.wage_type = self.job_offer.job.wage_type
 
             if utc_now() <= self.shift_started_at:
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled

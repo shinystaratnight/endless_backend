@@ -251,8 +251,20 @@ class WorkType(UUIDModel):
         SkillName,
         on_delete=models.CASCADE,
         verbose_name=_('Skill Name'),
-        related_name='work_types'
+        related_name='work_types',
+        blank=True,
+        null=True
     )
+
+    skill = models.ForeignKey(
+        Skill,
+        on_delete=models.CASCADE,
+        verbose_name=_('Skill Name'),
+        related_name='work_types',
+        blank=True,
+        null=True
+    )
+
     uom = models.ForeignKey(UnitOfMeasurement,
         verbose_name=_('Unit of measurement'),
         on_delete=models.CASCADE,
@@ -265,19 +277,43 @@ class WorkType(UUIDModel):
         verbose_name_plural = _("Skill activities")
         unique_together = [
             'skill_name',
+            'skill',
             'uom',
             'name',
         ]
 
+    def save(self, **kwargs):
+        self.clean()
+        return super().save(**kwargs)
+
+    def clean(self):
+        # Check if object has skill_name or skill but not both
+        if not self.skill_name and not self.skill:
+            raise ValidationError(_('Please set skill or skill_name field.'))
+        if self.skill_name and self.skill:
+            raise ValidationError(_('Please set or skill or skill_name field.'))
+        # Check if object has unique values
+        if self.skill_name and WorkType.objects.exclude(id=self.id) \
+                                               .filter(skill_name=self.skill_name,
+                                                       uom=self.uom,
+                                                       name=self.name) \
+                                               .exists():
+            raise ValidationError(_("Such skill activity exists"))
+        if self.skill and WorkType.objects.exclude(id=self.id) \
+                                          .filter(skill=self.skill,
+                                                  uom=self.uom,
+                                                  name=self.name) \
+                                          .exists():
+            raise ValidationError(_("Such skill activity exists"))
+
     def __str__(self):
-        return self.name
+        return f"{self.name} per {self.uom}"
 
     @property
     def translation(self, language='en'):
         """ Form translation getter """
         trans = self.translations.filter(language=self.language).first()
         return trans.name if trans else None
-
 
 
 class WorkTypeLanguage(models.Model):
