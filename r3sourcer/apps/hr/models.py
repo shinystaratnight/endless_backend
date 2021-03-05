@@ -1413,6 +1413,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             'candidate_rate': job_offer.shift.hourly_rate,
             'going_to_work_confirmation': going_to_work_confirmation,
             'status': status,
+            'wage_type': job_offer.job.wage_type,
         }
 
         try:
