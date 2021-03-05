@@ -701,7 +701,7 @@ class JobViewset(BaseApiViewset):
             '__str__': str(job),
             'jobsite': str(job.jobsite),
             'position': str(job.position),
-            'default_rate': skill_rate_range.default_rate,
+            'default_rate': skill_rate_range.default_rate if skill_rate_range else None,
         }
         if jobsite_address:
             job_ctx.update({
