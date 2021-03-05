@@ -159,7 +159,7 @@ class CandidateSync(BaseCategoryMixin,
         for payroll_wage_cat in payroll_details['Wage']['WageCategories']:
             wage_categories.add(payroll_wage_cat['UID'])
 
-        candidate_skill_rate = candidate_contact.candidate_skills.all().order_by('-rate').first()
+        candidate_skill_rate = candidate_contact.candidate_skills.all().order_by('-hourly_rate').first()
 
         base_rate = candidate_skill_rate and candidate_skill_rate.rate
 
