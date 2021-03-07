@@ -1161,8 +1161,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     wage_type = models.PositiveSmallIntegerField(
         choices=Job.WAGE_CHOICES,
         verbose_name=_("Type of wage"),
-        blank=True,
-        null=True
+        default=Job.WAGE_CHOICES.HOURLY
     )
 
     def supervisor_signature_path(self, filename):
@@ -1289,7 +1288,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
     def __str__(self):
-        fields = [self.shift_started_at_tz, self.candidate_submitted_at_tz, self.supervisor_approved_at_tz]
+        fields = [self.shift_started_at_tz, self.candidate_submitted_at_tz, self.wage_type]
         return ' '.join([str(x) for x in fields])
 
     @property
