@@ -1,6 +1,7 @@
 from unidecode import unidecode
 from django.db.models import Q
 from django.utils.text import slugify
+from django.utils.translation import ugettext_lazy as _
 from rest_framework.exceptions import ParseError
 
 from r3sourcer.apps.core.models import Country, Region, City
@@ -36,8 +37,8 @@ def get_street_address(address_parts):
 def parse_google_address(address_data):
     address_parts = get_address_parts(address_data)
     location = address_data.get('geometry', {}).get('location')
-    if not address_parts.get('country'):
-        raise ParseError('You should enter valid address')
+    if not address_parts.get('country') or not address_parts.get('locality'):
+        raise ParseError({'address': _('You should enter valid address')})
 
     # get country
     country = Country.objects.get(code2=address_parts['country']['short_name'])
