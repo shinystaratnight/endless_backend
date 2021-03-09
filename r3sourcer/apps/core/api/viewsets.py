@@ -386,20 +386,20 @@ class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
             data['is_active'] = True
         return data
 
-    def list(self, request, *args, **kwargs):
-        # check include_all parameter
-        include_all = request.GET.get('include_all')
-        if include_all in ['true', 'True', '1']:
-            return self._paginate(request, self.get_serializer_class())
-        # distinct languages
-        queryset = self.filter_queryset(self.get_queryset())
-        countries = queryset.values_list('address__country', flat=True).distinct()
-        # filter addresses for 1 per country
-        filtered_qs = queryset.none()
-        for country in countries:
-            latest_country_address = queryset.filter(address__country=country).latest('created_at')
-            filtered_qs |= queryset.filter(pk=latest_country_address.pk)
-        return self._paginate(request, self.get_serializer_class(), queryset=filtered_qs)
+    # def list(self, request, *args, **kwargs):
+    #     # check include_all parameter
+    #     include_all = request.GET.get('include_all')
+    #     if include_all in ['true', 'True', '1']:
+    #         return self._paginate(request, self.get_serializer_class())
+    #     # distinct languages
+    #     queryset = self.filter_queryset(self.get_queryset())
+    #     countries = queryset.values_list('address__country', flat=True).distinct()
+    #     # filter addresses for 1 per country
+    #     filtered_qs = queryset.none()
+    #     for country in countries:
+    #         latest_country_address = queryset.filter(address__country=country).latest('created_at')
+    #         filtered_qs |= queryset.filter(pk=latest_country_address.pk)
+    #     return self._paginate(request, self.get_serializer_class(), queryset=filtered_qs)
 
     def clear_active_contactaddresses(self, instance):
         """ if new address is active make all old adresses not active """
