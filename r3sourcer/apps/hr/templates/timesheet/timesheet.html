@@ -1,3 +1,5 @@
+{% load filters %}
+
 <!DOCTYPE html>
 <html lang="en">
 {%  load tz %}
@@ -84,8 +86,8 @@
 	<header>
 		<div class="logo">
 			<div style="display: inline-block; width: 33%; height: 50px; vertical-align: top;">
-				{% if group.get_closest_company.company_settings.logo %}
-				<img src="{{ domain }}{{ group.get_closest_company.company_settings.logo.url }}" alt="Logo" style="height: 50px;">
+				{% if group.0.get_closest_company.company_settings.logo %}
+				<img src="{{ domain }}{{ group.0.get_closest_company.company_settings.logo.url }}" alt="Logo" style="height: 50px;">
 				{% else %}{% endif %}
 			</div>
 			<h4 style="display: inline-block; width: 33%; text-align: center; height: 50px; line-height: 50px">
@@ -167,7 +169,6 @@
 				</thead>
 				<tbody>
 				{% for timesheet in t_s %}
-						{{ timesheet.timesheet_rates.all }}
 					{% for skill_activity in timesheet.timesheet_rates.all %}
 						{{ timesheet }}
 						{{ skill_activity }}
@@ -180,8 +181,7 @@
 							<td>{{ skill_activity.value}}</td>
 							<td>{{ skill_activity.worktype.uom.short_name}}</td>
 							<td>{{ timesheet.c_1_5x|get_hours }}</td>
-							<td>{{ timesheet.c_2x|get_hours }}</td>
-							<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
+							<td>{{ skill_activity.rate|multiply:skill_activity.value|floatformat:2 }}</td>
 							<td>{{ timesheet.travel }}</td>
 							<td>{{ timesheet.meal }}</td>
 							<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
