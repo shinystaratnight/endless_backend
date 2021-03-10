@@ -924,6 +924,7 @@ def get_file_from_str(str):
     from io import BytesIO
     import weasyprint
     pdf = weasyprint.HTML(string=str)
+    print(str)
     pdf_file = BytesIO()
     pdf_file.write(pdf.write_pdf())
     pdf_file.seek(0)
@@ -933,7 +934,8 @@ def get_file_from_str(str):
 
 def timesheets_group_by_job_site(timesheets):
     from itertools import groupby
-    for grouper, group in groupby(timesheets, key=lambda x: x.job_offer.shift.date.job.jobsite):
+    for grouper, group in groupby(timesheets, key=lambda x: (x.job_offer.shift.date.job.jobsite,
+                                                             x.wage_type)):
         yield grouper, list(group)
 
 
@@ -964,7 +966,7 @@ def get_value_for_rate_type(coeffs_hours, rate_type):
 def generate_pdf(timesheet_ids, request=None, master_company=None):
     template = get_template('timesheet/timesheet.html')
     timesheets = hr_models.TimeSheet.objects.filter(id__in=timesheet_ids).order_by(
-        'job_offer__shift__date__job__jobsite', 'shift_started_at')
+        'job_offer__shift__date__job__jobsite', 'wage_type', 'shift_started_at')
     domain = core_companies_utils.get_site_url(user=request and request.user, master_company=master_company)
     coefficient_service = CoefficientService()
 

@@ -106,7 +106,8 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         qs = super().get_queryset().filter(query)
         ordering = self.request.query_params.get('ordering', None)
         if ordering:
-            qs = qs.order_by(ordering)
+            ordering_fields = [param.strip() for param in ordering.split(',')]
+            qs = qs.order_by(*ordering_fields)
         return qs
 
     def get_contact(self):
