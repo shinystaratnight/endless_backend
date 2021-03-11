@@ -104,7 +104,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.contact.get_closest_company(),
                   job_offer__candidate_contact__candidate_rels__owner=True)
         qs = super().get_queryset().filter(query)
-        ordering = self.request.query_params.get('ordering', None)
+        ordering = self.request.query_params.get('ordering', '-shift_started_at')
         if ordering:
             ordering_fields = [param.strip() for param in ordering.split(',')]
             qs = qs.order_by(*ordering_fields)
