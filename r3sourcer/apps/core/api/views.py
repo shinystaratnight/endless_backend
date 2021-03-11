@@ -84,18 +84,23 @@ class TrialUserView(viewsets.GenericViewSet):
         site, created = Site.objects.get_or_create(domain=domain, defaults={'name': domain})
         models.SiteCompany.objects.get_or_create(company=company, site=site)
 
-        models.Form.objects.get_or_create(
+        form, _ = models.Form.objects.get_or_create(
             company=company,
             builder=models.FormBuilder.objects.get(
                 content_type=ContentType.objects.get_by_natural_key('candidate', 'candidatecontact')
             ),
             defaults=dict(
-                title='Application Form',
-                is_active=True,
-                short_description='New application form',
-                submit_message="You've been registered!"
+                is_active=True
             )
         )
+
+        models.FormLanguage.objects.get_or_create(
+            form=form,
+            title='Application Form',
+            short_description='New application form',
+            result_messages="You've been registered!"
+        )
+
         end_of_trial = utc_now() + datetime.timedelta(days=30)
 
         send_trial_email.apply_async([contact.id, company.id], countdown=10)
