@@ -48,7 +48,6 @@ class TrialUserView(viewsets.GenericViewSet):
     @method_decorator(csrf_exempt)
     def create(self, request, *args, **kwargs):
         data = copy.copy(request.data)
-        data['website'] = '{}.{}'.format(data['website'], settings.REDIRECT_DOMAIN)
 
         serializer = serializers.TrialSerializer(data=data)
         serializer.is_valid(raise_exception=True)
