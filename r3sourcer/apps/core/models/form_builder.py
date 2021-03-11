@@ -1161,6 +1161,7 @@ class FormLanguage(UUIDModel):
         'core.Language',
         verbose_name=_("Form language"),
         on_delete=models.CASCADE,
+        default='en',
         related_name='formlanguages',
     )
     title = models.CharField(max_length=64, verbose_name=_("Form Title"), default="Application Form")
