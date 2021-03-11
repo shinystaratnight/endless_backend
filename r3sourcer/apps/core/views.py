@@ -36,7 +36,7 @@ class OAuth2JWTTokenMixin():
 
         if not username:
             try:
-                username = json.loads(request.data.decode('utf-8'))['username']
+                username = json.loads(request.body.decode('utf-8'))['username']
             except Exception:
                 username = request.data.get('username') if hasattr(request, 'data') else request.POST.get('username')
 
