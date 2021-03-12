@@ -84,7 +84,7 @@ class TrialUserView(viewsets.GenericViewSet):
         site, created = Site.objects.get_or_create(domain=domain, defaults={'name': domain})
         models.SiteCompany.objects.get_or_create(company=company, site=site)
 
-        form, _ = models.Form.objects.get_or_create(
+        form, form_created = models.Form.objects.get_or_create(
             company=company,
             builder=models.FormBuilder.objects.get(
                 content_type=ContentType.objects.get_by_natural_key('candidate', 'candidatecontact')
