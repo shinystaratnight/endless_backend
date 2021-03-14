@@ -1617,6 +1617,11 @@ class CompanyContactRelationship(TimeZoneUUIDModel,
         blank=True
     )
 
+    class Meta:
+        unique_together = ('company', 'company_contact', 'active')
+        verbose_name = _("Company Contact Relationship")
+        verbose_name_plural = _("Company Contact Relationships")
+
     @property
     def geo(self):
         return self.__class__.objects.filter(
