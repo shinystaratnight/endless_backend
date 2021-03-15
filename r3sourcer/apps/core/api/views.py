@@ -15,7 +15,7 @@ from rest_framework.views import exception_handler
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.api import serializers
-from r3sourcer.apps.core.tasks import send_trial_email, cancel_trial
+from r3sourcer.apps.core.tasks import send_trial_email, cancel_trial, send_contact_verify_sms
 from r3sourcer.helpers.datetimes import utc_now, tz2utc
 
 User = get_user_model()
@@ -106,6 +106,8 @@ class TrialUserView(viewsets.GenericViewSet):
         send_trial_email.apply_async([contact.id, company.id], countdown=10)
         utc_end_of_trial = tz2utc(end_of_trial)
         cancel_trial.apply_async([new_user.id], eta=utc_end_of_trial)
+
+        send_contact_verify_sms.apply_async(args=(contact.id, contact.id))
 
         return Response({
             'status': 'success',
