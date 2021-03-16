@@ -14,9 +14,8 @@ class TestTrialUserView:
         url = reverse('register_trial')
         return client.post(url, data=data)
 
-    @mock.patch('r3sourcer.apps.core.api.views.send_trial_email')
-    @mock.patch('r3sourcer.apps.core.api.views.cancel_trial')
-    def test_register_success(self, mock_task, mock_cancel, client, contact_phone):
+    @mock.patch('r3sourcer.apps.core.api.views.send_trial_email.apply_async')
+    def test_register_success(self, mock_trial, client, contact_phone):
         data = {
             'first_name': 'testuser42',
             'last_name': 'tester42',
@@ -24,6 +23,7 @@ class TestTrialUserView:
             'phone_mobile': contact_phone,
             'company_name': 'Test Company',
             'website': 'test',
+            'country_code': 'et'
         }
 
         ct, _ = ContentType.objects.get_or_create(app_label='candidate', model='candidatecontact')
@@ -33,4 +33,7 @@ class TestTrialUserView:
 
         assert resp['status'] == 'success'
         assert Contact.objects.filter(email='test42@test.tt', phone_mobile=contact_phone).exists()
-        assert SiteCompany.objects.filter(site__domain='test.r3sourcer.com', company__name='Test Company').exists()
+        assert SiteCompany.objects.filter(
+            site__domain='test',
+            company__name='Test Company').exists()
+        assert mock_trial.called

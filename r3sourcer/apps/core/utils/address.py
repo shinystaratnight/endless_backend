@@ -38,7 +38,9 @@ def parse_google_address(address_data):
     address_parts = get_address_parts(address_data)
     location = address_data.get('geometry', {}).get('location')
     if not address_parts.get('country') or not address_parts.get('locality'):
-        raise ParseError({'address': _('You should enter valid address')})
+        raise ParseError({'address': _('Please enter a valid address')})
+    if not address_parts.get('postal_code'):
+        raise ParseError({'address': _("The entered address doesn't have postal code. Please enter more detailed address.")})
 
     # get country
     country = Country.objects.get(code2=address_parts['country']['short_name'])
