@@ -576,8 +576,8 @@ class User(UUIDModel,
         return hasattr(self, 'contact')
 
     def is_manager(self) -> bool:
-        if self.contact.company_contact.first():
-            return self.contact.company_contact.first().role == MANAGER
+        if self.contact.company_contact.filter(role=CompanyContact.MANAGER).exists():
+            return True
         return False
 
     def is_client(self) -> bool:
