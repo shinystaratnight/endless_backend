@@ -13,6 +13,7 @@ from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.skills.models import Skill, SkillName
 from r3sourcer.apps.pricing import models as pricing_models
 from r3sourcer.apps.sms_interface import models as sms_models
+from r3sourcer.helpers.datetimes import utc_now
 
 
 @pytest.fixture
@@ -336,6 +337,19 @@ def timesheet_issue(db, timesheet, company_contact):
         subject='subject',
         description='description',
         supervisor=company_contact
+    )
+
+
+@pytest.fixture
+@freeze_time(datetime.datetime(2017, 1, 2))
+def timesheet_with_break(db, job_offer, company_contact):
+    return hr_models.TimeSheet.objects.create(
+        job_offer=job_offer,
+        supervisor=company_contact,
+        shift_started_at=utc_now().replace(hour=8, minute=0),
+        shift_ended_at=utc_now().replace(hour=8, minute=0) + datetime.timedelta(hours=8),
+        break_started_at=utc_now().replace(hour=8, minute=0) + datetime.timedelta(hours=4),
+        break_ended_at=utc_now().replace(hour=8, minute=0) + datetime.timedelta(hours=4, minutes=30),
     )
 
 
