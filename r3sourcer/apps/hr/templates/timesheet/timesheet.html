@@ -82,60 +82,97 @@
 	</style>
 </head>
 <body>
-{% for group, t_s in timesheets %}
-	<header>
-		<div class="logo">
-			<div style="display: inline-block; width: 33%; height: 50px; vertical-align: top;">
-				{% if group.0.get_closest_company.company_settings.logo %}
-				<img src="{{ domain }}{{ group.0.get_closest_company.company_settings.logo.url }}" alt="Logo" style="height: 50px;">
-				{% else %}{% endif %}
-			</div>
-			<h4 style="display: inline-block; width: 33%; text-align: center; height: 50px; line-height: 50px">
-				Timesheet
-			</h4>
-			<div style="display: inline-block; width: 33%; height: 50px; vertical-align: top;">
-				 <span class="provided-logo"><span style="height: 50px; line-height: 50px;">Provided by</span> <img class="provided-logo" src="{{ domain }}/static/new-software.png" alt="R3sourcer" style="height: 50px;"></span>
-			</div>
+<header>
+	<div class="logo">
+		<div style="display: inline-block; width: 33%; height: 50px; vertical-align: top;">
+			{% if group.0.get_closest_company.company_settings.logo %}
+			<img src="{{ domain }}{{ group.0.get_closest_company.company_settings.logo.url }}" alt="Logo" style="height: 50px;">
+			{% else %}{% endif %}
 		</div>
-	</header>
-	<body>
-		<h4 class="title">{{ group.0.master_company }}</h4>
-		<table>
-			{% if group.1 == 0 %}
-				<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
-				<thead>
-					<tr>
-						<th>Candidate</th>
-						<th>Position</th>
-						<th>Date</th>
-						<th>Start</th>
-						<th>End</th>
-						<th>Break</th>
-						<th>Base hrs</th>
-						<th>x1.5</th>
-						<th>x2</th>
-						<th>Total</th>
-						<th>Travel</th>
-						<th>Meal</th>
-						<th>Electronic timesheet confirmed by supervisor</th>
-						<th>Electronic signature or timesheet confirmed by candidate</th>
-					</tr>
-				</thead>
-				<tbody>
-				{% for timesheet in t_s %}
+		<h4 style="display: inline-block; width: 33%; text-align: center; height: 50px; line-height: 50px">
+			Timesheet
+		</h4>
+		<div style="display: inline-block; width: 33%; height: 50px; vertical-align: top;">
+				<span class="provided-logo"><span style="height: 50px; line-height: 50px;">Provided by</span> <img class="provided-logo" src="{{ domain }}/static/new-software.png" alt="R3sourcer" style="height: 50px;"></span>
+		</div>
+	</div>
+</header>
+{% for group, t_s in timesheets %}
+	<h4 class="title">{{ group.0.master_company }}</h4>
+	<table>
+		{% if group.1 == 0 %}
+			<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
+			<thead>
+				<tr>
+					<th>Candidate</th>
+					<th>Position</th>
+					<th>Date</th>
+					<th>Start</th>
+					<th>End</th>
+					<th>Break</th>
+					<th>Base hrs</th>
+					<th>x1.5</th>
+					<th>x2</th>
+					<th>Total</th>
+					<th>Travel</th>
+					<th>Meal</th>
+					<th>Electronic timesheet confirmed by supervisor</th>
+					<th>Electronic signature or timesheet confirmed by candidate</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for timesheet in t_s %}
+				<tr>
+					<td>{{ timesheet.candidate_contact }}</td>
+					<td>{{ timesheet.job_offer.job.position }}</td>
+					<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
+					<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
+					<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
+					<td>{{ timesheet.break_delta|get_hours }}</td>
+					<td>{{ timesheet.base|get_hours }}</td>
+					<td>{{ timesheet.c_1_5x|get_hours }}</td>
+					<td>{{ timesheet.c_2x|get_hours }}</td>
+					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
+					<td>{{ timesheet.travel }}</td>
+					<td>{{ timesheet.meal }}</td>
+					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
+					</td>
+					{% if timesheet.supervisor_signature %}
+						<td><img src="{{ domain }}{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
+						{% else %}
+						<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
+						</td>
+					{% endif %}
+				</tr>
+			{% endfor %}
+			</tbody>
+		{% elif group.1 == 1 %}
+			<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
+			<thead>
+				<tr>
+					<th>Candidate</th>
+					<th>Position</th>
+					<th>Date</th>
+					<th>Skill_activity</th>
+					<th>Value</th>
+					<th>Rate</th>
+					<th>Unit of measurement</th>
+					<th>Electronic timesheet confirmed by supervisor</th>
+					<th>Electronic signature or timesheet confirmed by candidate</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for timesheet in t_s %}
+				{% for skill_activity in timesheet.timesheet_rates.all %}
 					<tr>
 						<td>{{ timesheet.candidate_contact }}</td>
 						<td>{{ timesheet.job_offer.job.position }}</td>
 						<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
-						<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
-						<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
-						<td>{{ timesheet.break_delta|get_hours }}</td>
-						<td>{{ timesheet.base|get_hours }}</td>
-						<td>{{ timesheet.c_1_5x|get_hours }}</td>
-						<td>{{ timesheet.c_2x|get_hours }}</td>
-						<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
-						<td>{{ timesheet.travel }}</td>
-						<td>{{ timesheet.meal }}</td>
+						<td>{{ skill_activity.worktype.name}}</td>
+						<td>{{ skill_activity.value}}</td>
+						<td>{{ skill_activity.rate}}</td>
+						<td>{{ skill_activity.worktype.uom.short_name}}</td>
+						<td>{{ skill_activity.rate|multiply:skill_activity.value|floatformat:2 }}</td>
 						<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
 						</td>
 						{% if timesheet.supervisor_signature %}
@@ -146,104 +183,65 @@
 						{% endif %}
 					</tr>
 				{% endfor %}
-				</tbody>
-			{% elif group.1 == 1 %}
-				<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
-				<thead>
-					<tr>
-						<th>Candidate</th>
-						<th>Position</th>
-						<th>Date</th>
-						<th>Skill_activity</th>
-						<th>Value</th>
-						<th>Rate</th>
-						<th>Unit of measurement</th>
-						<th>Electronic timesheet confirmed by supervisor</th>
-						<th>Electronic signature or timesheet confirmed by candidate</th>
-					</tr>
-				</thead>
-				<tbody>
-				{% for timesheet in t_s %}
-					{% for skill_activity in timesheet.timesheet_rates.all %}
-						<tr>
-							<td>{{ timesheet.candidate_contact }}</td>
-							<td>{{ timesheet.job_offer.job.position }}</td>
-							<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
-							<td>{{ skill_activity.worktype.name}}</td>
-							<td>{{ skill_activity.value}}</td>
-							<td>{{ skill_activity.rate}}</td>
-							<td>{{ skill_activity.worktype.uom.short_name}}</td>
-							<td>{{ skill_activity.rate|multiply:skill_activity.value|floatformat:2 }}</td>
-							<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
-							</td>
-							{% if timesheet.supervisor_signature %}
-								<td><img src="{{ domain }}{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
-								{% else %}
-								<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
-								</td>
-							{% endif %}
-						</tr>
-					{% endfor %}
-				{% endfor %}
-				</tbody>
-			{% elif group.1 == 2 %}
-				<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
-				<thead>
-					<tr>
-						<th>Candidate</th>
-						<th>Position</th>
-						<th>Date</th>
-						<th>Start</th>
-						<th>End</th>
-						<th>Break</th>
-						<th>Base hrs</th>
-						<th>x1.5</th>
-						<th>x2</th>
-						<th>Total</th>
-						<th>Travel</th>
-						<th>Meal</th>
-						<th>Electronic timesheet confirmed by supervisor</th>
-						<th>Electronic signature or timesheet confirmed by candidate</th>
-					</tr>
-				</thead>
-				<tbody>
-				{% for timesheet in t_s %}
-					<tr>
-						<td>{{ timesheet.candidate_contact }}</td>
-						<td>{{ timesheet.job_offer.job.position }}</td>
-						<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
-						<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
-						<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
-						<td>{{ timesheet.break_delta|get_hours }}</td>
-						<td>{{ timesheet.base|get_hours }}</td>
-						<td>{{ timesheet.c_1_5x|get_hours }}</td>
-						<td>{{ timesheet.c_2x|get_hours }}</td>
-						<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
-						<td>{{ timesheet.travel }}</td>
-						<td>{{ timesheet.meal }}</td>
-						<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
+			{% endfor %}
+			</tbody>
+		{% elif group.1 == 2 %}
+			<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
+			<thead>
+				<tr>
+					<th>Candidate</th>
+					<th>Position</th>
+					<th>Date</th>
+					<th>Start</th>
+					<th>End</th>
+					<th>Break</th>
+					<th>Base hrs</th>
+					<th>x1.5</th>
+					<th>x2</th>
+					<th>Total</th>
+					<th>Travel</th>
+					<th>Meal</th>
+					<th>Electronic timesheet confirmed by supervisor</th>
+					<th>Electronic signature or timesheet confirmed by candidate</th>
+				</tr>
+			</thead>
+			<tbody>
+			{% for timesheet in t_s %}
+				<tr>
+					<td>{{ timesheet.candidate_contact }}</td>
+					<td>{{ timesheet.job_offer.job.position }}</td>
+					<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
+					<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
+					<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
+					<td>{{ timesheet.break_delta|get_hours }}</td>
+					<td>{{ timesheet.base|get_hours }}</td>
+					<td>{{ timesheet.c_1_5x|get_hours }}</td>
+					<td>{{ timesheet.c_2x|get_hours }}</td>
+					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
+					<td>{{ timesheet.travel }}</td>
+					<td>{{ timesheet.meal }}</td>
+					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
+					</td>
+					{% if timesheet.supervisor_signature %}
+						<td><img src="{{ domain }}{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
+						{% else %}
+						<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
 						</td>
-						{% if timesheet.supervisor_signature %}
-							<td><img src="{{ domain }}{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
-							{% else %}
-							<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
-							</td>
-						{% endif %}
+					{% endif %}
+				</tr>
+				{% for skill_activity in timesheet.timesheet_rates.all %}
+					<tr>
+						<td>{{ skill_activity.worktype.name}}</td>
+						<td>{{ skill_activity.value}}</td>
+						<td>{{ skill_activity.rate}}</td>
+						<td>{{ skill_activity.worktype.uom.short_name}}</td>
+						<td>{{ skill_activity.rate|multiply:skill_activity.value|floatformat:2 }}</td>
 					</tr>
-					{% for skill_activity in timesheet.timesheet_rates.all %}
-						<tr>
-							<td>{{ skill_activity.worktype.name}}</td>
-							<td>{{ skill_activity.value}}</td>
-							<td>{{ skill_activity.rate}}</td>
-							<td>{{ skill_activity.worktype.uom.short_name}}</td>
-							<td>{{ skill_activity.rate|multiply:skill_activity.value|floatformat:2 }}</td>
-						</tr>
-					{% endfor %}
 				{% endfor %}
-				</tbody>
-			{% endif %}
-		</table>
-	</body>
+			{% endfor %}
+			</tbody>
+		{% endif %}
+	</table>
 	{% if not forloop.last %}
 		<p style="page-break-before: always" ></p>
 	{% endif %}
