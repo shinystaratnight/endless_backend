@@ -199,6 +199,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         if redirect_host is not None:
             response_data['data']['redirect'] = redirect_host
 
+        user.track_login()
+
         return Response(response_data, status=resp_status)
 
     def _generate_token(self, request, user):
@@ -246,6 +248,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
         token_content, resp_status = self.get_jwt_oauth2_token(
             request, token_body, 200, username=user.contact.email or user.contact.phone_mobile
         )
+
+        user.track_login()
 
         data = {
             'status': 'success',

@@ -659,6 +659,10 @@ class User(UUIDModel,
             self.date_joined = utc_now()
         super().save(*args, **kwargs)
 
+    def track_login(self):
+        self.last_login = utc_now()
+        self.save(update_fields=['last_login'])
+
 
 class Country(UUIDModel, AbstractCountry):
     currency = CurrencyField(default='USD', choices=CURRENCY_CHOICES)
