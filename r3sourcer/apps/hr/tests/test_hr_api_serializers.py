@@ -1,7 +1,8 @@
-from datetime import datetime
+from datetime import datetime, timedelta
 
 import freezegun
 import pytest
+from freezegun import freeze_time
 
 from pytz import timezone
 
@@ -9,7 +10,7 @@ from django.conf import settings as dj_settings
 
 from r3sourcer.apps.hr.api.serializers.timesheet import TimeSheetSerializer
 from r3sourcer.apps.hr.api.serializers.job import JobSerializer
-
+from r3sourcer.helpers.datetimes import utc_now
 
 tz = timezone(dj_settings.TIME_ZONE)
 
@@ -56,6 +57,25 @@ class TestTimeSheetSerializer:
         res = serializer.get_position(None)
 
         assert res is None
+
+    def test_save_null_dates(self, timesheet_with_break):
+        with freeze_time("2017-01-02 0:00:00", tz_offset=0):
+            data = {
+                "shift_started_at": utc_now().replace(hour=8, minute=0),
+                "shift_ended_at": utc_now().replace(hour=8, minute=0) + timedelta(hours=8),
+                "break_started_at": None,
+                "break_ended_at": None
+            }
+
+        serializer = TimeSheetSerializer(timesheet_with_break, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+
+        timesheet_with_break.refresh_from_db()
+
+        assert timesheet_with_break.shift_started_at is not None
+        assert timesheet_with_break.break_started_at is None
+        assert timesheet_with_break.break_ended_at is None
 
 
 @pytest.mark.django_db
