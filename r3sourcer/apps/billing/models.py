@@ -189,22 +189,24 @@ class SMSBalance(models.Model):
         if self.balance <= self.top_up_limit and self.auto_charge is True:
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
 
-        low_limit = SMSBalanceLimits.objects.filter(name="Low").first()
-        if low_limit and Decimal(self.balance) < low_limit.low_balance_limit and self.low_balance_sent is False:
-            tasks.send_sms_balance_is_low_email.delay(self.company.id, template=low_limit.email_template.slug)
-            self.low_balance_sent = True
+        if self.company.is_master:
+            low_limit = SMSBalanceLimits.objects.filter(name="Low").first()
+            if low_limit:
+                if Decimal(self.balance) < low_limit.low_balance_limit and self.low_balance_sent is False:
+                    tasks.send_sms_balance_is_low_email.delay(self.company.id, template=low_limit.email_template.slug)
+                    self.low_balance_sent = True
 
-        if low_limit and Decimal(self.balance) > low_limit.low_balance_limit and self.low_balance_sent is True:
-            self.low_balance_sent = False
+                if Decimal(self.balance) > low_limit.low_balance_limit and self.low_balance_sent is True:
+                    self.low_balance_sent = False
 
-        ran_out_limit = SMSBalanceLimits.objects.filter(name="Ran out").first()
-        if ran_out_limit and Decimal(self.balance) < ran_out_limit.low_balance_limit and self.ran_out_balance_sent is False:
-            tasks.send_sms_balance_ran_out_email.delay(self.company.id, template=ran_out_limit.email_template.slug)
-            self.ran_out_balance_sent = True
+            ran_out_limit = SMSBalanceLimits.objects.filter(name="Ran out").first()
+            if ran_out_limit:
+                if Decimal(self.balance) < ran_out_limit.low_balance_limit and self.ran_out_balance_sent is False:
+                    tasks.send_sms_balance_ran_out_email.delay(self.company.id, template=ran_out_limit.email_template.slug)
+                    self.ran_out_balance_sent = True
 
-        if ran_out_limit and Decimal(self.balance) > ran_out_limit.low_balance_limit and self.ran_out_balance_sent is\
-                True:
-            self.ran_out_balance_sent = False
+                if Decimal(self.balance) > ran_out_limit.low_balance_limit and self.ran_out_balance_sent is True:
+                    self.ran_out_balance_sent = False
 
         if Decimal(self.balance) - self.segment_cost < 0:
             self.company.sms_enabled = False

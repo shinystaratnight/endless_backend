@@ -110,6 +110,11 @@ class TestUser:
         assert user_sec.is_candidate()
         assert user_sec.company == company
 
+    def test_user_track_login(self, user):
+        assert user.last_login is None
+        user.track_login()
+        assert user.last_login is not None
+
 
 @pytest.mark.django_db
 class TestContact:

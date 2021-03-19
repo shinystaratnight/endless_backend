@@ -56,6 +56,14 @@ class TestSMSBalance:
 
         assert company.sms_balance.ran_out_balance_sent is False
 
+    def test_send_low_balance_general_company(self, client, user, regular_company, relationship,
+                                                           low_balance_limit):
+        sms_balance = regular_company.sms_balance
+        sms_balance.balance = low_balance_limit.low_balance_limit - 1
+        sms_balance.save()
+
+        assert regular_company.sms_balance.low_balance_sent is False
+
 
 class TestDiscount:
 
