@@ -32,7 +32,7 @@ def parse_sms_response(self, phone_number=None):
                 rel.sharing_data_consent=True
                 rel.save()
                 buy_candidate.apply_async([rel.pk, str(user.id)])
-                logger.exception('User shared consent to CandidateRel: %s', rel.pk)
+                logger.info('User shared consent to CandidateRel: %s', rel.pk)
 
         except User.DoesNotExist as e:
             logger.exception('Cannot find the User during parse SMS response. Error: %s', e)
