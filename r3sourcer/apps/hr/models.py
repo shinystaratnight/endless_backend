@@ -400,14 +400,18 @@ class Job(core_models.AbstractBaseOrder):
             return IRRELEVANT
 
         result = NOT_FULFILLED
+        # get the closest future shift
         next_date = self.shift_dates.filter(
             shift_date__gt=self.now_utc.date(),
             cancelled=False,
         ).order_by('shift_date').first()
 
         if next_date is not None:
+            # check if all shifts for this date is fulfilled
             result = next_date.is_fulfilled()
+            # if at least one shift isn't fulfilled and there is at least one offer for the date
             if result == NOT_FULFILLED and next_date.job_offers.exists():
+                # get all job_offers with undefined status for the date
                 unaccepted_jos = next_date.job_offers.filter(
                     status=JobOffer.STATUS_CHOICES.undefined
                 )
@@ -419,7 +423,7 @@ class Job(core_models.AbstractBaseOrder):
                         shift_started_at__lte=self.now_utc,
                         shift_ended_at__gte=self.now_utc + timedelta(hours=1),
                     )
-
+                    # if there is at least one timesheet for the offers that its shift is in progress right now
                     if not todays_timesheets.exists():
                         return NOT_FULFILLED
                 result = LIKELY_FULFILLED
