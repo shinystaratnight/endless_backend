@@ -3,16 +3,16 @@
 rm -f celerybeat.pid
 
 echo "Bower install starting..."
-django bower_install --allow-root
+python manage.py bower_install --allow-root
 
 echo "Collect static starting..."
-django collectstatic --noinput
+python manage.py collectstatic --noinput
 
 echo "Migrate starting..."
-django migrate --noinput
+python manage.py migrate --noinput
 
 echo "Create permissions for new models..."
-django create_permissions
+python manage.py create_permissions
 
 echo "App starting..."
-app start
+python manage.py runserver 0.0.0.0:8081
