@@ -15,10 +15,10 @@ class Migration(migrations.Migration):
 
         for skill_name in SkillName.objects.all():
             if not WorkType.objects.filter(skill_name=skill_name,
-                                           name=WorkType.DEFAULT).exists():
+                                           name='Hourly work').exists():
                 WorkType.objects.create(skill_name=skill_name,
                                         uom=default_uom,
-                                        name=WorkType.DEFAULT
+                                        name='Hourly work'
                                         )
 
 
