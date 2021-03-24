@@ -247,6 +247,8 @@ class SkillTag(UUIDModel):
 class WorkType(UUIDModel):
     """Model for storing work types"""
 
+    DEFAULT = 'Hourly work'
+
     skill_name = models.ForeignKey(
         SkillName,
         on_delete=models.CASCADE,
@@ -307,6 +309,8 @@ class WorkType(UUIDModel):
             raise ValidationError(_("Such skill activity exists"))
 
     def __str__(self):
+        if self.name == self.DEFAULT:
+            return self.name
         return f"{self.name} per {self.uom}"
 
     @property
