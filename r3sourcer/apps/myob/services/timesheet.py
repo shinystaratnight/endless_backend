@@ -377,7 +377,7 @@ class TimeSheetSync(BaseCategoryMixin,
                 skill=job.position,
             ).first()
             name = candidate_skill_rate and candidate_skill_rate.get_myob_name()
-            base_rate = candidate_skill_rate.rate if candidate_skill_rate else 0
+            base_rate = candidate_skill_rate.hourly_rate if candidate_skill_rate else 0
         return name, base_rate
 
     def _get_base_rate_wage_category(self, name, timesheet, rate=None, base_rate=None):
