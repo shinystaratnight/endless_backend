@@ -242,6 +242,7 @@ class PriceList(PriceListMixin, TimeZoneUUIDModel):
     def geo(self):
         return self.__class__.objects.filter(
             pk=self.pk,
+            company__company_addresses__hq=True,
         ).annotate(
             longitude=F('company__company_addresses__address__longitude'),
             latitude=F('company__company_addresses__address__latitude')
