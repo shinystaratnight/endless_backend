@@ -752,7 +752,9 @@ class SkillRel(UUIDModel):
     hourly_rate = models.DecimalField(
         decimal_places=2,
         max_digits=8,
-        verbose_name=_("Skill Rate")
+        verbose_name=_("Skill Rate"),
+        blank=True,
+        null=True
     )
 
     class Meta:
