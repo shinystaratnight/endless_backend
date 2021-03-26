@@ -390,7 +390,7 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
 class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
     method_fields = (
-        'shift_total', 'break_total', 'total_worked', 'time_zone',
+        'shift_total', 'break_total', 'total_worked', 'time_zone', 'position',
     )
 
     no_break = serializers.BooleanField(required=False)
@@ -478,6 +478,13 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
                     raise serializers.ValidationError({'shift_started_at':
                         _('Total working hours must be longer than 0 hours.')})
             return data
+
+    def get_position(self, obj):
+        if obj:
+            position = obj.job_offer.job.position
+            translations = [{'language': {'id': i.language.alpha_2, 'name': i.language.name},
+                             'value': i.value} for i in position.name.translations.all()]
+            return {'id': position.id, '__str__': str(position), 'translations': translations}
 
     def get_shift_total(self, obj):
         return format_timedelta(obj.shift_delta)
