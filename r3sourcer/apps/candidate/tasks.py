@@ -197,7 +197,7 @@ def send_candidate_consent_message(candidaterel_id, data_dict):
         try:
             email_interface = get_email_service()
         except ImportError:
-            logger.exception('Cannot load SMS service')
+            logger.exception('Cannot load Email service')
             return
 
         email_interface.send_tpl(candidate_contact.contact.email, candidate_rel.master_company, tpl_name='consent-sms-message',
