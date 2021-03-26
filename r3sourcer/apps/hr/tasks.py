@@ -29,6 +29,7 @@ from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface.helpers import get_sms_template
+from r3sourcer.apps.email_interface.helpers import get_email_template
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.celeryapp import app
@@ -416,7 +417,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 try:
                     email_interface = get_email_service()
                 except ImportError:
-                    logger.exception('Cannot load SMS service')
+                    logger.exception('Cannot load Email service')
                     return
 
                 email_tpl = events_dict[event]['email_tpl']
@@ -426,7 +427,13 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 if not email_tpl:
                     return
 
-                email_interface.send_tpl(recipient.contact.email, master_company, tpl_name=email_tpl, **data_dict)
+                email_template = get_email_template(company_id=master_company.id,
+                                                    contact_id=recipient.contact.id,
+                                                    slug=sms_tpl)
+                email_interface.send_tpl(recipient.contact.email,
+                                         master_company,
+                                         tpl_name=email_template,
+                                         **data_dict)
 
 
 @app.task(bind=True, queue='sms')
@@ -500,10 +507,16 @@ def send_supervisor_timesheet_message(
             try:
                 email_interface = get_email_service()
             except ImportError:
-                logger.exception('Cannot load SMS service')
+                logger.exception('Cannot load Email service')
                 return
 
-            email_interface.send_tpl(supervisor.contact.email, master_company, tpl_name=email_tpl, **data_dict)
+            email_template = get_email_template(company_id=master_company.id,
+                                                contact_id=supervisor.contact.id,
+                                                slug=sms_tpl)
+            email_interface.send_tpl(supervisor.contact.email,
+                                     master_company,
+                                     tpl_name=email_template,
+                                     **data_dict)
 
 
 @app.task(bind=True, queue='sms')
@@ -1034,7 +1047,7 @@ def send_invoice_email(invoice_id):
     try:
         email_interface = get_email_service()
     except ImportError:
-        logger.exception('Cannot load SMS service')
+        logger.exception('Cannot load Email service')
         return
 
     try:
