@@ -512,7 +512,7 @@ def send_supervisor_timesheet_message(
 
             email_template = get_email_template(company_id=master_company.id,
                                                 contact_id=supervisor.contact.id,
-                                                slug=sms_tpl)
+                                                slug=email_tpl)
             email_interface.send_tpl(supervisor.contact.email,
                                      master_company,
                                      tpl_name=email_template,

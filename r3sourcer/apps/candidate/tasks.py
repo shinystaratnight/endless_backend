@@ -14,6 +14,7 @@ from r3sourcer.apps.billing import models as billing_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.email_interface.utils import get_email_service
+from r3sourcer.apps.email_interface.helpers import get_email_template
 from r3sourcer.apps.sms_interface.helpers import get_sms_template
 from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 from r3sourcer.apps.sms_interface.utils import get_sms_service
@@ -200,5 +201,10 @@ def send_candidate_consent_message(candidaterel_id, data_dict):
             logger.exception('Cannot load Email service')
             return
 
-        email_interface.send_tpl(candidate_contact.contact.email, candidate_rel.master_company, tpl_name='consent-sms-message',
+        email_template = get_email_template(company_id=candidate_rel.master_company_id,
+                                            contact_id=candidate_contact.contact.id,
+                                            slug='consent-sms-message')
+        email_interface.send_tpl(candidate_contact.contact.email,
+                                 candidate_rel.master_company,
+                                 tpl_name=email_template,
                                  **data_dict)
