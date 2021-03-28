@@ -253,6 +253,7 @@ def send_contact_verify_sms(self, contact_id, manager_id):
 @shared_task(bind=True)
 def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
     from r3sourcer.apps.email_interface.utils import get_email_service
+    from r3sourcer.apps.email_interface.helpers import get_email_template
 
     try:
         email_interface = get_email_service()
@@ -294,9 +295,14 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
                 email_verification_link="%s%s" % (site_url, extranet_login.auth_url),
             )
 
+            email_template = get_email_template(company_id=master_company_id,
+                                                contact_id=contact.id,
+                                                slug=email_tpl)
             logger.info('Sending e-mail verify to %s.', contact)
-
-            email_interface.send_tpl(contact.email, master_company, tpl_name=email_tpl, **data_dict)
+            email_interface.send_tpl(contact.email,
+                                     master_company,
+                                     tpl_name=email_template,
+                                     **data_dict)
 
 
 @shared_task()
@@ -363,6 +369,7 @@ def send_generated_password_sms(contact_id, new_password=None):
 @shared_task()
 def send_verification_success_email(contact_id, master_company_id, template='e-mail-verification-success'):
     from r3sourcer.apps.email_interface.utils import get_email_service
+    from r3sourcer.apps.email_interface.helpers import get_email_template
 
     try:
         email_interface = get_email_service()
@@ -400,9 +407,14 @@ def send_verification_success_email(contact_id, master_company_id, template='e-m
             contact.user.set_password(new_password)
             contact.user.save()
 
+            email_template = get_email_template(company_id=master_company_id,
+                                                contact_id=contact.id,
+                                                slug=template)
             logger.info('Sending e-mail verification success to %s.', contact)
-
-            email_interface.send_tpl(contact.email, master_company, tpl_name=template, **data_dict)
+            email_interface.send_tpl(contact.email,
+                                     master_company,
+                                     tpl_name=email_template,
+                                     **data_dict)
 
 
 @shared_task()
