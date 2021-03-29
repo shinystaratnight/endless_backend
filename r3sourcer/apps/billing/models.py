@@ -1,4 +1,5 @@
 import datetime
+import logging
 from decimal import Decimal
 import pytz
 import stripe
@@ -7,6 +8,7 @@ from django.db import models
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
+from stripe.error import InvalidRequestError
 
 from r3sourcer import ref
 from r3sourcer.apps.core import tasks
@@ -14,6 +16,7 @@ from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
 from r3sourcer.apps.email_interface.models import EmailTemplate, DefaultEmailTemplate
 from r3sourcer.helpers.datetimes import utc_now
 
+logger = logging.getLogger(__name__)
 
 class Subscription(CompanyTimeZoneMixin):
     ALLOWED_STATUSES = ('active', 'incomplete', 'trialing')
@@ -121,7 +124,10 @@ class Subscription(CompanyTimeZoneMixin):
     def deactivate(self, user_id=None):
         stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         sub = stripe.Subscription.retrieve(self.subscription_id)
-        sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+        try:
+            sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+        except InvalidRequestError as e:
+            logger.warning('Subscription is missed, probably cancelled: {}'.format(e))
         if user_id:
             tasks.cancel_subscription_access.apply_async([user_id])
 
