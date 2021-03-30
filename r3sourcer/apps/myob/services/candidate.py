@@ -161,7 +161,7 @@ class CandidateSync(BaseCategoryMixin,
 
         candidate_skill_rate = candidate_contact.candidate_skills.all().order_by('-hourly_rate').first()
 
-        base_rate = candidate_skill_rate and candidate_skill_rate.rate
+        base_rate = candidate_skill_rate and candidate_skill_rate.hourly_rate
 
         data = self.mapper.map_extra_info(
             candidate_contact,
