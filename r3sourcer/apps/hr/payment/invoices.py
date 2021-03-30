@@ -39,7 +39,10 @@ class InvoiceService(BasePaymentService):
             price_list__company=customer_company,
         ).last()
 
-        return price_list_rate
+        if price_list_rate:
+            return price_list_rate
+        else:
+            raise Exception('Pricelist rate for skill not found')
 
     def calculate(self, company, timesheets):
         coefficient_service = CoefficientService()
