@@ -88,6 +88,7 @@ class BaseEmailService(metaclass=ABCMeta):
 
         if template is None:
             logger.exception('Cannot find email template with name %s', tpl_name)
+            return
 
         compiled = template.compile(**kwargs)
         subject = compiled['subject']
