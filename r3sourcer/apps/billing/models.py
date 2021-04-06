@@ -127,7 +127,7 @@ class Subscription(CompanyTimeZoneMixin):
         try:
             sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
         except InvalidRequestError as e:
-            logger.warning('Subscription is missed, probably cancelled: {}'.format(e.message))
+            logger.warning('Subscription is missed, probably cancelled: {}'.format(e))
         if user_id:
             tasks.cancel_subscription_access.apply_async([user_id])
 
