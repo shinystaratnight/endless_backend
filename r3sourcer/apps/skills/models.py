@@ -134,7 +134,7 @@ class Skill(MYOBMixin, UUIDModel):
         verbose_name_plural = _("Skills")
 
     def __str__(self):
-        return self.name.name
+        return f'{self.company.name} - {self.name.name}'
 
     def get_myob_name(self):
         name = self.short_name
@@ -261,7 +261,7 @@ class WorkType(UUIDModel):
     skill = models.ForeignKey(
         Skill,
         on_delete=models.CASCADE,
-        verbose_name=_('Skill Name'),
+        verbose_name=_('Skill'),
         related_name='work_types',
         blank=True,
         null=True
@@ -361,8 +361,6 @@ class SkillRateRange(MYOBMixin, UUIDModel):
         WorkType,
         related_name="skill_rate_ranges",
         verbose_name=_("WorkType"),
-        blank=True,
-        null=True
     )
     upper_rate_limit = models.DecimalField(
         decimal_places=2,
@@ -404,4 +402,4 @@ class SkillRateRange(MYOBMixin, UUIDModel):
         unique_together = ("skill", "worktype")
 
     def __str__(self):
-        return f"{self.skill.name.name} rate range"
+        return f"{self.skill.name.name} - {self.worktype.name}"

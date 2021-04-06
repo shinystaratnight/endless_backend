@@ -62,7 +62,7 @@ class SubscriptionCreateView(APIView):
                 default_tax_rates=[vat_object.stripe_id],
             )
         except InvalidRequestError as e:
-            data = {'error': e}
+            data = {'error': e.message}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
         current_period_start = None
         current_period_end = None
