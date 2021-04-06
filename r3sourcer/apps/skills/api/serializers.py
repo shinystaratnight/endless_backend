@@ -50,7 +50,7 @@ class SkillNameSerializer(ApiBaseModelSerializer):
             {'name': ('name', {'translations': ('language', 'value')})},
             {'industry': ('id', 'type', {'translations': ('language', 'value')}),
              'translations': ('language', 'value'),
-            #  'work_types': ('id', 'name', {'translations': ('language', 'value')}),
+             'work_types': ('id', 'name', {'translations': ('language', 'value')}),
             },
         )
 
@@ -122,6 +122,8 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
 
 class WorkTypeSerializer(ApiBaseModelSerializer):
 
+    method_fields = ['skill_rate_ranges']
+
     class Meta:
         model = WorkType
         fields = (
@@ -133,3 +135,22 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
             'skill_name': {'required': False},
             'skill': {'required': False}
         }
+
+    def get_skill_rate_ranges(self, obj):
+        if not obj:
+            return
+
+        request = self.context.get('request')
+        if obj.skill_name and request:
+            return SkillRateRangeSerializer(obj.skill_rate_ranges.filter(
+                                            skill__company=request.user.contact.get_closest_company()),
+                                            fields=['id', 'skill', 'lower_rate_limit', 'default_rate',
+                                                    'upper_rate_limit', 'price_list_lower_rate_limit',
+                                                    'price_list_default_rate', 'price_list_upper_rate_limit'],
+                                            many=True).data
+        else:
+            return SkillRateRangeSerializer(obj.skill_rate_ranges.filter(skill=obj.skill),
+                                            fields=['id', 'skill', 'lower_rate_limit', 'default_rate',
+                                                    'upper_rate_limit', 'price_list_lower_rate_limit',
+                                                    'price_list_default_rate', 'price_list_upper_rate_limit'],
+                                            many=True).data
