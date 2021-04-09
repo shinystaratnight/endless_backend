@@ -143,14 +143,10 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
         request = self.context.get('request')
         if obj.skill_name and request:
             return SkillRateRangeSerializer(obj.skill_rate_ranges.filter(
-                                            skill__company=request.user.contact.get_closest_company()),
-                                            fields=['id', 'skill', 'lower_rate_limit', 'default_rate',
-                                                    'upper_rate_limit', 'price_list_lower_rate_limit',
-                                                    'price_list_default_rate', 'price_list_upper_rate_limit'],
+                                            skill__company=request.user.company),
+                                            fields=['id', 'default_rate'],
                                             many=True).data
         else:
             return SkillRateRangeSerializer(obj.skill_rate_ranges.filter(skill=obj.skill),
-                                            fields=['id', 'skill', 'lower_rate_limit', 'default_rate',
-                                                    'upper_rate_limit', 'price_list_lower_rate_limit',
-                                                    'price_list_default_rate', 'price_list_upper_rate_limit'],
+                                            fields=['id', 'default_rate'],
                                             many=True).data
