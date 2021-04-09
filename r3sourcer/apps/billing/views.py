@@ -60,6 +60,7 @@ class SubscriptionCreateView(APIView):
                 customer=company.stripe_customer,
                 items=[{"plan": plan.id}],
                 default_tax_rates=[vat_object.stripe_id],
+                cancel_at_period_end=False,
             )
         except InvalidRequestError as e:
             data = {'error': e.message}
