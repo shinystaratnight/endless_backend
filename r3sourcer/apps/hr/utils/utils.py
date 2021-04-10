@@ -220,7 +220,8 @@ def send_supervisor_timesheet_approve(timesheet, force=False, not_agree=False):
         send_supervisor_timesheet_sign.apply_async(
             args=[timesheet.supervisor.id, timesheet.id, force], eta=date_time)
     else:
-        send_supervisor_timesheet_sign.apply_async(args=[timesheet.supervisor.id, timesheet.id, force], countdown=10)
+        send_supervisor_timesheet_sign.apply_async(
+            args=[timesheet.supervisor.id, timesheet.id, force], countdown=30*60)
 
 
 def send_job_confirmation_sms(job):
