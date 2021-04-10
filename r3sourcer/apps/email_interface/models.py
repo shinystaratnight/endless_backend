@@ -131,7 +131,7 @@ class EmailMessage(TimeZoneUUIDModel):
     )
 
     sent_at = models.DateTimeField(
-        verbose_name=_("When mail received"),
+        verbose_name=_("When mail sent"),
         null=True,
         blank=True
     )
