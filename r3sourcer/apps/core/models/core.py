@@ -552,6 +552,13 @@ class User(UUIDModel,
         else:
             return {"user": "User have no trial period start date"}
 
+    def get_end_of_trial_as_date(self):
+        if self.trial_period_start:
+            end_of_trial = self.trial_period_start + timedelta(days=30)
+            return end_of_trial
+        else:
+            return None
+
     def clean(self):
         if self.is_superuser \
                 and User.objects.filter(is_superuser=True).exists() \
