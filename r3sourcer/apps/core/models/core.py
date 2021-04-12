@@ -1622,7 +1622,7 @@ class CompanyContactRelationship(TimeZoneUUIDModel,
     )
 
     class Meta:
-        unique_together = ('company', 'company_contact', 'active')
+        unique_together = ('company', 'company_contact')
         verbose_name = _("Company Contact Relationship")
         verbose_name_plural = _("Company Contact Relationships")
 
