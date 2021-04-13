@@ -117,6 +117,14 @@ def address(db):
 
 
 @pytest.fixture
+def company_address(db, address, company):
+    return CompanyAddress.objects.create(
+        company=company,
+        address=address,
+        hq=True
+    )
+
+@pytest.fixture
 def jobsite(db, master_company, company_contact, industry, address, regular_company):
     return Jobsite.objects.create(
         industry=industry,

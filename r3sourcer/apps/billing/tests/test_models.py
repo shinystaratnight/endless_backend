@@ -4,7 +4,7 @@ from decimal import Decimal
 
 import stripe
 
-from r3sourcer.apps.billing.models import Discount, Subscription, Payment
+from r3sourcer.apps.billing.models import Discount, Subscription, Payment, SubscriptionType
 from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms
 
 
@@ -104,8 +104,11 @@ class TestDiscount:
 
         assert Payment.objects.first().amount == 75
 
+    @mock.patch.object(stripe.InvoiceItem, 'create')
+    @mock.patch.object(stripe.Invoice, 'create')
     @mock.patch('r3sourcer.apps.core.models.Company.active_workers')
-    def test_apply_discount_extra_workers(self, active_workers, client, user, company):
+    def test_apply_discount_extra_workers(self, mocked_invoice_item, mocked_invoice, active_workers, client, user,
+                                          company):
         Discount.objects.create(
             company=company,
             payment_type='extra_workers',
@@ -118,7 +121,9 @@ class TestDiscount:
         Subscription.objects.create(
             company=company,
             name='subscription',
-            type='monthly',
+            subscription_type=SubscriptionType.objects.create(
+                type='monthly'
+            ),
             price=500,
             worker_count=100,
             active=True,
