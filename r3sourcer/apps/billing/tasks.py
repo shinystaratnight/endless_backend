@@ -165,6 +165,16 @@ def fetch_payments():
         payments = Payment.objects.filter(invoice_url__isnull=True)
 
         for invoice in invoices:
+
+            if invoice['paid'] is False and invoice['subscription'] is not None:
+                try:
+                    sub = Subscription.objects.get(subscription_id=invoice['subscription'])
+                    sub.active = False
+                    sub.status = Subscription.SUBSCRIPTION_STATUSES.unpaid
+                    sub.save()
+                except Subscription.DoesNotExist:
+                    pass
+
             if not Payment.objects.filter(stripe_id=invoice['id']).exists():
                 Payment.objects.create(
                     company=company,
