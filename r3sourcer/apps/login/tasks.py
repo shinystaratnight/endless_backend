@@ -6,7 +6,6 @@ from django.db import transaction
 from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
-from r3sourcer.apps.email_interface.helpers import get_email_template
 from .models import TokenLogin
 from ..core.utils.companies import get_site_master_company
 from ..sms_interface.helpers import get_sms_template
@@ -53,12 +52,9 @@ def send_login_token(contact, send_func, tpl, redirect_url=None, type_=TokenLogi
                       tpl_id=sms_template.id,
                       **data_dict)
         elif type_ in (TokenLogin.TYPES.email,):
-            email_template = get_email_template(company_id=master_company.id,
-                                                contact_id=contact.id,
-                                                slug=tpl)
             send_func(contact.email,
                       master_company,
-                      tpl_name=email_template,
+                      tpl_name=tpl,
                       **data_dict)
         else:
             raise Exception('Unknown login  token type')
