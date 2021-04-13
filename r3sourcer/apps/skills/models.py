@@ -132,6 +132,7 @@ class Skill(MYOBMixin, UUIDModel):
     class Meta:
         verbose_name = _("Skill")
         verbose_name_plural = _("Skills")
+        unique_together = ['name', 'company']
 
     def __str__(self):
         return f'{self.company.name} - {self.name.name}'
