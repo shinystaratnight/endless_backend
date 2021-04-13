@@ -41,18 +41,18 @@ class TestSubscriptionCreateView:
 
 class TestSubscriptionListView:
     @mock.patch.object(Subscription, 'deactivate')
-    def test_get(self, mocked_method, client, user, company, relationship):
+    def test_get(self, mocked_method, client, user, company, subscription_type_monthly, relationship):
         plan1 = Subscription.objects.create(
             company=company,
             name='plan 1',
-            type='monthly',
+            subscription_type=subscription_type_monthly,
             price=500,
             worker_count=100,
         )
         plan2 = Subscription.objects.create(
             company=company,
             name='plan 2',
-            type='monthly',
+            subscription_type=subscription_type_monthly,
             price=1000,
             worker_count=200,
         )
@@ -69,11 +69,11 @@ class TestSubscriptionListView:
 
 
 class TestSubscriptionStatusView:
-    def test_subscription_status_active(self, client, user, company, relationship):
+    def test_subscription_status_active(self, client, user, company, subscription_type_monthly, relationship):
         subscription = Subscription.objects.create(
             company=company,
             name='subscription',
-            type='monthly',
+            subscription_type=subscription_type_monthly,
             price=1000,
             worker_count=200,
             status='active'
@@ -94,7 +94,7 @@ class TestSubscriptionStatusView:
 
 
 class TestStripeCustomerCreateView:
-    def test_get(self, client, user, company, relationship):
+    def test_get(self, client, user, company, relationship, company_address):
         url = reverse('billing:stripe_customer_create')
         client.force_login(user)
         client.post(url)
