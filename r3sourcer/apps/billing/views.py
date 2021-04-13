@@ -87,6 +87,12 @@ class SubscriptionCreateView(APIView):
         customer = company.stripe_customer
         invoices = stripe.Invoice.list(customer=customer)['data']
         for invoice in invoices:
+            if invoice['paid'] is False and invoice['subscription'] is not None and invoice['subscription'] == \
+                    subscription.id:
+                sub.active = False
+                sub.status = Subscription.SUBSCRIPTION_STATUSES.unpaid
+                sub.save()
+
             if not Payment.objects.filter(stripe_id=invoice['id']).exists():
                 Payment.objects.create(
                     company=company,
