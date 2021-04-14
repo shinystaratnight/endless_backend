@@ -74,17 +74,26 @@ class BaseEmailService(metaclass=ABCMeta):
                 email_message.save()
 
     @transaction.atomic
-    def send_tpl(self, recipients, master_company, from_email=None, tpl_name=None,  **kwargs):
-        languages = master_company.languages.order_by('-default').values_list('language_id', flat=True).all()
-        templates = {x.language_id: x for x in email_models.EmailTemplate.objects
-                                                                         .filter(Q(name=tpl_name) | Q(slug=tpl_name),
-                                                                                 company_id=master_company.id)
-                                                                         .all()}
-        template = None
+    def send_tpl(self, recepient, master_company, from_email=None, tpl_name=None,  **kwargs):
+
+        languages = None
+        if 'contact' in kwargs:
+            languages = kwargs.get('contact').languages.order_by('-default')
+        if not languages:
+            languages = master_company.languages.order_by('-default')
+
+        templates = email_models.EmailTemplate.objects.filter(Q(name=tpl_name) | Q(slug=tpl_name),
+                                                                company_id=master_company.id)
+
         for lang in languages:
-            template = templates.get(lang)
-            if template:
+            try:
+                template = templates.get(language=lang.language)
                 break
+            except:
+                continue
+
+        if template is None:
+            templates.get(language_id=settings.DEFAULT_LANGUAGE)
 
         if template is None:
             logger.exception('Cannot find email template with name %s', tpl_name)
@@ -92,10 +101,9 @@ class BaseEmailService(metaclass=ABCMeta):
 
         compiled = template.compile(**kwargs)
         subject = compiled['subject']
-        self.send(
-            recipients, subject, compiled['text'],
-            html_message=compiled['html'], from_email=from_email, template=template,
-            **kwargs
+        self.send(recepient, subject, compiled['text'],
+                  html_message=compiled['html'], from_email=from_email, template=template,
+                  **kwargs
         )
 
     @abstractmethod

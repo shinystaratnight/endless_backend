@@ -29,7 +29,6 @@ from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface.helpers import get_sms_template
-from r3sourcer.apps.email_interface.helpers import get_email_template
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.celeryapp import app
@@ -427,12 +426,9 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 if not email_tpl:
                     return
 
-                email_template = get_email_template(company_id=master_company.id,
-                                                    contact_id=recipient.contact.id,
-                                                    slug=sms_tpl)
                 email_interface.send_tpl(recipient.contact.email,
                                          master_company,
-                                         tpl_name=email_template,
+                                         tpl_name=email_tpl,
                                          **data_dict)
 
 
@@ -448,9 +444,8 @@ def autoconfirm_rejected_timesheet(self, time_sheet_id):
             time_sheet.save(update_fields=['candidate_submitted_at'])
 
 
-def send_supervisor_timesheet_message(
-    supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl=None, related_timesheets=None, **kwargs
-):
+def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
+                                      sms_tpl, email_tpl=None, related_timesheets=None, **kwargs):
     email_tpl = email_tpl or sms_tpl
 
     with transaction.atomic():
@@ -510,12 +505,9 @@ def send_supervisor_timesheet_message(
                 logger.exception('Cannot load Email service')
                 return
 
-            email_template = get_email_template(company_id=master_company.id,
-                                                contact_id=supervisor.contact.id,
-                                                slug=email_tpl)
             email_interface.send_tpl(supervisor.contact.email,
                                      master_company,
-                                     tpl_name=email_template,
+                                     tpl_name=email_tpl,
                                      **data_dict)
 
 
@@ -525,7 +517,6 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         supervisor = core_models.CompanyContact.objects.get(pk=supervisor_id)
     except core_models.CompanyContact.DoesNotExist:
         return
-
     try:
         time_sheet = hr_models.TimeSheet.objects.get(pk=timesheet_id)
     except hr_models.TimeSheet.DoesNotExist:
@@ -536,13 +527,70 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
     today_utc = now_utc.date()
     sms_tpl = 'supervisor-timesheet-sign'
     email_tpl = 'supervisor-timesheet-sign'
+    should_send_sms = False
+    should_send_email = False
 
     if force:
-        send_supervisor_timesheet_message(supervisor, True, True, sms_tpl, email_tpl,
-                                          related_timesheets=[time_sheet])
+
+        if supervisor.message_by_sms:
+
+            # last sms to supervisor time
+            try:
+                last_sms_time = SMSMessage.objects.filter(to_number=supervisor.contact.phone_mobile,
+                                                        template__slug=sms_tpl) \
+                                                .latest('sent_at') \
+                                                .sent_at
+            except:
+                last_sms_time = None
+
+            unapproved_timesheets = hr_models.TimeSheet.objects.filter(
+                supervisor=supervisor,
+                candidate_submitted_at__date=today_utc,
+                supervisor_approved_at__isnull=True) \
+                    .exclude(pk=timesheet_id)
+
+            # check if unapproved_timesheets exist
+            if last_sms_time:
+                unapproved_timesheets_after_last_sms = unapproved_timesheets.filter(
+                    candidate_submitted_at__gt=last_sms_time)
+
+                # check if last sms sent more than 30 min ago
+                if now_utc - last_sms_time > timedelta(minutes=30) \
+                    and not unapproved_timesheets_after_last_sms:
+                        should_send_sms = True
+            else:
+                if not unapproved_timesheets:
+                        should_send_sms = True
+
+        if supervisor.message_by_email:
+
+            # last email to supervisor time
+            try:
+                last_email_time = EmailMessage.objects.filter(to_addresses__contains=supervisor.contact.email,
+                                                            template__slug=email_tpl) \
+                                                    .latest('created_at') \
+                                                    .created_at
+            except:
+                last_email_time = None
+
+            if last_email_time:
+                unapproved_timesheets_after_last_email = unapproved_timesheets.filter(
+                    candidate_submitted_at__gt=last_email_time)
+
+                # check if last email sent more than 30 min ago
+                if now_utc - last_email_time > timedelta(minutes=30) \
+                    and not unapproved_timesheets_after_last_email:
+                        should_send_email = True
+
+            else:
+                if not unapproved_timesheets:
+                        should_send_email = True
+
+        if should_send_sms or should_send_email:
+            send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
+                                            sms_tpl, email_tpl, [time_sheet])
         return
 
-    should_send_sms = False
     if supervisor.message_by_sms:
         if not SMSMessage.objects.filter(
                   to_number=supervisor.contact.phone_mobile,
@@ -551,7 +599,6 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
                ).exists():
             should_send_sms = True
 
-    should_send_email = False
     if supervisor.message_by_email:
         if not EmailMessage.objects.filter(
                    to_addresses=supervisor.contact.email,

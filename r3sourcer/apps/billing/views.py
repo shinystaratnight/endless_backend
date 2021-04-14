@@ -60,9 +60,10 @@ class SubscriptionCreateView(APIView):
                 customer=company.stripe_customer,
                 items=[{"plan": plan.id}],
                 default_tax_rates=[vat_object.stripe_id],
+                cancel_at_period_end=False,
             )
         except InvalidRequestError as e:
-            data = {'error': e}
+            data = {'error': e.message}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
         current_period_start = None
         current_period_end = None
@@ -86,6 +87,12 @@ class SubscriptionCreateView(APIView):
         customer = company.stripe_customer
         invoices = stripe.Invoice.list(customer=customer)['data']
         for invoice in invoices:
+            if invoice['paid'] is False and invoice['subscription'] is not None and invoice['subscription'] == \
+                    subscription.id:
+                sub.active = False
+                sub.status = Subscription.SUBSCRIPTION_STATUSES.unpaid
+                sub.save()
+
             if not Payment.objects.filter(stripe_id=invoice['id']).exists():
                 Payment.objects.create(
                     company=company,

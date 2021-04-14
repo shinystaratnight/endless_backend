@@ -54,6 +54,8 @@ class EmailTemplate(TemplateMessage):
             'language',
         ]
 
+    def __str__(self):
+        return f'{self.type} {self.company} {self.language}'
 
 class DefaultEmailTemplate(DefaultTemplateABS):
     language = models.ForeignKey(
@@ -137,7 +139,7 @@ class EmailMessage(TimeZoneUUIDModel):
     )
 
     sent_at = models.DateTimeField(
-        verbose_name=_("When mail received"),
+        verbose_name=_("When mail sent"),
         null=True,
         blank=True
     )
