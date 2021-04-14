@@ -648,7 +648,7 @@
     }
 },
 {
-    "model": "email_interface.defaultsmstemplate",
+    "model": "sms_interface.defaultsmstemplate",
     "pk": 57,
     "fields": {
         "name": "Consent sms message",
