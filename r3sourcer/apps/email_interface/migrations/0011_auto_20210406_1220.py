@@ -57,10 +57,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterField(
-            model_name='defaultemailtemplate',
-            name='message_text_template',
-            field=models.TextField(blank=True, default='', verbose_name='Text template'),
-        ),
         migrations.RunPython(load_new_default_email_templates_from_fixture),
     ]
