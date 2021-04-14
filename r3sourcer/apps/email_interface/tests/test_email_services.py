@@ -142,19 +142,6 @@ class TestEmailServices:
 
     @mock.patch.object(EmailTestService, 'send')
     @lang_objects
-    def test_send_default_tpl(self, mock_send, service, default_email_template, master_company):
-        self.langs.add(
-            MockModel(language_id='en', default=True),
-        )
-        service.send_default_tpl('test@test.com', master_company=master_company, tpl_name='Test Email Template')
-
-        mock_send.assert_called_with(
-            'test@test.com', 'Test subject', 'template',
-            html_message='', from_email=None, template=default_email_template
-        )
-
-    @mock.patch.object(EmailTestService, 'send')
-    @lang_objects
     def test_send_tpl_slug(self, mock_send, service, email_template, master_company):
         self.langs.add(
             MockModel(language_id='en', default=True),
