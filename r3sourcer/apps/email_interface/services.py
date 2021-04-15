@@ -84,7 +84,7 @@ class BaseEmailService(metaclass=ABCMeta):
 
         templates = email_models.EmailTemplate.objects.filter(Q(name=tpl_name) | Q(slug=tpl_name),
                                                                 company_id=master_company.id)
-
+        template = None
         for lang in languages:
             try:
                 template = templates.get(language=lang.language)
