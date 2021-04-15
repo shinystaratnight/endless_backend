@@ -5,6 +5,7 @@ import mock
 import pytest
 
 from django.utils import timezone
+from django_mock_queries.query import MockSet, MockModel
 
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.email_interface.exceptions import EmailBaseServiceError
@@ -21,6 +22,8 @@ class EmailTestService(BaseEmailService):
 
 @pytest.mark.django_db
 class TestEmailServices:
+    langs = MockSet()
+    lang_objects = mock.patch('r3sourcer.apps.core.models.Company.languages', langs)
 
     @pytest.fixture
     def service(self):
@@ -125,18 +128,25 @@ class TestEmailServices:
         assert not EmailMessage.objects.exists()
 
     @mock.patch.object(EmailTestService, 'send')
-    def test_send_tpl(self, mock_send, service, email_template):
-        service.send_tpl('test@test.com', tpl_name='Email Template')
+    @lang_objects
+    def test_send_tpl(self, mock_send, service, email_template, master_company):
+        self.langs.add(
+            MockModel(language_id='en', default=True),
+        )
+        service.send_tpl('test@test.com', master_company=master_company, tpl_name='Email Template')
 
         mock_send.assert_called_with(
-            'test@test.com', 'subject', 'template',
-            html_message='', from_email=None, template=email_template
+            'test@test.com', 'subject', 'template', html_message='', from_email=None,
+            template=email_template
         )
 
     @mock.patch.object(EmailTestService, 'send')
-    @mock.patch.object(Company, 'languages')
-    def test_send_tpl_slug(self, mock_company, mock_send, service, email_template):
-        service.send_tpl('test@test.com', mock_company, tpl_name='email-template')
+    @lang_objects
+    def test_send_tpl_slug(self, mock_send, service, email_template, master_company):
+        self.langs.add(
+            MockModel(language_id='en', default=True),
+        )
+        service.send_tpl('test@test.com', master_company, tpl_name='email-template')
 
         mock_send.assert_called_with(
             'test@test.com', 'subject', 'template',
@@ -145,9 +155,9 @@ class TestEmailServices:
 
     @mock.patch('r3sourcer.apps.email_interface.services.logger')
     @mock.patch.object(EmailTestService, 'send')
-    @mock.patch.object(Company, 'languages')
-    def test_send_tpl_not_found(self, mock_company, mock_send, mock_log, service):
-        service.send_tpl('test@test.com', mock_company, 'sms')
+    @lang_objects
+    def test_send_tpl_not_found(self, mock_send, mock_log, service, master_company):
+        service.send_tpl('test@test.com', master_company, tpl_name='sms')
 
         assert mock_log.exception.called
         assert not mock_send.called

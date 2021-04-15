@@ -23,13 +23,18 @@ class DefaultSMSTemplate(DefaultTemplateABS):
     def save(self, *args, **kwargs):
         from r3sourcer.apps.core.models import Company
         super().save(*args, **kwargs)
+
+        SMSTemplate.objects.\
+            filter(slug=self.slug, language_id=self.language.alpha_2).\
+            update(message_text_template=self.message_text_template)
+
         templates = []
         for company in Company.objects.filter(
                     type=Company.COMPANY_TYPES.master,
                     languages__language=self.language
                 ).exclude(
                     sms_templates__slug=self.slug,
-                ).all():
+                ):
             obj = SMSTemplate(
                 name=self.name,
                 slug=self.slug,
