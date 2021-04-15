@@ -6,19 +6,50 @@ from django.utils import timezone
 import freezegun
 import pytest
 
-from r3sourcer.apps.core.models import Language
+from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.email_interface import models
 
 
 @pytest.fixture
-def email_template():
-    lang, _ = Language.objects.get_or_create(alpha_2='en', name='English')
+def user_primary(db):
+    return core_models.User.objects.create_user(
+        email='test3@test.tt', phone_mobile='+12345678903',
+        password='test2345'
+    )
+
+@pytest.fixture
+def contact_primary(db, user_primary):
+    return user_primary.contact
+
+@pytest.fixture
+def company_contact_primary(db, contact_primary):
+    return core_models.CompanyContact.objects.create(
+        contact=contact_primary
+    )
+
+
+@pytest.fixture
+def master_company(db, company_contact_primary):
+    return core_models.Company.objects.create(
+        name='Master',
+        business_id='123',
+        registered_for_gst=True,
+        type=core_models.Company.COMPANY_TYPES.master,
+        timesheet_approval_scheme=core_models.Company.TIMESHEET_APPROVAL_SCHEME.PIN,
+        primary_contact=company_contact_primary
+    )
+
+@pytest.fixture
+def email_template(master_company):
+    lang, _ = core_models.Language.objects.get_or_create(alpha_2='en', name='English')
     return models.EmailTemplate.objects.create(
         name='Email Template',
         type=models.EmailTemplate.EMAIL,
+        slug="email-template",
         message_text_template='template',
         subject_template='subject',
-        language=lang
+        language=lang,
+        company=master_company
     )
 
 
@@ -56,8 +87,9 @@ def fake_email_html_body(fake_email):
 @pytest.fixture
 def default_email_template():
     return models.DefaultEmailTemplate.objects.create(
-        name= "Test Email Template",
-        slug= "test-email-template",
-        subject_template= "Test subject",
-        language_id= "en"
+        name="Test Email Template",
+        slug="test-email-template",
+        subject_template="Test subject",
+        language_id="en",
+        message_text_template="template"
     )

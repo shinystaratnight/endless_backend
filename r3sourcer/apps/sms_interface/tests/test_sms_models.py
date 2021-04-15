@@ -1,5 +1,5 @@
 import string
-from datetime import datetime, date, timedelta
+from datetime import timedelta
 from itertools import chain
 
 from django.utils import timezone
@@ -7,7 +7,6 @@ from django.utils.translation import ugettext_lazy as _
 
 import mock
 import pytest
-import pytz
 from django_mock_queries.query import MockSet, MockModel
 
 from r3sourcer.apps.sms_interface.models import (
@@ -19,18 +18,6 @@ fake_sms_qs = MockSet(
     MockModel(is_fake=False),
     MockModel(is_fake=True)
 )
-
-
-@pytest.mark.django_db
-class TestManagers:
-
-    @mock.patch('django.db.models.Manager.get_queryset')
-    def test_fake_sms_manager_qs(self, mock_qs):
-        mock_qs.return_value = fake_sms_qs
-
-        manager = FakeSMSManager()
-
-        assert manager.get_queryset().count() == 1
 
 
 @pytest.mark.django_db
@@ -146,16 +133,12 @@ class TestSMSMessage:
         sms_message = SMSMessage.objects.create(sid='test')
         sms_message_second = SMSMessage.objects.create(sid='second')
 
-        SMSRelatedObject.objects.create(sms=sms_message,
+        related_object = SMSRelatedObject.objects.create(sms=sms_message,
                                         content_object=sms_message_second)
 
-        related_obj = RelatedSMSMixin()
-        related_obj.id = sms_message_second.id
+        related_sms = related_object.sms
 
-        related_sms = related_obj.get_all_related_sms()
-
-        assert related_sms.count() == 1
-        assert related_sms.first() == sms_message
+        assert related_sms == sms_message
 
     def test_get_sent_by_reply_check_reply(self, first_sms, second_sms):
         assert first_sms.get_sent_by_reply() == second_sms
