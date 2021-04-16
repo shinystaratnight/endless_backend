@@ -168,7 +168,7 @@ def fetch_payments():
 
             if invoice['paid'] is False and invoice['subscription'] is not None:
                 try:
-                    sub = Subscription.objects.get(subscription_id=invoice['subscription'])
+                    sub = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
                     sub.active = False
                     sub.status = Subscription.SUBSCRIPTION_STATUSES.unpaid
                     sub.save()
