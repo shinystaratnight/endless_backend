@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q
 
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.email_interface import models as email_models
 from r3sourcer.apps.email_interface.exceptions import RecipientsInvalidInstance, EmailBaseServiceError
 from r3sourcer.helpers.datetimes import utc_now
@@ -76,10 +77,10 @@ class BaseEmailService(metaclass=ABCMeta):
     @transaction.atomic
     def send_tpl(self, recepient, master_company, from_email=None, tpl_name=None,  **kwargs):
 
-        languages = None
-        if 'contact' in kwargs:
+        try:
+            contact = CandidateContact.objects.filter(contact__email=recepient)
             languages = kwargs.get('contact').languages.order_by('-default')
-        if not languages:
+        except:
             languages = master_company.languages.order_by('-default')
 
         templates = email_models.EmailTemplate.objects.filter(Q(name=tpl_name) | Q(slug=tpl_name),
@@ -93,7 +94,7 @@ class BaseEmailService(metaclass=ABCMeta):
                 continue
 
         if template is None:
-            templates.get(language_id=settings.DEFAULT_LANGUAGE)
+            template = templates.get(language_id=settings.DEFAULT_LANGUAGE)
 
         if template is None:
             logger.exception('Cannot find email template with name %s', tpl_name)
