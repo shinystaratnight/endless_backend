@@ -100,44 +100,47 @@ def charge_for_extra_workers():
 def charge_for_sms(company_id, amount, sms_balance_id):
     company = Company.objects.get(id=company_id)
     sms_balance = SMSBalance.objects.get(id=sms_balance_id)
-    country_code = company.get_hq_address().address.country.code2
-    stripe_secret_key = sca.get_stripe_key(country_code)
-    stripe.api_key = stripe_secret_key
-    vat_object = VAT.get_vat(country_code).first()
-    tax_percent = vat_object.stripe_rate
 
-    for discount in company.get_active_discounts('sms'):
-        amount = discount.apply_discount(amount)
+    # try to create invoice and pay if last payment was successful
+    if sms_balance.last_payment.status == Payment.PAYMENT_STATUSES.paid:
+        country_code = company.get_hq_address().address.country.code2
+        stripe_secret_key = sca.get_stripe_key(country_code)
+        stripe.api_key = stripe_secret_key
+        vat_object = VAT.get_vat(country_code).first()
+        tax_percent = vat_object.stripe_rate
 
-    tax_value = tax_percent / 100 + 1
-    stripe.InvoiceItem.create(customer=company.stripe_customer,
-                              amount=round(int(amount * 100 / tax_value)),
-                              currency=company.currency,
-                              description='Topping up sms balance')
-    invoice = stripe.Invoice.create(customer=company.stripe_customer,
-                                    default_tax_rates=[vat_object.stripe_id],
-                                    description='Topping up sms balance')
-    payment = Payment.objects.create(
-        company=company,
-        type=Payment.PAYMENT_TYPES.sms,
-        amount=amount,
-        stripe_id=invoice['id'],
-        invoice_url=invoice['invoice_pdf'],
-        status=invoice['status']
-    )
-    # pay an invoice after creation of corresponding Payment
-    try:
-        invoice.pay()
-        # increase balance if payment is successful
-        sms_balance.balance += Decimal(payment.amount)
-    except CardError as ex:
-        # mark as unpaid if error
-        payment.status = Payment.PAYMENT_STATUSES.not_paid
-        payment.save()
-    finally:
-        # in any case save the last payment to sms_balance
-        sms_balance.last_payment = payment
-        sms_balance.save()
+        for discount in company.get_active_discounts('sms'):
+            amount = discount.apply_discount(amount)
+
+        tax_value = tax_percent / 100 + 1
+        stripe.InvoiceItem.create(customer=company.stripe_customer,
+                                  amount=round(int(amount * 100 / tax_value)),
+                                  currency=company.currency,
+                                  description='Topping up sms balance')
+        invoice = stripe.Invoice.create(customer=company.stripe_customer,
+                                        default_tax_rates=[vat_object.stripe_id],
+                                        description='Topping up sms balance')
+        payment = Payment.objects.create(
+            company=company,
+            type=Payment.PAYMENT_TYPES.sms,
+            amount=amount,
+            stripe_id=invoice['id'],
+            invoice_url=invoice['invoice_pdf'],
+            status=invoice['status']
+        )
+        # pay an invoice after creation of corresponding Payment
+        try:
+            invoice.pay()
+            # increase balance if payment is successful
+            sms_balance.balance += Decimal(payment.amount)
+        except CardError as ex:
+            # mark as unpaid if error
+            payment.status = Payment.PAYMENT_STATUSES.not_paid
+            payment.save()
+        finally:
+            # in any case save the last payment to sms_balance
+            sms_balance.last_payment = payment
+            sms_balance.save()
 
 
 @shared_task
