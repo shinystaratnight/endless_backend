@@ -7,7 +7,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from django.conf import settings
-from stripe.error import InvalidRequestError
+from stripe.error import InvalidRequestError, CardError
 
 from r3sourcer.apps.billing.models import (
                             Subscription,
@@ -117,7 +117,6 @@ def charge_for_sms(company_id, amount, sms_balance_id):
     invoice = stripe.Invoice.create(customer=company.stripe_customer,
                                     default_tax_rates=[vat_object.stripe_id],
                                     description='Topping up sms balance')
-    invoice.pay()
     payment = Payment.objects.create(
         company=company,
         type=Payment.PAYMENT_TYPES.sms,
@@ -126,9 +125,19 @@ def charge_for_sms(company_id, amount, sms_balance_id):
         invoice_url=invoice['invoice_pdf'],
         status=invoice['status']
     )
-    sms_balance.balance += Decimal(payment.amount)
-    sms_balance.last_payment = payment
-    sms_balance.save()
+    # pay an invoice after creation of corresponding Payment
+    try:
+        invoice.pay()
+        # increase balance if payment is successful
+        sms_balance.balance += Decimal(payment.amount)
+    except CardError as ex:
+        # mark as unpaid if error
+        payment.status = Payment.PAYMENT_STATUSES.not_paid
+        payment.save()
+    finally:
+        # in any case save the last payment to sms_balance
+        sms_balance.last_payment = payment
+        sms_balance.save()
 
 
 @shared_task
