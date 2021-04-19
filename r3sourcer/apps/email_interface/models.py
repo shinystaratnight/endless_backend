@@ -54,6 +54,8 @@ class EmailTemplate(TemplateMessage):
             'language',
         ]
 
+    def __str__(self):
+        return f'{self.type} {self.company} {self.language}'
 
 class DefaultEmailTemplate(DefaultTemplateABS):
     language = models.ForeignKey(
@@ -86,6 +88,12 @@ class DefaultEmailTemplate(DefaultTemplateABS):
     def save(self, *args, **kwargs):
         from r3sourcer.apps.core.models import Company
         super().save(*args, **kwargs)
+
+        EmailTemplate.objects.\
+            filter(slug=self.slug, language_id=self.language.alpha_2).\
+            update(message_html_template=self.message_html_template,
+                   message_text_template=self.message_text_template)
+
         templates = []
         for company in Company.objects.filter(type=Company.COMPANY_TYPES.master,
                                               languages__language=self.language) \

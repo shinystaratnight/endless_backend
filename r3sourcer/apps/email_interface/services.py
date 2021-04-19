@@ -9,6 +9,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q
 
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.email_interface import models as email_models
 from r3sourcer.apps.email_interface.exceptions import RecipientsInvalidInstance, EmailBaseServiceError
 from r3sourcer.helpers.datetimes import utc_now
@@ -74,27 +75,36 @@ class BaseEmailService(metaclass=ABCMeta):
                 email_message.save()
 
     @transaction.atomic
-    def send_tpl(self, recipients, master_company, from_email=None, tpl_name=None,  **kwargs):
-        languages = master_company.languages.order_by('-default').values_list('language_id', flat=True).all()
-        templates = {x.language_id: x for x in email_models.EmailTemplate.objects
-                                                                         .filter(Q(name=tpl_name) | Q(slug=tpl_name),
-                                                                                 company_id=master_company.id)
-                                                                         .all()}
+    def send_tpl(self, recepient, master_company, from_email=None, tpl_name=None,  **kwargs):
+
+        try:
+            contact = CandidateContact.objects.filter(contact__email=recepient)
+            languages = kwargs.get('contact').languages.order_by('-default')
+        except:
+            languages = master_company.languages.order_by('-default')
+
+        templates = email_models.EmailTemplate.objects.filter(Q(name=tpl_name) | Q(slug=tpl_name),
+                                                                company_id=master_company.id)
         template = None
         for lang in languages:
-            template = templates.get(lang)
-            if template:
+            try:
+                template = templates.get(language=lang.language)
                 break
+            except:
+                continue
+
+        if template is None:
+            template = templates.get(language_id=settings.DEFAULT_LANGUAGE)
 
         if template is None:
             logger.exception('Cannot find email template with name %s', tpl_name)
+            return
 
         compiled = template.compile(**kwargs)
         subject = compiled['subject']
-        self.send(
-            recipients, subject, compiled['text'],
-            html_message=compiled['html'], from_email=from_email, template=template,
-            **kwargs
+        self.send(recepient, subject, compiled['text'],
+                  html_message=compiled['html'], from_email=from_email, template=template,
+                  **kwargs
         )
 
     @abstractmethod

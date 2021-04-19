@@ -1,3 +1,4 @@
+from django.db.models import Q
 from django_filters import UUIDFilter, BooleanFilter
 from django_filters.rest_framework import FilterSet
 
@@ -93,7 +94,23 @@ class SkillRateRangeFilter(FilterSet):
 
 
 class WorkTypeFilter(FilterSet):
+    skill = UUIDFilter(method='filter_skill')
 
     class Meta:
         model = skills_models.WorkType
         fields = ['skill_name', 'skill']
+
+    def filter_skill(self, queryset, name, value):
+        queryset = skills_models.WorkType.objects.all()
+        try:
+            skill = skills_models.Skill.objects.get(pk=value)
+        except:
+            skill = None
+        queryset = queryset.filter(
+            Q(skill_name=skill.name) |
+            Q(skill=value)
+        )
+        # exclude hourly_work activity for candidates
+        if self.request.user.contact.is_candidate_contact():
+            queryset = queryset.exclude(name=skills_models.WorkType.DEFAULT)
+        return queryset
