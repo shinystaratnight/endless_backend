@@ -91,7 +91,11 @@ def buy_candidate(candidate_rel_id, user=None):
             currency=company.currency,
             description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
         )
-        invoice = stripe.Invoice.create(customer=company.stripe_customer, default_tax_rates=[tax_id])
+        invoice = stripe.Invoice.create(
+            customer=company.stripe_customer,
+            default_tax_rates=[tax_id],
+            description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
+        )
         invoice.pay()
         billing_models.Payment.objects.create(
             company=company,

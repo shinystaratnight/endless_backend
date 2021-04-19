@@ -161,11 +161,9 @@ def fetch_payments():
             invoices = stripe.Invoice.list(customer=customer)['data']
         except:
             continue
-
-        payments = Payment.objects.filter(invoice_url__isnull=True)
-
+        # check all customer invoices
         for invoice in invoices:
-
+            # if subscription invoice is unpaid mark subscription as inactive
             if invoice['paid'] is False and invoice['subscription'] is not None:
                 try:
                     sub = Subscription.objects.get(subscription_id=invoice['subscription'])
@@ -175,14 +173,23 @@ def fetch_payments():
                 except Subscription.DoesNotExist:
                     pass
 
+            # if payment is not created yet then create it
             if not Payment.objects.filter(stripe_id=invoice['id']).exists():
+                payment_type = Payment.PAYMENT_TYPES.candidate
+                if invoice['subscription'] is not None:
+                    payment_type = Payment.PAYMENT_TYPES.subscription
+                elif 'sms' in invoice['description']:
+                    payment_type = Payment.PAYMENT_TYPES.sms
+                elif 'extra workers' in invoice['description']:
+                    payment_type = Payment.PAYMENT_TYPES.extra_workers
                 Payment.objects.create(
                     company=company,
-                    type=Payment.PAYMENT_TYPES.subscription,
+                    type=payment_type,
                     amount=invoice['total'] / 100,
                     stripe_id=invoice['id']
                 )
 
+        payments = Payment.objects.filter(invoice_url__isnull=True)
         for payment in payments:
             try:
                 invoice = stripe.Invoice.retrieve(payment.stripe_id)
