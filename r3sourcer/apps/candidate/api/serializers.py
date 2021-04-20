@@ -47,6 +47,7 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
         fields = (
             'id', 'score', 'candidate_contact', 'prior_experience', 'hourly_rate',
             {'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__')},
+            'created_at', 'updated_at',
         )
         extra_kwargs = {
             'score': {'max_value': Decimal(5)},

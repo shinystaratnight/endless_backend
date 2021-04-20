@@ -339,8 +339,8 @@ class WorkTypeLanguage(models.Model):
     )
 
     class Meta:
-        verbose_name = _("Work Transalation")
-        verbose_name_plural = _("Work Transalations")
+        verbose_name = _("Skill Activity Transalation")
+        verbose_name_plural = _("Skill Activity Transalations")
         unique_together = [
             'name',
             'language',
