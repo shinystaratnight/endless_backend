@@ -267,7 +267,7 @@ class CandidateContactViewset(BaseApiViewset):
 
     @action(methods=['get'], detail=False)
     def get_candidates_by_supervisor(self, request, *args, **kwargs):
-        supervisor_id = request.query_params['supervisor']
+        supervisor_id = request.query_params.get('supervisor')
         try:
             supervisor = CompanyContact.objects.get(pk=supervisor_id)
         except:
