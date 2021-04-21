@@ -504,7 +504,10 @@ class TimeSheetRateSerializer(ApiBaseModelSerializer):
     class Meta:
         model = TimeSheetRate
         fields = (
-            'id', 'timesheet', 'worktype', 'value', 'rate'
+            'id', 'timesheet', 'value', 'rate',
+            {
+                'worktype': ('id', 'name', {'translations': ('language', 'value')}),
+            }
         )
 
     def validate(self, data):

@@ -311,7 +311,7 @@ class WorkType(UUIDModel):
 
     def __str__(self):
         if self.name == self.DEFAULT:
-            return self.name
+            return f"{self.skill_name} {self.name}"
         return f"{self.name} per {self.uom}"
 
     @property
