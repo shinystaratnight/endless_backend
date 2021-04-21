@@ -250,10 +250,13 @@ class BaseSMSService(metaclass=ABCMeta):
         return from_number
 
     def substract_sms_cost(self, company, sms_message):
-        if company.sms_balance.balance > 0:
-            company.sms_balance.substract_sms_cost(sms_message.segments)
+        if company.sms_balance:
+            if company.sms_balance.balance > 0:
+                company.sms_balance.substract_sms_cost(sms_message.segments)
+            else:
+                raise SMSBalanceError()
         else:
-            raise SMSBalanceError()
+            SMSServiceError('There is no SMSBalance for that company')
 
     def sms_disable(self, company):
         if not company.sms_enabled:

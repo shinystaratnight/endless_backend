@@ -2909,6 +2909,9 @@ class ContactLanguage(models.Model):
         verbose_name_plural = _("Contact languages")
         unique_together = (("contact", "language"),)
 
+    def __str__(self):
+        return f'{self.language} - {self.default}'
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
 
