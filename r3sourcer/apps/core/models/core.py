@@ -1720,8 +1720,8 @@ class CompanyIndustryRel(UUIDModel):
         for skill_name in self.industry.skill_names.all():
             skill, _ = Skill.objects.get_or_create(name=skill_name,
                                                    company=self.company,
-                                                   active=False)
-            skill.save()
+                                                   defaults={'active': False},
+                                                   )
 
     def delete(self, using=None, keep_parents=False):
         for skill_name in self.industry.skill_names.all():
