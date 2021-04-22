@@ -3,7 +3,7 @@ import datetime
 from django.db.models import Q, OuterRef, Exists
 from django.utils.translation import ugettext_lazy as _
 
-from django_filters import UUIDFilter, NumberFilter, BooleanFilter, ChoiceFilter
+from django_filters import UUIDFilter, NumberFilter, BooleanFilter, ChoiceFilter, ModelMultipleChoiceFilter
 from django_filters.rest_framework import FilterSet
 
 from model_utils import Choices
@@ -12,11 +12,12 @@ from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Invoice
 from r3sourcer.apps.core_adapter.filters import DateRangeFilter
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.helpers.datetimes import utc_now
 
 
 class TimesheetFilter(FilterSet):
-    candidate = UUIDFilter(method='filter_candidate')
+    candidate = ModelMultipleChoiceFilter(queryset=CandidateContact.objects.all(), method='filter_candidate')
     approved = BooleanFilter(method='filter_approved')
     company = UUIDFilter('job_offer__shift__date__job__customer_company_id')
     jobsite = UUIDFilter('job_offer__shift__date__job__jobsite_id')
@@ -27,9 +28,10 @@ class TimesheetFilter(FilterSet):
         fields = ['shift_started_at', 'supervisor', 'status']
 
     def filter_candidate(self, queryset, name, value):
-        return queryset.filter(
-            job_offer__candidate_contact_id=value
-        )
+        if not value:
+            return queryset
+        queryset = queryset.filter(job_offer__candidate_contact__in=value)
+        return queryset
 
     def filter_company(self, queryset, name, value):
         return queryset.filter(
