@@ -1086,7 +1086,7 @@ class FormViewSet(BaseApiViewset):
     @action(methods=['post'], detail=True, permission_classes=(AllowAny,))
     def submit(self, request, pk, *args, **kwargs):
         from r3sourcer.apps.acceptance_tests.models import WorkflowObjectAnswer, WorkflowObject
-        from r3sourcer.apps.candidate.models import CandidateContact
+        from r3sourcer.apps.candidate.models import CandidateContact, Formality
         form_obj = self.get_object()
         extra_data = {}
         data = {}
@@ -1122,7 +1122,8 @@ class FormViewSet(BaseApiViewset):
             raise exceptions.ValidationError(storage_helper.errors)
 
         instance = storage_helper.create_instance()
-        if CandidateContact.objects.get(id=instance.id) and data.get('tests'):
+        candidate = CandidateContact.objects.get(id=instance.id)
+        if candidate and data.get('tests'):
             for item in data.get('tests'):
                 question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
                 answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
@@ -1131,6 +1132,14 @@ class FormViewSet(BaseApiViewset):
                                                     acceptance_test_question=question,
                                                     answer=answer)
 
+        # create formality object
+        personal_id = data.get('formalities__personal_id', None)
+        tax_number = data.get('formalities__tax_number', None)
+        if CandidateContact.objects.get(id=instance.id) and (personal_id or tax_number):
+            Formality.objects.create(candidate_contact=candidate,
+                                     country=candidate.contact.active_address.country,
+                                     personal_id=personal_id,
+                                     tax_number=tax_number)
 
         for extra_field in form_obj.builder.extra_fields.all():
             if extra_field.name not in extra_data:
