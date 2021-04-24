@@ -1232,6 +1232,20 @@ class TagViewSet(BaseApiViewset):
             qs = qs.filter(Q(company_tags__company_id=master_company.pk) | Q(owner=models.Tag.TAG_OWNER.system))
         return qs
 
+    @action(methods=['get'], detail=False, permission_classes=(AllowAny,))
+    def all(self, request, *args, **kwargs):
+        """
+        Public view that get company from subdomain and return company and system tags
+        """
+        domain = request.META['HTTP_HOST']
+        try:
+            master_company = models.SiteCompany.objects.get(site__domain=domain).company
+            queryset = models.Tag.objects.filter(Q(company_tags__company_id=master_company.pk) |
+                                                 Q(owner=models.Tag.TAG_OWNER.system))
+            return self._paginate(request, self.get_serializer_class(), queryset=queryset)
+        except:
+            return HttpResponseBadRequest(_("Sorry, we can't identify master company"))
+
     def update(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
         partial = kwargs.pop('partial', False)
