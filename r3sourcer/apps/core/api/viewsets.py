@@ -1176,7 +1176,7 @@ class FormViewSet(BaseApiViewset):
                     }
                     related_model.objects.create(**obj_values)
 
-        return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
+        return Response({'message': form_obj.submit_message, 'candidate-contact': instance.id}, status=status.HTTP_201_CREATED)
 
 
 class CitiesLightViewSet(BaseApiViewset):
