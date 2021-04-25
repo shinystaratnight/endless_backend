@@ -19,10 +19,15 @@ class FormalityInline(admin.TabularInline):
     extra = 0
 
 
+class TagRelInline(admin.TabularInline):
+    model = models.TagRel
+    extra = 0
+
+
 class CandidateContactAdmin(admin.ModelAdmin):
     list_display = ('contact', 'recruitment_agent', 'is_active')
     search_fields = ('contact__first_name', 'contact__last_name', 'profile_price')
-    inlines = [SkillRelInline, FormalityInline]
+    inlines = [SkillRelInline, FormalityInline, TagRelInline]
 
     def is_active(self, obj):
         return obj.contact.user.is_active
