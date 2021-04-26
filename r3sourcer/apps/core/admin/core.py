@@ -246,6 +246,7 @@ class TagLanguageInline(admin.TabularInline):
 
 class TagAdmin(MPTTModelAdmin):
     inlines = (TagLanguageInline,)
+    search_fields = ('name',)
 
     def get_queryset(self, request):
         qs = models.Tag.objects.filter(owner=models.Tag.TAG_OWNER.system)
