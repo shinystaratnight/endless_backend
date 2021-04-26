@@ -475,9 +475,21 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
         shift_date = validated_data['date']
         shift_time = validated_data['time']
 
-        is_another_shift = self.instance and self.instance.time != shift_time
+        # we should not allow another shift to overlap existing accepted shift
+        # creating new shift: check if there is another shift was accepted at the same time
+        overlapped_shifts = hr_models.JobOffer.objects.filter(
+            status__in=[
+                hr_models.JobOffer.STATUS_CHOICES.accepted
+            ]
+        ).filter(
+            shift__time=shift_time,
+            shift__date=shift_date
+        )
+        # updating existing shift: same query excluding existing shift
+        if self.instance:
+            overlapped_shifts = overlapped_shifts.exclude(shift=self.instance)
 
-        if (not self.instance or is_another_shift) and shift_date.shifts.filter(time=shift_time).exists():
+        if overlapped_shifts.exists():
             raise exceptions.ValidationError({'time': _('Shift time must be unique')})
 
         return validated_data

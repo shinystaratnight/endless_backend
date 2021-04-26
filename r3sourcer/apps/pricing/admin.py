@@ -58,6 +58,7 @@ class IndustryLanguageInline(admin.TabularInline):
 
 class IndustryAdmin(admin.ModelAdmin):
     list_display = ['type']
+    search_fields = ('type',)
     inlines = (IndustryLanguageInline,)
 
 class PriceListRateInline(admin.TabularInline):
