@@ -7,7 +7,7 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
 from django.db import transaction
-from django.db.models import Q, ForeignKey
+from django.db.models import Q, ForeignKey, FileField
 from django.forms import model_to_dict
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
@@ -20,6 +20,7 @@ from rest_framework.viewsets import ViewSet
 
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
 from r3sourcer.apps.core import tasks
+from r3sourcer.apps.core.api.fields import ApiBase64FileField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
 from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.address import parse_google_address
@@ -1093,7 +1094,7 @@ class FormViewSet(BaseApiViewset):
 
         for key, val in request.data.items():
             if form_obj.builder.extra_fields.filter(name=key).exists():
-                extra_data[key] = val['id'] if isinstance(val, dict) else val
+                extra_data[key] = val
             else:
                 data[key] = val
 
@@ -1142,41 +1143,53 @@ class FormViewSet(BaseApiViewset):
                                      tax_number=tax_number)
 
         for extra_field in form_obj.builder.extra_fields.all():
+            # check if field exists in extra_data
             if extra_field.name not in extra_data:
                 continue
 
-            related_model_ct = extra_field.related_through_content_type or extra_field.content_type
-            related_model = related_model_ct.model_class()
+            target_model = extra_field.content_type.model_class()
+            related_model = extra_field.related_through_content_type.model_class()
+            values = extra_data[extra_field.name]
 
-            multiple_data = {}
-            single_data = {}
+            # if value is single make list with one value
+            if not isinstance(values, list):
+                values = [values]
 
-            for field in related_model._meta.get_fields():
-                if not isinstance(field, ForeignKey):
-                    continue
+            for val in values:
+                # prepare data
+                for field in related_model._meta.get_fields():
+                    if not isinstance(field, ForeignKey):
+                        continue
+                    # if isinstance(FileField, field.field):
+                    #     if field.name in val:
+                    #        val[field.name] = ApiBase64FileField().to_internal_value(val[field.name])
+                    #     continue
+                    if isinstance(instance, field.rel.model):
+                        val[field.name] = instance
+                        continue
+                    if isinstance(instance.recruitment_agent, field.rel.model):
+                        val[field.name] = instance.recruitment_agent
+                        continue
 
-                if isinstance(instance, field.rel.model):
-                    single_data[field.name] = instance
-                    continue
+                # check if id field exists in dictionary
+                if 'id' in val and instance_field:
+                    val_id = val.pop('id', None)
 
-                if field.name in extra_data:
-                    values = extra_data[field.name]
+                    try:
+                        val_obj = target_model.objects.get(id=val_id)
+                        obj_values = {
+                            extra_field.name: val_obj,
+                            **val,
+                        }
+                        related_model.objects.create(**obj_values)
 
-                    if not isinstance(values, list):
-                        values = [values]
+                    except ObjectDoesNotExist:
+                        continue
 
-                    for val in values:
-                        multiple_data[field.name] = [field.rel.model.objects.get(id=id_val) for id_val in values]
-
-            for key, data in multiple_data.items():
-                for val in data:
-                    obj_values = {
-                        key: val,
-                        **single_data
-                    }
-                    related_model.objects.create(**obj_values)
-
-        return Response({'message': form_obj.submit_message, 'candidate-contact': instance.id}, status=status.HTTP_201_CREATED)
+        return Response({'message': form_obj.submit_message,
+                         'candidate_contact': instance.id,
+                         'recruitment_agent': instance.recruitment_agent.id},
+                        status=status.HTTP_201_CREATED)
 
 
 class CitiesLightViewSet(BaseApiViewset):
