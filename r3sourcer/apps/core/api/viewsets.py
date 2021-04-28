@@ -1158,12 +1158,12 @@ class FormViewSet(BaseApiViewset):
             for val in values:
                 # prepare data
                 for field in related_model._meta.get_fields():
+                    if isinstance(field, FileField):
+                        if field.name in val:
+                           val[field.name] = ApiBase64FileField().to_internal_value(val[field.name])
+                        continue
                     if not isinstance(field, ForeignKey):
                         continue
-                    # if isinstance(FileField, field.field):
-                    #     if field.name in val:
-                    #        val[field.name] = ApiBase64FileField().to_internal_value(val[field.name])
-                    #     continue
                     if isinstance(instance, field.rel.model):
                         val[field.name] = instance
                         continue
@@ -1172,7 +1172,7 @@ class FormViewSet(BaseApiViewset):
                         continue
 
                 # check if id field exists in dictionary
-                if 'id' in val and instance_field:
+                if 'id' in val:
                     val_id = val.pop('id', None)
 
                     try:
