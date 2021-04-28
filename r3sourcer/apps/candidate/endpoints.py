@@ -1,3 +1,5 @@
+from rest_framework.permissions import AllowAny
+
 from r3sourcer.apps.candidate.api.serializers import VisaTypeSerializer
 from r3sourcer.apps.candidate.api.viewsets import VisaTypeViewset
 from r3sourcer.apps.core.api.router import router
@@ -33,6 +35,7 @@ class TagRelEndpoint(core_endpoints.ApiEndpoint):
     model = candidate_models.TagRel
     serializer = candidate_serializers.TagRelSerializer
     filter_class = candidate_filters.TagRelFilter
+    permission_classes = [AllowAny]
 
 
 class SubcontractorEndpoint(core_endpoints.ApiEndpoint):
