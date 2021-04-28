@@ -185,8 +185,9 @@ def fetch_payments():
                 except Subscription.DoesNotExist:
                     pass
 
-            # if payment is not created yet then create it
-            if not Payment.objects.filter(stripe_id=invoice['id']).exists():
+            # if payment is not created yet then create it for not-void invoices
+            # void means this invoice was a mistake, and should be canceled.
+            if invoice['status'] != 'void' and not Payment.objects.filter(stripe_id=invoice['id']).exists():
                 payment_type = Payment.PAYMENT_TYPES.candidate
                 if invoice['subscription'] is not None:
                     payment_type = Payment.PAYMENT_TYPES.subscription
