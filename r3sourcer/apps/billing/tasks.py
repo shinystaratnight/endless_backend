@@ -233,6 +233,9 @@ def fetch_payments():
                     sms_balance.balance += payment.amount
                     sms_balance.save()
 
+            if invoice['status'] == 'void':
+                payment.delete()
+
 
 @shared_task
 def send_sms_payment_reminder():
