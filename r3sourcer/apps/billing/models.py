@@ -241,7 +241,7 @@ class Payment(CompanyTimeZoneMixin):
         on_delete=models.CASCADE)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = ref.DTField()
-    amount = models.IntegerField()
+    amount = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     status = models.CharField(max_length=255, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES.not_paid)
     stripe_id = models.CharField(max_length=255)
     invoice_url = models.CharField(max_length=255, blank=True, null=True)
