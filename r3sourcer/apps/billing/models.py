@@ -224,6 +224,9 @@ class SMSBalance(models.Model):
 
         super().save(*args, **kwargs)
 
+    @classmethod
+    def use_logger(cls):
+        return True
 
 class Payment(CompanyTimeZoneMixin):
     PAYMENT_TYPES = Choices(
@@ -261,6 +264,10 @@ class Payment(CompanyTimeZoneMixin):
         if not self.created:
             self.created = self.now_utc
         super().save(*args, **kwargs)
+
+    @classmethod
+    def use_logger(cls):
+        return True
 
 
 class Discount(CompanyTimeZoneMixin):
