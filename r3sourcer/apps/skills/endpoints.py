@@ -12,7 +12,7 @@ class SkillEndpoint(ApiEndpoint):
     filter_class = skills_filters.SkillFilter
     serializer = skill_serializer.SkillSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
-    search_fields = ('name__name', )
+    search_fields = ('name__name', 'name__translations__value')
 
 
 class EmploymentClassificationEndpoint(ApiEndpoint):
