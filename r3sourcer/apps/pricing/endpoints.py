@@ -10,7 +10,7 @@ class IndustryEndpoint(ApiEndpoint):
     model = models.Industry
     serializer = serializers.IndustrySerializer
     filter_class = filters.IndustryFilter
-    search_fields = ('type', )
+    search_fields = ('type', 'translations__value')
     permission_classes = (ReadonlyOrIsSuperUser, )
 
 
