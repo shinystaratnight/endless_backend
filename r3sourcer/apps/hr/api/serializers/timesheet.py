@@ -7,9 +7,11 @@ from rest_framework import serializers, exceptions
 
 from r3sourcer.apps.core.api.fields import ApiBaseRelatedField, ApiContactPictureField
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
+from r3sourcer.apps.skills.api.serializers import WorkTypeSerializer
 from r3sourcer.apps.core.models import Company
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
+from r3sourcer.apps.skills.models import WorkType
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.api import serializers as sms_serializers
 from r3sourcer.helpers.datetimes import utc_now
@@ -87,7 +89,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
-        'invoice', 'shift', 'evaluation', 'time_zone',
+        'invoice', 'shift', 'evaluation', 'time_zone', 'skill_activities'
     )
 
     class Meta:
@@ -295,6 +297,10 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                 },
                 '__str__': str(shift),
             }
+
+    def get_skill_activities(self, obj):
+        return WorkTypeSerializer(obj.get_skill_activities(), many=True, fields=['id', 'name', 'translations']).data
+
 
     def validate(self, data):
         """
