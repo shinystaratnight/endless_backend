@@ -1581,6 +1581,16 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         fields = [(field, x or y) for field, x, y in self._datetime_fields(just_added)]
         list(map(setter_fn, filter(filter_fn, fields)))
 
+    def get_skill_activities(self):
+        skill = self.job_offer.job.position
+        queryset = WorkType.objects.filter(
+            models.Q(skill_name=skill.name) |
+            models.Q(skill=skill)
+        )
+        # exclude hourly_work activity for candidates
+        queryset = queryset.exclude(name=WorkType.DEFAULT)
+        return queryset
+
     def save(self, *args, **kwargs):
         just_added = self._state.adding
         self.convert_datetime_before_save(just_added)
