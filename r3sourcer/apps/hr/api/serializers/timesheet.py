@@ -87,7 +87,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
-        'invoice', 'shift', 'evaluation', 'time_zone',
+        'invoice', 'shift','evaluation', 'time_zone',
     )
 
     class Meta:
@@ -125,6 +125,11 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'break_ended_at',
             'break_ended_at_tz',
             'break_ended_at_utc',
+            {'timesheet_rates': ('id',
+                                'rate',
+                                'value',
+                                {'worktype': ('id', 'translations')}),
+            }
         )
         related_fields = {
             'job_offer': ('id', {

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, time, timedelta, date
 
 import freezegun
 import pytest
@@ -7,9 +7,11 @@ from freezegun import freeze_time
 from pytz import timezone
 
 from django.conf import settings as dj_settings
+from rest_framework.exceptions import ValidationError
 
 from r3sourcer.apps.hr.api.serializers.timesheet import TimeSheetSerializer
-from r3sourcer.apps.hr.api.serializers.job import JobSerializer
+from r3sourcer.apps.hr.api.serializers.job import JobSerializer, ShiftSerializer
+from r3sourcer.apps.hr.models import Shift, ShiftDate
 from r3sourcer.helpers.datetimes import utc_now
 
 tz = timezone(dj_settings.TIME_ZONE)
@@ -95,3 +97,70 @@ class TestJobSerializer:
         res = serializer.get_todays_timesheets(job)
 
         assert res == '-'
+
+
+@pytest.mark.django_db
+class TestShiftSerializer:
+
+    @pytest.fixture
+    def serializer(self):
+        return ShiftSerializer()
+
+    @freezegun.freeze_time(tz.localize(datetime(2017, 1, 2, 8, 00)))
+    def test_success_validate(self, job, serializer, shift, cancelled_jo, shift_date):
+        data = {
+            'date': shift_date.pk,
+            'time': time(hour=8, minute=30)
+        }
+        res = serializer.validate(data)
+
+        assert res == {
+            'date': shift_date.pk,
+            'time': time(hour=8, minute=30)
+        }
+
+    @freezegun.freeze_time(tz.localize(datetime(2017, 1, 2, 8, 00)))
+    def test_fail_validate(self, job, serializer, accepted_jo, shift_date):
+        validated_data = {
+            'date': shift_date.pk,
+            'time': time(hour=8, minute=30)
+        }
+
+        with pytest.raises(ValidationError) as excinfo:
+            serializer.validate(validated_data)
+
+        assert "Shift time must be unique" in str(excinfo.value)
+
+    @freezegun.freeze_time(tz.localize(datetime(2017, 1, 2, 8, 00)))
+    def test_success_validate_on_update(self, job, shift, cancelled_jo, shift_date):
+        new_shift_date = ShiftDate.objects.create(
+            job=job,
+            shift_date=date(2017, 1, 3)
+        )
+        new_shift = Shift.objects.create(
+            date=new_shift_date,
+            time=time(hour=8, minute=30)
+        )
+        serializer = ShiftSerializer(new_shift, data={
+            'date': shift_date.pk,
+            'time': time(hour=8, minute=00)
+        })
+        res = serializer.is_valid(raise_exception=True)
+
+        assert res is True
+
+    @freezegun.freeze_time(tz.localize(datetime(2017, 1, 2, 8, 00)))
+    def test_fail_validate_on_update(self, job, accepted_jo, shift_date):
+        new_shift = Shift.objects.create(
+            date=shift_date,
+            time=time(hour=19, minute=30)
+        )
+        serializer = ShiftSerializer(new_shift, data={
+            'date': shift_date.pk,
+            'time': time(hour=8, minute=30)
+        })
+
+        with pytest.raises(ValidationError) as excinfo:
+            serializer.is_valid(raise_exception=True)
+
+        assert "Shift time must be unique" in str(excinfo.value)

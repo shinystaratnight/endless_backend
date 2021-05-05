@@ -1,6 +1,7 @@
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from django.db import models
+from django.core.exceptions import ObjectDoesNotExist
 
 from .mixins import CompanyLookupMixin
 from .service import factory
@@ -19,7 +20,10 @@ class WorkflowProcess(CompanyLookupMixin, models.Model):
         super(WorkflowProcess, self).__init__(*args, **kwargs)
 
         if not is_fake:
-            self.active_states = self.get_active_states()
+            try:
+                self.active_states = self.get_active_states()
+            except ObjectDoesNotExist:
+                self.active_states = None
 
     @property
     def content_type(self):
