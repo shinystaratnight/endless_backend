@@ -623,7 +623,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
             'related_objs': [extranet_login],
         }
 
-        send_candidate_consent_message.delay(self.id, rel_id, data_dict)
+        send_candidate_consent_message(rel_id, data_dict)
 
     @classmethod
     def owned_by_lookups(cls, owner):
