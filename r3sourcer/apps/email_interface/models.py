@@ -55,7 +55,7 @@ class EmailTemplate(TemplateMessage):
         ]
 
     def __str__(self):
-        return f'{self.type} {self.company} {self.language}'
+        return f'{self.company} {self.language}'
 
 class DefaultEmailTemplate(DefaultTemplateABS):
     language = models.ForeignKey(

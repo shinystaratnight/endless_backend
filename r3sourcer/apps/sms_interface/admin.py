@@ -52,7 +52,7 @@ create_with_languages.short_description = 'Copy template with selected language'
 
 class DefaultSMSTemplateAdmin(admin.ModelAdmin):
     # prepopulated_fields = {"slug": ("name",)}
-    list_display = ['name', 'language_name']
+    list_display = ['name', 'slug', 'language_name']
     ordering = ['name', 'language']
     search_fields = ['name']
     list_filter = (LanguageListFilter, 'name')
