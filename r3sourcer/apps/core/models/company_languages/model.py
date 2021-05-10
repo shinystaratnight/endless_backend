@@ -26,6 +26,9 @@ class CompanyLanguage(models.Model):
         verbose_name_plural = _("Company languages")
         unique_together = (("company", "language"),)
 
+    def __str__(self):
+        return self.language.name
+
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):
 

@@ -171,7 +171,7 @@ def update_superannuation_fund_list():
         candidate_models.SuperannuationFund.objects.bulk_create(batch)
 
 
-@shared_task()
+@shared_task()                                        # updated to service changes
 def send_candidate_consent_message(candidaterel_id, data_dict):
     try:
         candidate_rel = candidate_models.CandidateRel.objects.get(id=candidaterel_id)
@@ -204,7 +204,7 @@ def send_candidate_consent_message(candidaterel_id, data_dict):
             logger.exception('Cannot load Email service')
             return
 
-        email_interface.send_tpl(candidate_contact.contact.email,
+        email_interface.send_tpl(candidate_contact.contact,
                                  candidate_rel.master_company,
-                                 tpl_name='consent-sms-message',
+                                 tpl_name='consent-email-message',
                                  **data_dict)
