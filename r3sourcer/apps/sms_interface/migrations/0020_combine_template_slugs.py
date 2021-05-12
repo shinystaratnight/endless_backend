@@ -21,6 +21,16 @@ class Migration(migrations.Migration):
             template.name = "Consent message"
             template.save()
 
+        for template in DefaultSMSTemplate.objects.filter(slug="login-sms-token"):
+            template.slug = "login-token"
+            template.name = "Login Token"
+            template.save()
+
+        for template in SMSTemplate.objects.filter(slug="login-sms-token"):
+            template.slug = "login-token"
+            template.name = "Login Token"
+            template.save()
+
     dependencies = [
         ('sms_interface', '0019_load_new_sms_templates'),
     ]

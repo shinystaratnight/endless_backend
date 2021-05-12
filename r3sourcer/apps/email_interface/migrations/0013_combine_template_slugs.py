@@ -31,6 +31,16 @@ class Migration(migrations.Migration):
             template.name = "Generated password"
             template.save()
 
+        for template in DefaultEmailTemplate.objects.filter(slug="login-email-token"):
+            template.slug = "login-token"
+            template.name = "Login Token"
+            template.save()
+
+        for template in EmailTemplate.objects.filter(slug="login-email-token"):
+            template.slug = "login-token"
+            template.name = "Login Token"
+            template.save()
+
     dependencies = [
         ('email_interface', '0012_auto_20210428_0505'),
     ]
