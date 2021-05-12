@@ -56,20 +56,15 @@ def update_all_distances():
                 break
 
 
-def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
+def send_job_offer(job_offer, tpl_name, action_sent=None):
     """
-    Send job offer sms with specific template.
+    Send job offer with specific template.
 
     :param job_offer: JobOffer
-    :param tpl_id: SMSTemplate UUID
+    :param tpl_id: SMSTemplate slug
     :param action_sent: str Model field for waiting sms reply
     :return:
     """
-    try:
-        sms_interface = get_sms_service()
-    except ImportError:
-        logger.exception('Cannot load SMS service')
-        return
 
     target_date_and_time = formats.date_format(job_offer.start_time_tz, settings.DATETIME_FORMAT)
 
@@ -77,10 +72,12 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
         target_date_and_time = "ASAP"
 
     master_company = job_offer.candidate_contact.contact.get_closest_company()
+    template = sms_interface.get_template(job_offer.candidate_contact.contact, master_company, tpl_name)
 
-    sms_template = get_sms_template(company_id=master_company.id,
-                                    contact_id=job_offer.candidate_contact.contact_id,
-                                    slug=tpl_id)
+    # get job translation on template
+    template_language = template.language.alpha_2
+    job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
+    job_translation = job_translation[0].get('value', job_offer.job)
 
     data_dict = {
         'job_offer': job_offer,
@@ -90,33 +87,48 @@ def send_job_offer_sms(job_offer, tpl_id, action_sent=None):
         'target_date_and_time': target_date_and_time,
         'master_company': master_company,
         'related_obj': job_offer,
-        'related_objs': [job_offer.candidate_contact, job_offer.job]
+        'related_objs': [job_offer.candidate_contact, job_offer.job],
+        'job_translation': job_translation
     }
 
-    # get job translation on template
-    template_language = sms_template.language.alpha_2
-    job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
-    job_translation = job_translation[0].get('value', job_offer.job)
-    data_dict['job_translation'] = job_translation
-    # end
-    sent_message = sms_interface.send_tpl(to_number=job_offer.candidate_contact.contact.phone_mobile,
-                                          tpl_id=sms_template.id,
-                                          check_reply=bool(action_sent), **data_dict)
+    if job_offer.candidate_contact.message_by_sms:
+        try:
+            sms_interface = get_sms_service()
+        except ImportError:
+            logger.exception('Cannot load SMS service')
+        else:
+            sent_message = sms_interface.send_tpl(job_offer.candidate_contact.contact,
+                                                  master_company,
+                                                  tpl_name,
+                                                  check_reply=bool(action_sent),
+                                                  **data_dict
+                                                  )
+            if action_sent and sent_message:
+                related_query_name = hr_models.JobOfferSMS._meta.get_field(action_sent).related_query_name()
+                cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
 
-    if action_sent and sent_message:
-        related_query_name = hr_models.JobOfferSMS._meta.get_field(action_sent).related_query_name()
-        cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
+                hr_models.JobOfferSMS.objects.create(
+                    job_offer=job_offer,
+                    **{action_sent: sent_message}
+                )
 
-        hr_models.JobOfferSMS.objects.create(
-            job_offer=job_offer,
-            **{action_sent: sent_message}
-        )
+                job_offer.scheduled_sms_datetime = None
+                job_offer.save()
 
-        job_offer.scheduled_sms_datetime = None
-        job_offer.save()
+    if job_offer.candidate_contact.message_by_email:
+        try:
+            email_interface = get_email_service()
+        except ImportError:
+            logger.exception('Cannot load Email service')
+        else:
+            email_interface.send_tpl(job_offer.candidate_contact.contact,
+                                     master_company,
+                                     tpl_name,
+                                     **data_dict
+                                     )
 
 
-def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
+def send_or_schedule_job_offer(job_offer_id, task=None, **kwargs):
     with transaction.atomic():
         try:
             job_offer = hr_models.JobOffer.objects.select_for_update().get(id=job_offer_id)
@@ -141,7 +153,7 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                 if time(17, 0, 0, tzinfo=eta_tz.tzinfo) > eta_tz.timetz() > time(16, 0, 0, tzinfo=eta_tz.tzinfo):
                     eta_tz = datetime.combine(eta_tz.date(), time(16, 0, tzinfo=eta_tz.tzinfo))
                 elif eta_tz.timetz() > time(17, 0, 0, tzinfo=eta_tz.tzinfo):
-                    send_job_offer_sms(job_offer=job_offer, **kwargs)
+                    send_job_offer(job_offer=job_offer, **kwargs)
                     return
 
                 logger.info('JO SMS sending will be rescheduled for Job Offer: %s', str(job_offer_id))
@@ -157,31 +169,26 @@ def send_or_schedule_job_offer_sms(job_offer_id, task=None, **kwargs):
                 job_offer.save(update_fields=['scheduled_sms_datetime'])
                 task.apply_async(args=[job_offer_id], eta=eta_utc)
             else:
-                send_job_offer_sms(job_offer=job_offer, **kwargs)
+                send_job_offer(job_offer=job_offer, **kwargs)
 
 
 @shared_task(bind=True, queue='sms')
-def send_jo_confirmation_sms(self, job_offer_id):
-    send_or_schedule_job_offer_sms(job_offer_id,
-                                   task=send_jo_confirmation_sms,
-                                   tpl_id='job-offer-1st',
-                                   action_sent='offer_sent_by_sms')
+def send_jo_confirmation(self, job_offer_id):
+    send_or_schedule_job_offer(job_offer_id,
+                               task=send_jo_confirmation,
+                               tpl_id='job-offer-1st',
+                               action_sent='offer_sent')
 
 
 @shared_task(bind=True, queue='sms')
-def send_recurring_jo_confirmation_sms(self, job_offer_id):
-    send_or_schedule_job_offer_sms(job_offer_id,
-                                   task=send_recurring_jo_confirmation_sms,
-                                   tpl_id='job-offer-recurring',
-                                   action_sent='offer_sent_by_sms')
+def send_recurring_jo_confirmation(self, job_offer_id):
+    send_or_schedule_job_offer(job_offer_id,
+                               task=send_recurring_jo_confirmation,
+                               tpl_id='job-offer-recurring',
+                               action_sent='offer_sent')
 
 
-def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
-    try:
-        sms_interface = get_sms_service()
-    except ImportError:
-        logger.exception('Cannot load SMS service')
-        return
+def send_job_offer_notification(jo_id, tpl_name, recipient_field):
 
     with transaction.atomic():
         try:
@@ -204,18 +211,36 @@ def send_job_offer_sms_notification(jo_id, tpl_id, recipient):
             )
 
             master_company = job_offer.shift.date.job.jobsite.master_company
+            recipient = recipients.get(recipient_field)
 
-            sms_template = get_sms_template(company_id=master_company.id,
-                                            contact_id=job_offer.candidate_contact.contact_id,
-                                            slug=tpl_id)
-            sms_interface.send_tpl(to_number=recipients.get(recipient),
-                                   tpl_id=sms_template.id,
-                                   check_reply=False,
-                                   **data_dict)
+            if recipient.message_by_sms:
+                try:
+                    sms_interface = get_sms_service()
+                except ImportError:
+                    logger.exception('Cannot load SMS service')
+                else:
+                    sms_interface.send_tpl(recipient.contact,
+                                           master_company,
+                                           tpl_name,
+                                           check_reply=False,
+                                           **data_dict
+                                           )
+
+            if recipient.message_by_email:
+                try:
+                    email_interface = get_email_service()
+                except ImportError:
+                    logger.exception('Cannot load Email service')
+                else:
+                    email_interface.send_tpl(recipient.contact,
+                                             master_company,
+                                             tpl_name,
+                                             **data_dict
+                                             )
 
 
 @app.task()
-def send_job_offer_cancelled_sms(jo_id):
+def send_job_offer_cancelled(jo_id):
     """
     Send cancellation job offer sms.
 
@@ -223,11 +248,11 @@ def send_job_offer_cancelled_sms(jo_id):
     :return: None
     """
 
-    send_job_offer_sms_notification(jo_id, 'candidate-jo-cancelled', 'candidate_contact')
+    send_job_offer_notification(jo_id, 'candidate-jo-cancelled', 'candidate_contact')
 
 
 @app.task()
-def send_job_offer_cancelled_lt_one_hour_sms(jo_id):
+def send_job_offer_cancelled_lt_one_hour(jo_id):
     """
     Send cancellation job offer sms less than 1h.
 
@@ -235,11 +260,11 @@ def send_job_offer_cancelled_lt_one_hour_sms(jo_id):
     :return: None
     """
 
-    send_job_offer_sms_notification(jo_id, 'candidate-jo-cancelled-1-hrs', 'candidate_contact')
+    send_job_offer_notification(jo_id, 'candidate-jo-cancelled-1-hrs', 'candidate_contact')
 
 
 @app.task(bind=True, queue='sms')
-def send_placement_rejection_sms(self, job_offer_id):
+def send_placement_rejection(self, job_offer_id):
     from r3sourcer.apps.sms_interface.models import SMSRelatedObject
 
     with transaction.atomic():
@@ -250,7 +275,7 @@ def send_placement_rejection_sms(self, job_offer_id):
             'object_id': job_offer_id
         }
         if not SMSRelatedObject.objects.select_for_update().filter(**f_data).exists():
-            send_job_offer_sms(job_offer, tpl_id='job-offer-rejection')
+            send_job_offer(job_offer, tpl_name='job-offer-rejection')
 
 
 @shared_task
@@ -307,19 +332,12 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
     """
     events_dict = {
         SHIFT_ENDING: {
-            'sms_tpl': 'candidate-timesheet-hours',
-            'sms_old_tpl': 'candidate-timesheet-hours-old',
-            'email_subject': _('Please fill time sheet'),
-            'email_text': _('Please fill time sheet'),
-            'email_tpl': 'candidate-timesheet-hours',
-            'email_old_tpl': 'candidate-timesheet-hours-old',
+            'tpl_name': 'candidate-timesheet-hours',
+            'old_tpl_name': 'candidate-timesheet-hours-old',
             'delta_hours': 1,
         },
         SUPERVISOR_DECLINED: {
-            'sms_tpl': 'candidate-timesheet-agree',
-            'email_subject': _('Your time sheet was declined'),
-            'email_text': _('Your time sheet was declined'),
-            'email_tpl': '',
+            'tpl_name': 'candidate-timesheet-agree',
         },
     }
 
@@ -398,35 +416,33 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                     sms_interface = get_sms_service()
                 except ImportError:
                     logger.exception('Cannot load SMS service')
-                    return
+                else:
+                    tpl_name = events_dict[event]['tpl_name']
+                    if time_sheet.shift_ended_at.date() != utc_now().date():
+                        tpl_name = events_dict[event].get('old_tpl_name', tpl_name)
 
-                sms_tpl = events_dict[event]['sms_tpl']
-                if time_sheet.shift_ended_at.date() != utc_now().date():
-                    sms_tpl = events_dict[event].get('sms_old_tpl', sms_tpl)
-
-                sms_template = get_sms_template(company_id=master_company.id,
-                                                contact_id=recipient.contact.id,
-                                                slug=sms_tpl)
-                sms_interface.send_tpl(to_number=recipient.contact.phone_mobile,
-                                       tpl_id=sms_template.id,
-                                       check_reply=False,
-                                       **data_dict)
+                    sms_interface.send_tpl(recipient.contact,
+                                           master_company,
+                                           tpl_name,
+                                           check_reply=False,
+                                           **data_dict
+                                           )
 
             if candidate.message_by_email:
                 try:
                     email_interface = get_email_service()
                 except ImportError:
                     logger.exception('Cannot load Email service')
-                    return
+                else:
+                    tpl_name = events_dict[event]['tpl_name']
+                    if time_sheet.shift_ended_at.date() != utc_now().date():
+                        tpl_name = events_dict[event].get('old_tpl_name', tpl_name)
 
-                email_tpl = events_dict[event]['email_tpl']
-                if time_sheet.shift_ended_at.date() != utc_now().date():
-                    email_tpl = events_dict[event].get('email_old_tpl', email_tpl)
-
-                if not email_tpl:
-                    return
-
-                email_interface.send_tpl(recipient.contact, master_company, tpl_name=email_tpl, **data_dict)
+                    email_interface.send_tpl(recipient.contact,
+                                             master_company,
+                                             tpl_name,
+                                             **data_dict
+                                             )
 
 
 @app.task(bind=True, queue='sms')
@@ -442,8 +458,7 @@ def autoconfirm_rejected_timesheet(self, time_sheet_id):
 
 
 def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
-                                      sms_tpl, email_tpl=None, related_timesheets=None, **kwargs):
-    email_tpl = email_tpl or sms_tpl
+                                      tpl_name, related_timesheets=None, **kwargs):
 
     with transaction.atomic():
         sign_navigation = core_models.ExtranetNavigation.objects.get(id=119)
@@ -484,25 +499,25 @@ def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_e
                 sms_interface = get_sms_service()
             except ImportError:
                 logger.exception('Cannot load SMS service')
-                return
-
-            sms_template = get_sms_template(company_id=master_company.id,
-                                            contact_id=supervisor.contact_id,
-                                            slug=sms_tpl)
-
-            sms_interface.send_tpl(to_number=supervisor.contact.phone_mobile,
-                                   tpl_id=sms_template.id,
-                                   check_reply=False,
-                                   **data_dict)
+            else:
+                sms_interface.send_tpl(supervisor.contact,
+                                       master_company,
+                                       tpl_name,
+                                       check_reply=False,
+                                       **data_dict
+                                       )
 
         if should_send_email:
             try:
                 email_interface = get_email_service()
             except ImportError:
                 logger.exception('Cannot load Email service')
-                return
-
-            email_interface.send_tpl(supervisor.contact, master_company, tpl_name=email_tpl, **data_dict)
+            else:
+                email_interface.send_tpl(supervisor.contact,
+                                         master_company,
+                                         tpl_name,
+                                         **data_dict
+                                         )
 
 
 @app.task(bind=True, queue='sms')
@@ -519,8 +534,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
     now_utc = time_sheet.now_utc
     today_tz = now_tz.date()
     today_utc = now_utc.date()
-    sms_tpl = 'supervisor-timesheet-sign'
-    email_tpl = 'supervisor-timesheet-sign'
+    tpl_name = 'supervisor-timesheet-sign'
     should_send_sms = False
     should_send_email = False
 
@@ -531,9 +545,9 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
             # last sms to supervisor time
             try:
                 last_sms_time = SMSMessage.objects.filter(to_number=supervisor.contact.phone_mobile,
-                                                        template__slug=sms_tpl) \
-                                                .latest('sent_at') \
-                                                .sent_at
+                                                          template__slug=tpl_name) \
+                                                  .latest('sent_at') \
+                                                  .sent_at
             except:
                 last_sms_time = None
 
@@ -561,9 +575,9 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
             # last email to supervisor time
             try:
                 last_email_time = EmailMessage.objects.filter(to_addresses__contains=supervisor.contact.email,
-                                                            template__slug=email_tpl) \
-                                                    .latest('created_at') \
-                                                    .created_at
+                                                              template__slug=tpl_name) \
+                                                      .latest('created_at') \
+                                                      .created_at
             except:
                 last_email_time = None
 
@@ -582,13 +596,13 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 
         if should_send_sms or should_send_email:
             send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
-                                            sms_tpl, email_tpl, [time_sheet])
+                                              tpl_name, [time_sheet])
         return
 
     if supervisor.message_by_sms:
         if not SMSMessage.objects.filter(
                   to_number=supervisor.contact.phone_mobile,
-                  template__slug=sms_tpl,
+                  template__slug=tpl_name,
                   sent_at__date=today_utc,
                ).exists():
             should_send_sms = True
@@ -596,7 +610,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
     if supervisor.message_by_email:
         if not EmailMessage.objects.filter(
                    to_addresses=supervisor.contact.email,
-                   template__slug=email_tpl,
+                   template__slug=tpl_name,
                    sent_at__date=today_utc).exists():
             should_send_email = True
 
@@ -650,10 +664,9 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         if not signed_timesheets_started:
             return
 
-        send_supervisor_timesheet_message(
-            supervisor, should_send_sms, should_send_email, sms_tpl, email_tpl,
-            related_timesheets=related_timesheets
-        )
+        send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
+                                          tpl_name, related_timesheets=related_timesheets,
+                                          )
 
         eta = now_tz + timedelta(hours=4)
         is_today_reminder = True
@@ -671,6 +684,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 @app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
+    tpl_name = 'supervisor-timesheet-sign-reminder'
     today = date.today()
     if not is_today:
         today -= timedelta(days=1)
@@ -692,10 +706,9 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
     )
 
     if timesheets.exists():
-        send_supervisor_timesheet_message(
-            supervisor, supervisor.message_by_sms, supervisor.message_by_email, 'supervisor-timesheet-sign-reminder',
-            related_timesheets=list(timesheets)
-        )
+        send_supervisor_timesheet_message(supervisor, supervisor.message_by_sms, supervisor.message_by_email,
+                                          tpl_name, related_timesheets=list(timesheets)
+                                          )
 
 
 @shared_task
@@ -718,7 +731,7 @@ def check_unpaid_invoices():
         closed_invoices.update(is_paid=True)
 
 
-def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_target_dt=False):
+def send_timesheet_message(timesheet_id, job_offer_id, tpl_name, recipient, needs_target_dt=False):
     with transaction.atomic():
         try:
             timesheet = hr_models.TimeSheet.objects.get(pk=timesheet_id)
@@ -758,43 +771,56 @@ def send_timesheet_sms(timesheet_id, job_offer_id, sms_tpl, recipient, needs_tar
                 logger.info('Cannot get recipient for Timesheet: {}'.format(timesheet_id))
                 return
 
-            if recipient.contact.phone_mobile:
+            # send sms message if sms notification channel enabled
+            if recipient.message_by_sms:
                 try:
                     sms_interface = get_sms_service()
                 except ImportError:
                     logger.exception('Cannot load SMS service')
-                    return
+                else:
+                    sms_interface.send_tpl(recipient.contact,
+                                           master_company,
+                                           tpl_name,
+                                           check_reply=False,
+                                           **data_dict
+                                           )
 
-                sms_template = get_sms_template(company_id=master_company.id,
-                                                contact_id=recipient.contact.id,
-                                                slug=sms_tpl)
-
-                sms_interface.send_tpl(to_number=recipient.contact.phone_mobile,
-                                       tpl_id=sms_template.id,
-                                       check_reply=False,
-                                       **data_dict)
+            # send email message if email notification channel enabled
+            if recipient.message_by_email:
+                try:
+                    email_interface = get_email_service()
+                except ImportError:
+                    logger.exception('Cannot load Email service')
+                else:
+                    email_interface.send_tpl(recipient.contact,
+                                             master_company,
+                                             tpl_name,
+                                             **data_dict
+                                             )
 
 
 @app.task(bind=True, queue='sms')
-def send_placement_acceptance_sms(self, timesheet_id, job_offer_id):
-    send_timesheet_sms(timesheet_id,
-                       job_offer_id,
-                       'job-offer-placement-confirmation',
-                       'candidate_contact',
-                       needs_target_dt=True
+def send_placement_acceptance_message(self, timesheet_id, job_offer_id):
+    send_timesheet_message(timesheet_id,
+                           job_offer_id,
+                           'job-offer-placement-confirmation',
+                           'candidate_contact',
+                           needs_target_dt=True
     )
 
 
 @app.task(bind=True, queue='sms')
-def send_going_to_work_sms(self, time_sheet_id):
+def send_going_to_work_message(self, time_sheet_id):
     """
-    Send morning check sms notification.
-    Going to work sms message.
+    Send morning check notification.
+    Going to work message.
 
     :param time_sheet_id: UUID of TimeSheet instance
     :return:
     """
     action_sent = 'going_to_work_sent_sms'
+    tpl_name ='candidate-going-to-work'
+
     with transaction.atomic():
         try:
             time_sheet = hr_models.TimeSheet.objects.select_for_update().get(
@@ -815,33 +841,42 @@ def send_going_to_work_sms(self, time_sheet_id):
                 related_obj=time_sheet,
                 related_objs=[time_sheet.job_offer.job, candidate_contact],
             )
-            check_reply = not time_sheet.going_to_work_confirmation
 
-            try:
-                sms_interface = get_sms_service()
-            except ImportError:
-                logger.exception('Cannot load SMS service')
-                return
+            # send sms message if sms notification channel enabled
+            if recipient.message_by_sms:
+                try:
+                    sms_interface = get_sms_service()
+                except ImportError:
+                    logger.exception('Cannot load SMS service')
+                else:
+                    check_reply = not time_sheet.going_to_work_confirmation
+                    sent_message = sms_interface.send_tpl(candidate_contact.contact,
+                                                          time_sheet.master_company,
+                                                          tpl_name,
+                                                          check_reply=check_reply,
+                                                          **data_dict,
+                                                          )
 
-            sms_tpl ='candidate-going-to-work'
-            sms_template = get_sms_template(company_id=time_sheet.master_company.id,
-                                            contact_id=candidate_contact.contact_id,
-                                            slug=sms_tpl)
-            sent_message = sms_interface.send_tpl(to_number=candidate_contact.contact.phone_mobile,
-                                                  tpl_id=sms_template.id,
-                                                  check_reply=check_reply,
-                                                  **data_dict
-            )
+                    if  sent_message:
+                        setattr(time_sheet, action_sent, sent_message)
+                        time_sheet.update_status(False)
+                        time_sheet.save(update_fields=[action_sent, 'status'])
+                        related_query_name = hr_models.TimeSheet._meta.get_field(
+                            action_sent).related_query_name()
+                        cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
 
-            if not sent_message:
-                return
-
-            setattr(time_sheet, action_sent, sent_message)
-            time_sheet.update_status(False)
-            time_sheet.save(update_fields=[action_sent, 'status'])
-            related_query_name = hr_models.TimeSheet._meta.get_field(
-                action_sent).related_query_name()
-            cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
+            # send email message if email notification channel enabled
+            if recipient.message_by_email:
+                try:
+                    email_interface = get_email_service()
+                except ImportError:
+                    logger.exception('Cannot load Email service')
+                else:
+                    email_interface.send_tpl(candidate_contact.contact,
+                                             master_company,
+                                             tpl_name,
+                                             **data_dict
+                                             )
 
 
 def get_confirmation_string(job):
@@ -870,7 +905,7 @@ def get_confirmation_string(job):
 
 
 @app.task(bind=True, queue='sms')
-def send_job_confirmation_sms(self, job_id):
+def send_job_confirmation_message(self, job_id):
     """
     Send sms for Job confirmation.
 
@@ -878,6 +913,8 @@ def send_job_confirmation_sms(self, job_id):
     :param job_id: UUID of Job
     :return: None
     """
+
+    tpl_name = 'job-confirmed'
 
     try:
         job = hr_models.Job.objects.get(id=job_id)
@@ -887,12 +924,6 @@ def send_job_confirmation_sms(self, job_id):
             return
     except hr_models.Job.DoesNotExist:
         logger.warn('Job with id %s does not exists', str(job_id))
-        return
-
-    try:
-        sms_interface = get_sms_service()
-    except ImportError:
-        logger.exception('Cannot load SMS service')
         return
 
     with transaction.atomic():
@@ -921,14 +952,38 @@ def send_job_confirmation_sms(self, job_id):
             related_objs=[job.customer_representative, jobsite, job.provider_representative, extranet_login],
         )
         master_company = jobsite.master_company
-        sms_tpl = 'job-confirmed'
-        sms_template = get_sms_template(company_id=master_company.id,
-                                        contact_id=job.customer_representative.contact.id,
-                                        slug=sms_tpl)
         sms_interface.send_tpl(to_number=job.customer_representative.contact.phone_mobile,
                                tpl_id=sms_template.id,
                                check_reply=False,
                                **data_dict)
+
+        # send sms message if sms notification channel enabled
+        if job.customer_representative.message_by_sms:
+
+            try:
+                sms_interface = get_sms_service()
+            except ImportError:
+                logger.exception('Cannot load SMS service')
+            else:
+                sent_message = sms_interface.send_tpl(job.customer_representative.contact,
+                                                      master_company,
+                                                      tpl_name,
+                                                      check_reply=False,
+                                                      **data_dict
+                                                      )
+
+        # send email message if email notification channel enabled
+        if job.customer_representative.message_by_email:
+            try:
+                email_interface = get_email_service()
+            except ImportError:
+                logger.exception('Cannot load Email service')
+            else:
+                email_interface.send_tpl(job.customer_representative.contact,
+                                         master_company,
+                                         tpl_name,
+                                         **data_dict
+                                         )
 
 
 @app.task(bind=True, queue='hr')
@@ -1076,6 +1131,8 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
 
 @shared_task
 def send_invoice_email(invoice_id):
+    tpl_name='client-invoice'
+
     try:
         invoice = core_models.Invoice.objects.get(pk=invoice_id)
     except core_models.Invoice.DoesNotExist:
@@ -1084,12 +1141,6 @@ def send_invoice_email(invoice_id):
 
     master_company = invoice.provider_company
     client_company = invoice.customer_company
-
-    try:
-        email_interface = get_email_service()
-    except ImportError:
-        logger.exception('Cannot load Email service')
-        return
 
     try:
         pdf_file_obj = File.objects.get(
@@ -1114,7 +1165,11 @@ def send_invoice_email(invoice_id):
         'client': client_company.name,
     }
 
-    email_interface.send_tpl(client_company.primary_contact, master_company, tpl_name='client-invoice', **context)
+    email_interface.send_tpl(client_company.primary_contact,
+                             master_company,
+                             tpl_name,
+                             **context
+                             )
 
 
 @shared_task

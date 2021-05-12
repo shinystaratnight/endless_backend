@@ -24,7 +24,7 @@ from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
 from r3sourcer.apps.core.workflow import WorkflowProcess
-from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
+from r3sourcer.apps.hr.tasks import send_jo_confirmation, send_recurring_jo_confirmation
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.skills.models import Skill, SkillBaseRate, WorkType
@@ -957,13 +957,13 @@ class JobOffer(TimeZoneUUIDModel):
             pre_shift_check_enabled = time_sheet.master_company.company_settings.pre_shift_sms_enabled
             if ((pre_shift_check_enabled and time_sheet.candidate_submitted_at is None) or
                     (time_sheet.shift_started_at - self.now_utc).total_seconds() > 3600):
-                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_sms
-                send_job_offer_cancelled_sms.delay(self.pk)
+                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled
+                send_job_offer_cancelled.delay(self.pk)
 
                 time_sheet.delete()
             else:
-                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_lt_one_hour_sms
-                send_job_offer_cancelled_lt_one_hour_sms.delay(self.pk)
+                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_lt_one_hour
+                send_job_offer_cancelled_lt_one_hour.delay(self.pk)
 
                 if time_sheet.going_to_work_confirmation:
                     time_sheet.auto_fill_four_hours()
@@ -1072,12 +1072,12 @@ class JobOffer(TimeZoneUUIDModel):
                 self.scheduled_sms_datetime = utc_eta
                 self.save(update_fields=['scheduled_sms_datetime'])
                 if self.is_first() and not self.is_accepted():
-                    task = send_jo_confirmation_sms
+                    task = send_jo_confirmation
                 elif self.is_recurring():
-                    task = send_recurring_jo_confirmation_sms
+                    task = send_recurring_jo_confirmation
                 else:
                     # FIXME: send job confirmation SMS because there is pending job's JOs for candidate
-                    task = send_jo_confirmation_sms
+                    task = send_jo_confirmation
 
                 task.apply_async(args=[self.id], eta=utc_eta)
 
@@ -1435,8 +1435,8 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     @classmethod
     def _send_placement_acceptance_sms(cls, time_sheet, job_offer):
-        from r3sourcer.apps.hr.tasks import send_placement_acceptance_sms
-        send_placement_acceptance_sms.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
+        from r3sourcer.apps.hr.tasks import send_placement_acceptance_message
+        send_placement_acceptance_message.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
 
     def get_closest_company(self):
         return self.job_offer.job.get_closest_company()
@@ -1471,9 +1471,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     def _send_going_to_work(self, going_eta):
         if going_eta.tzinfo is None:
             raise ValueError('Invalid eta, datetime without timezone')
-        from r3sourcer.apps.hr.tasks import send_going_to_work_sms
+        from r3sourcer.apps.hr.tasks import send_going_to_work_message
         utc_going_eta = tz2utc(going_eta)
-        send_going_to_work_sms.apply_async(args=[self.pk], eta=utc_going_eta)
+        send_going_to_work_message.apply_async(args=[self.pk], eta=utc_going_eta)
 
     def _send_submit_sms(self, going_eta):
         if going_eta.tzinfo is None:
