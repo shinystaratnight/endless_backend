@@ -14,7 +14,6 @@ from r3sourcer.apps.billing import models as billing_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.email_interface.utils import get_email_service
-from r3sourcer.apps.sms_interface.helpers import get_sms_template
 from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 

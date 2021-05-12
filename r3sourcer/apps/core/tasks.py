@@ -12,7 +12,6 @@ from django.db import transaction
 from vine.five import monotonic
 
 from r3sourcer.apps.core.utils.companies import get_site_master_company
-from r3sourcer.apps.sms_interface.helpers import get_sms_template
 from r3sourcer.celeryapp import app
 
 from r3sourcer.apps.core import models as core_models

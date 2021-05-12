@@ -8,7 +8,6 @@ from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from .models import TokenLogin
 from ..core.utils.companies import get_site_master_company
-from ..sms_interface.helpers import get_sms_template
 
 logger = get_task_logger(__name__)
 

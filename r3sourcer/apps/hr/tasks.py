@@ -28,7 +28,6 @@ from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
-from r3sourcer.apps.sms_interface.helpers import get_sms_template
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.celeryapp import app
