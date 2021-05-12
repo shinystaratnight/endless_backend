@@ -32,6 +32,7 @@ class JobsiteAdmin(admin.ModelAdmin):
 admin.site.register(models.Jobsite, JobsiteAdmin)
 admin.site.register(models.JobsiteUnavailability)
 admin.site.register(models.Job)
+admin.site.register(models.JobTag)
 admin.site.register(models.ShiftDate)
 admin.site.register(models.Shift)
 admin.site.register(models.TimeSheet, TimeSheetAdmin)
