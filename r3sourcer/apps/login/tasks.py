@@ -44,9 +44,7 @@ def send_login_token(contact, send_func, tpl_name, redirect_url=None, type_=Toke
                     data_dict['auth_url'])
         master_company = get_site_master_company(user=contact.user)
         if type_ in (TokenLogin.TYPES.sms,):
-            send_func(to_number=contact.phone_mobile,
-                      tpl_id=sms_template.id,
-                      **data_dict)
+            send_func(contact, master_company, tpl_name, **data_dict)
         elif type_ in (TokenLogin.TYPES.email,):
             send_func(contact, master_company, tpl_name, **data_dict)
         else:
