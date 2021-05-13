@@ -673,7 +673,7 @@ class JobViewset(BaseApiViewset):
 
         tags_filter = request.query_params.get('show_without_tags', None) in ('True', None)
         if not tags_filter:
-            candidate_contacts = candidate_contacts.filter(tags_count=len(job_tags))
+            candidate_contacts = candidate_contacts.filter(tag_rels__tag_id__in=job_tags)
 
         restrict_radius = int(request.GET.get('distance_to_jobsite', -1))
         if restrict_radius > -1:
