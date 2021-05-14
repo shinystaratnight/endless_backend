@@ -92,6 +92,13 @@ def candidate_contact(db, contact):
 
 
 @pytest.fixture
+def candidate_contact_second(db, contact_another):
+    return candidate_models.CandidateContact.objects.create(
+        contact=contact_another
+    )
+
+
+@pytest.fixture
 def company_contact(db, contact):
     return core_models.CompanyContact.objects.create(
         contact=contact,
@@ -191,7 +198,8 @@ def job(db, master_company, regular_company, jobsite, skill):
         customer_company=regular_company,
         jobsite=jobsite,
         position=skill,
-        published=True
+        published=True,
+        workers=2
     )
 
 
@@ -212,11 +220,40 @@ def shift(db, shift_date):
 
 
 @pytest.fixture
+def shift_date_second(db, job):
+    return hr_models.ShiftDate.objects.create(
+        job=job,
+        shift_date=datetime.date(2017, 1, 3)
+    )
+
+
+@pytest.fixture
+def shift_second(db, shift_date_second):
+    return hr_models.Shift.objects.create(
+        date=shift_date_second,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
 @patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
 def job_offer(mock_check, db, shift, candidate_contact):
     job_offer = hr_models.JobOffer.objects.create(
         shift=shift,
         candidate_contact=candidate_contact
+    )
+
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+
+    return job_offer
+
+
+@pytest.fixture
+@patch.object(hr_models.JobOffer, 'check_job_quota', return_value=True)
+def job_offer_second(mock_check, db, shift_second, candidate_contact_second):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_second,
+        candidate_contact=candidate_contact_second
     )
 
     hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
@@ -496,3 +533,265 @@ def fake_sms(contact):
         text='fake',
         sid='FAKE_test',
     )
+
+
+@pytest.fixture
+def jobtag1(job):
+    tag1 = core_models.Tag.objects.create(name='Tag1')
+    return hr_models.JobTag.objects.create(
+        job=job,
+        tag=tag1
+    )
+
+
+@pytest.fixture
+def jobtag2(job):
+    tag2 = core_models.Tag.objects.create(name='Tag2')
+    return hr_models.JobTag.objects.create(
+        job=job,
+        tag=tag2
+    )
+
+# fixtures for job fulfillment tests
+@pytest.fixture
+def skill_name1(db, industry):
+    return SkillName.objects.create(name="Skill1", industry=industry)
+
+
+@pytest.fixture
+def skill1(db, skill_name1, master_company):
+    return Skill.objects.create(
+        name=skill_name1,
+        carrier_list_reserve=2,
+        short_name="Skl1",
+        active=False,
+        company=master_company
+    )
+
+
+@pytest.fixture
+def skill_name2(db, industry):
+    return SkillName.objects.create(name="Skill2", industry=industry)
+
+
+@pytest.fixture
+def skill2(db, skill_name2, master_company):
+    return Skill.objects.create(
+        name=skill_name2,
+        carrier_list_reserve=2,
+        short_name="Skl2",
+        active=False,
+        company=master_company
+    )
+
+
+@pytest.fixture
+def skill_name3(db, industry):
+    return SkillName.objects.create(name="Skill3", industry=industry)
+
+
+@pytest.fixture
+def skill3(db, skill_name3, master_company):
+    return Skill.objects.create(
+        name=skill_name3,
+        carrier_list_reserve=2,
+        short_name="Skl3",
+        active=False,
+        company=master_company
+    )
+
+
+@pytest.fixture
+def job_with_filled_not_accepted_shifts(master_company, regular_company, jobsite, skill1):
+    return hr_models.Job.objects.create(
+        provider_company=master_company,
+        customer_company=regular_company,
+        jobsite=jobsite,
+        position=skill1,
+        published=True,
+        workers=1
+    )
+
+
+@pytest.fixture
+def shift_date_filled_not_accepted(job_with_filled_not_accepted_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_filled_not_accepted_shifts,
+        shift_date=datetime.date(2017, 1, 2)
+    )
+
+
+@pytest.fixture
+def shift_filled_not_accepted(shift_date_filled_not_accepted):
+    return hr_models.Shift.objects.create(
+        date=shift_date_filled_not_accepted,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def job_offer_undefined(candidate_contact, shift_filled_not_accepted):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_filled_not_accepted,
+        candidate_contact=candidate_contact,
+        status=hr_models.JobOffer.STATUS_CHOICES.undefined
+    )
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+    return job_offer
+
+
+@pytest.fixture
+def shift_date_filled_accepted(job_with_filled_not_accepted_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_filled_not_accepted_shifts,
+        shift_date=datetime.date(2017, 1, 3)
+    )
+
+
+@pytest.fixture
+def shift_filled_accepted(shift_date_filled_accepted):
+    return hr_models.Shift.objects.create(
+        date=shift_date_filled_accepted,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def job_offer_accepted(candidate_contact_second, shift_filled_not_accepted):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_filled_not_accepted,
+        candidate_contact=candidate_contact_second,
+        status=hr_models.JobOffer.STATUS_CHOICES.accepted
+    )
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+    return job_offer
+
+
+#### filled_and_declined
+@pytest.fixture
+def shift_date_filled_notaccepted(job_with_filled_and_declined_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_filled_and_declined_shifts,
+        shift_date=datetime.date(2017, 1, 4)
+    )
+
+
+@pytest.fixture
+def shift_filled_notaccepted(shift_date_filled_notaccepted):
+    return hr_models.Shift.objects.create(
+        date=shift_date_filled_notaccepted,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def job_with_filled_and_declined_shifts(master_company, regular_company, candidate_contact, jobsite, skill2):
+    return hr_models.Job.objects.create(
+        provider_company=master_company,
+        customer_company=regular_company,
+        jobsite=jobsite,
+        position=skill2,
+        published=True,
+        workers=1
+    )
+
+
+@pytest.fixture
+def job_offer_first_declined(candidate_contact, shift_filled_notaccepted):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_filled_notaccepted,
+        candidate_contact=candidate_contact,
+        status=hr_models.JobOffer.STATUS_CHOICES.cancelled
+    )
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+    return job_offer
+
+
+@pytest.fixture
+def job_offer_second_declined(candidate_contact, shift_filled_notaccepted):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_filled_notaccepted,
+        candidate_contact=candidate_contact,
+        status=hr_models.JobOffer.STATUS_CHOICES.cancelled
+    )
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+    return job_offer
+
+
+@pytest.fixture
+def job_with_accepted_shifts(master_company, regular_company, jobsite, skill):
+    return hr_models.Job.objects.create(
+        provider_company=master_company,
+        customer_company=regular_company,
+        jobsite=jobsite,
+        position=skill,
+        published=True,
+        workers=1
+    )
+
+
+@pytest.fixture
+def shift_date_accepted(job_with_accepted_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_accepted_shifts,
+        shift_date=datetime.date(2017, 1, 3)
+    )
+
+
+@pytest.fixture
+def shift_accepted(shift_date_accepted):
+    return hr_models.Shift.objects.create(
+        date=shift_date_accepted,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def job_offer_yetanother_accepted(candidate_contact, shift_accepted):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_accepted,
+        candidate_contact=candidate_contact,
+        status=hr_models.JobOffer.STATUS_CHOICES.accepted
+    )
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+    return job_offer
+
+
+@pytest.fixture
+def job_with_declined_shifts(master_company, regular_company, jobsite, skill):
+    return hr_models.Job.objects.create(
+        provider_company=master_company,
+        customer_company=regular_company,
+        jobsite=jobsite,
+        position=skill,
+        published=True,
+        workers=1
+    )
+
+
+@pytest.fixture
+def shift_date_declined(job_with_declined_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_declined_shifts,
+        shift_date=datetime.date(2017, 1, 3)
+    )
+
+
+@pytest.fixture
+def shift_declined(shift_date_declined):
+    return hr_models.Shift.objects.create(
+        date=shift_date_declined,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def job_offer_declined(candidate_contact, shift_declined):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_declined,
+        candidate_contact=candidate_contact,
+        status=hr_models.JobOffer.STATUS_CHOICES.cancelled
+    )
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+    return job_offer
+# 8 failed
