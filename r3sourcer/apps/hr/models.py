@@ -819,6 +819,12 @@ class JobOffer(TimeZoneUUIDModel):
             shift__date__shift_date__lt=self.shift.date.shift_date
         ).exists()
 
+    def is_last(self):
+        return not self.job.get_job_offers().filter(
+            candidate_contact=self.candidate_contact,
+            shift__date__shift_date__gt=self.shift.date.shift_date
+        ).exists()
+
     def get_future_offers(self):
         return self.job.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
