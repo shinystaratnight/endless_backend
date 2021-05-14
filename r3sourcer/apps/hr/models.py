@@ -369,10 +369,7 @@ class Job(core_models.AbstractBaseOrder):
         return self.get_title()
 
     def get_title(self):
-        return _('{} at {}').format(
-            str(self.position),
-            str(self.jobsite),
-        )
+        return f'{self.position} - {self.jobsite} ({self.workers} workers)'
     get_title.short_description = _('Title')
 
     @property

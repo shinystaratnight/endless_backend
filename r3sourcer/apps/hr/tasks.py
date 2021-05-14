@@ -71,12 +71,7 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
         target_date_and_time = "ASAP"
 
     master_company = job_offer.candidate_contact.contact.get_closest_company()
-    template = sms_interface.get_template(job_offer.candidate_contact.contact, master_company, tpl_name)
-
-    # get job translation on template
-    template_language = template.language.alpha_2
-    job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
-    job_translation = job_translation[0].get('value', job_offer.job)
+    print(master_company)
 
     data_dict = {
         'job_offer': job_offer,
@@ -87,7 +82,6 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
         'master_company': master_company,
         'related_obj': job_offer,
         'related_objs': [job_offer.candidate_contact, job_offer.job],
-        'job_translation': job_translation
     }
 
     if job_offer.candidate_contact.message_by_sms:
@@ -96,6 +90,16 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
         except ImportError:
             logger.exception('Cannot load SMS service')
         else:
+            template = sms_interface.get_template(job_offer.candidate_contact.contact, master_company, tpl_name)
+            # get job translation on template
+            template_language = template.language.alpha_2
+            job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
+            if job_translation:
+                job_translationjob_translation = job_translation[0].get('value', job_offer.job)
+                data_dict['job_translation'] = job_translation
+            else:
+                job_translation = job_offer.job.position.name
+            # send message
             sent_message = sms_interface.send_tpl(job_offer.candidate_contact.contact,
                                                   master_company,
                                                   tpl_name,
@@ -120,6 +124,16 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
         except ImportError:
             logger.exception('Cannot load Email service')
         else:
+            template = email_interface.get_template(job_offer.candidate_contact.contact, master_company, tpl_name)
+            # get job translation on template
+            template_language = template.language.alpha_2
+            job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
+            if job_translation:
+                job_translation = job_translation[0].get('value', job_offer.job)
+                data_dict['job_translation'] = job_translation
+            else:
+                job_translation = job_offer.job.position.name
+            # send message
             email_interface.send_tpl(job_offer.candidate_contact.contact,
                                      master_company,
                                      tpl_name,

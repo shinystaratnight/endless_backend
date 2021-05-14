@@ -82,7 +82,7 @@ class TestJobsite:
 
         ts = TimeSheet.objects.filter(
             job_offer__in=[job_offer],
-            shift_started_at__date__gte=TimeZone.tomorrow_tz()
+            shift_started_at__date__gte=datetime.date.today() + datetime.timedelta(days=1)
         ).first()
 
         assert ts.supervisor == company_contact
@@ -96,7 +96,7 @@ class TestJobsite:
 
         ts = TimeSheet.objects.filter(
             job_offer__in=[job_offer],
-            shift_started_at__date__gte=TimeZone.tomorrow_tz()
+            shift_started_at__date__gte=datetime.date.today() + datetime.timedelta(days=1)
         ).first()
 
         assert ts.supervisor == company_contact_another
