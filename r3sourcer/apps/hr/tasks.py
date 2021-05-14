@@ -671,7 +671,10 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 @app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
 def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
+    tpl_name = 'supervisor-timesheet-sign-reminder'
     today = date.today()
+    should_send_sms = False
+    should_send_email = False
     if not is_today:
         today -= timedelta(days=1)
 
@@ -683,6 +686,21 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
     except core_models.CompanyContact.DoesNotExist:
         return
 
+    if supervisor.message_by_sms:
+        if not SMSMessage.objects.filter(
+                  to_number=supervisor.contact.phone_mobile,
+                  template__slug=tpl_name,
+                  sent_at__date=today,
+               ).exists():
+            should_send_sms = True
+
+    if supervisor.message_by_email:
+        if not EmailMessage.objects.filter(
+                   to_addresses=supervisor.contact.email,
+                   template__slug=tpl_name,
+                   sent_at__date=today).exists():
+            should_send_email = True
+
     timesheets = hr_models.TimeSheet.objects.filter(
         shift_ended_at__date=today,
         going_to_work_confirmation=True,
@@ -693,7 +711,7 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
 
     if timesheets.exists():
         send_supervisor_timesheet_message(
-            supervisor, supervisor.message_by_sms, supervisor.message_by_email, 'supervisor-timesheet-sign-reminder',
+            supervisor, supervisor.should_send_sms, supervisor.should_send_email, tpl_name,
             related_timesheets=list(timesheets)
         )
 
