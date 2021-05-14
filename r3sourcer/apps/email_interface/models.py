@@ -54,6 +54,8 @@ class EmailTemplate(TemplateMessage):
             'language',
         ]
 
+    def __str__(self):
+        return f'{self.type} {self.company} {self.language}'
 
 class DefaultEmailTemplate(DefaultTemplateABS):
     language = models.ForeignKey(
@@ -86,6 +88,13 @@ class DefaultEmailTemplate(DefaultTemplateABS):
     def save(self, *args, **kwargs):
         from r3sourcer.apps.core.models import Company
         super().save(*args, **kwargs)
+
+        EmailTemplate.objects.\
+            filter(slug=self.slug, language_id=self.language.alpha_2).\
+            update(message_html_template=self.message_html_template,
+                   message_text_template=self.message_text_template,
+                   subject_template=self.subject_template)
+
         templates = []
         for company in Company.objects.filter(type=Company.COMPANY_TYPES.master,
                                               languages__language=self.language) \
@@ -97,7 +106,9 @@ class DefaultEmailTemplate(DefaultTemplateABS):
                 reply_timeout=self.reply_timeout,
                 delivery_timeout=self.delivery_timeout,
                 language_id=self.language.alpha_2,
-                company_id=company.id)
+                company_id=company.id,
+                subject_template=self.subject_template
+            )
             templates.append(obj)
         EmailTemplate.objects.bulk_create(templates)
 
@@ -131,7 +142,7 @@ class EmailMessage(TimeZoneUUIDModel):
     )
 
     sent_at = models.DateTimeField(
-        verbose_name=_("When mail received"),
+        verbose_name=_("When mail sent"),
         null=True,
         blank=True
     )

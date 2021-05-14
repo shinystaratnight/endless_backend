@@ -1,4 +1,5 @@
 import datetime
+import logging
 from decimal import Decimal
 import pytz
 import stripe
@@ -7,6 +8,7 @@ from django.db import models
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
+from stripe.error import InvalidRequestError
 
 from r3sourcer import ref
 from r3sourcer.apps.core import tasks
@@ -14,6 +16,7 @@ from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
 from r3sourcer.apps.email_interface.models import EmailTemplate, DefaultEmailTemplate
 from r3sourcer.helpers.datetimes import utc_now
 
+logger = logging.getLogger(__name__)
 
 class Subscription(CompanyTimeZoneMixin):
     ALLOWED_STATUSES = ('active', 'incomplete', 'trialing')
@@ -104,7 +107,7 @@ class Subscription(CompanyTimeZoneMixin):
     def update_permissions_on_status(self):
         this_user = self.company.get_user()
         if this_user.trial_period_start:
-            end_of_trial = this_user.trial_period_start + datetime.timedelta(days=30)
+            end_of_trial = this_user.get_end_of_trial_as_date()
             if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
                 self.deactivate(user_id=(str(this_user.id)))
         # elif self.status in allowed_statuses:
@@ -115,13 +118,16 @@ class Subscription(CompanyTimeZoneMixin):
         subscription = stripe.Subscription.retrieve(self.subscription_id)
         self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
         self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
-        if self.current_period_end.replace(tzinfo=pytz.UTC) <= self.now_utc and self.company.get_user():
+        if self.current_period_end.replace(tzinfo=pytz.UTC) < self.now_utc and self.company.get_user():
             self.deactivate(user_id=(str(self.company.get_user().id)))
 
     def deactivate(self, user_id=None):
         stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         sub = stripe.Subscription.retrieve(self.subscription_id)
-        sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+        try:
+            sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+        except InvalidRequestError as e:
+            logger.warning('Subscription is missed, probably cancelled: {}'.format(e))
         if user_id:
             tasks.cancel_subscription_access.apply_async([user_id])
 
@@ -189,22 +195,24 @@ class SMSBalance(models.Model):
         if self.balance <= self.top_up_limit and self.auto_charge is True:
             charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
 
-        low_limit = SMSBalanceLimits.objects.filter(name="Low").first()
-        if low_limit and Decimal(self.balance) < low_limit.low_balance_limit and self.low_balance_sent is False:
-            tasks.send_sms_balance_is_low_email.delay(self.company.id, template=low_limit.email_template.slug)
-            self.low_balance_sent = True
+        if self.company.is_master:
+            low_limit = SMSBalanceLimits.objects.filter(name="Low").first()
+            if low_limit:
+                if Decimal(self.balance) < low_limit.low_balance_limit and self.low_balance_sent is False:
+                    tasks.send_sms_balance_is_low_email.delay(self.company.id, template=low_limit.email_template.slug)
+                    self.low_balance_sent = True
 
-        if low_limit and Decimal(self.balance) > low_limit.low_balance_limit and self.low_balance_sent is True:
-            self.low_balance_sent = False
+                if Decimal(self.balance) > low_limit.low_balance_limit and self.low_balance_sent is True:
+                    self.low_balance_sent = False
 
-        ran_out_limit = SMSBalanceLimits.objects.filter(name="Ran out").first()
-        if ran_out_limit and Decimal(self.balance) < ran_out_limit.low_balance_limit and self.ran_out_balance_sent is False:
-            tasks.send_sms_balance_ran_out_email.delay(self.company.id, template=ran_out_limit.email_template.slug)
-            self.ran_out_balance_sent = True
+            ran_out_limit = SMSBalanceLimits.objects.filter(name="Ran out").first()
+            if ran_out_limit:
+                if Decimal(self.balance) < ran_out_limit.low_balance_limit and self.ran_out_balance_sent is False:
+                    tasks.send_sms_balance_ran_out_email.delay(self.company.id, template=ran_out_limit.email_template.slug)
+                    self.ran_out_balance_sent = True
 
-        if ran_out_limit and Decimal(self.balance) > ran_out_limit.low_balance_limit and self.ran_out_balance_sent is\
-                True:
-            self.ran_out_balance_sent = False
+                if Decimal(self.balance) > ran_out_limit.low_balance_limit and self.ran_out_balance_sent is True:
+                    self.ran_out_balance_sent = False
 
         if Decimal(self.balance) - self.segment_cost < 0:
             self.company.sms_enabled = False
@@ -216,6 +224,9 @@ class SMSBalance(models.Model):
 
         super().save(*args, **kwargs)
 
+    @classmethod
+    def use_logger(cls):
+        return True
 
 class Payment(CompanyTimeZoneMixin):
     PAYMENT_TYPES = Choices(
@@ -233,7 +244,7 @@ class Payment(CompanyTimeZoneMixin):
         on_delete=models.CASCADE)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = ref.DTField()
-    amount = models.IntegerField()
+    amount = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     status = models.CharField(max_length=255, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES.not_paid)
     stripe_id = models.CharField(max_length=255)
     invoice_url = models.CharField(max_length=255, blank=True, null=True)
@@ -253,6 +264,10 @@ class Payment(CompanyTimeZoneMixin):
         if not self.created:
             self.created = self.now_utc
         super().save(*args, **kwargs)
+
+    @classmethod
+    def use_logger(cls):
+        return True
 
 
 class Discount(CompanyTimeZoneMixin):

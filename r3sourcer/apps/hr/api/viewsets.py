@@ -104,7 +104,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         query = Q(job_offer__candidate_contact__candidate_rels__master_company=self.request.user.contact.get_closest_company(),
                   job_offer__candidate_contact__candidate_rels__owner=True)
         qs = super().get_queryset().filter(query)
-        ordering = self.request.query_params.get('ordering', None)
+        ordering = self.request.query_params.get('ordering', '-shift_started_at')
         if ordering:
             ordering_fields = [param.strip() for param in ordering.split(',')]
             qs = qs.order_by(*ordering_fields)
@@ -673,7 +673,7 @@ class JobViewset(BaseApiViewset):
 
         tags_filter = request.query_params.get('show_without_tags', None) in ('True', None)
         if not tags_filter:
-            candidate_contacts = candidate_contacts.filter(tags_count=len(job_tags))
+            candidate_contacts = candidate_contacts.filter(tag_rels__tag_id__in=job_tags)
 
         restrict_radius = int(request.GET.get('distance_to_jobsite', -1))
         if restrict_radius > -1:

@@ -132,9 +132,10 @@ class Skill(MYOBMixin, UUIDModel):
     class Meta:
         verbose_name = _("Skill")
         verbose_name_plural = _("Skills")
+        unique_together = ['name', 'company']
 
     def __str__(self):
-        return self.name.name
+        return f'{self.company.name} - {self.name.name}'
 
     def get_myob_name(self):
         name = self.short_name
@@ -247,6 +248,8 @@ class SkillTag(UUIDModel):
 class WorkType(UUIDModel):
     """Model for storing work types"""
 
+    DEFAULT = 'Hourly work'
+
     skill_name = models.ForeignKey(
         SkillName,
         on_delete=models.CASCADE,
@@ -259,7 +262,7 @@ class WorkType(UUIDModel):
     skill = models.ForeignKey(
         Skill,
         on_delete=models.CASCADE,
-        verbose_name=_('Skill Name'),
+        verbose_name=_('Skill'),
         related_name='work_types',
         blank=True,
         null=True
@@ -307,6 +310,8 @@ class WorkType(UUIDModel):
             raise ValidationError(_("Such skill activity exists"))
 
     def __str__(self):
+        if self.name == self.DEFAULT:
+            return f"{self.skill_name} {self.name}"
         return f"{self.name} per {self.uom}"
 
     @property
@@ -334,8 +339,8 @@ class WorkTypeLanguage(models.Model):
     )
 
     class Meta:
-        verbose_name = _("Work Transalation")
-        verbose_name_plural = _("Work Transalations")
+        verbose_name = _("Skill Activity Transalation")
+        verbose_name_plural = _("Skill Activity Transalations")
         unique_together = [
             'name',
             'language',
@@ -357,8 +362,6 @@ class SkillRateRange(MYOBMixin, UUIDModel):
         WorkType,
         related_name="skill_rate_ranges",
         verbose_name=_("WorkType"),
-        blank=True,
-        null=True
     )
     upper_rate_limit = models.DecimalField(
         decimal_places=2,
@@ -400,4 +403,4 @@ class SkillRateRange(MYOBMixin, UUIDModel):
         unique_together = ("skill", "worktype")
 
     def __str__(self):
-        return f"{self.skill.name.name} rate range"
+        return f"{self.skill.name.name} - {self.worktype.name}"

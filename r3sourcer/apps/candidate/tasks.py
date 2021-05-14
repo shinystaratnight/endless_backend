@@ -90,7 +90,11 @@ def buy_candidate(candidate_rel_id, user=None):
             currency=company.currency,
             description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
         )
-        invoice = stripe.Invoice.create(customer=company.stripe_customer, default_tax_rates=[tax_id])
+        invoice = stripe.Invoice.create(
+            customer=company.stripe_customer,
+            default_tax_rates=[tax_id],
+            description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
+        )
         invoice.pay()
         billing_models.Payment.objects.create(
             company=company,
@@ -167,7 +171,7 @@ def update_superannuation_fund_list():
         candidate_models.SuperannuationFund.objects.bulk_create(batch)
 
 
-@shared_task()
+@shared_task()                                        # updated to service changes
 def send_candidate_consent_message(candidaterel_id, data_dict):
     try:
         candidate_rel = candidate_models.CandidateRel.objects.get(id=candidaterel_id)
@@ -197,8 +201,10 @@ def send_candidate_consent_message(candidaterel_id, data_dict):
         try:
             email_interface = get_email_service()
         except ImportError:
-            logger.exception('Cannot load SMS service')
+            logger.exception('Cannot load Email service')
             return
 
-        email_interface.send_tpl(candidate_contact.contact.email, candidate_rel.master_company, tpl_name='consent-sms-message',
+        email_interface.send_tpl(candidate_contact.contact,
+                                 candidate_rel.master_company,
+                                 tpl_name='consent-email-message',
                                  **data_dict)

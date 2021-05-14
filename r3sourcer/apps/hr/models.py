@@ -1163,8 +1163,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     wage_type = models.PositiveSmallIntegerField(
         choices=Job.WAGE_CHOICES,
         verbose_name=_("Type of wage"),
-        blank=True,
-        null=True
+        default=Job.WAGE_CHOICES.HOURLY
     )
 
     def supervisor_signature_path(self, filename):
@@ -1291,7 +1290,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
     def __str__(self):
-        fields = [self.shift_started_at_tz, self.candidate_submitted_at_tz, self.supervisor_approved_at_tz]
+        fields = [self.shift_started_at_tz, self.candidate_submitted_at_tz, self.wage_type]
         return ' '.join([str(x) for x in fields])
 
     @property
@@ -1415,6 +1414,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             'candidate_rate': job_offer.shift.hourly_rate,
             'going_to_work_confirmation': going_to_work_confirmation,
             'status': status,
+            'wage_type': job_offer.job.wage_type,
         }
 
         try:
@@ -1546,20 +1546,28 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         if save:
             self.save(update_fields=['status'])
 
-    @property
-    def _datetime_fields(self):
-        return (
+    def _datetime_fields(self, just_added):
+        fields = [
             ('shift_started_at', self.shift_started_at, self.today_7_am),
-            ('break_started_at', self.break_started_at, self.today_12_pm),
-            ('break_ended_at', self.break_ended_at, self.today_12_30_pm),
             ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
             ('candidate_submitted_at', self.candidate_submitted_at, None),
             ('supervisor_approved_at', self.supervisor_approved_at, None),
             ('supervisor_modified_at', self.supervisor_modified_at, None),
             ('rate_overrides_approved_at', self.rate_overrides_approved_at, None),
-        )
+        ]
+        if just_added:
+            fields += [
+                ('break_started_at', self.break_started_at, self.today_12_pm),
+                ('break_ended_at', self.break_ended_at, self.today_12_30_pm),
+            ]
+        else:
+            fields += [
+                ('break_started_at', self.break_started_at, None),
+                ('break_ended_at', self.break_ended_at, None),
+            ]
+        return tuple(fields)
 
-    def convert_datetime_before_save(self):
+    def convert_datetime_before_save(self, just_added):
         def setter_fn(args):
             field, value = args
             setattr(self, field, value)
@@ -1568,13 +1576,13 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             _, value = args
             return value is not None
 
-        fields = [(field, x or y) for field, x, y in self._datetime_fields]
+        fields = [(field, x or y) for field, x, y in self._datetime_fields(just_added)]
         list(map(setter_fn, filter(filter_fn, fields)))
 
     def save(self, *args, **kwargs):
-        self.convert_datetime_before_save()
-
         just_added = self._state.adding
+        self.convert_datetime_before_save(just_added)
+
         going_set = self.going_to_work_confirmation is not None and (
             just_added or self.__original_going_to_work_confirmation != self.going_to_work_confirmation
         )

@@ -18,9 +18,10 @@ class SkillSerializer(ApiBaseModelSerializer):
         fields = (
             'id', 'company', 'carrier_list_reserve', 'short_name', 'employment_classification', 'active',
             {'name': ('id', 'name', {'translations': ('language', 'value')},
-                         {'industry': ('id', 'type', {'translations': ('language', 'value')})})
+                      {'industry': ('id', 'type', {'translations': ('language', 'value')})})
             },
-            {'skill_rate_ranges': ('id', 'worktype',
+            {'skill_rate_ranges': ('id',
+                                   {'worktype': ('id', 'name', {'translations': ('language', 'value')})},
                                    'upper_rate_limit', 'lower_rate_limit', 'default_rate',
                                    'price_list_upper_rate_limit', 'price_list_lower_rate_limit',
                                    'price_list_default_rate'),
@@ -50,7 +51,7 @@ class SkillNameSerializer(ApiBaseModelSerializer):
             {'name': ('name', {'translations': ('language', 'value')})},
             {'industry': ('id', 'type', {'translations': ('language', 'value')}),
              'translations': ('language', 'value'),
-            #  'work_types': ('id', 'name', {'translations': ('language', 'value')}),
+             'work_types': ('id', 'name', {'translations': ('language', 'value')}),
             },
         )
 
@@ -79,6 +80,7 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
         model = SkillRateRange
         fields = (
             'id', 'skill', 'worktype',
+            {'worktype': ('id', 'name', {'translations': ('language', 'value')})},
             'upper_rate_limit', 'lower_rate_limit', 'default_rate',
             'price_list_upper_rate_limit', 'price_list_lower_rate_limit', 'price_list_default_rate'
             )
@@ -87,6 +89,9 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
         lower_rate = validated_data.get('lower_rate_limit')
         upper_rate = validated_data.get('upper_rate_limit')
         default_rate = validated_data.get('default_rate')
+        price_list_lower_rate = validated_data.get('price_list_lower_rate_limit')
+        price_list_upper_rate = validated_data.get('price_list_upper_rate_limit')
+        price_list_default_rate = validated_data.get('price_list_default_rate')
 
         errors = {}
 
@@ -97,18 +102,19 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
         if upper_rate and default_rate and default_rate > upper_rate:
             errors['upper_rate_limit'] = _('Upper Rate Limit should be greater than or equal Default Rate')
 
-        lower_rate = validated_data.get('price_list_lower_rate_limit')
-        upper_rate = validated_data.get('price_list_upper_rate_limit')
-        default_rate = validated_data.get('price_list_default_rate')
-
-        if lower_rate and upper_rate and lower_rate > upper_rate:
-            errors['price_list_lower_rate_limit'] = _(
-                'Lower Rate Limit should be lesser than or equal Upper Rate Limit'
-            )
-        if lower_rate and default_rate and lower_rate > default_rate:
+        if price_list_lower_rate and price_list_upper_rate and price_list_lower_rate > price_list_upper_rate:
+            errors['price_list_lower_rate_limit'] = _('Lower Rate Limit should be lesser than or equal Upper Rate Limit')
+        if price_list_lower_rate and price_list_default_rate and price_list_lower_rate > price_list_default_rate:
             errors['price_list_default_rate'] = _('Default Rate should be greater than or equal Lower Rate Limit')
-        if upper_rate and default_rate and default_rate > upper_rate:
+        if price_list_upper_rate and price_list_default_rate and price_list_default_rate > price_list_upper_rate:
             errors['price_list_upper_rate_limit'] = _('Upper Rate Limit should be greater than or equal Default Rate')
+
+        if lower_rate and price_list_lower_rate and lower_rate >= price_list_lower_rate:
+            errors['lower_rate_limit'] = _('Lower Rate Limit should be lesser than Price List Lower Rate Limit')
+        if default_rate and price_list_default_rate and default_rate >= price_list_default_rate:
+            errors['default_rate'] = _('Default Rate should be lesser than Price List Default Rate')
+        if upper_rate and price_list_upper_rate and upper_rate >= price_list_upper_rate:
+            errors['upper_rate_limit'] = _('Upper Rate Limit should be lesser than Price List Upper Rate Limit')
 
         if errors:
             raise exceptions.ValidationError(errors)
@@ -117,6 +123,8 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
 
 
 class WorkTypeSerializer(ApiBaseModelSerializer):
+
+    method_fields = ['skill_rate_ranges']
 
     class Meta:
         model = WorkType
@@ -129,3 +137,18 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
             'skill_name': {'required': False},
             'skill': {'required': False}
         }
+
+    def get_skill_rate_ranges(self, obj):
+        if not obj:
+            return
+
+        request = self.context.get('request')
+        if obj.skill_name and request:
+            return SkillRateRangeSerializer(obj.skill_rate_ranges.filter(
+                                            skill__company=request.user.company),
+                                            fields=['id', 'default_rate'],
+                                            many=True).data
+        else:
+            return SkillRateRangeSerializer(obj.skill_rate_ranges.filter(skill=obj.skill),
+                                            fields=['id', 'default_rate'],
+                                            many=True).data

@@ -52,7 +52,7 @@ def send_login_token(contact, send_func, tpl, redirect_url=None, type_=TokenLogi
                       tpl_id=sms_template.id,
                       **data_dict)
         elif type_ in (TokenLogin.TYPES.email,):
-            send_func(contact.email, master_company, tpl_name=tpl, **data_dict)
+            send_func(contact, master_company, tpl_name=tpl, **data_dict)
         else:
             raise Exception('Unknown login  token type')
 

@@ -12,7 +12,6 @@ from r3sourcer.apps.candidate.tasks import send_candidate_consent_message
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.models import CompanyContactRelationship, UnitOfMeasurement
-from r3sourcer.apps.core.models import CompanyContactRelationship
 from r3sourcer.apps.core.utils.companies import get_site_master_company, get_site_url
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
@@ -561,9 +560,10 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         super().save(*args, **kwargs)
 
         if just_added and master_company:
-            company_contact = self.recruitment_agent
-            company_contact_relation = CompanyContactRelationship.objects.create(company=master_company,
-                                                                                 company_contact=company_contact)
+            company_contact_relation = CompanyContactRelationship.objects.filter(company=master_company,
+                                                                                 company_contact=self.recruitment_agent) \
+                                                                         .last()
+
             self.contact.user.role.add(core_models.Role.objects.create(name=core_models.Role.ROLE_NAMES.candidate,
                                                                        company_contact_rel=company_contact_relation))
             if not hasattr(self, 'candidate_scores'):
@@ -623,7 +623,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
             'related_objs': [extranet_login],
         }
 
-        send_candidate_consent_message.delay(self.id, rel_id, data_dict)
+        send_candidate_consent_message(rel_id, data_dict)
 
     @classmethod
     def owned_by_lookups(cls, owner):
@@ -752,7 +752,9 @@ class SkillRel(UUIDModel):
     hourly_rate = models.DecimalField(
         decimal_places=2,
         max_digits=8,
-        verbose_name=_("Skill Rate")
+        verbose_name=_("Skill Rate"),
+        blank=True,
+        null=True
     )
 
     class Meta:

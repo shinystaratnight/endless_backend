@@ -130,7 +130,7 @@ def fetch_holiday_dates(country_code, year, month):
 one_sms_task_at_the_same_time = one_task_at_the_same_time(True)
 
 
-@app.task(bind=True)
+@app.task(bind=True)                                               # updated to email service changes
 def send_trial_email(self, contact_id, master_company_id):
     try:
         contact = core_models.Contact.objects.get(id=contact_id)
@@ -161,7 +161,7 @@ def send_trial_email(self, contact_id, master_company_id):
             'verification_url': "%s%s" % (site_url, extranet_login.auth_url),
         }
 
-        email_interface.send_tpl(contact.email, master_company, tpl_name='trial-user-email-verification', **data_dict)
+        email_interface.send_tpl(contact, master_company, tpl_name='trial-user-email-verification', **data_dict)
 
 
 @shared_task()
@@ -250,7 +250,7 @@ def send_contact_verify_sms(self, contact_id, manager_id):
             sms_interface.send_tpl(to_number=contact.phone_mobile, tpl_id=sms_template.id, **data_dict)
 
 
-@shared_task(bind=True)
+@shared_task(bind=True)                                             # updated to email service changes
 def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
     from r3sourcer.apps.email_interface.utils import get_email_service
 
@@ -295,11 +295,10 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
             )
 
             logger.info('Sending e-mail verify to %s.', contact)
+            email_interface.send_tpl(contact, master_company, tpl_name=email_tpl, **data_dict)
 
-            email_interface.send_tpl(contact.email, master_company, tpl_name=email_tpl, **data_dict)
 
-
-@shared_task()
+@shared_task()                                                  # updated to email service changes
 def send_generated_password_email(email, new_password=None):
     try:
         contact = core_models.Contact.objects.get(email=email)
@@ -321,7 +320,7 @@ def send_generated_password_email(email, new_password=None):
             'site_url': site_url,
         }
         master_company = contact.get_closest_company()
-        email_interface.send_tpl(contact.email, master_company, tpl_name='forgot-password', **data_dict)
+        email_interface.send_tpl(contact, master_company, tpl_name='forgot-password', **data_dict)
 
         contact.user.set_password(new_password)
         contact.user.save()
@@ -360,7 +359,7 @@ def send_generated_password_sms(contact_id, new_password=None):
     contact.user.save()
 
 
-@shared_task()
+@shared_task()                                                          # updated to email service changes
 def send_verification_success_email(contact_id, master_company_id, template='e-mail-verification-success'):
     from r3sourcer.apps.email_interface.utils import get_email_service
 
@@ -401,11 +400,10 @@ def send_verification_success_email(contact_id, master_company_id, template='e-m
             contact.user.save()
 
             logger.info('Sending e-mail verification success to %s.', contact)
+            email_interface.send_tpl(contact, master_company, tpl_name=template, **data_dict)
 
-            email_interface.send_tpl(contact.email, master_company, tpl_name=template, **data_dict)
 
-
-@shared_task()
+@shared_task()                                                # updated to email service changes
 def send_sms_balance_ran_out_email(master_company_id, template='sms-balance-ran-out'):
     from r3sourcer.apps.email_interface.utils import get_email_service
 
@@ -437,10 +435,10 @@ def send_sms_balance_ran_out_email(master_company_id, template='sms-balance-ran-
 
         logger.info('Sending Sms Balance Ran Out e-mail to %s.', primary_contact)
 
-        email_interface.send_tpl(primary_contact.email, master_company, tpl_name=template, **data_dict)
+        email_interface.send_tpl(primary_contact, master_company, tpl_name=template, **data_dict)
 
 
-@shared_task()
+@shared_task()                                              # updated to email service changes
 def send_sms_balance_is_low_email(master_company_id, template='sms-balance-is-low'):
     from r3sourcer.apps.email_interface.utils import get_email_service
 
@@ -473,4 +471,4 @@ def send_sms_balance_is_low_email(master_company_id, template='sms-balance-is-lo
 
         logger.info('Sending Sms Balance Is Low e-mail to %s.', primary_contact)
 
-        email_interface.send_tpl(primary_contact.email, master_company, tpl_name=template, **data_dict)
+        email_interface.send_tpl(primary_contact, master_company, tpl_name=template, **data_dict)

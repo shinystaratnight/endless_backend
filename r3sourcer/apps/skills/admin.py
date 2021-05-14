@@ -29,7 +29,7 @@ class SkillNameAdmin(nested_admin.NestedModelAdmin):
     inlines = [SkillNameLanguageInline, WorkTypeInline]
 
 
-class SkillRateRangeInline(admin.TabularInline):
+class SkillRateRangeInline(nested_admin.NestedTabularInline):
     model = models.SkillRateRange
     extra = 0
 
@@ -39,12 +39,13 @@ class SkillRateRangeInline(admin.TabularInline):
                                                                 Q(skill=request._obj_))
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
-class WorkTypeSkillInline(admin.TabularInline):
+class WorkTypeSkillInline(nested_admin.NestedTabularInline):
     model = models.WorkType
     exclude = ['skill_name']
     extra = 0
+    inlines = [WorkTypeLanguageInline]
 
-class SkillAdmin(admin.ModelAdmin):
+class SkillAdmin(nested_admin.NestedModelAdmin):
     list_display = ('name', 'company', 'industry', )
     search_fields = ['name__name', 'company__name']
     list_filter = (('company', ObjectRelatedDropdownFilter),)
@@ -62,5 +63,6 @@ class SkillAdmin(admin.ModelAdmin):
 admin.site.register(models.EmploymentClassification)
 admin.site.register(models.Skill, SkillAdmin)
 admin.site.register(models.SkillName, SkillNameAdmin)
-# admin.site.register(models.SkillBaseRate)
+admin.site.register(models.WorkType)
 admin.site.register(models.SkillTag)
+admin.site.register(models.SkillRateRange)

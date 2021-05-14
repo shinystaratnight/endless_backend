@@ -552,6 +552,13 @@ class User(UUIDModel,
         else:
             return {"user": "User have no trial period start date"}
 
+    def get_end_of_trial_as_date(self):
+        if self.trial_period_start:
+            end_of_trial = self.trial_period_start + timedelta(days=30)
+            return end_of_trial
+        else:
+            return None
+
     def clean(self):
         if self.is_superuser \
                 and User.objects.filter(is_superuser=True).exists() \
@@ -576,8 +583,8 @@ class User(UUIDModel,
         return hasattr(self, 'contact')
 
     def is_manager(self) -> bool:
-        if self.contact.company_contact.first():
-            return self.contact.company_contact.first().role == MANAGER
+        if self.contact.company_contact.filter(role=CompanyContact.MANAGER).exists():
+            return True
         return False
 
     def is_client(self) -> bool:
@@ -658,6 +665,10 @@ class User(UUIDModel,
         if not self.date_joined:
             self.date_joined = utc_now()
         super().save(*args, **kwargs)
+
+    def track_login(self):
+        self.last_login = utc_now()
+        self.save(update_fields=['last_login'])
 
 
 class Country(UUIDModel, AbstractCountry):
@@ -1617,6 +1628,11 @@ class CompanyContactRelationship(TimeZoneUUIDModel,
         blank=True
     )
 
+    class Meta:
+        unique_together = ('company', 'company_contact')
+        verbose_name = _("Company Contact Relationship")
+        verbose_name_plural = _("Company Contact Relationships")
+
     @property
     def geo(self):
         return self.__class__.objects.filter(
@@ -1704,8 +1720,8 @@ class CompanyIndustryRel(UUIDModel):
         for skill_name in self.industry.skill_names.all():
             skill, _ = Skill.objects.get_or_create(name=skill_name,
                                                    company=self.company,
-                                                   active=False)
-            skill.save()
+                                                   defaults={'active': False},
+                                                   )
 
     def delete(self, using=None, keep_parents=False):
         for skill_name in self.industry.skill_names.all():
@@ -2892,6 +2908,9 @@ class ContactLanguage(models.Model):
         verbose_name = _("Contact language")
         verbose_name_plural = _("Contact languages")
         unique_together = (("contact", "language"),)
+
+    def __str__(self):
+        return f'{self.language} - {self.default}'
 
     def save(self, force_insert=False, force_update=False, using=None,
              update_fields=None):

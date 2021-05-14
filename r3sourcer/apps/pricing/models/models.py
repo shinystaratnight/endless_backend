@@ -62,7 +62,7 @@ class IndustryLanguage(models.Model):
         verbose_name=_('Industry'),
         related_name='translations'
     )
-    value = models.CharField(max_length=127, verbose_name=_("Industry transalation"))
+    value = models.CharField(max_length=127, verbose_name=_("Industry translation"))
     language = models.ForeignKey(
         'core.Language',
         verbose_name=_("Industry language"),
@@ -242,6 +242,7 @@ class PriceList(PriceListMixin, TimeZoneUUIDModel):
     def geo(self):
         return self.__class__.objects.filter(
             pk=self.pk,
+            company__company_addresses__hq=True,
         ).annotate(
             longitude=F('company__company_addresses__address__longitude'),
             latitude=F('company__company_addresses__address__latitude')
