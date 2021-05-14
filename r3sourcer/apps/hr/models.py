@@ -400,28 +400,24 @@ class Job(core_models.AbstractBaseOrder):
             return IRRELEVANT
 
         result = NOT_FULFILLED
-        next_date = self.shift_dates.filter(
-            shift_date__gt=self.now_utc.date(),
+        # get today and future shift dates
+        next_dates = self.shift_dates.filter(
+            shift_date__gte=self.now_utc.date(),
             cancelled=False,
-        ).order_by('shift_date').first()
+        ).order_by('shift_date')
 
-        if next_date is not None:
-            result = next_date.is_fulfilled()
-            if result == NOT_FULFILLED and next_date.job_offers.exists():
-                unaccepted_jos = next_date.job_offers.filter(
-                    status=JobOffer.STATUS_CHOICES.undefined
-                )
+        if next_dates.count() > 0:
+            # check if all offers for these dates
+            acceptance = {y.status for x in next_dates for y in x.job_offers if y.is_last()}
 
-                for unaccepted_jo in unaccepted_jos.all():
-                    # TODO: Refactor this very eager query
-                    todays_timesheets = unaccepted_jo.time_sheets.filter(
-                        going_to_work_confirmation=True,
-                        shift_started_at__lte=self.now_utc,
-                        shift_ended_at__gte=self.now_utc + timedelta(hours=1),
-                    )
-
-                    if not todays_timesheets.exists():
-                        return NOT_FULFILLED
+            # If shift has no job offers or rejected offers only it shows red
+            if len(acceptance) == 0 or {JobOffer.STATUS_CHOICES.cancelled} == acceptance:
+                result = NOT_FULFILLED
+            # if shift has all job offers accepted it remains green
+            elif {JobOffer.STATUS_CHOICES.accepted} == acceptance:
+                result = FULFILLED
+            # if shift has pending job offers it remains yellow
+            else:
                 result = LIKELY_FULFILLED
         else:
             result = IRRELEVANT
