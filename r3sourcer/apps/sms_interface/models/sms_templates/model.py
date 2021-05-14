@@ -45,3 +45,6 @@ class SMSTemplate(TemplateMessage):
             'slug',
             'language',
         ]
+
+    def __str__(self):
+        return f'{self.name}'

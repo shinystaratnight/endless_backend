@@ -10,8 +10,8 @@ from ...helpers.admin.filters import LanguageListFilter, CompanyListFilter
 
 class SMSTemplateAdmin(admin.ModelAdmin):
     # prepopulated_fields = {"slug": ("name",)}
-    list_display = ['company', 'name', 'language_name']
-    ordering = ['company', 'name', 'language']
+    list_display = ['name', 'company', 'slug', 'language_name']
+    ordering = ['company', 'slug', 'language']
     list_filter = (CompanyListFilter, LanguageListFilter, 'name')
 
     @classmethod
