@@ -91,20 +91,6 @@ class InvoiceService(BasePaymentService):
     def generate_pdf(cls, invoice, show_candidate=False):
         template = get_template('payment/invoices.html')
 
-        code_data = {
-            'code': 'GNR',
-            'rate': '0',
-            'tax': '0',
-            'amount': '{0:.2f}'.format(invoice.total)
-        }
-        if invoice.customer_company.registered_for_gst:
-            code_data = {
-                'code': 'GST',
-                'rate': '10',
-                'tax': '{0:.2f}'.format(invoice.total * Decimal(0.1)),
-                'amount': '{0:.2f}'.format(invoice.total)
-            }
-
         domain = get_site_url(master_company=invoice.provider_company)
         master_company = invoice.provider_company
 
@@ -117,7 +103,6 @@ class InvoiceService(BasePaymentService):
             'lines': invoice.invoice_lines.order_by('date').all(),
             'invoice': invoice,
             'company': invoice.customer_company,
-            'code_data': code_data,
             'master_company': invoice.provider_company,
             'master_company_logo': master_logo,
             'show_candidate': show_candidate,
