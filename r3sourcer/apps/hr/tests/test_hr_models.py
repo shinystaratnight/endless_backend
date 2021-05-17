@@ -107,10 +107,10 @@ class TestJobsite:
 
 @pytest.mark.django_db
 class TestJob:
+
     def test_get_title(self, job, jobsite, skill):
         assert str(jobsite) in str(job)
         assert str(skill) in str(job)
-        assert str(job.workers) in str(job)
 
     def test_get_job_offers(self, job, job_offer):
         assert job.get_job_offers().count() == 1
@@ -119,84 +119,110 @@ class TestJob:
         assert job.get_total_bookings_count() == 1
 
     @freeze_time(datetime.datetime(2017, 1, 2))
-    def test_is_fulfilled_irrelevant(self, job, shift_date):
+    def test_is_fulfilled_irrelevant(self, job):
         assert job.is_fulfilled() == IRRELEVANT
 
-    @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
-    def test_is_fulfilled_fulfilled(self, mock_sd_fulfilled, job, shift_date):
-        assert job.is_fulfilled() == FULFILLED
-
-    @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=LIKELY_FULFILLED)
-    def test_is_fulfilled_sd_likely_fulfilled(self, mock_sd_fulfilled, job,
-                                              shift_date):
-        assert job.is_fulfilled() == LIKELY_FULFILLED
-
-    @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=IRRELEVANT)
-    def test_is_fulfilled_sd_irrelevant(self, mock_sd_fulfilled, job, shift_date):
-        assert job.is_fulfilled() == IRRELEVANT
-
-    @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
-    @patch.object(ShiftDate, 'job_offers', new_callable=PropertyMock)
-    def test_is_fulfilled_sd_not_fulfilled_jo_not_exists(self, mock_jos, mock_sd_fulfilled, job, shift_date):
-        mock_jos.return_value.exists.return_value = False
-
-        assert job.is_fulfilled() == NOT_FULFILLED
-
-    @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
-    @patch.object(ShiftDate, 'job_offers', new_callable=PropertyMock)
-    def test_is_fulfilled_sd_not_fulfilled_no_unaccepted_jos(self, mock_jos, mock_sd_fulfilled, job, shift_date):
-        mock_jos.return_value = MockSet(
-            MockModel(status=JobOffer.STATUS_CHOICES.accepted)
-        )
-
-        assert job.is_fulfilled() == LIKELY_FULFILLED
-
-    @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
-    def test_is_fulfilled_sd_not_fulfilled_accepted_ts(self, mock_sd_fulfilled, job, job_offer, shift_date):
-        TimeSheet.objects.create(
-            job_offer=job_offer,
-            going_to_work_confirmation=True
-        )
-
-        assert job.is_fulfilled() == LIKELY_FULFILLED
-
-    @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
-    def test_is_fulfilled_sd_not_fulfilled_no_accepted_ts(self, mock_sd_fulfilled, job, shift_date, timesheet):
-
-        assert job.is_fulfilled() == NOT_FULFILLED
+    @freeze_time(datetime.datetime(2017, 1, 2))
+    def test_is_fulfilled_and_accepted(self, job_with_accepted_shifts, shift_accepted, job_offer_yetanother_accepted):
+        assert job_with_accepted_shifts.is_fulfilled() == FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 2))
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
-    def test_is_fulfilled_today_fulfilled(self, mock_fulfilled, job, shift_date):
-        assert job.is_fulfilled_today() == FULFILLED
+    def test_is_fulfilled_likely_fullfilled(self, job_with_filled_not_accepted_shifts, shift_filled_accepted,
+                                       shift_filled_not_accepted, job_offer_undefined, job_offer_accepted):
+        assert job_with_filled_not_accepted_shifts.is_fulfilled() == LIKELY_FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 2))
-    def test_is_fulfilled_today_no_sd_today(self, job):
-        assert job.is_fulfilled_today() == IRRELEVANT
-
-    @freeze_time(datetime.datetime(2017, 1, 2))
-    @patch.object(Job, 'is_fulfilled', return_value=NOT_FULFILLED)
-    def test_can_fillin_not_fulfilled(self, mock_sd_fulfilled, job):
-        assert job.can_fillin()
+    def test_is_fulfilled_not_fullfilled(self, job_with_declined_shifts, shift_declined,job_offer_declined):
+        assert job_with_declined_shifts.is_fulfilled() == NOT_FULFILLED
 
     @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(Job, 'is_fulfilled', return_value=FULFILLED)
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
-    def test_can_fillin_future_sd_not_fulfilled(self, mock_fulfilled, mock_sd_fulfilled, job, job_offer):
-        assert job.can_fillin()
+    def test_is_fulfilled_declined(self, job_with_filled_and_declined_shifts, shift_filled_notaccepted,
+                                   job_offer_first_declined, job_offer_second_declined):
+        assert job_with_filled_and_declined_shifts.is_fulfilled() == NOT_FULFILLED
 
-    @freeze_time(datetime.datetime(2017, 1, 1))
-    @patch.object(Job, 'is_fulfilled', return_value=FULFILLED)
-    @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
-    def test_can_fillin_future_sd_fulfilled(self, mock_fulfilled, mock_sd_fulfilled, job, job_offer):
-        assert not job.can_fillin()
+    #####
+    # OLD LOGIC TESTS (remove them if logic is accepted)
+    # ###
+
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
+    # def test_is_fulfilled_fulfilled(self, mock_sd_fulfilled, job, shift_date):
+    #     assert job.is_fulfilled() == FULFILLED
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=LIKELY_FULFILLED)
+    # def test_is_fulfilled_sd_likely_fulfilled(self, mock_sd_fulfilled, job,
+    #                                           shift_date):
+    #     assert job.is_fulfilled() == LIKELY_FULFILLED
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=IRRELEVANT)
+    # def test_is_fulfilled_sd_irrelevant(self, mock_sd_fulfilled, job, shift_date):
+    #     assert job.is_fulfilled() == IRRELEVANT
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
+    # @patch.object(ShiftDate, 'job_offers', new_callable=PropertyMock)
+    # def test_is_fulfilled_sd_not_fulfilled_jo_not_exists(self, mock_jos, mock_sd_fulfilled, job, shift_date):
+    #     mock_jos.return_value.exists.return_value = False
+    #
+    #     assert job.is_fulfilled() == NOT_FULFILLED
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
+    # @patch.object(ShiftDate, 'job_offers', new_callable=PropertyMock)
+    # def test_is_fulfilled_sd_not_fulfilled_no_unaccepted_jos(self, mock_jos, mock_sd_fulfilled, job, shift_date):
+    #     mock_jos.return_value = MockSet(
+    #         MockModel(status=JobOffer.STATUS_CHOICES.accepted)
+    #     )
+    #
+    #     assert job.is_fulfilled() == LIKELY_FULFILLED
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
+    # def test_is_fulfilled_sd_not_fulfilled_accepted_ts(self, mock_sd_fulfilled, job, job_offer, shift_date):
+    #     TimeSheet.objects.create(
+    #         job_offer=job_offer,
+    #         going_to_work_confirmation=True
+    #     )
+    #
+    #     assert job.is_fulfilled() == LIKELY_FULFILLED
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
+    # def test_is_fulfilled_sd_not_fulfilled_no_accepted_ts(self, mock_sd_fulfilled, job, shift_date, timesheet):
+    #
+    #     assert job.is_fulfilled() == NOT_FULFILLED
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 2))
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
+    # def test_is_fulfilled_today_fulfilled(self, mock_fulfilled, job, shift_date):
+    #     assert job.is_fulfilled_today() == FULFILLED
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 2))
+    # def test_is_fulfilled_today_no_sd_today(self, job):
+    #     assert job.is_fulfilled_today() == IRRELEVANT
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 2))
+    # @patch.object(Job, 'is_fulfilled', return_value=NOT_FULFILLED)
+    # def test_can_fillin_not_fulfilled(self, mock_sd_fulfilled, job):
+    #     assert job.can_fillin()
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(Job, 'is_fulfilled', return_value=FULFILLED)
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=NOT_FULFILLED)
+    # def test_can_fillin_future_sd_not_fulfilled(self, mock_fulfilled, mock_sd_fulfilled, job, job_offer):
+    #     assert job.can_fillin()
+    #
+    # @freeze_time(datetime.datetime(2017, 1, 1))
+    # @patch.object(Job, 'is_fulfilled', return_value=FULFILLED)
+    # @patch.object(ShiftDate, 'is_fulfilled', return_value=FULFILLED)
+    # def test_can_fillin_future_sd_fulfilled(self, mock_fulfilled, mock_sd_fulfilled, job, job_offer):
+    #     assert not job.can_fillin()
+
+    #####
+    # END
+    # ###
 
 
 @pytest.mark.django_db

@@ -548,6 +548,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
     today_tz = now_tz.date()
     today_utc = now_utc.date()
     tpl_name = 'supervisor-timesheet-sign'
+    tpl_name_reminder = 'supervisor-timesheet-sign-reminder'
     should_send_sms = False
     should_send_email = False
 
@@ -614,16 +615,16 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 
     if supervisor.message_by_sms:
         if not SMSMessage.objects.filter(
+                  models.Q(template__slug=tpl_name) | models.Q(template__slug=tpl_name_reminder),
                   to_number=supervisor.contact.phone_mobile,
-                  template__slug=tpl_name,
                   sent_at__date=today_utc,
                ).exists():
             should_send_sms = True
 
     if supervisor.message_by_email:
         if not EmailMessage.objects.filter(
+                   models.Q(template__slug=tpl_name) | models.Q(template__slug=tpl_name_reminder),
                    to_addresses=supervisor.contact.email,
-                   template__slug=tpl_name,
                    sent_at__date=today_utc).exists():
             should_send_email = True
 
@@ -856,7 +857,7 @@ def send_going_to_work_message(self, time_sheet_id):
             )
 
             # send sms message if sms notification channel enabled
-            if recipient.message_by_sms:
+            if candidate_contact.message_by_sms:
                 try:
                     sms_interface = get_sms_service()
                 except ImportError:
@@ -879,14 +880,14 @@ def send_going_to_work_message(self, time_sheet_id):
                         cache.set(sent_message.pk, related_query_name, (sent_message.reply_timeout + 2) * 60)
 
             # send email message if email notification channel enabled
-            if recipient.message_by_email:
+            if candidate_contact.message_by_email:
                 try:
                     email_interface = get_email_service()
                 except ImportError:
                     logger.exception('Cannot load Email service')
                 else:
                     email_interface.send_tpl(candidate_contact.contact,
-                                             master_company,
+                                             time_sheet.master_company,
                                              tpl_name,
                                              **data_dict
                                              )
@@ -965,10 +966,6 @@ def send_job_confirmation_message(self, job_id):
             related_objs=[job.customer_representative, jobsite, job.provider_representative, extranet_login],
         )
         master_company = jobsite.master_company
-        sms_interface.send_tpl(to_number=job.customer_representative.contact.phone_mobile,
-                               tpl_id=sms_template.id,
-                               check_reply=False,
-                               **data_dict)
 
         # send sms message if sms notification channel enabled
         if job.customer_representative.message_by_sms:
