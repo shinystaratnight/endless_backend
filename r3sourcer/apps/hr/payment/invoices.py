@@ -74,14 +74,14 @@ class InvoiceService(BasePaymentService):
                 if not units:
                     continue
 
-                vat_name = 'GST' if company.registered_for_gst else 'GNR'
+                vat = company.get_vat()
                 lines.append({
                     'date': timesheet.shift_started_at_tz.date(),
                     'units': units,
                     'notes': notes,
                     'unit_price': rate,
                     'amount': math.ceil(rate * units * 100) / 100,
-                    'vat': VAT.objects.get(name=vat_name),
+                    'vat': vat,
                     'timesheet': timesheet,
                 })
 
