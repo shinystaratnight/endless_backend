@@ -65,7 +65,7 @@ class DefaultSMSTemplateAdmin(admin.ModelAdmin):
 
 
 class SMSMessageAdmin(admin.ModelAdmin):
-    list_display = ['sent_at', '__str__', 'company', 'related_content_type', 'text']
+    list_display = ['__str__', 'template', 'sent_at', 'company', 'related_content_type', 'text']
 
 
 admin.site.register(models.SMSMessage, SMSMessageAdmin)

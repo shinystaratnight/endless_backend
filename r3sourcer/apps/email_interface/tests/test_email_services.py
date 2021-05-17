@@ -32,7 +32,7 @@ class TestEmailServices:
     def test_get_default_fake_email_service(self):
         service = get_email_service()
 
-        assert isinstance(service, FakeEmailService)
+        assert isinstance(service, SMTPEmailService)
 
     def test_get_service_by_name(self):
         service_class_name = '%s.%s' % (EmailTestService.__module__,
@@ -129,35 +129,22 @@ class TestEmailServices:
 
     @mock.patch.object(EmailTestService, 'send')
     @lang_objects
-    def test_send_tpl(self, mock_send, service, email_template, master_company):
+    def test_send_tpl(self, mock_send, service, email_template, master_company, candidate_contact):
         self.langs.add(
             MockModel(language_id='en', default=True),
         )
-        service.send_tpl('test@test.com', master_company=master_company, tpl_name='Email Template')
+        service.send_tpl(candidate_contact.contact, master_company, 'email-template')
 
         mock_send.assert_called_with(
-            'test@test.com', 'subject', 'template', html_message='', from_email=None,
+            candidate_contact.contact.email, 'subject', 'template', html_message='', from_email=None,
             template=email_template
-        )
-
-    @mock.patch.object(EmailTestService, 'send')
-    @lang_objects
-    def test_send_tpl_slug(self, mock_send, service, email_template, master_company):
-        self.langs.add(
-            MockModel(language_id='en', default=True),
-        )
-        service.send_tpl('test@test.com', master_company, tpl_name='email-template')
-
-        mock_send.assert_called_with(
-            'test@test.com', 'subject', 'template',
-            html_message='', from_email=None, template=email_template
         )
 
     @mock.patch('r3sourcer.apps.email_interface.services.logger')
     @mock.patch.object(EmailTestService, 'send')
     @lang_objects
-    def test_send_tpl_not_found(self, mock_send, mock_log, service, master_company):
-        service.send_tpl('test@test.com', master_company, tpl_name='sms')
+    def test_send_tpl_not_found(self, mock_send, mock_log, service, master_company, candidate_contact):
+        service.send_tpl(candidate_contact.contact, master_company, 'sms')
 
         assert mock_log.exception.called
         assert not mock_send.called
