@@ -216,7 +216,8 @@ class CandidateContactViewset(BaseApiViewset):
             candidate_contact.send_consent_message(rel.id)
 
         return Response({'status': 'success', 'message': _('Please wait for candidate to agree sharing their '
-                                                           'information')})
+                                                           'information'),
+                        'candidate': str(candidate_contact)})
 
     @action(methods=['get'], detail=True)
     def tests(self, request, *args, **kwargs):
