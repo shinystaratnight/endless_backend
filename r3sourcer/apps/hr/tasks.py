@@ -521,6 +521,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
     today_utc = now_utc.date()
     sms_tpl = 'supervisor-timesheet-sign'
     email_tpl = 'supervisor-timesheet-sign'
+    tpl_name_reminder = 'supervisor-timesheet-sign-reminder'
     should_send_sms = False
     should_send_email = False
 
@@ -587,16 +588,16 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 
     if supervisor.message_by_sms:
         if not SMSMessage.objects.filter(
+                  models.Q(template__slug=sms_tpl) | models.Q(template__slug=tpl_name_reminder),
                   to_number=supervisor.contact.phone_mobile,
-                  template__slug=sms_tpl,
                   sent_at__date=today_utc,
                ).exists():
             should_send_sms = True
 
     if supervisor.message_by_email:
         if not EmailMessage.objects.filter(
+                   models.Q(template__slug=email_tpl) | models.Q(template__slug=tpl_name_reminder),
                    to_addresses=supervisor.contact.email,
-                   template__slug=email_tpl,
                    sent_at__date=today_utc).exists():
             should_send_email = True
 

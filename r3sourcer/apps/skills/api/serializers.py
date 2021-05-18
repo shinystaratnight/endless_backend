@@ -130,7 +130,8 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
         model = WorkType
         fields = (
             '__all__',
-            {'translations': ('language', 'value')},
+            {'uom': ('id', 'name', 'short_name'),
+            'translations': ('language', 'value')},
             )
 
         extra_kwargs = {

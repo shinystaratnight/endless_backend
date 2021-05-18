@@ -1483,6 +1483,10 @@ class Company(CategoryFolderMixin,
             return hq_address.address.country.code2
         return 'EE' # TODO: refactor this
 
+    def get_vat(self):
+        company = self.get_closest_master_company()
+        return VAT.get_vat(company.get_country_code()).first()
+
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
