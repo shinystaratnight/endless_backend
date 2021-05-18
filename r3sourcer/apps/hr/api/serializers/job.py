@@ -403,46 +403,23 @@ class ShiftDateSerializer(core_serializers.UUIDApiSerializerMixin,
                           core_serializers.ApiBaseModelSerializer):
     method_fields = (
         *core_serializers.UUIDApiSerializerMixin.method_fields,
+        'workers_details',
     )
 
     class Meta:
         model = hr_models.ShiftDate
-        fields = (
-            '__all__'
-        )
-
-
-class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
-                      core_serializers.ApiBaseModelSerializer):
-
-    method_fields = (
-        *core_serializers.UUIDApiSerializerMixin.method_fields,
-        'is_fulfilled',
-        'workers_details',
-        'can_delete',
-    )
-
-    class Meta:
-        model = hr_models.Shift
-        fields = (
-            '__all__', {
-                'date': ('__all__', {
+        fields = ('__all__', {
                     'job': ('id',
                             {'jobsite': ('id', 'short_name')},
                             'default_shift_starting_time',
                             {'position': ['id', {'name': ('name', {'translations': ('language', 'value')})},
                                           ]},
                             'notes'),
-                }),
-            }
-        )
-
-    def get_is_fulfilled(self, obj):  # pragma: no cover
-        return obj and (obj.is_fulfilled_annotated if hasattr(obj, 'is_fulfilled_annotated') else obj.is_fulfilled())
+                })
 
     def get_workers_details(self, obj):
         latest = hr_models.JobOffer.objects\
-            .filter(shift=obj) \
+            .filter(shift__date=obj) \
             .values('candidate_contact') \
             .annotate(latest_date=Max('updated_at'))
 
@@ -466,6 +443,41 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
             'accepted': result.get(hr_models.JobOffer.STATUS_CHOICES.accepted, []),
             'cancelled': result.get(hr_models.JobOffer.STATUS_CHOICES.cancelled, []),
             'undefined': result.get(hr_models.JobOffer.STATUS_CHOICES.undefined, []),
+        }
+
+
+class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
+                      core_serializers.ApiBaseModelSerializer):
+
+    method_fields = (
+        *core_serializers.UUIDApiSerializerMixin.method_fields,
+        'is_fulfilled',
+        'workers_details',
+        'can_delete',
+    )
+
+    class Meta:
+        model = hr_models.Shift
+        fields = (
+            '__all__', {
+                'date': ('id', 'shift_date'),
+            }
+        )
+
+    def get_is_fulfilled(self, obj):  # pragma: no cover
+        return obj and (obj.is_fulfilled_annotated if hasattr(obj, 'is_fulfilled_annotated') else obj.is_fulfilled())
+
+    def get_workers_details(self, obj):
+        qs = hr_models.JobOffer.objects.filter(shift=obj)
+
+        accepted = qs.filter(status=hr_models.JobOffer.STATUS_CHOICES.accepted).count()
+        cancelled = qs.filter(status=hr_models.JobOffer.STATUS_CHOICES.cancelled).count()
+        undefined = qs.filter(status=hr_models.JobOffer.STATUS_CHOICES.undefined).count()
+
+        return {
+            'accepted': accepted,
+            'cancelled': cancelled,
+            'undefined': undefined,
         }
 
     def get_can_delete(self, obj):  # pragma: no cover
