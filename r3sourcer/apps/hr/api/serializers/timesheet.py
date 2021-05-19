@@ -522,7 +522,13 @@ class TimeSheetRateSerializer(ApiBaseModelSerializer):
         # validate value
         if value is None or value <= 0:
             raise exceptions.ValidationError({
-                'value': _('Value must be graeter then 0')
+                'value': _('Value must be greater then 0')
+            })
+
+        # validate rate
+        if rate is None or rate <= 0:
+            raise exceptions.ValidationError({
+                'rate': _('Rate must be greater then 0')
             })
 
         # validate rate    TODO choose betweann master company and regular company
@@ -532,8 +538,8 @@ class TimeSheetRateSerializer(ApiBaseModelSerializer):
         if skill_rate_range:
             lower_limit = skill_rate_range.lower_rate_limit
             upper_limit = skill_rate_range.upper_rate_limit
-            is_lower = lower_limit and data.get('rate') < lower_limit
-            is_upper = upper_limit and data.get('rate') > upper_limit
+            is_lower = lower_limit and rate < lower_limit
+            is_upper = upper_limit and rate > upper_limit
             if is_lower or is_upper:
                 raise exceptions.ValidationError({
                     'rate': _('Rate should be between {} and {}')
