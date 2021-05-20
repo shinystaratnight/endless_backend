@@ -432,14 +432,14 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
         if self.instance.pk:
             # validate sent fields
-            if wage_type in [0,2]:
-                if not data.get('shift_started_at'):
-                    raise exceptions.ValidationError({'shift_started_at': _('You need to fill in the start time of the shift')})
-                if not data.get('shift_ended_at'):
-                    raise exceptions.ValidationError({'shift_ended_at': _('You need to fill in the end time of the shift')})
-            if wage_type in [1,2]:
-                if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
-                    raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
+            # if wage_type in [0,2]:
+            #     if not data.get('shift_started_at'):
+            #         raise exceptions.ValidationError({'shift_started_at': _('You need to fill in the start time of the shift')})
+            #     if not data.get('shift_ended_at'):
+            #         raise exceptions.ValidationError({'shift_ended_at': _('You need to fill in the end time of the shift')})
+            # if wage_type in [1,2]:
+            #     if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
+            #         raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
 
             if shift_started_at and shift_ended_at:
                 shift_date = self.instance.job_offer.shift.shift_date_at_tz
