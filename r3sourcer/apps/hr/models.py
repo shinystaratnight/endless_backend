@@ -2535,13 +2535,13 @@ class JobTag(UUIDModel):
     tag = models.ForeignKey(
         core_models.Tag,
         related_name="job_tags",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Tag")
     )
 
     job = models.ForeignKey(
         Job,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="tags",
         verbose_name=_("Job")
     )

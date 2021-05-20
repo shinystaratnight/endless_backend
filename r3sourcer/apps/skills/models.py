@@ -217,13 +217,13 @@ class SkillTag(UUIDModel):
     tag = models.ForeignKey(
         'core.Tag',
         related_name="skill_tags",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Tag")
     )
 
     skill = models.ForeignKey(
         'skills.Skill',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="skill_tags",
         verbose_name=_("Skill")
     )
