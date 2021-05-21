@@ -1287,6 +1287,12 @@ class Company(CategoryFolderMixin,
             return self.company_addresses.filter(hq=True).first()
         return None
 
+    def vat_name(self):
+        try:
+            return VAT.objects.filter(country=self.get_hq_address().company.country).first().name
+        except:
+            return None
+
     def is_business_id_set(self):
         return bool(self.business_id)
     is_business_id_set.short_description = _("Business id didn't set")
