@@ -1636,6 +1636,30 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         self.update_status(False)
 
+        hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
+                                                skill_name=self.job_offer.job.position.name) \
+                                        .first()
+        hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
+        other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
+
+        # add or modify hourly_rate skill activity if we have hourly or combined wage
+        if self.candidate_submitted_at and self.wage_type in [0,2]:
+            if hourly_activity:
+                hourly_activity.value = self.shift_duration.total_seconds()/3600
+                hourly_activity.rate = self.get_hourly_rate
+                hourly_activity.save()
+            else:
+                self.timesheet_rates.create(worktype=hourly_work,
+                                            value=self.shift_duration.total_seconds()/3600,
+                                            rate=self.get_hourly_rate)
+
+        # set wage_type to HOURLY_WORK if skill activities is not added
+        if self.candidate_submitted_at:
+            if hourly_activity and not other_activities and self.wage_type in [1,2]:
+                self.wage_type = Job.WAGE_CHOICES.HOURLY
+            if hourly_activity and other_activities and self.wage_type in [0,1]:
+                self.wage_type = Job.WAGE_CHOICES.COMBINED
+
         super().save(*args, **kwargs)
 
         if just_added and self.is_allowed(10):
@@ -1654,22 +1678,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         if candidate_submitted_at and self.supervisor and not self.supervisor_approved_at:
             hr_utils.send_supervisor_timesheet_approve(self)
-
-        # add or modify hourly_rate skill activity if we have hourly or combined wage
-        if self.candidate_submitted_at and self.wage_type in [0,2]:
-            hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
-                                                  skill_name=self.job_offer.job.position.name) \
-                                          .first()
-            hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
-            if hourly_activity:
-                hourly_activity.value = self.shift_duration.total_seconds()/3600
-                hourly_activity.rate = self.get_hourly_rate
-                hourly_activity.save()
-            else:
-                self.timesheet_rates.create(worktype=hourly_work,
-                                            value=self.shift_duration.total_seconds()/3600,
-                                            rate=self.get_hourly_rate)
-
 
 
 class TimeSheetIssue(
