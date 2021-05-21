@@ -1455,6 +1455,23 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             return self.break_ended_at - self.break_started_at
         return timedelta()
 
+    @property
+    def shift_duration(self):
+        return self.shift_delta - self.break_delta
+
+    @property
+    def get_hourly_rate(self):
+        if self.candidate_rate:
+            return self.candidate_rate
+        elif self.job_offer.shift.hourly_rate:
+            return self.job_offer.shift.hourly_rate
+        elif self.job_offer.shift.hourly_rate:
+            return self.job_offer.shift.hourly_rate
+        elif self.job_offer.shift.date.hourly_rate:
+            return self.job_offer.shift.date.hourly_rate
+        else:
+            return self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
+
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
         self.supervisor_approved_at = utc_now()
@@ -1592,10 +1609,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         if just_added:
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
-            # Set wage_type from Job.wage_type
-            if not self.wage_type and self.job_offer:
-                self.wage_type = self.job_offer.job.wage_type
-
             if utc_now() <= self.shift_started_at:
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
                 pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
@@ -1604,6 +1617,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                     self._send_going_to_work(going_eta)
                 else:
                     self.going_to_work_confirmation = True
+            # Set wage_type from Job.wage_type
+            if not self.wage_type and self.job_offer:
+                self.wage_type = self.job_offer.job.wage_type
         else:
             if self.candidate_submitted_at is not None and self.is_allowed(30):
                 self.create_state(30)
@@ -1619,6 +1635,30 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             self.supervisor_modified = True
 
         self.update_status(False)
+
+        hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
+                                                skill_name=self.job_offer.job.position.name) \
+                                        .first()
+        hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
+        other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
+
+        # add or modify hourly_rate skill activity if we have hourly or combined wage
+        if self.candidate_submitted_at and self.wage_type in [0,2]:
+            if hourly_activity:
+                hourly_activity.value = self.shift_duration.total_seconds()/3600
+                hourly_activity.rate = self.get_hourly_rate
+                hourly_activity.save()
+            else:
+                self.timesheet_rates.create(worktype=hourly_work,
+                                            value=self.shift_duration.total_seconds()/3600,
+                                            rate=self.get_hourly_rate)
+
+        # set wage_type to HOURLY_WORK if skill activities is not added
+        if self.candidate_submitted_at:
+            if hourly_activity and not other_activities and self.wage_type in [1,2]:
+                self.wage_type = Job.WAGE_CHOICES.HOURLY
+            if hourly_activity and other_activities and self.wage_type in [0,1]:
+                self.wage_type = Job.WAGE_CHOICES.COMBINED
 
         super().save(*args, **kwargs)
 
@@ -2535,13 +2575,13 @@ class JobTag(UUIDModel):
     tag = models.ForeignKey(
         core_models.Tag,
         related_name="job_tags",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Tag")
     )
 
     job = models.ForeignKey(
         Job,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="tags",
         verbose_name=_("Job")
     )

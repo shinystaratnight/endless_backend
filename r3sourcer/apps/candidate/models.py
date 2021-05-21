@@ -647,7 +647,7 @@ class TagRel(UUIDModel):
     tag = models.ForeignKey(
         'core.Tag',
         related_name="tag_rels",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Tag")
     )
 
