@@ -1359,7 +1359,7 @@ class CompanyListSerializer(
 ):
     method_fields = (
         'manager', 'terms_of_pay', 'regular_company_rel', 'master_company', 'state', 'city', 'credit_approved',
-        'address', 'manager_phone', 'myob_name', 'industries'
+        'address', 'manager_phone', 'myob_name', 'industries', 'vat_name'
     )
 
     invoice_rule = InvoiceRuleSerializer(required=False)
@@ -1490,6 +1490,8 @@ class CompanyListSerializer(
         queryset = core_models.CompanyIndustryRel.objects.filter(company=obj)
         return [CompanyIndustrySerializer(q).data for q in queryset]
 
+    def get_vat_name(self, company):
+        return company.vat_name()
 
 class FormFieldSerializer(ApiBaseModelSerializer):
 
