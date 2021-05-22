@@ -1289,7 +1289,7 @@ class Company(CategoryFolderMixin,
 
     def vat_name(self):
         try:
-            return VAT.objects.filter(country=self.get_hq_address().company.country).first().name
+            return VAT.objects.get(country=self.get_hq_address().company.country).name
         except:
             return None
 
@@ -2181,6 +2181,9 @@ class VAT(UUIDModel):
     class Meta:
         verbose_name = _("VAT")
         verbose_name_plural = _("VATs")
+
+    def __str__(self):
+        return f'{self.country.name} - {self.name}'
 
     @classmethod
     def is_owned(cls):
