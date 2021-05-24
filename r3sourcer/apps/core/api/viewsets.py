@@ -8,6 +8,7 @@ from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q, ForeignKey, FileField
+from django.db.models.deletion import ProtectedError
 from django.forms import model_to_dict
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
@@ -167,6 +168,21 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return {
             k: v for k, v in data.items() if v is not None
         }
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            raise exceptions.ValidationError({
+                'errors': {
+                    'valid': False,
+                    'message': 'Data you are trying to delete has relationships to other parts of database so this '
+                               'cannot be deleted! '
+                },
+                'status': 'error'
+            })
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ContactViewset(GoogleAddressMixin, BaseApiViewset):
