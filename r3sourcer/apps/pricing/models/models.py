@@ -193,7 +193,7 @@ class PriceList(PriceListMixin, TimeZoneUUIDModel):
     approved_by = models.ForeignKey(
         'core.CompanyContact',
         related_name="price_lists",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name=_("Approved By")
