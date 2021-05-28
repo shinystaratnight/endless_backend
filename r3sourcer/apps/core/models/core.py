@@ -1287,6 +1287,12 @@ class Company(CategoryFolderMixin,
             return self.company_addresses.filter(hq=True).first()
         return None
 
+    def vat_name(self):
+        try:
+            return VAT.objects.get(country=self.get_hq_address().company.country).name
+        except:
+            return None
+
     def is_business_id_set(self):
         return bool(self.business_id)
     is_business_id_set.short_description = _("Business id didn't set")
@@ -1482,6 +1488,10 @@ class Company(CategoryFolderMixin,
         if hq_address:
             return hq_address.address.country.code2
         return 'EE' # TODO: refactor this
+
+    def get_vat(self):
+        company = self.get_closest_master_company()
+        return VAT.get_vat(company.get_country_code()).first()
 
     @classmethod
     def owned_by_lookups(cls, owner):
@@ -2173,7 +2183,7 @@ class VAT(UUIDModel):
         verbose_name_plural = _("VATs")
 
     def __str__(self):
-        return f"{self.country} - {self.name}"
+        return f'{self.country.name} - {self.name}'
 
     @classmethod
     def is_owned(cls):

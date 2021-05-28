@@ -24,7 +24,7 @@ class JobEndpoint(ApiEndpoint):
     filter_class = hr_filters.JobFilter
     search_fields = (
         'workers', 'jobsite__address__city__search_names', 'publish_on', 'expires_on', 'position__name__name',
-        'jobsite__address__street_address', 'jobsite__master_company__name'
+        'jobsite__address__street_address', 'jobsite__master_company__name', 'jobsite__regular_company__name'
     )
 
 
