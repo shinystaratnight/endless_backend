@@ -172,6 +172,16 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
             value = normalize_phone_number(value, country_code)
         return value
 
+    def validate(self, data):
+        # restrict disabling both notification channels
+        message_by_sms = data.get('message_by_sms')
+        message_by_email = data.get('message_by_email')
+        if not message_by_email and not message_by_sms:
+            raise exceptions.ValidationError({
+                'message_by_email': _('At least one notofication channel should be active')
+            })
+        return data
+
     def get_average_score(self, obj):
         if not obj:
             return

@@ -123,8 +123,8 @@ class Migration(migrations.Migration):
             name='superannuation_membership_number',
             field=models.CharField(blank=True, max_length=255, null=True, verbose_name='Employee Membership Number'),
         ),
-        migrations.RunPython(fetch_superannuation_funds, migrations.RunPython.noop),
-        migrations.RunPython(migrate_superannuation_fund, migrations.RunPython.noop),
+        # migrations.RunPython(fetch_superannuation_funds, migrations.RunPython.noop),
+        # migrations.RunPython(migrate_superannuation_fund, migrations.RunPython.noop),
         migrations.RemoveField(
             model_name='candidatecontact',
             name='superannuation_fund',

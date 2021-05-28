@@ -10,8 +10,8 @@ from ...helpers.admin.filters import LanguageListFilter, CompanyListFilter
 
 class SMSTemplateAdmin(admin.ModelAdmin):
     # prepopulated_fields = {"slug": ("name",)}
-    list_display = ['company', 'name', 'language_name']
-    ordering = ['company', 'name', 'language']
+    list_display = ['name', 'company', 'slug', 'language_name']
+    ordering = ['company', 'slug', 'language']
     list_filter = (CompanyListFilter, LanguageListFilter, 'name')
 
     @classmethod
@@ -52,7 +52,7 @@ create_with_languages.short_description = 'Copy template with selected language'
 
 class DefaultSMSTemplateAdmin(admin.ModelAdmin):
     # prepopulated_fields = {"slug": ("name",)}
-    list_display = ['name', 'language_name']
+    list_display = ['name', 'slug', 'language_name']
     ordering = ['name', 'language']
     search_fields = ['name']
     list_filter = (LanguageListFilter, 'name')
@@ -65,7 +65,7 @@ class DefaultSMSTemplateAdmin(admin.ModelAdmin):
 
 
 class SMSMessageAdmin(admin.ModelAdmin):
-    list_display = ['sent_at', '__str__', 'company', 'related_content_type', 'text']
+    list_display = ['__str__', 'template', 'sent_at', 'company', 'related_content_type', 'text']
 
 
 admin.site.register(models.SMSMessage, SMSMessageAdmin)

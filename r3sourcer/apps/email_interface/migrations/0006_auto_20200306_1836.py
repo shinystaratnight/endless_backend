@@ -72,7 +72,7 @@ class Migration(migrations.Migration):
             name='emailtemplate',
             unique_together=set([('company', 'name', 'slug')]),
         ),
-        migrations.RunPython(load_default_email_templates_from_fixture,
-                             delete_default_email_templates),
-        migrations.RunPython(propagate_default_email_templates),
+        # migrations.RunPython(load_default_email_templates_from_fixture,
+        #                      delete_default_email_templates),
+        # migrations.RunPython(propagate_default_email_templates),
     ]
