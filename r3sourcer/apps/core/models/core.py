@@ -2172,6 +2172,9 @@ class VAT(UUIDModel):
         verbose_name = _("VAT")
         verbose_name_plural = _("VATs")
 
+    def __str__(self):
+        return f"{self.country} - {self.name}"
+
     @classmethod
     def is_owned(cls):
         return False

@@ -29,8 +29,8 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_default_sms_templates_from_fixture,
-                             delete_default_sms_templates),
-        migrations.RunPython(load_sms_templates_from_fixture,
-                             delete_sms_templates),
+        # migrations.RunPython(load_default_sms_templates_from_fixture,
+        #                      delete_default_sms_templates),
+        # migrations.RunPython(load_sms_templates_from_fixture,
+        #                      delete_sms_templates),
     ]

@@ -21,7 +21,7 @@ class TestVOTasks:
     @freezegun.freeze_time(tz.localize(datetime(2017, 1, 1, 7)))
     @mock.patch('r3sourcer.apps.hr.tasks.get_sms_service')
     def test_send_job_offer_sms(self, mock_sms_service, job_offer):
-        hr_tasks.send_job_offer(job_offer, 'tpl')
+        hr_tasks.send_job_offer(job_offer, 'job-offer-1st')
 
         assert mock_sms_service.return_value.send_tpl.called
 

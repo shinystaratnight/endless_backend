@@ -164,7 +164,7 @@ class TestSMSMessage:
     def test_has_no_contact_relation(self, contact):
         sms_message = SMSMessage.objects.create(
             from_number='+12345987601',
-            to_number='+12345678901',
+            to_number='+12345987601',
             sent_at=timezone.now(),
             type=SMSMessage.TYPE_CHOICES.RECEIVED,
         )

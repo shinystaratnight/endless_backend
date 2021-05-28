@@ -54,5 +54,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_new_default_sms_templates_from_fixture),
+        # migrations.RunPython(load_new_default_sms_templates_from_fixture),
     ]

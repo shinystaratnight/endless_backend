@@ -33,5 +33,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(propagate_default_sms_templates),
+        # migrations.RunPython(propagate_default_sms_templates),
     ]
