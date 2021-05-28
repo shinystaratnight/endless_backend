@@ -1,6 +1,7 @@
 import logging
 from abc import ABCMeta, abstractmethod
 
+from django.conf import settings
 from django.db import transaction
 from phonenumber_field.phonenumber import PhoneNumber
 
@@ -40,12 +41,12 @@ class BaseSMSService(metaclass=ABCMeta):
 
         if template is None:
             logger.exception('Cannot find sms template with name %s', tpl_name)
-            raise Exception('Cannot find sms template with name:', tpl_name)
+            # raise Exception('Cannot find sms template with name:', tpl_name)
 
         return template
 
     @transaction.atomic
-    def send(self, to_number, text, from_number, related_obj, **kwargs):
+    def send(self, to_number, text, from_number, related_obj=[], **kwargs):
         if isinstance(to_number, PhoneNumber):
             to_number = to_number.as_e164
 
@@ -95,17 +96,18 @@ class BaseSMSService(metaclass=ABCMeta):
         return sms_message
 
     @transaction.atomic
-    def send_tpl(self, contact_obj, master_company, tpl_name, related_obj, from_number=None, **kwargs):
+    def send_tpl(self, contact_obj, master_company, tpl_name, related_obj=[], from_number=None, **kwargs):
 
         template = self.get_template(contact_obj, master_company, tpl_name)
 
-        message = template.compile(**kwargs)['text']
-        sms_message = self.send(contact_obj.phone_mobile, message, from_number, related_obj, **kwargs)
-        if sms_message is not None:
-            sms_message.template = template
-            sms_message.save()
+        if template:
+            message = template.compile(**kwargs)['text']
+            sms_message = self.send(contact_obj.phone_mobile, message, from_number, related_obj, **kwargs)
+            if sms_message is not None:
+                sms_message.template = template
+                sms_message.save()
 
-        return sms_message
+            return sms_message
 
     @abstractmethod
     def process_sms_send(self, sms_message):
@@ -139,7 +141,6 @@ class BaseSMSService(metaclass=ABCMeta):
             sms_message.type, sms_message.id, sms_message
         )
 
-        # ac = self.activity_service.on_new_sms_message(sms_message)
         if sms_message.status == SMSMessage.STATUS_CHOICES.RECEIVED:
             sent_message = sms_message.get_sent_by_reply()
         else:
