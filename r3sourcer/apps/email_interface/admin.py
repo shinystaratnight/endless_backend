@@ -10,7 +10,7 @@ from r3sourcer.helpers.admin.filters import LanguageListFilter, CompanyListFilte
 
 class EmailTemplateAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
-    list_display = ['company', 'name', 'slug', 'language_name']
+    list_display = ['name', 'company', 'slug', 'language_name']
     ordering = ['company', 'slug', 'language']
     list_filter = (CompanyListFilter, LanguageListFilter, 'name')
 

@@ -14,7 +14,6 @@ from r3sourcer.apps.billing import models as billing_models
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.email_interface.utils import get_email_service
-from r3sourcer.apps.sms_interface.helpers import get_sms_template
 from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 
@@ -52,11 +51,9 @@ def send_verify_sms(self, candidate_contact_id, workflow_object_id=None):
             logger.info('Sending phone verify SMS to %s.', candidate.contact)
 
             master_company = candidate.contact.get_closest_company()
-            sms_template = get_sms_template(company_id=master_company.id,
-                                            contact_id=candidate.contact_id,
-                                            slug=sms_tpl)
-            sms_interface.send_tpl(to_number=candidate.contact.phone_mobile,
-                                   tpl_id=sms_template.id,
+            sms_interface.send_tpl(candidate.contact,
+                                   master_company,
+                                   sms_tpl,
                                    **data_dict)
 
 
@@ -171,8 +168,9 @@ def update_superannuation_fund_list():
         candidate_models.SuperannuationFund.objects.bulk_create(batch)
 
 
-@shared_task()                                        # updated to service changes
+@shared_task()
 def send_candidate_consent_message(candidaterel_id, data_dict):
+    tpl_name='consent-message'
     try:
         candidate_rel = candidate_models.CandidateRel.objects.get(id=candidaterel_id)
     except candidate_models.CandidateRel.DoesNotExist:
@@ -187,24 +185,20 @@ def send_candidate_consent_message(candidaterel_id, data_dict):
             sms_interface = get_sms_service()
         except ImportError:
             logger.exception('Cannot load SMS service')
-            return
-
-        sms_template = get_sms_template(company_id=candidate_rel.master_company_id,
-                                        contact_id=candidate_contact.contact.id,
-                                        slug='consent-sms-message')
-        sms_interface.send_tpl(to_number=candidate_contact.contact.phone_mobile,
-                               tpl_id=sms_template.id,
-                               check_reply=True,
-                               **data_dict)
+        else:
+            sms_interface.send_tpl(candidate_contact.contact,
+                                candidate_rel.master_company,
+                                tpl_name,
+                                check_reply=True,
+                                **data_dict)
 
     if candidate_contact.message_by_email:
         try:
             email_interface = get_email_service()
         except ImportError:
             logger.exception('Cannot load Email service')
-            return
-
-        email_interface.send_tpl(candidate_contact.contact,
-                                 candidate_rel.master_company,
-                                 tpl_name='consent-email-message',
-                                 **data_dict)
+        else:
+            email_interface.send_tpl(candidate_contact.contact,
+                                    candidate_rel.master_company,
+                                    tpl_name,
+                                    **data_dict)

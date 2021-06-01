@@ -5,6 +5,8 @@ import pytz
 import stripe
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
@@ -227,6 +229,12 @@ class SMSBalance(models.Model):
     @classmethod
     def use_logger(cls):
         return True
+
+
+@receiver(pre_delete, sender=SMSBalance)
+def smsbalance_delete(sender, instance, **kwargs):
+    raise Exception
+
 
 class Payment(CompanyTimeZoneMixin):
     PAYMENT_TYPES = Choices(

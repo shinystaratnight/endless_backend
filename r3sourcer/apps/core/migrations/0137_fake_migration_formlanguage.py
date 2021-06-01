@@ -12,19 +12,19 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        # migrations.AlterUniqueTogether(
-        #     name='formlanguage',
-        #     unique_together=set([]),
-        # ),
-        # migrations.RemoveField(
-        #     model_name='formlanguage',
-        #     name='form',
-        # ),
-        # migrations.RemoveField(
-        #     model_name='formlanguage',
-        #     name='language',
-        # ),
-        # migrations.DeleteModel(
-        #     name='FormLanguage',
-        # ),
+        migrations.AlterUniqueTogether(
+            name='formlanguage',
+            unique_together=set([]),
+        ),
+        migrations.RemoveField(
+            model_name='formlanguage',
+            name='form',
+        ),
+        migrations.RemoveField(
+            model_name='formlanguage',
+            name='language',
+        ),
+        migrations.DeleteModel(
+            name='FormLanguage',
+        ),
     ]

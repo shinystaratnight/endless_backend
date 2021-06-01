@@ -238,7 +238,7 @@ def fetch_payments():
 
 
 @shared_task
-def send_sms_payment_reminder():                                                       # updated to service changes
+def send_sms_payment_reminder():
     balance_objects = SMSBalance.objects.filter(company__type='master',
                                                 last_payment__status='not_paid')
     one_day_objects = balance_objects.filter(last_payment__created__gte=utc_now() - timedelta(days=1))
@@ -249,12 +249,12 @@ def send_sms_payment_reminder():                                                
     for sms_balance in one_day_objects:
         email_interface.send_tpl(sms_balance.company.primary_contact.contact,
                                  sms_balance.company,
-                                 tpl_name='sms_payment_reminder_24')
+                                 tpl_name='sms-payment-reminder-24')
 
     for sms_balance in two_days_objects:
         email_interface.send_tpl(sms_balance.company.primary_contact.contact,
                                  sms_balance.company,
-                                 tpl_name='sms_payment_reminder_48')
+                                 tpl_name='sms-payment-reminder-48')
 
 
 @shared_task

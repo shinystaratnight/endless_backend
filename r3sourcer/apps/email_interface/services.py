@@ -43,7 +43,7 @@ class BaseEmailService(metaclass=ABCMeta):
 
         if template is None:
             logger.exception('Cannot find email template with name %s', tpl_name)
-            raise Exception('Cannot find email template with name:', tpl_name)
+            # raise Exception('Cannot find email template with name:', tpl_name)
 
         return template
 
@@ -103,16 +103,17 @@ class BaseEmailService(metaclass=ABCMeta):
                 email_message.save()
 
     @transaction.atomic
-    def send_tpl(self, contact_obj, master_company, tpl_name, from_email=None, **kwargs):
+    def send_tpl(self, contact_obj, master_company_obj, tpl_name, from_email=None, **kwargs):
 
-        template = self.get_template(contact_obj, master_company, tpl_name)
+        template = self.get_template(contact_obj, master_company_obj, tpl_name)
 
-        compiled = template.compile(**kwargs)
-        subject = compiled['subject']
-        self.send(contact_obj.email, subject, compiled['text'],
-                  html_message=compiled['html'], from_email=from_email, template=template,
-                  **kwargs
-        )
+        if template:
+            compiled = template.compile(**kwargs)
+            subject = compiled['subject']
+            self.send(contact_obj.email, subject, compiled['text'],
+                    html_message=compiled['html'], from_email=from_email, template=template,
+                    **kwargs
+            )
 
     @abstractmethod
     def process_email_send(self, email_message):

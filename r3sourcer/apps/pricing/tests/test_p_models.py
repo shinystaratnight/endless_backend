@@ -26,7 +26,7 @@ str_test_data = [
     (PriceList(company=Company(name='company', fake_wf=True), valid_from=date(2017, 1, 1),
                valid_until=date(2017, 2, 1)),
         'company: 01/01/2017 - 01/02/2017'),
-    (PriceListRate(skill=skill_f, hourly_rate=1.23), 'skill: $1.23/h'),
+    (PriceListRate(skill=skill_f, default_rate=1.23), 'skill: $1.23/h'),
     (RateCoefficientGroup(name='group'), 'group'),
     (rate_coeff_fake, 'coefficient'),
     (RateCoefficientModifier(rate_coefficient=rate_coeff_fake,

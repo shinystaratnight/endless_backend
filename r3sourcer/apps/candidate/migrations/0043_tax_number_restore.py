@@ -40,5 +40,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_tax_numbers),
+        # migrations.RunPython(load_tax_numbers),
     ]

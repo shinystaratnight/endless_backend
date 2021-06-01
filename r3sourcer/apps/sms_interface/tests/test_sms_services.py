@@ -54,17 +54,17 @@ class TestSMSServices:
 
         return sent_sms
 
-    @pytest.fixture
-    def sms_activity(self):
-        ac = mock.Mock()
-        ac.create_activity = mock.Mock()
+    # @pytest.fixture
+    # def sms_activity(self):
+    #     ac = mock.Mock()
+    #     ac.create_activity = mock.Mock()
 
-        from_contact = mock.PropertyMock()
-        to_contact = mock.PropertyMock()
-        type(ac).from_contact = from_contact
-        type(ac).to_contact = to_contact
+    #     from_contact = mock.PropertyMock()
+    #     to_contact = mock.PropertyMock()
+    #     type(ac).from_contact = from_contact
+    #     type(ac).to_contact = to_contact
 
-        return ac
+    #     return ac
 
     def test_get_default_fake_sms_service(self):
         service = get_sms_service()
@@ -136,6 +136,7 @@ class TestSMSServices:
     def test_fake_sms_service_send(
         self, mock_get_service, mock_can_send, mock_factory, mock_master, twilio_account, phone_number, company
     ):
+        company.sms_enabled=True
         mock_can_send.return_value = company
         mock_master.return_value = company
 
@@ -155,6 +156,8 @@ class TestSMSServices:
     def test_send_sms_text(
         self, mock_sms_send, mock_can_send, mock_factory, contact, twilio_account, phone_number, company
     ):
+        company.sms_enabled=True
+        company.sms_balance.balance = 10
         mock_sms_send.return_value = None
         mock_can_send.return_value = company
 
@@ -172,6 +175,8 @@ class TestSMSServices:
     def test_send_sms_text_service_exception(
         self, mock_sms_send, mock_can_send, mock_factory, contact, twilio_account, phone_number, company
     ):
+        company.sms_enabled=True
+        company.sms_balance.balance = 10
         mock_sms_send.side_effect = SMSServiceError
         mock_can_send.return_value = company
 
@@ -203,7 +208,7 @@ class TestSMSServices:
         service._process_sms(fake_sms)
 
         assert SMSMessage.objects.all().count() == 1
-        assert not mock_log.info.called
+        assert mock_log.info.called
 
     @mock.patch.object(factory, 'get_instance')
     @mock.patch.object(SMSMessage, 'get_sent_by_reply')
@@ -222,20 +227,6 @@ class TestSMSServices:
         assert SMSMessage.objects.all().count() == 1
         assert mock_log.info.called
 
-    def test_get_activity_service_settings(self, settings):
-        settings.ACTIVITY_SERVICE_CLASS = mock.Mock
-        service = SMSTestService()
-
-        assert isinstance(service.activity_service, mock.Mock)
-
-    @mock.patch('r3sourcer.apps.sms_interface.services.factory')
-    def test_get_activity_service_factory(self, mock_factory, settings):
-        mock_factory.return_value.get.return_value = mock.Mock
-
-        service = SMSTestService()
-
-        assert isinstance(service.activity_service, mock.Mock)
-
     @mock.patch('r3sourcer.apps.sms_interface.services.logger')
     def test_process_sms_answer_no_contact_relation(self, mock_log, fake_sms):
         mock_contact_relation = mock.Mock()
@@ -244,68 +235,45 @@ class TestSMSServices:
 
         service = SMSTestService()
 
-        service.process_sms_answer(fake_sms, None, mock.Mock())
+        service.process_sms_answer(fake_sms, None)
 
         assert mock_log.error.called
 
     def test_get_related_object_exists(self, service, fake_sms,
-                                       sent_sms, sms_activity):
-        related = service._get_related_object(
-            fake_sms, sent_sms, sms_activity
-        )
+                                       sent_sms):
+        related = sent_sms.get_related_objects()
 
         assert related is not None
 
-    def test_get_related_object_sent_sms_none(self, service, fake_sms,
-                                              sms_activity):
-        related = service._get_related_object(
-            fake_sms, None, sms_activity
-        )
-
-        assert related is None
-        assert sms_activity.create_activity.called
-
-    def test_get_related_object_not_exists(self, service, fake_sms,
-                                           sent_sms, sms_activity):
-        mock_related = mock.PropertyMock(return_value=None)
-        type(sent_sms).related_object = mock_related
-
-        related = service._get_related_object(
-            fake_sms, sent_sms, sms_activity
-        )
-
-        assert related is None
-
-    def test_is_positive_true(self, service, fake_sms, sms_activity):
+    def test_is_positive_true(self, service, fake_sms):
         with mock.patch.object(SMSMessage, 'is_positive_answer', return_value=True):
-            positive = service._is_positive(fake_sms, sms_activity)
+            positive = service._is_positive(fake_sms)
 
             assert positive
 
-    def test_is_positive_false(self, service, fake_sms, sms_activity):
+    def test_is_positive_false(self, service, fake_sms):
         with mock.patch.object(SMSMessage, 'is_positive_answer', return_value=False):
             with mock.patch.object(SMSMessage, 'is_negative_answer', return_value=True):
-                positive = service._is_positive(fake_sms, sms_activity)
+                positive = service._is_positive(fake_sms)
 
                 assert not positive
-                assert sms_activity.create_activity.called
 
-    def test_is_positive_none(self, service, fake_sms, sms_activity):
+    def test_is_positive_none(self, service, fake_sms):
         with mock.patch.object(SMSMessage, 'is_positive_answer', return_value=False):
             with mock.patch.object(SMSMessage, 'is_negative_answer', return_value=False):
-                positive = service._is_positive(fake_sms, sms_activity)
+                positive = service._is_positive(fake_sms)
 
                 assert positive is None
 
     def test_process_sms_answer_sms_sent_exists(self, service, fake_sms,
-                                                sent_sms, sms_activity):
+                                                sent_sms):
         fake_sms_mock_kwargs = {
             'target': SMSMessage,
             'attribute': 'add_related_objects',
             'return_value': None,
         }
         with mock.patch.object(**fake_sms_mock_kwargs) as mock_add_related:
-            service.process_sms_answer(fake_sms, sent_sms, sms_activity)
+            service.process_sms_answer(fake_sms, sent_sms)
 
             assert mock_add_related.called
             assert sent_sms.no_check_reply.called
@@ -314,7 +282,7 @@ class TestSMSServices:
     @mock.patch.object(SMSMessage, 'is_late_reply', return_value=True)
     def test_process_sms_answer_sms_sent_not_exists_late_reply(
                 self, mock_late_reply, mock_add_related, service, fake_sms,
-                sent_sms, sms_activity
+                sent_sms
             ):
         fake_sms_mock_kwargs = {
             'target': SMSMessage,
@@ -322,7 +290,7 @@ class TestSMSServices:
             'return_value': sent_sms,
         }
         with mock.patch.object(**fake_sms_mock_kwargs) as mock_sent_by_reply:
-            service.process_sms_answer(fake_sms, None, sms_activity)
+            service.process_sms_answer(fake_sms, None)
 
             assert mock_sent_by_reply.called
             assert mock_add_related.called
@@ -332,7 +300,7 @@ class TestSMSServices:
     @mock.patch.object(SMSMessage, 'is_late_reply', return_value=False)
     def test_process_sms_answer_sms_sent_not_exists_not_late_reply(
                 self, mock_late_reply, mock_add_related, service, fake_sms,
-                sent_sms, sms_activity
+                sent_sms
             ):
         fake_sms_mock_kwargs = {
             'target': SMSMessage,
@@ -340,80 +308,68 @@ class TestSMSServices:
             'return_value': sent_sms,
         }
         with mock.patch.object(**fake_sms_mock_kwargs) as mock_sent_by_reply:
-            service.process_sms_answer(fake_sms, None, sms_activity)
+            service.process_sms_answer(fake_sms, None)
 
             assert not mock_sent_by_reply.called
             assert not mock_add_related.called
 
-    @mock.patch.object(SMSTestService, '_get_related_object')
-    def test_process_sms_answer_can_process(
-                self, mock_related, service, fake_sms, sent_sms, sms_activity
-            ):
-        related = mock.Mock()
-        mock_related.return_value = related
-        service.process_sms_answer(fake_sms, None, sms_activity)
+    # @mock.patch.object(SMSTestService, 'process_sms_reply')
+    # def test_process_sms_answer_can_process(
+    #             self, service, fake_sms, sent_sms
+    #         ):
+    #     related = mock.Mock()
+    #     mock_related = mock.PropertyMock()
+    #     mock_related.return_value = related
+    #     service.process_sms_answer(fake_sms, None)
 
-        assert related.process_sms_reply.called
+    #     assert related.process_sms_reply.called
 
-    @mock.patch.object(SMSTestService, '_get_related_object')
-    def test_process_sms_answer_cannot_process(
-                self, mock_related, service, fake_sms, sent_sms, sms_activity
-            ):
-        mock_related.return_value = None
-        service.process_sms_answer(fake_sms, None, sms_activity)
+    # @mock.patch.object(SMSTestService, '_get_related_object')
+    # def test_process_sms_answer_cannot_process(
+    #             self, mock_related, service, fake_sms, sent_sms, sms_activity
+    #         ):
+    #     mock_related.return_value = None
+    #     service.process_sms_answer(fake_sms, None, sms_activity)
 
-        assert not mock_related.process_sms_reply.called
+    #     assert not mock_related.process_sms_reply.called
 
-    @mock.patch.object(SMSTestService, 'send')
-    @mock.patch.object(SMSMessage, 'add_related_objects')
-    def test_process_ambiguous_answer_has_sent_message(
-                self, mock_add_related_objs, mock_send,
-                service, fake_sms, sent_sms, sms_activity
-            ):
-        service.process_ambiguous_answer(fake_sms, sent_sms, sms_activity)
+    # @mock.patch.object(SMSTestService, 'send')
+    # @mock.patch.object(SMSMessage, 'add_related_objects')
+    # def test_process_ambiguous_answer_has_sent_message(
+    #             self, mock_add_related_objs, mock_send,
+    #             service, fake_sms, sent_sms, sms_activity
+    #         ):
+    #     service.process_ambiguous_answer(fake_sms, sent_sms, sms_activity)
 
-        assert mock_add_related_objs.called
-        assert sent_sms.get_related_objects.called
+    #     assert mock_add_related_objs.called
+    #     assert sent_sms.get_related_objects.called
 
-    @mock.patch.object(SMSTestService, 'send')
-    def test_process_ambiguous_answer_create_activity(
-                self, mock_send, service, fake_sms, sms_activity
-            ):
-        service.process_ambiguous_answer(fake_sms, None, sms_activity)
+    # @mock.patch.object(SMSTestService, 'send')
+    # def test_process_ambiguous_answer_create_activity(
+    #             self, mock_send, service, fake_sms, sms_activity
+    #         ):
+    #     service.process_ambiguous_answer(fake_sms, None, sms_activity)
 
-        assert sms_activity.create_activity.called
+    #     assert sms_activity.create_activity.called
 
-    @mock.patch.object(SMSTestService, 'send')
-    @mock.patch('r3sourcer.apps.sms_interface.services.get_phone_number')
-    def test_process_ambiguous_answer_to_from_company_contact_exists(
-        self, mock_get_phone, mock_send, service, fake_sms, sms_activity
-    ):
-        # sms_activity.from_contact.company_contact.last.return_value = None
+    # @mock.patch.object(SMSTestService, 'send')
+    # @mock.patch('r3sourcer.apps.sms_interface.services.get_phone_number')
+    # def test_process_ambiguous_answer_to_from_company_contact_exists(
+    #     self, mock_get_phone, mock_send, service, fake_sms, sms_activity
+    # ):
+    #     # sms_activity.from_contact.company_contact.last.return_value = None
 
-        service.process_ambiguous_answer(fake_sms, None, sms_activity)
+    #     service.process_ambiguous_answer(fake_sms, None, sms_activity)
 
-        message_text = '{}: {}\n{}'.format(
-            str(sms_activity.from_contact), fake_sms.from_number, fake_sms.text
-        )
+    #     message_text = '{}: {}\n{}'.format(
+    #         str(sms_activity.from_contact), fake_sms.from_number, fake_sms.text
+    #     )
 
-        mock_send.assert_called_once_with(
-            sms_activity.to_contact.phone_mobile, message_text,
-            sms_activity.from_contact, from_number=mock_get_phone.return_value,
-            check_reply=False
-        )
-
-    @mock.patch.object(SMSTestService, 'process_sms_answer')
-    @mock.patch.object(SMSMessage, 'is_answer', return_value=True)
-    def test_process_sms_answer(self, mock_is_answer, mock_process_answer,
-                                service, fake_sms):
-        fake_sms.type = SMSMessage.TYPE_CHOICES.RECEIVED
-
-        mock_activity_service = mock.PropertyMock()
-        SMSTestService.activity_service = mock_activity_service
-
-        service._process_sms(fake_sms)
-
-        assert mock_process_answer.called
+    #     mock_send.assert_called_once_with(
+    #         sms_activity.to_contact.phone_mobile, message_text,
+    #         sms_activity.from_contact, from_number=mock_get_phone.return_value,
+    #         check_reply=False
+    #     )
 
     @mock.patch.object(Contact, 'objects')
     @mock.patch.object(SMSMessage, 'is_answer', return_value=False)
@@ -445,57 +401,51 @@ class TestSMSServices:
 
         mock_update.update.assert_called_once_with(is_available=True)
 
-    @mock.patch.object(Contact, 'objects')
-    @mock.patch.object(SMSMessage, 'is_answer', return_value=False)
-    @mock.patch.object(SMSMessage, 'is_login', return_value=True)
-    @mock.patch('r3sourcer.apps.sms_interface.services.factory.get_instance')
-    def test_process_sms_login_message_without_contact(
-                self, mock_get_instance, mock_is_stop, mock_is_answer,
-                mock_objects, service, fake_sms
-            ):
-        fake_sms.type = SMSMessage.TYPE_CHOICES.RECEIVED
+    # @mock.patch.object(Contact, 'objects')
+    # @mock.patch.object(SMSMessage, 'is_answer', return_value=False)
+    # @mock.patch.object(SMSMessage, 'is_login', return_value=True)
+    # @mock.patch('r3sourcer.apps.sms_interface.services.factory.get_instance')
+    # def test_process_sms_login_message_without_contact(
+    #             self, mock_get_instance, mock_is_stop, mock_is_answer,
+    #             mock_objects, service, fake_sms
+    #         ):
+    #     fake_sms.type = SMSMessage.TYPE_CHOICES.RECEIVED
 
-        mock_update = mock.Mock()
-        mock_objects.filter.return_value = mock_update
+    #     mock_update = mock.Mock()
+    #     mock_objects.filter.return_value = mock_update
 
-        mock_send_sms = mock.Mock()
-        mock_get_instance.return_value = mock_send_sms
+    #     mock_send_sms = mock.Mock()
+    #     mock_get_instance.return_value = mock_send_sms
 
-        service._process_sms(fake_sms)
+    #     service._process_sms(fake_sms)
 
-        mock_objects.filter.assert_called_once_with(phone_mobile=fake_sms.from_number)
-        assert mock_send_sms.send_login_sms.called
+    #     mock_objects.filter.assert_called_once_with(phone_mobile=fake_sms.from_number)
+    #     assert mock_send_sms.send_login_sms.called
 
-    @mock.patch.object(SMSTestService, 'process_ambiguous_answer')
-    @mock.patch.object(SMSMessage, 'is_answer', return_value=False)
-    def test_process_sms_ambiguous_answer(
-                self, mock_is_answer, mock_process_answer, service, fake_sms
-            ):
-        fake_sms.type = SMSMessage.TYPE_CHOICES.RECEIVED
+    # @mock.patch.object(SMSTestService, 'process_ambiguous_answer')
+    # @mock.patch.object(SMSMessage, 'is_answer', return_value=False)
+    # def test_process_sms_ambiguous_answer(
+    #             self, mock_is_answer, mock_process_answer, service, fake_sms
+    #         ):
+    #     fake_sms.type = SMSMessage.TYPE_CHOICES.RECEIVED
 
-        mock_activity_service = mock.PropertyMock()
-        SMSTestService.activity_service = mock_activity_service
+    #     mock_activity_service = mock.PropertyMock()
+    #     SMSTestService.activity_service = mock_activity_service
 
-        service._process_sms(fake_sms)
+    #     service._process_sms(fake_sms)
 
-        assert mock_process_answer.called
-
-    @mock.patch.object(SMSTestService, 'send')
-    def test_send_tpl(self, mock_send, service, sms_template):
-        service.send_tpl('+123456789012', 'SMS Template')
-
-        mock_send.assert_called_with('+123456789012', 'template', None, None)
+    #     assert mock_process_answer.called
 
     @mock.patch.object(SMSTestService, 'send')
-    def test_send_tpl_slug(self, mock_send, service, sms_template):
-        service.send_tpl('+123456789012', 'sms-template')
+    def test_send_tpl_slug(self, mock_send, service, sms_template, candidate_contact, company):
+        service.send_tpl(candidate_contact.contact, company, 'sms-template')
 
-        mock_send.assert_called_with('+123456789012', 'template', None, None)
+        mock_send.assert_called_with(candidate_contact.contact.phone_mobile, 'template', None, [])
 
     @mock.patch('r3sourcer.apps.sms_interface.services.logger')
     @mock.patch.object(SMSTestService, 'send')
-    def test_send_tpl_not_found(self, mock_send, mock_log, service):
-        service.send_tpl('+123456789012', 'sms')
+    def test_send_tpl_not_found(self, mock_send, mock_log, service, candidate_contact, company):
+        service.send_tpl(candidate_contact.contact, company, 'sms')
 
         assert mock_log.exception.called
         assert not mock_send.called
