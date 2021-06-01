@@ -103,9 +103,9 @@ class BaseEmailService(metaclass=ABCMeta):
                 email_message.save()
 
     @transaction.atomic
-    def send_tpl(self, contact_obj, master_company, tpl_name, from_email=None, **kwargs):
+    def send_tpl(self, contact_obj, master_company_obj, tpl_name, from_email=None, **kwargs):
 
-        template = self.get_template(contact_obj, master_company, tpl_name)
+        template = self.get_template(contact_obj, master_company_obj, tpl_name)
 
         if template:
             compiled = template.compile(**kwargs)
