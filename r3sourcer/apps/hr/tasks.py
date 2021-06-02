@@ -190,7 +190,7 @@ def send_jo_confirmation(self, job_offer_id):
     send_or_schedule_job_offer(job_offer_id,
                                task=send_jo_confirmation,
                                tpl_name='job-offer-1st',
-                               action_sent='offer_sent')
+                               action_sent='offer_sent_by_sms')
 
 
 @shared_task(bind=True, queue='sms')
@@ -198,7 +198,7 @@ def send_recurring_jo_confirmation(self, job_offer_id):
     send_or_schedule_job_offer(job_offer_id,
                                task=send_recurring_jo_confirmation,
                                tpl_name='job-offer-recurring',
-                               action_sent='offer_sent')
+                               action_sent='offer_sent_by_sms')
 
 
 def send_job_offer_notification(jo_id, tpl_name, recipient_field):
