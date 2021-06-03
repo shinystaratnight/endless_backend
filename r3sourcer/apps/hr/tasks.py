@@ -95,7 +95,7 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
             template_language = template.language.alpha_2
             job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
             if job_translation:
-                job_translationjob_translation = job_translation[0].get('value', job_offer.job)
+                job_translation = job_translation[0].get('value', job_offer.job)
                 data_dict['job_translation'] = job_translation
             else:
                 job_translation = job_offer.job.position.name
