@@ -1444,17 +1444,20 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     def shift_delta(self):
         if self.shift_ended_at and self.shift_started_at:
             return self.shift_ended_at - self.shift_started_at
-        return timedelta()
+        return None
 
     @property
     def break_delta(self):
         if self.break_ended_at and self.break_started_at:
             return self.break_ended_at - self.break_started_at
-        return timedelta()
+        return None
 
     @property
     def shift_duration(self):
-        return self.shift_delta - self.break_delta
+        try:
+            return self.shift_delta - self.break_delta
+        except:
+            return None
 
     @property
     def get_hourly_rate(self):
@@ -1562,8 +1565,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     def _datetime_fields(self, just_added):
         fields = [
-            ('shift_started_at', self.shift_started_at, self.today_7_am),
-            ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
             ('candidate_submitted_at', self.candidate_submitted_at, None),
             ('supervisor_approved_at', self.supervisor_approved_at, None),
             ('supervisor_modified_at', self.supervisor_modified_at, None),
@@ -1571,11 +1572,15 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         ]
         if just_added:
             fields += [
+                ('shift_started_at', self.shift_started_at, self.today_7_am),
+                ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
                 ('break_started_at', self.break_started_at, self.today_12_pm),
                 ('break_ended_at', self.break_ended_at, self.today_12_30_pm),
             ]
         else:
             fields += [
+                ('shift_started_at', self.shift_started_at, self.job_offer.start_time_tz),
+                ('shift_ended_at', self.shift_ended_at, None),
                 ('break_started_at', self.break_started_at, None),
                 ('break_ended_at', self.break_ended_at, None),
             ]
@@ -1594,6 +1599,10 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         list(map(setter_fn, filter(filter_fn, fields)))
 
     def save(self, *args, **kwargs):
+        # Set wage_type from Job.wage_type
+        if not self.wage_type and self.job_offer:
+            self.wage_type = self.job_offer.job.wage_type
+
         just_added = self._state.adding
         self.convert_datetime_before_save(just_added)
 
@@ -1614,9 +1623,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                     self._send_going_to_work(going_eta)
                 else:
                     self.going_to_work_confirmation = True
-            # Set wage_type from Job.wage_type
-            if not self.wage_type and self.job_offer:
-                self.wage_type = self.job_offer.job.wage_type
         else:
             if self.candidate_submitted_at is not None and self.is_allowed(30):
                 self.create_state(30)
@@ -1640,21 +1646,27 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
 
         # add or modify hourly_rate skill activity if we have hourly or combined wage
-        if self.candidate_submitted_at and self.wage_type in [0,2]:
+        if self.candidate_submitted_at:
             if hourly_activity:
-                hourly_activity.value = self.shift_duration.total_seconds()/3600
-                hourly_activity.rate = self.get_hourly_rate
-                hourly_activity.save()
-            else:
-                self.timesheet_rates.create(worktype=hourly_work,
-                                            value=self.shift_duration.total_seconds()/3600,
-                                            rate=self.get_hourly_rate)
+                if self.shift_duration:
+                    hourly_activity.value = self.shift_duration.total_seconds()/3600
+                    hourly_activity.rate = self.get_hourly_rate
+                    hourly_activity.save()
+                else:
+                    hourly_activity.delete()
+            elif self.shift_duration:
+                hourly_activity = self.timesheet_rates.create(worktype=hourly_work,
+                                                              value=self.shift_duration.total_seconds()/3600,
+                                                              rate=self.get_hourly_rate
+                                                              )
 
         # set wage_type to HOURLY_WORK if skill activities is not added
         if self.candidate_submitted_at:
-            if hourly_activity and not other_activities and self.wage_type in [1,2]:
+            if hourly_activity and not other_activities:
                 self.wage_type = Job.WAGE_CHOICES.HOURLY
-            if hourly_activity and other_activities and self.wage_type in [0,1]:
+            elif not hourly_activity and other_activities:
+                self.wage_type = Job.WAGE_CHOICES.PIECEWORK
+            elif hourly_activity and other_activities:
                 self.wage_type = Job.WAGE_CHOICES.COMBINED
 
         super().save(*args, **kwargs)
