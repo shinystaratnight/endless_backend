@@ -95,7 +95,7 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
             template_language = template.language.alpha_2
             job_translation = job_offer.job.position.name.translations.filter(language=template_language).values('value')
             if job_translation:
-                job_translationjob_translation = job_translation[0].get('value', job_offer.job)
+                job_translation = job_translation[0].get('value', job_offer.job)
                 data_dict['job_translation'] = job_translation
             else:
                 job_translation = job_offer.job.position.name
@@ -189,16 +189,16 @@ def send_or_schedule_job_offer(job_offer_id, task=None, **kwargs):
 def send_jo_confirmation(self, job_offer_id):
     send_or_schedule_job_offer(job_offer_id,
                                task=send_jo_confirmation,
-                               tpl_id='job-offer-1st',
-                               action_sent='offer_sent')
+                               tpl_name='job-offer-1st',
+                               action_sent='offer_sent_by_sms')
 
 
 @shared_task(bind=True, queue='sms')
 def send_recurring_jo_confirmation(self, job_offer_id):
     send_or_schedule_job_offer(job_offer_id,
                                task=send_recurring_jo_confirmation,
-                               tpl_id='job-offer-recurring',
-                               action_sent='offer_sent')
+                               tpl_name='job-offer-recurring',
+                               action_sent='offer_sent_by_sms')
 
 
 def send_job_offer_notification(jo_id, tpl_name, recipient_field):

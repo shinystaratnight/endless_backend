@@ -13,7 +13,7 @@ from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.api import serializers as sms_serializers
 from r3sourcer.helpers.datetimes import utc_now
-from ...models import TimeSheet, CandidateEvaluation, TimeSheetRate
+from ...models import TimeSheet, CandidateEvaluation, TimeSheetRate, WorkType
 
 __all__ = [
     'TimeSheetSignatureSerializer',
@@ -125,7 +125,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'break_ended_at',
             'break_ended_at_tz',
             'break_ended_at_utc',
-            'timesheet_rates'
+            'timesheet_rates',
         )
         related_fields = {'job_offer': ('id',
                                         {'candidate_contact': ('id', {
@@ -204,13 +204,13 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     def get_resend_sms_candidate(self, obj):
         return (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= utc_now()
+            obj.supervisor_approved_at is None and obj.shift_ended_at_utc and obj.shift_ended_at_utc <= utc_now()
         )
 
     def get_resend_sms_supervisor(self, obj):
         return (
             obj.going_to_work_confirmation and obj.candidate_submitted_at is not None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= utc_now()
+            obj.supervisor_approved_at is None and obj.shift_ended_at_utc and obj.shift_ended_at_utc <= utc_now()
         )
 
     def get_candidate_submit_hidden(self, obj):
@@ -304,7 +304,6 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         Time validation on timesheet save
         """
 
-        wage_type = data.get('wage_type')
         shift_started_at = data.get('shift_started_at', None)
         shift_ended_at = data.get('shift_ended_at', None)
         break_started_at = data.get('break_started_at', None)
@@ -312,14 +311,12 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
 
         if self.instance.pk:
             # validate sent fields
-            if wage_type in [0,2]:
-                if not data.get('shift_started_at'):
-                    raise exceptions.ValidationError({'shift_started_at': _('You need to fill in the start time of the shift')})
-                if not data.get('shift_ended_at'):
-                    raise exceptions.ValidationError({'shift_ended_at': _('You need to fill in the end time of the shift')})
-            # if wage_type in [1,2]:
-            #     if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
-            #         raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
+            hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
+                                                  skill_name=self.instance.job_offer.job.position.name) \
+                                          .first()
+            if not (data.get('shift_started_at') and data.get('shift_ended_at')) and \
+                not TimeSheetRate.objects.filter(timesheet=self.instance).exclude(worktype=hourly_work).exists():
+                    raise exceptions.ValidationError({'non_field_errors': _("You need to fill time data or add at least one skill activity")})
 
             if shift_started_at and shift_ended_at:
                 shift_date = self.instance.job_offer.shift.shift_date_at_tz
@@ -437,9 +434,9 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
                     raise exceptions.ValidationError({'shift_started_at': _('You need to fill in the start time of the shift')})
                 if not data.get('shift_ended_at'):
                     raise exceptions.ValidationError({'shift_ended_at': _('You need to fill in the end time of the shift')})
-            # if wage_type in [1,2]:
-            #     if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
-            #         raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
+            if wage_type in [1,2]:
+                if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
+                    raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
 
             if shift_started_at and shift_ended_at:
                 shift_date = self.instance.job_offer.shift.shift_date_at_tz
