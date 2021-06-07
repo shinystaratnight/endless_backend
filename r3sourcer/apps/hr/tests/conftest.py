@@ -2,10 +2,13 @@ import datetime
 
 import binascii
 import pytest
+from django.contrib.contenttypes.models import ContentType
 from django.core.files.base import ContentFile
 from django.utils import timezone
 from freezegun import freeze_time
 from unittest.mock import patch
+
+from r3sourcer.apps.core.models import WorkflowNode, Workflow
 
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
@@ -87,16 +90,48 @@ def contact_primary(db, user_primary):
 
 @pytest.fixture
 def candidate_contact(db, contact):
-    return candidate_models.CandidateContact.objects.create(
+    candidate = candidate_models.CandidateContact.objects.create(
         contact=contact
     )
+    hr_models.CandidateScore.objects.create(candidate_contact=candidate, skill_score=4, average_score=4)
+    content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
+    w, _ = Workflow.objects.get_or_create(
+        name='test',
+        model=content_type
+    )
+    n, _ = WorkflowNode.objects.get_or_create(
+        number=70,
+        workflow=w,
+    )
+    core_models.WorkflowObject.objects.create(
+        state=n,
+        active=True,
+        object_id=candidate.pk
+    )
+    return candidate
 
 
 @pytest.fixture
 def candidate_contact_second(db, contact_another):
-    return candidate_models.CandidateContact.objects.create(
+    candidate = candidate_models.CandidateContact.objects.create(
         contact=contact_another
     )
+    hr_models.CandidateScore.objects.create(candidate_contact=candidate, skill_score=4, average_score=4)
+    content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
+    w, _ = Workflow.objects.get_or_create(
+        name='test',
+        model = content_type
+    )
+    n, _ = WorkflowNode.objects.get_or_create(
+        number=70,
+        workflow=w,
+    )
+    core_models.WorkflowObject.objects.create(
+        state=n,
+        active=True,
+        object_id=candidate.pk
+    )
+    return candidate
 
 
 @pytest.fixture
@@ -144,6 +179,16 @@ def regular_company(db):
 
 
 @pytest.fixture
+def second_regular_company(db):
+    return core_models.Company.objects.create(
+        name='Second Regular',
+        business_id='4321',
+        registered_for_gst=True,
+        type=core_models.Company.COMPANY_TYPES.regular
+    )
+
+
+@pytest.fixture
 def industry(db):
     return pricing_models.Industry.objects.create(type='test')
 
@@ -158,6 +203,18 @@ def jobsite(db, master_company, company_contact, industry, address, regular_comp
         primary_contact=company_contact,
         address=address,
         regular_company=regular_company,
+    )
+
+@pytest.fixture
+def another_jobsite(db, master_company, company_contact, industry, address, second_regular_company):
+    return hr_models.Jobsite.objects.create(
+        industry=industry,
+        master_company=master_company,
+        start_date=datetime.date.today(),
+        end_date=datetime.date.today() + datetime.timedelta(days=7),
+        primary_contact=company_contact,
+        address=address,
+        regular_company=second_regular_company,
     )
 
 
@@ -808,4 +865,162 @@ def job_offer_declined(candidate_contact, shift_declined):
     )
     hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
     return job_offer
-# 8 failed
+
+# for TestJobViewset.test_fillin_partially_available()
+
+@pytest.fixture
+def job_with_four_shifts(master_company, regular_company, jobsite, skill):
+    return hr_models.Job.objects.create(
+        provider_company=master_company,
+        customer_company=regular_company,
+        jobsite=jobsite,
+        position=skill,
+        published=True,
+        workers=1
+    )
+
+
+@pytest.fixture
+def another_job_with_one_shift(master_company, second_regular_company, another_jobsite, skill):
+    return hr_models.Job.objects.create(
+        provider_company=master_company,
+        customer_company=second_regular_company,
+        jobsite=another_jobsite,
+        position=skill,
+        published=True,
+        workers=1
+    )
+
+
+@pytest.fixture
+def shift_date_first(job_with_four_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_four_shifts,
+        shift_date=datetime.date(2017, 1, 1)
+    )
+
+
+@pytest.fixture
+def shift_first(shift_date_first):
+    return hr_models.Shift.objects.create(
+        date=shift_date_first,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def shift_date_second(job_with_four_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_four_shifts,
+        shift_date=datetime.date(2017, 1, 2)
+    )
+
+
+@pytest.fixture
+def shift_second(shift_date_second):
+    return hr_models.Shift.objects.create(
+        date=shift_date_second,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def shift_date_third(job_with_four_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_four_shifts,
+        shift_date=datetime.date(2017, 1, 3)
+    )
+
+
+@pytest.fixture
+def shift_third(shift_date_third):
+    return hr_models.Shift.objects.create(
+        date=shift_date_third,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def shift_date_fourth(job_with_four_shifts):
+    return hr_models.ShiftDate.objects.create(
+        job=job_with_four_shifts,
+        shift_date=datetime.date(2017, 1, 4)
+    )
+
+
+@pytest.fixture
+def shift_fourth(shift_date_fourth):
+    return hr_models.Shift.objects.create(
+        date=shift_date_fourth,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+def shift_date_fifth(another_job_with_one_shift):
+    return hr_models.ShiftDate.objects.create(
+        job=another_job_with_one_shift,
+        shift_date=datetime.date(2017, 1, 4)
+    )
+
+
+@pytest.fixture
+def shift_fifth(shift_date_fifth):
+    return hr_models.Shift.objects.create(
+        date=shift_date_fifth,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+@pytest.fixture
+def skill_rel(skill, candidate_contact):
+    return candidate_models.SkillRel.objects.create(
+        skill=skill,
+        candidate_contact=candidate_contact,
+        score=4,
+    )
+
+@pytest.fixture
+def skill_rel_second(skill, candidate_contact_second):
+    return candidate_models.SkillRel.objects.create(
+        skill=skill,
+        candidate_contact=candidate_contact_second,
+        score=4,
+    )
+
+@pytest.fixture
+def candidate_rel(master_company, candidate_contact):
+    return candidate_models.CandidateRel.objects.create(
+        master_company=master_company,
+        candidate_contact=candidate_contact,
+        active=True,
+    )
+
+@pytest.fixture
+def candidate_rel_second(master_company, candidate_contact_second):
+    return candidate_models.CandidateRel.objects.create(
+        master_company=master_company,
+        candidate_contact=candidate_contact_second,
+        active=True,
+    )
+
+
+@pytest.fixture
+def job_offer_for_candidate(candidate_contact, shift_first):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_first,
+        candidate_contact=candidate_contact,
+        status=hr_models.JobOffer.STATUS_CHOICES.accepted
+    )
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+    return job_offer
+
+
+@pytest.fixture
+def job_offer_for_candidate_fifth_shift(candidate_contact, shift_fifth):
+    job_offer = hr_models.JobOffer.objects.create(
+        shift=shift_fifth,
+        candidate_contact=candidate_contact,
+        status=hr_models.JobOffer.STATUS_CHOICES.accepted
+    )
+    hr_models.JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+    return job_offer
