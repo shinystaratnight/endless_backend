@@ -1,8 +1,11 @@
+import time
+
 import pytest
 import freezegun
-from datetime import datetime, date, timedelta
+from datetime import datetime, date, timedelta, time
 from django.utils import timezone
 
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import InvoiceRule, Invoice, InvoiceLine
 from r3sourcer.apps.hr.models import PayslipRule
 from r3sourcer.apps.hr.utils.utils import (
@@ -10,8 +13,12 @@ from r3sourcer.apps.hr.utils.utils import (
         get_invoice_rule,
         get_payslip_rule,
         get_invoice,
-        get_invoice_dates
+        get_invoice_dates,
     )
+from r3sourcer.apps.hr.utils.job import (
+    get_partially_available_candidate_ids_for_vs,
+    get_partially_available_candidate_ids, get_partially_available_candidates,
+)
 from r3sourcer.apps.hr.models import TimeSheet
 
 fun_test_data = [
@@ -317,3 +324,79 @@ class TestGetInvoiceDates:
 
         assert date_from == date(2017, 3, 27)
         assert date_to == date(2017, 5, 1)
+
+
+class TestJobUtils():
+
+    @freezegun.freeze_time(datetime(2017,2,1,0,0,0))
+    def test_get_partially_available_candidate_ids_for_vs(self, client, user, job_with_four_shifts, shift_first,
+                                                          shift_second, shift_third, shift_fourth,
+                                                          skill_rel, skill_rel_second, candidate_rel,
+                                                          candidate_rel_second):
+        candidates = CandidateContact.objects.all()
+        candidate_ids = get_partially_available_candidate_ids_for_vs(candidates, date(2017, 2, 1), time(0, 0, 0))
+
+        assert len(candidates) > 0
+        assert len(candidate_ids) == 0
+
+    @freezegun.freeze_time(datetime(2017,1,1,0,0,0))
+    def test_get_partially_available_candidate_ids_for_vs_with_unavailable(self, client, user, job_with_four_shifts,
+                                                                           shift_first, shift_second, shift_third,
+                                                                           shift_fourth, skill_rel, skill_rel_second,
+                                                                           candidate_rel, candidate_rel_second,
+                                                                           job_offer_for_candidate):
+        candidates = CandidateContact.objects.all()
+        candidate_ids = get_partially_available_candidate_ids_for_vs(candidates, date(2017, 1, 1), time(0, 0, 0))
+
+        assert len(candidates) > 0
+        assert len(candidate_ids) == 1
+
+    @freezegun.freeze_time(datetime(2017,2,1,0,0,0))
+    def test_get_partially_available_candidate_ids(self, client, user, job_with_four_shifts, shift_first,
+                                                          shift_second, shift_third, shift_fourth,
+                                                          skill_rel, skill_rel_second, candidate_rel,
+                                                          candidate_rel_second):
+        candidates = CandidateContact.objects.all()
+        shifts = [shift_first, shift_second, shift_third, shift_fourth]
+        partial = get_partially_available_candidate_ids(candidates, shifts)
+
+        assert len(candidates) > 0
+        assert len(partial) == 0
+
+    @freezegun.freeze_time(datetime(2017,1,1,0,0,0))
+    def test_get_partially_available_candidate_ids_with_unavailable(self, client, user, job_with_four_shifts,
+                                                                   shift_first,
+                                                               shift_second, shift_third, shift_fourth, skill_rel,
+                                                               skill_rel_second, candidate_rel, candidate_rel_second,
+                                                               job_offer_for_candidate):
+        candidates = CandidateContact.objects.all()
+        shifts = [shift_first, shift_second, shift_third, shift_fourth]
+        partial = get_partially_available_candidate_ids(candidates, shifts)
+
+        assert len(candidates) > 0
+        assert len(partial) == 1
+
+    @freezegun.freeze_time(datetime(2017,2,1,0,0,0))
+    def test_get_partially_available_candidates(self, client, user, job_with_four_shifts, shift_first,
+                                                          shift_second, shift_third, shift_fourth,
+                                                          skill_rel, skill_rel_second, candidate_rel,
+                                                          candidate_rel_second):
+        candidates = CandidateContact.objects.all()
+        shifts = [shift_first, shift_second, shift_third, shift_fourth]
+        partial = get_partially_available_candidates(candidates, shifts)
+
+        assert len(candidates) > 0
+        assert len(partial) == 0
+
+    @freezegun.freeze_time(datetime(2017,1,1,0,0,0))
+    def test_get_partially_available_candidates_with_unavailable(self, client, user, job_with_four_shifts,
+                                                                   shift_first,
+                                                               shift_second, shift_third, shift_fourth, skill_rel,
+                                                               skill_rel_second, candidate_rel, candidate_rel_second,
+                                                               job_offer_for_candidate):
+        candidates = CandidateContact.objects.all()
+        shifts = [shift_first, shift_second, shift_third, shift_fourth]
+        partial = get_partially_available_candidates(candidates, shifts)
+
+        assert len(candidates) > 0
+        assert len(partial) == 1
