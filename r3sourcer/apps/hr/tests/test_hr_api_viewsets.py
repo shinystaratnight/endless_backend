@@ -6,6 +6,7 @@ import mock
 import pytest
 from django.test.client import MULTIPART_CONTENT
 from django.contrib.auth.models import AnonymousUser
+from django.urls import reverse
 from django.utils import timezone
 
 from rest_framework import status
@@ -14,6 +15,7 @@ from rest_framework.request import Request
 from rest_framework.test import force_authenticate
 from freezegun import freeze_time
 
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import CompanyContact
 from r3sourcer.apps.hr.api.viewsets import TimeSheetViewset
 from r3sourcer.apps.hr.endpoints import TimeSheetEndpoint
@@ -303,3 +305,53 @@ class TestApiViewset:
             {'put': 'evaluate'}, req, pk=timesheet.pk)
 
         assert response.data['status'] == 'success'
+
+
+@pytest.mark.django_db
+class TestJobViewset:
+    view_name = 'api:hr/jobs-fillin'
+
+    @freeze_time(datetime(2017, 1, 1, 6))
+    @mock.patch('r3sourcer.apps.hr.utils.job.get_available_candidate_list')
+    def test_fillin_partially_available(
+        self, mock_available_candidate_list, client, user, job_with_four_shifts, shift_first, shift_second,
+            shift_third, shift_fourth, rf, skill_rel, skill_rel_second, candidate_rel, candidate_rel_second
+    ):
+        mock_available_candidate_list.return_value.fetch.return_value = CandidateContact.objects.all()
+        url = reverse(self.view_name, args=[job_with_four_shifts.pk])
+        client.force_login(user)
+        response = client.get(url).json()
+
+        assert len(response['shifts']) == 4
+        assert len(response['list']) == 2
+
+    @freeze_time(datetime(2017, 1, 1, 0))
+    @mock.patch('r3sourcer.apps.hr.utils.job.get_available_candidate_list')
+    def test_fillin_partially_available_with_unavailable(
+        self, mock_available_candidate_list, client, user, job_with_four_shifts, shift_first, shift_second,
+            shift_third, shift_fourth, rf, skill_rel, skill_rel_second, candidate_rel, candidate_rel_second,
+            job_offer_for_candidate_fifth_shift
+    ):
+        mock_available_candidate_list.return_value.fetch.return_value = CandidateContact.objects.all()
+        url = reverse(self.view_name, args=[job_with_four_shifts.pk])
+        client.force_login(user)
+        response = client.get(url,  {'available': 'False'}).json()
+
+        assert len(response['shifts']) == 4
+        assert len(response['list']) == 1
+
+
+    @freeze_time(datetime(2017, 1, 1, 0))
+    @mock.patch('r3sourcer.apps.hr.utils.job.get_available_candidate_list')
+    def test_fillin_partially_available_with_available_true(
+        self, mock_available_candidate_list, client, user, job_with_four_shifts, shift_first, shift_second,
+            shift_third, shift_fourth, rf, skill_rel, skill_rel_second, candidate_rel, candidate_rel_second,
+            job_offer_for_candidate_fifth_shift
+    ):
+        mock_available_candidate_list.return_value.fetch.return_value = CandidateContact.objects.all()
+        url = reverse(self.view_name, args=[job_with_four_shifts.pk])
+        client.force_login(user)
+        response = client.get(url,  {'available': 'True'}).json()
+
+        assert len(response['shifts']) == 4
+        assert len(response['list']) == 2
