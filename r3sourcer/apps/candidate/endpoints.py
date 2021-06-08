@@ -87,6 +87,13 @@ class FormalityEndpoint(core_endpoints.ApiEndpoint):
     filter_class = candidate_filters.FormalityFilter
 
 
+class CandidateStatisticsEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.CandidateContact
+    base_viewset = candidate_viewsets.CandidateStatisticsViewset
+    serializer = candidate_serializers.CandidateStatisticsSerializer
+
+
 router.register(endpoint=VisaTypeEndpoint())
 router.register(endpoint=SuperannuationFundEndpoint())
 router.register(endpoint=CandidateContactEndpoint())
@@ -99,3 +106,4 @@ router.register(endpoint=SubcontractorCandidateRelationEndpoint())
 router.register(endpoint=CandidateLocationEndpoint(), url='candidate/location')
 router.register(endpoint=SkillRateCoefficientRelEndpoint())
 router.register(endpoint=FormalityEndpoint())
+router.register(endpoint=CandidateStatisticsEndpoint(), url='candidate/statistics')

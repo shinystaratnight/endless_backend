@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import Avg
@@ -405,3 +406,46 @@ class FormalitySerializer(core_serializers.ApiBaseModelSerializer):
             return obj.get_formality_attributes()
         else:
             return None
+
+
+class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = (
+        'shifts_total', 'hours_total', 'skill_activities_total',
+    )
+
+    class Meta:
+        model = candidate_models.CandidateContact
+        fields = ('id',)
+
+    def get_shifts_total(self, obj):
+        return hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
+                                                  status__in=[5,7],
+                                                  job_offer__shift__date__shift_date__gte=self.context['from_date'],
+                                                  job_offer__shift__date__shift_date__lte=self.context['to_date']) \
+                                          .count()
+
+    def get_hours_total(self, obj):
+        hours = timedelta(hours=0)
+        timesheets = hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
+                                                        status__in=[5,7],
+                                                        wage_type__in=[0,2],
+                                                        job_offer__shift__date__shift_date__gte=self.context['from_date'],
+                                                        job_offer__shift__date__shift_date__lte=self.context['to_date'])
+
+        for ts in timesheets:
+            if ts.shift_duration:
+                hours += ts.shift_duration
+
+        return int(hours.total_seconds()/3600), (hours.seconds//60)%60
+
+
+    def get_skill_activities_total(self, obj):
+        timesheets = hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
+                                                        wage_type__in=[1,2],
+                                                        job_offer__shift__date__shift_date__gte=self.context['from_date'],
+                                                        job_offer__shift__date__shift_date__lte=self.context['to_date'],
+                                                        timesheet_rates__isnull=False) \
+                                                .count()
+
+        return timesheets
