@@ -124,8 +124,6 @@ def get_partially_available_candidates(candidate_contacts, shifts):
             partial for partial, data in partially_available_candidates.items()
             if len(data['shifts']) == len(shifts)
         ]
-        candidate_contacts = candidate_contacts.exclude(id__in=unavailable_all)
-
         for key in unavailable_all:
             partially_available_candidates.pop(key)
 

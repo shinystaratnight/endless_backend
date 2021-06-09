@@ -386,6 +386,12 @@ class CompanyRelAdmin(SuperuserAdmin):
     )
 
 
+class CompanyAddressAdmin(admin.ModelAdmin):
+
+    search_fields = ('company__name', 'name')
+    list_display = ('__str__', 'company__name', 'active', 'hq')
+
+
 class VATAdmin(admin.ModelAdmin):
     list_display = (
         'country',
@@ -455,7 +461,7 @@ admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
 admin.site.register(models.Address, AddressAdmin)
 admin.site.register(models.CompanyRel, CompanyRelAdmin)
-admin.site.register(models.CompanyAddress, BaseAdmin)
+admin.site.register(models.CompanyAddress, CompanyAddressAdmin)
 admin.site.register(models.CompanyLocalization)
 admin.site.register(models.CompanyContact)
 admin.site.register(models.CompanyContactAddress, BaseAdmin)
