@@ -412,9 +412,7 @@ class FormalitySerializer(core_serializers.ApiBaseModelSerializer):
 class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
 
     method_fields = (
-        'shifts_total', 'total_hours', 'skill_activities',
-        # 'earned_', count other skill activities x rate
-        'currency'
+        'shifts_total', 'hourly_work', 'skill_activities', 'currency'
     )
 
     class Meta:
@@ -428,8 +426,9 @@ class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
                                                   job_offer__shift__date__shift_date__lte=self.context['to_date']) \
                                           .count()
 
-    def get_total_hours(self, obj):
+    def get_hourly_work(self, obj):
         hours = timedelta(hours=0)
+        earned = 0
         timesheets = hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
                                                         status=7,
                                                         wage_type__in=[0,2],
@@ -439,28 +438,39 @@ class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
         for ts in timesheets:
             if ts.shift_duration:
                 hours += ts.shift_duration
+                earned += ts.get_hourly_rate * Decimal(ts.shift_duration.total_seconds()/3600)
 
-        return int(hours.total_seconds()/3600), (hours.seconds//60)%60
+        data = {'total_hours': int(hours.total_seconds()/3600),
+                'total_minutes': (hours.seconds//60)%60,
+                'total_earned': earned}
+
+        return data
 
 
     def get_skill_activities(self, obj):
         timesheets = hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
                                                         wage_type__in=[1,2],
-                                                        status=7,
+                                                        # status=7,
                                                         job_offer__shift__date__shift_date__gte=self.context['from_date'],
                                                         job_offer__shift__date__shift_date__lte=self.context['to_date'])
         activities = {}
+        total_earned = 0
         for ts in timesheets:
-            for rate in ts.timesheet_rates.exclude(worktype__name=skill_models.WorkType.DEFAULT):
+            for rate in ts.timesheet_rates.all():   #exclude(worktype__name=skill_models.WorkType.DEFAULT):
                 if rate.worktype.name not in activities:
                     serializer = WorkTypeSerializer(rate.worktype)
                     activities[rate.worktype.name] = serializer.data
-                    activities[rate.worktype.name]['total_value'] = rate.value
+                    activities[rate.worktype.name]['value_sum'] = rate.value
+                    activities[rate.worktype.name]['earned_sum'] = rate.value * rate.rate
+                    total_earned += rate.value * rate.rate
                 else:
-                    activities[rate.worktype.name]['total_value'] = activities[rate.worktype.name]['total_value'] + rate.value
+                    activities[rate.worktype.name]['value_sum'] += rate.value
+                    activities[rate.worktype.name]['earned_sum'] += rate.value * rate.rate
+                    total_earned += rate.value * rate.rate
+
+        activities['total_earned'] = total_earned
 
         return activities
-
 
     def get_currency(self, obj):
         return obj.get_closest_company().currency
