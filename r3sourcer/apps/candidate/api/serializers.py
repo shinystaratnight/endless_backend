@@ -456,7 +456,7 @@ class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
         activities = {}
         total_earned = 0
         for ts in timesheets:
-            for rate in ts.timesheet_rates.all():   #exclude(worktype__name=skill_models.WorkType.DEFAULT):
+            for rate in ts.timesheet_rates.exclude(worktype__name=skill_models.WorkType.DEFAULT):
                 if rate.worktype.name not in activities:
                     serializer = WorkTypeSerializer(rate.worktype)
                     activities[rate.worktype.name] = serializer.data
