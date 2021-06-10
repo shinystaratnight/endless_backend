@@ -117,9 +117,14 @@ def charge_for_sms(company_id, amount, sms_balance_id):
                                   amount=round(int(amount * 100 / tax_value)),
                                   currency=company.currency,
                                   description='Topping up sms balance')
+        logger.info('InvoiceItem Topping up sms balance created for {} to {}'.format(
+            round(int(amount * 100 / tax_value)),
+            company.id
+        ))
         invoice = stripe.Invoice.create(customer=company.stripe_customer,
                                         default_tax_rates=[vat_object.stripe_id],
                                         description='Topping up sms balance')
+        logger.info('Invoice Topping up sms balance created to {}'.format(company.id))
         payment = Payment.objects.create(
             company=company,
             type=Payment.PAYMENT_TYPES.sms,
