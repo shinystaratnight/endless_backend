@@ -393,7 +393,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @workflow_function
     def is_skill_rate_defined(self):
-        return self.candidate_skills.filter(score__gt=0, skill__active=True, hourly_rate__gt=0).count() > 0
+        return self.candidate_skills.filter(score__gt=0, skill__active=True, skill_rates__isnull=False).count() > 0
     is_skill_rate_defined.short_description = _("At least one active skill hourly rate must be higher that 0")
 
     @workflow_function
@@ -759,7 +759,14 @@ class SkillRel(UUIDModel):
             str(self.candidate_contact), str(self.skill), str(self.score))
 
     def get_valid_rate(self):
-        skill_rate = self.skill_rates.filter(uom__default=True).first()
+        return self.hourly_rate
+
+    @property
+    def hourly_rate(self):
+        hourly_work = WorkType.objects.filter(name='Hourly work',
+                                              skill_name=self.skill.name) \
+                                      .first()
+        skill_rate = self.skill_rates.filter(worktype=hourly_work).first()
         return skill_rate.rate if skill_rate else None
 
     def get_myob_name(self):
