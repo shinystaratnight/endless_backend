@@ -749,14 +749,6 @@ class SkillRel(UUIDModel):
         default=PRIOR_EXPERIENCE_CHOICES.inexperienced
     )
 
-    hourly_rate = models.DecimalField(
-        decimal_places=2,
-        max_digits=8,
-        verbose_name=_("Skill Rate"),
-        blank=True,
-        null=True
-    )
-
     class Meta:
         verbose_name = _("Candidate Skill")
         verbose_name_plural = _("Candidate Skills")
@@ -767,7 +759,8 @@ class SkillRel(UUIDModel):
             str(self.candidate_contact), str(self.skill), str(self.score))
 
     def get_valid_rate(self):
-        return self.hourly_rate
+        skill_rate = self.skill_rates.filter(uom__default=True).first()
+        return skill_rate.rate if skill_rate else None
 
     def get_myob_name(self):
         return '{} {}'.format(str(self.skill.get_myob_name()), str(self.get_valid_rate()))
@@ -779,6 +772,37 @@ class SkillRel(UUIDModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.candidate_contact.candidate_scores.recalc_scores()
+
+
+class SkillRate(UUIDModel):
+
+    skill_rel = models.ForeignKey(
+        SkillRel,
+        related_name="skill_rates",
+        verbose_name=_("Candidate Skill")
+    )
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="skill_rates",
+        verbose_name=_("Type of work"),
+        blank=True,
+        null=True
+    )
+
+    rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=8,
+        verbose_name=_("Skill Rate"),
+    )
+
+    class Meta:
+        verbose_name = _("Skill rate")
+        verbose_name_plural = _("Skill rates")
+        unique_together = ("skill_rel", "worktype")
+
+    def __str__(self):
+        return f'{self.skill_rel}-{self.worktype}' if self.worktype else f'{self.skill_rel}'
 
 
 class SkillRateCoefficientRel(UUIDModel):

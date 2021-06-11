@@ -30,6 +30,12 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
     filter_class = candidate_filters.SkillRelFilter
 
 
+class SkillRateEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.SkillRate
+    serializer = candidate_serializers.SkillRateSerializer
+
+
 class TagRelEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.TagRel
@@ -98,6 +104,7 @@ router.register(endpoint=VisaTypeEndpoint())
 router.register(endpoint=SuperannuationFundEndpoint())
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
+router.register(endpoint=SkillRateEndpoint())
 router.register(endpoint=TagRelEndpoint())
 router.register(endpoint=SkillRelEndpoint())
 router.register(candidate_models.InterviewSchedule)
