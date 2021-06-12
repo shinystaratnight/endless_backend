@@ -159,8 +159,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @transaction.atomic
     @action(methods=['put'], detail=True)
     def approve(self, request, pk, *args, **kwargs):  # pragma: no cover
-        return self.handle_request(request, pk, False, data={},
-                                   *args, **kwargs)
+        return self.handle_request(request, pk, False, *args, **kwargs)
 
     @transaction.atomic
     @action(methods=['put'], detail=True)
