@@ -949,3 +949,28 @@ class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
             })
 
         return validated_data
+
+
+class JobRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = hr_models.JobRate
+        fields = (
+            '__all__',
+        )
+
+    def validate(self, data):
+        job = data.get('job')
+        worktype = data.get('worktype')
+        skill_rate_range = job.position.skill_rate_ranges.filter(worktype=worktype).first()
+        if skill_rate_range:
+            lower_limit = skill_rate_range.lower_rate_limit
+            upper_limit = skill_rate_range.upper_rate_limit
+            is_lower = lower_limit and data.get('rate') < lower_limit
+            is_upper = upper_limit and data.get('rate') > upper_limit
+            if is_lower or is_upper:
+                raise exceptions.ValidationError({
+                    'rate': _('Rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
+
+        return data

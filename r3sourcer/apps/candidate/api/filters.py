@@ -4,7 +4,7 @@ from django_filters import ModelMultipleChoiceFilter, NumberFilter, MultipleChoi
                            BooleanFilter, UUIDFilter, CharFilter
 from django_filters.rest_framework import FilterSet
 
-from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, TagRel, \
+from r3sourcer.apps.candidate.models import CandidateContact, SkillRel, SkillRate, TagRel, \
                                             CandidateContactAnonymous, Formality
 from r3sourcer.apps.core.api.mixins import ActiveStateFilterMixin
 from r3sourcer.apps.core.models import Tag
@@ -111,3 +111,14 @@ class FormalityFilter(FilterSet):
 
     def filter_country(self, queryset, name, value):
         return queryset.filter(Q(country__code2=value.upper()) if len(value) == 2 else Q(country_id=value))
+
+
+class SkillRateFilter(FilterSet):
+    uom = CharFilter(method='filter_uom')
+
+    class Meta:
+        model = SkillRate
+        fields = ['skill_rel', 'worktype', 'uom']
+
+    def filter_uom(self, queryset, name, value):
+        return queryset.filter(worktype__uom__name=value)

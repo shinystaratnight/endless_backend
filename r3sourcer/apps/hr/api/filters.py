@@ -251,3 +251,9 @@ class TimeSheetRateFilter(FilterSet):
         fields = [
             'timesheet',
         ]
+
+class JobRateFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.JobRate
+        fields = ['job', 'worktype']
