@@ -1,6 +1,7 @@
 from datetime import datetime, time
 from itertools import chain
 from collections import OrderedDict
+import logging
 
 from django.conf import settings
 from django.core.cache import cache
@@ -34,6 +35,8 @@ from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 from r3sourcer.apps.core.models import Workflow
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.helpers.datetimes import utc_now, tz2utc
+
+logger = logging.getLogger(__name__)
 
 rest_settings = settings.REST_FRAMEWORK
 
@@ -301,6 +304,8 @@ class ApiFullRelatedFieldsMixin():
                 if not isinstance(instance, model):
                     instance = model.objects.create(**instance)
                 validated_data[field_name] = instance
+                logger.debug("Create nested model {modelname} with id={ts_id} in {parentmodel}.".format(
+                    modelname=model._meta.label, ts_id=instance.id, parentmodel=self.Meta.model._meta.label))
 
         obj = self.Meta.model.objects.create(**validated_data)
         return obj
