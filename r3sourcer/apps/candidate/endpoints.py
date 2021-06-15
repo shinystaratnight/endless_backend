@@ -34,6 +34,7 @@ class SkillRateEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.SkillRate
     serializer = candidate_serializers.SkillRateSerializer
+    filter_class = candidate_filters.SkillRateFilter
 
 
 class TagRelEndpoint(core_endpoints.ApiEndpoint):
