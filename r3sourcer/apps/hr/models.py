@@ -353,7 +353,6 @@ class Job(core_models.AbstractBaseOrder):
         default=WAGE_CHOICES.HOURLY
     )
 
-    # TODO delete this field after uoms task finished
     hourly_rate_default = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -2640,3 +2639,34 @@ class TimeSheetRate(UUIDModel):
 
     def __str__(self):
         return f'{self.timesheet}-{self.worktype}'
+
+
+class JobRate(UUIDModel):
+    job = models.ForeignKey(
+        Job,
+        verbose_name=_("Job"),
+        on_delete=models.CASCADE,
+        related_name='job_rates')
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name='job_rates',
+        verbose_name=_("Skill activity"),
+        )
+
+    rate = models.DecimalField(
+        _("Timesheet Rate"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    class Meta:
+        verbose_name = _("Job Skill Activity Rate")
+        verbose_name_plural = _("Job Skill Activity Rates")
+        unique_together = [
+            'job',
+            'worktype',
+        ]
+
+    def __str__(self):
+        return f'{self.job}-{self.worktype}'
