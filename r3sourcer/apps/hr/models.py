@@ -2655,7 +2655,7 @@ class JobRate(UUIDModel):
         )
 
     rate = models.DecimalField(
-        _("Timesheet Rate"),
+        _("Gob Skill Activity Rate"),
         default=0,
         max_digits=8,
         decimal_places=2)
