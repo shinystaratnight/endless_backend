@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 
+import logging
 from django.conf import settings
 from django.db.models import Q, Max
 from django.utils.translation import ugettext_lazy as _
@@ -14,6 +15,7 @@ from r3sourcer.apps.hr.utils import utils as hr_utils, job as hr_job_utils
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.helpers.datetimes import utc_now
 
+logger = logging.getLogger(__name__)
 
 class FillinAvailableMixin:
 
@@ -444,6 +446,10 @@ class ShiftDateSerializer(core_serializers.UUIDApiSerializerMixin,
             'cancelled': result.get(hr_models.JobOffer.STATUS_CHOICES.cancelled, []),
             'undefined': result.get(hr_models.JobOffer.STATUS_CHOICES.undefined, []),
         }
+
+    def save(self, *args, **kwargs):
+        logger.warning("ShiftDate {ts_id} saving in serializer.".format(ts_id=self.validated_data['shift_date']))
+        super().save(*args, **kwargs)
 
 
 class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
