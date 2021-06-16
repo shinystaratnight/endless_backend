@@ -304,7 +304,7 @@ class ApiFullRelatedFieldsMixin():
                 if not isinstance(instance, model):
                     instance = model.objects.create(**instance)
                 validated_data[field_name] = instance
-                logger.debug("Create nested model {modelname} with id={ts_id} in {parentmodel}.".format(
+                logger.warning("Create nested model {modelname} with id={ts_id} in {parentmodel}.".format(
                     modelname=model._meta.label, ts_id=instance.id, parentmodel=self.Meta.model._meta.label))
 
         obj = self.Meta.model.objects.create(**validated_data)
