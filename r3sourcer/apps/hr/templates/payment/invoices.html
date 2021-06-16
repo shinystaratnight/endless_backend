@@ -10,12 +10,14 @@
       <span>{{ master_company.get_hq_address.address.get_city_address }}</span><br>
       <span>A.B.N. {{ master_company.get_formatted_abn }}</span><br>
       <span>PH {{ master_company.primary_contact.contact.phone_mobile }}</span><br>
-      <span>F {{ master_company.get_hq_address.phone_fax }}</span><br>
+      {% if master_company.get_hq_address.phone_fax %}
+        <span>F {{ master_company.get_hq_address.phone_fax }}</span><br>
+      {% endif %}
       <span>{{ master_company.primary_contact.contact.email }}</span><br>
       <span>{{ master_company.website }}</span>
     </div>
     <div class="right">
-      <img src="{% if master_company_logo %}{{ DOMAIN }}{{ master_company_logo }}{% else %}{{ DOMAIN }}/assets/img/logo.svg{% endif %}"
+      <img src="{{ master_company_logo }}"
            alt="Logo" width="100" style="width: 100px"><br>
     </div>
   </div>
