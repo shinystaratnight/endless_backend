@@ -937,7 +937,7 @@ class JobViewset(BaseApiViewset):
 
     def perform_create(self, serializer):
         self.perform_update(serializer)
-        logger.debug("Job {ts_id} created from data.".format(ts_id=serializer.validated_data))
+        logger.warning("Job {ts_id} created from data.".format(ts_id=serializer.validated_data['position']))
 
     @action(methods=['get'], detail=False)
     def client_contact_job(self, request, *args, **kwargs):
@@ -1075,7 +1075,7 @@ class ShiftViewset(BaseApiViewset):
         serializer = self.get_serializer(data=data, many=many)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
-        logger.debug("Shift {ts_id} created from data.".format(ts_id=serializer.validated_data))
+        logger.warning("Shift {ts_id} created from data.".format(ts_id=serializer.validated_data))
 
         if is_response:
             headers = self.get_success_headers(serializer.data)
@@ -1184,7 +1184,7 @@ class ShiftDateViewset(BaseApiViewset):
             job=serializer.validated_data['job'],
         ).first()
 
-        logger.debug("ShiftDate {ts_id} created from data.".format(ts_id=serializer.validated_data['shift_date']))
+        logger.warning("ShiftDate {ts_id} created from data.".format(ts_id=serializer.validated_data['shift_date']))
         if not date:
             self.perform_create(serializer)
         else:
