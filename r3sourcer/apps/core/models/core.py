@@ -2375,7 +2375,7 @@ class AbstractOrder(AbstractBaseOrder):
         if lines:
             for group in lines.values('vat__rate').annotate(sum=Sum('amount')):
                 vat += group['sum'] * group['vat__rate']
-        return math.ceil(vat * 100) / 100
+        return math.ceil(vat) / 100
 
     def calculate_total(self):
         lines = getattr(self, '{}_lines'.format(self._meta.model_name))

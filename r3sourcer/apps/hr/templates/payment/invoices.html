@@ -52,6 +52,7 @@
       <tr>
         <th>Date</th>
         <th>Units</th>
+        <th>Unit name</th>
         <th>Notes</th>
         <th>Code</th>
         <th>Rate</th>
@@ -63,6 +64,7 @@
       <tr>
         <td>{{ line.date }}</td>
         <td>{{ line.units }}</td>
+        <td>hours</td>
         {% if show_candidate %}
             <td>{{ line.notes }}<br>
                 {{ line.timesheet.job_offer.candidate_contact }}</td>
@@ -101,7 +103,7 @@
                   <td class="padding">${{ invoice.total }}<br> ${{ invoice.tax }}</td>
               </tr>
               <tr>
-                  <td class="padding border" style="font-size: 14px; line-height: 14px; font-weight: 600">Total:<br> <span style="font-size: 8px; line-height: 10px; opacity: 0.4">Include GST</span></td>
+                  <td class="padding border" style="font-size: 14px; line-height: 14px; font-weight: 600">Total:<br> <span style="font-size: 8px; line-height: 10px; opacity: 0.4">Include {% with lines|first as first_line %}{{ first_line.vat.name }}{% endwith %}</span></td>
                   <td class="padding border" style="font-size: 14px; font-weight: 600">${{ invoice.total_with_tax }}</td>
               </tr>
               <tr>
