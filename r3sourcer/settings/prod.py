@@ -95,6 +95,7 @@ INSTALLED_APPS = [
     'r3sourcer.apps.myob',
     'r3sourcer.apps.company_settings',
     'r3sourcer.apps.billing',
+    'r3sourcer.apps.pdf_templates',
 
     'oauth2_provider',
     'oauth2_provider_jwt',
@@ -346,7 +347,7 @@ COMPRESS_CSS_FILTERS = [
     'compressor.filters.cssmin.rCSSMinFilter',
 ]
 
-COMPRESS_ENABLED = True
+COMPRESS_ENABLED = False
 
 # FIXME: change system user email
 SYSTEM_USER = "system@endless.pro"
