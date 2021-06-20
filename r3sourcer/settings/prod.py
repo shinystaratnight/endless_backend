@@ -95,6 +95,7 @@ INSTALLED_APPS = [
     'r3sourcer.apps.myob',
     'r3sourcer.apps.company_settings',
     'r3sourcer.apps.billing',
+    'r3sourcer.apps.pdf_templates',
 
     'oauth2_provider',
     'oauth2_provider_jwt',

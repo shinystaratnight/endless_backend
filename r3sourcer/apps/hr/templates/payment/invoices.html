@@ -10,12 +10,14 @@
       <span>{{ master_company.get_hq_address.address.get_city_address }}</span><br>
       <span>A.B.N. {{ master_company.get_formatted_abn }}</span><br>
       <span>PH {{ master_company.primary_contact.contact.phone_mobile }}</span><br>
-      <span>F {{ master_company.get_hq_address.phone_fax }}</span><br>
+      {% if master_company.get_hq_address.phone_fax %}
+        <span>F {{ master_company.get_hq_address.phone_fax }}</span><br>
+      {% endif %}
       <span>{{ master_company.primary_contact.contact.email }}</span><br>
       <span>{{ master_company.website }}</span>
     </div>
     <div class="right">
-      <img src="{% if master_company_logo %}{{ DOMAIN }}{{ master_company_logo }}{% else %}{{ DOMAIN }}/assets/img/logo.svg{% endif %}"
+      <img src="{{ master_company_logo }}"
            alt="Logo" width="100" style="width: 100px"><br>
     </div>
   </div>
@@ -50,6 +52,7 @@
       <tr>
         <th>Date</th>
         <th>Units</th>
+        <th>Unit name</th>
         <th>Notes</th>
         <th>Code</th>
         <th>Rate</th>
@@ -61,6 +64,7 @@
       <tr>
         <td>{{ line.date }}</td>
         <td>{{ line.units }}</td>
+        <td>hours</td>
         {% if show_candidate %}
             <td>{{ line.notes }}<br>
                 {{ line.timesheet.job_offer.candidate_contact }}</td>
@@ -95,11 +99,11 @@
       <div class="right" style="width: 40%;">
           <table class="price" border="0">
               <tr>
-                  <td class="padding">Subtotal:<br> GST(10%):</td>
+                  <td class="padding">Subtotal:<br> {% with lines|first as first_line %}{{ first_line.vat.name }}({{ first_line.vat.rate }}){% endwith %}
                   <td class="padding">${{ invoice.total }}<br> ${{ invoice.tax }}</td>
               </tr>
               <tr>
-                  <td class="padding border" style="font-size: 14px; line-height: 14px; font-weight: 600">Total:<br> <span style="font-size: 8px; line-height: 10px; opacity: 0.4">Include GST</span></td>
+                  <td class="padding border" style="font-size: 14px; line-height: 14px; font-weight: 600">Total:<br> <span style="font-size: 8px; line-height: 10px; opacity: 0.4">Include {% with lines|first as first_line %}{{ first_line.vat.name }}{% endwith %}</span></td>
                   <td class="padding border" style="font-size: 14px; font-weight: 600">${{ invoice.total_with_tax }}</td>
               </tr>
               <tr>
