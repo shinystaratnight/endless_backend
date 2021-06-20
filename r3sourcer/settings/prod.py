@@ -347,7 +347,7 @@ COMPRESS_CSS_FILTERS = [
     'compressor.filters.cssmin.rCSSMinFilter',
 ]
 
-COMPRESS_ENABLED = False
+COMPRESS_ENABLED = True
 
 # FIXME: change system user email
 SYSTEM_USER = "system@endless.pro"
