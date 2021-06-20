@@ -97,7 +97,7 @@
       <div class="right" style="width: 40%;">
           <table class="price" border="0">
               <tr>
-                  <td class="padding">Subtotal:<br> GST(10%):</td>
+                  <td class="padding">Subtotal:<br> {% with lines|first as first_line %}{{ first_line.vat.name }}({{ first_line.vat.rate }}){% endwith %}
                   <td class="padding">${{ invoice.total }}<br> ${{ invoice.tax }}</td>
               </tr>
               <tr>
