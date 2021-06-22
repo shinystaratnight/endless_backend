@@ -111,11 +111,11 @@
 					<th>End</th>
 					<th>Break</th>
 					<th>Base hrs</th>
-					<th>x1.5</th>
-					<th>x2</th>
+					{% if total_15_coef %}<th>x1.5</th>{% endif %}
+					{% if total_2_coef %}<th>x2</th>{% endif %}
 					<th>Total</th>
-					<th>Travel</th>
-					<th>Meal</th>
+					{% if total_travel %}<th>Travel</th>{% endif %}
+					{% if total_meal %}<th>Meal</th>{% endif %}
 					<th>Electronic timesheet confirmed by supervisor</th>
 					<th>Electronic signature or timesheet confirmed by candidate</th>
 				</tr>
@@ -130,11 +130,11 @@
 					<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
 					<td>{{ timesheet.break_delta|get_hours }}</td>
 					<td>{{ timesheet.base|get_hours }}</td>
-					<td>{{ timesheet.c_1_5x|get_hours }}</td>
-					<td>{{ timesheet.c_2x|get_hours }}</td>
+					{% if total_15_coef %}<td>{{ timesheet.c_1_5x|get_hours }}</td>{% endif %}
+					{% if total_2_coef %}<td>{{ timesheet.c_2x|get_hours }}</td>{% endif %}
 					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
-					<td>{{ timesheet.travel }}</td>
-					<td>{{ timesheet.meal }}</td>
+					{% if total_travel %}<td>{{ timesheet.travel }}</td>{% endif %}
+					{% if total_meal %}<td>{{ timesheet.meal }}</td>{% endif %}
 					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
 					</td>
 					{% if timesheet.supervisor_signature %}
@@ -145,6 +145,16 @@
 					{% endif %}
 				</tr>
 			{% endfor %}
+				<tr>
+					<td></td><td></td><td></td><td></td><td></td>
+					<td>Total:</td>
+					<td>{{ total_base_units }}</td>
+					{% if total_15_coef %}<td>{{ total_15_coef }}</td>{% endif %}
+					{% if total_2_coef %}<td>{{ total_2_coef }}</td>{% endif %}
+					<td>{{ total_value }}</td>
+					{% if total_travel %}<td>{{ total_travel }}</td>{% endif %}
+					{% if total_meal %}<td>{{ total_meal }}</td>{% endif %}
+				</tr>
 			</tbody>
 		{% elif group.1 == 1 %}
 			<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
