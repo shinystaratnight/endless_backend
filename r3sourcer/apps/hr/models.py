@@ -4,6 +4,7 @@ from uuid import UUID  # not remove
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
+import logging
 import pytz
 from django.db.models import F
 from easy_thumbnails.fields import ThumbnailerImageField
@@ -37,6 +38,7 @@ from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
+logger = logging.getLogger(__name__)
 
 class Jobsite(CategoryFolderMixin,
               MYOBMixin,
@@ -353,7 +355,6 @@ class Job(core_models.AbstractBaseOrder):
         default=WAGE_CHOICES.HOURLY
     )
 
-    # TODO delete this field after uoms task finished
     hourly_rate_default = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -637,6 +638,10 @@ class ShiftDate(TimeZoneUUIDModel):
         return FULFILLED
     is_fulfilled.short_description = _('Fulfilled')
 
+    def save(self, *args, **kwargs):
+        logger.warning("ShiftDate {ts_id} saved in model.".format(ts_id=self.shift_date))
+        super().save(*args, **kwargs)
+
 
 class SQCount(models.Subquery):
     template = "(SELECT count(*) FROM (%(subquery)s) _count)"
@@ -718,6 +723,10 @@ class Shift(TimeZoneUUIDModel):
         if jos.exists() and self.workers <= accepted_jos.count():
             result = FULFILLED
         return result
+
+    def save(self, *args, **kwargs):
+        logger.warning("Shift for {ts_id} saved in model.".format(ts_id=self.time))
+        super().save(*args, **kwargs)
 
 
 class JobOffer(TimeZoneUUIDModel):
@@ -2641,3 +2650,34 @@ class TimeSheetRate(UUIDModel):
 
     def __str__(self):
         return f'{self.timesheet}-{self.worktype}'
+
+
+class JobRate(UUIDModel):
+    job = models.ForeignKey(
+        Job,
+        verbose_name=_("Job"),
+        on_delete=models.CASCADE,
+        related_name='job_rates')
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name='job_rates',
+        verbose_name=_("Skill activity"),
+        )
+
+    rate = models.DecimalField(
+        _("Gob Skill Activity Rate"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    class Meta:
+        verbose_name = _("Job Skill Activity Rate")
+        verbose_name_plural = _("Job Skill Activity Rates")
+        unique_together = [
+            'job',
+            'worktype',
+        ]
+
+    def __str__(self):
+        return f'{self.job}-{self.worktype}'

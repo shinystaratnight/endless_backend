@@ -94,8 +94,8 @@ class InvoiceService(BasePaymentService):
         domain = get_site_url(master_company=invoice.provider_company)
         master_company = invoice.provider_company
 
-        if hasattr(master_company, 'company_settings') and master_company.company_settings.logo:
-            master_logo = master_company.company_settings.logo.url
+        if master_company.logo:
+            master_logo = get_thumbnail_picture(master_company.logo, 'large')
         else:
             master_logo = get_thumbnail_picture(invoice.provider_company.logo, 'large')
 

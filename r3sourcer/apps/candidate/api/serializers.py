@@ -1,3 +1,4 @@
+from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import Avg
@@ -14,6 +15,7 @@ from r3sourcer.apps.core.utils.utils import normalize_phone_number
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.myob.models import MYOBSyncObject
 from r3sourcer.apps.skills import models as skill_models
+from r3sourcer.apps.skills.api.serializers import WorkTypeSerializer
 
 
 class FavouriteListSerializer(core_serializers.ApiBaseModelSerializer):
@@ -45,7 +47,7 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
     class Meta:
         model = candidate_models.SkillRel
         fields = (
-            'id', 'score', 'candidate_contact', 'prior_experience', 'hourly_rate',
+            'id', 'score', 'candidate_contact', 'prior_experience',
             {'skill': ('id', {'name': ('__str__', {'translations': ('language', 'value')})}, '__str__')},
             'created_at', 'updated_at',
         )
@@ -53,19 +55,61 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
             'score': {'max_value': Decimal(5)},
         }
 
+    # def validate(self, data):
+    #     skill = data.get('skill')
+    #     default_uom = core_models.UnitOfMeasurement.objects.get(default=True)
+    #     skill_rate_range = skill.skill_rate_ranges.filter(uom=default_uom, worktype=None).first()
+    #     if skill_rate_range and data.get('hourly_rate'):
+    #         lower_limit = skill_rate_range.lower_rate_limit
+    #         upper_limit = skill_rate_range.upper_rate_limit
+    #         is_lower = lower_limit and data.get('hourly_rate') < lower_limit
+    #         is_upper = upper_limit and data.get('hourly_rate') > upper_limit
+    #         if is_lower or is_upper:
+    #             raise exceptions.ValidationError({
+    #                 'rate': _('Hourly rate should be between {} and {}')
+    #                     .format(lower_limit, upper_limit)
+    #             })
+    #     return data
+
+    def create(self, validated_data):
+        default_rate = validated_data.pop('default_rate', None)
+        # create SkillRel
+        skill_rel = super().create(validated_data)
+
+        # create default rate for SkillRel
+        if default_rate:
+            default_uom = core_models.UnitOfMeasurement.objects.get(default=True)
+            candidate_models.SkillRate.objects.create(skill_rel=skill_rel,
+                                                      uom=default_uom,
+                                                      rate=default_rate)
+        return skill_rel
+
+
+class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = candidate_models.SkillRate
+        fields = (
+            '__all__',
+        )
+        extra_kwargs = {
+            'worktype': {'required': False}
+        }
+
     def validate(self, data):
-        skill = data.get('skill')
-        skill_rate_range = skill.skill_rate_ranges.filter(worktype=None).first()
-        if skill_rate_range and data.get('hourly_rate'):
+        skill_rel = data.get('skill_rel')
+        worktype = data.get('worktype', None)
+        skill_rate_range = skill_rel.skill.skill_rate_ranges.filter(worktype=worktype).first()
+        if skill_rate_range:
             lower_limit = skill_rate_range.lower_rate_limit
             upper_limit = skill_rate_range.upper_rate_limit
-            is_lower = lower_limit and data.get('hourly_rate') < lower_limit
-            is_upper = upper_limit and data.get('hourly_rate') > upper_limit
+            is_lower = lower_limit and data.get('rate') < lower_limit
+            is_upper = upper_limit and data.get('rate') > upper_limit
             if is_lower or is_upper:
                 raise exceptions.ValidationError({
-                    'rate': _('Hourly rate should be between {} and {}')
+                    'rate': _('Rate should be between {} and {}')
                         .format(lower_limit, upper_limit)
                 })
+
         return data
 
 
@@ -405,3 +449,70 @@ class FormalitySerializer(core_serializers.ApiBaseModelSerializer):
             return obj.get_formality_attributes()
         else:
             return None
+
+
+class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
+
+    method_fields = (
+        'shifts_total', 'hourly_work', 'skill_activities', 'currency'
+    )
+
+    class Meta:
+        model = candidate_models.CandidateContact
+        fields = ('id',)
+
+    def get_shifts_total(self, obj):
+        return hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
+                                                  status=7,
+                                                  job_offer__shift__date__shift_date__gte=self.context['from_date'],
+                                                  job_offer__shift__date__shift_date__lte=self.context['to_date']) \
+                                          .count()
+
+    def get_hourly_work(self, obj):
+        hours = timedelta(hours=0)
+        earned = 0
+        timesheets = hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
+                                                        status=7,
+                                                        wage_type__in=[0,2],
+                                                        job_offer__shift__date__shift_date__gte=self.context['from_date'],
+                                                        job_offer__shift__date__shift_date__lte=self.context['to_date'])
+
+        for ts in timesheets:
+            if ts.shift_duration:
+                hours += ts.shift_duration
+                earned += ts.get_hourly_rate * Decimal(ts.shift_duration.total_seconds()/3600)
+
+        data = {'total_hours': int(hours.total_seconds()/3600),
+                'total_minutes': (hours.seconds//60)%60,
+                'total_earned': earned}
+
+        return data
+
+
+    def get_skill_activities(self, obj):
+        timesheets = hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
+                                                        wage_type__in=[1,2],
+                                                        status=7,
+                                                        job_offer__shift__date__shift_date__gte=self.context['from_date'],
+                                                        job_offer__shift__date__shift_date__lte=self.context['to_date'])
+        activities = {}
+        total_earned = 0
+        for ts in timesheets:
+            for rate in ts.timesheet_rates.exclude(worktype__name=skill_models.WorkType.DEFAULT):
+                if rate.worktype.name not in activities:
+                    serializer = WorkTypeSerializer(rate.worktype)
+                    activities[rate.worktype.name] = serializer.data
+                    activities[rate.worktype.name]['value_sum'] = rate.value
+                    activities[rate.worktype.name]['earned_sum'] = rate.value * rate.rate
+                    total_earned += rate.value * rate.rate
+                else:
+                    activities[rate.worktype.name]['value_sum'] += rate.value
+                    activities[rate.worktype.name]['earned_sum'] += rate.value * rate.rate
+                    total_earned += rate.value * rate.rate
+
+        activities['total_earned'] = total_earned
+
+        return activities
+
+    def get_currency(self, obj):
+        return obj.get_closest_company().currency

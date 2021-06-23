@@ -1,12 +1,26 @@
 from django.contrib import admin
+from django.db.models import Q
+import nested_admin
 
 from r3sourcer.apps.skills.models import Skill
 from . import models
 
 
-class SkillRelInline(admin.TabularInline):
+class SkillRateInline(nested_admin.NestedTabularInline):
+    model = models.SkillRate
+    extra = 0
+
+    # def formfield_for_foreignkey(self, db_field, request, **kwargs):
+    #     if db_field.name == "worktype" and request._obj_:
+    #         kwargs["queryset"] = models.WorkType.objects.filter(Q(skill_name=request._skill_obj_.skill.name) | \
+    #                                                             Q(skill=request._skill_obj_.skill))
+    #     return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+class SkillRelInline(nested_admin.NestedTabularInline):
     model = models.SkillRel
     extra = 0
+    inlines = [SkillRateInline]
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "skill" and request._obj_:
@@ -14,17 +28,17 @@ class SkillRelInline(admin.TabularInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class FormalityInline(admin.TabularInline):
+class FormalityInline(nested_admin.NestedTabularInline):
     model = models.Formality
     extra = 0
 
 
-class TagRelInline(admin.TabularInline):
+class TagRelInline(nested_admin.NestedTabularInline):
     model = models.TagRel
     extra = 0
 
 
-class CandidateContactAdmin(admin.ModelAdmin):
+class CandidateContactAdmin(nested_admin.NestedModelAdmin):
     list_display = ('contact', 'recruitment_agent', 'is_active')
     search_fields = ('contact__first_name', 'contact__last_name', 'profile_price')
     inlines = [SkillRelInline, FormalityInline, TagRelInline]

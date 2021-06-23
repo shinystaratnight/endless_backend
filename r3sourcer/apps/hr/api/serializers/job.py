@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 
+import logging
 from django.conf import settings
 from django.db.models import Q, Max
 from django.utils.translation import ugettext_lazy as _
@@ -14,6 +15,7 @@ from r3sourcer.apps.hr.utils import utils as hr_utils, job as hr_job_utils
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.helpers.datetimes import utc_now
 
+logger = logging.getLogger(__name__)
 
 class FillinAvailableMixin:
 
@@ -444,6 +446,10 @@ class ShiftDateSerializer(core_serializers.UUIDApiSerializerMixin,
             'cancelled': result.get(hr_models.JobOffer.STATUS_CHOICES.cancelled, []),
             'undefined': result.get(hr_models.JobOffer.STATUS_CHOICES.undefined, []),
         }
+
+    def save(self, *args, **kwargs):
+        logger.warning("ShiftDate {ts_id} saving in serializer.".format(ts_id=self.validated_data['shift_date']))
+        super().save(*args, **kwargs)
 
 
 class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
@@ -949,3 +955,28 @@ class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
             })
 
         return validated_data
+
+
+class JobRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = hr_models.JobRate
+        fields = (
+            '__all__',
+        )
+
+    def validate(self, data):
+        job = data.get('job')
+        worktype = data.get('worktype')
+        skill_rate_range = job.position.skill_rate_ranges.filter(worktype=worktype).first()
+        if skill_rate_range:
+            lower_limit = skill_rate_range.lower_rate_limit
+            upper_limit = skill_rate_range.upper_rate_limit
+            is_lower = lower_limit and data.get('rate') < lower_limit
+            is_upper = upper_limit and data.get('rate') > upper_limit
+            if is_lower or is_upper:
+                raise exceptions.ValidationError({
+                    'rate': _('Rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
+
+        return data

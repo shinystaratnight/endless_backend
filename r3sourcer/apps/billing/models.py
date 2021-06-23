@@ -176,7 +176,7 @@ class SMSBalance(models.Model):
     balance = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
-    last_payment = models.ForeignKey('Payment', blank=True, null=True)
+    last_payment = models.ForeignKey('Payment', blank=True, null=True, on_delete=models.SET_NULL)
     cost_of_segment = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     auto_charge = models.BooleanField(default=False, verbose_name=_('Auto Charge'))
     low_balance_sent = models.BooleanField(default=False)
