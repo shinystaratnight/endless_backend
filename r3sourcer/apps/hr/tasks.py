@@ -975,7 +975,7 @@ def send_job_confirmation_message(self, job_id):
             except ImportError:
                 logger.exception('Cannot load SMS service')
             else:
-                sent_message = sms_interface.send_tpl(job.customer_representative.contact,
+                sms_interface.send_tpl(job.customer_representative.contact,
                                                       master_company,
                                                       tpl_name,
                                                       check_reply=False,
