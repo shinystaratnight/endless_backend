@@ -71,7 +71,6 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
         target_date_and_time = "ASAP"
 
     master_company = job_offer.candidate_contact.contact.get_closest_company()
-    print(master_company)
 
     data_dict = {
         'job_offer': job_offer,
@@ -975,7 +974,7 @@ def send_job_confirmation_message(self, job_id):
             except ImportError:
                 logger.exception('Cannot load SMS service')
             else:
-                sent_message = sms_interface.send_tpl(job.customer_representative.contact,
+                sms_interface.send_tpl(job.customer_representative.contact,
                                                       master_company,
                                                       tpl_name,
                                                       check_reply=False,
@@ -1043,7 +1042,6 @@ def get_file_from_str(str):
     from io import BytesIO
     import weasyprint
     pdf = weasyprint.HTML(string=str)
-    print(str)
     pdf_file = BytesIO()
     pdf_file.write(pdf.write_pdf())
     pdf_file.seek(0)
@@ -1088,6 +1086,12 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         'job_offer__shift__date__job__jobsite', 'wage_type', 'shift_started_at')
     domain = core_companies_utils.get_site_url(user=request and request.user, master_company=master_company)
     coefficient_service = CoefficientService()
+    total_base_units = timedelta(0)
+    total_15_coef = timedelta(0)
+    total_2_coef = timedelta(0)
+    total_value = timedelta(0)
+    total_travel = timedelta(0)
+    total_meal = timedelta(0)
 
     for timesheet in timesheets:
         jobsite = timesheet.job_offer.job.jobsite
@@ -1114,10 +1118,26 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         else:
             timesheet.meal = 0
 
+        # set total values
+        total_base_units += get_value_for_rate_type(coeffs_hours, 'base')
+        total_15_coef += get_value_for_rate_type(coeffs_hours, 'c_1_5x')
+        total_2_coef += get_value_for_rate_type(coeffs_hours, 'c_2x')
+        total_value += get_value_for_rate_type(coeffs_hours, 'base') \
+                    + get_value_for_rate_type(coeffs_hours, 'c_1_5x') \
+                    + get_value_for_rate_type(coeffs_hours, 'c_2x')
+        total_travel += get_value_for_rate_type(coeffs_hours, 'travel')
+        total_meal += get_value_for_rate_type(coeffs_hours, 'meal')
+
     context = {
         'timesheets': timesheets_group_by_job_site(timesheets),
         'request': request,
         'domain': domain,
+        'total_base_units': round(total_base_units / timedelta(hours=1), 2),
+        'total_15_coef': round(total_15_coef / timedelta(hours=1), 2),
+        'total_2_coef': round(total_2_coef / timedelta(hours=1), 2),
+        'total_value': round(total_value / timedelta(hours=1), 2),
+        'total_travel': round(total_travel / timedelta(hours=1), 2),
+        'total_meal': round(total_meal / timedelta(hours=1), 2),
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))
