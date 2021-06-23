@@ -938,7 +938,6 @@ class JobViewset(BaseApiViewset):
 
     def perform_create(self, serializer):
         self.perform_update(serializer)
-        logger.debug("Job {ts_id} created from data.".format(ts_id=serializer.validated_data))
 
     @action(methods=['get'], detail=False)
     def client_contact_job(self, request, *args, **kwargs):
@@ -1068,22 +1067,6 @@ class ShiftViewset(BaseApiViewset):
         serializer = job_serializers.ShiftSerializer(filtered_qs, many=True)
         return Response(serializer.data)
 
-    def create_from_data(self, data, *args, **kwargs):
-        is_response = kwargs.pop('is_response', True)
-
-        many = isinstance(data, list)
-
-        serializer = self.get_serializer(data=data, many=many)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        logger.debug("Shift {ts_id} created from data.".format(ts_id=serializer.validated_data))
-
-        if is_response:
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        else:
-            return serializer
-
 
 class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
 
@@ -1185,7 +1168,6 @@ class ShiftDateViewset(BaseApiViewset):
             job=serializer.validated_data['job'],
         ).first()
 
-        logger.debug("ShiftDate {ts_id} created from data.".format(ts_id=serializer.validated_data['shift_date']))
         if not date:
             self.perform_create(serializer)
         else:

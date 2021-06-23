@@ -534,7 +534,8 @@ class Job(core_models.AbstractBaseOrder):
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
             sd, _ = ShiftDate.objects.get_or_create(job=self, shift_date=self.work_start_date)
-            Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
+            # fix: commented due to https://taavisaavo.atlassian.net/browse/RV-1279
+            # Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
 
             hr_utils.send_job_confirmation_sms(self)
 
