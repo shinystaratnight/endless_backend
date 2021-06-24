@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.template import Context, Template
 
 from r3sourcer.helpers.models.abs import UUIDModel
 
@@ -54,6 +55,14 @@ class PDFTemplate(PDFTemplateAbstract):
             'slug',
             'language',
         ]
+
+    def render(self, context):
+        """
+        Template rendering, variables substitution.
+        """
+
+        tpl = Template(self.html_template)
+        return tpl.render(Context(context))
 
 
 class DefaultPDFTemplate(PDFTemplateAbstract):

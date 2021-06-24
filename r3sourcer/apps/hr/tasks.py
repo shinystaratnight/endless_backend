@@ -18,6 +18,7 @@ from filer.models import File, Folder
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.core.utils import companies as core_companies_utils
+from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
@@ -30,6 +31,7 @@ from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
+from r3sourcer.apps.pdf_templates.models import PDFTemplate
 from r3sourcer.celeryapp import app
 from r3sourcer.helpers.datetimes import utc_now, tz2utc, date2utc_date
 
@@ -1081,10 +1083,23 @@ def get_value_for_rate_type(coeffs_hours, rate_type):
 
 
 def generate_pdf(timesheet_ids, request=None, master_company=None):
-    template = get_template('timesheet/timesheet.html')
+    template_slug = 'timesheets-list'
+
     timesheets = hr_models.TimeSheet.objects.filter(id__in=timesheet_ids).order_by(
         'job_offer__shift__date__job__jobsite', 'wage_type', 'shift_started_at')
-    domain = core_companies_utils.get_site_url(user=request and request.user, master_company=master_company)
+    if not master_company:
+        master_company = timesheets[0].master_company
+    if master_company.logo:
+        master_logo = get_thumbnail_picture(master_company.logo, 'large')
+
+    # get template
+    try:
+        template = PDFTemplate.objects.get(slug=template_slug,
+                                           company=master_company)
+    except PDFTemplate.DoesNotExist:
+        logger.exception('Cannot find pdf template with slug %s', template_slug)
+        raise Exception('Cannot find pdf template with slug:', template_slug)
+
     coefficient_service = CoefficientService()
     total_base_units = timedelta(0)
     total_15_coef = timedelta(0)
@@ -1128,21 +1143,24 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         total_travel += get_value_for_rate_type(coeffs_hours, 'travel')
         total_meal += get_value_for_rate_type(coeffs_hours, 'meal')
 
+    test = timesheets_group_by_job_site(timesheets)
+    print(*test)
+
     context = {
         'timesheets': timesheets_group_by_job_site(timesheets),
-        'request': request,
-        'domain': domain,
-        'total_base_units': round(total_base_units / timedelta(hours=1), 2),
-        'total_15_coef': round(total_15_coef / timedelta(hours=1), 2),
-        'total_2_coef': round(total_2_coef / timedelta(hours=1), 2),
-        'total_value': round(total_value / timedelta(hours=1), 2),
-        'total_travel': round(total_travel / timedelta(hours=1), 2),
-        'total_meal': round(total_meal / timedelta(hours=1), 2),
+        'master_company': master_company,
+        'master_company_logo': master_logo,
+        'total_base_units': total_base_units,
+        'total_15_coef': total_15_coef,
+        'total_2_coef': total_2_coef,
+        'total_value': total_value,
+        'total_travel': total_travel,
+        'total_meal': total_meal,
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))
     folder, created = Folder.objects.get_or_create(
-        parent=timesheets[0].master_company.files,
+        parent=master_company.files,
         name='timesheet',
     )
     file_name = 'timesheet_{}_{}_{}.pdf'.format(
