@@ -1213,11 +1213,16 @@ def send_invoice_email(invoice_id):
         'client': client_company.name,
     }
 
-    email_interface.send_tpl(client_company.primary_contact,
-                             master_company,
-                             tpl_name,
-                             **context
-                             )
+    try:
+        email_interface = get_email_service()
+    except ImportError:
+        logger.exception('Cannot load Email service')
+    else:
+        email_interface.send_tpl(client_company.primary_contact,
+                                master_company,
+                                tpl_name,
+                                **context
+                                )
 
 
 @shared_task
