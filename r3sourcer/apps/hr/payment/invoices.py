@@ -1,3 +1,4 @@
+import logging
 import math
 from copy import copy
 from hashlib import md5
@@ -16,7 +17,10 @@ from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
+from r3sourcer.apps.pdf_templates.models import PDFTemplate
 from r3sourcer.helpers.datetimes import utc_now, date2utc_date
+
+logger = logging.getLogger(__name__)
 
 
 class InvoiceService(BasePaymentService):
@@ -89,10 +93,16 @@ class InvoiceService(BasePaymentService):
 
     @classmethod
     def generate_pdf(cls, invoice, show_candidate=False):
-        template = get_template('payment/invoices.html')
-
-        domain = get_site_url(master_company=invoice.provider_company)
+        template_slug = 'company-invoice'
         master_company = invoice.provider_company
+
+        # get template
+        try:
+            template = PDFTemplate.objects.get(slug=template_slug,
+                                               company=master_company)
+        except PDFTemplate.DoesNotExist:
+            logger.exception('Cannot find pdf template with slug %s', template_slug)
+            raise Exception('Cannot find pdf template with slug:', template_slug)
 
         if master_company.logo:
             master_logo = get_thumbnail_picture(master_company.logo, 'large')
@@ -106,8 +116,6 @@ class InvoiceService(BasePaymentService):
             'master_company': invoice.provider_company,
             'master_company_logo': master_logo,
             'show_candidate': show_candidate,
-            'STATIC_URL': '%s/static' % domain,
-            'DOMAIN': domain
         }
 
         pdf_file = cls._get_file_from_str(str(template.render(context)))
