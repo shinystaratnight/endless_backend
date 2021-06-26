@@ -1163,10 +1163,9 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         parent=master_company.files,
         name='timesheet',
     )
-    file_name = 'timesheet_{}_{}_{}.pdf'.format(
+    file_name = 'timesheet_{}_{}.pdf'.format(
         str(timesheets[0].id),
-        date_format(timesheets[0].shift_started_at_tz, 'Y_m_d'),
-        date_format(timesheets[0].shift_ended_at_tz, 'Y_m_d')
+        date_format(timesheets[0].shift_started_at_tz, 'Y_m_d')
     )
     file_obj, created = File.objects.get_or_create(
         folder=folder,
