@@ -793,8 +793,6 @@ class SkillRate(UUIDModel):
         WorkType,
         related_name="skill_rates",
         verbose_name=_("Type of work"),
-        blank=True,
-        null=True
     )
 
     rate = models.DecimalField(
