@@ -1281,6 +1281,18 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         default=STATUS_CHOICES.new
     )
 
+    candidate_notes = models.TextField(
+        verbose_name=_("Candidate Notes"),
+        help_text=_("Candidate notes for a Timesheet"),
+        blank=True
+    )
+
+    client_notes = models.TextField(
+        verbose_name=_("Client Notes"),
+        help_text=_("Client notes for a Timesheet"),
+        blank=True
+    )
+
     __original_supervisor_id = None
     __original_going_to_work_confirmation = None
     __original_candidate_submitted_at = None
