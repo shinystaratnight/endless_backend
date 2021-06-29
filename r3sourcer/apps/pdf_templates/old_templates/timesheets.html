@@ -1,3 +1,4 @@
+{% load filters %}
 {%  load tz %}
 
 <html lang="en">
@@ -104,11 +105,11 @@
 					<th>End</th>
 					<th>Break</th>
 					<th>Base hrs</th>
-					{% if total_15_coef %}<th>x1.5</th>{% endif %}
-					{% if total_2_coef %}<th>x2</th>{% endif %}
+					{% if total_15_coef|index:forloop.parentloop.counter0 %}<th>x1.5</th>{% endif %}
+					{% if total_2_coef|index:forloop.parentloop.counter0 %}<th>x2</th>{% endif %}
 					<th>Total</th>
-					{% if total_travel %}<th>Travel</th>{% endif %}
-					{% if total_meal %}<th>Meal</th>{% endif %}
+					{% if total_travel|index:forloop.parentloop.counter0 %}<th>Travel</th>{% endif %}
+					{% if total_meal|index:forloop.parentloop.counter0 %}<th>Meal</th>{% endif %}
 					<th>Electronic timesheet confirmed by supervisor</th>
 					<th>Electronic signature or timesheet confirmed by candidate</th>
 				</tr>
@@ -123,11 +124,11 @@
  					<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
 					<td>{{ timesheet.break_delta|get_hours }}</td>
 					<td>{{ timesheet.base|get_hours }}</td>
-					{% if total_15_coef %}<td>{{ timesheet.c_1_5x|get_hours }}</td>{% endif %}
-					{% if total_2_coef %}<td>{{ timesheet.c_2x|get_hours }}</td>{% endif %}
+					{% if total_15_coef|index:forloop.parentloop.counter0 %}<td>{{ timesheet.c_1_5x|get_hours }}</td>{% endif %}
+					{% if total_2_coef|index:forloop.parentloop.counter0 %}<td>{{ timesheet.c_2x|get_hours }}</td>{% endif %}
 					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
-					{% if total_travel %}<td>{{ timesheet.travel }}</td>{% endif %}
-					{% if total_meal %}<td>{{ timesheet.meal }}</td>{% endif %}
+					{% if total_travel|index:forloop.parentloop.counter0 %}<td>{{ timesheet.travel }}</td>{% endif %}
+					{% if total_meal|index:forloop.parentloop.counter0 %}<td>{{ timesheet.meal }}</td>{% endif %}
 					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
 					</td>
 					{% if timesheet.supervisor_signature %}
@@ -141,12 +142,12 @@
 				<tr>
 					<td></td><td></td><td></td><td></td><td></td>
 					<td>Total:</td>
-					<td>{{ total_base_units|get_hours }}</td>
-					{% if total_15_coef %}<td>{{ total_15_coef|get_hours }}</td>{% endif %}
-					{% if total_2_coef %}<td>{{ total_2_coef|get_hours }}</td>{% endif %}
-					<td>{{ total_value|get_hours }}</td>
-					{% if total_travel %}<td>{{ total_travel|get_hours }}</td>{% endif %}
-					{% if total_meal %}<td>{{ total_meal|get_hours }}</td>{% endif %}
+					<td>{{ total_base_units|index:forloop.counter0|get_hours }}</td>
+					{% if total_15_coef|index:forloop.counter0 %}<td>{{ total_15_coef|index:forloop.counter0|get_hours }}</td>{% endif %}
+					{% if total_2_coef|index:forloop.counter0 %}<td>{{ total_2_coef|index:forloop.counter0|get_hours }}</td>{% endif %}
+					<td>{{ total_value|index:forloop.counter0|get_hours }}</td>
+					{% if total_travel|index:forloop.counter0 %}<td>{{ total_travel|index:forloop.counter0|get_hours }}</td>{% endif %}
+					{% if total_meal|index:forloop.counter0 %}<td>{{ total_meal|index:forloop.counter0|get_hours }}</td>{% endif %}
 					<td></td><td></td>
 				</tr>
 			</tbody>
@@ -197,11 +198,11 @@
 					<th>End</th>
 					<th>Break</th>
 					<th>Base hrs</th>
-					{% if total_15_coef %}<th>x1.5</th>{% endif %}
-					{% if total_2_coef %}<th>x2</th>{% endif %}
+					{% if total_15_coef|index:forloop.parentloop.counter0 %}<th>x1.5</th>{% endif %}
+					{% if total_2_coef|index:forloop.parentloop.counter0 %}<th>x2</th>{% endif %}
 					<th>Total</th>
-					{% if total_travel %}<th>Travel</th>{% endif %}
-					{% if total_meal %}<th>Meal</th>{% endif %}
+					{% if total_travel|index:forloop.parentloop.counter0 %}<th>Travel</th>{% endif %}
+					{% if total_meal|index:forloop.parentloop.counter0 %}<th>Meal</th>{% endif %}
 					<th>Electronic timesheet confirmed by supervisor</th>
 					<th>Electronic signature or timesheet confirmed by candidate</th>
 				</tr>
@@ -216,11 +217,11 @@
  					<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
 					<td>{{ timesheet.break_delta|get_hours }}</td>
 					<td>{{ timesheet.base|get_hours }}</td>
-					{% if total_15_coef %}<td>{{ timesheet.c_1_5x|get_hours }}</td>{% endif %}
-					{% if total_2_coef %}<td>{{ timesheet.c_2x|get_hours }}</td>{% endif %}
+					{% if total_15_coef|index:forloop.parentloop.counter0 %}<td>{{ timesheet.c_1_5x|get_hours }}</td>{% endif %}
+					{% if total_2_coef|index:forloop.parentloop.counter0 %}<td>{{ timesheet.c_2x|get_hours }}</td>{% endif %}
 					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
-					{% if total_travel %}<td>{{ timesheet.travel }}</td>{% endif %}
-					{% if total_meal %}<td>{{ timesheet.meal }}</td>{% endif %}
+					{% if total_travel|index:forloop.parentloop.counter0 %}<td>{{ timesheet.travel }}</td>{% endif %}
+					{% if total_meal|index:forloop.parentloop.counter0 %}<td>{{ timesheet.meal }}</td>{% endif %}
 					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
 					</td>
 					{% if timesheet.supervisor_signature %}
@@ -251,12 +252,12 @@
 				<tr>
 					<td></td><td></td><td></td><td></td><td></td>
 					<td>Total:</td>
-					<td>{{ total_base_units|get_hours }}</td>
-					{% if total_15_coef %}<td>{{ total_15_coef|get_hours }}</td>{% endif %}
-					{% if total_2_coef %}<td>{{ total_2_coef|get_hours }}</td>{% endif %}
-					<td>{{ total_value|get_hours }}</td>
-					{% if total_travel %}<td>{{ total_travel|get_hours }}</td>{% endif %}
-					{% if total_meal %}<td>{{ total_meal|get_hours }}</td>{% endif %}
+					<td>{{ total_base_units|index:forloop.counter0|get_hours }}</td>
+					{% if total_15_coef|index:forloop.counter0 %}<td>{{ total_15_coef|index:forloop.counter0|get_hours }}</td>{% endif %}
+					{% if total_2_coef|index:forloop.counter0 %}<td>{{ total_2_coef|index:forloop.counter0|get_hours }}</td>{% endif %}
+					<td>{{ total_value|index:forloop.counter0|get_hours }}</td>
+					{% if total_travel|index:forloop.counter0 %}<td>{{ total_travel|index:forloop.counter0|get_hours }}</td>{% endif %}
+					{% if total_meal|index:forloop.counter0 %}<td>{{ total_meal|index:forloop.counter0|get_hours }}</td>{% endif %}
 					<td></td><td></td>
 				</tr>
 			</tbody>
