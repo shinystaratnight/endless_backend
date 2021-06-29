@@ -220,7 +220,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
         # restrict disabling both notification channels
         message_by_sms = data.get('message_by_sms')
         message_by_email = data.get('message_by_email')
-        if not message_by_email and not message_by_sms:
+        if message_by_email == False and message_by_sms == False:
             raise exceptions.ValidationError({
                 'message_by_email': _('At least one notofication channel should be active')
             })
