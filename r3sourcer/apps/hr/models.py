@@ -1451,6 +1451,10 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         return self.job_offer.candidate_contact
 
     @property
+    def skill(self):
+        return self.job_offer.job.position
+
+    @property
     def shift_delta(self):
         if self.shift_ended_at and self.shift_started_at:
             return self.shift_ended_at - self.shift_started_at
@@ -1480,7 +1484,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         elif self.job_offer.shift.date.hourly_rate:
             return self.job_offer.shift.date.hourly_rate
         else:
-            return self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
+            return self.candidate_contact.candidate_skills.filter(skill=self.skill).first().hourly_rate
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
@@ -1656,19 +1660,18 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
 
         # add or modify hourly_rate skill activity if we have hourly or combined wage
-        if self.candidate_submitted_at:
-            if hourly_activity:
-                if self.shift_duration:
-                    hourly_activity.value = self.shift_duration.total_seconds()/3600
-                    hourly_activity.rate = self.get_hourly_rate
-                    hourly_activity.save()
-                else:
-                    hourly_activity.delete()
-            elif self.shift_duration:
-                hourly_activity = self.timesheet_rates.create(worktype=hourly_work,
-                                                              value=self.shift_duration.total_seconds()/3600,
-                                                              rate=self.get_hourly_rate
-                                                              )
+        if hourly_activity:
+            if self.shift_duration:
+                hourly_activity.value = self.shift_duration.total_seconds()/3600
+                hourly_activity.rate = self.get_hourly_rate
+                hourly_activity.save()
+            else:
+                hourly_activity.delete()
+        elif self.shift_duration:
+            hourly_activity = self.timesheet_rates.create(worktype=hourly_work,
+                                                            value=self.shift_duration.total_seconds()/3600,
+                                                            rate=self.get_hourly_rate
+                                                            )
 
         # set wage_type to HOURLY_WORK if skill activities is not added
         if self.candidate_submitted_at:
@@ -2651,6 +2654,29 @@ class TimeSheetRate(UUIDModel):
     def __str__(self):
         return f'{self.timesheet}-{self.worktype}'
 
+    # def get_rate(self):
+    #     # search rate for candidate
+    #     if self.worktype.skill:
+    #         skill_rel = self.timesheet.job_offer.candidate_contact.candidate_skills.filter(skill=self.worktype.skill).last()
+    #     elif self.worktype.skill_name:
+    #        skill_rel = self.timesheet.job_offer.candidate_contact.candidate_skills.filter(skill__name=self.worktype.skill_name).last()
+
+    #     if skill_rel:
+
+
+    #     if skill_rel:
+    #         skill_activity_rate = skill_rel.skill_rates.filter(worktype=self).last()
+    #         if skill_activity_rate:
+    #             return skill_activity_rate
+
+    #     # search rate for job
+    #     rate_range = candidate_contact.skill_rates.filter(worktype=self)
+
+    #     if not rate_range:
+    #         if self.skill_name:
+    #             rate_range = self.skill_rate_ranges.last()
+
+    #     return rate_range
 
 class JobRate(UUIDModel):
     job = models.ForeignKey(
