@@ -22,7 +22,6 @@ from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
 from r3sourcer.apps.myob.helpers import get_myob_client
@@ -1122,12 +1121,11 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
 
             jobsite = timesheet.job_offer.job.jobsite
             industry = jobsite.industry
-            worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc(timesheet.master_company,
                                                     industry,
                                                     RateCoefficientModifier.TYPE_CHOICES.candidate,
                                                     timesheet.shift_started_at_tz,
-                                                    worked_hours,
+                                                    timesheet.shift_duration,
                                                     break_started=timesheet.break_started_at_tz,
                                                     break_ended=timesheet.break_ended_at_tz)
             timesheet.coeffs_hours = coeffs_hours

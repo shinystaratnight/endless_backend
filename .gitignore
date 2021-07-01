@@ -32,3 +32,5 @@ __pycache__
 webui-app
 /users.xml
 conf/docker/nginx.conf
+.pytest_cache/v/cache/nodeids
+.pytest_cache/v/cache/lastfailed
