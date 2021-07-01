@@ -1468,10 +1468,12 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     @property
     def shift_duration(self):
-        try:
+        if self.shift_delta and self.break_delta:
             return self.shift_delta - self.break_delta
-        except:
-            return None
+        elif self.shift_delta and not self.break_delta:
+            return self.shift_delta
+        else:
+            return timedelta(0)
 
     @property
     def get_hourly_rate(self):
