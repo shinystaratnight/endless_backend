@@ -1616,7 +1616,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     def save(self, *args, **kwargs):
         # Set wage_type from Job.wage_type
-        if not self.wage_type and self.job_offer:
+        if self.wage_type is None and self.job_offer:
             self.wage_type = self.job_offer.job.wage_type
 
         just_added = self._state.adding
@@ -1676,13 +1676,12 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                                                             )
 
         # set wage_type to HOURLY_WORK if skill activities is not added
-        if self.candidate_submitted_at:
-            if hourly_activity and not other_activities:
-                self.wage_type = Job.WAGE_CHOICES.HOURLY
-            elif not hourly_activity and other_activities:
-                self.wage_type = Job.WAGE_CHOICES.PIECEWORK
-            elif hourly_activity and other_activities:
-                self.wage_type = Job.WAGE_CHOICES.COMBINED
+        if hourly_activity and not other_activities:
+            self.wage_type = Job.WAGE_CHOICES.HOURLY
+        elif not hourly_activity and other_activities:
+            self.wage_type = Job.WAGE_CHOICES.PIECEWORK
+        elif hourly_activity and other_activities:
+            self.wage_type = Job.WAGE_CHOICES.COMBINED
 
         super().save(*args, **kwargs)
 
