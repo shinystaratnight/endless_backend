@@ -14,7 +14,7 @@ from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
 from r3sourcer.apps.core.utils.companies import get_site_url
 from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.hr.models import TimeSheet
-from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
+from r3sourcer.apps.hr.payment.base import BasePaymentService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pdf_templates.models import PDFTemplate
@@ -57,12 +57,11 @@ class InvoiceService(BasePaymentService):
             skill = timesheet.job_offer.job.position
             customer_company = timesheet.job_offer.shift.date.job.customer_company
             price_list_rate = self._get_price_list_rate(skill, customer_company)
-            worked_hours = calc_worked_delta(timesheet)
             coeffs_hours = coefficient_service.calc(timesheet.master_company,
                                                     industry,
                                                     RateCoefficientModifier.TYPE_CHOICES.company,
                                                     timesheet.shift_started_at_tz,
-                                                    worked_hours,
+                                                    timesheet.shift_duration,
                                                     break_started=timesheet.break_started_at_tz,
                                                     break_ended=timesheet.break_ended_at_tz)
 
