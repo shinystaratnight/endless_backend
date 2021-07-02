@@ -219,8 +219,12 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
 
     def get_resend_sms_supervisor(self, obj):
         return (
-                obj.going_to_work_confirmation and obj.candidate_submitted_at is not None and
-                obj.supervisor_approved_at is None and obj.shift_ended_at_utc and obj.shift_ended_at_utc <= utc_now()
+            (obj.going_to_work_confirmation and
+            obj.candidate_submitted_at is not None and
+            obj.supervisor_approved_at is None) and
+            (obj.wage_type == 1 or
+            obj.shift_ended_at_utc and
+            obj.shift_ended_at_utc <= utc_now())
         )
 
     def get_candidate_submit_hidden(self, obj):

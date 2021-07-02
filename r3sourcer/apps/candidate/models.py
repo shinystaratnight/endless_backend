@@ -3,6 +3,7 @@ from datetime import timedelta
 from crum import get_current_request
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.core.exceptions import ValidationError
 from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -793,8 +794,6 @@ class SkillRate(UUIDModel):
         WorkType,
         related_name="skill_rates",
         verbose_name=_("Type of work"),
-        blank=True,
-        null=True
     )
 
     rate = models.DecimalField(
@@ -810,6 +809,21 @@ class SkillRate(UUIDModel):
 
     def __str__(self):
         return f'{self.skill_rel}-{self.worktype}' if self.worktype else f'{self.skill_rel}'
+
+    def clean(self):
+        # get skill_rate_range for worktype
+        skill_rate_range = self.skill_rel.skill.skill_rate_ranges.filter(worktype=self.worktype).first()
+        # Check if skill_rate in defined skill_rate_range
+        if skill_rate_range:
+            lower_limit = skill_rate_range.lower_rate_limit
+            upper_limit = skill_rate_range.upper_rate_limit
+            is_lower = lower_limit and self.rate < lower_limit
+            is_upper = upper_limit and self.rate > upper_limit
+            if is_lower or is_upper:
+                raise ValidationError({
+                    'rate': _('Rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
 
 
 class SkillRateCoefficientRel(UUIDModel):

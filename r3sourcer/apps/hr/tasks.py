@@ -22,7 +22,6 @@ from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
 from r3sourcer.apps.myob.helpers import get_myob_client
@@ -1101,50 +1100,58 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         raise Exception('Cannot find pdf template with slug:', template_slug)
 
     coefficient_service = CoefficientService()
-    total_base_units = timedelta(0)
-    total_15_coef = timedelta(0)
-    total_2_coef = timedelta(0)
-    total_value = timedelta(0)
-    total_travel = timedelta(0)
-    total_meal = timedelta(0)
+    total_base_units = []
+    total_15_coef = []
+    total_2_coef = []
+    total_value = []
+    total_travel = []
+    total_meal = []
 
-    for timesheet in timesheets:
-        jobsite = timesheet.job_offer.job.jobsite
-        industry = jobsite.industry
-        worked_hours = calc_worked_delta(timesheet)
-        coeffs_hours = coefficient_service.calc(timesheet.master_company,
-                                                industry,
-                                                RateCoefficientModifier.TYPE_CHOICES.candidate,
-                                                timesheet.shift_started_at_tz,
-                                                worked_hours,
-                                                break_started=timesheet.break_started_at_tz,
-                                                break_ended=timesheet.break_ended_at_tz)
-        timesheet.coeffs_hours = coeffs_hours
-        name_mapping = {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}
+    # calculate total values by groups
+    index = 0
+    for group, t_s in timesheets_group_by_job_site(timesheets):
+        total_base_units.append(timedelta(0))
+        total_15_coef.append(timedelta(0))
+        total_2_coef.append(timedelta(0))
+        total_value.append(timedelta(0))
+        total_travel.append(timedelta(0))
+        total_meal.append(timedelta(0))
 
-        for rate_type, value in name_mapping.items():
-            setattr(timesheet, value, get_value_for_rate_type(coeffs_hours, rate_type))
-        if str(timesheet.travel) == '1:00:00':
-            timesheet.travel = 1
-        else:
-            timesheet.travel = 0
-        if str(timesheet.meal) == '1:00:00':
-            timesheet.meal = 1
-        else:
-            timesheet.meal = 0
+        for timesheet in t_s:
 
-        # set total values
-        total_base_units += get_value_for_rate_type(coeffs_hours, 'base')
-        total_15_coef += get_value_for_rate_type(coeffs_hours, 'c_1_5x')
-        total_2_coef += get_value_for_rate_type(coeffs_hours, 'c_2x')
-        total_value += get_value_for_rate_type(coeffs_hours, 'base') \
-                    + get_value_for_rate_type(coeffs_hours, 'c_1_5x') \
-                    + get_value_for_rate_type(coeffs_hours, 'c_2x')
-        total_travel += get_value_for_rate_type(coeffs_hours, 'travel')
-        total_meal += get_value_for_rate_type(coeffs_hours, 'meal')
+            jobsite = timesheet.job_offer.job.jobsite
+            industry = jobsite.industry
+            coeffs_hours = coefficient_service.calc(timesheet.master_company,
+                                                    industry,
+                                                    RateCoefficientModifier.TYPE_CHOICES.candidate,
+                                                    timesheet.shift_started_at_tz,
+                                                    timesheet.shift_duration,
+                                                    break_started=timesheet.break_started_at_tz,
+                                                    break_ended=timesheet.break_ended_at_tz)
+            timesheet.coeffs_hours = coeffs_hours
+            name_mapping = {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}
 
-    test = timesheets_group_by_job_site(timesheets)
-    print(*test)
+            for rate_type, value in name_mapping.items():
+                setattr(timesheet, value, get_value_for_rate_type(coeffs_hours, rate_type))
+            if str(timesheet.travel) == '1:00:00':
+                timesheet.travel = 1
+            else:
+                timesheet.travel = 0
+            if str(timesheet.meal) == '1:00:00':
+                timesheet.meal = 1
+            else:
+                timesheet.meal = 0
+
+            total_base_units[index] += get_value_for_rate_type(coeffs_hours, 'base')
+            total_15_coef[index] += get_value_for_rate_type(coeffs_hours, 'c_1_5x')
+            total_2_coef[index] += get_value_for_rate_type(coeffs_hours, 'c_2x')
+            total_value[index] += get_value_for_rate_type(coeffs_hours, 'base') \
+                               + get_value_for_rate_type(coeffs_hours, 'c_1_5x') \
+                               + get_value_for_rate_type(coeffs_hours, 'c_2x')
+            total_travel[index] += get_value_for_rate_type(coeffs_hours, 'travel')
+            total_meal[index] += get_value_for_rate_type(coeffs_hours, 'meal')
+
+        index += 1
 
     context = {
         'timesheets': timesheets_group_by_job_site(timesheets),
@@ -1163,10 +1170,9 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         parent=master_company.files,
         name='timesheet',
     )
-    file_name = 'timesheet_{}_{}_{}.pdf'.format(
+    file_name = 'timesheet_{}_{}.pdf'.format(
         str(timesheets[0].id),
-        date_format(timesheets[0].shift_started_at_tz, 'Y_m_d'),
-        date_format(timesheets[0].shift_ended_at_tz, 'Y_m_d')
+        date_format(timesheets[0].shift_started_at_tz, 'Y_m_d')
     )
     file_obj, created = File.objects.get_or_create(
         folder=folder,
@@ -1213,11 +1219,16 @@ def send_invoice_email(invoice_id):
         'client': client_company.name,
     }
 
-    email_interface.send_tpl(client_company.primary_contact,
-                             master_company,
-                             tpl_name,
-                             **context
-                             )
+    try:
+        email_interface = get_email_service()
+    except ImportError:
+        logger.exception('Cannot load Email service')
+    else:
+        email_interface.send_tpl(client_company.primary_contact,
+                                master_company,
+                                tpl_name,
+                                **context
+                                )
 
 
 @shared_task
