@@ -1711,6 +1711,52 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             hr_utils.send_supervisor_timesheet_approve(self)
 
 
+class CandidateTimeSheetFiles(UUIDModel):
+    time_sheet = models.ForeignKey(
+        TimeSheet,
+        on_delete=models.CASCADE,
+        related_name="candidate_files",
+        verbose_name=_("TimeSheet")
+    )
+
+    def candidate_timesheet_path(self, filename):
+        return 'candidates/timesheet/{}/{}'.format(self.id, filename)
+
+    file = models.FileField(
+        verbose_name=_("Candidate Timesheet File"),
+        upload_to=candidate_timesheet_path,
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = _("Candidate TimeSheet File")
+        verbose_name_plural = _("Candidate TimeSheet Files")
+
+
+class ClientTimeSheetFiles(UUIDModel):
+    time_sheet = models.ForeignKey(
+        TimeSheet,
+        on_delete=models.CASCADE,
+        related_name="client_files",
+        verbose_name=_("TimeSheet")
+    )
+
+    def client_timesheet_path(self, filename):
+        return 'clients/timesheet/{}/{}'.format(self.id, filename)
+
+    file = models.FileField(
+        verbose_name=_("Client Timesheet File"),
+        upload_to=client_timesheet_path,
+        null=True,
+        blank=True
+    )
+
+    class Meta:
+        verbose_name = _("Client TimeSheet File")
+        verbose_name_plural = _("Client TimeSheet Files")
+
+
 class TimeSheetIssue(
         UUIDModel,
         WorkflowProcess):
