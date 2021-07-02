@@ -24,12 +24,11 @@ __all__ = [
 
 
 class ValidateApprovalScheme(serializers.Serializer):
-
     APPROVAL_SCHEME = None
 
     def validate(self, attrs):
         # get master companies and check existing
-        client_company =  self.instance.job_offer.job.customer_company
+        client_company = self.instance.job_offer.job.customer_company
         companies = self.instance.supervisor.get_master_company()
         if len(companies) == 0:
             raise serializers.ValidationError(_("Supervisor has not master company"))
@@ -51,22 +50,22 @@ class ApiTimesheetImageFieldsMixin():
 
 
 class TimeSheetSignatureSerializer(ValidateApprovalScheme, ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
-
     image_fields = ('supervisor_signature',)
     APPROVAL_SCHEME = Company.TIMESHEET_APPROVAL_SCHEME.SIGNATURE
 
     class Meta:
         model = TimeSheet
         fields = ('supervisor_signature',)
-        extra_kwargs = {'supervisor_signature': {
-            'required': True,
-            'allow_empty_file': False,
-            'allow_null': False}
+        extra_kwargs = {
+            'supervisor_signature': {
+                'required': True,
+                'allow_empty_file': False,
+                'allow_null': False
+            }
         }
 
 
 class PinCodeSerializer(ValidateApprovalScheme):
-
     APPROVAL_SCHEME = Company.TIMESHEET_APPROVAL_SCHEME.PIN
 
     pin_code = serializers.CharField(min_length=4)
@@ -142,9 +141,9 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         if obj:
             company = obj.job_offer.job.customer_company
             return {
-                    'id': company.id, '__str__': str(company),
-                    'supervisor_approved_scheme': company.timesheet_approval_scheme
-                    }
+                'id': company.id, '__str__': str(company),
+                'supervisor_approved_scheme': company.timesheet_approval_scheme
+            }
 
     def get_jobsite(self, obj):
         if obj:
@@ -161,8 +160,10 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     def get_position(self, obj):
         if obj:
             position = obj.job_offer.job.position
-            translations = [{'language': {'id': i.language.alpha_2, 'name': i.language.name},
-                             'value': i.value} for i in position.name.translations.all()]
+            translations = [{
+                                'language': {'id': i.language.alpha_2, 'name': i.language.name},
+                                'value': i.value
+                            } for i in position.name.translations.all()]
             return {'id': position.id, '__str__': str(position), 'translations': translations}
 
     def __format_datetime(self, date_time, default='-'):
@@ -203,20 +204,20 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
 
     def get_resend_sms_candidate(self, obj):
         return (
-            obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at_utc and obj.shift_ended_at_utc <= utc_now()
+                obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
+                obj.supervisor_approved_at is None and obj.shift_ended_at_utc and obj.shift_ended_at_utc <= utc_now()
         )
 
     def get_resend_sms_supervisor(self, obj):
         return (
-            obj.going_to_work_confirmation and obj.candidate_submitted_at is not None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at_utc and obj.shift_ended_at_utc <= utc_now()
+                obj.going_to_work_confirmation and obj.candidate_submitted_at is not None and
+                obj.supervisor_approved_at is None and obj.shift_ended_at_utc and obj.shift_ended_at_utc <= utc_now()
         )
 
     def get_candidate_submit_hidden(self, obj):
         return not (
-            obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_started_at_utc <= utc_now()
+                obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
+                obj.supervisor_approved_at is None and obj.shift_started_at_utc <= utc_now()
         )
 
     def get_evaluated(self, obj):
@@ -269,7 +270,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                     template__slug=template_slug,
                     related_objects__object_id=obj.id,
                     company=obj.master_company
-                    ).first()
+                ).first()
 
         return sms and sms_serializers.SMSMessageSerializer(sms, fields=['id', '__str__']).data
 
@@ -361,7 +362,6 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):
-
     method_fields = ('jobsite', 'position')
 
     class Meta:
@@ -388,7 +388,6 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
 
 
 class TimeSheetManualSerializer(ApiBaseModelSerializer):
-
     method_fields = (
         'shift_total', 'break_total', 'total_worked', 'time_zone', 'position',
     )
@@ -429,12 +428,12 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
         if self.instance.pk:
             # validate sent fields
-            if wage_type in [0,2]:
+            if wage_type in [0, 2]:
                 if not data.get('shift_started_at'):
                     raise exceptions.ValidationError({'shift_started_at': _('You need to fill in the start time of the shift')})
                 if not data.get('shift_ended_at'):
                     raise exceptions.ValidationError({'shift_ended_at': _('You need to fill in the end time of the shift')})
-            if wage_type in [1,2]:
+            if wage_type in [1, 2]:
                 if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
                     raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
 
@@ -482,8 +481,10 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
     def get_position(self, obj):
         if obj:
             position = obj.job_offer.job.position
-            translations = [{'language': {'id': i.language.alpha_2, 'name': i.language.name},
-                             'value': i.value} for i in position.name.translations.all()]
+            translations = [{
+                                'language': {'id': i.language.alpha_2, 'name': i.language.name},
+                                'value': i.value
+                            } for i in position.name.translations.all()]
             return {'id': position.id, '__str__': str(position), 'translations': translations}
 
     def get_shift_total(self, obj):
@@ -500,7 +501,6 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
 
 class TimeSheetRateSerializer(ApiBaseModelSerializer):
-
     class Meta:
         model = TimeSheetRate
         fields = (
