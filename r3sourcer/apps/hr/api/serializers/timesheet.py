@@ -86,7 +86,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
-        'invoice', 'shift','evaluation', 'time_zone',
+        'invoice', 'shift', 'evaluation', 'time_zone',
     )
 
     class Meta:
@@ -125,17 +125,26 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'break_ended_at_tz',
             'break_ended_at_utc',
             'timesheet_rates',
+            'candidate_notes',
+            'client_notes',
+            'client_files',
+            'candidate_files'
         )
-        related_fields = {'job_offer': ('id',
-                                        {'candidate_contact': ('id', {
-                                                              'contact': ('picture', ),
-                                                              'candidate_scores': ['average_score'],
-                                        },),},),
-                         'timesheet_rates': ('id',
-                                             'rate',
-                                             'value',
-                                             {'worktype': ('id', 'translations')}),
-                         }
+        related_fields = {
+            'job_offer': ('id',
+                          {
+                              'candidate_contact': ('id', {
+                                  'contact': ('picture',),
+                                  'candidate_scores': ['average_score'],
+                              },),
+                          },),
+            'timesheet_rates': ('id',
+                                'rate',
+                                'value',
+                                {'worktype': ('id', 'translations')}),
+            'client_notes': ('id', 'file',),
+            'candidate_files': ('id', 'file',),
+        }
 
     def get_company(self, obj):
         if obj:
