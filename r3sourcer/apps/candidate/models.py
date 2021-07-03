@@ -523,6 +523,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         return self.contact.email
 
     def get_candidate_rate_for_skill(self, skill, **skill_kwargs):
+        # search skill activity rate in candidate's skill activity rates
         candidate_skill = self.candidate_skills.filter(
             skill=skill, **skill_kwargs
         ).first()
