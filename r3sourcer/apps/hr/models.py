@@ -4,6 +4,7 @@ from uuid import UUID  # not remove
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
+import logging
 import pytz
 from django.db.models import F
 from easy_thumbnails.fields import ThumbnailerImageField
@@ -37,6 +38,7 @@ from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
+logger = logging.getLogger(__name__)
 
 class Jobsite(CategoryFolderMixin,
               MYOBMixin,
@@ -533,7 +535,8 @@ class Job(core_models.AbstractBaseOrder):
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
             sd, _ = ShiftDate.objects.get_or_create(job=self, shift_date=self.work_start_date)
-            Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
+            # fix: commented due to https://taavisaavo.atlassian.net/browse/RV-1279
+            # Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
 
             hr_utils.send_job_confirmation_sms(self)
 
@@ -643,6 +646,10 @@ class ShiftDate(TimeZoneUUIDModel):
         return FULFILLED
     is_fulfilled.short_description = _('Fulfilled')
 
+    def save(self, *args, **kwargs):
+        logger.warning("ShiftDate {ts_id} saved in model.".format(ts_id=self.shift_date))
+        super().save(*args, **kwargs)
+
 
 class SQCount(models.Subquery):
     template = "(SELECT count(*) FROM (%(subquery)s) _count)"
@@ -724,6 +731,10 @@ class Shift(TimeZoneUUIDModel):
         if jos.exists() and self.workers <= accepted_jos.count():
             result = FULFILLED
         return result
+
+    def save(self, *args, **kwargs):
+        logger.warning("Shift for {ts_id} saved in model.".format(ts_id=self.time))
+        super().save(*args, **kwargs)
 
 
 class JobOffer(TimeZoneUUIDModel):
@@ -1448,6 +1459,10 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         return self.job_offer.candidate_contact
 
     @property
+    def skill(self):
+        return self.job_offer.job.position
+
+    @property
     def shift_delta(self):
         if self.shift_ended_at and self.shift_started_at:
             return self.shift_ended_at - self.shift_started_at
@@ -1461,10 +1476,12 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     @property
     def shift_duration(self):
-        try:
+        if self.shift_delta and self.break_delta:
             return self.shift_delta - self.break_delta
-        except:
-            return None
+        elif self.shift_delta and not self.break_delta:
+            return self.shift_delta
+        else:
+            return timedelta(0)
 
     @property
     def get_hourly_rate(self):
@@ -1616,7 +1633,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     def save(self, *args, **kwargs):
         # Set wage_type from Job.wage_type
-        if not self.wage_type and self.job_offer:
+        if self.wage_type is None and self.job_offer:
             self.wage_type = self.job_offer.job.wage_type
 
         just_added = self._state.adding
@@ -1662,28 +1679,26 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
 
         # add or modify hourly_rate skill activity if we have hourly or combined wage
-        if self.candidate_submitted_at:
-            if hourly_activity:
-                if self.shift_duration:
-                    hourly_activity.value = self.shift_duration.total_seconds()/3600
-                    hourly_activity.rate = self.get_hourly_rate
-                    hourly_activity.save()
-                else:
-                    hourly_activity.delete()
-            elif self.shift_duration:
-                hourly_activity = self.timesheet_rates.create(worktype=hourly_work,
-                                                              value=self.shift_duration.total_seconds()/3600,
-                                                              rate=self.get_hourly_rate
-                                                              )
+        if hourly_activity:
+            if self.shift_duration:
+                hourly_activity.value = self.shift_duration.total_seconds()/3600
+                hourly_activity.rate = self.get_hourly_rate
+                hourly_activity.save()
+            else:
+                hourly_activity.delete()
+        elif self.shift_duration:
+            hourly_activity = self.timesheet_rates.create(worktype=hourly_work,
+                                                            value=self.shift_duration.total_seconds()/3600,
+                                                            rate=self.get_hourly_rate
+                                                            )
 
         # set wage_type to HOURLY_WORK if skill activities is not added
-        if self.candidate_submitted_at:
-            if hourly_activity and not other_activities:
-                self.wage_type = Job.WAGE_CHOICES.HOURLY
-            elif not hourly_activity and other_activities:
-                self.wage_type = Job.WAGE_CHOICES.PIECEWORK
-            elif hourly_activity and other_activities:
-                self.wage_type = Job.WAGE_CHOICES.COMBINED
+        if hourly_activity and not other_activities:
+            self.wage_type = Job.WAGE_CHOICES.HOURLY
+        elif not hourly_activity and other_activities:
+            self.wage_type = Job.WAGE_CHOICES.PIECEWORK
+        elif hourly_activity and other_activities:
+            self.wage_type = Job.WAGE_CHOICES.COMBINED
 
         super().save(*args, **kwargs)
 
@@ -2657,6 +2672,29 @@ class TimeSheetRate(UUIDModel):
     def __str__(self):
         return f'{self.timesheet}-{self.worktype}'
 
+    # def get_rate(self):
+    #     # search rate for candidate
+    #     if self.worktype.skill:
+    #         skill_rel = self.timesheet.job_offer.candidate_contact.candidate_skills.filter(skill=self.worktype.skill).last()
+    #     elif self.worktype.skill_name:
+    #        skill_rel = self.timesheet.job_offer.candidate_contact.candidate_skills.filter(skill__name=self.worktype.skill_name).last()
+
+    #     if skill_rel:
+
+
+    #     if skill_rel:
+    #         skill_activity_rate = skill_rel.skill_rates.filter(worktype=self).last()
+    #         if skill_activity_rate:
+    #             return skill_activity_rate
+
+    #     # search rate for job
+    #     rate_range = candidate_contact.skill_rates.filter(worktype=self)
+
+    #     if not rate_range:
+    #         if self.skill_name:
+    #             rate_range = self.skill_rate_ranges.last()
+
+    #     return rate_range
 
 class JobRate(UUIDModel):
     job = models.ForeignKey(

@@ -18,10 +18,10 @@ from filer.models import File, Folder
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.core.utils import companies as core_companies_utils
+from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.email_interface.models import EmailMessage
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.hr import models as hr_models
-from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.hr.utils import utils
 from r3sourcer.apps.login.models import TokenLogin
 from r3sourcer.apps.myob.helpers import get_myob_client
@@ -30,6 +30,7 @@ from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
+from r3sourcer.apps.pdf_templates.models import PDFTemplate
 from r3sourcer.celeryapp import app
 from r3sourcer.helpers.datetimes import utc_now, tz2utc, date2utc_date
 
@@ -71,7 +72,6 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
         target_date_and_time = "ASAP"
 
     master_company = job_offer.candidate_contact.contact.get_closest_company()
-    print(master_company)
 
     data_dict = {
         'job_offer': job_offer,
@@ -975,7 +975,7 @@ def send_job_confirmation_message(self, job_id):
             except ImportError:
                 logger.exception('Cannot load SMS service')
             else:
-                sent_message = sms_interface.send_tpl(job.customer_representative.contact,
+                sms_interface.send_tpl(job.customer_representative.contact,
                                                       master_company,
                                                       tpl_name,
                                                       check_reply=False,
@@ -1043,7 +1043,6 @@ def get_file_from_str(str):
     from io import BytesIO
     import weasyprint
     pdf = weasyprint.HTML(string=str)
-    print(str)
     pdf_file = BytesIO()
     pdf_file.write(pdf.write_pdf())
     pdf_file.seek(0)
@@ -1083,52 +1082,97 @@ def get_value_for_rate_type(coeffs_hours, rate_type):
 
 
 def generate_pdf(timesheet_ids, request=None, master_company=None):
-    template = get_template('timesheet/timesheet.html')
+    template_slug = 'timesheets-list'
+
     timesheets = hr_models.TimeSheet.objects.filter(id__in=timesheet_ids).order_by(
         'job_offer__shift__date__job__jobsite', 'wage_type', 'shift_started_at')
-    domain = core_companies_utils.get_site_url(user=request and request.user, master_company=master_company)
+    if not master_company:
+        master_company = timesheets[0].master_company
+    if master_company.logo:
+        master_logo = get_thumbnail_picture(master_company.logo, 'large')
+
+    # get template
+    try:
+        template = PDFTemplate.objects.get(slug=template_slug,
+                                           company=master_company)
+    except PDFTemplate.DoesNotExist:
+        logger.exception('Cannot find pdf template with slug %s', template_slug)
+        raise Exception('Cannot find pdf template with slug:', template_slug)
+
     coefficient_service = CoefficientService()
+    total_base_units = []
+    total_15_coef = []
+    total_2_coef = []
+    total_value = []
+    total_travel = []
+    total_meal = []
 
-    for timesheet in timesheets:
-        jobsite = timesheet.job_offer.job.jobsite
-        industry = jobsite.industry
-        worked_hours = calc_worked_delta(timesheet)
-        coeffs_hours = coefficient_service.calc(timesheet.master_company,
-                                                industry,
-                                                RateCoefficientModifier.TYPE_CHOICES.candidate,
-                                                timesheet.shift_started_at_tz,
-                                                worked_hours,
-                                                break_started=timesheet.break_started_at_tz,
-                                                break_ended=timesheet.break_ended_at_tz)
-        timesheet.coeffs_hours = coeffs_hours
-        name_mapping = {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}
+    # calculate total values by groups
+    index = 0
+    for group, t_s in timesheets_group_by_job_site(timesheets):
+        total_base_units.append(timedelta(0))
+        total_15_coef.append(timedelta(0))
+        total_2_coef.append(timedelta(0))
+        total_value.append(timedelta(0))
+        total_travel.append(timedelta(0))
+        total_meal.append(timedelta(0))
 
-        for rate_type, value in name_mapping.items():
-            setattr(timesheet, value, get_value_for_rate_type(coeffs_hours, rate_type))
-        if str(timesheet.travel) == '1:00:00':
-            timesheet.travel = 1
-        else:
-            timesheet.travel = 0
-        if str(timesheet.meal) == '1:00:00':
-            timesheet.meal = 1
-        else:
-            timesheet.meal = 0
+        for timesheet in t_s:
+
+            jobsite = timesheet.job_offer.job.jobsite
+            industry = jobsite.industry
+            coeffs_hours = coefficient_service.calc(timesheet.master_company,
+                                                    industry,
+                                                    RateCoefficientModifier.TYPE_CHOICES.candidate,
+                                                    timesheet.shift_started_at_tz,
+                                                    timesheet.shift_duration,
+                                                    break_started=timesheet.break_started_at_tz,
+                                                    break_ended=timesheet.break_ended_at_tz)
+            timesheet.coeffs_hours = coeffs_hours
+            name_mapping = {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}
+
+            for rate_type, value in name_mapping.items():
+                setattr(timesheet, value, get_value_for_rate_type(coeffs_hours, rate_type))
+            if str(timesheet.travel) == '1:00:00':
+                timesheet.travel = 1
+            else:
+                timesheet.travel = 0
+            if str(timesheet.meal) == '1:00:00':
+                timesheet.meal = 1
+            else:
+                timesheet.meal = 0
+
+            total_base_units[index] += get_value_for_rate_type(coeffs_hours, 'base')
+            total_15_coef[index] += get_value_for_rate_type(coeffs_hours, 'c_1_5x')
+            total_2_coef[index] += get_value_for_rate_type(coeffs_hours, 'c_2x')
+            total_value[index] += get_value_for_rate_type(coeffs_hours, 'base') \
+                               + get_value_for_rate_type(coeffs_hours, 'c_1_5x') \
+                               + get_value_for_rate_type(coeffs_hours, 'c_2x')
+            total_travel[index] += get_value_for_rate_type(coeffs_hours, 'travel')
+            total_meal[index] += get_value_for_rate_type(coeffs_hours, 'meal')
+
+        index += 1
 
     context = {
         'timesheets': timesheets_group_by_job_site(timesheets),
-        'request': request,
-        'domain': domain,
+        'master_company': master_company,
+        'master_company_logo': master_logo,
+        'total_base_units': total_base_units,
+        'total_15_coef': total_15_coef,
+        'total_2_coef': total_2_coef,
+        'total_value': total_value,
+        'total_travel': total_travel,
+        'total_meal': total_meal,
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))
     folder, created = Folder.objects.get_or_create(
-        parent=timesheets[0].master_company.files,
+        parent=master_company.files,
         name='timesheet',
     )
-    file_name = 'timesheet_{}_{}_{}.pdf'.format(
+    file_name = 'timesheet_{}_{}.pdf'.format(
         str(timesheets[0].id),
-        date_format(timesheets[0].shift_started_at_tz, 'Y_m_d'),
-        date_format(timesheets[0].shift_ended_at_tz, 'Y_m_d')
+        date_format(timesheets[0].shift_started_at_tz, 'Y_m_d')
     )
     file_obj, created = File.objects.get_or_create(
         folder=folder,
@@ -1175,11 +1219,16 @@ def send_invoice_email(invoice_id):
         'client': client_company.name,
     }
 
-    email_interface.send_tpl(client_company.primary_contact,
-                             master_company,
-                             tpl_name,
-                             **context
-                             )
+    try:
+        email_interface = get_email_service()
+    except ImportError:
+        logger.exception('Cannot load Email service')
+    else:
+        email_interface.send_tpl(client_company.primary_contact,
+                                master_company,
+                                tpl_name,
+                                **context
+                                )
 
 
 @shared_task
