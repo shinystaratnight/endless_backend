@@ -162,6 +162,14 @@ class Skill(MYOBMixin, UUIDModel):
                 models.Q(company__regular_companies__master_company=owner)
             ]
 
+    def get_hourly_rate(self):
+        # search skill activity rate in job's skill activity rates
+        hourly_work = WorkType.objects.filter(name='Hourly work',
+                                              skill_name=self.name) \
+                                      .first()
+        skill_activity = self.skill_rate_ranges.filter(worktype=hourly_work).first()
+        return skill_activity.default_rate if skill_activity else None
+
 
 class SkillBaseRate(UUIDModel):   # TODO delete SkillBaseRate model after uom rates changes will be completed
 

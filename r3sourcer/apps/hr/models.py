@@ -586,6 +586,14 @@ class Job(core_models.AbstractBaseOrder):
                 }
         return None
 
+    def get_hourly_rate_for_skill(self, skill):
+        # search skill activity rate in job's skill activity rates
+        hourly_work = WorkType.objects.filter(name='Hourly work',
+                                              skill_name=skill.name) \
+                                      .first()
+        job_skill_activity = self.job_rates.filter(worktype=hourly_work).first()
+        return job_skill_activity.rate if job_skill_activity else None
+
 
 class ShiftDate(TimeZoneUUIDModel):
 
@@ -1464,12 +1472,21 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             return self.candidate_rate
         elif self.job_offer.shift.hourly_rate:
             return self.job_offer.shift.hourly_rate
-        elif self.job_offer.shift.hourly_rate:
-            return self.job_offer.shift.hourly_rate
         elif self.job_offer.shift.date.hourly_rate:
             return self.job_offer.shift.date.hourly_rate
+        elif self.job_offer.shift.date.job.hourly_rate_default:
+            return self.job_offer.shift.date.job.hourly_rate_default
         else:
-            return self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
+            # search skill activity rate in candidate's skill activity rates
+            rate = self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
+            if not rate:
+                # search skill activity rate in job's skill activity rates
+                rate = self.job_offer.job.get_hourly_rate_for_skill(self.job_offer.job.position)
+            if not rate:
+                # search skill activity rate in skill rate ranges
+                rate = self.job_offer.job.position.get_hourly_rate()
+            return rate if rate else 0
+
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
