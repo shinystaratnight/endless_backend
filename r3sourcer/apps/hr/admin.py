@@ -25,7 +25,7 @@ class CandidateTimeSheetFilesInline(admin.TabularInline):
 
 
 class TimeSheetAdmin(admin.ModelAdmin):
-    list_display = ('__str__', 'regular_company', 'shift_started_at')
+    list_display = ('created_at', '__str__', 'regular_company', 'shift_started_at')
     ordering = ['-shift_started_at']
     inlines = [TimeSheetRateInline, ClientTimeSheetFilesInline, CandidateTimeSheetFilesInline]
 
@@ -61,6 +61,12 @@ class JobsiteAdmin(admin.ModelAdmin):
     search_fields = ('short_name',)
 
 
+class JobOfferAdmin(admin.ModelAdmin):
+    list_display = ('created_at', 'candidate_contact', 'status')
+    search_fields = ('short_name',)
+    ordering = ['-created_at']
+
+
 admin.site.register(models.Jobsite, JobsiteAdmin)
 admin.site.register(models.JobsiteUnavailability)
 admin.site.register(models.Job, JobAdmin)
@@ -69,7 +75,7 @@ admin.site.register(models.ShiftDate)
 admin.site.register(models.Shift)
 admin.site.register(models.TimeSheet, TimeSheetAdmin)
 admin.site.register(models.TimeSheetIssue)
-admin.site.register(models.JobOffer)
+admin.site.register(models.JobOffer, JobOfferAdmin)
 admin.site.register(models.CandidateEvaluation)
 admin.site.register(models.CandidateScore)
 admin.site.register(models.BlackList)
