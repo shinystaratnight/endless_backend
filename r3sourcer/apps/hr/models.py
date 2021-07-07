@@ -1446,6 +1446,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         try:
             time_sheet, created = cls.objects.get_or_create(**data)
+            print(time_sheet, created)
         except IntegrityError:
             time_sheet, created = cls.objects.update_or_create(
                 job_offer=job_offer,
@@ -1543,13 +1544,14 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             raise ValueError('Invalid timezone, need UTC but provided %s' % {going_eta.tzinfo})
 
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
-        for task in chain.from_iterable(app.control.inspect().scheduled().values()):
-            if str(eval(task['request']['args'])[0]) == str(self.id) and task['request'][
-                'name'] == \
-                    'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
-                if str(eval(task['request']['args'])[1]) == '1':
-                    app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
-        process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
+        if app.control.inspect().scheduled():
+            for task in chain.from_iterable(app.control.inspect().scheduled().values()):
+                if str(eval(task['request']['args'])[0]) == str(self.id) and task['request'][
+                    'name'] == \
+                        'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
+                    if str(eval(task['request']['args'])[1]) == '1':
+                        app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
+            process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         if self.going_to_work_confirmation is None:
@@ -1690,6 +1692,16 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
         other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
 
+        # set wage_type to HOURLY_WORK if skill activities is not added
+        if hourly_activity and not other_activities:
+            self.wage_type = Job.WAGE_CHOICES.HOURLY
+        elif not hourly_activity and other_activities:
+            self.wage_type = Job.WAGE_CHOICES.PIECEWORK
+        elif hourly_activity and other_activities:
+            self.wage_type = Job.WAGE_CHOICES.COMBINED
+
+        super().save(*args, **kwargs)
+
         # add or modify hourly_rate skill activity if we have hourly or combined wage
         if hourly_activity:
             if self.shift_duration:
@@ -1703,16 +1715,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                                                             value=self.shift_duration.total_seconds()/3600,
                                                             rate=self.get_hourly_rate
                                                             )
-
-        # set wage_type to HOURLY_WORK if skill activities is not added
-        if hourly_activity and not other_activities:
-            self.wage_type = Job.WAGE_CHOICES.HOURLY
-        elif not hourly_activity and other_activities:
-            self.wage_type = Job.WAGE_CHOICES.PIECEWORK
-        elif hourly_activity and other_activities:
-            self.wage_type = Job.WAGE_CHOICES.COMBINED
-
-        super().save(*args, **kwargs)
 
         if just_added and self.is_allowed(10):
             self.create_state(10)
