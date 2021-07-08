@@ -7,6 +7,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from django.conf import settings
+from django.db.models import Count
 from stripe.error import InvalidRequestError, CardError
 
 from r3sourcer.apps.billing.models import (
@@ -17,6 +18,7 @@ from r3sourcer.apps.billing.models import (
                             StripeCountryAccount as sca,
     )
 from r3sourcer.apps.core.models import Company, VAT
+from r3sourcer.apps.core.tasks import cancel_subscription_access
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.helpers.datetimes import utc_now
@@ -161,6 +163,17 @@ def sync_subscriptions():
         subscription.sync_status()
         subscription.update_permissions_on_status()
         subscription.save()
+
+
+@shared_task
+def restrict_access_for_users_without_subscription():
+    # for companies without a subscription
+    # users should also be restricted by the end of trial
+    for company in Company.objects.all().prefetch_related('subscriptions').annotate(count=Count(
+            'subscriptions')).filter(count=0):
+        this_user = company.get_user()
+        if this_user and this_user.trial_period_start and utc_now > this_user.get_end_of_trial_as_date():
+            cancel_subscription_access.apply_async([this_user.id])
 
 
 @shared_task()
