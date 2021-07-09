@@ -329,9 +329,9 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                     raise serializers.ValidationError({'shift_started_at':
                         _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
                 # shift_started_at <= shift__time + 24h
-                if shift_started_at > shift_date + timedelta(hours=24):
+                if shift_started_at > shift_date + timedelta(hours=12):
                     raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be later than 24 hours after default shift starting time.')})
+                        _('Shift starting time can not be later than 12 hours after default shift starting time.')})
                 # shift_ended_at >= shift_started_at
                 if shift_ended_at < shift_started_at:
                     raise serializers.ValidationError({'shift_started_at':
@@ -449,9 +449,9 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
                     raise serializers.ValidationError({'shift_started_at':
                         _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
                 # shift_started_at <= shift__time + 24h
-                if shift_started_at > shift_date + timedelta(hours=24):
+                if shift_started_at > shift_date + timedelta(hours=12):
                     raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be later than 24 hours after default shift starting time.')})
+                        _('Shift starting time can not be later than 12 hours after default shift starting time.')})
                 # shift_ended_at >= shift_started_at
                 if shift_ended_at < shift_started_at:
                     raise serializers.ValidationError({'shift_started_at':
