@@ -300,6 +300,7 @@ class NoteEndpoint(ApiEndpoint):
     model = models.Note
     serializer = serializers.NoteSerializer
     filter_class = filters.NoteFilter
+    base_viewset = viewsets.NoteViewset
 
 
 class ContactUnavailabilityEndpoint(ApiEndpoint):
