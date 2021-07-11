@@ -172,7 +172,8 @@ def restrict_access_for_users_without_subscription():
     for company in Company.objects.all().prefetch_related('subscriptions').annotate(count=Count(
             'subscriptions')).filter(count=0):
         this_user = company.get_user()
-        if this_user and this_user.trial_period_start and utc_now > this_user.get_end_of_trial_as_date():
+        now = utc_now()
+        if this_user and this_user.trial_period_start and now > this_user.get_end_of_trial_as_date():
             cancel_subscription_access.apply_async([this_user.id])
 
 
