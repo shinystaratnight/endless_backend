@@ -1517,6 +1517,27 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                 rate = self.job_offer.job.position.get_hourly_rate()
             return rate if rate else 0
 
+    @property
+    def get_skill_activity_rate(self):
+        if self.candidate_rate:
+            return self.candidate_rate
+        elif self.job_offer.shift.hourly_rate:
+            return self.job_offer.shift.hourly_rate
+        elif self.job_offer.shift.date.hourly_rate:
+            return self.job_offer.shift.date.hourly_rate
+        elif self.job_offer.shift.date.job.hourly_rate_default:
+            return self.job_offer.shift.date.job.hourly_rate_default
+        else:
+            # search skill activity rate in candidate's skill activity rates
+            rate = self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
+            if not rate:
+                # search skill activity rate in job's skill activity rates
+                rate = self.job_offer.job.get_hourly_rate_for_skill(self.job_offer.job.position)
+            if not rate:
+                # search skill activity rate in skill rate ranges
+                rate = self.job_offer.job.position.get_hourly_rate()
+            return rate if rate else 0
+
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
@@ -1712,9 +1733,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                 hourly_activity.delete()
         elif self.shift_duration:
             hourly_activity = self.timesheet_rates.create(worktype=hourly_work,
-                                                            value=self.shift_duration.total_seconds()/3600,
-                                                            rate=self.get_hourly_rate
-                                                            )
+                                                          value=self.shift_duration.total_seconds()/3600,
+                                                          rate=self.get_hourly_rate
+                                                          )
 
         if just_added and self.is_allowed(10):
             self.create_state(10)
@@ -2705,9 +2726,8 @@ class TimeSheetRate(UUIDModel):
     worktype = models.ForeignKey(
         WorkType,
         related_name="timesheet_rates",
-        verbose_name=_("Type of work"),
-        blank=True,
-        null=True)
+        verbose_name=_("Type of work")
+        )
 
     value = models.DecimalField(
         _("Timesheet Value"),
