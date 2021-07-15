@@ -1106,6 +1106,8 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
     total_value = []
     total_travel = []
     total_meal = []
+    total_skill_activities = []
+    activities = []
 
     # calculate total values by groups
     index = 0
@@ -1116,6 +1118,8 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         total_value.append(timedelta(0))
         total_travel.append(timedelta(0))
         total_meal.append(timedelta(0))
+        total_skill_activities.append('')
+        activities.append({})
 
         for timesheet in t_s:
 
@@ -1151,6 +1155,16 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
             total_travel[index] += get_value_for_rate_type(coeffs_hours, 'travel')
             total_meal[index] += get_value_for_rate_type(coeffs_hours, 'meal')
 
+            if timesheet.wage_type in [1,2]:
+                for ts_rate in timesheet.timesheet_rates.all():
+                    if ts_rate.worktype.name in activities[index]:
+                        activities[index][ts_rate.worktype.name] += ts_rate.value
+                    else:
+                        activities[index][ts_rate.worktype.name] = ts_rate.value
+
+        for key, value in activities[index].items():
+            total_skill_activities[index] += f'{key}: {value}; '
+
         index += 1
 
     context = {
@@ -1163,6 +1177,7 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         'total_value': total_value,
         'total_travel': total_travel,
         'total_meal': total_meal,
+        'total_skill_activities': total_skill_activities,
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))

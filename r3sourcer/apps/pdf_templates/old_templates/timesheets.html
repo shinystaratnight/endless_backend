@@ -94,8 +94,8 @@
 {% for group, t_s in timesheets %}
 	<h4 class="title">{{ group.0.master_company }}</h4>
 	<table>
+		<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
 		{% if group.1 == 0 %}
-			<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
 			<thead>
 				<tr>
 					<th>Candidate</th>
@@ -151,8 +151,7 @@
 					<td></td><td></td>
 				</tr>
 			</tbody>
-		{% elif group.1 == 1 %}
-			<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
+		{% elif group.1 == 1 or group.1 == 2 %}
 			<thead>
 				<tr>
 					<th>Candidate</th>
@@ -186,80 +185,13 @@
 					</tr>
 				{% endfor %}
 			{% endfor %}
-			</tbody>
-		{% elif group.1 == 2 %}
-			<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
-			<thead>
-				<tr>
-					<th>Candidate</th>
-					<th>Position</th>
-					<th>Date</th>
-					<th>Start</th>
-					<th>End</th>
-					<th>Break</th>
-					<th>Base hrs</th>
-					{% if total_15_coef|index:forloop.parentloop.counter0 %}<th>x1.5</th>{% endif %}
-					{% if total_2_coef|index:forloop.parentloop.counter0 %}<th>x2</th>{% endif %}
-					<th>Total</th>
-					{% if total_travel|index:forloop.parentloop.counter0 %}<th>Travel</th>{% endif %}
-					{% if total_meal|index:forloop.parentloop.counter0 %}<th>Meal</th>{% endif %}
-					<th>Electronic timesheet confirmed by supervisor</th>
-					<th>Electronic signature or timesheet confirmed by candidate</th>
-				</tr>
-			</thead>
-			<tbody>
-			{% for timesheet in t_s %}
-				<tr>
-					<td>{{ timesheet.candidate_contact }}</td>
-					<td>{{ timesheet.job_offer.job.position }}</td>
-                    <td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
-                    <td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
- 					<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
-					<td>{{ timesheet.break_delta|get_hours }}</td>
-					<td>{{ timesheet.base|get_hours }}</td>
-					{% if total_15_coef|index:forloop.parentloop.counter0 %}<td>{{ timesheet.c_1_5x|get_hours }}</td>{% endif %}
-					{% if total_2_coef|index:forloop.parentloop.counter0 %}<td>{{ timesheet.c_2x|get_hours }}</td>{% endif %}
-					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
-					{% if total_travel|index:forloop.parentloop.counter0 %}<td>{{ timesheet.travel }}</td>{% endif %}
-					{% if total_meal|index:forloop.parentloop.counter0 %}<td>{{ timesheet.meal }}</td>{% endif %}
-					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
-					</td>
-					{% if timesheet.supervisor_signature %}
-						<td><img src="{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
-						{% else %}
-						<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
-						</td>
-					{% endif %}
-				</tr>
-				{% for skill_activity in timesheet.timesheet_rates.all %}
-					<tr>
-						<td>{{ timesheet.candidate_contact }}</td>
-						<td>{{ timesheet.job_offer.job.position }}</td>
-						<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
-						<td>{{ skill_activity.worktype.name}}</td>
-						<td>{{ skill_activity.value}}</td>
-						<td>{{ skill_activity.worktype.uom.short_name}}</td>
-						<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
-						</td>
-						{% if timesheet.supervisor_signature %}
-							<td><img src="{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
-							{% else %}
-							<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
-							</td>
-						{% endif %}					</tr>
-				{% endfor %}
-			{% endfor %}
-				<tr>
-					<td></td><td></td><td></td><td></td><td></td>
-					<td>Total:</td>
-					<td>{{ total_base_units|index:forloop.counter0|get_hours }}</td>
-					{% if total_15_coef|index:forloop.counter0 %}<td>{{ total_15_coef|index:forloop.counter0|get_hours }}</td>{% endif %}
-					{% if total_2_coef|index:forloop.counter0 %}<td>{{ total_2_coef|index:forloop.counter0|get_hours }}</td>{% endif %}
-					<td>{{ total_value|index:forloop.counter0|get_hours }}</td>
-					{% if total_travel|index:forloop.counter0 %}<td>{{ total_travel|index:forloop.counter0|get_hours }}</td>{% endif %}
-					{% if total_meal|index:forloop.counter0 %}<td>{{ total_meal|index:forloop.counter0|get_hours }}</td>{% endif %}
-					<td></td><td></td>
-				</tr>
+			<tr>
+				<td>Total:</td>
+				<td colspan="7">
+					{{total_skill_activities|index:forloop.counter0 }}
+				</td>
+
+			</tr>
 			</tbody>
 		{% endif %}
 	</table>
