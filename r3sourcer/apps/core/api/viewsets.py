@@ -175,12 +175,8 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
             self.perform_destroy(instance)
         except ProtectedError:
             raise exceptions.ValidationError({
-                'errors': {
-                    'valid': False,
-                    'message': 'Data you are trying to delete has relationships to other parts of database so this '
-                               'cannot be deleted! '
-                },
-                'status': 'error'
+                'message': 'Data you are trying to delete has relationships to other parts of '
+                           'database so this cannot be deleted! '
             })
         return Response(status=status.HTTP_204_NO_CONTENT)
 
