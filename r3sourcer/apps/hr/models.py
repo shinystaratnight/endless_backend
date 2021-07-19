@@ -1690,6 +1690,8 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         # set wage_type to HOURLY_WORK if skill activities is not added
         if other_activities:
             self.wage_type = Job.WAGE_CHOICES.PIECEWORK
+        else:
+            self.wage_type = Job.WAGE_CHOICES.HOURLY
 
         super().save(*args, **kwargs)
 
