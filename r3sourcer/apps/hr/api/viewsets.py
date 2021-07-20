@@ -952,7 +952,8 @@ class JobViewset(BaseApiViewset):
         client_contact = role.company_contact_rel.company_contact
         if not client_contact:
             raise exceptions.ValidationError({'client_contact': _('User has no company_contact!')})
-        queryset = self.queryset.filter(customer_representative=client_contact)
+        companies = client_contact.relationships.values_list('company', flat=True)
+        queryset = self.queryset.filter(customer_company__id__in=companies)
 
         return self._paginate(request, job_serializers.JobSerializer, queryset)
 
@@ -1145,7 +1146,8 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
             client_contact = role.company_contact_rel.company_contact
             if not client_contact:
                 raise exceptions.ValidationError({'client_contact': _('User has no company_contact!')})
-            queryset = self.queryset.filter(primary_contact=client_contact)
+            companies = client_contact.relationships.values_list('company', flat=True)
+            queryset = self.queryset.filter(regular_company__id__in=companies)
 
             return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
         if company_id:

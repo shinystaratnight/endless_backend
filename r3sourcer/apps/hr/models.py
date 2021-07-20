@@ -346,7 +346,6 @@ class Job(core_models.AbstractBaseOrder):
     WAGE_CHOICES = Choices(
         (0,'HOURLY', _("Hourly wage")),
         (1, 'PIECEWORK', _("Piecework wage")),
-        (2, 'COMBINED', _("Combined wage")),
     )
 
     wage_type = models.PositiveSmallIntegerField(
@@ -1517,28 +1516,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                 rate = self.job_offer.job.position.get_hourly_rate()
             return rate if rate else 0
 
-    @property
-    def get_skill_activity_rate(self):
-        if self.candidate_rate:
-            return self.candidate_rate
-        elif self.job_offer.shift.hourly_rate:
-            return self.job_offer.shift.hourly_rate
-        elif self.job_offer.shift.date.hourly_rate:
-            return self.job_offer.shift.date.hourly_rate
-        elif self.job_offer.shift.date.job.hourly_rate_default:
-            return self.job_offer.shift.date.job.hourly_rate_default
-        else:
-            # search skill activity rate in candidate's skill activity rates
-            rate = self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
-            if not rate:
-                # search skill activity rate in job's skill activity rates
-                rate = self.job_offer.job.get_hourly_rate_for_skill(self.job_offer.job.position)
-            if not rate:
-                # search skill activity rate in skill rate ranges
-                rate = self.job_offer.job.position.get_hourly_rate()
-            return rate if rate else 0
-
-
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
         self.supervisor_approved_at = utc_now()
@@ -1667,9 +1644,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         list(map(setter_fn, filter(filter_fn, fields)))
 
     def save(self, *args, **kwargs):
-        # Set wage_type from Job.wage_type
-        if self.wage_type is None and self.job_offer:
-            self.wage_type = self.job_offer.job.wage_type
 
         just_added = self._state.adding
         self.convert_datetime_before_save(just_added)
@@ -1714,16 +1688,14 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
 
         # set wage_type to HOURLY_WORK if skill activities is not added
-        if hourly_activity and not other_activities:
-            self.wage_type = Job.WAGE_CHOICES.HOURLY
-        elif not hourly_activity and other_activities:
+        if other_activities:
             self.wage_type = Job.WAGE_CHOICES.PIECEWORK
-        elif hourly_activity and other_activities:
-            self.wage_type = Job.WAGE_CHOICES.COMBINED
+        else:
+            self.wage_type = Job.WAGE_CHOICES.HOURLY
 
         super().save(*args, **kwargs)
 
-        # add or modify hourly_rate skill activity if we have hourly or combined wage
+        # add or modify hourly_rate skill activity
         if hourly_activity:
             if self.shift_duration:
                 hourly_activity.value = self.shift_duration.total_seconds()/3600
@@ -2752,29 +2724,19 @@ class TimeSheetRate(UUIDModel):
     def __str__(self):
         return f'{self.timesheet}-{self.worktype}'
 
-    # def get_rate(self):
-    #     # search rate for candidate
-    #     if self.worktype.skill:
-    #         skill_rel = self.timesheet.job_offer.candidate_contact.candidate_skills.filter(skill=self.worktype.skill).last()
-    #     elif self.worktype.skill_name:
-    #        skill_rel = self.timesheet.job_offer.candidate_contact.candidate_skills.filter(skill__name=self.worktype.skill_name).last()
+    @property
+    def get_rate(self):
 
-    #     if skill_rel:
+        # search skill activity rate in candidate's skill activity rates
+        rate = self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
+        if not rate:
+            # search skill activity rate in job's skill activity rates
+            rate = self.job_offer.job.get_hourly_rate_for_skill(self.job_offer.job.position)
+        if not rate:
+            # search skill activity rate in skill rate ranges
+            rate = self.job_offer.job.position.get_hourly_rate()
+        return rate if rate else 0
 
-
-    #     if skill_rel:
-    #         skill_activity_rate = skill_rel.skill_rates.filter(worktype=self).last()
-    #         if skill_activity_rate:
-    #             return skill_activity_rate
-
-    #     # search rate for job
-    #     rate_range = candidate_contact.skill_rates.filter(worktype=self)
-
-    #     if not rate_range:
-    #         if self.skill_name:
-    #             rate_range = self.skill_rate_ranges.last()
-
-    #     return rate_range
 
 class JobRate(UUIDModel):
     job = models.ForeignKey(
