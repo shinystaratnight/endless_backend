@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
-from r3sourcer.apps.core.models import Company, UnitOfMeasurement, UnitOfMeasurement
+from r3sourcer.apps.core.models import Company, UnitOfMeasurement
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
@@ -56,6 +56,24 @@ class SkillName(UUIDModel):
             return [
                 models.Q(industry__in=owner.industries.all())
             ]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for company in Company.objects.filter(industries__in=[self.industry]):
+            Skill.objects.get_or_create(name=self,
+                                        company=company,
+                                        defaults={'active': False},
+                                        )
+
+        worktype, created = WorkType.objects.get_or_create(name=WorkType.DEFAULT,
+                                                           skill_name=self,
+                                                           uom=UnitOfMeasurement.objects.get(default=True))
+
+        if created:
+            WorkTypeLanguage.objects.create(name=worktype, language_id='en', value=WorkType.DEFAULT)
+            WorkTypeLanguage.objects.create(name=worktype, language_id='et', value='Tunnitöö')
+            WorkTypeLanguage.objects.create(name=worktype, language_id='ru', value='Почасовая робота')
+            WorkTypeLanguage.objects.create(name=worktype, language_id='fi', value='Tunneittainen työ')
 
 
 class SkillNameLanguage(models.Model):

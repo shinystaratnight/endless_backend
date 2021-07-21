@@ -5,16 +5,29 @@ import nested_admin
 
 from r3sourcer.apps.core_utils.filters import ObjectRelatedDropdownFilter
 from . import models
+from r3sourcer.apps.core.models import CompanyLanguage, Language
 
 
 class SkillNameLanguageInline(nested_admin.NestedTabularInline):
     model = models.SkillNameLanguage
     extra = 0
 
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "language":
+            company_languages = CompanyLanguage.objects.values_list('language_id', flat=True).distinct()
+            kwargs["queryset"] = Language.objects.filter(alpha_2__in=company_languages)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
 
 class WorkTypeLanguageInline(nested_admin.NestedTabularInline):
     model = models.WorkTypeLanguage
     extra = 0
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "language":
+            company_languages = CompanyLanguage.objects.values_list('language_id', flat=True).distinct()
+            kwargs["queryset"] = Language.objects.filter(alpha_2__in=company_languages)
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
 class WorkTypeInline(nested_admin.NestedTabularInline):
@@ -27,6 +40,11 @@ class WorkTypeInline(nested_admin.NestedTabularInline):
 class SkillNameAdmin(nested_admin.NestedModelAdmin):
     list_display = ('name', 'industry', )
     inlines = [SkillNameLanguageInline, WorkTypeInline]
+
+    def get_form(self, request, obj=None, **kwargs):
+        # just save obj reference for future processing in Inline
+        request._obj_ = obj
+        return super().get_form(request, obj, **kwargs)
 
 
 class SkillRateRangeInline(nested_admin.NestedTabularInline):
