@@ -28,7 +28,7 @@ from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.hr.tasks import send_jo_confirmation, send_recurring_jo_confirmation
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.skills.models import Skill, SkillBaseRate, WorkType
+from r3sourcer.apps.skills.models import SkillBaseRate, SkillRateRange, WorkType
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
@@ -594,6 +594,11 @@ class Job(core_models.AbstractBaseOrder):
                                               skill_name=skill.name) \
                                       .first()
         job_skill_activity = self.job_rates.filter(worktype=hourly_work).first()
+        return job_skill_activity.rate if job_skill_activity else None
+
+    def get_rate_for_worktype(self, worktype):
+        # search skill activity rate in job's skill activity rates
+        job_skill_activity = self.job_rates.filter(worktype=worktype).first()
         return job_skill_activity.rate if job_skill_activity else None
 
 
@@ -1505,16 +1510,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             return self.job_offer.shift.date.hourly_rate
         elif self.job_offer.shift.date.job.hourly_rate_default:
             return self.job_offer.shift.date.job.hourly_rate_default
-        else:
-            # search skill activity rate in candidate's skill activity rates
-            rate = self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
-            if not rate:
-                # search skill activity rate in job's skill activity rates
-                rate = self.job_offer.job.get_hourly_rate_for_skill(self.job_offer.job.position)
-            if not rate:
-                # search skill activity rate in skill rate ranges
-                rate = self.job_offer.job.position.get_hourly_rate()
-            return rate if rate else 0
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
@@ -2724,18 +2719,23 @@ class TimeSheetRate(UUIDModel):
     def __str__(self):
         return f'{self.timesheet}-{self.worktype}'
 
-    @property
     def get_rate(self):
-
         # search skill activity rate in candidate's skill activity rates
-        rate = self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
+        rate = self.timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(self.worktype)
         if not rate:
             # search skill activity rate in job's skill activity rates
-            rate = self.job_offer.job.get_hourly_rate_for_skill(self.job_offer.job.position)
+            rate = self.timesheet.job_offer.job.get_rate_for_worktype(self.worktype)
         if not rate:
             # search skill activity rate in skill rate ranges
-            rate = self.job_offer.job.position.get_hourly_rate()
+            rate = SkillRateRange.objects.filter(worktype=self.worktype,
+                                                 skill=self.timesheet.job_offer.job.position) \
+                                         .last().default_rate
         return rate if rate else 0
+
+    def save(self, *args, **kwargs):
+        if not self.rate or self.rate == 0:
+            self.rate = self.get_rate()
+        super().save(*args, **kwargs)
 
 
 class JobRate(UUIDModel):
