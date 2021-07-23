@@ -533,6 +533,13 @@ class CandidateContact(UUIDModel, WorkflowProcess):
                 return candidate_skill_rate
         return None
 
+    def get_candidate_rate_for_worktype(self, wotktype):
+        # search skill activity rate in candidate's skill activity rates
+        skill_rate = SkillRate.objects.filter(worktype=wotktype,
+                                              skill_rel__candidate_contact=self) \
+                                      .first()
+        return skill_rate.rate if skill_rate else None
+
     def get_closest_company(self):
         try:
             current_request = get_current_request()
