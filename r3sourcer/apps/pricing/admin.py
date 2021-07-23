@@ -2,7 +2,7 @@ from django.db.models import Q
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 
-from r3sourcer.apps.skills.models import WorkType
+from r3sourcer.apps.skills.models import Skill, WorkType
 from . import models
 
 
@@ -66,6 +66,9 @@ class PriceListRateInline(admin.TabularInline):
     extra = 0
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "skill" and request._obj_:
+            industries = request._obj_.company.industries.all()
+            kwargs["queryset"] = Skill.objects.filter(company=request._obj_.company)
         if db_field.name == "worktype" and request._obj_:
             industries = request._obj_.company.industries.all()
             kwargs["queryset"] = WorkType.objects.filter(Q(skill_name__industry__in=industries) |
