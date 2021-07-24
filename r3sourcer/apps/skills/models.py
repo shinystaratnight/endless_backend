@@ -422,7 +422,6 @@ class SkillRateRange(MYOBMixin, UUIDModel):
         max_digits=16,
     )
 
-
     class Meta:
         verbose_name = _("Skill Rate Range")
         verbose_name_plural = _("Skill Rate Ranges")
