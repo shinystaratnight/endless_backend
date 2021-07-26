@@ -300,7 +300,13 @@ class NoteEndpoint(ApiEndpoint):
     model = models.Note
     serializer = serializers.NoteSerializer
     filter_class = filters.NoteFilter
-    base_viewset = viewsets.NoteViewset
+    # base_viewset = viewsets.NoteViewset
+
+
+class NoteFileEndpoint(ApiEndpoint):
+
+    model = models.NoteFile
+    serializer = serializers.NoteFileSerializer
 
 
 class ContactUnavailabilityEndpoint(ApiEndpoint):
@@ -372,6 +378,7 @@ router.register(endpoint=InvoiceEndpoint())
 router.register(endpoint=InvoiceLineEndpoint())
 router.register(endpoint=NavigationEndpoint())
 router.register(endpoint=NoteEndpoint())
+router.register(endpoint=NoteFileEndpoint())
 router.register(endpoint=OrderEndpoint())
 router.register(endpoint=RegionEndpoint())
 router.register(endpoint=TagEndpoint())

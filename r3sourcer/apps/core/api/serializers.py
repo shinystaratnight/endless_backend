@@ -651,11 +651,11 @@ class NoteSerializer(
         related = RELATED_NONE
 
 
-# class NoteFilesSerializer(ApiBaseModelSerializer, ApiFullRelatedFieldsMixin):
-#
-#     class Meta:
-#         model = core_models.NoteFiles
-#         fields = '__all__'
+class NoteFileSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.NoteFile
+        fields = '__all__'
 
 
 class ContactSerializer(ApiContactImageFieldsMixin,
