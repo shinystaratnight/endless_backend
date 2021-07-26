@@ -1293,18 +1293,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         default=STATUS_CHOICES.new
     )
 
-    candidate_notes = models.TextField(
-        verbose_name=_("Candidate Notes"),
-        help_text=_("Candidate notes for a Timesheet"),
-        blank=True
-    )
-
-    client_notes = models.TextField(
-        verbose_name=_("Client Notes"),
-        help_text=_("Client notes for a Timesheet"),
-        blank=True
-    )
-
     __original_supervisor_id = None
     __original_going_to_work_confirmation = None
     __original_candidate_submitted_at = None
@@ -1720,52 +1708,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         if candidate_submitted_at and self.supervisor and not self.supervisor_approved_at:
             hr_utils.send_supervisor_timesheet_approve(self)
-
-
-class CandidateTimeSheetFiles(UUIDModel):
-    time_sheet = models.ForeignKey(
-        TimeSheet,
-        on_delete=models.CASCADE,
-        related_name="candidate_files",
-        verbose_name=_("TimeSheet")
-    )
-
-    def candidate_timesheet_path(self, filename):
-        return 'candidates/timesheet/{}/{}'.format(self.id, filename)
-
-    file = models.FileField(
-        verbose_name=_("Candidate Timesheet File"),
-        upload_to=candidate_timesheet_path,
-        null=True,
-        blank=True
-    )
-
-    class Meta:
-        verbose_name = _("Candidate TimeSheet File")
-        verbose_name_plural = _("Candidate TimeSheet Files")
-
-
-class ClientTimeSheetFiles(UUIDModel):
-    time_sheet = models.ForeignKey(
-        TimeSheet,
-        on_delete=models.CASCADE,
-        related_name="client_files",
-        verbose_name=_("TimeSheet")
-    )
-
-    def client_timesheet_path(self, filename):
-        return 'clients/timesheet/{}/{}'.format(self.id, filename)
-
-    file = models.FileField(
-        verbose_name=_("Client Timesheet File"),
-        upload_to=client_timesheet_path,
-        null=True,
-        blank=True
-    )
-
-    class Meta:
-        verbose_name = _("Client TimeSheet File")
-        verbose_name_plural = _("Client TimeSheet Files")
 
 
 class TimeSheetIssue(
