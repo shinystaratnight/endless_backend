@@ -16,12 +16,12 @@ class Migration(migrations.Migration):
 
     operations = [
         migrations.CreateModel(
-            name='NoteFiles',
+            name='NoteFile',
             fields=[
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('file', models.FileField(upload_to=r3sourcer.apps.core.models.core.NoteFiles.note_files_path, verbose_name='Note File')),
+                ('file', models.FileField(upload_to=r3sourcer.apps.core.models.core.NoteFile.note_files_path, verbose_name='Note File')),
             ],
             options={
                 'verbose_name': 'Note File',
@@ -34,7 +34,7 @@ class Migration(migrations.Migration):
             field=models.ForeignKey(null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='created_notes', to='core.Contact', verbose_name='Contact'),
         ),
         migrations.AddField(
-            model_name='notefiles',
+            model_name='notefile',
             name='note',
             field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='files', to='core.Note', verbose_name='Note'),
         ),
