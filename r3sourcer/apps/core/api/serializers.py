@@ -642,7 +642,7 @@ class NoteSerializer(
     class Meta:
         model = core_models.Note
         read_only = ('contact',)
-        fields = ('__all__', 'contact_id',
+        fields = ('__all__',
                   # {
                   #     'contact': ('id', 'first_name', 'last_name', 'phone_mobile', 'email')
                   # }
