@@ -2044,6 +2044,14 @@ class Note(UUIDModel):
         blank=True
     )
 
+    contact = models.ForeignKey(
+        'core.Contact',
+        related_name='created_notes',
+        verbose_name=_('Contact'),
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
     def __str__(self):
         return '{} {}'.format(str(self.content_type), _("Note"))
 
@@ -2054,6 +2062,27 @@ class Note(UUIDModel):
     @classmethod
     def is_owned(cls):
         return False
+
+
+class NoteFile(UUIDModel):
+    note = models.ForeignKey(
+        Note,
+        on_delete=models.CASCADE,
+        related_name="files",
+        verbose_name=_("Note")
+    )
+
+    def note_files_path(self, filename):
+        return 'notes/{}/{}'.format(self.note_id, filename)
+
+    file = models.FileField(
+        verbose_name=_("Note File"),
+        upload_to=note_files_path
+    )
+
+    class Meta:
+        verbose_name = _("Note File")
+        verbose_name_plural = _("Note Files")
 
 
 class Tag(MPTTModel, UUIDModel):
@@ -2976,7 +3005,7 @@ __all__ = [
     'Address', 'FileStorage',
     'Order',
     'AbstractPayRuleMixin', 'Invoice', 'InvoiceLine',
-    'Note', 'Tag', 'TagLanguage', 'CompanyTag', 'TagCompany',
+    'Note', 'NoteFile', 'Tag', 'TagLanguage', 'CompanyTag', 'TagCompany',
     'VAT', 'InvoiceRule',
     'CurrencyExchangeRates', 'PublicHoliday', 'ExtranetNavigation',
     'AbstractBaseOrder', 'AbstractOrder', 'ContactLanguage', 'Role'
