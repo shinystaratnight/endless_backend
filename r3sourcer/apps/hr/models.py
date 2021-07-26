@@ -28,7 +28,7 @@ from r3sourcer.apps.core.workflow import WorkflowProcess
 from r3sourcer.apps.hr.tasks import send_jo_confirmation, send_recurring_jo_confirmation
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.skills.models import Skill, SkillBaseRate, WorkType
+from r3sourcer.apps.skills.models import SkillBaseRate, SkillRateRange, WorkType
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
@@ -346,7 +346,6 @@ class Job(core_models.AbstractBaseOrder):
     WAGE_CHOICES = Choices(
         (0,'HOURLY', _("Hourly wage")),
         (1, 'PIECEWORK', _("Piecework wage")),
-        (2, 'COMBINED', _("Combined wage")),
     )
 
     wage_type = models.PositiveSmallIntegerField(
@@ -595,6 +594,11 @@ class Job(core_models.AbstractBaseOrder):
                                               skill_name=skill.name) \
                                       .first()
         job_skill_activity = self.job_rates.filter(worktype=hourly_work).first()
+        return job_skill_activity.rate if job_skill_activity else None
+
+    def get_rate_for_worktype(self, worktype):
+        # search skill activity rate in job's skill activity rates
+        job_skill_activity = self.job_rates.filter(worktype=worktype).first()
         return job_skill_activity.rate if job_skill_activity else None
 
 
@@ -1434,6 +1438,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         try:
             time_sheet, created = cls.objects.get_or_create(**data)
+            print(time_sheet, created)
         except IntegrityError:
             time_sheet, created = cls.objects.update_or_create(
                 job_offer=job_offer,
@@ -1493,17 +1498,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             return self.job_offer.shift.date.hourly_rate
         elif self.job_offer.shift.date.job.hourly_rate_default:
             return self.job_offer.shift.date.job.hourly_rate_default
-        else:
-            # search skill activity rate in candidate's skill activity rates
-            rate = self.candidate_contact.get_candidate_rate_for_skill(self.job_offer.job.position)
-            if not rate:
-                # search skill activity rate in job's skill activity rates
-                rate = self.job_offer.job.get_hourly_rate_for_skill(self.job_offer.job.position)
-            if not rate:
-                # search skill activity rate in skill rate ranges
-                rate = self.job_offer.job.position.get_hourly_rate()
-            return rate if rate else 0
-
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
@@ -1531,13 +1525,14 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             raise ValueError('Invalid timezone, need UTC but provided %s' % {going_eta.tzinfo})
 
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
-        for task in chain.from_iterable(app.control.inspect().scheduled().values()):
-            if str(eval(task['request']['args'])[0]) == str(self.id) and task['request'][
-                'name'] == \
-                    'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
-                if str(eval(task['request']['args'])[1]) == '1':
-                    app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
-        process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
+        if app.control.inspect().scheduled():
+            for task in chain.from_iterable(app.control.inspect().scheduled().values()):
+                if str(eval(task['request']['args'])[0]) == str(self.id) and task['request'][
+                    'name'] == \
+                        'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
+                    if str(eval(task['request']['args'])[1]) == '1':
+                        app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
+            process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         if self.going_to_work_confirmation is None:
@@ -1632,9 +1627,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         list(map(setter_fn, filter(filter_fn, fields)))
 
     def save(self, *args, **kwargs):
-        # Set wage_type from Job.wage_type
-        if self.wage_type is None and self.job_offer:
-            self.wage_type = self.job_offer.job.wage_type
 
         just_added = self._state.adding
         self.convert_datetime_before_save(just_added)
@@ -1678,7 +1670,15 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
         other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
 
-        # add or modify hourly_rate skill activity if we have hourly or combined wage
+        # set wage_type to HOURLY_WORK if skill activities is not added
+        if other_activities:
+            self.wage_type = Job.WAGE_CHOICES.PIECEWORK
+        else:
+            self.wage_type = Job.WAGE_CHOICES.HOURLY
+
+        super().save(*args, **kwargs)
+
+        # add or modify hourly_rate skill activity
         if hourly_activity:
             if self.shift_duration:
                 hourly_activity.value = self.shift_duration.total_seconds()/3600
@@ -1688,19 +1688,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                 hourly_activity.delete()
         elif self.shift_duration:
             hourly_activity = self.timesheet_rates.create(worktype=hourly_work,
-                                                            value=self.shift_duration.total_seconds()/3600,
-                                                            rate=self.get_hourly_rate
-                                                            )
-
-        # set wage_type to HOURLY_WORK if skill activities is not added
-        if hourly_activity and not other_activities:
-            self.wage_type = Job.WAGE_CHOICES.HOURLY
-        elif not hourly_activity and other_activities:
-            self.wage_type = Job.WAGE_CHOICES.PIECEWORK
-        elif hourly_activity and other_activities:
-            self.wage_type = Job.WAGE_CHOICES.COMBINED
-
-        super().save(*args, **kwargs)
+                                                          value=self.shift_duration.total_seconds()/3600,
+                                                          rate=self.get_hourly_rate
+                                                          )
 
         if just_added and self.is_allowed(10):
             self.create_state(10)
@@ -2645,9 +2635,8 @@ class TimeSheetRate(UUIDModel):
     worktype = models.ForeignKey(
         WorkType,
         related_name="timesheet_rates",
-        verbose_name=_("Type of work"),
-        blank=True,
-        null=True)
+        verbose_name=_("Type of work")
+        )
 
     value = models.DecimalField(
         _("Timesheet Value"),
@@ -2672,29 +2661,24 @@ class TimeSheetRate(UUIDModel):
     def __str__(self):
         return f'{self.timesheet}-{self.worktype}'
 
-    # def get_rate(self):
-    #     # search rate for candidate
-    #     if self.worktype.skill:
-    #         skill_rel = self.timesheet.job_offer.candidate_contact.candidate_skills.filter(skill=self.worktype.skill).last()
-    #     elif self.worktype.skill_name:
-    #        skill_rel = self.timesheet.job_offer.candidate_contact.candidate_skills.filter(skill__name=self.worktype.skill_name).last()
+    def get_rate(self):
+        # search skill activity rate in candidate's skill activity rates
+        rate = self.timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(self.worktype)
+        if not rate:
+            # search skill activity rate in job's skill activity rates
+            rate = self.timesheet.job_offer.job.get_rate_for_worktype(self.worktype)
+        if not rate:
+            # search skill activity rate in skill rate ranges
+            rate = SkillRateRange.objects.filter(worktype=self.worktype,
+                                                 skill=self.timesheet.job_offer.job.position) \
+                                         .last().default_rate
+        return rate if rate else 0
 
-    #     if skill_rel:
+    def save(self, *args, **kwargs):
+        if not self.rate or self.rate == 0:
+            self.rate = self.get_rate()
+        super().save(*args, **kwargs)
 
-
-    #     if skill_rel:
-    #         skill_activity_rate = skill_rel.skill_rates.filter(worktype=self).last()
-    #         if skill_activity_rate:
-    #             return skill_activity_rate
-
-    #     # search rate for job
-    #     rate_range = candidate_contact.skill_rates.filter(worktype=self)
-
-    #     if not rate_range:
-    #         if self.skill_name:
-    #             rate_range = self.skill_rate_ranges.last()
-
-    #     return rate_range
 
 class JobRate(UUIDModel):
     job = models.ForeignKey(
