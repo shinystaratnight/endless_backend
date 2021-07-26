@@ -12,18 +12,18 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RemoveField(
-            model_name='timesheet',
-            name='candidate_notes',
-        ),
-        migrations.RemoveField(
-            model_name='timesheet',
-            name='client_notes',
-        ),
-        migrations.DeleteModel(
-            name='CandidateTimeSheetFiles',
-        ),
-        migrations.DeleteModel(
-            name='ClientTimeSheetFiles',
-        ),
+        # migrations.RemoveField(
+        #     model_name='timesheet',
+        #     name='candidate_notes',
+        # ),
+        # migrations.RemoveField(
+        #     model_name='timesheet',
+        #     name='client_notes',
+        # ),
+        # migrations.DeleteModel(
+        #     name='CandidateTimeSheetFiles',
+        # ),
+        # migrations.DeleteModel(
+        #     name='ClientTimeSheetFiles',
+        # ),
     ]
