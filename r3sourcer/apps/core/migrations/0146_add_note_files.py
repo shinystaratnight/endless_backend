@@ -21,7 +21,9 @@ class Migration(migrations.Migration):
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('file', models.FileField(upload_to=r3sourcer.apps.core.models.core.NoteFile.note_files_path, verbose_name='Note File')),
+                ('file', models.FileField(
+                    upload_to=r3sourcer.apps.core.models.core.NoteFile.note_files_path,
+                    verbose_name='Note File')),
             ],
             options={
                 'verbose_name': 'Note File',

@@ -2064,7 +2064,7 @@ class Note(UUIDModel):
         return False
 
 
-class NoteFiles(UUIDModel):
+class NoteFile(UUIDModel):
     note = models.ForeignKey(
         Note,
         on_delete=models.CASCADE,
@@ -3005,7 +3005,7 @@ __all__ = [
     'Address', 'FileStorage',
     'Order',
     'AbstractPayRuleMixin', 'Invoice', 'InvoiceLine',
-    'Note', 'Tag', 'TagLanguage', 'CompanyTag', 'TagCompany',
+    'Note', 'NoteFile', 'Tag', 'TagLanguage', 'CompanyTag', 'TagCompany',
     'VAT', 'InvoiceRule',
     'CurrencyExchangeRates', 'PublicHoliday', 'ExtranetNavigation',
     'AbstractBaseOrder', 'AbstractOrder', 'ContactLanguage', 'Role'
