@@ -634,11 +634,28 @@ class ContactUnavailabilitySerializer(ApiBaseModelSerializer):
         related = RELATED_DIRECT
 
 
-class NoteSerializer(core_mixins.CreatedUpdatedByMixin, ApiBaseModelSerializer):
+class NoteSerializer(
+    core_mixins.CreatedUpdatedByMixin,
+    ApiBaseModelSerializer
+):
 
     class Meta:
         model = core_models.Note
-        fields = ('__all__', )
+        read_only = ('contact',)
+        fields = ('__all__', 'contact_id',
+                  # {
+                  #     'contact': ('id', 'first_name', 'last_name', 'phone_mobile', 'email')
+                  # }
+                  {'files': ('id', 'file')}
+                  )
+        related = RELATED_NONE
+
+
+class NoteFileSerializer(ApiBaseModelSerializer):
+
+    class Meta:
+        model = core_models.NoteFile
+        fields = '__all__'
 
 
 class ContactSerializer(ApiContactImageFieldsMixin,

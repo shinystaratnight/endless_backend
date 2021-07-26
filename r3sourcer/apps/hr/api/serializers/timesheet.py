@@ -125,10 +125,6 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'break_ended_at_tz',
             'break_ended_at_utc',
             'timesheet_rates',
-            'candidate_notes',
-            'client_notes',
-            'client_files',
-            'candidate_files'
         )
         related_fields = {
             'job_offer': ('id',
@@ -142,8 +138,6 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                                 'rate',
                                 'value',
                                 {'worktype': ('id', 'translations')}),
-            'client_notes': ('id', 'file',),
-            'candidate_files': ('id', 'file',),
         }
 
     def get_company(self, obj):

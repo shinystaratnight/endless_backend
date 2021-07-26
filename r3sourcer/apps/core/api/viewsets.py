@@ -13,6 +13,7 @@ from django.forms import model_to_dict
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
+from r3sourcer.apps.core.api.serializers import ContactSerializer
 from rest_framework import viewsets, exceptions, status, fields
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -1312,3 +1313,4 @@ class TagViewSet(BaseApiViewset):
             company_tag.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
