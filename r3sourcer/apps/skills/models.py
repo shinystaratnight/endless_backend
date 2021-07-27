@@ -83,7 +83,7 @@ class SkillNameLanguage(models.Model):
         on_delete=models.PROTECT,
         verbose_name=_('Skill Name'),
     )
-    value = models.CharField(max_length=127, verbose_name=_("Skill Name transalation"))
+    value = models.CharField(max_length=127, verbose_name=_("Skill Name translation"))
     language = models.ForeignKey(
         'core.Language',
         verbose_name=_("Skill name language"),
