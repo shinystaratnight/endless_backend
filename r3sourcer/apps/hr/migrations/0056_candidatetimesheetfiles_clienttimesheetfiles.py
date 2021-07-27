@@ -23,7 +23,7 @@ class Migration(migrations.Migration):
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('file', models.FileField(blank=True, null=True, upload_to=r3sourcer.apps.hr.models.CandidateTimeSheetFiles.candidate_timesheet_path, verbose_name='Candidate Timesheet File')),
+                ('file', models.FileField(blank=True, null=True, verbose_name='Candidate Timesheet File')),
                 ('time_sheet', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='candidate_files', to='hr.TimeSheet', verbose_name='TimeSheet')),
             ],
             options={
@@ -37,7 +37,7 @@ class Migration(migrations.Migration):
                 ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
                 ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
                 ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('file', models.FileField(blank=True, null=True, upload_to=r3sourcer.apps.hr.models.ClientTimeSheetFiles.client_timesheet_path, verbose_name='Client Timesheet File')),
+                ('file', models.FileField(blank=True, null=True, verbose_name='Client Timesheet File')),
                 ('time_sheet', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='client_files', to='hr.TimeSheet', verbose_name='TimeSheet')),
             ],
             options={

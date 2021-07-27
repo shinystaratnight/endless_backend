@@ -12,14 +12,14 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AddField(
-            model_name='timesheet',
-            name='candidate_notes',
-            field=models.TextField(blank=True, help_text='Candidate notes for a Timesheet', verbose_name='Candidate Notes'),
-        ),
-        migrations.AddField(
-            model_name='timesheet',
-            name='client_notes',
-            field=models.TextField(blank=True, help_text='Client notes for a Timesheet', verbose_name='Client Notes'),
-        ),
+        # migrations.AddField(
+        #     model_name='timesheet',
+        #     name='candidate_notes',
+        #     field=models.TextField(blank=True, help_text='Candidate notes for a Timesheet', verbose_name='Candidate Notes'),
+        # ),
+        # migrations.AddField(
+        #     model_name='timesheet',
+        #     name='client_notes',
+        #     field=models.TextField(blank=True, help_text='Client notes for a Timesheet', verbose_name='Client Notes'),
+        # ),
     ]
