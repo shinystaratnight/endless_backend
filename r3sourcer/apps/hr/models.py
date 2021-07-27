@@ -1665,32 +1665,33 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         self.update_status(False)
 
         hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
-                                                skill_name=self.job_offer.job.position.name) \
-                                        .first()
-        hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
-        other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
+                                              skill_name=self.job_offer.job.position.name) \
+                                      .first()
+        if hourly_work:
+            hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
+            other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
 
-        # set wage_type to HOURLY_WORK if skill activities is not added
-        if other_activities:
-            self.wage_type = Job.WAGE_CHOICES.PIECEWORK
-        else:
-            self.wage_type = Job.WAGE_CHOICES.HOURLY
-
-        super().save(*args, **kwargs)
-
-        # add or modify hourly_rate skill activity
-        if hourly_activity:
-            if self.shift_duration:
-                hourly_activity.value = self.shift_duration.total_seconds()/3600
-                hourly_activity.rate = self.get_hourly_rate
-                hourly_activity.save()
+            # set wage_type to HOURLY_WORK if skill activities is not added
+            if other_activities:
+                self.wage_type = Job.WAGE_CHOICES.PIECEWORK
             else:
-                hourly_activity.delete()
-        elif self.shift_duration:
-            hourly_activity = self.timesheet_rates.create(worktype=hourly_work,
-                                                          value=self.shift_duration.total_seconds()/3600,
-                                                          rate=self.get_hourly_rate
-                                                          )
+                self.wage_type = Job.WAGE_CHOICES.HOURLY
+
+            super().save(*args, **kwargs)
+
+            # add or modify hourly_rate skill activity
+            if hourly_activity:
+                if self.shift_duration:
+                    hourly_activity.value = self.shift_duration.total_seconds()/3600
+                    hourly_activity.rate = self.get_hourly_rate
+                    hourly_activity.save()
+                else:
+                    hourly_activity.delete()
+            elif self.shift_duration:
+                TimeSheetRate.objects.create(worktype=hourly_work,
+                                             value=self.shift_duration.total_seconds()/3600,
+                                             rate=self.get_hourly_rate
+                                             )
 
         if just_added and self.is_allowed(10):
             self.create_state(10)
