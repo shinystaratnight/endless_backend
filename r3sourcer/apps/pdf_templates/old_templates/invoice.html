@@ -180,7 +180,7 @@
         <th>Units</th>
         <th>Unit name</th>
         <th>Notes</th>
-        <th>Code</th>
+        <th>Tax</th>
         <th>Rate</th>
         <th>Amount</th>
       </tr>
@@ -190,7 +190,7 @@
       <tr>
         <td>{{ line.date }}</td>
         <td>{{ line.units }}</td>
-        <td>hours</td>
+        <td>{{ line.unit_name }}</td>
         {% if show_candidate %}
             <td>{{ line.notes }}<br>
                 {{ line.timesheet.job_offer.candidate_contact }}</td>
@@ -225,11 +225,24 @@
       <div class="right" style="width: 40%;">
           <table class="price" border="0">
               <tr>
-                  <td class="padding">Subtotal:<br> {% with lines|first as first_line %}{{ first_line.vat.name }}({{ first_line.vat.rate }}){% endwith %}
+                  <td class="padding">Subtotal:<br>
+                    {% with lines|first as first_line %}
+                        {% if first_line.vat %}
+                          {{ first_line.vat.name }}({{ first_line.vat.rate }})
+                        {% else %}
+                          Tax:
+                        {% endif %}
+                    {% endwith %}
                   <td class="padding">${{ invoice.total }}<br> ${{ invoice.tax }}</td>
               </tr>
               <tr>
-                  <td class="padding border" style="font-size: 14px; line-height: 14px; font-weight: 600">Total:<br> <span style="font-size: 8px; line-height: 10px; opacity: 0.4">Include {% with lines|first as first_line %}{{ first_line.vat.name }}{% endwith %}</span></td>
+                  <td class="padding border" style="font-size: 14px; line-height: 14px; font-weight: 600">Total:
+                  {% with lines|first as first_line %}
+                    {% if first_line.vat %}
+                    <br> <span style="font-size: 8px; line-height: 10px; opacity: 0.4">Include
+                    {{ first_line.vat.name }}
+                    {% endif %}
+                  {% endwith %}</span></td>
                   <td class="padding border" style="font-size: 14px; font-weight: 600">${{ invoice.total_with_tax }}</td>
               </tr>
               <tr>
