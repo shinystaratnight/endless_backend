@@ -1438,7 +1438,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         try:
             time_sheet, created = cls.objects.get_or_create(**data)
-            print(time_sheet, created)
         except IntegrityError:
             time_sheet, created = cls.objects.update_or_create(
                 job_offer=job_offer,
@@ -1688,7 +1687,8 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                 else:
                     hourly_activity.delete()
             elif self.shift_duration:
-                TimeSheetRate.objects.create(worktype=hourly_work,
+                TimeSheetRate.objects.create(timesheet=self,
+                                             worktype=hourly_work,
                                              value=self.shift_duration.total_seconds()/3600,
                                              rate=self.get_hourly_rate
                                              )
