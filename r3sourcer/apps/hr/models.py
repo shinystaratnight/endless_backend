@@ -747,6 +747,15 @@ class JobOffer(TimeZoneUUIDModel):
         (1, 'accepted', _("Accepted")),
         (2, 'cancelled', _("Cancelled")),
     )
+    CANDIDATE_STATUS_CHOICES = STATUS_CHOICES + [
+        (0, 'undefined', _("Undefined")),
+        (1, 'accepted', _("Accepted")),
+        (2, 'cancelled', _("Cancelled")),
+        (3, 'already_filled', _("Already filled")),
+        (4, 'declined_by_candidate', _("Declined by Candidate")),
+        (5, 'cancelled_by_job_site_contact', _("Cancelled by Job Site Contact")),
+        (6, 'cancelled_by', _("Cancelled by {additional_text}")),
+    ]
 
     shift = models.ForeignKey(
         'hr.Shift',
