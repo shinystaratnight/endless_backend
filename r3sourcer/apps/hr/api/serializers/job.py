@@ -671,13 +671,22 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
     def get_hide_text(self, obj):
         return not self.get_hide_buttons(obj)
 
+    @staticmethod
+    def get_status_tuple(status, additional_text=None):
+        if additional_text:
+            return (
+                status,
+                hr_models.JobOffer.CANDIDATE_STATUS_CHOICES[status].format(additional_text=additional_text)
+            )
+        return (status, hr_models.JobOffer.CANDIDATE_STATUS_CHOICES[status])
+
     def get_status(self, obj):
         if obj.status == hr_models.JobOffer.STATUS_CHOICES.undefined:
-            return ' '
+            return self.get_status_tuple(obj.status)
 
         last_change = endless_logger.get_recent_field_change(hr_models.JobOffer, obj.id, 'status')
         if not last_change:
-            return hr_models.JobOffer.STATUS_CHOICES[obj.status]
+            return self.get_status_tuple(obj.status)
 
         updated_by_id = last_change['updated_by']
         system_user = get_default_user()
@@ -688,22 +697,28 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         jobsite_contact = obj.job.jobsite.primary_contact
 
         if obj.is_quota_filled() or (reply_sms and reply_sms.is_positive_answer() and not obj.is_accepted()):
-            return _('Already filled')
+            return self.get_status_tuple(hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.already_filled)
 
         if obj.is_cancelled():
             if str(obj.candidate_contact.contact.user.id) == updated_by_id:
-                return _('Declined by Candidate')
+                return self.get_status_tuple(
+                    hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.declined_by_candidate)
             elif str(system_user.id) == updated_by_id:
                 if reply_sms and reply_sms.is_negative_answer():
-                    return _('Declined by Candidate')
+                    return self.get_status_tuple(
+                        hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.declined_by_candidate)
                 else:
-                    return _('Cancelled')
+                    return self.get_status_tuple(
+                        hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.cancelled)
             elif jobsite_contact and str(jobsite_contact.contact.user.id) == updated_by_id:
-                return _('Cancelled by Job Site Contact')
+                return self.get_status_tuple(
+                    hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.cancelled_by_job_site_contact)
             else:
-                return _('Cancelled by {name}').format(name=core_models.User.objects.get(id=updated_by_id))
+                return self.get_status_tuple(
+                    hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.cancelled_by,
+                    additional_text=core_models.User.objects.get(id=updated_by_id))
 
-        return hr_models.JobOffer.STATUS_CHOICES[obj.status]
+        return self.get_status_tuple(obj.status)
 
     def get_status_icon(self, obj):
         return obj.status == hr_models.JobOffer.STATUS_CHOICES.accepted
