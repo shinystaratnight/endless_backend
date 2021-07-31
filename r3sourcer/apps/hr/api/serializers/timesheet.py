@@ -86,7 +86,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
-        'invoice', 'shift', 'evaluation', 'time_zone',
+        'invoice', 'shift', 'evaluation', 'time_zone', 'is_30_days_old',
     )
 
     class Meta:
@@ -306,6 +306,9 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                 },
                 '__str__': str(shift),
             }
+
+    def get_is_30_days_old(self, obj):
+        return obj.shift_started_at_tz < obj.now_tz - timedelta(days=30)
 
     def validate(self, data):
         """
