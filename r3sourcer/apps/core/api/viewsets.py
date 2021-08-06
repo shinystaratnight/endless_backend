@@ -1169,6 +1169,9 @@ class FormViewSet(BaseApiViewset):
                 values = [values]
 
             for val in values:
+                # TODO: remove next 2 lines after https://taavisaavo.atlassian.net/browse/RV-1237 will be fixed on FE
+                if isinstance(val, str):
+                    val = {"id": val}
                 # prepare data
                 for field in related_model._meta.get_fields():
                     if isinstance(field, FileField):
