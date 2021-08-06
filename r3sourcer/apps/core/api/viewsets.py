@@ -1254,6 +1254,19 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
 
 
 class TagViewSet(BaseApiViewset):
+
+    permission_classes_by_action = {'create': [AllowAny],
+                                    'all': [AllowAny],
+                                    'update': [IsAuthenticated]}
+
+    def get_permissions(self):
+        try:
+            # return permission_classes depending on `action`
+            return [permission() for permission in self.permission_classes_by_action[self.action]]
+        except KeyError:
+            # action is not set return default permission_classes
+            return [permission() for permission in self.permission_classes]
+
     def get_queryset(self):
         qs = super().get_queryset()
         if not self.kwargs.get('pk'):
@@ -1261,7 +1274,7 @@ class TagViewSet(BaseApiViewset):
             qs = qs.filter(Q(company_tags__company_id=master_company.pk) | Q(owner=models.Tag.TAG_OWNER.system))
         return qs
 
-    @action(methods=['get'], detail=False, permission_classes=(AllowAny,))
+    @action(methods=['get'], detail=False)
     def all(self, request, *args, **kwargs):
         """
         Public view that get company from subdomain and return company and system tags
@@ -1292,28 +1305,31 @@ class TagViewSet(BaseApiViewset):
         return Response(serializer.data)
 
     def create(self, request, *args, **kwargs):
-        with transaction.atomic():
-            data = self.prepare_related_data(request.data)
-            serializer = self.get_serializer(data=data)
-            serializer.initial_data['owner'] = models.Tag.TAG_OWNER.company
-            serializer.is_valid(raise_exception=True)
-            if self.queryset.filter(owner=models.Tag.TAG_OWNER.system,
-                                    name__iexact=serializer.validated_data['name']).all():
-                return HttpResponseBadRequest('Tag already exists {0}'.format(serializer.validated_data["name"]))
+        domain = request.META['HTTP_HOST']
+        try:
+            master_company = models.SiteCompany.objects.get(site__domain=domain).company
+            with transaction.atomic():
+                data = self.prepare_related_data(request.data)
+                serializer = self.get_serializer(data=data)
+                serializer.initial_data['owner'] = models.Tag.TAG_OWNER.company
+                serializer.is_valid(raise_exception=True)
+                if self.queryset.filter(owner=models.Tag.TAG_OWNER.system,
+                                        name__iexact=serializer.validated_data['name']).all():
+                    return HttpResponseBadRequest('Tag already exists {0}'.format(serializer.validated_data["name"]))
 
-            master_company = self.request.user.contact.get_closest_company().get_closest_master_company()
-            if self.queryset.filter(owner=models.Tag.TAG_OWNER.company,
-                                    name__iexact=serializer.validated_data['name'],
-                                    company_tags__company_id=master_company.pk,
-                                    ).all():
-                return HttpResponseBadRequest('Tag already exists {0}'.format(serializer.validated_data["name"]))
+                if self.queryset.filter(owner=models.Tag.TAG_OWNER.company,
+                                        name__iexact=serializer.validated_data['name'],
+                                        company_tags__company_id=master_company.pk,
+                                        ).all():
+                    return HttpResponseBadRequest('Tag already exists {0}'.format(serializer.validated_data["name"]))
 
-            self.perform_create(serializer)
-            company_tag = models.CompanyTag(
-                tag_id=serializer.data['id'],
-                company_id=master_company.pk,
-            )
-            company_tag.save()
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
+                self.perform_create(serializer)
+                company_tag = models.CompanyTag(
+                    tag_id=serializer.data['id'],
+                    company_id=master_company.pk,
+                )
+                company_tag.save()
+                headers = self.get_success_headers(serializer.data)
+                return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except:
+            return HttpResponseBadRequest(_("Sorry, we can't identify master company"))
