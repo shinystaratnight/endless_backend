@@ -1498,14 +1498,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     @property
     def get_hourly_rate(self):
-        if self.candidate_rate:
-            return self.candidate_rate
-        elif self.job_offer.shift.hourly_rate:
-            return self.job_offer.shift.hourly_rate
-        elif self.job_offer.shift.date.hourly_rate:
-            return self.job_offer.shift.date.hourly_rate
-        elif self.job_offer.shift.date.job.hourly_rate_default:
-            return self.job_offer.shift.date.job.hourly_rate_default
+        return self.timesheet_rates.filter(worktype__name=WorkType.DEFAULT).first().rate or 0
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
@@ -1691,7 +1684,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             if hourly_activity:
                 if self.shift_duration:
                     hourly_activity.value = self.shift_duration.total_seconds()/3600
-                    hourly_activity.rate = self.get_hourly_rate
                     hourly_activity.save()
                 else:
                     hourly_activity.delete()
@@ -1699,7 +1691,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
                 TimeSheetRate.objects.create(timesheet=self,
                                              worktype=hourly_work,
                                              value=self.shift_duration.total_seconds()/3600,
-                                             rate=self.get_hourly_rate
                                              )
 
         if just_added and self.is_allowed(10):
@@ -2672,6 +2663,18 @@ class TimeSheetRate(UUIDModel):
         return f'{self.timesheet}-{self.worktype}'
 
     def get_rate(self):
+
+        # if worktype is hourly work return hourly_rate
+        if self.worktype.name == WorkType.DEFAULT:
+            if self.timesheet.candidate_rate:
+                return self.timesheet.candidate_rate
+            elif self.timesheet.job_offer.shift.hourly_rate:
+                return self.timesheet.job_offer.shift.hourly_rate
+            elif self.timesheet.job_offer.shift.date.hourly_rate:
+                return self.timesheet.job_offer.shift.date.hourly_rate
+            elif self.timesheet.job_offer.shift.date.job.hourly_rate_default:
+                return self.timesheet.job_offer.shift.date.job.hourly_rate_default
+
         # search skill activity rate in candidate's skill activity rates
         rate = self.timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(self.worktype)
         if not rate:

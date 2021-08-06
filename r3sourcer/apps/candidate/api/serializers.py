@@ -473,7 +473,6 @@ class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
         earned = 0
         timesheets = hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
                                                         status=7,
-                                                        wage_type__in=[0,2],
                                                         job_offer__shift__date__shift_date__gte=self.context['from_date'],
                                                         job_offer__shift__date__shift_date__lte=self.context['to_date'])
 
@@ -491,7 +490,7 @@ class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
 
     def get_skill_activities(self, obj):
         timesheets = hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj,
-                                                        wage_type__in=[1,2],
+                                                        wage_type=1,
                                                         status=7,
                                                         job_offer__shift__date__shift_date__gte=self.context['from_date'],
                                                         job_offer__shift__date__shift_date__lte=self.context['to_date'])
