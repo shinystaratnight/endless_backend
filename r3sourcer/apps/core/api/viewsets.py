@@ -1149,7 +1149,7 @@ class FormViewSet(BaseApiViewset):
         # create formality object
         personal_id = data.get('formalities__personal_id', None)
         tax_number = data.get('formalities__tax_number', None)
-        if CandidateContact.objects.get(id=instance.id) and (personal_id or tax_number):
+        if candidate and (personal_id or tax_number):
             Formality.objects.create(candidate_contact=candidate,
                                      country=candidate.contact.active_address.country,
                                      personal_id=personal_id,
