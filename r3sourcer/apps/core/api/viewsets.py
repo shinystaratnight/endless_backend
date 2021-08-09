@@ -9,11 +9,10 @@ from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q, ForeignKey, FileField
 from django.db.models.deletion import ProtectedError
-from django.forms import model_to_dict
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
-from r3sourcer.apps.core.api.serializers import ContactSerializer
+
 from rest_framework import viewsets, exceptions, status, fields
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
