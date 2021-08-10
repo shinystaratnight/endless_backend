@@ -282,6 +282,10 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             }
         ]
 
+    def __init__(self, *args, **kwargs):
+        many = kwargs.pop('many', True)
+        super(JobOfferSerializer, self).__init__(many=many, *args, **kwargs)
+
     def get_candidate_rate(self, obj):
         if not obj:
             return None
