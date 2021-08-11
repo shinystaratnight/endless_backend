@@ -340,11 +340,12 @@ class WorkType(UUIDModel):
             return f"{self.skill_name} {self.name}"
         return f"{self.name} per {self.uom}"
 
-    @property
-    def translation(self, language='en'):
+    def translation(self, language):
         """ Form translation getter """
-        trans = self.translations.filter(language=self.language).first()
-        return trans.name if trans else None
+        try:
+            return self.translations.get(language=language).value
+        except:
+            return self.name
 
 
 class WorkTypeLanguage(models.Model):

@@ -53,9 +53,9 @@ class InvoiceService(BasePaymentService):
 
         for timesheet in timesheets:
             industry = timesheet.job_offer.job.jobsite.industry
-            skill = timesheet.job_offer.job.position
             customer_company = timesheet.job_offer.shift.date.job.customer_company
             vat = customer_company.get_vat()
+            company_language = customer_company.get_default_lanuage()
 
             for ts_rate in timesheet.timesheet_rates.all():
                 price_list_rate = self._get_price_list_rate(ts_rate.worktype, customer_company)
@@ -83,22 +83,22 @@ class InvoiceService(BasePaymentService):
                         lines.append({
                             'date': timesheet.shift_started_at_tz.date(),
                             'units': units,
-                            'notes': notes,
+                            'notes': ts_rate.worktype.translation(company_language),
                             'unit_price': rate,
                             'amount': math.ceil(rate * units * 100) / 100,
                             'vat': vat,
-                            'unit_name': ts_rate.worktype.uom.name,
+                            'unit_name': ts_rate.worktype.uom.translation(company_language),
                             'timesheet': timesheet,
                         })
                 else:
                     lines.append({
                         'date': timesheet.shift_started_at_tz.date(),
                         'units': ts_rate.value,
-                        'notes': ts_rate.worktype.name,
+                        'notes': ts_rate.worktype.translation(company_language),
                         'unit_price': price_list_rate.rate,
                         'amount': math.ceil(price_list_rate.rate * ts_rate.value * 100) / 100,
                         'vat': vat,
-                        'unit_name': ts_rate.worktype.uom.name,
+                        'unit_name': ts_rate.worktype.uom.translation(company_language),
                         'timesheet': timesheet,
                     })
 
