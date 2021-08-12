@@ -38,7 +38,6 @@ from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
-logger = logging.getLogger(__name__)
 
 class Jobsite(CategoryFolderMixin,
               MYOBMixin,
@@ -650,10 +649,6 @@ class ShiftDate(TimeZoneUUIDModel):
         return FULFILLED
     is_fulfilled.short_description = _('Fulfilled')
 
-    def save(self, *args, **kwargs):
-        logger.warning("ShiftDate {ts_id} saved in model.".format(ts_id=self.shift_date))
-        super().save(*args, **kwargs)
-
 
 class SQCount(models.Subquery):
     template = "(SELECT count(*) FROM (%(subquery)s) _count)"
@@ -735,10 +730,6 @@ class Shift(TimeZoneUUIDModel):
         if jos.exists() and self.workers <= accepted_jos.count():
             result = FULFILLED
         return result
-
-    def save(self, *args, **kwargs):
-        logger.warning("Shift for {ts_id} saved in model.".format(ts_id=self.time))
-        super().save(*args, **kwargs)
 
 
 class JobOffer(TimeZoneUUIDModel):

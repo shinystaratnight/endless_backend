@@ -1153,29 +1153,3 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
         if company_id:
             queryset = self.queryset.filter(regular_company__id=company_id)
             return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
-
-
-class ShiftDateViewset(BaseApiViewset):
-
-    def create_from_data(self, data, *args, **kwargs):
-        is_response = kwargs.pop('is_response', True)
-
-        many = isinstance(data, list)
-
-        serializer = self.get_serializer(data=data, many=many)
-        serializer.is_valid(raise_exception=True)
-        date = hr_models.ShiftDate.objects.filter(
-            shift_date=serializer.validated_data['shift_date'],
-            job=serializer.validated_data['job'],
-        ).first()
-
-        if not date:
-            self.perform_create(serializer)
-        else:
-            serializer = self.get_serializer(date, many=many)
-
-        if is_response:
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        else:
-            return serializer

@@ -76,7 +76,6 @@ class ShiftDateEndpoint(ApiEndpoint):
 
     model = hr_models.ShiftDate
     serializer = job_serializers.ShiftDateSerializer
-    base_viewset = hr_viewsets.ShiftDateViewset
 
 
 class CandidateJobOfferEndpoint(ApiEndpoint):
