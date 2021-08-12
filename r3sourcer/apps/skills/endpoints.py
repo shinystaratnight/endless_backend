@@ -12,7 +12,7 @@ class SkillEndpoint(ApiEndpoint):
     filter_class = skills_filters.SkillFilter
     serializer = skill_serializer.SkillSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly, )
-    search_fields = ('name__name', )
+    search_fields = ('name__name', 'name__translations__value')
 
 
 class EmploymentClassificationEndpoint(ApiEndpoint):
@@ -26,14 +26,14 @@ class SkillBaseRateEndpoint(ApiEndpoint):
     model = models.SkillBaseRate
     serializer = skill_serializer.SkillBaseRateSerializer
     filter_class = skills_filters.SkillBaseRateFilter
-    search_fields = ('skill__name__name', )
+    search_fields = ('skill__name__name', 'skill__name__translations__value')
 
 
 class SkillTagEndpoint(ApiEndpoint):
     model = models.SkillTag
     filter_class = skills_filters.SkillTagFilter
     serializer = skill_serializer.SkillTagSerializer
-    search_fields = ('skill__name__name', 'tag__name')
+    search_fields = ('skill__name__name', 'tag__name', 'skill__name__translations__value')
 
 
 class SkillNameEndpoint(ApiEndpoint):
@@ -42,7 +42,7 @@ class SkillNameEndpoint(ApiEndpoint):
     base_viewset = skill_viewset.SkillNameViewSet
     filter_class = skills_filters.SkillNameFilter
     serializer = skill_serializer.SkillNameSerializer
-    search_fields = ('name', )
+    search_fields = ('name', 'translations__value')
 
 
 class SkillRateRangeEndpoint(ApiEndpoint):
@@ -51,7 +51,7 @@ class SkillRateRangeEndpoint(ApiEndpoint):
     base_viewset = skill_viewset.SkillRateRangeViewSet
     filter_class = skills_filters.SkillRateRangeFilter
     serializer = skill_serializer.SkillRateRangeSerializer
-    search_fields = ('skill__name__name', 'worktype__name',)
+    search_fields = ('skill__name__name', 'worktype__name', 'skill__name__translations__value')
 
 
 class WorkTypeEndpoint(ApiEndpoint):
@@ -60,7 +60,7 @@ class WorkTypeEndpoint(ApiEndpoint):
     base_viewset = skill_viewset.WorkTypeViewSet
     filter_class = skills_filters.WorkTypeFilter
     serializer = skill_serializer.WorkTypeSerializer
-    search_fields = ('skill_name__name', 'name',)
+    search_fields = ('skill_name__name', 'name', 'skill_name__translations__value')
 
 
 router.register(endpoint=SkillNameEndpoint())

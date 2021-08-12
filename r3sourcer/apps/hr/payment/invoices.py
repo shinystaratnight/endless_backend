@@ -1,3 +1,4 @@
+import logging
 import math
 from copy import copy
 from hashlib import md5
@@ -5,18 +6,20 @@ from decimal import Decimal
 
 from django.core.files.base import ContentFile
 from django.db.models import Count
-from django.template.loader import get_template
 from django.utils.formats import date_format
 from filer.models import Folder, File, Q
 
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
-from r3sourcer.apps.core.utils.companies import get_site_url
 from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.hr.models import TimeSheet
-from r3sourcer.apps.hr.payment.base import calc_worked_delta, BasePaymentService
+from r3sourcer.apps.hr.payment.base import BasePaymentService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
-from r3sourcer.helpers.datetimes import utc_now, date2utc_date
+from r3sourcer.apps.pdf_templates.models import PDFTemplate
+from r3sourcer.apps.skills.models import WorkType
+from r3sourcer.helpers.datetimes import utc_now
+
+logger = logging.getLogger(__name__)
 
 
 class InvoiceService(BasePaymentService):
@@ -33,83 +36,89 @@ class InvoiceService(BasePaymentService):
 
         return order_number
 
-    def _get_price_list_rate(self, skill, customer_company):
+    def _get_price_list_rate(self, worktype, customer_company):
         price_list_rate = PriceListRate.objects.filter(
-            skill=skill,
+            worktype=worktype,
             price_list__company=customer_company,
         ).last()
 
         if price_list_rate:
             return price_list_rate
         else:
-            raise Exception('Pricelist rate for skill not found')
+            raise Exception('Pricelist rate for company not found')
 
-    def calculate(self, company, timesheets):
+    def calculate(self, timesheets):
         coefficient_service = CoefficientService()
         lines = []
 
         for timesheet in timesheets:
             industry = timesheet.job_offer.job.jobsite.industry
-            skill = timesheet.job_offer.job.position
             customer_company = timesheet.job_offer.shift.date.job.customer_company
-            price_list_rate = self._get_price_list_rate(skill, customer_company)
-            worked_hours = calc_worked_delta(timesheet)
-            coeffs_hours = coefficient_service.calc(timesheet.master_company,
-                                                    industry,
-                                                    RateCoefficientModifier.TYPE_CHOICES.company,
-                                                    timesheet.shift_started_at_tz,
-                                                    worked_hours,
-                                                    break_started=timesheet.break_started_at_tz,
-                                                    break_ended=timesheet.break_ended_at_tz)
+            vat = customer_company.get_vat()
+            company_language = customer_company.get_default_lanuage()
 
-            lines_iter = self.lines_iter(coeffs_hours,
-                                         skill,
-                                         price_list_rate.rate,
-                                         timesheet)
-            for raw_line in lines_iter:
-                rate = raw_line['rate']
-                notes = raw_line['notes']
-                units = Decimal(raw_line['hours'].total_seconds() / 3600)
+            for ts_rate in timesheet.timesheet_rates.all():
+                price_list_rate = self._get_price_list_rate(ts_rate.worktype, customer_company)
+                if ts_rate.worktype.name == WorkType.DEFAULT:
+                    coeffs_hours = coefficient_service.calc(timesheet.master_company,
+                                                            industry,
+                                                            RateCoefficientModifier.TYPE_CHOICES.company,
+                                                            timesheet.shift_started_at_tz,
+                                                            timesheet.shift_duration,
+                                                            break_started=timesheet.break_started_at_tz,
+                                                            break_ended=timesheet.break_ended_at_tz)
 
-                if not units:
-                    continue
+                    lines_iter = self.lines_iter(coeffs_hours,
+                                                 ts_rate.worktype,
+                                                 price_list_rate.rate,
+                                                 timesheet)
+                    for raw_line in lines_iter:
+                        rate = raw_line['rate']
+                        notes = raw_line['notes']
+                        units = Decimal(raw_line['hours'].total_seconds() / 3600)
 
-                vat_name = 'GST' if company.registered_for_gst else 'GNR'
-                lines.append({
-                    'date': timesheet.shift_started_at_tz.date(),
-                    'units': units,
-                    'notes': notes,
-                    'unit_price': rate,
-                    'amount': math.ceil(rate * units * 100) / 100,
-                    'vat': VAT.objects.get(name=vat_name),
-                    'timesheet': timesheet,
-                })
+                        if not units:
+                            continue
+
+                        lines.append({
+                            'date': timesheet.shift_started_at_tz.date(),
+                            'units': units,
+                            'notes': ts_rate.worktype.skill_translation(company_language),
+                            'unit_price': rate,
+                            'amount': math.ceil(rate * units * 100) / 100,
+                            'vat': vat,
+                            'unit_name': ts_rate.worktype.uom.translation(company_language),
+                            'timesheet': timesheet,
+                        })
+                else:
+                    lines.append({
+                        'date': timesheet.shift_started_at_tz.date(),
+                        'units': ts_rate.value,
+                        'notes': ts_rate.worktype.translation(company_language),
+                        'unit_price': price_list_rate.rate,
+                        'amount': math.ceil(price_list_rate.rate * ts_rate.value * 100) / 100,
+                        'vat': vat,
+                        'unit_name': ts_rate.worktype.uom.translation(company_language),
+                        'timesheet': timesheet,
+                    })
 
         return lines, timesheets
 
     @classmethod
     def generate_pdf(cls, invoice, show_candidate=False):
-        template = get_template('payment/invoices.html')
-
-        code_data = {
-            'code': 'GNR',
-            'rate': '0',
-            'tax': '0',
-            'amount': '{0:.2f}'.format(invoice.total)
-        }
-        if invoice.customer_company.registered_for_gst:
-            code_data = {
-                'code': 'GST',
-                'rate': '10',
-                'tax': '{0:.2f}'.format(invoice.total * Decimal(0.1)),
-                'amount': '{0:.2f}'.format(invoice.total)
-            }
-
-        domain = get_site_url(master_company=invoice.provider_company)
+        template_slug = 'company-invoice'
         master_company = invoice.provider_company
 
-        if hasattr(master_company, 'company_settings') and master_company.company_settings.logo:
-            master_logo = master_company.company_settings.logo.url
+        # get template
+        try:
+            template = PDFTemplate.objects.get(slug=template_slug,
+                                               company=master_company)
+        except PDFTemplate.DoesNotExist:
+            logger.exception('Cannot find pdf template with slug %s', template_slug)
+            raise Exception('Cannot find pdf template with slug:', template_slug)
+
+        if master_company.logo:
+            master_logo = get_thumbnail_picture(master_company.logo, 'large')
         else:
             master_logo = get_thumbnail_picture(invoice.provider_company.logo, 'large')
 
@@ -117,12 +126,9 @@ class InvoiceService(BasePaymentService):
             'lines': invoice.invoice_lines.order_by('date').all(),
             'invoice': invoice,
             'company': invoice.customer_company,
-            'code_data': code_data,
             'master_company': invoice.provider_company,
             'master_company_logo': master_logo,
             'show_candidate': show_candidate,
-            'STATIC_URL': '%s/static' % domain,
-            'DOMAIN': domain
         }
 
         pdf_file = cls._get_file_from_str(str(template.render(context)))
@@ -156,7 +162,8 @@ class InvoiceService(BasePaymentService):
             'units',
             'notes',
             'unit_price',
-            'amount'
+            'amount',
+            'unit_name'
         )
 
     def get_line_unique_id(self, get_fn, line):
@@ -166,14 +173,15 @@ class InvoiceService(BasePaymentService):
 
         return md5(''.join(parts).encode()).hexdigest()
 
-    def _prepare_invoice(self, date_from, date_to, timesheets, invoice=None, company=None, show_candidate=False, recreate=False):
+    def _prepare_invoice(self, date_from, date_to, timesheets, invoice=None, company=None,
+                         show_candidate=False, recreate=False):
         if hasattr(company, 'subcontractor'):
             candidate = company.subcontractor.primary_contact
             timesheets = timesheets.filter(
                 job_offer__candidate_contact=candidate
             )
 
-        lines, timesheets = self.calculate(company, timesheets)
+        lines, timesheets = self.calculate(timesheets)
 
         if not lines:
             return

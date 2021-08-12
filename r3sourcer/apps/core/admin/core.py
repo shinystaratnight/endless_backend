@@ -9,16 +9,15 @@ from django.shortcuts import redirect
 from django.urls import reverse
 from django.utils.html import format_html
 from django.utils.translation import ugettext_lazy as _
+import nested_admin
 import stripe
 from functools import reduce
 
-from mptt.admin import MPTTModelAdmin
 from r3sourcer.apps.billing.models import StripeCountryAccount as sca
 
 from r3sourcer.apps.core_utils.filters import RelatedDropDownFilter
 from r3sourcer.apps.core_utils.mixins import ExtendedDraggableMPTTAdmin
 from r3sourcer.apps.billing.models import Subscription
-from r3sourcer.helpers.admin.filters import LanguageListFilter
 
 from .. import forms
 from .. import models
@@ -240,12 +239,14 @@ class SuperuserAdmin(admin.ModelAdmin):
         return request.user.is_superuser
 
 
-class TagLanguageInline(admin.TabularInline):
+class TagLanguageInline(nested_admin.NestedTabularInline):
     model = models.TagLanguage
+    extra = 0
 
 
-class TagAdmin(MPTTModelAdmin):
-    inlines = (TagLanguageInline,)
+class TagAdmin(nested_admin.NestedModelAdmin):
+    inlines = [TagLanguageInline]
+    search_fields = ('name',)
 
     def get_queryset(self, request):
         qs = models.Tag.objects.filter(owner=models.Tag.TAG_OWNER.system)
@@ -255,8 +256,8 @@ class TagAdmin(MPTTModelAdmin):
         return qs
 
 
-class TagCompanyAdmin(MPTTModelAdmin):
-    inlines = (TagLanguageInline,)
+class TagCompanyAdmin(nested_admin.NestedModelAdmin):
+    inlines = [TagLanguageInline]
 
     def get_queryset(self, request):
         qs = models.Tag.objects.filter(owner=models.Tag.TAG_OWNER.company)
@@ -385,6 +386,12 @@ class CompanyRelAdmin(SuperuserAdmin):
     )
 
 
+class CompanyAddressAdmin(admin.ModelAdmin):
+
+    search_fields = ('company__name', 'name')
+    list_display = ('__str__', 'company__name', 'active', 'hq')
+
+
 class VATAdmin(admin.ModelAdmin):
     list_display = (
         'country',
@@ -454,7 +461,7 @@ admin.site.register(models.BankAccount)
 admin.site.register(models.Company, CompanyAdmin)
 admin.site.register(models.Address, AddressAdmin)
 admin.site.register(models.CompanyRel, CompanyRelAdmin)
-admin.site.register(models.CompanyAddress, BaseAdmin)
+admin.site.register(models.CompanyAddress, CompanyAddressAdmin)
 admin.site.register(models.CompanyLocalization)
 admin.site.register(models.CompanyContact)
 admin.site.register(models.CompanyContactAddress, BaseAdmin)

@@ -7,11 +7,12 @@ from django.contrib.sites.models import Site
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.core.validators import validate_email
 from django.db import transaction
-from django.db.models import Q, ForeignKey
-from django.forms import model_to_dict
+from django.db.models import Q, ForeignKey, FileField
+from django.db.models.deletion import ProtectedError
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
+
 from rest_framework import viewsets, exceptions, status, fields
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -20,7 +21,10 @@ from rest_framework.viewsets import ViewSet
 
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
 from r3sourcer.apps.core import tasks
+from r3sourcer.apps.core.api.contact_bank_accounts.serializers import ContactBankAccountFieldSerializer
+from r3sourcer.apps.core.api.fields import ApiBase64FileField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.models import BankAccountLayoutCountry, ContactBankAccount, BankAccountField
 from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.address import parse_google_address
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
@@ -166,6 +170,17 @@ class BaseApiViewset(BaseViewsetMixin, viewsets.ModelViewSet):
         return {
             k: v for k, v in data.items() if v is not None
         }
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        try:
+            self.perform_destroy(instance)
+        except ProtectedError:
+            raise exceptions.ValidationError({
+                'message': 'Data you are trying to delete has relationships to other parts of '
+                           'database so this cannot be deleted! '
+            })
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class ContactViewset(GoogleAddressMixin, BaseApiViewset):
@@ -1086,14 +1101,14 @@ class FormViewSet(BaseApiViewset):
     @action(methods=['post'], detail=True, permission_classes=(AllowAny,))
     def submit(self, request, pk, *args, **kwargs):
         from r3sourcer.apps.acceptance_tests.models import WorkflowObjectAnswer, WorkflowObject
-        from r3sourcer.apps.candidate.models import CandidateContact
+        from r3sourcer.apps.candidate.models import CandidateContact, Formality
         form_obj = self.get_object()
         extra_data = {}
         data = {}
 
         for key, val in request.data.items():
             if form_obj.builder.extra_fields.filter(name=key).exists():
-                extra_data[key] = val['id'] if isinstance(val, dict) else val
+                extra_data[key] = val
             else:
                 data[key] = val
 
@@ -1122,7 +1137,8 @@ class FormViewSet(BaseApiViewset):
             raise exceptions.ValidationError(storage_helper.errors)
 
         instance = storage_helper.create_instance()
-        if CandidateContact.objects.get(id=instance.id) and data.get('tests'):
+        candidate = CandidateContact.objects.get(id=instance.id)
+        if candidate and data.get('tests'):
             for item in data.get('tests'):
                 question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
                 answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
@@ -1131,43 +1147,88 @@ class FormViewSet(BaseApiViewset):
                                                     acceptance_test_question=question,
                                                     answer=answer)
 
+        # create formality object
+        personal_id = data.get('formalities__personal_id', None)
+        tax_number = data.get('formalities__tax_number', None)
+        if candidate and (personal_id or tax_number):
+            Formality.objects.create(candidate_contact=candidate,
+                                     country=candidate.contact.active_address.country,
+                                     personal_id=personal_id,
+                                     tax_number=tax_number)
+
+        # create bank account
+        if candidate:
+            try:
+                bank_account_layout = BankAccountLayoutCountry.objects.get(country=candidate.contact.active_address.country, default=True).layout
+            except BankAccountLayoutCountry.DoesNotExist:
+                raise exceptions.ValidationError(candidate.contact.active_address.country)
+            with transaction.atomic():
+                bank_account = ContactBankAccount(
+                    contact=candidate.contact,
+                    layout=bank_account_layout,
+                )
+                bank_account.save()
+                for (key, value) in data.items():
+                    if key.startswith("contact__bank_accounts"):
+                        try:
+                            field = BankAccountField.objects.get(name=key[key.rfind('__')+2:])
+                        except BankAccountField.DoesNotExist:
+                            raise exceptions.ValidationError(key)
+                        field_serializer = ContactBankAccountFieldSerializer(data={'field_id': field.id, 'value': value})
+                        if field_serializer.is_valid(raise_exception=True):
+                            field_serializer.create(dict(bank_account_id=str(bank_account.pk), **field_serializer.data))
 
         for extra_field in form_obj.builder.extra_fields.all():
+            # check if field exists in extra_data
             if extra_field.name not in extra_data:
                 continue
 
-            related_model_ct = extra_field.related_through_content_type or extra_field.content_type
-            related_model = related_model_ct.model_class()
+            target_model = extra_field.content_type.model_class()
+            related_model = extra_field.related_through_content_type.model_class()
+            values = extra_data[extra_field.name]
 
-            multiple_data = {}
-            single_data = {}
+            # if value is single make list with one value
+            if not isinstance(values, list):
+                values = [values]
 
-            for field in related_model._meta.get_fields():
-                if not isinstance(field, ForeignKey):
-                    continue
+            for val in values:
+                # TODO: remove next 2 lines after https://taavisaavo.atlassian.net/browse/RV-1237 will be fixed on FE
+                if isinstance(val, str):
+                    val = {"id": val}
+                # prepare data
+                for field in related_model._meta.get_fields():
+                    if isinstance(field, FileField):
+                        if field.name in val:
+                           val[field.name] = ApiBase64FileField().to_internal_value(val[field.name])
+                        continue
+                    if not isinstance(field, ForeignKey):
+                        continue
+                    if isinstance(instance, field.rel.model):
+                        val[field.name] = instance
+                        continue
+                    if isinstance(instance.recruitment_agent, field.rel.model):
+                        val[field.name] = instance.recruitment_agent
+                        continue
 
-                if isinstance(instance, field.rel.model):
-                    single_data[field.name] = instance
-                    continue
+                # check if id field exists in dictionary
+                if 'id' in val:
+                    val_id = val.pop('id', None)
 
-                if field.name in extra_data:
-                    values = extra_data[field.name]
+                    try:
+                        val_obj = target_model.objects.get(id=val_id)
+                        obj_values = {
+                            extra_field.name: val_obj,
+                            **val,
+                        }
+                        related_model.objects.create(**obj_values)
 
-                    if not isinstance(values, list):
-                        values = [values]
+                    except ObjectDoesNotExist:
+                        continue
 
-                    for val in values:
-                        multiple_data[field.name] = [field.rel.model.objects.get(id=id_val) for id_val in values]
-
-            for key, data in multiple_data.items():
-                for val in data:
-                    obj_values = {
-                        key: val,
-                        **single_data
-                    }
-                    related_model.objects.create(**obj_values)
-
-        return Response({'message': form_obj.submit_message}, status=status.HTTP_201_CREATED)
+        return Response({'message': form_obj.submit_message,
+                         'candidate_contact': instance.id,
+                         'recruitment_agent': instance.recruitment_agent.id},
+                        status=status.HTTP_201_CREATED)
 
 
 class CitiesLightViewSet(BaseApiViewset):
@@ -1223,6 +1284,20 @@ class TagViewSet(BaseApiViewset):
             qs = qs.filter(Q(company_tags__company_id=master_company.pk) | Q(owner=models.Tag.TAG_OWNER.system))
         return qs
 
+    @action(methods=['get'], detail=False, permission_classes=(AllowAny,))
+    def all(self, request, *args, **kwargs):
+        """
+        Public view that get company from subdomain and return company and system tags
+        """
+        domain = request.META['HTTP_HOST']
+        try:
+            master_company = models.SiteCompany.objects.get(site__domain=domain).company
+            queryset = models.Tag.objects.filter(Q(company_tags__company_id=master_company.pk) |
+                                                 Q(owner=models.Tag.TAG_OWNER.system))
+            return self._paginate(request, self.get_serializer_class(), queryset=queryset)
+        except:
+            return HttpResponseBadRequest(_("Sorry, we can't identify master company"))
+
     def update(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
         partial = kwargs.pop('partial', False)
@@ -1264,3 +1339,4 @@ class TagViewSet(BaseApiViewset):
             company_tag.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+

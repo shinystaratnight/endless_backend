@@ -5,6 +5,8 @@ import pytz
 import stripe
 from django.conf import settings
 from django.db import models
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
@@ -174,7 +176,7 @@ class SMSBalance(models.Model):
     balance = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     top_up_amount = models.IntegerField(default=100)
     top_up_limit = models.IntegerField(default=10)
-    last_payment = models.ForeignKey('Payment', blank=True, null=True)
+    last_payment = models.ForeignKey('Payment', blank=True, null=True, on_delete=models.SET_NULL)
     cost_of_segment = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     auto_charge = models.BooleanField(default=False, verbose_name=_('Auto Charge'))
     low_balance_sent = models.BooleanField(default=False)
@@ -224,6 +226,15 @@ class SMSBalance(models.Model):
 
         super().save(*args, **kwargs)
 
+    @classmethod
+    def use_logger(cls):
+        return True
+
+
+@receiver(pre_delete, sender=SMSBalance)
+def smsbalance_delete(sender, instance, **kwargs):
+    raise Exception
+
 
 class Payment(CompanyTimeZoneMixin):
     PAYMENT_TYPES = Choices(
@@ -241,7 +252,7 @@ class Payment(CompanyTimeZoneMixin):
         on_delete=models.CASCADE)
     type = models.CharField(max_length=255, choices=PAYMENT_TYPES)
     created = ref.DTField()
-    amount = models.IntegerField()
+    amount = models.DecimalField(default=0, max_digits=8, decimal_places=2)
     status = models.CharField(max_length=255, choices=PAYMENT_STATUSES, default=PAYMENT_STATUSES.not_paid)
     stripe_id = models.CharField(max_length=255)
     invoice_url = models.CharField(max_length=255, blank=True, null=True)
@@ -261,6 +272,10 @@ class Payment(CompanyTimeZoneMixin):
         if not self.created:
             self.created = self.now_utc
         super().save(*args, **kwargs)
+
+    @classmethod
+    def use_logger(cls):
+        return True
 
 
 class Discount(CompanyTimeZoneMixin):

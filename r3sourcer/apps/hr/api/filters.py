@@ -21,6 +21,7 @@ class TimesheetFilter(FilterSet):
     approved = BooleanFilter(method='filter_approved')
     company = UUIDFilter('job_offer__shift__date__job__customer_company_id')
     jobsite = UUIDFilter('job_offer__shift__date__job__jobsite_id')
+    primary_contact = UUIDFilter('job_offer__shift__date__job__jobsite__primary_contact_id')
     shift_started_at = DateRangeFilter(distinct=True)
 
     class Meta:
@@ -250,3 +251,9 @@ class TimeSheetRateFilter(FilterSet):
         fields = [
             'timesheet',
         ]
+
+class JobRateFilter(FilterSet):
+
+    class Meta:
+        model = hr_models.JobRate
+        fields = ['job', 'worktype']

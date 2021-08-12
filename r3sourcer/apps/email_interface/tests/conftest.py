@@ -7,8 +7,26 @@ import freezegun
 import pytest
 
 from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.email_interface import models
 
+
+@pytest.fixture
+def user(db):
+    return core_models.User.objects.create_user(
+        email='candidate_contact@test.ee', phone_mobile='+12345678904',
+        password='test2345'
+    )
+
+@pytest.fixture
+def contact_candidate(db, user):
+    return user.contact
+
+@pytest.fixture
+def candidate_contact(db, contact_candidate):
+    return candidate_models.CandidateContact.objects.create(
+        contact=contact_candidate
+    )
 
 @pytest.fixture
 def user_primary(db):

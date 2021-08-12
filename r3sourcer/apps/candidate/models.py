@@ -3,6 +3,7 @@ from datetime import timedelta
 from crum import get_current_request
 from django.db import models
 from django.utils.translation import ugettext_lazy as _
+from django.core.exceptions import ValidationError
 from model_utils import Choices
 from phonenumber_field.modelfields import PhoneNumberField
 
@@ -393,7 +394,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
 
     @workflow_function
     def is_skill_rate_defined(self):
-        return self.candidate_skills.filter(score__gt=0, skill__active=True, hourly_rate__gt=0).count() > 0
+        return self.candidate_skills.filter(score__gt=0, skill__active=True, skill_rates__isnull=False).count() > 0
     is_skill_rate_defined.short_description = _("At least one active skill hourly rate must be higher that 0")
 
     @workflow_function
@@ -522,6 +523,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         return self.contact.email
 
     def get_candidate_rate_for_skill(self, skill, **skill_kwargs):
+        # search skill activity rate in candidate's skill activity rates
         candidate_skill = self.candidate_skills.filter(
             skill=skill, **skill_kwargs
         ).first()
@@ -530,6 +532,13 @@ class CandidateContact(UUIDModel, WorkflowProcess):
             if candidate_skill_rate:
                 return candidate_skill_rate
         return None
+
+    def get_candidate_rate_for_worktype(self, wotktype):
+        # search skill activity rate in candidate's skill activity rates
+        skill_rate = SkillRate.objects.filter(worktype=wotktype,
+                                              skill_rel__candidate_contact=self) \
+                                      .first()
+        return skill_rate.rate if skill_rate else None
 
     def get_closest_company(self):
         try:
@@ -623,7 +632,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
             'related_objs': [extranet_login],
         }
 
-        send_candidate_consent_message.delay(self.id, rel_id, data_dict)
+        send_candidate_consent_message(rel_id, data_dict)
 
     @classmethod
     def owned_by_lookups(cls, owner):
@@ -647,7 +656,7 @@ class TagRel(UUIDModel):
     tag = models.ForeignKey(
         'core.Tag',
         related_name="tag_rels",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Tag")
     )
 
@@ -749,14 +758,6 @@ class SkillRel(UUIDModel):
         default=PRIOR_EXPERIENCE_CHOICES.inexperienced
     )
 
-    hourly_rate = models.DecimalField(
-        decimal_places=2,
-        max_digits=8,
-        verbose_name=_("Skill Rate"),
-        blank=True,
-        null=True
-    )
-
     class Meta:
         verbose_name = _("Candidate Skill")
         verbose_name_plural = _("Candidate Skills")
@@ -769,6 +770,14 @@ class SkillRel(UUIDModel):
     def get_valid_rate(self):
         return self.hourly_rate
 
+    @property
+    def hourly_rate(self):
+        hourly_work = WorkType.objects.filter(name='Hourly work',
+                                              skill_name=self.skill.name) \
+                                      .first()
+        skill_rate = self.skill_rates.filter(worktype=hourly_work).first()
+        return skill_rate.rate if skill_rate else None
+
     def get_myob_name(self):
         return '{} {}'.format(str(self.skill.get_myob_name()), str(self.get_valid_rate()))
 
@@ -779,6 +788,50 @@ class SkillRel(UUIDModel):
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         self.candidate_contact.candidate_scores.recalc_scores()
+
+
+class SkillRate(UUIDModel):
+
+    skill_rel = models.ForeignKey(
+        SkillRel,
+        related_name="skill_rates",
+        verbose_name=_("Candidate Skill")
+    )
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name="skill_rates",
+        verbose_name=_("Type of work"),
+    )
+
+    rate = models.DecimalField(
+        decimal_places=2,
+        max_digits=8,
+        verbose_name=_("Skill Rate"),
+    )
+
+    class Meta:
+        verbose_name = _("Skill rate")
+        verbose_name_plural = _("Skill rates")
+        unique_together = ("skill_rel", "worktype")
+
+    def __str__(self):
+        return f'{self.skill_rel}-{self.worktype}' if self.worktype else f'{self.skill_rel}'
+
+    def clean(self):
+        # get skill_rate_range for worktype
+        skill_rate_range = self.skill_rel.skill.skill_rate_ranges.filter(worktype=self.worktype).first()
+        # Check if skill_rate in defined skill_rate_range
+        if skill_rate_range:
+            lower_limit = skill_rate_range.lower_rate_limit
+            upper_limit = skill_rate_range.upper_rate_limit
+            is_lower = lower_limit and self.rate < lower_limit
+            is_upper = upper_limit and self.rate > upper_limit
+            if is_lower or is_upper:
+                raise ValidationError({
+                    'rate': _('Rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
 
 
 class SkillRateCoefficientRel(UUIDModel):

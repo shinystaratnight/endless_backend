@@ -20,6 +20,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(load_sms_balance_limits_from_fixture,
-                             delete_sms_balance_limits),
+        # migrations.RunPython(load_sms_balance_limits_from_fixture,
+        #                      delete_sms_balance_limits),
     ]

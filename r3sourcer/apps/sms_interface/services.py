@@ -1,10 +1,11 @@
 import logging
 from abc import ABCMeta, abstractmethod
 
+from django.conf import settings
 from django.db import transaction
 from phonenumber_field.phonenumber import PhoneNumber
 
-from r3sourcer.apps.core.models import Contact
+from r3sourcer.apps.core.models import Contact, Company
 from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from .exceptions import SMSServiceError, AccountHasNotPhoneNumbers, SMSBalanceError, SMSDisableError
@@ -16,8 +17,36 @@ logger = logging.getLogger(__name__)
 
 class BaseSMSService(metaclass=ABCMeta):
 
+    def get_template(self, contact: Contact, master_company: Company, tpl_name: str) -> SMSTemplate:
+        # notification language selection
+        if contact.is_candidate_contact():
+            languages = contact.languages.order_by('-default')
+
+        elif contact.is_company_contact():
+            languages = master_company.languages.order_by('-default')
+
+        # template selection
+        templates = SMSTemplate.objects.filter(slug=tpl_name, company=master_company)
+        template = None
+
+        for lang in languages:
+            try:
+                template = templates.get(language=lang.language)
+                break
+            except SMSTemplate.DoesNotExist:
+                continue
+
+        if template is None:
+            template = templates.filter(language_id=settings.DEFAULT_LANGUAGE).first()
+
+        if template is None:
+            logger.exception('Cannot find sms template with name %s', tpl_name)
+            # raise Exception('Cannot find sms template with name:', tpl_name)
+
+        return template
+
     @transaction.atomic
-    def send(self, to_number, text, from_number, related_obj, **kwargs):
+    def send(self, to_number, text, from_number, related_obj=[], **kwargs):
         if isinstance(to_number, PhoneNumber):
             to_number = to_number.as_e164
 
@@ -67,14 +96,13 @@ class BaseSMSService(metaclass=ABCMeta):
         return sms_message
 
     @transaction.atomic
-    def send_tpl(self, to_number, tpl_id, related_obj, from_number=None, **kwargs):
-        try:
-            template = SMSTemplate.objects.get(id=tpl_id)
+    def send_tpl(self, contact_obj, master_company_obj, tpl_name, related_obj=[], from_number=None, **kwargs):
+
+        template = self.get_template(contact_obj, master_company_obj, tpl_name)
+
+        if template:
             message = template.compile(**kwargs)['text']
-        except SMSTemplate.DoesNotExist:
-            logger.exception('Cannot find template with id %s', tpl_id)
-        else:
-            sms_message = self.send(to_number, message, from_number, related_obj, **kwargs)
+            sms_message = self.send(contact_obj.phone_mobile, message, from_number, related_obj, **kwargs)
             if sms_message is not None:
                 sms_message.template = template
                 sms_message.save()
@@ -113,7 +141,6 @@ class BaseSMSService(metaclass=ABCMeta):
             sms_message.type, sms_message.id, sms_message
         )
 
-        # ac = self.activity_service.on_new_sms_message(sms_message)
         if sms_message.status == SMSMessage.STATUS_CHOICES.RECEIVED:
             sent_message = sms_message.get_sent_by_reply()
         else:

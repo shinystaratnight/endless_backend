@@ -42,6 +42,6 @@ class Migration(migrations.Migration):
             name='company',
             field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.CASCADE, related_name='sms_templates', to='core.Company', verbose_name='Master company'),
         ),
-        migrations.RunPython(load_default_sms_templates_from_fixture,
-                             delete_default_sms_templates),
+        # migrations.RunPython(load_default_sms_templates_from_fixture,
+        #                      delete_default_sms_templates),
     ]

@@ -4,7 +4,7 @@ from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
-from r3sourcer.apps.core.models import Company, UnitOfMeasurement, UnitOfMeasurement
+from r3sourcer.apps.core.models import Company, UnitOfMeasurement
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
@@ -57,6 +57,31 @@ class SkillName(UUIDModel):
                 models.Q(industry__in=owner.industries.all())
             ]
 
+    def translation(self, language):
+        """ SkillName translation getter """
+        try:
+            return self.translations.get(language=language).value
+        except:
+            return self.name
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        for company in Company.objects.filter(industries__in=[self.industry]):
+            Skill.objects.get_or_create(name=self,
+                                        company=company,
+                                        defaults={'active': False},
+                                        )
+
+        worktype, created = WorkType.objects.get_or_create(name=WorkType.DEFAULT,
+                                                           skill_name=self,
+                                                           uom=UnitOfMeasurement.objects.get(default=True))
+
+        if created:
+            WorkTypeLanguage.objects.create(name=worktype, language_id='en', value=WorkType.DEFAULT)
+            WorkTypeLanguage.objects.create(name=worktype, language_id='et', value='Tunnitöö')
+            WorkTypeLanguage.objects.create(name=worktype, language_id='ru', value='Почасовая робота')
+            WorkTypeLanguage.objects.create(name=worktype, language_id='fi', value='Tunneittainen työ')
+
 
 class SkillNameLanguage(models.Model):
     name = models.ForeignKey(
@@ -65,7 +90,7 @@ class SkillNameLanguage(models.Model):
         on_delete=models.PROTECT,
         verbose_name=_('Skill Name'),
     )
-    value = models.CharField(max_length=127, verbose_name=_("Skill Name transalation"))
+    value = models.CharField(max_length=127, verbose_name=_("Skill Name translation"))
     language = models.ForeignKey(
         'core.Language',
         verbose_name=_("Skill name language"),
@@ -162,6 +187,14 @@ class Skill(MYOBMixin, UUIDModel):
                 models.Q(company__regular_companies__master_company=owner)
             ]
 
+    def get_hourly_rate(self):
+        # search skill activity rate in job's skill activity rates
+        hourly_work = WorkType.objects.filter(name='Hourly work',
+                                              skill_name=self.name) \
+                                      .first()
+        skill_activity = self.skill_rate_ranges.filter(worktype=hourly_work).first()
+        return skill_activity.default_rate if skill_activity else None
+
 
 class SkillBaseRate(UUIDModel):   # TODO delete SkillBaseRate model after uom rates changes will be completed
 
@@ -217,13 +250,13 @@ class SkillTag(UUIDModel):
     tag = models.ForeignKey(
         'core.Tag',
         related_name="skill_tags",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Tag")
     )
 
     skill = models.ForeignKey(
         'skills.Skill',
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="skill_tags",
         verbose_name=_("Skill")
     )
@@ -314,12 +347,31 @@ class WorkType(UUIDModel):
             return f"{self.skill_name} {self.name}"
         return f"{self.name} per {self.uom}"
 
-    @property
-    def translation(self, language='en'):
-        """ Form translation getter """
-        trans = self.translations.filter(language=self.language).first()
-        return trans.name if trans else None
+    def is_system(self):
+        if self.skill_name:
+            return True
+        else:
+            return False
 
+    def translation(self, language):
+        """ WorkType translation getter """
+        try:
+            return self.translations.get(language=language).value
+        except:
+            return self.name
+
+    def skill_translation(self, language):
+        """ Skill name translation getter """
+        if self.is_system:
+            try:
+                return self.skill_name.translation(language)
+            except:
+                return self.skill_name.name
+        else:
+            try:
+                return self.skill.name.translation(language)
+            except:
+                return self.skill.name.name
 
 class WorkTypeLanguage(models.Model):
     """Model for storing work type translations"""
@@ -395,7 +447,6 @@ class SkillRateRange(MYOBMixin, UUIDModel):
         decimal_places=2,
         max_digits=16,
     )
-
 
     class Meta:
         verbose_name = _("Skill Rate Range")

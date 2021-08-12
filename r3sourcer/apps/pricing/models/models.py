@@ -62,7 +62,7 @@ class IndustryLanguage(models.Model):
         verbose_name=_('Industry'),
         related_name='translations'
     )
-    value = models.CharField(max_length=127, verbose_name=_("Industry transalation"))
+    value = models.CharField(max_length=127, verbose_name=_("Industry translation"))
     language = models.ForeignKey(
         'core.Language',
         verbose_name=_("Industry language"),
@@ -193,7 +193,7 @@ class PriceList(PriceListMixin, TimeZoneUUIDModel):
     approved_by = models.ForeignKey(
         'core.CompanyContact',
         related_name="price_lists",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name=_("Approved By")

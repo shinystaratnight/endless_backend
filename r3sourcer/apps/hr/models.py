@@ -4,6 +4,7 @@ from uuid import UUID  # not remove
 from datetime import timedelta, date, time, datetime
 from decimal import Decimal
 
+import logging
 import pytz
 from django.db.models import F
 from easy_thumbnails.fields import ThumbnailerImageField
@@ -24,10 +25,10 @@ from r3sourcer.apps.core.decorators import workflow_function
 from r3sourcer.apps.core.managers import AbstractObjectOwnerQuerySet
 from r3sourcer.apps.core.mixins import CategoryFolderMixin, MYOBMixin
 from r3sourcer.apps.core.workflow import WorkflowProcess
-from r3sourcer.apps.hr.tasks import send_jo_confirmation_sms, send_recurring_jo_confirmation_sms
+from r3sourcer.apps.hr.tasks import send_jo_confirmation, send_recurring_jo_confirmation
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.skills.models import Skill, SkillBaseRate, WorkType
+from r3sourcer.apps.skills.models import SkillBaseRate, SkillRateRange, WorkType
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.pricing.models import Industry
 from r3sourcer.apps.hr.utils import utils as hr_utils
@@ -37,6 +38,7 @@ from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 
 NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT = range(4)
 
+logger = logging.getLogger(__name__)
 
 class Jobsite(CategoryFolderMixin,
               MYOBMixin,
@@ -344,7 +346,6 @@ class Job(core_models.AbstractBaseOrder):
     WAGE_CHOICES = Choices(
         (0,'HOURLY', _("Hourly wage")),
         (1, 'PIECEWORK', _("Piecework wage")),
-        (2, 'COMBINED', _("Combined wage")),
     )
 
     wage_type = models.PositiveSmallIntegerField(
@@ -353,7 +354,6 @@ class Job(core_models.AbstractBaseOrder):
         default=WAGE_CHOICES.HOURLY
     )
 
-    # TODO delete this field after uoms task finished
     hourly_rate_default = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -369,10 +369,7 @@ class Job(core_models.AbstractBaseOrder):
         return self.get_title()
 
     def get_title(self):
-        return _('{} at {}').format(
-            str(self.position),
-            str(self.jobsite),
-        )
+        return f'{self.position} - {self.jobsite} ({self.workers} workers)'
     get_title.short_description = _('Title')
 
     @property
@@ -400,32 +397,24 @@ class Job(core_models.AbstractBaseOrder):
             return IRRELEVANT
 
         result = NOT_FULFILLED
-        # get the closest future shift
-        next_date = self.shift_dates.filter(
-            shift_date__gt=self.now_utc.date(),
+        # get today and future shift dates
+        next_dates = self.shift_dates.filter(
+            shift_date__gte=self.now_utc.date(),
             cancelled=False,
-        ).order_by('shift_date').first()
+        ).order_by('shift_date')
 
-        if next_date is not None:
-            # check if all shifts for this date is fulfilled
-            result = next_date.is_fulfilled()
-            # if at least one shift isn't fulfilled and there is at least one offer for the date
-            if result == NOT_FULFILLED and next_date.job_offers.exists():
-                # get all job_offers with undefined status for the date
-                unaccepted_jos = next_date.job_offers.filter(
-                    status=JobOffer.STATUS_CHOICES.undefined
-                )
+        if next_dates.count() > 0:
+            # check if all offers for these dates
+            acceptance = {y.status for x in next_dates for y in x.job_offers if y.is_last()}
 
-                for unaccepted_jo in unaccepted_jos.all():
-                    # TODO: Refactor this very eager query
-                    todays_timesheets = unaccepted_jo.time_sheets.filter(
-                        going_to_work_confirmation=True,
-                        shift_started_at__lte=self.now_utc,
-                        shift_ended_at__gte=self.now_utc + timedelta(hours=1),
-                    )
-                    # if there is at least one timesheet for the offers that its shift is in progress right now
-                    if not todays_timesheets.exists():
-                        return NOT_FULFILLED
+            # If shift has no job offers or rejected offers only it shows red
+            if len(acceptance) == 0 or {JobOffer.STATUS_CHOICES.cancelled} == acceptance:
+                result = NOT_FULFILLED
+            # if shift has all job offers accepted it remains green
+            elif {JobOffer.STATUS_CHOICES.accepted} == acceptance:
+                result = FULFILLED
+            # if shift has pending job offers it remains yellow
+            else:
                 result = LIKELY_FULFILLED
         else:
             result = IRRELEVANT
@@ -545,7 +534,8 @@ class Job(core_models.AbstractBaseOrder):
     def after_state_created(self, workflow_object):
         if workflow_object.state.number == 20:
             sd, _ = ShiftDate.objects.get_or_create(job=self, shift_date=self.work_start_date)
-            Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
+            # fix: commented due to https://taavisaavo.atlassian.net/browse/RV-1279
+            # Shift.objects.get_or_create(date=sd, time=self.default_shift_starting_time, workers=self.workers)
 
             hr_utils.send_job_confirmation_sms(self)
 
@@ -598,6 +588,19 @@ class Job(core_models.AbstractBaseOrder):
                 }
         return None
 
+    def get_hourly_rate_for_skill(self, skill):
+        # search skill activity rate in job's skill activity rates
+        hourly_work = WorkType.objects.filter(name='Hourly work',
+                                              skill_name=skill.name) \
+                                      .first()
+        job_skill_activity = self.job_rates.filter(worktype=hourly_work).first()
+        return job_skill_activity.rate if job_skill_activity else None
+
+    def get_rate_for_worktype(self, worktype):
+        # search skill activity rate in job's skill activity rates
+        job_skill_activity = self.job_rates.filter(worktype=worktype).first()
+        return job_skill_activity.rate if job_skill_activity else None
+
 
 class ShiftDate(TimeZoneUUIDModel):
 
@@ -646,6 +649,10 @@ class ShiftDate(TimeZoneUUIDModel):
 
         return FULFILLED
     is_fulfilled.short_description = _('Fulfilled')
+
+    def save(self, *args, **kwargs):
+        logger.warning("ShiftDate {ts_id} saved in model.".format(ts_id=self.shift_date))
+        super().save(*args, **kwargs)
 
 
 class SQCount(models.Subquery):
@@ -729,6 +736,10 @@ class Shift(TimeZoneUUIDModel):
             result = FULFILLED
         return result
 
+    def save(self, *args, **kwargs):
+        logger.warning("Shift for {ts_id} saved in model.".format(ts_id=self.time))
+        super().save(*args, **kwargs)
+
 
 class JobOffer(TimeZoneUUIDModel):
     STATUS_CHOICES = Choices(
@@ -736,6 +747,15 @@ class JobOffer(TimeZoneUUIDModel):
         (1, 'accepted', _("Accepted")),
         (2, 'cancelled', _("Cancelled")),
     )
+    CANDIDATE_STATUS_CHOICES = STATUS_CHOICES + [
+        (0, 'undefined', _("Undefined")),
+        (1, 'accepted', _("Accepted")),
+        (2, 'cancelled', _("Cancelled")),
+        (3, 'already_filled', _("Already filled")),
+        (4, 'declined_by_candidate', _("Declined by Candidate")),
+        (5, 'cancelled_by_job_site_contact', _("Cancelled by Job Site Contact")),
+        (6, 'cancelled_by', _("Cancelled by {additional_text}")),
+    ]
 
     shift = models.ForeignKey(
         'hr.Shift',
@@ -821,6 +841,12 @@ class JobOffer(TimeZoneUUIDModel):
         return not self.job.get_job_offers().filter(
             candidate_contact=self.candidate_contact,
             shift__date__shift_date__lt=self.shift.date.shift_date
+        ).exists()
+
+    def is_last(self):
+        return not self.job.get_job_offers().filter(
+            candidate_contact=self.candidate_contact,
+            shift__date__shift_date__gt=self.shift.date.shift_date
         ).exists()
 
     def get_future_offers(self):
@@ -957,13 +983,13 @@ class JobOffer(TimeZoneUUIDModel):
             pre_shift_check_enabled = time_sheet.master_company.company_settings.pre_shift_sms_enabled
             if ((pre_shift_check_enabled and time_sheet.candidate_submitted_at is None) or
                     (time_sheet.shift_started_at - self.now_utc).total_seconds() > 3600):
-                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_sms
-                send_job_offer_cancelled_sms.delay(self.pk)
+                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled
+                send_job_offer_cancelled.delay(self.pk)
 
                 time_sheet.delete()
             else:
-                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_lt_one_hour_sms
-                send_job_offer_cancelled_lt_one_hour_sms.delay(self.pk)
+                from r3sourcer.apps.hr.tasks import send_job_offer_cancelled_lt_one_hour
+                send_job_offer_cancelled_lt_one_hour.delay(self.pk)
 
                 if time_sheet.going_to_work_confirmation:
                     time_sheet.auto_fill_four_hours()
@@ -1072,12 +1098,12 @@ class JobOffer(TimeZoneUUIDModel):
                 self.scheduled_sms_datetime = utc_eta
                 self.save(update_fields=['scheduled_sms_datetime'])
                 if self.is_first() and not self.is_accepted():
-                    task = send_jo_confirmation_sms
+                    task = send_jo_confirmation
                 elif self.is_recurring():
-                    task = send_recurring_jo_confirmation_sms
+                    task = send_recurring_jo_confirmation
                 else:
                     # FIXME: send job confirmation SMS because there is pending job's JOs for candidate
-                    task = send_jo_confirmation_sms
+                    task = send_jo_confirmation
 
                 task.apply_async(args=[self.id], eta=utc_eta)
 
@@ -1435,8 +1461,8 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     @classmethod
     def _send_placement_acceptance_sms(cls, time_sheet, job_offer):
-        from r3sourcer.apps.hr.tasks import send_placement_acceptance_sms
-        send_placement_acceptance_sms.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
+        from r3sourcer.apps.hr.tasks import send_placement_acceptance_message
+        send_placement_acceptance_message.apply_async(args=[time_sheet.id, job_offer.id], countdown=10)
 
     def get_closest_company(self):
         return self.job_offer.job.get_closest_company()
@@ -1446,16 +1472,33 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         return self.job_offer.candidate_contact
 
     @property
+    def skill(self):
+        return self.job_offer.job.position
+
+    @property
     def shift_delta(self):
         if self.shift_ended_at and self.shift_started_at:
             return self.shift_ended_at - self.shift_started_at
-        return timedelta()
+        return None
 
     @property
     def break_delta(self):
         if self.break_ended_at and self.break_started_at:
             return self.break_ended_at - self.break_started_at
-        return timedelta()
+        return None
+
+    @property
+    def shift_duration(self):
+        if self.shift_delta and self.break_delta:
+            return self.shift_delta - self.break_delta
+        elif self.shift_delta and not self.break_delta:
+            return self.shift_delta
+        else:
+            return timedelta(0)
+
+    @property
+    def get_hourly_rate(self):
+        return self.timesheet_rates.filter(worktype__name=WorkType.DEFAULT).first().rate or 0
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
@@ -1471,9 +1514,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
     def _send_going_to_work(self, going_eta):
         if going_eta.tzinfo is None:
             raise ValueError('Invalid eta, datetime without timezone')
-        from r3sourcer.apps.hr.tasks import send_going_to_work_sms
+        from r3sourcer.apps.hr.tasks import send_going_to_work_message
         utc_going_eta = tz2utc(going_eta)
-        send_going_to_work_sms.apply_async(args=[self.pk], eta=utc_going_eta)
+        send_going_to_work_message.apply_async(args=[self.pk], eta=utc_going_eta)
 
     def _send_submit_sms(self, going_eta):
         if going_eta.tzinfo is None:
@@ -1483,13 +1526,14 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             raise ValueError('Invalid timezone, need UTC but provided %s' % {going_eta.tzinfo})
 
         from r3sourcer.apps.hr.tasks import process_time_sheet_log_and_send_notifications, SHIFT_ENDING
-        for task in chain.from_iterable(app.control.inspect().scheduled().values()):
-            if str(eval(task['request']['args'])[0]) == str(self.id) and task['request'][
-                'name'] == \
-                    'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
-                if str(eval(task['request']['args'])[1]) == '1':
-                    app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
-        process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
+        if app.control.inspect().scheduled():
+            for task in chain.from_iterable(app.control.inspect().scheduled().values()):
+                if str(eval(task['request']['args'])[0]) == str(self.id) and task['request'][
+                    'name'] == \
+                        'r3sourcer.apps.hr.tasks.process_time_sheet_log_and_send_notifications':
+                    if str(eval(task['request']['args'])[1]) == '1':
+                        app.control.revoke(task['request']['id'], terminate=True, signal='SIGKILL')
+            process_time_sheet_log_and_send_notifications.apply_async(args=[self.pk, SHIFT_ENDING], eta=going_eta)
 
     def process_sms_reply(self, sent_sms, reply_sms, positive):
         if self.going_to_work_confirmation is None:
@@ -1550,8 +1594,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     def _datetime_fields(self, just_added):
         fields = [
-            ('shift_started_at', self.shift_started_at, self.today_7_am),
-            ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
             ('candidate_submitted_at', self.candidate_submitted_at, None),
             ('supervisor_approved_at', self.supervisor_approved_at, None),
             ('supervisor_modified_at', self.supervisor_modified_at, None),
@@ -1559,11 +1601,15 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         ]
         if just_added:
             fields += [
+                ('shift_started_at', self.shift_started_at, self.today_7_am),
+                ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
                 ('break_started_at', self.break_started_at, self.today_12_pm),
                 ('break_ended_at', self.break_ended_at, self.today_12_30_pm),
             ]
         else:
             fields += [
+                ('shift_started_at', self.shift_started_at, self.job_offer.start_time_tz),
+                ('shift_ended_at', self.shift_ended_at, None),
                 ('break_started_at', self.break_started_at, None),
                 ('break_ended_at', self.break_ended_at, None),
             ]
@@ -1582,6 +1628,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         list(map(setter_fn, filter(filter_fn, fields)))
 
     def save(self, *args, **kwargs):
+
         just_added = self._state.adding
         self.convert_datetime_before_save(just_added)
 
@@ -1594,10 +1641,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         if just_added:
             if not self.supervisor and self.job_offer:
                 self.supervisor = self.job_offer.job.jobsite.primary_contact
-            # Set wage_type from Job.wage_type
-            if not self.wage_type and self.job_offer:
-                self.wage_type = self.job_offer.job.wage_type
-
             if utc_now() <= self.shift_started_at:
                 pre_shift_confirmation = self.master_company.company_settings.pre_shift_sms_enabled
                 pre_shift_confirmation_delta = self.master_company.company_settings.pre_shift_sms_delta
@@ -1622,7 +1665,33 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         self.update_status(False)
 
-        super().save(*args, **kwargs)
+        hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
+                                              skill_name=self.job_offer.job.position.name) \
+                                      .first()
+        if hourly_work:
+            hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
+            other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
+
+            # set wage_type to HOURLY_WORK if skill activities is not added
+            if other_activities:
+                self.wage_type = Job.WAGE_CHOICES.PIECEWORK
+            else:
+                self.wage_type = Job.WAGE_CHOICES.HOURLY
+
+            super().save(*args, **kwargs)
+
+            # add or modify hourly_rate skill activity
+            if hourly_activity:
+                if self.shift_duration:
+                    hourly_activity.value = self.shift_duration.total_seconds()/3600
+                    hourly_activity.save()
+                else:
+                    hourly_activity.delete()
+            elif self.shift_duration:
+                TimeSheetRate.objects.create(timesheet=self,
+                                             worktype=hourly_work,
+                                             value=self.shift_duration.total_seconds()/3600,
+                                             )
 
         if just_added and self.is_allowed(10):
             self.create_state(10)
@@ -2537,13 +2606,13 @@ class JobTag(UUIDModel):
     tag = models.ForeignKey(
         core_models.Tag,
         related_name="job_tags",
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         verbose_name=_("Tag")
     )
 
     job = models.ForeignKey(
         Job,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         related_name="tags",
         verbose_name=_("Job")
     )
@@ -2567,9 +2636,8 @@ class TimeSheetRate(UUIDModel):
     worktype = models.ForeignKey(
         WorkType,
         related_name="timesheet_rates",
-        verbose_name=_("Type of work"),
-        blank=True,
-        null=True)
+        verbose_name=_("Type of work")
+        )
 
     value = models.DecimalField(
         _("Timesheet Value"),
@@ -2593,3 +2661,64 @@ class TimeSheetRate(UUIDModel):
 
     def __str__(self):
         return f'{self.timesheet}-{self.worktype}'
+
+    def get_rate(self):
+
+        # if worktype is hourly work return hourly_rate
+        if self.worktype.name == WorkType.DEFAULT:
+            if self.timesheet.candidate_rate:
+                return self.timesheet.candidate_rate
+            elif self.timesheet.job_offer.shift.hourly_rate:
+                return self.timesheet.job_offer.shift.hourly_rate
+            elif self.timesheet.job_offer.shift.date.hourly_rate:
+                return self.timesheet.job_offer.shift.date.hourly_rate
+            elif self.timesheet.job_offer.shift.date.job.hourly_rate_default:
+                return self.timesheet.job_offer.shift.date.job.hourly_rate_default
+
+        # search skill activity rate in candidate's skill activity rates
+        rate = self.timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(self.worktype)
+        if not rate:
+            # search skill activity rate in job's skill activity rates
+            rate = self.timesheet.job_offer.job.get_rate_for_worktype(self.worktype)
+        if not rate:
+            # search skill activity rate in skill rate ranges
+            rate = SkillRateRange.objects.filter(worktype=self.worktype,
+                                                 skill=self.timesheet.job_offer.job.position) \
+                                         .last().default_rate
+        return rate if rate else 0
+
+    def save(self, *args, **kwargs):
+        if not self.rate or self.rate == 0:
+            self.rate = self.get_rate()
+        super().save(*args, **kwargs)
+
+
+class JobRate(UUIDModel):
+    job = models.ForeignKey(
+        Job,
+        verbose_name=_("Job"),
+        on_delete=models.CASCADE,
+        related_name='job_rates')
+
+    worktype = models.ForeignKey(
+        WorkType,
+        related_name='job_rates',
+        verbose_name=_("Skill activity"),
+        )
+
+    rate = models.DecimalField(
+        _("Gob Skill Activity Rate"),
+        default=0,
+        max_digits=8,
+        decimal_places=2)
+
+    class Meta:
+        verbose_name = _("Job Skill Activity Rate")
+        verbose_name_plural = _("Job Skill Activity Rates")
+        unique_together = [
+            'job',
+            'worktype',
+        ]
+
+    def __str__(self):
+        return f'{self.job}-{self.worktype}'

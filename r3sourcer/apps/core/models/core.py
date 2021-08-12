@@ -1483,6 +1483,23 @@ class Company(CategoryFolderMixin,
             return hq_address.address.country.code2
         return 'EE' # TODO: refactor this
 
+    def vat_name(self):
+        try:
+            return VAT.objects.get(country=self.get_country_code()).name
+        except:
+            return None
+
+    def get_vat(self):
+        company = self.get_closest_master_company()
+        if company.registered_for_gst:
+            return VAT.get_vat(company.get_country_code()).first()
+
+    def get_default_lanuage(self):
+        default_language = self.languages.filter(default=True).first()
+        if not default_language and self.type == self.COMPANY_TYPES.regular:
+            default_language = self.get_closest_master_company().languages.filter(default=True).first()
+        return default_language.language if default_language is not None else None
+
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
@@ -2034,6 +2051,14 @@ class Note(UUIDModel):
         blank=True
     )
 
+    contact = models.ForeignKey(
+        'core.Contact',
+        related_name='created_notes',
+        verbose_name=_('Contact'),
+        on_delete=models.SET_NULL,
+        null=True
+    )
+
     def __str__(self):
         return '{} {}'.format(str(self.content_type), _("Note"))
 
@@ -2044,6 +2069,27 @@ class Note(UUIDModel):
     @classmethod
     def is_owned(cls):
         return False
+
+
+class NoteFile(UUIDModel):
+    note = models.ForeignKey(
+        Note,
+        on_delete=models.CASCADE,
+        related_name="files",
+        verbose_name=_("Note")
+    )
+
+    def note_files_path(self, filename):
+        return 'notes/{}/{}'.format(self.note_id, filename)
+
+    file = models.FileField(
+        verbose_name=_("Note File"),
+        upload_to=note_files_path
+    )
+
+    class Meta:
+        verbose_name = _("Note File")
+        verbose_name_plural = _("Note Files")
 
 
 class Tag(MPTTModel, UUIDModel):
@@ -2172,14 +2218,16 @@ class VAT(UUIDModel):
         verbose_name = _("VAT")
         verbose_name_plural = _("VATs")
 
+    def __str__(self):
+        return f'{self.country.name} - {self.name}'
+
     @classmethod
     def is_owned(cls):
         return False
 
     @staticmethod
     def get_vat(country_code_2):
-        qs = VAT.objects.exclude(name='GNR')
-        return qs.filter(country=country_code_2) or qs.filter(country='EE')
+        return VAT.objects.filter(country=country_code_2)
 
 
 class AbstractBaseOrder(TimeZoneUUIDModel,
@@ -2358,11 +2406,10 @@ class AbstractOrder(AbstractBaseOrder):
 
     def calculate_vat(self):
         vat = 0
-        lines = getattr(self, '{}_lines'.format(self._meta.model_name))
-        if lines:
-            for group in lines.values('vat__rate').annotate(sum=Sum('amount')):
-                vat += group['sum'] * group['vat__rate']
-        return math.ceil(vat * 100) / 100
+        for line in self.invoice_lines.all():
+            if line.vat:
+                vat += line.vat.rate * line.amount
+        return math.ceil(vat) / 100
 
     def calculate_total(self):
         lines = getattr(self, '{}_lines'.format(self._meta.model_name))
@@ -2431,20 +2478,18 @@ class AbstractOrderLine(TimeZoneUUIDModel):
         decimal_places=2,
     )
 
-    UNIT_TYPE_CHOICES = Choices(
-        ('unit', _('Unit')),
-    )
-
-    unit_type = models.CharField(
-        max_length=10,
-        choices=UNIT_TYPE_CHOICES,
-        default=UNIT_TYPE_CHOICES.unit
+    unit_name = models.CharField(
+        _("Unit Name"),
+        max_length=20,
+        default=_('hours')
     )
 
     vat = models.ForeignKey(
         'core.VAT',
         on_delete=models.PROTECT,
         verbose_name=_("VAT"),
+        null=True,
+        blank=True
     )
 
     def __str__(self):
@@ -2963,7 +3008,7 @@ __all__ = [
     'Address', 'FileStorage',
     'Order',
     'AbstractPayRuleMixin', 'Invoice', 'InvoiceLine',
-    'Note', 'Tag', 'TagLanguage', 'CompanyTag', 'TagCompany',
+    'Note', 'NoteFile', 'Tag', 'TagLanguage', 'CompanyTag', 'TagCompany',
     'VAT', 'InvoiceRule',
     'CurrencyExchangeRates', 'PublicHoliday', 'ExtranetNavigation',
     'AbstractBaseOrder', 'AbstractOrder', 'ContactLanguage', 'Role'

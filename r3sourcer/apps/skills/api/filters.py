@@ -110,7 +110,7 @@ class WorkTypeFilter(FilterSet):
             Q(skill_name=skill.name) |
             Q(skill=value)
         )
-        # exclude hourly_work activity for candidates
-        if self.request.user.contact.is_candidate_contact():
-            queryset = queryset.exclude(name=skills_models.WorkType.DEFAULT)
+        # # exclude hourly_work activity for candidates
+        # if self.request.user.contact.is_candidate_contact():
+        #     queryset = queryset.exclude(name=skills_models.WorkType.DEFAULT)
         return queryset

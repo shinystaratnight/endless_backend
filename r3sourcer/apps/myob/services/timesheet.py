@@ -6,7 +6,6 @@ from django.utils.decorators import method_decorator
 
 from r3sourcer.apps.candidate.models import SkillRel
 from r3sourcer.apps.hr.models import TimeSheet
-from r3sourcer.apps.hr.payment.base import calc_worked_delta
 from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.myob.mappers import TimeSheetMapper, format_date_to_myob
 from r3sourcer.apps.myob.models import MYOBSyncObject
@@ -308,12 +307,11 @@ class TimeSheetSync(BaseCategoryMixin,
 
         job = timesheet.job_offer.job
         position = job.position
-        worked_hours = calc_worked_delta(timesheet)
         timesheets_with_rates = self.timesheet_rates_calc.calc(timesheet.master_company,
                                                                job.jobsite.industry,
                                                                RateCoefficientModifier.TYPE_CHOICES.candidate,
                                                                timesheet.shift_started_at_tz,
-                                                               worked_hours,
+                                                               timesheet.shift_duration,
                                                                break_started=timesheet.break_started_at,
                                                                break_ended=timesheet.break_ended_at,
                                                                overlaps=True)
