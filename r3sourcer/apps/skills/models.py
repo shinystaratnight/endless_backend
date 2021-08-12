@@ -57,6 +57,13 @@ class SkillName(UUIDModel):
                 models.Q(industry__in=owner.industries.all())
             ]
 
+    def translation(self, language):
+        """ SkillName translation getter """
+        try:
+            return self.translations.get(language=language).value
+        except:
+            return self.name
+
     def save(self, *args, **kwargs):
         super().save(*args, **kwargs)
         for company in Company.objects.filter(industries__in=[self.industry]):
@@ -340,12 +347,31 @@ class WorkType(UUIDModel):
             return f"{self.skill_name} {self.name}"
         return f"{self.name} per {self.uom}"
 
-    @property
-    def translation(self, language='en'):
-        """ Form translation getter """
-        trans = self.translations.filter(language=self.language).first()
-        return trans.name if trans else None
+    def is_system(self):
+        if self.skill_name:
+            return True
+        else:
+            return False
 
+    def translation(self, language):
+        """ WorkType translation getter """
+        try:
+            return self.translations.get(language=language).value
+        except:
+            return self.name
+
+    def skill_translation(self, language):
+        """ Skill name translation getter """
+        if self.is_system:
+            try:
+                return self.skill_name.translation(language)
+            except:
+                return self.skill_name.name
+        else:
+            try:
+                return self.skill.name.translation(language)
+            except:
+                return self.skill.name.name
 
 class WorkTypeLanguage(models.Model):
     """Model for storing work type translations"""

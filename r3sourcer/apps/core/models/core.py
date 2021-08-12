@@ -1494,6 +1494,12 @@ class Company(CategoryFolderMixin,
         if company.registered_for_gst:
             return VAT.get_vat(company.get_country_code()).first()
 
+    def get_default_lanuage(self):
+        default_language = self.languages.filter(default=True).first()
+        if not default_language and self.type == self.COMPANY_TYPES.regular:
+            default_language = self.get_closest_master_company().languages.filter(default=True).first()
+        return default_language.language if default_language is not None else None
+
     @classmethod
     def owned_by_lookups(cls, owner):
         if isinstance(owner, Company):
