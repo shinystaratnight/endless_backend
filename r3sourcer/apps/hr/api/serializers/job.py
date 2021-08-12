@@ -451,9 +451,15 @@ class ShiftDateSerializer(core_serializers.UUIDApiSerializerMixin,
             'undefined': result.get(hr_models.JobOffer.STATUS_CHOICES.undefined, []),
         }
 
-    def save(self, *args, **kwargs):
-        logger.warning("ShiftDate {ts_id} saving in serializer.".format(ts_id=self.validated_data['shift_date']))
-        super().save(*args, **kwargs)
+    def create(self, validated_data):
+        existing_date = hr_models.ShiftDate.objects.filter(
+            shift_date=validated_data['shift_date'],
+            job=validated_data['job'],
+        ).first()
+
+        if not existing_date:
+            return super(ShiftDateSerializer, self).create(validated_data=validated_data)
+        return existing_date
 
 
 class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
