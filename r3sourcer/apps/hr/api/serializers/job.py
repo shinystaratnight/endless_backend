@@ -423,6 +423,10 @@ class ShiftDateSerializer(core_serializers.UUIDApiSerializerMixin,
                             'notes'),
                 })
 
+    def __init__(self, *args, **kwargs):
+        many = kwargs.pop('many', True)
+        super(ShiftDateSerializer, self).__init__(many=many, *args, **kwargs)
+
     def get_workers_details(self, obj):
         latest = hr_models.JobOffer.objects\
             .filter(shift__date=obj) \
