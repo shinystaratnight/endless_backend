@@ -287,10 +287,9 @@ class TwilioAutoChargeView(APIView):
         if 'top_up_amount' not in self.request.data or 'top_up_limit' not in self.request.data:
             data = {'error': 'Must provide top_up_amount and top_up_limit'}
             return Response(status=status.HTTP_400_BAD_REQUEST, data=data)
-
         sms_balance.top_up_amount = self.request.data.get('top_up_amount')
         sms_balance.top_up_limit = self.request.data.get('top_up_limit')
-        sms_balance.auto_charge = self.request.data.get('auto_charge')
+        sms_balance.auto_charge = self.request.data.get('auto_charge', False)
         sms_balance.save()
 
         serializer = SmsAutoChargeSerializer(sms_balance)
