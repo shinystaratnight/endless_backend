@@ -118,7 +118,7 @@
 			{% for timesheet in t_s %}
 				<tr>
 					<td>{{ timesheet.candidate_contact }}</td>
-					<td>{{ timesheet.job_offer.job.position }}</td>
+					<td>{{ timesheet.job_offer.job.position.name|translation:user }}</td>
                     <td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
                     <td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
  					<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
@@ -151,7 +151,7 @@
 					<td></td><td></td>
 				</tr>
 			</tbody>
-		{% elif group.1 == 1 or group.1 == 2 %}
+		{% elif group.1 == 1 %}
 			<thead>
 				<tr>
 					<th>Candidate</th>
@@ -169,11 +169,11 @@
 				{% for skill_activity in timesheet.timesheet_rates.all %}
 					<tr>
 						<td>{{ timesheet.candidate_contact }}</td>
-						<td>{{ timesheet.job_offer.job.position }}</td>
+						<td>{{ timesheet.job_offer.job.position.name|translation:user }}</td>
 						<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
-						<td>{{ skill_activity.worktype.name}}</td>
+						<td>{{ skill_activity.worktype|translation:user}}</td>
 						<td>{{ skill_activity.value}}</td>
-						<td>{{ skill_activity.worktype.uom.short_name}}</td>
+						<td>{{ skill_activity.worktype.uom|translation:user}}</td>
 						<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
 						</td>
 						{% if timesheet.supervisor_signature %}
