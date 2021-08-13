@@ -56,37 +56,52 @@ class InvoiceService(BasePaymentService):
             industry = timesheet.job_offer.job.jobsite.industry
             skill = timesheet.job_offer.job.position
             customer_company = timesheet.job_offer.shift.date.job.customer_company
-            price_list_rate = self._get_price_list_rate(skill, customer_company)
-            coeffs_hours = coefficient_service.calc(timesheet.master_company,
-                                                    industry,
-                                                    RateCoefficientModifier.TYPE_CHOICES.company,
-                                                    timesheet.shift_started_at_tz,
-                                                    timesheet.shift_duration,
-                                                    break_started=timesheet.break_started_at_tz,
-                                                    break_ended=timesheet.break_ended_at_tz)
+            vat = customer_company.get_vat()
+            company_language = customer_company.get_default_lanuage()
 
-            lines_iter = self.lines_iter(coeffs_hours,
-                                         skill,
-                                         price_list_rate.rate,
-                                         timesheet)
-            for raw_line in lines_iter:
-                rate = raw_line['rate']
-                notes = raw_line['notes']
-                units = Decimal(raw_line['hours'].total_seconds() / 3600)
+            for ts_rate in timesheet.timesheet_rates.all():
+                price_list_rate = self._get_price_list_rate(ts_rate.worktype, customer_company)
+                if ts_rate.worktype.name == WorkType.DEFAULT:
+                    coeffs_hours = coefficient_service.calc(timesheet.master_company,
+                                                            industry,
+                                                            RateCoefficientModifier.TYPE_CHOICES.company,
+                                                            timesheet.shift_started_at_tz,
+                                                            timesheet.shift_duration,
+                                                            break_started=timesheet.break_started_at_tz,
+                                                            break_ended=timesheet.break_ended_at_tz)
 
-                if not units:
-                    continue
+                    lines_iter = self.lines_iter(coeffs_hours,
+                                                 ts_rate.worktype,
+                                                 price_list_rate.rate,
+                                                 timesheet)
+                    for raw_line in lines_iter:
+                        rate = raw_line['rate']
+                        units = Decimal(raw_line['hours'].total_seconds() / 3600)
 
-                vat = company.get_vat()
-                lines.append({
-                    'date': timesheet.shift_started_at_tz.date(),
-                    'units': units,
-                    'notes': notes,
-                    'unit_price': rate,
-                    'amount': math.ceil(rate * units * 100) / 100,
-                    'vat': vat,
-                    'timesheet': timesheet,
-                })
+                        if not units:
+                            continue
+
+                        lines.append({
+                            'date': timesheet.shift_started_at_tz.date(),
+                            'units': units,
+                            'notes': ts_rate.worktype.skill_translation(company_language),
+                            'unit_price': rate,
+                            'amount': math.ceil(rate * units * 100) / 100,
+                            'vat': vat,
+                            'unit_name': ts_rate.worktype.uom.translation(company_language),
+                            'timesheet': timesheet,
+                        })
+                else:
+                    lines.append({
+                        'date': timesheet.shift_started_at_tz.date(),
+                        'units': ts_rate.value,
+                        'notes': ts_rate.worktype.translation(company_language),
+                        'unit_price': price_list_rate.rate,
+                        'amount': math.ceil(price_list_rate.rate * ts_rate.value * 100) / 100,
+                        'vat': vat,
+                        'unit_name': ts_rate.worktype.uom.translation(company_language),
+                        'timesheet': timesheet,
+                    })
 
         return lines, timesheets
 
