@@ -86,7 +86,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
-        'invoice', 'shift', 'evaluation', 'time_zone',
+        'invoice', 'shift', 'evaluation', 'time_zone', 'is_30_days_old',
     )
 
     class Meta:
@@ -125,10 +125,6 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'break_ended_at_tz',
             'break_ended_at_utc',
             'timesheet_rates',
-            'candidate_notes',
-            'client_notes',
-            'client_files',
-            'candidate_files'
         )
         related_fields = {
             'job_offer': ('id',
@@ -142,8 +138,6 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                                 'rate',
                                 'value',
                                 {'worktype': ('id', 'translations')}),
-            'client_notes': ('id', 'file',),
-            'candidate_files': ('id', 'file',),
         }
 
     def get_company(self, obj):
@@ -313,6 +307,9 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                 '__str__': str(shift),
             }
 
+    def get_is_30_days_old(self, obj):
+        return obj.shift_started_at_tz < obj.now_tz - timedelta(days=30)
+
     def validate(self, data):
         """
         Time validation on timesheet save
@@ -339,9 +336,9 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                     raise serializers.ValidationError({'shift_started_at':
                         _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
                 # shift_started_at <= shift__time + 24h
-                if shift_started_at > shift_date + timedelta(hours=24):
+                if shift_started_at > shift_date + timedelta(hours=12):
                     raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be later than 24 hours after default shift starting time.')})
+                        _('Shift starting time can not be later than 12 hours after default shift starting time.')})
                 # shift_ended_at >= shift_started_at
                 if shift_ended_at < shift_started_at:
                     raise serializers.ValidationError({'shift_started_at':
@@ -457,9 +454,9 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
                     raise serializers.ValidationError({'shift_started_at':
                         _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
                 # shift_started_at <= shift__time + 24h
-                if shift_started_at > shift_date + timedelta(hours=24):
+                if shift_started_at > shift_date + timedelta(hours=12):
                     raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be later than 24 hours after default shift starting time.')})
+                        _('Shift starting time can not be later than 12 hours after default shift starting time.')})
                 # shift_ended_at >= shift_started_at
                 if shift_ended_at < shift_started_at:
                     raise serializers.ValidationError({'shift_started_at':

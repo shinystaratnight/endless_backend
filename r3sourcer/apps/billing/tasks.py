@@ -104,7 +104,8 @@ def charge_for_sms(company_id, amount, sms_balance_id):
     sms_balance = SMSBalance.objects.get(id=sms_balance_id)
 
     # try to create invoice and pay if last payment was successful
-    if sms_balance.last_payment.status == Payment.PAYMENT_STATUSES.paid:
+    # or if it's the first payment
+    if sms_balance.last_payment is None or sms_balance.last_payment.status == Payment.PAYMENT_STATUSES.paid:
         country_code = company.get_hq_address().address.country.code2
         stripe_secret_key = sca.get_stripe_key(country_code)
         stripe.api_key = stripe_secret_key

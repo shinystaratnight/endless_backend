@@ -6,19 +6,18 @@ from decimal import Decimal
 
 from django.core.files.base import ContentFile
 from django.db.models import Count
-from django.template.loader import get_template
 from django.utils.formats import date_format
 from filer.models import Folder, File, Q
 
 from r3sourcer.apps.core.models import Invoice, InvoiceLine, InvoiceRule, VAT
-from r3sourcer.apps.core.utils.companies import get_site_url
 from r3sourcer.apps.core.utils.utils import get_thumbnail_picture
 from r3sourcer.apps.hr.models import TimeSheet
 from r3sourcer.apps.hr.payment.base import BasePaymentService
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pdf_templates.models import PDFTemplate
-from r3sourcer.helpers.datetimes import utc_now, date2utc_date
+from r3sourcer.apps.skills.models import WorkType
+from r3sourcer.helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
@@ -37,24 +36,23 @@ class InvoiceService(BasePaymentService):
 
         return order_number
 
-    def _get_price_list_rate(self, skill, customer_company):
+    def _get_price_list_rate(self, worktype, customer_company):
         price_list_rate = PriceListRate.objects.filter(
-            skill=skill,
+            worktype=worktype,
             price_list__company=customer_company,
         ).last()
 
         if price_list_rate:
             return price_list_rate
         else:
-            raise Exception('Pricelist rate for skill not found')
+            raise Exception('Pricelist rate for company not found')
 
-    def calculate(self, company, timesheets):
+    def calculate(self, timesheets):
         coefficient_service = CoefficientService()
         lines = []
 
         for timesheet in timesheets:
             industry = timesheet.job_offer.job.jobsite.industry
-            skill = timesheet.job_offer.job.position
             customer_company = timesheet.job_offer.shift.date.job.customer_company
             vat = customer_company.get_vat()
             company_language = customer_company.get_default_lanuage()
@@ -163,7 +161,8 @@ class InvoiceService(BasePaymentService):
             'units',
             'notes',
             'unit_price',
-            'amount'
+            'amount',
+            'unit_name'
         )
 
     def get_line_unique_id(self, get_fn, line):
@@ -173,14 +172,15 @@ class InvoiceService(BasePaymentService):
 
         return md5(''.join(parts).encode()).hexdigest()
 
-    def _prepare_invoice(self, date_from, date_to, timesheets, invoice=None, company=None, show_candidate=False, recreate=False):
+    def _prepare_invoice(self, date_from, date_to, timesheets, invoice=None, company=None,
+                         show_candidate=False, recreate=False):
         if hasattr(company, 'subcontractor'):
             candidate = company.subcontractor.primary_contact
             timesheets = timesheets.filter(
                 job_offer__candidate_contact=candidate
             )
 
-        lines, timesheets = self.calculate(company, timesheets)
+        lines, timesheets = self.calculate(timesheets)
 
         if not lines:
             return

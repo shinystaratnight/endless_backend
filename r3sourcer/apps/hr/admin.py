@@ -14,20 +14,10 @@ class TimeSheetRateInline(admin.TabularInline):
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-class ClientTimeSheetFilesInline(admin.TabularInline):
-    model = models.ClientTimeSheetFiles
-    extra = 0
-
-
-class CandidateTimeSheetFilesInline(admin.TabularInline):
-    model = models.CandidateTimeSheetFiles
-    extra = 0
-
-
 class TimeSheetAdmin(admin.ModelAdmin):
     list_display = ('created_at', '__str__', 'regular_company', 'shift_started_at')
     ordering = ['-shift_started_at']
-    inlines = [TimeSheetRateInline, ClientTimeSheetFilesInline, CandidateTimeSheetFilesInline]
+    inlines = [TimeSheetRateInline]
 
     def get_form(self, request, obj=None, **kwargs):
         request._obj_ = obj
