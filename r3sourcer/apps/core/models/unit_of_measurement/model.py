@@ -19,15 +19,15 @@ class UnitOfMeasurement(UUIDModel):
     def __str__(self):
         return self.name
 
-    def name_translation(self, country_code):
+    def translation(self, language):
         try:
-            return self.translations.get(language_id=country_code).name
+            return self.translations.get(language=language).name
         except:
             return self.name
 
-    def short_name_translation(self, country_code):
+    def short_name_translation(self, language):
         try:
-            return self.translations.get(language_id=country_code).short_name
+            return self.translations.get(language=language).short_name
         except:
             return self.short_name
 

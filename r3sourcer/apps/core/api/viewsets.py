@@ -9,11 +9,10 @@ from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Q, ForeignKey, FileField
 from django.db.models.deletion import ProtectedError
-from django.forms import model_to_dict
 from django.http import HttpResponseBadRequest
 from django.shortcuts import get_object_or_404
 from django.utils.translation import ugettext_lazy as _
-from r3sourcer.apps.core.api.serializers import ContactSerializer
+
 from rest_framework import viewsets, exceptions, status, fields
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -22,8 +21,10 @@ from rest_framework.viewsets import ViewSet
 
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
 from r3sourcer.apps.core import tasks
+from r3sourcer.apps.core.api.contact_bank_accounts.serializers import ContactBankAccountFieldSerializer
 from r3sourcer.apps.core.api.fields import ApiBase64FileField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
+from r3sourcer.apps.core.models import BankAccountLayoutCountry, ContactBankAccount, BankAccountField
 from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.address import parse_google_address
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
@@ -1149,11 +1150,33 @@ class FormViewSet(BaseApiViewset):
         # create formality object
         personal_id = data.get('formalities__personal_id', None)
         tax_number = data.get('formalities__tax_number', None)
-        if CandidateContact.objects.get(id=instance.id) and (personal_id or tax_number):
+        if candidate and (personal_id or tax_number):
             Formality.objects.create(candidate_contact=candidate,
                                      country=candidate.contact.active_address.country,
                                      personal_id=personal_id,
                                      tax_number=tax_number)
+
+        # create bank account
+        if candidate:
+            try:
+                bank_account_layout = BankAccountLayoutCountry.objects.get(country=candidate.contact.active_address.country, default=True).layout
+            except BankAccountLayoutCountry.DoesNotExist:
+                raise exceptions.ValidationError(candidate.contact.active_address.country)
+            with transaction.atomic():
+                bank_account = ContactBankAccount(
+                    contact=candidate.contact,
+                    layout=bank_account_layout,
+                )
+                bank_account.save()
+                for (key, value) in data.items():
+                    if key.startswith("contact__bank_accounts"):
+                        try:
+                            field = BankAccountField.objects.get(name=key[key.rfind('__')+2:])
+                        except BankAccountField.DoesNotExist:
+                            raise exceptions.ValidationError(key)
+                        field_serializer = ContactBankAccountFieldSerializer(data={'field_id': field.id, 'value': value})
+                        if field_serializer.is_valid(raise_exception=True):
+                            field_serializer.create(dict(bank_account_id=str(bank_account.pk), **field_serializer.data))
 
         for extra_field in form_obj.builder.extra_fields.all():
             # check if field exists in extra_data
