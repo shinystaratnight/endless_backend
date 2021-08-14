@@ -74,7 +74,6 @@ class InvoiceService(BasePaymentService):
                                                  timesheet)
                     for raw_line in lines_iter:
                         rate = raw_line['rate']
-                        notes = raw_line['notes']
                         units = Decimal(raw_line['hours'].total_seconds() / 3600)
 
                         if not units:

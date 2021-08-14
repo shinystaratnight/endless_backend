@@ -1090,6 +1090,7 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         master_company = timesheets[0].master_company
     if master_company.logo:
         master_logo = get_thumbnail_picture(master_company.logo, 'large')
+    company_language = master_company.get_default_lanuage()
 
     # get template
     try:
@@ -1155,13 +1156,12 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
             total_travel[index] += get_value_for_rate_type(coeffs_hours, 'travel')
             total_meal[index] += get_value_for_rate_type(coeffs_hours, 'meal')
 
-            if timesheet.wage_type in [1,2]:
+            if timesheet.wage_type == 1:
                 for ts_rate in timesheet.timesheet_rates.all():
                     if ts_rate.worktype.name in activities[index]:
-                        activities[index][ts_rate.worktype.name] += ts_rate.value
+                        activities[index][ts_rate.worktype.translation(company_language)] += ts_rate.value
                     else:
-                        activities[index][ts_rate.worktype.name] = ts_rate.value
-
+                        activities[index][ts_rate.worktype.translation(company_language)] = ts_rate.value
         for key, value in activities[index].items():
             total_skill_activities[index] += f'{key}: {value}; '
 
@@ -1178,6 +1178,7 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         'total_travel': total_travel,
         'total_meal': total_meal,
         'total_skill_activities': total_skill_activities,
+        'user': request.user
     }
 
     pdf_file = get_file_from_str(str(template.render(context)))
