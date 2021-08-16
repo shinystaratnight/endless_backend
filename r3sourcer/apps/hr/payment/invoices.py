@@ -107,14 +107,16 @@ class InvoiceService(BasePaymentService):
     def generate_pdf(cls, invoice, show_candidate=False):
         template_slug = 'company-invoice'
         master_company = invoice.provider_company
+        company_language = master_company.get_default_lanuage()
 
         # get template
         try:
             template = PDFTemplate.objects.get(slug=template_slug,
-                                               company=master_company)
+                                               company=master_company,
+                                               language=company_language)
         except PDFTemplate.DoesNotExist:
-            logger.exception('Cannot find pdf template with slug %s', template_slug)
-            raise Exception('Cannot find pdf template with slug:', template_slug)
+            logger.exception('Cannot find pdf template with slug %s for language %s', template_slug, company_language)
+            raise Exception('Cannot find pdf template with slug %s for language %s', template_slug, company_language)
 
         if master_company.logo:
             master_logo = get_thumbnail_picture(master_company.logo, 'large')

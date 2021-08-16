@@ -1095,10 +1095,11 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
     # get template
     try:
         template = PDFTemplate.objects.get(slug=template_slug,
-                                           company=master_company)
+                                           company=master_company,
+                                           language=company_language)
     except PDFTemplate.DoesNotExist:
-        logger.exception('Cannot find pdf template with slug %s', template_slug)
-        raise Exception('Cannot find pdf template with slug:', template_slug)
+        logger.exception('Cannot find pdf template with slug %s for language %s', template_slug, company_language)
+        raise Exception('Cannot find pdf template with slug %s for language %s', template_slug, company_language)
 
     coefficient_service = CoefficientService()
     total_base_units = []
