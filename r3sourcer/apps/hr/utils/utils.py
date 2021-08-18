@@ -168,8 +168,9 @@ def get_invoice_dates(invoice_rule, time_sheet):
             date_to = date_from + timedelta(days=14)
 
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.monthly:
-        date_to = today.replace(day=1) - timedelta(1)
-        date_from = date_to.replace(day=1)
+        date_from = today.replace(day=1)
+        next_month = date_from.replace(day=28) + timedelta(days=4)
+        date_to = next_month - timedelta(days=next_month.day)
 
     if not date_from:
         raise Exception("Wrong invoice rule period.")
