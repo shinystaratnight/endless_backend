@@ -1226,8 +1226,7 @@ class FormViewSet(BaseApiViewset):
                         continue
 
         return Response({'message': form_obj.submit_message,
-                         'candidate_contact': instance.id,
-                         'recruitment_agent': instance.recruitment_agent.id},
+                         'candidate_contact': instance.id},
                         status=status.HTTP_201_CREATED)
 
 
