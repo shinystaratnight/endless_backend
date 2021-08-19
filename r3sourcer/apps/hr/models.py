@@ -1426,9 +1426,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         data = {
             'job_offer': job_offer,
             'shift_started_at': job_offer.start_time_utc,
-            'break_started_at': job_offer.start_time_utc + timedelta(hours=5),
-            'break_ended_at': job_offer.start_time_utc + timedelta(hours=5, minutes=30),
-            'shift_ended_at': job_offer.start_time_utc + timedelta(hours=8, minutes=30),
+            # 'break_started_at': job_offer.start_time_utc + timedelta(hours=5),
+            # 'break_ended_at': job_offer.start_time_utc + timedelta(hours=5, minutes=30),
+            # 'shift_ended_at': job_offer.start_time_utc + timedelta(hours=8, minutes=30),
             'supervisor': job_offer.job.jobsite.primary_contact,
             'candidate_rate': job_offer.shift.hourly_rate,
             'going_to_work_confirmation': going_to_work_confirmation,
@@ -1593,9 +1593,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         if just_added:
             fields += [
                 ('shift_started_at', self.shift_started_at, self.today_7_am),
-                ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
-                ('break_started_at', self.break_started_at, self.today_12_pm),
-                ('break_ended_at', self.break_ended_at, self.today_12_30_pm),
+                # ('shift_ended_at', self.shift_ended_at, self.today_3_30_pm),
+                # ('break_started_at', self.break_started_at, self.today_12_pm),
+                # ('break_ended_at', self.break_ended_at, self.today_12_30_pm),
             ]
         else:
             fields += [
@@ -1656,20 +1656,15 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         self.update_status(False)
 
-        hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
-                                              skill_name=self.job_offer.job.position.name) \
-                                      .first()
-        if hourly_work:
-            hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
-            other_activities = self.timesheet_rates.exclude(worktype=hourly_work).exists()
+        super().save(*args, **kwargs)
 
-            # set wage_type to HOURLY_WORK if skill activities is not added
-            if other_activities:
-                self.wage_type = Job.WAGE_CHOICES.PIECEWORK
-            else:
-                self.wage_type = Job.WAGE_CHOICES.HOURLY
+        if self.wage_type == Job.WAGE_CHOICES.HOURLY and self.candidate_submitted_at:
 
-            super().save(*args, **kwargs)
+            hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
+                                                  skill_name=self.job_offer.job.position.name) \
+                                          .first()
+            if hourly_work:
+                hourly_activity = self.timesheet_rates.filter(worktype=hourly_work).first()
 
             # add or modify hourly_rate skill activity
             if hourly_activity:
@@ -1689,7 +1684,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         if going_set and self.going_to_work_confirmation and self.is_allowed(20):
             self.create_state(20)
-            self._send_submit_sms(self.shift_ended_at)
+            self._send_submit_sms(self.shift_started_at + timedelta(hours=8, minutes=30))
 
         # If accepted manually, disable reply checking.
         if self.going_to_work_confirmation and self.going_to_work_sent_sms and self.going_to_work_sent_sms.check_reply:
