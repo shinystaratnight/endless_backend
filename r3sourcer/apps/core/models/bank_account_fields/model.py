@@ -12,3 +12,10 @@ class BankAccountField(models.Model):
 
     def __str__(self):
         return self.name
+
+    def translation(self, language):
+        """ SkillName translation getter """
+        try:
+            return self.languages.get(language=language).name
+        except:
+            return self.languages.get(language_id='en').name
