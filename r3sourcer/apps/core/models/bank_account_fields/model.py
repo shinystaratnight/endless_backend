@@ -18,4 +18,8 @@ class BankAccountField(models.Model):
         try:
             return self.languages.get(language=language).name
         except:
+            pass
+        try:
             return self.languages.get(language_id='en').name
+        except:
+            return self.name
