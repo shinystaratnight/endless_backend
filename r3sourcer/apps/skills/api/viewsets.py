@@ -1,7 +1,8 @@
 from django.db.models import Q
 
 from r3sourcer.apps.core.api import viewsets as core_viewsets
-from r3sourcer.apps.skills.models import Skill, SkillRateRange
+from r3sourcer.apps.skills.models import Skill
+from r3sourcer.apps.pricing.models import PriceListRate
 
 
 class SkillNameViewSet(core_viewsets.BaseApiViewset):
@@ -36,12 +37,15 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
     def get_queryset(self):
         qs = super().get_queryset()
 
-        # qs = qs.filter(
-        #     Q(skill_name__industry__in=self.request.user.company.industries.all()) |
-        #     Q(skill__company=self.request.user.company)
-        # )
-        rate_ranges_exists = SkillRateRange.objects.filter(skill__company=self.request.user.company)
-        qs =qs.filter(skill_rate_ranges__in=rate_ranges_exists)
+        all = self.request.query_params.get('all', False) in ['true', '1']
+        company = self.request.user.company
+        industries = company.industries.all()
+        price_list_rates = PriceListRate.objects.filter(price_list__company=company).values_list('pk', flat=True)
+        print(price_list_rates)
+        qs = qs.filter(Q(skill_name__industry__in=industries) |
+                       Q(skill__company=company))
+        if not all:
+            qs = qs.filter(price_list_rates__in=price_list_rates)
 
         if self.request.query_params.get('ordering'):
             ordering = self.request.query_params.get('ordering')
