@@ -101,16 +101,12 @@ class WorkTypeFilter(FilterSet):
         fields = ['skill_name', 'skill']
 
     def filter_skill(self, queryset, name, value):
-        queryset = skills_models.WorkType.objects.all()
         try:
             skill = skills_models.Skill.objects.get(pk=value)
         except:
             skill = None
         queryset = queryset.filter(
             Q(skill_name=skill.name) |
-            Q(skill=value)
+            Q(skill=skill)
         )
-        # # exclude hourly_work activity for candidates
-        # if self.request.user.contact.is_candidate_contact():
-        #     queryset = queryset.exclude(name=skills_models.WorkType.DEFAULT)
         return queryset
