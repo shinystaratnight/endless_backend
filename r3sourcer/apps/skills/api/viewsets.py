@@ -41,7 +41,6 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
         company = self.request.user.company
         industries = company.industries.all()
         price_list_rates = PriceListRate.objects.filter(price_list__company=company).values_list('pk', flat=True)
-        print(price_list_rates)
         qs = qs.filter(Q(skill_name__industry__in=industries) |
                        Q(skill__company=company))
         if not all:

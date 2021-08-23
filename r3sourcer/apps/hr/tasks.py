@@ -364,6 +364,10 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
             'candidate_contact': candidate,
             'company_contact': time_sheet.supervisor
         }
+        if time_sheet.shift_ended_at_tz:
+            shift_ended_at_tz = time_sheet.shift_ended_at_tz
+        else:
+            shift_ended_at_tz = time_sheet.shift_ended_at_tz + timedelta(hours=8, minutes=30)
         with transaction.atomic():
             site_url = core_companies_utils.get_site_url(user=contacts['candidate_contact'].contact.user)
             data_dict = dict(
@@ -374,7 +378,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 get_supervisor_redirect_url="%s/hr/timesheets/unapproved" % site_url,
                 get_supervisor_sign_url="%s/hr/timesheets/unapproved" % site_url,
                 shift_start_date=formats.date_format(time_sheet.shift_started_at_tz, settings.DATETIME_FORMAT),
-                shift_end_date=formats.date_format(time_sheet.shift_ended_at_tz.date(), settings.DATE_FORMAT),
+                shift_end_date=formats.date_format(shift_ended_at_tz.date(), settings.DATE_FORMAT),
                 related_obj=time_sheet,
             )
 
