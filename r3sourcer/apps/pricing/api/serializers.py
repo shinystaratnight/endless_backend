@@ -155,14 +155,12 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
         model = pricing_models.PriceListRate
         fields = ('__all__',
                   {
-                   'skill': ('id', {'name': ('name', {'translations': ('language', 'value')})}),
                    'worktype': ('id', 'name', {'translations': ('language', 'value')}),
                   },)
 
     def validate(self, data):
-        skill = data.get('skill')
         worktype = data.get('worktype', None)
-        skill_rate_range = skill.skill_rate_ranges.filter(worktype=worktype).first()
+        skill_rate_range = worktype.skill_rate_ranges.filter(worktype=worktype).first()
         if skill_rate_range:
             lower_limit = skill_rate_range.price_list_lower_rate_limit
             upper_limit = skill_rate_range.price_list_upper_rate_limit
