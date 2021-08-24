@@ -53,8 +53,9 @@ class SkillRateRangeInline(nested_admin.NestedTabularInline):
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
         if db_field.name == "worktype" and request._obj_:
-            kwargs["queryset"] = models.WorkType.objects.filter(Q(skill_name=request._obj_.name) | \
-                                                                Q(skill=request._obj_))
+            industries = request._obj_.company.industries.all()
+            kwargs["queryset"] = models.WorkType.objects.filter(Q(skill_name__industry__in=industries) |
+                                                         Q(skill__company=request._obj_.company))
         return super().formfield_for_foreignkey(db_field, request, **kwargs)
 
 class WorkTypeSkillInline(nested_admin.NestedTabularInline):
@@ -83,4 +84,3 @@ admin.site.register(models.Skill, SkillAdmin)
 admin.site.register(models.SkillName, SkillNameAdmin)
 admin.site.register(models.WorkType)
 admin.site.register(models.SkillTag)
-admin.site.register(models.SkillRateRange)

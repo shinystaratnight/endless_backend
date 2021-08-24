@@ -289,7 +289,8 @@ class WorkType(UUIDModel):
         verbose_name=_('Skill Name'),
         related_name='work_types',
         blank=True,
-        null=True
+        null=True,
+        help_text="Fill in this field only for System skill activities"
     )
 
     skill = models.ForeignKey(
@@ -298,7 +299,8 @@ class WorkType(UUIDModel):
         verbose_name=_('Skill'),
         related_name='work_types',
         blank=True,
-        null=True
+        null=True,
+        help_text="Fill in this field only for Company skill activities"
     )
 
     uom = models.ForeignKey(UnitOfMeasurement,
@@ -413,7 +415,7 @@ class SkillRateRange(MYOBMixin, UUIDModel):
     worktype = models.ForeignKey(
         WorkType,
         related_name="skill_rate_ranges",
-        verbose_name=_("WorkType"),
+        verbose_name=_("Skill Activity"),
     )
     upper_rate_limit = models.DecimalField(
         decimal_places=2,
