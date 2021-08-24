@@ -1339,7 +1339,6 @@ class Company(CategoryFolderMixin,
         ).filter(
             effective=True,
             valid_until__gte=date.today(),
-            price_list_rates__skill__active=True,
             price_list_rates__rate__gt=0
         )
 
