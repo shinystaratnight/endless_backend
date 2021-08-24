@@ -55,7 +55,7 @@ class EmailTemplate(TemplateMessage):
         ]
 
     def __str__(self):
-        return f'{self.type} {self.company} {self.language}'
+        return f'{self.name}'
 
 class DefaultEmailTemplate(DefaultTemplateABS):
     language = models.ForeignKey(
@@ -92,7 +92,8 @@ class DefaultEmailTemplate(DefaultTemplateABS):
         EmailTemplate.objects.\
             filter(slug=self.slug, language_id=self.language.alpha_2).\
             update(message_html_template=self.message_html_template,
-                   message_text_template=self.message_text_template)
+                   message_text_template=self.message_text_template,
+                   subject_template=self.subject_template)
 
         templates = []
         for company in Company.objects.filter(type=Company.COMPANY_TYPES.master,
@@ -105,7 +106,9 @@ class DefaultEmailTemplate(DefaultTemplateABS):
                 reply_timeout=self.reply_timeout,
                 delivery_timeout=self.delivery_timeout,
                 language_id=self.language.alpha_2,
-                company_id=company.id)
+                company_id=company.id,
+                subject_template=self.subject_template
+            )
             templates.append(obj)
         EmailTemplate.objects.bulk_create(templates)
 

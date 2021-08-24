@@ -7,7 +7,8 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from django.conf import settings
-from stripe.error import InvalidRequestError
+from django.db.models import Count
+from stripe.error import InvalidRequestError, CardError
 
 from r3sourcer.apps.billing.models import (
                             Subscription,
@@ -17,6 +18,7 @@ from r3sourcer.apps.billing.models import (
                             StripeCountryAccount as sca,
     )
 from r3sourcer.apps.core.models import Company, VAT
+from r3sourcer.apps.core.tasks import cancel_subscription_access
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.billing import STRIPE_INTERVALS
 from r3sourcer.helpers.datetimes import utc_now
@@ -100,35 +102,53 @@ def charge_for_extra_workers():
 def charge_for_sms(company_id, amount, sms_balance_id):
     company = Company.objects.get(id=company_id)
     sms_balance = SMSBalance.objects.get(id=sms_balance_id)
-    country_code = company.get_hq_address().address.country.code2
-    stripe_secret_key = sca.get_stripe_key(country_code)
-    stripe.api_key = stripe_secret_key
-    vat_object = VAT.get_vat(country_code).first()
-    tax_percent = vat_object.stripe_rate
 
-    for discount in company.get_active_discounts('sms'):
-        amount = discount.apply_discount(amount)
+    # try to create invoice and pay if last payment was successful
+    # or if it's the first payment
+    if sms_balance.last_payment is None or sms_balance.last_payment.status == Payment.PAYMENT_STATUSES.paid:
+        country_code = company.get_hq_address().address.country.code2
+        stripe_secret_key = sca.get_stripe_key(country_code)
+        stripe.api_key = stripe_secret_key
+        vat_object = VAT.get_vat(country_code).first()
+        tax_percent = vat_object.stripe_rate
 
-    tax_value = tax_percent / 100 + 1
-    stripe.InvoiceItem.create(customer=company.stripe_customer,
-                              amount=round(int(amount * 100 / tax_value)),
-                              currency=company.currency,
-                              description='Topping up sms balance')
-    invoice = stripe.Invoice.create(customer=company.stripe_customer,
-                                    default_tax_rates=[vat_object.stripe_id],
-                                    description='Topping up sms balance')
-    invoice.pay()
-    payment = Payment.objects.create(
-        company=company,
-        type=Payment.PAYMENT_TYPES.sms,
-        amount=amount,
-        stripe_id=invoice['id'],
-        invoice_url=invoice['invoice_pdf'],
-        status=invoice['status']
-    )
-    sms_balance.balance += Decimal(payment.amount)
-    sms_balance.last_payment = payment
-    sms_balance.save()
+        for discount in company.get_active_discounts('sms'):
+            amount = discount.apply_discount(amount)
+
+        tax_value = tax_percent / 100 + 1
+        stripe.InvoiceItem.create(customer=company.stripe_customer,
+                                  amount=round(int(amount * 100 / tax_value)),
+                                  currency=company.currency,
+                                  description='Topping up sms balance')
+        logger.info('InvoiceItem Topping up sms balance created for {} to {}'.format(
+            round(int(amount * 100 / tax_value)),
+            company.id
+        ))
+        invoice = stripe.Invoice.create(customer=company.stripe_customer,
+                                        default_tax_rates=[vat_object.stripe_id],
+                                        description='Topping up sms balance')
+        logger.info('Invoice Topping up sms balance created to {}'.format(company.id))
+        payment = Payment.objects.create(
+            company=company,
+            type=Payment.PAYMENT_TYPES.sms,
+            amount=amount,
+            stripe_id=invoice['id'],
+            invoice_url=invoice['invoice_pdf'],
+            status=invoice['status']
+        )
+        # pay an invoice after creation of corresponding Payment
+        try:
+            invoice.pay()
+            # increase balance if payment is successful
+            sms_balance.balance += Decimal(payment.amount)
+        except CardError as ex:
+            # mark as unpaid if error
+            payment.status = Payment.PAYMENT_STATUSES.not_paid
+            payment.save()
+        finally:
+            # in any case save the last payment to sms_balance
+            sms_balance.last_payment = payment
+            sms_balance.save()
 
 
 @shared_task
@@ -146,6 +166,18 @@ def sync_subscriptions():
         subscription.save()
 
 
+@shared_task
+def restrict_access_for_users_without_subscription():
+    # for companies without a subscription
+    # users should also be restricted by the end of trial
+    for company in Company.objects.all().prefetch_related('subscriptions').annotate(count=Count(
+            'subscriptions')).filter(count=0):
+        this_user = company.get_user()
+        now = utc_now()
+        if this_user and this_user.trial_period_start and now > this_user.get_end_of_trial_as_date():
+            cancel_subscription_access.apply_async([this_user.id])
+
+
 @shared_task()
 def fetch_payments():
     """creates invoices for not payed payments and downloads invoices from stripe for payed"""
@@ -161,28 +193,36 @@ def fetch_payments():
             invoices = stripe.Invoice.list(customer=customer)['data']
         except:
             continue
-
-        payments = Payment.objects.filter(invoice_url__isnull=True)
-
+        # check all customer invoices
         for invoice in invoices:
-
+            # if subscription invoice is unpaid mark subscription as inactive
             if invoice['paid'] is False and invoice['subscription'] is not None:
                 try:
-                    sub = Subscription.objects.get(subscription_id=invoice['subscription'])
+                    sub = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
                     sub.active = False
                     sub.status = Subscription.SUBSCRIPTION_STATUSES.unpaid
                     sub.save()
                 except Subscription.DoesNotExist:
                     pass
 
-            if not Payment.objects.filter(stripe_id=invoice['id']).exists():
+            # if payment is not created yet then create it for not-void invoices
+            # void means this invoice was a mistake, and should be canceled.
+            if invoice['status'] != 'void' and not Payment.objects.filter(stripe_id=invoice['id']).exists():
+                payment_type = Payment.PAYMENT_TYPES.candidate
+                if invoice['subscription'] is not None:
+                    payment_type = Payment.PAYMENT_TYPES.subscription
+                elif 'sms' in invoice['description']:
+                    payment_type = Payment.PAYMENT_TYPES.sms
+                elif 'extra workers' in invoice['description']:
+                    payment_type = Payment.PAYMENT_TYPES.extra_workers
                 Payment.objects.create(
                     company=company,
-                    type=Payment.PAYMENT_TYPES.subscription,
+                    type=payment_type,
                     amount=invoice['total'] / 100,
                     stripe_id=invoice['id']
                 )
 
+        payments = Payment.objects.filter(invoice_url__isnull=True)
         for payment in payments:
             try:
                 invoice = stripe.Invoice.retrieve(payment.stripe_id)
@@ -213,22 +253,28 @@ def fetch_payments():
                     sms_balance.balance += payment.amount
                     sms_balance.save()
 
+            if invoice['status'] == 'void':
+                payment.delete()
+
 
 @shared_task
 def send_sms_payment_reminder():
-    balance_objects = SMSBalance.objects.filter(last_payment__status='not_paid')
+    balance_objects = SMSBalance.objects.filter(company__type='master',
+                                                last_payment__status='not_paid')
     one_day_objects = balance_objects.filter(last_payment__created__gte=utc_now() - timedelta(days=1))
     two_days_objects = balance_objects.filter(last_payment__created__gte=utc_now() - timedelta(days=2)) \
                                       .filter(last_payment__created__lt=utc_now() - timedelta(days=1))
     email_interface = get_email_service()
 
     for sms_balance in one_day_objects:
-        # TODO: propagate master company
-        email_interface.send_tpl(sms_balance.company.primary_contact.contact.email, tpl_name='sms_payment_reminder_24')
+        email_interface.send_tpl(sms_balance.company.primary_contact.contact,
+                                 sms_balance.company,
+                                 tpl_name='sms-payment-reminder-24')
 
     for sms_balance in two_days_objects:
-        # TODO: propagate master company
-        email_interface.send_tpl(sms_balance.company.primary_contact.contact.email, tpl_name='sms_payment_reminder_48')
+        email_interface.send_tpl(sms_balance.company.primary_contact.contact,
+                                 sms_balance.company,
+                                 tpl_name='sms-payment-reminder-48')
 
 
 @shared_task

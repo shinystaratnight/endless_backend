@@ -77,7 +77,6 @@ all: \
   var/make \
   var/tmp \
   var/run \
-  var/make/subnet \
   var/make/docker-redis \
   var/make-docker-postgres \
   var/make/docker-rabbitmq \
@@ -112,21 +111,6 @@ docker-install:
 	sudo apt-add-repository 'deb https://apt.dockerproject.org/repo ubuntu-xenial main'
 	sudo usermod -aG docker $(whoami)
 	touch $@
-
-rm-subnet:
-	if docker network ls | grep "$(DOCKER_SUB_NET_NAME)"; then \
-        docker network rm $(DOCKER_SUB_NET_NAME); \
-	fi;
-
-var/make/subnet:
-	if docker network inspect $(DOCKER_SUB_NET_NAME); then \
-	    echo "Subnet already exists"; \
-    else \
-        if ! docker network create --subnet=$(DOCKER_SUB_NET_ROUTE) $(DOCKER_SUB_NET_NAME); then \
-            exit 1; \
-        fi; \
-        echo "Subnet successfully created: $(DOCKER_SUB_NET_ROUTE) with name $(DOCKER_SUB_NET_NAME)"; \
-    fi;
 
 var/make/create-db:
 	make create-postgres-user
@@ -184,7 +168,6 @@ full-clean:
             docker rm -f $$CONTAINER; \
         fi ; \
 	done
-	make rm-subnet
 
 clean:
 	@make rm-docker-app;

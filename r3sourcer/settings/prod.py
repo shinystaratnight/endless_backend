@@ -95,6 +95,7 @@ INSTALLED_APPS = [
     'r3sourcer.apps.myob',
     'r3sourcer.apps.company_settings',
     'r3sourcer.apps.billing',
+    'r3sourcer.apps.pdf_templates',
 
     'oauth2_provider',
     'oauth2_provider_jwt',
@@ -222,7 +223,7 @@ USE_L10N = True
 USE_TZ = True
 
 # Data limits
-DATA_UPLOAD_MAX_MEMORY_SIZE = 5242880
+DATA_UPLOAD_MAX_MEMORY_SIZE = 52428800
 DATA_UPLOAD_MAX_NUMBER_FIELDS = 10240
 
 # Static files (CSS, JavaScript, Images)

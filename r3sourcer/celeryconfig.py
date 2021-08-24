@@ -79,6 +79,10 @@ beat_schedule = {
         'task': 'r3sourcer.apps.billing.tasks.send_sms_payment_reminder',
         'schedule': crontab(minute=45)
     },
+    'restrict_access_for_users_without_subscription': {
+        'task': 'r3sourcer.apps.billing.tasks.restrict_access_for_users_without_subscription',
+        'schedule': crontab(minute=35, hour=3)
+    },
     'update_superannuation_fund_list': {
         'task': 'r3sourcer.apps.candidate.tasks.update_superannuation_fund_list',
         'schedule': crontab(minute=0, hour=0, day_of_month=2)

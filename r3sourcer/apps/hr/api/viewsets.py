@@ -159,8 +159,7 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
     @transaction.atomic
     @action(methods=['put'], detail=True)
     def approve(self, request, pk, *args, **kwargs):  # pragma: no cover
-        return self.handle_request(request, pk, False, data={},
-                                   *args, **kwargs)
+        return self.handle_request(request, pk, False, *args, **kwargs)
 
     @transaction.atomic
     @action(methods=['put'], detail=True)
@@ -673,7 +672,7 @@ class JobViewset(BaseApiViewset):
 
         tags_filter = request.query_params.get('show_without_tags', None) in ('True', None)
         if not tags_filter:
-            candidate_contacts = candidate_contacts.filter(tags_count=len(job_tags))
+            candidate_contacts = candidate_contacts.filter(tag_rels__tag_id__in=job_tags)
 
         restrict_radius = int(request.GET.get('distance_to_jobsite', -1))
         if restrict_radius > -1:
@@ -953,7 +952,8 @@ class JobViewset(BaseApiViewset):
         client_contact = role.company_contact_rel.company_contact
         if not client_contact:
             raise exceptions.ValidationError({'client_contact': _('User has no company_contact!')})
-        queryset = self.queryset.filter(customer_representative=client_contact)
+        companies = client_contact.relationships.values_list('company', flat=True)
+        queryset = self.queryset.filter(customer_company__id__in=companies)
 
         return self._paginate(request, job_serializers.JobSerializer, queryset)
 
@@ -1146,35 +1146,10 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
             client_contact = role.company_contact_rel.company_contact
             if not client_contact:
                 raise exceptions.ValidationError({'client_contact': _('User has no company_contact!')})
-            queryset = self.queryset.filter(primary_contact=client_contact)
+            companies = client_contact.relationships.values_list('company', flat=True)
+            queryset = self.queryset.filter(regular_company__id__in=companies)
 
             return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
         if company_id:
             queryset = self.queryset.filter(regular_company__id=company_id)
             return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
-
-
-class ShiftDateViewset(BaseApiViewset):
-
-    def create_from_data(self, data, *args, **kwargs):
-        is_response = kwargs.pop('is_response', True)
-
-        many = isinstance(data, list)
-
-        serializer = self.get_serializer(data=data, many=many)
-        serializer.is_valid(raise_exception=True)
-        date = hr_models.ShiftDate.objects.filter(
-            shift_date=serializer.validated_data['shift_date'],
-            job=serializer.validated_data['job'],
-        ).first()
-
-        if not date:
-            self.perform_create(serializer)
-        else:
-            serializer = self.get_serializer(date, many=many)
-
-        if is_response:
-            headers = self.get_success_headers(serializer.data)
-            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-        else:
-            return serializer

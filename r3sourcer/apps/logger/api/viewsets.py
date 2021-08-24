@@ -61,8 +61,8 @@ class LogHistoryViewset(viewsets.ViewSet):
             else:
                 log_kwargs = self._get_kwargs(request)
                 history = endless_logger.get_object_history(retrieving_model, **log_kwargs)
-                log_kwargs.pop("limit")
-                log_kwargs.pop("offset")
+                log_kwargs.pop("limit", 250)
+                log_kwargs.pop("offset", 0)
                 total = endless_logger.get_result_length(retrieving_model, **log_kwargs)
                 return Response({"recordsTotal": total, "recordsFiltered": total, "data": history})
         return Response(status=status.HTTP_400_BAD_REQUEST)
@@ -78,8 +78,8 @@ class LogHistoryViewset(viewsets.ViewSet):
             else:
                 log_kwargs = self._get_kwargs(request)
                 history = endless_logger.get_object_history(retrieving_model, pk, **log_kwargs)
-                log_kwargs.pop("limit")
-                log_kwargs.pop("offset")
+                log_kwargs.pop("limit", 250)
+                log_kwargs.pop("offset", 0)
                 total = endless_logger.get_result_length(retrieving_model, **log_kwargs)
                 return Response({"recordsTotal": total, "recordsFiltered": total, "data": history})
         return Response(status=status.HTTP_400_BAD_REQUEST)

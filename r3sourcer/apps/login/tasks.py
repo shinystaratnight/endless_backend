@@ -8,7 +8,6 @@ from r3sourcer.apps.core.service import factory
 from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
 from .models import TokenLogin
 from ..core.utils.companies import get_site_master_company
-from ..sms_interface.helpers import get_sms_template
 
 logger = get_task_logger(__name__)
 
@@ -25,7 +24,7 @@ def get_contact(contact_id):
 DEFAULT_LOGIN_REDIRECT = '/'
 
 
-def send_login_token(contact, send_func, tpl, redirect_url=None, type_=TokenLogin.TYPES.sms):
+def send_login_token(contact, send_func, tpl_name, redirect_url=None, type_=TokenLogin.TYPES.sms):
     if not redirect_url:
         redirect_url = DEFAULT_LOGIN_REDIRECT
     with transaction.atomic():
@@ -45,17 +44,9 @@ def send_login_token(contact, send_func, tpl, redirect_url=None, type_=TokenLogi
                     data_dict['auth_url'])
         master_company = get_site_master_company(user=contact.user)
         if type_ in (TokenLogin.TYPES.sms,):
-            sms_template = get_sms_template(company_id=master_company.id,
-                                            contact_id=contact.id,
-                                            slug=tpl)
-            send_func(to_number=contact.phone_mobile,
-                      tpl_id=sms_template.id,
-                      **data_dict)
+            send_func(contact, master_company, tpl_name, **data_dict)
         elif type_ in (TokenLogin.TYPES.email,):
-            send_func(contact.email,
-                      master_company,
-                      tpl_name=tpl,
-                      **data_dict)
+            send_func(contact, master_company, tpl_name, **data_dict)
         else:
             raise Exception('Unknown login  token type')
 
@@ -66,7 +57,7 @@ def send_login_sms(self, contact_id, redirect_url=None):
         getattr(settings, 'SMS_INTERFACE_CLASS', 'sms_interface')
     )
 
-    sms_tpl = 'login-sms-token'
+    sms_tpl = 'login-token'
 
     contact = get_contact(contact_id)
 
@@ -80,7 +71,7 @@ def send_login_email(self, contact_id):
         getattr(settings, 'EMAIL_INTERFACE_CLASS', 'email_interface')
     )
 
-    email_tpl = 'login-email-token'
+    email_tpl = 'login-token'
 
     contact = get_contact(contact_id)
     if contact is not None:

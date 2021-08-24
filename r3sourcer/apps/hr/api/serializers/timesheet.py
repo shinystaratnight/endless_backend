@@ -13,7 +13,7 @@ from r3sourcer.apps.pricing.utils.utils import format_timedelta
 from r3sourcer.apps.sms_interface import models as sms_models
 from r3sourcer.apps.sms_interface.api import serializers as sms_serializers
 from r3sourcer.helpers.datetimes import utc_now
-from ...models import TimeSheet, CandidateEvaluation, TimeSheetRate
+from ...models import TimeSheet, CandidateEvaluation, TimeSheetRate, WorkType
 
 __all__ = [
     'TimeSheetSignatureSerializer',
@@ -23,13 +23,82 @@ __all__ = [
 ]
 
 
-class ValidateApprovalScheme(serializers.Serializer):
+def validate_timesheet(self, data):
+    """
+    Time validation on timesheet save
+    """
 
+    hours = data.get('hours', True)
+
+    if self.instance.pk:
+        # validate sent fields
+        if hours:
+            if data.get('no_break'):
+                data['break_started_at'] = None
+                data['break_ended_at'] = None
+            shift_started_at = data.get('shift_started_at', None)
+            shift_ended_at = data.get('shift_ended_at', None)
+            break_started_at = data.get('break_started_at', None)
+            break_ended_at = data.get('break_ended_at', None)
+
+            if shift_started_at and shift_ended_at:
+                shift_date = self.instance.job_offer.shift.shift_date_at_tz
+                # shift_started_at >= shift__time - 4h
+                if shift_started_at < shift_date - timedelta(hours=4):
+                    raise serializers.ValidationError({'shift_started_at':
+                        _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
+                # shift_started_at <= shift__time + 24h
+                if shift_started_at > shift_date + timedelta(hours=12):
+                    raise serializers.ValidationError({'shift_started_at':
+                        _('Shift starting time can not be later than 12 hours after default shift starting time.')})
+                # shift_ended_at >= shift_started_at
+                if shift_ended_at < shift_started_at:
+                    raise serializers.ValidationError({'shift_started_at':
+                        _('Incorrect shift starting or ending time.')})
+                if break_ended_at and break_started_at:
+                # break_ended_at >= break_started_at
+                    if break_started_at < break_started_at:
+                        raise serializers.ValidationError({'break_started_at':
+                            _('Incorrect break starting or ending time.')})
+                # shift_started_at <= break_started_at
+                    if shift_started_at > break_started_at:
+                        raise serializers.ValidationError({'break_started_at':
+                            _('Break must start after shift starting time.')})
+                # shift_ended_at >= break_ended_at
+                    if shift_ended_at < break_ended_at:
+                        raise serializers.ValidationError({'break_ended_at':
+                            _('Break must end before shift ending time.')})
+                # calculate break duration
+                    break_duration = break_ended_at - break_started_at
+                else:
+                    break_duration = timedelta(0)
+                # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at)  <= 24h
+                if (shift_ended_at - shift_started_at) - break_duration > timedelta(hours=24):
+                    raise serializers.ValidationError({'shift_started_at':
+                        _('Total working hours must not be longer than 24 hours.')})
+                # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) >= 0
+                if (shift_ended_at - shift_started_at) - break_duration <= timedelta(0):
+                    raise serializers.ValidationError({'shift_started_at':
+                        _('Total working hours must be longer than 0 hours.')})
+            data['wage_type'] = 0
+
+        else:
+            hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
+                                                    skill_name=self.instance.job_offer.job.position.name) \
+                                            .first()
+            if not TimeSheetRate.objects.filter(timesheet=self.instance).exclude(worktype=hourly_work).exists():
+                raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
+            data['wage_type'] = 1
+
+        return data
+
+
+class ValidateApprovalScheme(serializers.Serializer):
     APPROVAL_SCHEME = None
 
     def validate(self, attrs):
         # get master companies and check existing
-        client_company =  self.instance.job_offer.job.customer_company
+        client_company = self.instance.job_offer.job.customer_company
         companies = self.instance.supervisor.get_master_company()
         if len(companies) == 0:
             raise serializers.ValidationError(_("Supervisor has not master company"))
@@ -51,22 +120,22 @@ class ApiTimesheetImageFieldsMixin():
 
 
 class TimeSheetSignatureSerializer(ValidateApprovalScheme, ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
-
     image_fields = ('supervisor_signature',)
     APPROVAL_SCHEME = Company.TIMESHEET_APPROVAL_SCHEME.SIGNATURE
 
     class Meta:
         model = TimeSheet
         fields = ('supervisor_signature',)
-        extra_kwargs = {'supervisor_signature': {
-            'required': True,
-            'allow_empty_file': False,
-            'allow_null': False}
+        extra_kwargs = {
+            'supervisor_signature': {
+                'required': True,
+                'allow_empty_file': False,
+                'allow_null': False
+            }
         }
 
 
 class PinCodeSerializer(ValidateApprovalScheme):
-
     APPROVAL_SCHEME = Company.TIMESHEET_APPROVAL_SCHEME.PIN
 
     pin_code = serializers.CharField(min_length=4)
@@ -81,13 +150,14 @@ class PinCodeSerializer(ValidateApprovalScheme):
 
 class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     image_fields = ('supervisor_signature',)
+    hours = serializers.BooleanField(required=False)
 
     method_fields = (
         'company', 'jobsite', 'position', 'shift_started_ended',
         'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
-        'invoice', 'shift', 'evaluation', 'time_zone',
+        'invoice', 'shift', 'evaluation', 'time_zone', 'is_30_days_old',
     )
 
     class Meta:
@@ -125,23 +195,30 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'break_ended_at',
             'break_ended_at_tz',
             'break_ended_at_utc',
+            'timesheet_rates',
+            'hours',
         )
         related_fields = {
-            'job_offer': ('id', {
-                'candidate_contact': ('id', {
-                    'contact': ('picture', ),
-                    'candidate_scores': ['average_score'],
-                }, ),
-            }, ),
+            'job_offer': ('id',
+                          {
+                              'candidate_contact': ('id', {
+                                  'contact': ('picture',),
+                                  'candidate_scores': ['average_score'],
+                              },),
+                          },),
+            'timesheet_rates': ('id',
+                                'rate',
+                                'value',
+                                {'worktype': ('id', 'translations')}),
         }
 
     def get_company(self, obj):
         if obj:
             company = obj.job_offer.job.customer_company
             return {
-                    'id': company.id, '__str__': str(company),
-                    'supervisor_approved_scheme': company.timesheet_approval_scheme
-                    }
+                'id': company.id, '__str__': str(company),
+                'supervisor_approved_scheme': company.timesheet_approval_scheme
+            }
 
     def get_jobsite(self, obj):
         if obj:
@@ -158,8 +235,10 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
     def get_position(self, obj):
         if obj:
             position = obj.job_offer.job.position
-            translations = [{'language': {'id': i.language.alpha_2, 'name': i.language.name},
-                             'value': i.value} for i in position.name.translations.all()]
+            translations = [{
+                                'language': {'id': i.language.alpha_2, 'name': i.language.name},
+                                'value': i.value
+                            } for i in position.name.translations.all()]
             return {'id': position.id, '__str__': str(position), 'translations': translations}
 
     def __format_datetime(self, date_time, default='-'):
@@ -200,20 +279,24 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
 
     def get_resend_sms_candidate(self, obj):
         return (
-            obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= utc_now()
+                obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
+                obj.supervisor_approved_at is None and obj.shift_ended_at_utc and obj.shift_ended_at_utc <= utc_now()
         )
 
     def get_resend_sms_supervisor(self, obj):
         return (
-            obj.going_to_work_confirmation and obj.candidate_submitted_at is not None and
-            obj.supervisor_approved_at is None and obj.shift_ended_at_utc <= utc_now()
+            (obj.going_to_work_confirmation and
+            obj.candidate_submitted_at is not None and
+            obj.supervisor_approved_at is None) and
+            (obj.wage_type == 1 or
+            obj.shift_ended_at_utc and
+            obj.shift_ended_at_utc <= utc_now())
         )
 
     def get_candidate_submit_hidden(self, obj):
         return not (
-            obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
-            obj.supervisor_approved_at is None and obj.shift_started_at_utc <= utc_now()
+                obj.going_to_work_confirmation and obj.candidate_submitted_at is None and
+                obj.supervisor_approved_at is None and obj.shift_started_at_utc <= utc_now()
         )
 
     def get_evaluated(self, obj):
@@ -266,7 +349,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                     template__slug=template_slug,
                     related_objects__object_id=obj.id,
                     company=obj.master_company
-                    ).first()
+                ).first()
 
         return sms and sms_serializers.SMSMessageSerializer(sms, fields=['id', '__str__']).data
 
@@ -296,72 +379,17 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                 '__str__': str(shift),
             }
 
+    def get_is_30_days_old(self, obj):
+        return obj.shift_started_at_tz < obj.now_tz - timedelta(days=30)
+
     def validate(self, data):
         """
         Time validation on timesheet save
         """
-
-        wage_type = data.get('wage_type')
-        shift_started_at = data.get('shift_started_at', None)
-        shift_ended_at = data.get('shift_ended_at', None)
-        break_started_at = data.get('break_started_at', None)
-        break_ended_at = data.get('break_ended_at', None)
-
-        if self.instance.pk:
-            # validate sent fields
-            if wage_type in [0,2]:
-                if not data.get('shift_started_at'):
-                    raise exceptions.ValidationError({'shift_started_at': _('You need to fill in the start time of the shift')})
-                if not data.get('shift_ended_at'):
-                    raise exceptions.ValidationError({'shift_ended_at': _('You need to fill in the end time of the shift')})
-            if wage_type in [1,2]:
-                if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
-                    raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
-
-            if shift_started_at and shift_ended_at:
-                shift_date = self.instance.job_offer.shift.shift_date_at_tz
-                # shift_started_at >= shift__time - 4h
-                if shift_started_at < shift_date - timedelta(hours=4):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
-                # shift_started_at <= shift__time + 24h
-                if shift_started_at > shift_date + timedelta(hours=24):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be later than 24 hours after default shift starting time.')})
-                # shift_ended_at >= shift_started_at
-                if shift_ended_at < shift_started_at:
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Incorrect shift starting or ending time.')})
-                if break_ended_at and break_started_at:
-                # break_ended_at >= break_started_at
-                    if break_started_at < break_started_at:
-                        raise serializers.ValidationError({'break_started_at':
-                            _('Incorrect break starting or ending time.')})
-                # shift_started_at <= break_started_at
-                    if shift_started_at > break_started_at:
-                        raise serializers.ValidationError({'break_started_at':
-                            _('Break must start after shift starting time.')})
-                # shift_ended_at >= break_ended_at
-                    if shift_ended_at < break_ended_at:
-                        raise serializers.ValidationError({'break_ended_at':
-                            _('Break must end before shift ending time.')})
-                # calculate break duration
-                    break_duration = break_ended_at - break_started_at
-                else:
-                    break_duration = timedelta(0)
-                # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at)  <= 24h
-                if (shift_ended_at - shift_started_at) - break_duration > timedelta(hours=24):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Total working hours must not be longer than 24 hours.')})
-                # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) >= 0
-                if (shift_ended_at - shift_started_at) - break_duration <= timedelta(0):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Total working hours must be longer than 0 hours.')})
-            return data
+        return validate_timesheet(self, data)
 
 
 class CandidateEvaluationSerializer(ApiBaseModelSerializer):
-
     method_fields = ('jobsite', 'position')
 
     class Meta:
@@ -388,11 +416,11 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
 
 
 class TimeSheetManualSerializer(ApiBaseModelSerializer):
-
     method_fields = (
         'shift_total', 'break_total', 'total_worked', 'time_zone', 'position',
     )
 
+    hours = serializers.BooleanField(required=False)
     no_break = serializers.BooleanField(required=False)
     send_supervisor_message = serializers.BooleanField(required=False)
     send_candidate_message = serializers.BooleanField(required=False)
@@ -403,7 +431,7 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
         model = TimeSheet
         fields = (
             'id', 'shift_started_at', 'break_started_at', 'break_ended_at',
-            'shift_ended_at', 'no_break', 'send_supervisor_message',
+            'shift_ended_at', 'no_break', 'hours', 'send_supervisor_message',
             'send_candidate_message', 'candidate_submitted_at',
             'supervisor_approved_at', 'shift_started_at_tz',
             'shift_ended_at_tz', 'break_started_at_tz', 'break_ended_at_tz',
@@ -416,74 +444,15 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
         """
         Time validation on timesheet save
         """
-
-        if data.get('no_break'):
-            data['break_started_at'] = None
-            data['break_ended_at'] = None
-
-        wage_type = data.get('wage_type')
-        shift_started_at = data.get('shift_started_at', None)
-        shift_ended_at = data.get('shift_ended_at', None)
-        break_started_at = data.get('break_started_at', None)
-        break_ended_at = data.get('break_ended_at', None)
-
-        if self.instance.pk:
-            # validate sent fields
-            if wage_type in [0,2]:
-                if not data.get('shift_started_at'):
-                    raise exceptions.ValidationError({'shift_started_at': _('You need to fill in the start time of the shift')})
-                if not data.get('shift_ended_at'):
-                    raise exceptions.ValidationError({'shift_ended_at': _('You need to fill in the end time of the shift')})
-            if wage_type in [1,2]:
-                if not TimeSheetRate.objects.filter(timesheet=self.instance).exists():
-                    raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
-
-            if shift_started_at and shift_ended_at:
-                shift_date = self.instance.job_offer.shift.shift_date_at_tz
-                # shift_started_at >= shift__time - 4h
-                if shift_started_at < shift_date - timedelta(hours=4):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
-                # shift_started_at <= shift__time + 24h
-                if shift_started_at > shift_date + timedelta(hours=24):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be later than 24 hours after default shift starting time.')})
-                # shift_ended_at >= shift_started_at
-                if shift_ended_at < shift_started_at:
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Incorrect shift starting or ending time.')})
-                if break_ended_at and break_started_at:
-                # break_ended_at >= break_started_at
-                    if break_started_at < break_started_at:
-                        raise serializers.ValidationError({'break_started_at':
-                            _('Incorrect break starting or ending time.')})
-                # shift_started_at <= break_started_at
-                    if shift_started_at > break_started_at:
-                        raise serializers.ValidationError({'break_started_at':
-                            _('Break must start after shift starting time.')})
-                # shift_ended_at >= break_ended_at
-                    if shift_ended_at < break_ended_at:
-                        raise serializers.ValidationError({'break_ended_at':
-                            _('Break must end before shift ending time.')})
-                # calculate break duration
-                    break_duration = break_ended_at - break_started_at
-                else:
-                    break_duration = timedelta(0)
-                # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at)  <= 24h
-                if (shift_ended_at - shift_started_at) - break_duration > timedelta(hours=24):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Total working hours must not be longer than 24 hours.')})
-                # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) >= 0
-                if (shift_ended_at - shift_started_at) - break_duration <= timedelta(0):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Total working hours must be longer than 0 hours.')})
-            return data
+        return validate_timesheet(self, data)
 
     def get_position(self, obj):
         if obj:
             position = obj.job_offer.job.position
-            translations = [{'language': {'id': i.language.alpha_2, 'name': i.language.name},
-                             'value': i.value} for i in position.name.translations.all()]
+            translations = [{
+                                'language': {'id': i.language.alpha_2, 'name': i.language.name},
+                                'value': i.value
+                            } for i in position.name.translations.all()]
             return {'id': position.id, '__str__': str(position), 'translations': translations}
 
     def get_shift_total(self, obj):
@@ -500,11 +469,13 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
 
 class TimeSheetRateSerializer(ApiBaseModelSerializer):
-
     class Meta:
         model = TimeSheetRate
         fields = (
-            'id', 'timesheet', 'worktype', 'value', 'rate'
+            'id', 'timesheet', 'value', 'rate',
+            {
+                'worktype': ('id', 'name', {'translations': ('language', 'value')}),
+            }
         )
 
     def validate(self, data):
@@ -516,7 +487,13 @@ class TimeSheetRateSerializer(ApiBaseModelSerializer):
         # validate value
         if value is None or value <= 0:
             raise exceptions.ValidationError({
-                'value': _('Value must be graeter then 0')
+                'value': _('Value must be greater then 0')
+            })
+
+        # validate rate
+        if rate is None or rate <= 0:
+            raise exceptions.ValidationError({
+                'rate': _('Rate must be greater then 0')
             })
 
         # validate rate    TODO choose betweann master company and regular company
@@ -526,8 +503,8 @@ class TimeSheetRateSerializer(ApiBaseModelSerializer):
         if skill_rate_range:
             lower_limit = skill_rate_range.lower_rate_limit
             upper_limit = skill_rate_range.upper_rate_limit
-            is_lower = lower_limit and data.get('rate') < lower_limit
-            is_upper = upper_limit and data.get('rate') > upper_limit
+            is_lower = lower_limit and rate < lower_limit
+            is_upper = upper_limit and rate > upper_limit
             if is_lower or is_upper:
                 raise exceptions.ValidationError({
                     'rate': _('Rate should be between {} and {}')

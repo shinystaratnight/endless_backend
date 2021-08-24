@@ -10,7 +10,7 @@ class PriceListRateFilter(FilterSet):
 
     class Meta:
         model = models.PriceListRate
-        fields = ['skill', 'price_list']
+        fields = ['worktype', 'price_list']
 
 
 class RateCoefficientModifierFilter(FilterSet):

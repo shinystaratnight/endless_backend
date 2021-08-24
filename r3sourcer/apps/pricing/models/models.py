@@ -62,7 +62,7 @@ class IndustryLanguage(models.Model):
         verbose_name=_('Industry'),
         related_name='translations'
     )
-    value = models.CharField(max_length=127, verbose_name=_("Industry transalation"))
+    value = models.CharField(max_length=127, verbose_name=_("Industry translation"))
     language = models.ForeignKey(
         'core.Language',
         verbose_name=_("Industry language"),
@@ -193,7 +193,7 @@ class PriceList(PriceListMixin, TimeZoneUUIDModel):
     approved_by = models.ForeignKey(
         'core.CompanyContact',
         related_name="price_lists",
-        on_delete=models.PROTECT,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         verbose_name=_("Approved By")
@@ -256,22 +256,12 @@ class PriceListRate(UUIDModel):
         on_delete=models.CASCADE,
         related_name='price_list_rates',
         verbose_name=_('Price List'),
-        blank=True,
-        null=True
-    )
-
-    skill = models.ForeignKey(
-        Skill,
-        related_name='price_list_rates',
-        verbose_name=_('Skill'),
     )
 
     worktype = models.ForeignKey(
         WorkType,
         related_name="price_list_rates",
-        verbose_name=_("WorkType"),
-        blank=True,
-        null=True
+        verbose_name=_("Skill Activity"),
     )
 
     rate = models.DecimalField(
@@ -289,16 +279,16 @@ class PriceListRate(UUIDModel):
     class Meta:
         verbose_name = _('Price List Rate')
         verbose_name_plural = _('Price List Rates')
-        unique_together = ('price_list', 'skill', 'worktype')
+        unique_together = ('price_list', 'worktype')
 
     @classmethod
     def set_default_rate(cls, sender, instance, created, **kwargs):
-        if created and not instance.skill.price_list_rates.exclude(pk=instance.pk).count():
+        if created and not instance.worktype.price_list_rates.exclude(pk=instance.pk).count():
             instance.default_rate = True
             instance.save()
 
     def save(self, *args, **kwargs):
-        skill_rate_range = self.skill.skill_rate_ranges.filter(worktype=self.worktype).first()
+        skill_rate_range = self.worktype.skill_rate_ranges.filter(worktype=self.worktype).first()
         if skill_rate_range:
             if not self.rate:
                 self.rate = skill_rate_range.price_list_default_rate
@@ -321,7 +311,7 @@ class PriceListRate(UUIDModel):
                 default_rates.update(default_rate=False)
 
     def __str__(self):
-        return f"{self.skill}-{self.worktype}-{self.rate}"
+        return f"{self.worktype}-{self.rate}"
 
 
 class PriceListRateCoefficient(UUIDModel):

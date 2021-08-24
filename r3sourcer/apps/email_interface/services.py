@@ -9,14 +9,43 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from django.db.models import Q
 
+from r3sourcer.apps.core.models import Company, Contact, CompanyContact
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.email_interface import models as email_models
 from r3sourcer.apps.email_interface.exceptions import RecipientsInvalidInstance, EmailBaseServiceError
 from r3sourcer.helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
-
 class BaseEmailService(metaclass=ABCMeta):
+
+    def get_template(self, contact: Contact, master_company: Company, tpl_name: str) -> email_models.EmailTemplate:
+        # notification language selection
+        if contact.is_candidate_contact():
+            languages = contact.languages.order_by('-default')
+
+        elif contact.is_company_contact():
+            languages = master_company.languages.order_by('-default')
+
+        # template selection
+        templates = email_models.EmailTemplate.objects.filter(slug=tpl_name, company=master_company)
+        template = None
+
+        for lang in languages:
+            try:
+                template = templates.get(language=lang.language)
+                break
+            except email_models.EmailTemplate.DoesNotExist:
+                continue
+
+        if template is None:
+            template = templates.filter(language_id=settings.DEFAULT_LANGUAGE).first()
+
+        if template is None:
+            logger.exception('Cannot find email template with name %s', tpl_name)
+            # raise Exception('Cannot find email template with name:', tpl_name)
+
+        return template
 
     @transaction.atomic
     def send(self, recipients, subject, text_message, html_message=None, from_email=None, template=None, **kwargs):
@@ -74,37 +103,17 @@ class BaseEmailService(metaclass=ABCMeta):
                 email_message.save()
 
     @transaction.atomic
-    def send_tpl(self, recepient, master_company, from_email=None, tpl_name=None,  **kwargs):
+    def send_tpl(self, contact_obj, master_company_obj, tpl_name, from_email=None, **kwargs):
 
-        languages = None
-        if 'contact' in kwargs:
-            languages = kwargs.get('contact').languages.order_by('-default')
-        if not languages:
-            languages = master_company.languages.order_by('-default')
+        template = self.get_template(contact_obj, master_company_obj, tpl_name)
 
-        templates = email_models.EmailTemplate.objects.filter(Q(name=tpl_name) | Q(slug=tpl_name),
-                                                                company_id=master_company.id)
-        template = None
-        for lang in languages:
-            try:
-                template = templates.get(language=lang.language)
-                break
-            except:
-                continue
-
-        if template is None:
-            templates.get(language_id=settings.DEFAULT_LANGUAGE)
-
-        if template is None:
-            logger.exception('Cannot find email template with name %s', tpl_name)
-            return
-
-        compiled = template.compile(**kwargs)
-        subject = compiled['subject']
-        self.send(recepient, subject, compiled['text'],
-                  html_message=compiled['html'], from_email=from_email, template=template,
-                  **kwargs
-        )
+        if template:
+            compiled = template.compile(**kwargs)
+            subject = compiled['subject']
+            self.send(contact_obj.email, subject, compiled['text'],
+                    html_message=compiled['html'], from_email=from_email, template=template,
+                    **kwargs
+            )
 
     @abstractmethod
     def process_email_send(self, email_message):

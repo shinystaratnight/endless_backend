@@ -1,6 +1,8 @@
+from django.db.models import Q
 from django.contrib import admin
 from django.contrib.contenttypes.admin import GenericTabularInline
 
+from r3sourcer.apps.skills.models import Skill, WorkType
 from . import models
 
 
@@ -56,14 +58,35 @@ class IndustryLanguageInline(admin.TabularInline):
 
 class IndustryAdmin(admin.ModelAdmin):
     list_display = ['type']
+    search_fields = ('type',)
     inlines = (IndustryLanguageInline,)
+
+class PriceListRateInline(admin.TabularInline):
+    model = models.PriceListRate
+    extra = 0
+
+    def formfield_for_foreignkey(self, db_field, request, **kwargs):
+        if db_field.name == "worktype" and request._obj_:
+            industries = request._obj_.company.industries.all()
+            kwargs["queryset"] = WorkType.objects.filter(Q(skill_name__industry__in=industries) |
+                                                         Q(skill__company=request._obj_.company))
+        return super().formfield_for_foreignkey(db_field, request, **kwargs)
+
+
+class PriceListAdmin(admin.ModelAdmin):
+    list_display = ['company', 'valid_from', 'valid_until']
+    inlines = (PriceListRateInline,)
+
+    def get_form(self, request, obj=None, **kwargs):
+        # just save obj reference for future processing in Inline
+        request._obj_ = obj
+        return super().get_form(request, obj, **kwargs)
 
 
 admin.site.register(models.Industry, IndustryAdmin)
 admin.site.register(models.RateCoefficientGroup)
 admin.site.register(models.RateCoefficient, RateCoefficientAdmin)
-admin.site.register(models.PriceList)
-admin.site.register(models.PriceListRate)
+admin.site.register(models.PriceList, PriceListAdmin)
 admin.site.register(models.PriceListRateCoefficient)
 admin.site.register(models.RateCoefficientModifier)
 admin.site.register(models.DynamicCoefficientRule)

@@ -38,10 +38,10 @@ class TestFakeSMSCommands:
         assert not SMSMessage.objects.all().exists()
 
     def test_create_fake_sms(self, contact, phone_number, out):
-        call_command('fake_sms', '--noinput', from_number='+12345678999',
+        call_command('fake_sms', '--noinput', from_number='+12345678901',
                      text='test', stdout=out)
 
-        sms_message = SMSMessage.objects.filter(from_number='+12345678999').first()
+        sms_message = SMSMessage.objects.filter(from_number='+12345678901').first()
 
         assert sms_message is not None
         assert sms_message.to_number == phone_number.phone_number
@@ -50,10 +50,10 @@ class TestFakeSMSCommands:
                                                     phone_number, out):
         call_command('fake_sms', '--noinput', text='test',
                      to_number=phone_number.phone_number,
-                     from_number='+12345678999', stdout=out)
+                     from_number='+12345678901', stdout=out)
 
         sms_message = SMSMessage.objects.filter(
-            from_number='+12345678999'
+            from_number='+12345678901'
         ).first()
 
         assert sms_message is not None

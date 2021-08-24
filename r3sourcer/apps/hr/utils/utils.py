@@ -109,8 +109,8 @@ def calculate_distances_for_jobsite(contacts, jobsite):
 
 
 def send_jo_rejection(job_offer):  # pragme: no cover
-    from r3sourcer.apps.hr.tasks import send_placement_rejection_sms
-    send_placement_rejection_sms.delay(job_offer.pk)
+    from r3sourcer.apps.hr.tasks import send_placement_rejection
+    send_placement_rejection.delay(job_offer.pk)
 
 
 def meters_to_km(meters):
@@ -168,8 +168,9 @@ def get_invoice_dates(invoice_rule, time_sheet):
             date_to = date_from + timedelta(days=14)
 
     elif invoice_rule.period == InvoiceRule.PERIOD_CHOICES.monthly:
-        date_to = today.replace(day=1) - timedelta(1)
-        date_from = date_to.replace(day=1)
+        date_from = today.replace(day=1)
+        next_month = date_from.replace(day=28) + timedelta(days=4)
+        date_to = next_month - timedelta(days=next_month.day)
 
     if not date_from:
         raise Exception("Wrong invoice rule period.")
@@ -225,8 +226,8 @@ def send_supervisor_timesheet_approve(timesheet, force=False, not_agree=False):
 
 
 def send_job_confirmation_sms(job):
-    from r3sourcer.apps.hr.tasks import send_job_confirmation_sms
-    send_job_confirmation_sms.apply_async(args=[job.id], countdown=10)
+    from r3sourcer.apps.hr.tasks import send_job_confirmation_message
+    send_job_confirmation_message.apply_async(args=[job.id], countdown=10)
 
 
 def schedule_auto_approve_timesheet(timesheet):

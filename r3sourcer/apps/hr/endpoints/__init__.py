@@ -24,7 +24,7 @@ class JobEndpoint(ApiEndpoint):
     filter_class = hr_filters.JobFilter
     search_fields = (
         'workers', 'jobsite__address__city__search_names', 'publish_on', 'expires_on', 'position__name__name',
-        'jobsite__address__street_address', 'jobsite__master_company__name'
+        'jobsite__address__street_address', 'jobsite__master_company__name', 'jobsite__regular_company__name'
     )
 
 
@@ -76,7 +76,6 @@ class ShiftDateEndpoint(ApiEndpoint):
 
     model = hr_models.ShiftDate
     serializer = job_serializers.ShiftDateSerializer
-    base_viewset = hr_viewsets.ShiftDateViewset
 
 
 class CandidateJobOfferEndpoint(ApiEndpoint):
@@ -91,6 +90,12 @@ class JobTagEndpoint(ApiEndpoint):
 
     model = hr_models.JobTag
     filter_class = hr_filters.JobTagFilter
+
+class JobRateEndpoint(ApiEndpoint):
+
+    model = hr_models.JobRate
+    filter_class = hr_filters.JobRateFilter
+    serializer = job_serializers.JobRateSerializer
 
 
 router.register(endpoint=JobsiteEndpoint())
@@ -113,3 +118,4 @@ router.register(hr_models.PayslipLine)
 router.register(hr_models.PayslipRule)
 router.register(endpoint=InvoiceEndpoint(), replace=True)
 router.register(endpoint=CandidateJobOfferEndpoint(), url='hr/joboffers-candidate')
+router.register(endpoint=JobRateEndpoint())

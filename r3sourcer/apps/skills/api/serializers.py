@@ -18,9 +18,10 @@ class SkillSerializer(ApiBaseModelSerializer):
         fields = (
             'id', 'company', 'carrier_list_reserve', 'short_name', 'employment_classification', 'active',
             {'name': ('id', 'name', {'translations': ('language', 'value')},
-                         {'industry': ('id', 'type', {'translations': ('language', 'value')})})
+                      {'industry': ('id', 'type', {'translations': ('language', 'value')})})
             },
-            {'skill_rate_ranges': ('id', 'worktype',
+            {'skill_rate_ranges': ('id',
+                                   {'worktype': ('id', 'name', {'translations': ('language', 'value')})},
                                    'upper_rate_limit', 'lower_rate_limit', 'default_rate',
                                    'price_list_upper_rate_limit', 'price_list_lower_rate_limit',
                                    'price_list_default_rate'),
@@ -79,6 +80,7 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
         model = SkillRateRange
         fields = (
             'id', 'skill', 'worktype',
+            {'worktype': ('id', 'name', {'translations': ('language', 'value')})},
             'upper_rate_limit', 'lower_rate_limit', 'default_rate',
             'price_list_upper_rate_limit', 'price_list_lower_rate_limit', 'price_list_default_rate'
             )
@@ -128,7 +130,8 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
         model = WorkType
         fields = (
             '__all__',
-            {'translations': ('language', 'value')},
+            {'uom': ('id', 'name', 'short_name'),
+            'translations': ('language', 'value')},
             )
 
         extra_kwargs = {

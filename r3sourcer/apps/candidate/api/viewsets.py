@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import timedelta, date
 
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
@@ -16,7 +16,7 @@ from r3sourcer.apps.candidate.api.filters import CandidateContactAnonymousFilter
 from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
-from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject
+from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject, CompanyContact
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.hr.models import Job, TimeSheet
 from r3sourcer.apps.logger.main import location_logger
@@ -216,7 +216,8 @@ class CandidateContactViewset(BaseApiViewset):
             candidate_contact.send_consent_message(rel.id)
 
         return Response({'status': 'success', 'message': _('Please wait for candidate to agree sharing their '
-                                                           'information')})
+                                                           'information'),
+                        'candidate': str(candidate_contact)})
 
     @action(methods=['get'], detail=True)
     def tests(self, request, *args, **kwargs):
@@ -263,6 +264,22 @@ class CandidateContactViewset(BaseApiViewset):
 
         serializer = serializers.CandidateRelSerializer(candidate_rel)
         return Response(serializer.data, status=status.HTTP_200_OK)
+
+
+    @action(methods=['get'], detail=False)
+    def get_candidates_by_supervisor(self, request, *args, **kwargs):
+        supervisor_id = request.query_params.get('supervisor')
+        try:
+            supervisor = CompanyContact.objects.get(pk=supervisor_id)
+        except:
+            raise exceptions.ParseError(_('You should add valid supervisor pk'))
+
+        candidates_ids = supervisor.supervised_time_sheets.all().values_list('job_offer__candidate_contact',
+                                                                             flat=True) \
+                                                                .distinct()
+        candidates = CandidateContact.objects.filter(pk__in=candidates_ids)
+
+        return self._paginate(request, serializers.CandidateContactSerializer, candidates)
 
 
 class SubcontractorViewset(BaseApiViewset):
@@ -409,3 +426,20 @@ class FormalityViewset(BaseApiViewset):
         if personal_id:
             Formality.objects.update_or_create(candidate_contact_id=candidate_contact, country_id=country,
                                                defaults={'personal_id': personal_id})
+
+
+class CandidateStatisticsViewset(BaseApiViewset):
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        return qs.filter(contact__user=self.request.user)
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        context.update(
+            {
+                "from_date": self.request.query_params.get('started_at_0', date.today().replace(day=1)),
+                "to_date": self.request.query_params.get('started_at_1', date.today())
+            }
+        )
+        return context

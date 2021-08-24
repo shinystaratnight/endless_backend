@@ -1,3 +1,5 @@
+from rest_framework.permissions import AllowAny
+
 from r3sourcer.apps.candidate.api.serializers import VisaTypeSerializer
 from r3sourcer.apps.candidate.api.viewsets import VisaTypeViewset
 from r3sourcer.apps.core.api.router import router
@@ -28,11 +30,19 @@ class SkillRelEndpoint(core_endpoints.ApiEndpoint):
     filter_class = candidate_filters.SkillRelFilter
 
 
+class SkillRateEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.SkillRate
+    serializer = candidate_serializers.SkillRateSerializer
+    filter_class = candidate_filters.SkillRateFilter
+
+
 class TagRelEndpoint(core_endpoints.ApiEndpoint):
 
     model = candidate_models.TagRel
     serializer = candidate_serializers.TagRelSerializer
     filter_class = candidate_filters.TagRelFilter
+    permission_classes = [AllowAny]
 
 
 class SubcontractorEndpoint(core_endpoints.ApiEndpoint):
@@ -84,10 +94,18 @@ class FormalityEndpoint(core_endpoints.ApiEndpoint):
     filter_class = candidate_filters.FormalityFilter
 
 
+class CandidateStatisticsEndpoint(core_endpoints.ApiEndpoint):
+
+    model = candidate_models.CandidateContact
+    base_viewset = candidate_viewsets.CandidateStatisticsViewset
+    serializer = candidate_serializers.CandidateStatisticsSerializer
+
+
 router.register(endpoint=VisaTypeEndpoint())
 router.register(endpoint=SuperannuationFundEndpoint())
 router.register(endpoint=CandidateContactEndpoint())
 router.register(endpoint=SubcontractorEndpoint())
+router.register(endpoint=SkillRateEndpoint())
 router.register(endpoint=TagRelEndpoint())
 router.register(endpoint=SkillRelEndpoint())
 router.register(candidate_models.InterviewSchedule)
@@ -96,3 +114,4 @@ router.register(endpoint=SubcontractorCandidateRelationEndpoint())
 router.register(endpoint=CandidateLocationEndpoint(), url='candidate/location')
 router.register(endpoint=SkillRateCoefficientRelEndpoint())
 router.register(endpoint=FormalityEndpoint())
+router.register(endpoint=CandidateStatisticsEndpoint(), url='candidate/statistics')

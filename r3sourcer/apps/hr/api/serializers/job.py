@@ -1,5 +1,6 @@
 from datetime import date, datetime, timedelta
 
+import logging
 from django.conf import settings
 from django.db.models import Q, Max
 from django.utils.translation import ugettext_lazy as _
@@ -14,6 +15,7 @@ from r3sourcer.apps.hr.utils import utils as hr_utils, job as hr_job_utils
 from r3sourcer.apps.logger.main import endless_logger
 from r3sourcer.helpers.datetimes import utc_now
 
+logger = logging.getLogger(__name__)
 
 class FillinAvailableMixin:
 
@@ -280,6 +282,10 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             }
         ]
 
+    def __init__(self, *args, **kwargs):
+        many = kwargs.pop('many', True)
+        super(JobOfferSerializer, self).__init__(many=many, *args, **kwargs)
+
     def get_candidate_rate(self, obj):
         if not obj:
             return None
@@ -403,46 +409,27 @@ class ShiftDateSerializer(core_serializers.UUIDApiSerializerMixin,
                           core_serializers.ApiBaseModelSerializer):
     method_fields = (
         *core_serializers.UUIDApiSerializerMixin.method_fields,
+        'workers_details',
     )
 
     class Meta:
         model = hr_models.ShiftDate
-        fields = (
-            '__all__'
-        )
-
-
-class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
-                      core_serializers.ApiBaseModelSerializer):
-
-    method_fields = (
-        *core_serializers.UUIDApiSerializerMixin.method_fields,
-        'is_fulfilled',
-        'workers_details',
-        'can_delete',
-    )
-
-    class Meta:
-        model = hr_models.Shift
-        fields = (
-            '__all__', {
-                'date': ('__all__', {
+        fields = ('__all__', {
                     'job': ('id',
-                            'jobsite',
+                            {'jobsite': ('id', 'short_name')},
                             'default_shift_starting_time',
                             {'position': ['id', {'name': ('name', {'translations': ('language', 'value')})},
                                           ]},
                             'notes'),
-                }),
-            }
-        )
+                })
 
-    def get_is_fulfilled(self, obj):  # pragma: no cover
-        return obj and (obj.is_fulfilled_annotated if hasattr(obj, 'is_fulfilled_annotated') else obj.is_fulfilled())
+    def __init__(self, *args, **kwargs):
+        many = kwargs.pop('many', True)
+        super(ShiftDateSerializer, self).__init__(many=many, *args, **kwargs)
 
     def get_workers_details(self, obj):
         latest = hr_models.JobOffer.objects\
-            .filter(shift=obj) \
+            .filter(shift__date=obj) \
             .values('candidate_contact') \
             .annotate(latest_date=Max('updated_at'))
 
@@ -468,6 +455,51 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
             'undefined': result.get(hr_models.JobOffer.STATUS_CHOICES.undefined, []),
         }
 
+    def create(self, validated_data):
+        existing_date = hr_models.ShiftDate.objects.filter(
+            shift_date=validated_data['shift_date'],
+            job=validated_data['job'],
+        ).first()
+
+        if not existing_date:
+            return super(ShiftDateSerializer, self).create(validated_data=validated_data)
+        return existing_date
+
+
+class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
+                      core_serializers.ApiBaseModelSerializer):
+
+    method_fields = (
+        *core_serializers.UUIDApiSerializerMixin.method_fields,
+        'is_fulfilled',
+        'workers_details',
+        'can_delete',
+    )
+
+    class Meta:
+        model = hr_models.Shift
+        fields = (
+            '__all__', {
+                'date': ('id', 'shift_date'),
+            }
+        )
+
+    def get_is_fulfilled(self, obj):  # pragma: no cover
+        return obj and (obj.is_fulfilled_annotated if hasattr(obj, 'is_fulfilled_annotated') else obj.is_fulfilled())
+
+    def get_workers_details(self, obj):
+        qs = hr_models.JobOffer.objects.filter(shift=obj)
+
+        accepted = qs.filter(status=hr_models.JobOffer.STATUS_CHOICES.accepted).count()
+        cancelled = qs.filter(status=hr_models.JobOffer.STATUS_CHOICES.cancelled).count()
+        undefined = qs.filter(status=hr_models.JobOffer.STATUS_CHOICES.undefined).count()
+
+        return {
+            'accepted': accepted,
+            'cancelled': cancelled,
+            'undefined': undefined,
+        }
+
     def get_can_delete(self, obj):  # pragma: no cover
         return not obj.job_offers.exists()
 
@@ -475,9 +507,21 @@ class ShiftSerializer(core_serializers.UUIDApiSerializerMixin,
         shift_date = validated_data['date']
         shift_time = validated_data['time']
 
-        is_another_shift = self.instance and self.instance.time != shift_time
+        # we should not allow another shift to overlap existing accepted shift
+        # creating new shift: check if there is another shift was accepted at the same time
+        overlapped_shifts = hr_models.JobOffer.objects.filter(
+            status__in=[
+                hr_models.JobOffer.STATUS_CHOICES.accepted
+            ]
+        ).filter(
+            shift__time=shift_time,
+            shift__date=shift_date
+        )
+        # updating existing shift: same query excluding existing shift
+        if self.instance:
+            overlapped_shifts = overlapped_shifts.exclude(shift=self.instance)
 
-        if (not self.instance or is_another_shift) and shift_date.shifts.filter(time=shift_time).exists():
+        if overlapped_shifts.exists():
             raise exceptions.ValidationError({'time': _('Shift time must be unique')})
 
         return validated_data
@@ -641,13 +685,22 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
     def get_hide_text(self, obj):
         return not self.get_hide_buttons(obj)
 
+    @staticmethod
+    def get_status_tuple(status, additional_text=None):
+        if additional_text:
+            return (
+                status,
+                hr_models.JobOffer.CANDIDATE_STATUS_CHOICES[status].format(additional_text=additional_text)
+            )
+        return (status, hr_models.JobOffer.CANDIDATE_STATUS_CHOICES[status])
+
     def get_status(self, obj):
         if obj.status == hr_models.JobOffer.STATUS_CHOICES.undefined:
-            return ' '
+            return self.get_status_tuple(obj.status)
 
         last_change = endless_logger.get_recent_field_change(hr_models.JobOffer, obj.id, 'status')
         if not last_change:
-            return hr_models.JobOffer.STATUS_CHOICES[obj.status]
+            return self.get_status_tuple(obj.status)
 
         updated_by_id = last_change['updated_by']
         system_user = get_default_user()
@@ -658,22 +711,28 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         jobsite_contact = obj.job.jobsite.primary_contact
 
         if obj.is_quota_filled() or (reply_sms and reply_sms.is_positive_answer() and not obj.is_accepted()):
-            return _('Already filled')
+            return self.get_status_tuple(hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.already_filled)
 
         if obj.is_cancelled():
             if str(obj.candidate_contact.contact.user.id) == updated_by_id:
-                return _('Declined by Candidate')
+                return self.get_status_tuple(
+                    hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.declined_by_candidate)
             elif str(system_user.id) == updated_by_id:
                 if reply_sms and reply_sms.is_negative_answer():
-                    return _('Declined by Candidate')
+                    return self.get_status_tuple(
+                        hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.declined_by_candidate)
                 else:
-                    return _('Cancelled')
+                    return self.get_status_tuple(
+                        hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.cancelled)
             elif jobsite_contact and str(jobsite_contact.contact.user.id) == updated_by_id:
-                return _('Cancelled by Job Site Contact')
+                return self.get_status_tuple(
+                    hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.cancelled_by_job_site_contact)
             else:
-                return _('Cancelled by {name}').format(name=core_models.User.objects.get(id=updated_by_id))
+                return self.get_status_tuple(
+                    hr_models.JobOffer.CANDIDATE_STATUS_CHOICES.cancelled_by,
+                    additional_text=core_models.User.objects.get(id=updated_by_id))
 
-        return hr_models.JobOffer.STATUS_CHOICES[obj.status]
+        return self.get_status_tuple(obj.status)
 
     def get_status_icon(self, obj):
         return obj.status == hr_models.JobOffer.STATUS_CHOICES.accepted
@@ -925,3 +984,28 @@ class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
             })
 
         return validated_data
+
+
+class JobRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = hr_models.JobRate
+        fields = (
+            '__all__',
+        )
+
+    def validate(self, data):
+        job = data.get('job')
+        worktype = data.get('worktype')
+        skill_rate_range = job.position.skill_rate_ranges.filter(worktype=worktype).first()
+        if skill_rate_range:
+            lower_limit = skill_rate_range.lower_rate_limit
+            upper_limit = skill_rate_range.upper_rate_limit
+            is_lower = lower_limit and data.get('rate') < lower_limit
+            is_upper = upper_limit and data.get('rate') > upper_limit
+            if is_lower or is_upper:
+                raise exceptions.ValidationError({
+                    'rate': _('Rate should be between {} and {}')
+                        .format(lower_limit, upper_limit)
+                })
+
+        return data

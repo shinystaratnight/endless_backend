@@ -11,54 +11,6 @@ from r3sourcer.apps.pricing.models import (
 )
 from r3sourcer.helpers.datetimes import tz2utc, date2utc_date
 
-
-def calc_worked_delta(timesheet):
-    """
-    Calculate worked hours from time sheet.
-
-    :param timesheet: object TimeSheet
-    :return: timedelta
-    """
-
-    if not timesheet.shift_ended_at:
-        return timedelta()
-
-    if timesheet.shift_ended_at < timesheet.shift_started_at:
-        timesheet.shift_ended_at += timedelta(hours=12)
-        timesheet.save(update_fields=['shift_ended_at'])
-
-    delta = timesheet.shift_ended_at - timesheet.shift_started_at
-
-    if timesheet.break_started_at and timesheet.break_ended_at:
-        if timesheet.break_started_at.date() < timesheet.shift_started_at.date():
-            timesheet.break_started_at += timedelta(days=1)
-
-        if timesheet.break_started_at < timesheet.shift_started_at:
-            timesheet.break_started_at += timedelta(hours=12)
-
-        if timesheet.break_ended_at < timesheet.shift_started_at:
-            timesheet.break_ended_at += timedelta(hours=12)
-
-        if timesheet.break_started_at > timesheet.shift_ended_at \
-                or timesheet.break_ended_at > timesheet.shift_ended_at:
-            break_delta = timesheet.break_ended_at - timesheet.break_started_at
-
-        elif timesheet.break_ended_at >= timesheet.break_started_at:
-            break_delta = timesheet.break_ended_at - timesheet.break_started_at
-            timesheet.break_ended_at = timesheet.break_ended_at
-            timesheet.save(
-                update_fields=['break_started_at', 'break_ended_at']
-            )
-        else:
-            break_delta = timedelta()
-    else:
-        break_delta = timedelta()
-
-    delta -= break_delta
-
-    return delta
-
-
 class BasePaymentService:
 
     modifier_type = RateCoefficientModifier.TYPE_CHOICES.company
