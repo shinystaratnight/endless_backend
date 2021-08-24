@@ -1343,7 +1343,7 @@ class Company(CategoryFolderMixin,
         )
 
         if position:
-            qs = qs.filter(price_list_rates__skill=position)
+            qs = qs.filter(price_list_rates__worktype__skill_name=position.name)
 
         return qs
 
