@@ -289,7 +289,8 @@ class WorkType(UUIDModel):
         verbose_name=_('Skill Name'),
         related_name='work_types',
         blank=True,
-        null=True
+        null=True,
+        help_text="Fill in this field only for System skill activities"
     )
 
     skill = models.ForeignKey(
@@ -298,7 +299,8 @@ class WorkType(UUIDModel):
         verbose_name=_('Skill'),
         related_name='work_types',
         blank=True,
-        null=True
+        null=True,
+        help_text="Fill in this field only for Company skill activities"
     )
 
     uom = models.ForeignKey(UnitOfMeasurement,
