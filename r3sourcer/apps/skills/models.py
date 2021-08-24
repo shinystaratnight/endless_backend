@@ -413,7 +413,7 @@ class SkillRateRange(MYOBMixin, UUIDModel):
     worktype = models.ForeignKey(
         WorkType,
         related_name="skill_rate_ranges",
-        verbose_name=_("WorkType"),
+        verbose_name=_("Skill Activity"),
     )
     upper_rate_limit = models.DecimalField(
         decimal_places=2,

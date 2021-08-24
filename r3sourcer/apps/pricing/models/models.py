@@ -261,7 +261,7 @@ class PriceListRate(UUIDModel):
     worktype = models.ForeignKey(
         WorkType,
         related_name="price_list_rates",
-        verbose_name=_("WorkType"),
+        verbose_name=_("Skill Activity"),
     )
 
     rate = models.DecimalField(
