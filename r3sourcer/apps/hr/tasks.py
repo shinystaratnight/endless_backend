@@ -367,7 +367,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
         if time_sheet.shift_ended_at_tz:
             shift_ended_at_tz = time_sheet.shift_ended_at_tz
         else:
-            shift_ended_at_tz = time_sheet.shift_start_date + timedelta(hours=8, minutes=30)
+            shift_ended_at_tz = time_sheet.shift_started_at_tz + timedelta(hours=8, minutes=30)
         with transaction.atomic():
             site_url = core_companies_utils.get_site_url(user=contacts['candidate_contact'].contact.user)
             data_dict = dict(
