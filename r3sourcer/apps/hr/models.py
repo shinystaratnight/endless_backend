@@ -1338,6 +1338,14 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         return self.shift_ended_at
 
     @property
+    def planned_shift_end_at_tz(self):
+        return self.utc2local(self.shift_started_at + timedelta(hours=8, minutes=30))
+
+    @property
+    def planned_shift_end_at_utc(self):
+        return self.shift_started_at + timedelta(hours=8, minutes=30)
+
+    @property
     def break_started_at_tz(self):
         return self.utc2local(self.break_started_at)
 
