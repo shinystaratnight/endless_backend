@@ -107,6 +107,6 @@ class WorkTypeFilter(FilterSet):
             skill = None
         queryset = queryset.filter(
             Q(skill_name=skill.name) |
-            Q(skill=skill)
+            Q(skill__name=skill.name)
         )
         return queryset

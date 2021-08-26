@@ -306,7 +306,7 @@ class PriceListRate(UUIDModel):
         super().save(*args, **kwargs)
 
         if self.default_rate:
-            default_rates = self.skill.price_list_rates.filter(default_rate=True).exclude(pk=self.pk)
+            default_rates = self.worktype.price_list_rates.filter(default_rate=True).exclude(pk=self.pk)
             if default_rates:
                 default_rates.update(default_rate=False)
 
