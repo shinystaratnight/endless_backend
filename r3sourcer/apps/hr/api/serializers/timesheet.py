@@ -416,7 +416,7 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
 
 class TimeSheetManualSerializer(ApiBaseModelSerializer):
     method_fields = (
-        'shift_total', 'break_total', 'total_worked', 'time_zone', 'position',
+        'company', 'shift_total', 'break_total', 'total_worked', 'time_zone', 'position',
     )
 
     hours = serializers.BooleanField(required=False)
@@ -444,6 +444,14 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
         Time validation on timesheet save
         """
         return validate_timesheet(self, data)
+
+    def get_company(self, obj):
+            if obj:
+                company = obj.job_offer.job.customer_company
+                return {
+                    'id': company.id, '__str__': str(company),
+                    'supervisor_approved_scheme': company.timesheet_approval_scheme
+                }
 
     def get_position(self, obj):
         if obj:
