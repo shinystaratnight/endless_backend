@@ -38,10 +38,7 @@ class IndustryFilter(FilterSet):
     def filter_by_company_price_lists(self, queryset, name, value):
         return queryset.filter(
             Q(skill_names__skills__company_id=value) |
-            Q(skill_names__skills__price_list_rates__price_list__company_id=value,
-              skill_names__skills__price_list_rates__price_list__effective=True,
-              skill_names__skills__price_list_rates__price_list__valid_from__lte=utc_now(),
-              skill_names__skills__price_list_rates__price_list__valid_until__gte=utc_now())
+            Q(skill_names__skills__active=True)
         ).distinct()
 
 
