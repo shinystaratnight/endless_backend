@@ -22,12 +22,7 @@ class SkillFilter(FilterSet):
         if company and company.type == core_models.Company.COMPANY_TYPES.master:
             return queryset.filter(company=company).distinct()
 
-        return queryset.filter(
-            price_list_rates__price_list__company_id=value,
-            price_list_rates__price_list__effective=True,
-            price_list_rates__price_list__valid_from__lte=company.now_tz,
-            price_list_rates__price_list__valid_until__gte=company.now_tz,
-        )
+        return queryset.filter(active=True)
 
     def exclude_by_candidate(self, queryset, name, value):
         return queryset.filter(active=True).exclude(
