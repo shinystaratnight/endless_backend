@@ -455,7 +455,8 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
             return {'id': position.id, '__str__': str(position), 'translations': translations}
 
     def get_shift_total(self, obj):
-        return format_timedelta(obj.shift_delta)
+        if obj.shift_delta:
+            return format_timedelta(obj.shift_delta)
 
     def get_break_total(self, obj):
         return format_timedelta(obj.break_delta)
