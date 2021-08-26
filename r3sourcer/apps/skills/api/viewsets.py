@@ -3,6 +3,7 @@ from django.db.models import Q
 from r3sourcer.apps.core.api import viewsets as core_viewsets
 from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.pricing.models import PriceListRate
+from r3sourcer.apps.core.models import Company
 
 
 class SkillNameViewSet(core_viewsets.BaseApiViewset):
@@ -38,7 +39,10 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
         qs = super().get_queryset()
 
         all = self.request.query_params.get('all', False) in ['true', '1']
-        company = self.request.user.company
+        try:
+            company =  Company.objects.get(pk=self.request.query_params.get('company'))
+        except:
+            company = self.request.user.company
         industries = company.industries.all()
         price_list_rates = PriceListRate.objects.filter(price_list__company=company).values_list('pk', flat=True)
         print(price_list_rates)
