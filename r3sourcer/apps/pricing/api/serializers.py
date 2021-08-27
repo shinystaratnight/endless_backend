@@ -1,3 +1,4 @@
+from r3sourcer.apps.skills.models import Skill
 from django.contrib.contenttypes.models import ContentType
 from django.utils.translation import ugettext_lazy as _
 from inflector import Inflector, English
@@ -151,6 +152,8 @@ class IndustrySerializer(ApiBaseModelSerializer):
 
 class PriceListRateSerializer(ApiBaseModelSerializer):
 
+    method_fields = ['skill']
+
     class Meta:
         model = pricing_models.PriceListRate
         fields = ('__all__',
@@ -160,7 +163,7 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
 
     def validate(self, data):
         worktype = data.get('worktype', None)
-        skill_rate_range = worktype.skill_rate_ranges.filter(worktype=worktype).first()
+        skill_rate_range = worktype.skill_rate_ranges.last()
         if skill_rate_range:
             lower_limit = skill_rate_range.price_list_lower_rate_limit
             upper_limit = skill_rate_range.price_list_upper_rate_limit
@@ -173,3 +176,9 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
                 })
 
         return data
+
+    def get_skill(self, obj):
+        if obj.worktype.skill:
+            return obj.worktype.skill.pk
+        if obj.worktype.skill_name:
+            return Skill.objects.filter(name=obj.worktype.skill_name, company=obj.price_list.company).last().pk
