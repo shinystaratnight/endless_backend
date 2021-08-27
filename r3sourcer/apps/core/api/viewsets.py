@@ -1267,12 +1267,14 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
 
             if has_jobs or has_jobsites or company_contact.supervised_time_sheets.exists():
                 raise ValidationError({'non_field_errors': _('Cannot delete')})
-
-            models.Role.objects.filter(company_contact_rel=instance).delete()
+            # Roles will be deleted according to on_delete=CASCADE
+            # models.Role.objects.filter(company_contact_rel=instance).delete()
 
             # mark user as inactive
             instance.company_contact.contact.user.is_active = False
             instance.company_contact.contact.user.save()
+
+            super().perform_destroy(instance)
 
 
 class TagViewSet(BaseApiViewset):
