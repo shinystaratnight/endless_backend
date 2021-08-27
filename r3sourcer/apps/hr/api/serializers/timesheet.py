@@ -467,10 +467,14 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
             return format_timedelta(obj.shift_delta)
 
     def get_break_total(self, obj):
-        return format_timedelta(obj.break_delta)
+        if obj.break_delta:
+            return format_timedelta(obj.break_delta)
 
     def get_total_worked(self, obj):
-        return format_timedelta(obj.shift_delta - obj.break_delta)
+        if obj.shift_delta and obj.break_delta:
+            return format_timedelta(obj.shift_delta - obj.break_delta)
+        else:
+            return obj.shift_delta
 
     def get_time_zone(self, obj):
         return obj.tz.zone
