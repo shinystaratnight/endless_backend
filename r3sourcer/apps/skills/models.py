@@ -1,10 +1,14 @@
+from datetime import date
+from r3sourcer.apps.candidate.tests.conftest import price_list
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.db.models.query_utils import Q
 from django.db.models.signals import post_save
 from django.utils.translation import ugettext_lazy as _
 
 from r3sourcer.apps.core.mixins import MYOBMixin
 from r3sourcer.apps.core.models import Company, UnitOfMeasurement
+from r3sourcer.apps.pricing.models import PriceListRate
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
 
@@ -178,6 +182,18 @@ class Skill(MYOBMixin, UUIDModel):
 
         return name[:6]
 
+    def is_priced(self):
+        worktypes = WorkType.objects.filter(Q(skill=self) | Q(skill_name=self.name))
+        if worktypes:
+            active_price_rates = PriceListRate.objects.filter(price_list__company=self.company,
+                                                              price_list__effective=True,
+                                                              price_list__valid_from__lte=date.today(),
+                                                              price_list__valid_until__gte=date.today(),
+                                                              worktype__in=worktypes,
+                                                              )
+            if active_price_rates.exists():
+                return True
+        return False
 
     @classmethod
     def owned_by_lookups(cls, owner):

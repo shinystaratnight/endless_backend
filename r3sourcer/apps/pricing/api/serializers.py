@@ -181,4 +181,6 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
         if obj.worktype.skill:
             return obj.worktype.skill.pk
         if obj.worktype.skill_name:
-            return Skill.objects.filter(name=obj.worktype.skill_name, company=obj.price_list.company).last().pk
+            return Skill.objects.filter(name=obj.worktype.skill_name,
+                                        company=obj.price_list.company) \
+                                .last().pk

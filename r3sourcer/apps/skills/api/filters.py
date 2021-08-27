@@ -19,10 +19,14 @@ class SkillFilter(FilterSet):
     def filter_by_company_price_lists(self, queryset, name, value):
         company = core_models.Company.objects.filter(id=value).first()
 
-        if company and company.type == core_models.Company.COMPANY_TYPES.master:
-            return queryset.filter(company=company).distinct()
+        queryset = queryset.filter(company=company).distinct()
 
-        return queryset.filter(active=True)
+        if company and company.type == core_models.Company.COMPANY_TYPES.master:
+            return queryset
+
+        priced_skill_ids = [skill.id for skill in queryset if skill.is_priced()]
+
+        return queryset.filter(id__in=priced_skill_ids)
 
     def exclude_by_candidate(self, queryset, name, value):
         return queryset.filter(active=True).exclude(

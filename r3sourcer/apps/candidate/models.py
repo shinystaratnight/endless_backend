@@ -16,7 +16,6 @@ from r3sourcer.apps.core.models import CompanyContactRelationship, UnitOfMeasure
 from r3sourcer.apps.core.utils.companies import get_site_master_company, get_site_url
 from r3sourcer.apps.core.utils.user import get_default_user
 from r3sourcer.apps.core.workflow import WorkflowProcess
-from r3sourcer.apps.skills.models import WorkType
 from r3sourcer.apps.login.models import TokenLogin
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
@@ -772,8 +771,7 @@ class SkillRel(UUIDModel):
 
     @property
     def hourly_rate(self):
-        hourly_work = WorkType.objects.filter(name='Hourly work',
-                                              skill_name=self.skill.name) \
+        hourly_work = self.skill.name.work_types.filter(name='Hourly work') \
                                       .first()
         skill_rate = self.skill_rates.filter(worktype=hourly_work).first()
         return skill_rate.rate if skill_rate else None
@@ -799,7 +797,7 @@ class SkillRate(UUIDModel):
     )
 
     worktype = models.ForeignKey(
-        WorkType,
+        'skills.WorkType',
         related_name="skill_rates",
         verbose_name=_("Type of work"),
     )
