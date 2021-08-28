@@ -1,5 +1,4 @@
 from datetime import date
-from r3sourcer.apps.candidate.tests.conftest import price_list
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.db.models.query_utils import Q
@@ -370,6 +369,12 @@ class WorkType(UUIDModel):
             return True
         else:
             return False
+
+    def get_skill_for_company(self, company):
+        if self.skill:
+            return self.skill
+        else:
+            return self.skill_name.skills.filter(company=company).first()
 
     def translation(self, language):
         """ WorkType translation getter """

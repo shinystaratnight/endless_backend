@@ -11,10 +11,11 @@ class SkillFilter(FilterSet):
     exclude = UUIDFilter(method='exclude_by_candidate')
     exclude_pricelist = UUIDFilter(method='exclude_by_pricelist')
     industry = UUIDFilter(method='filter_by_industry')
+    active = BooleanFilter(method='filter_by_active')
 
     class Meta:
         model = skills_models.Skill
-        fields = ['company', 'active']
+        fields = ['company']
 
     def filter_by_company_price_lists(self, queryset, name, value):
         company = core_models.Company.objects.filter(id=value).first()

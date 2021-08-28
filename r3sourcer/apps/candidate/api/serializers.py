@@ -1,4 +1,3 @@
-from datetime import timedelta
 from decimal import Decimal
 
 from django.db.models import Avg
@@ -55,22 +54,6 @@ class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Api
             'score': {'max_value': Decimal(5)},
         }
 
-    # def validate(self, data):
-    #     skill = data.get('skill')
-    #     default_uom = core_models.UnitOfMeasurement.objects.get(default=True)
-    #     skill_rate_range = skill.skill_rate_ranges.filter(uom=default_uom, worktype=None).first()
-    #     if skill_rate_range and data.get('hourly_rate'):
-    #         lower_limit = skill_rate_range.lower_rate_limit
-    #         upper_limit = skill_rate_range.upper_rate_limit
-    #         is_lower = lower_limit and data.get('hourly_rate') < lower_limit
-    #         is_upper = upper_limit and data.get('hourly_rate') > upper_limit
-    #         if is_lower or is_upper:
-    #             raise exceptions.ValidationError({
-    #                 'rate': _('Hourly rate should be between {} and {}')
-    #                     .format(lower_limit, upper_limit)
-    #             })
-    #     return data
-
     def create(self, validated_data):
         default_rate = validated_data.pop('default_rate', None)
         # create SkillRel
@@ -97,7 +80,9 @@ class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Ap
 
     def validate(self, data):
         skill_rel = data.get('skill_rel')
-        worktype = data.get('worktype', None)
+        worktype = data.get('worktype')
+
+        # check if candidate rate in skill_rate_range
         skill_rate_range = skill_rel.skill.skill_rate_ranges.filter(worktype=worktype).first()
         if skill_rate_range:
             lower_limit = skill_rate_range.lower_rate_limit
