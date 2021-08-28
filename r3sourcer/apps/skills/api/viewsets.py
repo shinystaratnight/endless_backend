@@ -1,7 +1,7 @@
 from django.db.models import Q
 
 from r3sourcer.apps.core.api import viewsets as core_viewsets
-from r3sourcer.apps.skills.models import Skill
+from r3sourcer.apps.skills.models import Skill, SkillRateRange
 from r3sourcer.apps.pricing.models import PriceListRate
 from r3sourcer.apps.core.models import Company
 
@@ -38,17 +38,25 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
     def get_queryset(self):
         qs = super().get_queryset()
 
-        all = self.request.query_params.get('all', False) in ['true', '1']
+        priced = self.request.query_params.get('priced', False) in ['true', '1']
+        limited = self.request.query_params.get('limited', False) in ['true', '1']
         try:
             company =  Company.objects.get(pk=self.request.query_params.get('company'))
         except:
             company = self.request.user.company
         industries = company.industries.all()
-        price_list_rates = PriceListRate.objects.filter(price_list__company=company).values_list('pk', flat=True)
         qs = qs.filter(Q(skill_name__industry__in=industries) |
                        Q(skill__company=company))
-        if not all:
+        if priced:
+            # limit skill activities which have Price_list_rate
+            price_list_rates = PriceListRate.objects.filter(price_list__company=company) \
+                                                    .values_list('pk', flat=True)
             qs = qs.filter(price_list_rates__in=price_list_rates)
+
+        if limited:
+            # limit skill activities which have skill_rate_range
+            rate_ranges_exists = SkillRateRange.objects.filter(skill__company=company.get_closest_master_company())
+            qs =qs.filter(skill_rate_ranges__in=rate_ranges_exists)
 
         if self.request.query_params.get('ordering'):
             ordering = self.request.query_params.get('ordering')
