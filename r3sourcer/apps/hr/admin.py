@@ -37,7 +37,7 @@ class JobRateInline(admin.TabularInline):
 
 class JobAdmin(admin.ModelAdmin):
     list_display = ('jobsite', 'position')
-    search_fields = ('jobsite', 'position')
+    search_fields = ('jobsite__short_name', 'position__name__name')
     inlines = [JobRateInline]
 
 
