@@ -452,17 +452,8 @@ class Job(core_models.AbstractBaseOrder):
 
     @workflow_function
     def has_active_price_list_and_rate(self):
-        if self.customer_company.type == core_models.Company.COMPANY_TYPES.master:
-            return True
-
-        return self.customer_company.price_lists.filter(
-            models.Q(
-                price_list_rates__skill=self.position,
-                price_list_rates__rate__gt=0
-            ),
-            models.Q(valid_until__gte=self.now_utc.date()) | models.Q(valid_until__isnull=True),
-            effective=True, valid_from__lte=self.now_utc.date(),
-        ).exists()
+        # this is implemented in skill queryset
+        return True
     has_active_price_list_and_rate.short_description = _('Customer active price list for skill')
 
     @workflow_function
