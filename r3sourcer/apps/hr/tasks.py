@@ -428,6 +428,11 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 recipient = time_sheet.supervisor
 
             master_company = time_sheet.master_company
+            if time_sheet.shift_ended_at:
+                shift_ended_at = time_sheet.shift_ended_at
+            else:
+                shift_ended_at = time_sheet.shift_started_at + timedelta(hours=8, minutes=30)
+
             if candidate.message_by_sms:
                 try:
                     sms_interface = get_sms_service()
@@ -435,7 +440,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                     logger.exception('Cannot load SMS service')
                 else:
                     tpl_name = events_dict[event]['tpl_name']
-                    if time_sheet.shift_ended_at.date() != utc_now().date():
+                    if shift_ended_at.date() != utc_now().date():
                         tpl_name = events_dict[event].get('old_tpl_name', tpl_name)
 
                     sms_interface.send_tpl(recipient.contact,
@@ -452,7 +457,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                     logger.exception('Cannot load Email service')
                 else:
                     tpl_name = events_dict[event]['tpl_name']
-                    if time_sheet.shift_ended_at.date() != utc_now().date():
+                    if shift_ended_at.date() != utc_now().date():
                         tpl_name = events_dict[event].get('old_tpl_name', tpl_name)
 
                     email_interface.send_tpl(recipient.contact,
