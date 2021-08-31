@@ -1,33 +1,26 @@
 from django.db.models import Q
-from django_filters import UUIDFilter, BooleanFilter
-from django_filters.rest_framework import FilterSet
+from django_filters import UUIDFilter
+from django_filters.rest_framework import FilterSet, BooleanFilter
 
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.skills import models as skills_models
 
 
 class SkillFilter(FilterSet):
-    company = UUIDFilter(method='filter_by_company_price_lists')
+    priced = BooleanFilter(method='filter_by_priced')
     exclude = UUIDFilter(method='exclude_by_candidate')
     exclude_pricelist = UUIDFilter(method='exclude_by_pricelist')
     industry = UUIDFilter(method='filter_by_industry')
-    active = BooleanFilter(method='filter_by_active')
 
     class Meta:
         model = skills_models.Skill
         fields = ['company']
 
-    def filter_by_company_price_lists(self, queryset, name, value):
-        company = core_models.Company.objects.filter(id=value).first()
-
-        queryset = queryset.filter(company=company).distinct()
-
-        if company and company.type == core_models.Company.COMPANY_TYPES.master:
+    def filter_by_priced(self, queryset, name, value):
+        if value:
+            return queryset.filter(id__in=[skill.id for skill in queryset if skill.is_priced()])
+        else:
             return queryset
-
-        priced_skill_ids = [skill.id for skill in queryset if skill.is_priced()]
-
-        return queryset.filter(id__in=priced_skill_ids)
 
     def exclude_by_candidate(self, queryset, name, value):
         return queryset.filter(active=True).exclude(

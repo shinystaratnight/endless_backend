@@ -291,13 +291,16 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             return None
 
         if obj.shift.hourly_rate:
-            candidate_rate = obj.shift.hourly_rate
+            return obj.shift.hourly_rate
         elif obj.shift.date.hourly_rate:
-            candidate_rate = obj.shift.date.hourly_rate
-        else:
-            candidate_rate = obj.candidate_contact.get_candidate_rate_for_skill(obj.job.position)
-
-        return candidate_rate
+            return obj.shift.date.hourly_rate
+        elif obj.job.get_hourly_rate_for_skill(obj.job.position):
+            return obj.job.get_hourly_rate_for_skill(obj.job.position)
+        elif obj.shift.date.job.hourly_rate_default:
+            return obj.shift.date.job.hourly_rate_default
+        elif obj.candidate_contact.get_candidate_rate_for_skill(obj.job.position):
+            return obj.candidate_contact.get_candidate_rate_for_skill(obj.job.position)
+        return None
 
     def get_client_rate(self, obj):
         if not obj:
