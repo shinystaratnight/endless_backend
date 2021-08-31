@@ -524,7 +524,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
     def get_candidate_rate_for_skill(self, skill, **skill_kwargs):
         # search skill activity rate in candidate's skill activity rates
         candidate_skill = self.candidate_skills.filter(
-            skill=skill, **skill_kwargs
+            skill__name=skill.name, **skill_kwargs
         ).first()
         if candidate_skill:
             candidate_skill_rate = candidate_skill.get_valid_rate()
