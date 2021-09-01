@@ -28,9 +28,15 @@ def validate_timesheet(self, data):
     Time validation on timesheet save
     """
 
-    hours = data.get('hours', True)
+    hours = data.get('hours', None)
 
-    if self.instance.pk:
+    if self.instance.pk and (hours or self.instance.candidate_submitted_at):
+        if hours == None:
+            if data['wage_type'] == 1:
+                hours = False
+            else:
+                hours = True
+
         # validate sent fields
         if hours:
             if data.get('no_break'):
@@ -80,8 +86,10 @@ def validate_timesheet(self, data):
                 if (shift_ended_at - shift_started_at) - break_duration <= timedelta(0):
                     raise serializers.ValidationError({'shift_started_at':
                         _('Total working hours must be longer than 0 hours.')})
-            data['wage_type'] = 0
-
+                data['wage_type'] = 0
+            else:
+                raise serializers.ValidationError({'shift_started_at':
+                    _('You need to specify shift end time.')})
         else:
             hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
                                                     skill_name=self.instance.job_offer.job.position.name) \
