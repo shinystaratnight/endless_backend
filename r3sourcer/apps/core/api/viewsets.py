@@ -1161,7 +1161,7 @@ class FormViewSet(BaseApiViewset):
             try:
                 bank_account_layout = BankAccountLayoutCountry.objects.get(country=candidate.contact.active_address.country, default=True).layout
             except BankAccountLayoutCountry.DoesNotExist:
-                raise exceptions.ValidationError(candidate.contact.active_address.country)
+                raise exceptions.ValidationError({"country": _("Bank account layout doesn't exist for country {}".format(candidate.contact.active_address.country.name))})
             with transaction.atomic():
                 bank_account = ContactBankAccount(
                     contact=candidate.contact,
@@ -1173,7 +1173,7 @@ class FormViewSet(BaseApiViewset):
                         try:
                             field = BankAccountField.objects.get(name=key[key.rfind('__')+2:])
                         except BankAccountField.DoesNotExist:
-                            raise exceptions.ValidationError(key)
+                            raise exceptions.ValidationError({"{}".format(key): _("Field doesn't exist ")})
                         field_serializer = ContactBankAccountFieldSerializer(data={'field_id': field.id, 'value': value})
                         if field_serializer.is_valid(raise_exception=True):
                             field_serializer.create(dict(bank_account_id=str(bank_account.pk), **field_serializer.data))
