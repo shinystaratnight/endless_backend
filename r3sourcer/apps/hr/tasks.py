@@ -1168,7 +1168,7 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
 
             if timesheet.wage_type == 1:
                 for ts_rate in timesheet.timesheet_rates.all():
-                    if ts_rate.worktype.name in activities[index]:
+                    if ts_rate.worktype.translation(company_language) in activities[index]:
                         activities[index][ts_rate.worktype.translation(company_language)] += ts_rate.value
                     else:
                         activities[index][ts_rate.worktype.translation(company_language)] = ts_rate.value
