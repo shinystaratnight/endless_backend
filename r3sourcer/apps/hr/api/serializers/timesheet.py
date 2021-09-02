@@ -32,7 +32,7 @@ def validate_timesheet(self, data):
 
     if self.instance.pk and (hours or self.instance.candidate_submitted_at):
         if hours == None:
-            if data['wage_type'] == 1:
+            if data.get('wage_type') == 1 or self.instance.wage_type == 1:
                 hours = False
             else:
                 hours = True
