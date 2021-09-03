@@ -30,7 +30,7 @@ def validate_timesheet(self, data):
 
     hours = data.get('hours', None)
 
-    if self.instance.pk and (hours or self.instance.candidate_submitted_at):
+    if self.instance.pk and (hours != None or self.instance.candidate_submitted_at):
         if hours == None:
             if data.get('wage_type') == 1 or self.instance.wage_type == 1:
                 hours = False
@@ -99,6 +99,7 @@ def validate_timesheet(self, data):
             data['wage_type'] = 1
 
         return data
+    raise exceptions.ValidationError({'non_field_errors': _("Timesheet data is not valid")})
 
 
 class ValidateApprovalScheme(serializers.Serializer):
@@ -165,7 +166,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
         'break_started_ended', 'job', 'related_sms',
         'candidate_filled', 'supervisor_approved', 'resend_sms_candidate', 'resend_sms_supervisor', 'candidate_sms',
         'candidate_sms_old', 'candidate_submit_hidden', 'evaluated', 'myob_status', 'show_sync_button', 'supervisor_sms',
-        'invoice', 'shift', 'evaluation', 'time_zone', 'is_30_days_old',
+        'invoice', 'shift', 'evaluation', 'time_zone', 'is_30_days_old', 'default_shift_times'
     )
 
     class Meta:
@@ -219,6 +220,13 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
                                 'value',
                                 {'worktype': ('id', 'translations')}),
         }
+
+    def get_default_shift_times(self, obj):
+            return {'default_shift_start_time': settings.DEFAULT_SHIFT_START_TIME,
+                    'default_shift_end_time': settings.DEFAULT_SHIFT_END_TIME,
+                    'default_break_start_time': settings.DEFAULT_BREAK_START_TIME,
+                    'default_break_end_time': settings.DEFAULT_BREAK_END_TIME
+                    }
 
     def get_company(self, obj):
         if obj:
@@ -425,6 +433,7 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
 class TimeSheetManualSerializer(ApiBaseModelSerializer):
     method_fields = (
         'company', 'shift_total', 'break_total', 'total_worked', 'time_zone', 'position',
+        'default_shift_times'
     )
 
     hours = serializers.BooleanField(required=False)
@@ -486,6 +495,13 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
 
     def get_time_zone(self, obj):
         return obj.tz.zone
+
+    def get_default_shift_times(self, obj):
+            return {'default_shift_start_time': settings.DEFAULT_SHIFT_START_TIME,
+                    'default_shift_end_time': settings.DEFAULT_SHIFT_END_TIME,
+                    'default_break_start_time': settings.DEFAULT_BREAK_START_TIME,
+                    'default_break_end_time': settings.DEFAULT_BREAK_END_TIME
+                    }
 
 
 class TimeSheetRateSerializer(ApiBaseModelSerializer):

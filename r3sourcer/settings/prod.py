@@ -16,7 +16,7 @@ from sentry_sdk.integrations.django import DjangoIntegration
 from sentry_sdk.integrations.celery import CeleryIntegration
 from sentry_sdk.integrations.redis import RedisIntegration
 
-from datetime import timedelta
+from datetime import timedelta, time
 from decimal import Decimal
 
 from django.utils.translation import ugettext_lazy as _
@@ -523,6 +523,11 @@ DEFAULT_PHONE_NUMBER_COUNTRY_CODE = 'AU'
 MAXIMUM_ACCEPTANCE_TEST_PICTURES = 2
 SUBSCRIPTION_START_WORKERS = 5
 SUBSCRIPTION_DEFAULT_DISCOUNT = 0.75
+
+DEFAULT_SHIFT_START_TIME = time(hour=8, minute=0)
+DEFAULT_SHIFT_END_TIME = time(hour=16, minute=30)
+DEFAULT_BREAK_START_TIME = time(hour=12, minute=0)
+DEFAULT_BREAK_END_TIME = time(hour=12, minute=30)
 
 # AWS S3 settings
 AWS_STORAGE_BUCKET_NAME=env('AWS_STORAGE_BUCKET_NAME')
