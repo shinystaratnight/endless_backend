@@ -30,7 +30,7 @@ def validate_timesheet(self, data):
 
     hours = data.get('hours', None)
 
-    if self.instance.pk and (hours or self.instance.candidate_submitted_at):
+    if self.instance.pk and (hours != None or self.instance.candidate_submitted_at):
         if hours == None:
             if data.get('wage_type') == 1 or self.instance.wage_type == 1:
                 hours = False
@@ -99,6 +99,7 @@ def validate_timesheet(self, data):
             data['wage_type'] = 1
 
         return data
+    raise exceptions.ValidationError({'non_field_errors': _("Timesheet data is not valid")})
 
 
 class ValidateApprovalScheme(serializers.Serializer):
