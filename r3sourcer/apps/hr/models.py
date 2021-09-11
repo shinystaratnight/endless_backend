@@ -2667,9 +2667,11 @@ class TimeSheetRate(UUIDModel):
             rate = self.timesheet.job_offer.job.get_rate_for_worktype(self.worktype)
         if not rate:
             # search skill activity rate in skill rate ranges
-            rate = SkillRateRange.objects.filter(worktype=self.worktype,
-                                                 skill=self.timesheet.job_offer.job.position) \
-                                         .last().default_rate
+            skill_rate_range = SkillRateRange.objects.filter(worktype=self.worktype,
+                                                             skill=self.timesheet.job_offer.job.position) \
+                                                     .last()
+            if skill_rate_range:
+                rate = skill_rate_range.default_rate
         return rate if rate else 0
 
     def save(self, *args, **kwargs):
