@@ -2636,6 +2636,11 @@ class TimeSheetRate(UUIDModel):
         max_digits=8,
         decimal_places=2)
 
+    is_hourly = models.BooleanField(
+        default=True,
+        verbose_name=_('Is hourly')
+    )
+
     class Meta:
         verbose_name = _("TimeSheet Rate")
         verbose_name_plural = _("TimeSheet Rates")
@@ -2677,6 +2682,7 @@ class TimeSheetRate(UUIDModel):
     def save(self, *args, **kwargs):
         if not self.rate or self.rate == 0:
             self.rate = self.get_rate()
+        self.is_hourly = self.worktype.is_hourly()
         super().save(*args, **kwargs)
 
 

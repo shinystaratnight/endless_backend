@@ -370,6 +370,11 @@ class WorkType(UUIDModel):
         else:
             return False
 
+    def is_hourly(self):
+        if self.name == self.DEFAULT:
+            return True
+        return False
+
     def get_skill_for_company(self, company):
         if self.skill:
             return self.skill
