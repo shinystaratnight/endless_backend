@@ -165,6 +165,10 @@ class Subscription(CompanyTimeZoneMixin):
                 subscription.active = False
                 subscription.save()
 
+    @classmethod
+    def use_logger(cls):
+        return True
+
 
 class SMSBalance(models.Model):
     company = models.OneToOneField(
