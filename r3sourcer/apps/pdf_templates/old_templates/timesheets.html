@@ -91,11 +91,11 @@
 		</div>
 	</div>
 </header>
-{% for group, t_s in timesheets %}
+{% for group, rates in timesheet_rates %}
 	<h4 class="title">{{ group.0.master_company }}</h4>
 	<table>
 		<caption>{{ group.0 }} {% if group.0.end_date  %} ( expires {{ group.0.end_date|date:'d/m/Y' }} ) {% else %}{% endif %}</caption>
-		{% if group.1 == 0 %}
+		{% if group.1 == True %}
 			<thead>
 				<tr>
 					<th>Candidate</th>
@@ -115,26 +115,26 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for timesheet in t_s %}
+			{% for rate in rates %}
 				<tr>
-					<td>{{ timesheet.candidate_contact }}</td>
-					<td>{{ timesheet.job_offer.job.position.name|translation:user }}</td>
-                    <td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
-                    <td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
- 					<td>{{ timesheet.shift_ended_at|timezone:timesheet.timezone|time:'h:i A' }}</td>
-					<td>{{ timesheet.break_delta|get_hours }}</td>
-					<td>{{ timesheet.base|get_hours }}</td>
-					{% if total_15_coef|index:forloop.parentloop.counter0 %}<td>{{ timesheet.c_1_5x|get_hours }}</td>{% endif %}
-					{% if total_2_coef|index:forloop.parentloop.counter0 %}<td>{{ timesheet.c_2x|get_hours }}</td>{% endif %}
-					<td>{{ timesheet.base|add:timesheet.c_1_5x|add:timesheet.c_2x|get_hours }}</td>
-					{% if total_travel|index:forloop.parentloop.counter0 %}<td>{{ timesheet.travel }}</td>{% endif %}
-					{% if total_meal|index:forloop.parentloop.counter0 %}<td>{{ timesheet.meal }}</td>{% endif %}
-					<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
+					<td>{{ rate.timesheet.candidate_contact }}</td>
+					<td>{{ rate.timesheet.job_offer.job.position.name|translation:user }}</td>
+                    <td>{{ rate.timesheet.shift_started_at|timezone:rate.timesheet.timezone|date:'d/m/Y' }}</td>
+                    <td>{{ rate.timesheet.shift_started_at|timezone:rate.timesheet.timezone|time:'h:i A' }}</td>
+ 					<td>{{ rate.timesheet.shift_ended_at|timezone:rate.timesheet.timezone|time:'h:i A' }}</td>
+					<td>{{ rate.timesheet.break_delta|get_hours }}</td>
+					<td>{{ rate.timesheet.base|get_hours }}</td>
+					{% if total_15_coef|index:forloop.parentloop.counter0 %}<td>{{ rate.timesheet.c_1_5x|get_hours }}</td>{% endif %}
+					{% if total_2_coef|index:forloop.parentloop.counter0 %}<td>{{ rate.timesheet.c_2x|get_hours }}</td>{% endif %}
+					<td>{{ rate.timesheet.base|add:rate.timesheet.c_1_5x|add:rate.timesheet.c_2x|get_hours }}</td>
+					{% if total_travel|index:forloop.parentloop.counter0 %}<td>{{ rate.timesheet.travel }}</td>{% endif %}
+					{% if total_meal|index:forloop.parentloop.counter0 %}<td>{{ rate.timesheet.meal }}</td>{% endif %}
+					<td>{{ rate.timesheet.supervisor }}<br/>{{ rate.timesheet.supervisor.contact.phone_mobile }}<br/>{{rate.timesheet.supervisor_approved_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
 					</td>
-					{% if timesheet.supervisor_signature %}
+					{% if rate.timesheet.supervisor_signature %}
 						<td><img src="{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
 						{% else %}
-						<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
+						<td>{{ rate.timesheet.candidate_contact.contact.phone_mobile }}<br/>{{rate.timesheet.candidate_submitted_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
 						</td>
 					{% endif %}
 				</tr>
@@ -151,7 +151,7 @@
 					<td></td><td></td>
 				</tr>
 			</tbody>
-		{% elif group.1 == 1 %}
+		{% elif group.1 == False %}
 			<thead>
 				<tr>
 					<th>Candidate</th>
@@ -165,25 +165,24 @@
 				</tr>
 			</thead>
 			<tbody>
-			{% for timesheet in t_s %}
-				{% for skill_activity in timesheet.timesheet_rates.all %}
-					<tr>
-						<td>{{ timesheet.candidate_contact }}</td>
-						<td>{{ timesheet.job_offer.job.position.name|translation:user }}</td>
-						<td>{{ timesheet.shift_started_at|timezone:timesheet.timezone|date:'d/m/Y' }}</td>
-						<td>{{ skill_activity.worktype|translation:user}}</td>
-						<td>{{ skill_activity.value}}</td>
-						<td>{{ skill_activity.worktype.uom|translation:user}}</td>
-						<td>{{ timesheet.supervisor }}<br/>{{ timesheet.supervisor.contact.phone_mobile }}<br/>{{timesheet.supervisor_approved_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
+			{% for rate in rates %}
+				<tr>
+					<td>{{ rate.timesheet.candidate_contact }}</td>
+					<td>{{ rate.timesheet.job_offer.job.position.name|translation:user }}</td>
+					<td>{{ rate.timesheet.shift_started_at|timezone:rate.timesheet.timezone|date:'d/m/Y' }}</td>
+					<td>{{ rate.worktype|translation:user}}</td>
+					<td>{{ rate.value}}</td>
+					<td>{{ rate.worktype.uom|translation:user}}</td>
+					<td>{{ rate.timesheet.supervisor }}<br/>{{ rate.timesheet.supervisor.contact.phone_mobile }}<br/>{{rate.timesheet.supervisor_approved_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
+					</td>
+					{% if rate.timesheet.supervisor_signature %}
+						<td><img src="{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
+						{% else %}
+						<td>{{ rate.timesheet.candidate_contact.contact.phone_mobile }}<br/>
+							{{rate.timesheet.candidate_submitted_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
 						</td>
-						{% if timesheet.supervisor_signature %}
-							<td><img src="{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
-							{% else %}
-							<td>{{ timesheet.candidate_contact.contact.phone_mobile }}<br/>{{timesheet.candidate_submitted_at|timezone:timesheet.timezone|date:'d/m/Y h:i A' }}
-							</td>
-						{% endif %}
+					{% endif %}
 					</tr>
-				{% endfor %}
 			{% endfor %}
 			<tr>
 				<td>Total:</td>
