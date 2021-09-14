@@ -9,7 +9,6 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.db import transaction, models
-from django.template.loader import get_template
 from django.utils import formats
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -1059,12 +1058,12 @@ def get_file_from_str(str):
     return pdf_file
 
 
-def timesheets_group_by_job_site(timesheets):
+def group_timsheet_rates(timesheet_rates):
     from itertools import groupby
-    for grouper, group in groupby(timesheets, key=lambda x: (x.job_offer.shift.date.job.jobsite,
-                                                             x.wage_type)):
-        yield grouper, list(group)
 
+    for grouper, group in groupby(timesheet_rates, key=lambda x: (x.timesheet.job_offer.shift.date.job.jobsite,
+                                                                  x.is_hourly)):
+        yield grouper, list(group)
 
 def get_price_list_rate(skill, customer_company):
     price_list_rate = PriceListRate.objects.filter(
@@ -1093,10 +1092,10 @@ def get_value_for_rate_type(coeffs_hours, rate_type):
 def generate_pdf(timesheet_ids, request=None, master_company=None):
     template_slug = 'timesheets-list'
 
-    timesheets = hr_models.TimeSheet.objects.filter(id__in=timesheet_ids).order_by(
-        'job_offer__shift__date__job__jobsite', 'wage_type', 'shift_started_at')
+    timesheet_rates = hr_models.TimeSheetRate.objects.filter(timesheet__pk__in=timesheet_ids).order_by(
+        'timesheet__job_offer__shift__date__job__jobsite', 'is_hourly', 'timesheet__shift_started_at')
     if not master_company:
-        master_company = timesheets[0].master_company
+        master_company = timesheet_rates[0].timesheet.master_company
     if master_company.logo:
         master_logo = get_thumbnail_picture(master_company.logo, 'large')
     company_language = master_company.get_default_lanuage()
@@ -1120,9 +1119,11 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
     total_skill_activities = []
     activities = []
 
+    print(list(group_timsheet_rates(timesheet_rates)))
+
     # calculate total values by groups
     index = 0
-    for group, t_s in timesheets_group_by_job_site(timesheets):
+    for group, rates in group_timsheet_rates(timesheet_rates):
         total_base_units.append(timedelta(0))
         total_15_coef.append(timedelta(0))
         total_2_coef.append(timedelta(0))
@@ -1132,30 +1133,30 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         total_skill_activities.append('')
         activities.append({})
 
-        for timesheet in t_s:
+        for timesheet_rate in rates:
 
-            jobsite = timesheet.job_offer.job.jobsite
+            jobsite = timesheet_rate.timesheet.job_offer.job.jobsite
             industry = jobsite.industry
-            coeffs_hours = coefficient_service.calc(timesheet.master_company,
+            coeffs_hours = coefficient_service.calc(timesheet_rate.timesheet.master_company,
                                                     industry,
                                                     RateCoefficientModifier.TYPE_CHOICES.candidate,
-                                                    timesheet.shift_started_at_tz,
-                                                    timesheet.shift_duration,
-                                                    break_started=timesheet.break_started_at_tz,
-                                                    break_ended=timesheet.break_ended_at_tz)
-            timesheet.coeffs_hours = coeffs_hours
+                                                    timesheet_rate.timesheet.shift_started_at_tz,
+                                                    timesheet_rate.timesheet.shift_duration,
+                                                    break_started=timesheet_rate.timesheet.break_started_at_tz,
+                                                    break_ended=timesheet_rate.timesheet.break_ended_at_tz)
+            timesheet_rate.timesheet.coeffs_hours = coeffs_hours
             name_mapping = {'base': 'base', '1.5': 'c_1_5x', '2': 'c_2x', 'meal': 'meal', 'travel': 'travel'}
 
             for rate_type, value in name_mapping.items():
-                setattr(timesheet, value, get_value_for_rate_type(coeffs_hours, rate_type))
-            if str(timesheet.travel) == '1:00:00':
-                timesheet.travel = 1
+                setattr(timesheet_rate.timesheet, value, get_value_for_rate_type(coeffs_hours, rate_type))
+            if str(timesheet_rate.timesheet.travel) == '1:00:00':
+                timesheet_rate.timesheet.travel = 1
             else:
-                timesheet.travel = 0
-            if str(timesheet.meal) == '1:00:00':
-                timesheet.meal = 1
+                timesheet_rate.timesheet.travel = 0
+            if str(timesheet_rate.timesheet.meal) == '1:00:00':
+                timesheet_rate.timesheet.meal = 1
             else:
-                timesheet.meal = 0
+                timesheet_rate.timesheet.meal = 0
 
             total_base_units[index] += get_value_for_rate_type(coeffs_hours, 'base')
             total_15_coef[index] += get_value_for_rate_type(coeffs_hours, 'c_1_5x')
@@ -1166,19 +1167,18 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
             total_travel[index] += get_value_for_rate_type(coeffs_hours, 'travel')
             total_meal[index] += get_value_for_rate_type(coeffs_hours, 'meal')
 
-            if timesheet.wage_type == 1:
-                for ts_rate in timesheet.timesheet_rates.all():
-                    if ts_rate.worktype.translation(company_language) in activities[index]:
-                        activities[index][ts_rate.worktype.translation(company_language)] += ts_rate.value
-                    else:
-                        activities[index][ts_rate.worktype.translation(company_language)] = ts_rate.value
+            if not timesheet_rate.worktype.is_hourly():
+                if timesheet_rate.worktype.translation(company_language) in activities[index]:
+                    activities[index][timesheet_rate.worktype.translation(company_language)] += timesheet_rate.value
+                else:
+                    activities[index][timesheet_rate.worktype.translation(company_language)] = timesheet_rate.value
         for key, value in activities[index].items():
             total_skill_activities[index] += f'{key}: {value}; '
 
         index += 1
 
     context = {
-        'timesheets': timesheets_group_by_job_site(timesheets),
+        'timesheet_rates': group_timsheet_rates(timesheet_rates),
         'master_company': master_company,
         'master_company_logo': master_logo,
         'total_base_units': total_base_units,
@@ -1197,8 +1197,8 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         name='timesheet',
     )
     file_name = 'timesheet_{}_{}.pdf'.format(
-        str(timesheets[0].id),
-        date_format(timesheets[0].shift_started_at_tz, 'Y_m_d')
+        master_company,
+        date_format(timesheet_rates[0].timesheet.shift_started_at_tz, 'Y_m_d')
     )
     file_obj, created = File.objects.get_or_create(
         folder=folder,
