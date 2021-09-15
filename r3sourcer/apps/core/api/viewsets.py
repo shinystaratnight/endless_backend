@@ -1164,7 +1164,7 @@ class FormViewSet(BaseApiViewset):
             ).order_by('-countries__default').first()
 
             if not bank_account_layout:
-                return ValidationError({"country": _("Bank account layout doesn't exist for country {}".format(master_company.country))})
+                raise exceptions.ValidationError({"country": _("Bank account layout doesn't exist for country {}".format(master_company.country))})
 
             with transaction.atomic():
                 bank_account = ContactBankAccount(
