@@ -24,7 +24,7 @@ from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.api.contact_bank_accounts.serializers import ContactBankAccountFieldSerializer
 from r3sourcer.apps.core.api.fields import ApiBase64FileField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
-from r3sourcer.apps.core.models import BankAccountLayoutCountry, ContactBankAccount, BankAccountField
+from r3sourcer.apps.core.models import BankAccountLayout, ContactBankAccount, BankAccountField
 from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.address import parse_google_address
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
@@ -1158,10 +1158,14 @@ class FormViewSet(BaseApiViewset):
 
         # create bank account
         if candidate:
-            try:
-                bank_account_layout = BankAccountLayoutCountry.objects.get(country=candidate.contact.active_address.country, default=True).layout
-            except BankAccountLayoutCountry.DoesNotExist:
-                raise exceptions.ValidationError({"country": _("Bank account layout doesn't exist for country {}".format(candidate.contact.active_address.country.name))})
+            master_company = get_site_master_company()
+            bank_account_layout = BankAccountLayout.objects.filter(
+                countries__country=master_company.country
+            ).order_by('-countries__default').first()
+
+            if not bank_account_layout:
+                raise exceptions.ValidationError({"country": _("Bank account layout doesn't exist for country {}".format(master_company.country))})
+
             with transaction.atomic():
                 bank_account = ContactBankAccount(
                     contact=candidate.contact,
