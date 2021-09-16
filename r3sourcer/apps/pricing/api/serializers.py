@@ -162,8 +162,9 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
                   },)
 
     def validate(self, data):
+        skill = data.get('skill', None)
         worktype = data.get('worktype', None)
-        skill_rate_range = worktype.skill_rate_ranges.last()
+        skill_rate_range = worktype.skill_rate_ranges.filter(skill=skill).last()
         if skill_rate_range:
             lower_limit = skill_rate_range.price_list_lower_rate_limit
             upper_limit = skill_rate_range.price_list_upper_rate_limit
