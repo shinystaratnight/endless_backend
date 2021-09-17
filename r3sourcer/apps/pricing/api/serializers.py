@@ -161,27 +161,5 @@ class PriceListRateSerializer(ApiBaseModelSerializer):
                    'worktype': ('id', 'name', {'translations': ('language', 'value')}),
                   },)
 
-    def validate(self, data):
-        skill = data.get('skill', None)
-        worktype = data.get('worktype', None)
-        skill_rate_range = worktype.skill_rate_ranges.filter(skill=skill).last()
-        if skill_rate_range:
-            lower_limit = skill_rate_range.price_list_lower_rate_limit
-            upper_limit = skill_rate_range.price_list_upper_rate_limit
-            is_lower = lower_limit and data.get('rate') < lower_limit
-            is_upper = upper_limit and data.get('rate') > upper_limit
-            if is_lower or is_upper:
-                raise exceptions.ValidationError({
-                    'rate': _('Rate should be between {} and {}')
-                        .format(lower_limit, upper_limit)
-                })
-
-        return data
-
     def get_skill(self, obj):
-        if obj.worktype.skill:
-            return obj.worktype.skill.pk
-        if obj.worktype.skill_name:
-            return Skill.objects.filter(name=obj.worktype.skill_name,
-                                        company=obj.price_list.company) \
-                                .last().pk
+        return obj.get_skill()
