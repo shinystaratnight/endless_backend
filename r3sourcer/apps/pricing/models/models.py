@@ -9,7 +9,7 @@ from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
 
-from r3sourcer.apps.core.models import Company, UnitOfMeasurement
+from r3sourcer.apps.core.models import Company
 from r3sourcer.helpers.models.abs import UUIDModel, TimeZoneUUIDModel
 from r3sourcer.apps.pricing.models.rules import all_rules, AllowanceWorkRule
 
@@ -287,7 +287,8 @@ class PriceListRate(UUIDModel):
             instance.save()
 
     def save(self, *args, **kwargs):
-        skill_rate_range = self.worktype.skill_rate_ranges.filter(worktype=self.worktype).first()
+        company = self.price_list.company.get_closest_master_company()
+        skill_rate_range = self.worktype.skill_rate_ranges.filter(skill__company=company).last()
         if skill_rate_range:
             if not self.rate:
                 self.rate = skill_rate_range.price_list_default_rate
@@ -312,6 +313,14 @@ class PriceListRate(UUIDModel):
     def __str__(self):
         return f"{self.worktype}-{self.rate}"
 
+    def get_skill(self):
+        if self.worktype.skill:
+            return self.worktype.skill.pk
+        if self.worktype.skill_name:
+            from r3sourcer.apps.skills.models import Skill
+            return Skill.objects.filter(name=self.worktype.skill_name,
+                                        company=self.price_list.company) \
+                                .last().pk
 
 class PriceListRateCoefficient(UUIDModel):
 
