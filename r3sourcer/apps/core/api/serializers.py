@@ -2029,3 +2029,12 @@ class UomSerializer(ApiBaseModelSerializer):
             'id', 'name', 'short_name', 'default',
             {'translations': ('id', 'language', 'name', 'short_name')},
         )
+
+
+class RoleSerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.Role
+        fields = (
+            'id', 'name',
+            {'company_contact_rel': ('id', 'company', 'company_contact')},
+        )
