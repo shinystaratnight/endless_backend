@@ -67,7 +67,7 @@ class UserAdmin(BaseUserAdmin):
 
     change_form_template = 'loginas/change_form.html'
 
-    filter_horizontal = ('groups',)
+    filter_horizontal = ('groups', 'role')
 
     fieldsets = (
         (_("Roles"), {
