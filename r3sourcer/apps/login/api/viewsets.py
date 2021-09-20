@@ -21,7 +21,7 @@ from rest_framework.response import Response
 
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from r3sourcer.apps.core.api.serializers import RoleSerializer
-from r3sourcer.apps.core.models import Contact, User
+from r3sourcer.apps.core.models import Contact, User, SiteCompany
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.utils import get_host, is_valid_email, is_valid_phone_number
 from r3sourcer.apps.core.views import OAuth2JWTTokenMixin
