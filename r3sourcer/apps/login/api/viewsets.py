@@ -22,7 +22,7 @@ from rest_framework.response import Response
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
 from r3sourcer.apps.core.api.serializers import RoleSerializer
 from r3sourcer.apps.core.models import Contact, User, SiteCompany
-from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.core.utils.companies import get_site_master_company, get_company_domain
 from r3sourcer.apps.core.utils.utils import get_host, is_valid_email, is_valid_phone_number
 from r3sourcer.apps.core.views import OAuth2JWTTokenMixin
 from r3sourcer.apps.login.api.exceptions import TokenAlreadyUsed
@@ -323,10 +323,13 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             request, token_body, 200, redirect_host, username=user.contact.email or user.contact.phone_mobile
         )
 
+        domain = get_company_domain(user.contact.get_closest_company())
+
         response_data = {
             'status': 'success',
             'message': _('You are logged in as {user}').format(user=str(user.contact)),
             **token_content,
+            'domain': domain,
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
