@@ -153,16 +153,11 @@ def charge_for_sms(company_id, amount, sms_balance_id):
 
 @shared_task
 def sync_subscriptions():
-    # from contextlib import suppress
-    # with suppress(InvalidRequestError):
-    for subscription in Subscription.objects.filter(active=True):
-        subscription.sync_status()
-        subscription.update_permissions_on_status()
-        subscription.sync_periods()
-        subscription.save()
-    for subscription in Subscription.objects.filter(active=False):
-        subscription.sync_status()
-        subscription.update_permissions_on_status()
+    for subscription in Subscription.objects.all():
+        stripe_subscription = subscription.get_stripe_subscription()
+        subscription.sync_status(stripe_subscription)
+        subscription.sync_periods(stripe_subscription)
+        subscription.update_user_permissions(stripe_subscription)
         subscription.save()
 
 
