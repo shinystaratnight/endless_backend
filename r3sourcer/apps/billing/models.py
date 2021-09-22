@@ -21,12 +21,25 @@ from r3sourcer.helpers.datetimes import utc_now
 logger = logging.getLogger(__name__)
 
 class Subscription(CompanyTimeZoneMixin):
+    """Subscription class mirrors the Stripe subscription
+
+    Statuses:
+    - Subscription is created with status `incomplete`.
+    - Subscription status is set to `active` when invoice is paid.
+    - Subscriptions that start with a trial don’t require payment and have the `trialing` status.
+    For once time invoicing: if no payment is made during 23 hours, the subscription is updated to `incomplete_expired`.
+    For automatic invoicing: if automatic payment fails, the subscription is updated to `past_due` and Stripe attempts
+    to recover payment based on your retry rules. If payment recovery fails,
+    you can set the subscription status to `canceled`, `unpaid`, or you can leave it `active`."""
     ALLOWED_STATUSES = ('active', 'incomplete', 'trialing')
     SUBSCRIPTION_STATUSES = Choices(
         ('active', 'Active'),
         ('past_due', 'Past due'),
         ('canceled', 'Canceled'),
         ('unpaid', 'Unpaid'),
+        ('incomplete', 'Incomplete'),
+        ('trialing', 'Trialing'),
+        ('incomplete_expired', 'Incomplete expired'),
     )
     company = models.ForeignKey(
         'core.Company',
