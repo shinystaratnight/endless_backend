@@ -143,13 +143,14 @@ class Subscription(CompanyTimeZoneMixin):
             self.deactivate(user_id=(str(this_user.id) if this_user else None), stripe_subscription=stripe_subscription)
 
     def sync_periods(self, stripe_subscription=None):
-        if not stripe_subscription:
-            stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
-            stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
+        if self.active:
+            if not stripe_subscription:
+                stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
+                stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
 
-        self.current_period_start = datetime.datetime.utcfromtimestamp(stripe_subscription.current_period_start)
-        self.current_period_end = datetime.datetime.utcfromtimestamp(stripe_subscription.current_period_end)
-        self.save(update_fields=['current_period_start', 'current_period_end'])
+            self.current_period_start = datetime.datetime.utcfromtimestamp(stripe_subscription.current_period_start)
+            self.current_period_end = datetime.datetime.utcfromtimestamp(stripe_subscription.current_period_end)
+            self.save(update_fields=['current_period_start', 'current_period_end'])
 
     def deactivate(self, user_id=None, stripe_subscription=None):
         if not stripe_subscription:
