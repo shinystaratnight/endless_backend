@@ -20,6 +20,7 @@ from r3sourcer.helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
+
 class Subscription(CompanyTimeZoneMixin):
     """Subscription class mirrors the Stripe subscription
 
@@ -100,7 +101,8 @@ class Subscription(CompanyTimeZoneMixin):
             total_amount += (active_workers - start_workers) * self.subscription_type.step_change_val
         if self.subscription_type.type == self.subscription_type.SUBSCRIPTION_TYPES.annual:
             if self.subscription_type.percentage_discount:
-                total_amount = (total_amount * 12) - (total_amount * 12 / 100 * self.subscription_type.percentage_discount)
+                total_amount = (total_amount * 12) - (
+                        total_amount * 12 / 100 * self.subscription_type.percentage_discount)
             else:
                 total_amount = total_amount * 12 * settings.SUBSCRIPTION_DEFAULT_DISCOUNT
         if self.subscription_type.type == self.subscription_type.SUBSCRIPTION_TYPES.monthly:
@@ -227,7 +229,8 @@ class SMSBalance(models.Model):
             ran_out_limit = SMSBalanceLimits.objects.filter(name="Ran out").first()
             if ran_out_limit:
                 if Decimal(self.balance) < ran_out_limit.low_balance_limit and self.ran_out_balance_sent is False:
-                    tasks.send_sms_balance_ran_out_email.delay(self.company.id, template=ran_out_limit.email_template.slug)
+                    tasks.send_sms_balance_ran_out_email.delay(self.company.id,
+                                                               template=ran_out_limit.email_template.slug)
                     self.ran_out_balance_sent = True
 
                 if Decimal(self.balance) > ran_out_limit.low_balance_limit and self.ran_out_balance_sent is True:
