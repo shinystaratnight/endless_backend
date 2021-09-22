@@ -112,39 +112,53 @@ class Subscription(CompanyTimeZoneMixin):
                 total_amount = total_amount
         return total_amount
 
-    def sync_status(self):
+    def get_stripe_subscription(self):
         stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         subscription = stripe.Subscription.retrieve(self.subscription_id)
-        self.status = subscription.status
-        if subscription.status not in self.ALLOWED_STATUSES:
+        return subscription
+
+    def sync_status(self, stripe_subscription=None):
+        if not stripe_subscription:
+            stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
+            stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
+
+        self.status = stripe_subscription.status
+        if stripe_subscription.status not in self.ALLOWED_STATUSES:
             self.active = False
         else:
             self.active = True
+        self.save(update_fields=['status', 'active'])
 
-    def update_permissions_on_status(self):
+    def update_user_permissions(self, stripe_subscription=None):
         this_user = self.company.get_user()
         if this_user.trial_period_start:
             end_of_trial = this_user.get_end_of_trial_as_date()
             if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
-                self.deactivate(user_id=(str(this_user.id)))
+                self.deactivate(user_id=(str(this_user.id)), stripe_subscription=stripe_subscription)
         # elif self.status in allowed_statuses:
         #     self.activate(user_id=(str(this_user.id)))
 
-    def sync_periods(self):
-        stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
-        subscription = stripe.Subscription.retrieve(self.subscription_id)
-        self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
-        self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
-        if self.current_period_end.replace(tzinfo=pytz.UTC) < self.now_utc and self.company.get_user():
-            self.deactivate(user_id=(str(self.company.get_user().id)))
+        # waiting for 14 days to pay then cancel subscription
+        if self.current_period_end.replace(tzinfo=pytz.UTC) < self.in_two_weeks_utc:
+            self.deactivate(user_id=(str(this_user.id) if this_user else None), stripe_subscription=stripe_subscription)
 
-    def deactivate(self, user_id=None):
-        stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
-        sub = stripe.Subscription.retrieve(self.subscription_id)
+    def sync_periods(self, stripe_subscription=None):
+        if not stripe_subscription:
+            stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
+            stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
+
+        self.current_period_start = datetime.datetime.utcfromtimestamp(stripe_subscription.current_period_start)
+        self.current_period_end = datetime.datetime.utcfromtimestamp(stripe_subscription.current_period_end)
+        self.save(update_fields=['current_period_start', 'current_period_end'])
+
+    def deactivate(self, user_id=None, stripe_subscription=None):
+        if not stripe_subscription:
+            stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
+            stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
         try:
-            sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+            stripe_subscription.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
         except InvalidRequestError as e:
-            logger.warning('Subscription is missed, probably cancelled: {}'.format(e))
+            logger.warning('Cannot deactivate subscription {}. It is missed, probably cancelled: {}'.format(self.subscription_id, e))
         if user_id:
             tasks.cancel_subscription_access.apply_async([user_id])
 
