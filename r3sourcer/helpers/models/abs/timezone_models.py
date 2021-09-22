@@ -41,6 +41,10 @@ class TimeZone(models.Model):
         return self.now_utc + timedelta(days=1)
 
     @property
+    def in_two_weeks_utc(self):
+        return self.now_utc + timedelta(days=14)
+
+    @property
     def today_utc(self):
         return self.now_utc.date()
 
