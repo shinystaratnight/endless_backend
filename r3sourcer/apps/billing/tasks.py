@@ -203,7 +203,7 @@ def fetch_payments():
                     pass
 
             # if payment is not created yet then create it for not-void invoices
-            # void means this invoice was a mistake, and should be canceled.
+            # void means this invoice was a mistake or cancelled.
             if invoice['status'] != 'void' and not Payment.objects.filter(stripe_id=invoice['id']).exists():
                 payment_type = Payment.PAYMENT_TYPES.candidate
                 if invoice['subscription'] is not None:
@@ -216,7 +216,8 @@ def fetch_payments():
                     company=company,
                     type=payment_type,
                     amount=invoice['total'] / 100,
-                    stripe_id=invoice['id']
+                    stripe_id=invoice['id'],
+                    invoice_url=invoice['invoice_pdf']
                 )
 
         payments = Payment.objects.filter(invoice_url__isnull=True)
