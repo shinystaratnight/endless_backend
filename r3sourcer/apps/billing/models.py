@@ -192,6 +192,7 @@ class Subscription(CompanyTimeZoneMixin):
 
             for subscription in subscriptions:
                 subscription.deactivate()
+                subscription.status = Subscription.SUBSCRIPTION_STATUSES.canceled
                 subscription.active = False
                 subscription.save()
 
