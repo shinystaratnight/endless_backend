@@ -560,10 +560,16 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
     should_send_sms = False
     should_send_email = False
 
+    unapproved_timesheets = hr_models.TimeSheet.objects.filter(supervisor=supervisor,
+                                                               candidate_submitted_at__date=today_utc,
+                                                               supervisor_approved_at__isnull=True) \
+                                                       .exclude(pk=timesheet_id)
+
+    print(supervisor, time_sheet)
+
     if force:
 
         if supervisor.message_by_sms:
-
             # last sms to supervisor time
             try:
                 last_sms_time = SMSMessage.objects.filter(to_number=supervisor.contact.phone_mobile,
@@ -572,12 +578,6 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
                                                   .sent_at
             except:
                 last_sms_time = None
-
-            unapproved_timesheets = hr_models.TimeSheet.objects.filter(
-                supervisor=supervisor,
-                candidate_submitted_at__date=today_utc,
-                supervisor_approved_at__isnull=True) \
-                    .exclude(pk=timesheet_id)
 
             # check if unapproved_timesheets exist
             if last_sms_time:
@@ -589,11 +589,9 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
                     and not unapproved_timesheets_after_last_sms:
                         should_send_sms = True
             else:
-                if not unapproved_timesheets:
-                        should_send_sms = True
+                should_send_sms = True
 
         if supervisor.message_by_email:
-
             # last email to supervisor time
             try:
                 last_email_time = EmailMessage.objects.filter(to_addresses__contains=supervisor.contact.email,
@@ -613,8 +611,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
                         should_send_email = True
 
             else:
-                if not unapproved_timesheets:
-                        should_send_email = True
+                should_send_email = True
 
         if should_send_sms or should_send_email:
             send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
@@ -622,19 +619,52 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
         return
 
     if supervisor.message_by_sms:
-        if not SMSMessage.objects.filter(
-                  models.Q(template__slug=tpl_name) | models.Q(template__slug=tpl_name_reminder),
-                  to_number=supervisor.contact.phone_mobile,
-                  sent_at__date=today_utc,
-               ).exists():
-            should_send_sms = True
+        # last email to supervisor time
+        try:
+            last_sms_time = SMSMessage.objects.filter(
+                models.Q(template__slug=tpl_name) | models.Q(template__slug=tpl_name_reminder),
+                to_number=supervisor.contact.phone_mobile) \
+                    .latest('sent_at') \
+                    .sent_at
+        except:
+            last_sms_time = None
+
+        # check if unapproved_timesheets exist
+        if last_sms_time:
+            unapproved_timesheets_after_last_sms = unapproved_timesheets.filter(
+                candidate_submitted_at__gt=last_sms_time)
+
+            # check if last sms sent more than 30 min ago
+            if now_utc - last_sms_time > timedelta(minutes=30) \
+                and not unapproved_timesheets_after_last_sms:
+                    should_send_sms = True
+
+        if not last_sms_time or last_sms_time.date() != today_utc:
+            should_send_sms = False
 
     if supervisor.message_by_email:
-        if not EmailMessage.objects.filter(
-                   models.Q(template__slug=tpl_name) | models.Q(template__slug=tpl_name_reminder),
-                   to_addresses=supervisor.contact.email,
-                   sent_at__date=today_utc).exists():
-            should_send_email = True
+        # last email to supervisor time
+        try:
+            last_email_time = EmailMessage.objects.filter(
+                models.Q(template__slug=tpl_name) | models.Q(template__slug=tpl_name_reminder),
+                to_addresses__contains=supervisor.contact.email) \
+                    .latest('created_at') \
+                    .created_at
+        except:
+            last_email_time = None
+
+        # check if unapproved_timesheets exist
+        if last_email_time:
+            unapproved_timesheets_after_last_email = unapproved_timesheets.filter(
+                candidate_submitted_at__gt=last_email_time)
+
+            # check if last email sent more than 30 min ago
+            if now_utc - last_email_time > timedelta(minutes=30) \
+                and not unapproved_timesheets_after_last_email:
+                    should_send_email = True
+
+        if not last_email_time or last_email_time.date() != today_utc:
+            should_send_email = False
 
     if not should_send_email and not should_send_sms:
         return
@@ -1118,8 +1148,6 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
     total_meal = []
     total_skill_activities = []
     activities = []
-
-    print(list(group_timsheet_rates(timesheet_rates)))
 
     # calculate total values by groups
     index = 0
