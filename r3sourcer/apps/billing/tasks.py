@@ -191,13 +191,14 @@ def fetch_payments():
             continue
         # check all customer invoices
         for invoice in invoices:
-            # if subscription invoice is unpaid mark subscription as inactive
+            # if subscription invoice is unpaid mark active subscription as inactive
             if invoice['paid'] is False and invoice['subscription'] is not None:
                 try:
-                    sub = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
-                    sub.active = False
-                    sub.status = Subscription.SUBSCRIPTION_STATUSES.unpaid
-                    sub.save()
+                    subscription = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
+                    stripe_subscription = subscription.get_stripe_subscription()
+                    subscription.status = stripe_subscription.status
+                    subscription.active = False
+                    subscription.save()
                 except Subscription.DoesNotExist:
                     pass
 
