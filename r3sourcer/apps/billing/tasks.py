@@ -243,14 +243,15 @@ def fetch_payments():
                     payment.delete()
                     continue
 
-            if invoice['paid']:
+            if invoice['paid'] == True:
                 payment.status = Payment.PAYMENT_STATUSES.paid
                 payment.save()
-                sms_balance = SMSBalance.objects.filter(last_payment=payment).first()
 
-                if sms_balance:
-                    sms_balance.balance += payment.amount
-                    sms_balance.save()
+                if 'sms' in invoice['description']:
+                    sms_balance = SMSBalance.objects.filter(last_payment=payment).first()
+                    if sms_balance:
+                        sms_balance.balance += payment.amount
+                        sms_balance.save()
 
             if invoice['status'] == 'void':
                 payment.delete()
