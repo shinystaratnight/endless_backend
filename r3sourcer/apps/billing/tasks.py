@@ -221,7 +221,7 @@ def fetch_payments():
                     invoice_url=invoice['invoice_pdf']
                 )
 
-        payments = Payment.objects.filter(invoice_url__isnull=True)
+        payments = Payment.objects.filter(invoice_url__isnull=True, company=company)
         for payment in payments:
             try:
                 invoice = stripe.Invoice.retrieve(payment.stripe_id)
@@ -234,7 +234,7 @@ def fetch_payments():
                 payment.invoice_url = invoice['invoice_pdf']
                 payment.save()
 
-        not_paid_payments = Payment.objects.filter(status=Payment.PAYMENT_STATUSES.not_paid)
+        not_paid_payments = Payment.objects.filter(status=Payment.PAYMENT_STATUSES.not_paid, company=company)
         for payment in not_paid_payments:
             try:
                 invoice = stripe.Invoice.retrieve(payment.stripe_id)
