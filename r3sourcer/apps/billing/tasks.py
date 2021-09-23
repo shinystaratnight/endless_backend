@@ -153,6 +153,7 @@ def charge_for_sms(company_id, amount, sms_balance_id):
 
 @shared_task
 def sync_subscriptions():
+    """sync subscriptions statuses and periods"""
     for subscription in Subscription.objects.all():
         stripe_subscription = subscription.get_stripe_subscription()
         subscription.sync_status(stripe_subscription)
