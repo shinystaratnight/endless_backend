@@ -139,12 +139,13 @@ def charge_for_sms(company_id, amount, sms_balance_id):
         # pay an invoice after creation of corresponding Payment
         try:
             invoice.pay()
-            # increase balance if payment is successful
-            sms_balance.balance += Decimal(payment.amount)
         except CardError as ex:
             # mark as unpaid if error
             payment.status = Payment.PAYMENT_STATUSES.not_paid
             payment.save()
+        else:
+            # increase balance if payment is successful
+            sms_balance.balance += Decimal(payment.amount)
         finally:
             # in any case save the last payment to sms_balance
             sms_balance.last_payment = payment
