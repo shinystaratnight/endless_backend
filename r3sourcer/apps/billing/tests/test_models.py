@@ -6,6 +6,84 @@ import stripe
 
 from r3sourcer.apps.billing.models import Discount, Subscription, Payment, SubscriptionType
 from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms
+from r3sourcer.apps.core.tasks import cancel_subscription_access
+
+
+class TestSubscription:
+
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_get_stripe_subscription(self, mocked_retrieve, subscription):
+        """expect call retrieve to get Stripe subscription"""
+        subscription.get_stripe_subscription()
+        mocked_retrieve.assert_called_once_with(subscription.subscription_id)
+
+    def test_sync_status_from_allowed_and_activate(self):
+        pass
+
+    def test_sync_status_from_not_allowed_and_deactivate(self):
+        pass
+
+    def test_update_user_permissions_for_allowed_status(self):
+        pass
+
+    def test_update_user_permissions_for_not_allowed_status(self):
+        pass
+
+    def test_sync_periods(self):
+        pass
+
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    @mock.patch.object(stripe.Subscription, 'modify')
+    @mock.patch.object(cancel_subscription_access, 'apply_async')
+    def test_deactivate(self, mocked_apply_async, mocked_modify, mocked_retrieve, subscription):
+        """expect call retrieve to get Stripe subscription and then modify without cancel_subscription_access"""
+        stripe_subscription = mock.Mock()
+        mocked_retrieve.return_value = stripe_subscription
+
+        subscription.deactivate()
+
+        mocked_retrieve.assert_called_once_with(subscription.subscription_id)
+        stripe_subscription.modify.assert_called_once_with(subscription.subscription_id, cancel_at_period_end=True, prorate=False)
+        mocked_apply_async.assert_not_called()
+
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    @mock.patch.object(stripe.Subscription, 'modify')
+    @mock.patch.object(cancel_subscription_access, 'apply_async')
+    def test_deactivate_with_stripe_subscription(self, mocked_apply_async, mocked_modify, mocked_retrieve, subscription):
+        """expect call retrieve to get Stripe subscription and then modify without cancel_subscription_access"""
+        stripe_subscription = mock.Mock()
+        mocked_retrieve.return_value = stripe_subscription
+
+        subscription.deactivate(stripe_subscription=stripe_subscription)
+
+        mocked_retrieve.assert_not_called()
+        stripe_subscription.modify.assert_called_once_with(subscription.subscription_id, cancel_at_period_end=True, prorate=False)
+        mocked_apply_async.assert_not_called()
+
+    def test_save_status(self, subscription):
+        """change a status of subscription and expect it saves"""
+        assert subscription.status == 'active'
+
+        subscription.status = 'canceled'
+        subscription.save(update_fields=['status'])
+
+        assert subscription.status == 'canceled'
+
+    def test_save_another_active_subscription(self, canceled_subscription, subscription):
+        """make a canceled subscription active and expect that 'old' subscription become inactive"""
+        assert subscription.status == 'active'
+        assert subscription.active is True
+        assert canceled_subscription.status == 'canceled'
+
+        canceled_subscription.status = 'active'
+        canceled_subscription.active = True
+        canceled_subscription.save(update_fields=['status', 'active'])
+
+        subscription.refresh_from_db()
+        assert subscription.status == 'canceled'
+        assert subscription.active is False
+        assert canceled_subscription.status == 'active'
+        assert canceled_subscription.active is True
 
 
 class TestSMSBalance:
