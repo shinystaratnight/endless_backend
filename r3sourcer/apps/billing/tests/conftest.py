@@ -6,8 +6,9 @@ from unittest.mock import patch
 
 from r3sourcer.apps.core.models import (
     User, Company, CompanyContact, CompanyContactRelationship, Country, Region, City, Address,
-    CompanyAddress,
+    CompanyAddress, Language,
 )
+from r3sourcer.apps.email_interface.models import DefaultEmailTemplate
 from r3sourcer.apps.hr.models import Shift, ShiftDate, Job, Jobsite
 from r3sourcer.apps.skills.models import Skill, SkillName
 from r3sourcer.apps.pricing.models import Industry
@@ -226,10 +227,20 @@ def canceled_subscription(db, company, subscription_type_monthly):
 
 
 @pytest.fixture
-def low_balance_limit(db):
-    return SMSBalanceLimits.objects.filter(name="Low").first()
+def language(db):
+    language, _ = Language.objects.get_or_create(alpha_2="en")
+    return language
 
 
 @pytest.fixture
-def ran_out_balance_limit(db):
-    return SMSBalanceLimits.objects.filter(name="Ran out").first()
+def low_balance_limit(db, language):
+    template, _ = DefaultEmailTemplate.objects.get_or_create(slug="sms-balance-low", language=language)
+    limit, created = SMSBalanceLimits.objects.get_or_create(name="Low", low_balance_limit=20, email_template=template)
+    return limit
+
+
+@pytest.fixture
+def ran_out_balance_limit(db, language):
+    template, _ = DefaultEmailTemplate.objects.get_or_create(slug="sms-balance-ran-out", language=language)
+    limit, _ = SMSBalanceLimits.objects.get_or_create(name="Ran out", low_balance_limit=0, email_template=template)
+    return limit

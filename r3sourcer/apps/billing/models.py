@@ -20,13 +20,27 @@ from r3sourcer.helpers.datetimes import utc_now
 
 logger = logging.getLogger(__name__)
 
+
 class Subscription(CompanyTimeZoneMixin):
+    """Subscription class mirrors the Stripe subscription
+
+    Statuses:
+    - Subscription is created with status `incomplete`.
+    - Subscription status is set to `active` when invoice is paid.
+    - Subscriptions that start with a trial don’t require payment and have the `trialing` status.
+    For once time invoicing: if no payment is made during 23 hours, the subscription is updated to `incomplete_expired`.
+    For automatic invoicing: if automatic payment fails, the subscription is updated to `past_due` and Stripe attempts
+    to recover payment based on your retry rules. If payment recovery fails,
+    you can set the subscription status to `canceled`, `unpaid`, or you can leave it `active`."""
     ALLOWED_STATUSES = ('active', 'incomplete', 'trialing')
     SUBSCRIPTION_STATUSES = Choices(
         ('active', 'Active'),
         ('past_due', 'Past due'),
         ('canceled', 'Canceled'),
         ('unpaid', 'Unpaid'),
+        ('incomplete', 'Incomplete'),
+        ('trialing', 'Trialing'),
+        ('incomplete_expired', 'Incomplete expired'),
     )
     company = models.ForeignKey(
         'core.Company',
@@ -87,7 +101,8 @@ class Subscription(CompanyTimeZoneMixin):
             total_amount += (active_workers - start_workers) * self.subscription_type.step_change_val
         if self.subscription_type.type == self.subscription_type.SUBSCRIPTION_TYPES.annual:
             if self.subscription_type.percentage_discount:
-                total_amount = (total_amount * 12) - (total_amount * 12 / 100 * self.subscription_type.percentage_discount)
+                total_amount = (total_amount * 12) - (
+                        total_amount * 12 / 100 * self.subscription_type.percentage_discount)
             else:
                 total_amount = total_amount * 12 * settings.SUBSCRIPTION_DEFAULT_DISCOUNT
         if self.subscription_type.type == self.subscription_type.SUBSCRIPTION_TYPES.monthly:
@@ -97,39 +112,58 @@ class Subscription(CompanyTimeZoneMixin):
                 total_amount = total_amount
         return total_amount
 
-    def sync_status(self):
+    def get_stripe_subscription(self):
         stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
         subscription = stripe.Subscription.retrieve(self.subscription_id)
-        self.status = subscription.status
-        if subscription.status not in self.ALLOWED_STATUSES:
+        return subscription
+
+    def sync_status(self, stripe_subscription=None):
+        logger.warning('Synchronization statuses for subscription {}'.format(self.subscription_id))
+        if not stripe_subscription:
+            stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
+            stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
+
+        self.status = stripe_subscription.status
+        if stripe_subscription.status not in self.ALLOWED_STATUSES:
             self.active = False
         else:
             self.active = True
+        self.save(update_fields=['status', 'active'])
 
-    def update_permissions_on_status(self):
+    def update_user_permissions(self, stripe_subscription=None):
         this_user = self.company.get_user()
         if this_user.trial_period_start:
             end_of_trial = this_user.get_end_of_trial_as_date()
             if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
-                self.deactivate(user_id=(str(this_user.id)))
+                self.deactivate(user_id=(str(this_user.id)), stripe_subscription=stripe_subscription)
         # elif self.status in allowed_statuses:
         #     self.activate(user_id=(str(this_user.id)))
 
-    def sync_periods(self):
-        stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
-        subscription = stripe.Subscription.retrieve(self.subscription_id)
-        self.current_period_start = datetime.datetime.utcfromtimestamp(subscription.current_period_start)
-        self.current_period_end = datetime.datetime.utcfromtimestamp(subscription.current_period_end)
-        if self.current_period_end.replace(tzinfo=pytz.UTC) < self.now_utc and self.company.get_user():
-            self.deactivate(user_id=(str(self.company.get_user().id)))
+        # waiting for 14 days to pay then cancel subscription
+        if self.current_period_end.replace(tzinfo=pytz.UTC) < self.in_two_weeks_utc:
+            logger.warning('Call deactivate subscription {} from update_user_permissions'.format(self.subscription_id))
+            self.deactivate(user_id=(str(this_user.id) if this_user else None), stripe_subscription=stripe_subscription)
 
-    def deactivate(self, user_id=None):
-        stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
-        sub = stripe.Subscription.retrieve(self.subscription_id)
+    def sync_periods(self, stripe_subscription=None):
+        if self.active:
+            logger.warning('Synchronization periods for subscription {}'.format(self.subscription_id))
+            if not stripe_subscription:
+                stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
+                stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
+
+            self.current_period_start = datetime.datetime.utcfromtimestamp(stripe_subscription.current_period_start)
+            self.current_period_end = datetime.datetime.utcfromtimestamp(stripe_subscription.current_period_end)
+            self.save(update_fields=['current_period_start', 'current_period_end'])
+
+    def deactivate(self, user_id=None, stripe_subscription=None):
+        logger.warning('Deactivating subscription {}'.format(self.subscription_id))
+        if not stripe_subscription:
+            stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
+            stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
         try:
-            sub.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+            stripe_subscription.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
         except InvalidRequestError as e:
-            logger.warning('Subscription is missed, probably cancelled: {}'.format(e))
+            logger.warning('Cannot deactivate subscription {}. It is missed, probably cancelled: {}'.format(self.subscription_id, e))
         if user_id:
             tasks.cancel_subscription_access.apply_async([user_id])
 
@@ -162,6 +196,7 @@ class Subscription(CompanyTimeZoneMixin):
 
             for subscription in subscriptions:
                 subscription.deactivate()
+                subscription.status = Subscription.SUBSCRIPTION_STATUSES.canceled
                 subscription.active = False
                 subscription.save()
 
@@ -214,7 +249,8 @@ class SMSBalance(models.Model):
             ran_out_limit = SMSBalanceLimits.objects.filter(name="Ran out").first()
             if ran_out_limit:
                 if Decimal(self.balance) < ran_out_limit.low_balance_limit and self.ran_out_balance_sent is False:
-                    tasks.send_sms_balance_ran_out_email.delay(self.company.id, template=ran_out_limit.email_template.slug)
+                    tasks.send_sms_balance_ran_out_email.delay(self.company.id,
+                                                               template=ran_out_limit.email_template.slug)
                     self.ran_out_balance_sent = True
 
                 if Decimal(self.balance) > ran_out_limit.low_balance_limit and self.ran_out_balance_sent is True:

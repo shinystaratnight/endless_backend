@@ -139,12 +139,13 @@ def charge_for_sms(company_id, amount, sms_balance_id):
         # pay an invoice after creation of corresponding Payment
         try:
             invoice.pay()
-            # increase balance if payment is successful
-            sms_balance.balance += Decimal(payment.amount)
         except CardError as ex:
             # mark as unpaid if error
             payment.status = Payment.PAYMENT_STATUSES.not_paid
             payment.save()
+        else:
+            # increase balance if payment is successful
+            sms_balance.balance += Decimal(payment.amount)
         finally:
             # in any case save the last payment to sms_balance
             sms_balance.last_payment = payment
@@ -153,16 +154,12 @@ def charge_for_sms(company_id, amount, sms_balance_id):
 
 @shared_task
 def sync_subscriptions():
-    # from contextlib import suppress
-    # with suppress(InvalidRequestError):
-    for subscription in Subscription.objects.filter(active=True):
-        subscription.sync_status()
-        subscription.update_permissions_on_status()
-        subscription.sync_periods()
-        subscription.save()
-    for subscription in Subscription.objects.filter(active=False):
-        subscription.sync_status()
-        subscription.update_permissions_on_status()
+    """sync subscriptions statuses and periods"""
+    for subscription in Subscription.objects.all():
+        stripe_subscription = subscription.get_stripe_subscription()
+        subscription.sync_status(stripe_subscription)
+        subscription.sync_periods(stripe_subscription)
+        subscription.update_user_permissions(stripe_subscription)
         subscription.save()
 
 
@@ -195,18 +192,22 @@ def fetch_payments():
             continue
         # check all customer invoices
         for invoice in invoices:
-            # if subscription invoice is unpaid mark subscription as inactive
+            # if subscription invoice is unpaid mark active subscription as inactive
             if invoice['paid'] is False and invoice['subscription'] is not None:
                 try:
-                    sub = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
-                    sub.active = False
-                    sub.status = Subscription.SUBSCRIPTION_STATUSES.unpaid
-                    sub.save()
+                    subscription = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
+                    stripe_subscription = subscription.get_stripe_subscription()
+                    subscription.status = stripe_subscription.status
+                    subscription.active = False
+                    subscription.save()
+                    logger.warning('Mark subscription {} as inactive from fetch_payments'.format(
+                        subscription.subscription_id
+                    ))
                 except Subscription.DoesNotExist:
                     pass
 
             # if payment is not created yet then create it for not-void invoices
-            # void means this invoice was a mistake, and should be canceled.
+            # void means this invoice was a mistake or cancelled.
             if invoice['status'] != 'void' and not Payment.objects.filter(stripe_id=invoice['id']).exists():
                 payment_type = Payment.PAYMENT_TYPES.candidate
                 if invoice['subscription'] is not None:
@@ -215,45 +216,68 @@ def fetch_payments():
                     payment_type = Payment.PAYMENT_TYPES.sms
                 elif 'extra workers' in invoice['description']:
                     payment_type = Payment.PAYMENT_TYPES.extra_workers
+                logger.warning('Create payment with invoice {} from fetch_payments'.format(
+                    invoice['id']
+                ))
                 Payment.objects.create(
                     company=company,
                     type=payment_type,
                     amount=invoice['total'] / 100,
-                    stripe_id=invoice['id']
+                    stripe_id=invoice['id'],
+                    invoice_url=invoice['invoice_pdf']
                 )
 
-        payments = Payment.objects.filter(invoice_url__isnull=True)
+        payments = Payment.objects.filter(invoice_url__isnull=True, company=company)
         for payment in payments:
             try:
                 invoice = stripe.Invoice.retrieve(payment.stripe_id)
             except InvalidRequestError as ex:
                 if ex.http_status == 404 and ex.code == 'resource_missing':
+                    logger.warning('Delete payment with invoice {} from fetch_payments'.format(
+                        payment.stripe_id
+                    ))
                     payment.delete()
                     continue
 
             if invoice['invoice_pdf']:
+                logger.warning('Set invoice_pdf with invoice {} from fetch_payments'.format(
+                    payment.stripe_id
+                ))
                 payment.invoice_url = invoice['invoice_pdf']
                 payment.save()
 
-        not_paid_payments = Payment.objects.filter(status=Payment.PAYMENT_STATUSES.not_paid)
+        not_paid_payments = Payment.objects.filter(status=Payment.PAYMENT_STATUSES.not_paid, company=company)
         for payment in not_paid_payments:
             try:
                 invoice = stripe.Invoice.retrieve(payment.stripe_id)
             except InvalidRequestError as ex:
                 if ex.http_status == 404 and ex.code == 'resource_missing':
+                    logger.warning('Delete payment with invoice {} from fetch_payments'.format(
+                        payment.stripe_id
+                    ))
                     payment.delete()
                     continue
 
-            if invoice['paid']:
+            if invoice['paid'] == True:
+                logger.warning('Mark payment with invoice {} as paid from fetch_payments'.format(
+                    payment.stripe_id
+                ))
                 payment.status = Payment.PAYMENT_STATUSES.paid
                 payment.save()
-                sms_balance = SMSBalance.objects.filter(last_payment=payment).first()
 
-                if sms_balance:
-                    sms_balance.balance += payment.amount
-                    sms_balance.save()
+                if 'sms' in invoice['description']:
+                    sms_balance = SMSBalance.objects.filter(last_payment=payment).first()
+                    if sms_balance:
+                        logger.warning('Add sms balance from payment with invoice {} rom fetch_payments'.format(
+                            payment.stripe_id
+                        ))
+                        sms_balance.balance += payment.amount
+                        sms_balance.save()
 
             if invoice['status'] == 'void':
+                logger.warning('Delete payment with invoice {} because it\'s void from fetch_payments'.format(
+                    payment.stripe_id
+                ))
                 payment.delete()
 
 
