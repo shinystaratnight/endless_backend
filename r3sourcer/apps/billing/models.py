@@ -202,7 +202,7 @@ class Subscription(CompanyTimeZoneMixin):
                 subscription.deactivate()
                 subscription.status = Subscription.SUBSCRIPTION_STATUSES.canceled
                 subscription.active = False
-                subscription.save()
+                subscription.save(update_fields=['status', 'active'])
 
     @classmethod
     def use_logger(cls):
