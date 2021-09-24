@@ -87,6 +87,10 @@ class Subscription(CompanyTimeZoneMixin):
     def current_period_end_utc(self):
         return self.current_period_end
 
+    @property
+    def current_period_end_plus_two_week(self):
+        return self.current_period_end + datetime.timedelta(days=14)
+
     def __str__(self):
         return "{} with {} workers. Status: {}".format(self.company.name, self.worker_count, self.status)
 
@@ -140,7 +144,7 @@ class Subscription(CompanyTimeZoneMixin):
         #     self.activate(user_id=(str(this_user.id)))
 
         # waiting for 14 days to pay then cancel subscription
-        if self.current_period_end.replace(tzinfo=pytz.UTC) < self.in_two_weeks_utc:
+        if self.current_period_end_plus_two_week.replace(tzinfo=pytz.UTC) < self.now_utc:
             logger.warning('Call deactivate subscription {} from update_user_permissions'.format(self.subscription_id))
             self.deactivate(user_id=(str(this_user.id) if this_user else None), stripe_subscription=stripe_subscription)
 
