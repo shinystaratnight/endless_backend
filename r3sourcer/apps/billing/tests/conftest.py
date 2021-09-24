@@ -200,7 +200,7 @@ def subscription(db, company, subscription_type_monthly):
         worker_count=10,
         active=True,
         status='active',
-        subscription_id='sub_IcQQankIwgFG0x'
+        subscription_id='sub_J5Za0mDguqlu5C'
     )
 
 
@@ -222,7 +222,7 @@ def canceled_subscription(db, company, subscription_type_monthly):
         worker_count=10,
         active=False,
         status='canceled',
-        subscription_id='sub_IcQPoFaGvbP1BB'
+        subscription_id='sub_J5Za0mDguqlu5C'
     )
 
 
