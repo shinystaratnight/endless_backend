@@ -118,6 +118,7 @@ class Subscription(CompanyTimeZoneMixin):
         return subscription
 
     def sync_status(self, stripe_subscription=None):
+        logger.warning('Synchronization statuses for subscription {}'.format(self.subscription_id))
         if not stripe_subscription:
             stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
             stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
@@ -140,10 +141,12 @@ class Subscription(CompanyTimeZoneMixin):
 
         # waiting for 14 days to pay then cancel subscription
         if self.current_period_end.replace(tzinfo=pytz.UTC) < self.in_two_weeks_utc:
+            logger.warning('Call deactivate subscription {} from update_user_permissions'.format(self.subscription_id))
             self.deactivate(user_id=(str(this_user.id) if this_user else None), stripe_subscription=stripe_subscription)
 
     def sync_periods(self, stripe_subscription=None):
         if self.active:
+            logger.warning('Synchronization periods for subscription {}'.format(self.subscription_id))
             if not stripe_subscription:
                 stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
                 stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
@@ -153,6 +156,7 @@ class Subscription(CompanyTimeZoneMixin):
             self.save(update_fields=['current_period_start', 'current_period_end'])
 
     def deactivate(self, user_id=None, stripe_subscription=None):
+        logger.warning('Deactivating subscription {}'.format(self.subscription_id))
         if not stripe_subscription:
             stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
             stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
