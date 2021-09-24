@@ -17,11 +17,81 @@ class TestSubscription:
         subscription.get_stripe_subscription()
         mocked_retrieve.assert_called_once_with(subscription.subscription_id)
 
-    def test_sync_status_from_allowed_and_activate(self):
-        pass
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_sync_status_to_incomplete_and_activate(self, mocked_retrieve, canceled_subscription):
+        """expect call retrieve to get Stripe subscription and then change status to incomplete and activate"""
+        assert canceled_subscription.status == 'canceled'
 
-    def test_sync_status_from_not_allowed_and_deactivate(self):
-        pass
+        stripe_subscription = mock.Mock()
+        stripe_subscription.status = 'incomplete'
+        mocked_retrieve.return_value = stripe_subscription
+
+        canceled_subscription.sync_status()
+
+        mocked_retrieve.assert_called_once_with(canceled_subscription.subscription_id)
+        assert canceled_subscription.status == 'incomplete'
+        assert canceled_subscription.active is True
+
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_sync_status_to_active_and_activate(self, mocked_retrieve, canceled_subscription):
+        """expect call retrieve to get Stripe subscription and then change status to active and activate"""
+        assert canceled_subscription.status == 'canceled'
+
+        stripe_subscription = mock.Mock()
+        stripe_subscription.status = 'active'
+        mocked_retrieve.return_value = stripe_subscription
+
+        canceled_subscription.sync_status()
+
+        mocked_retrieve.assert_called_once_with(canceled_subscription.subscription_id)
+        assert canceled_subscription.status == 'active'
+        assert canceled_subscription.active is True
+
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_sync_status_to_trialing_and_activate(self, mocked_retrieve, canceled_subscription):
+        """expect call retrieve to get Stripe subscription and then change status to trialing and activate"""
+        assert canceled_subscription.status == 'canceled'
+
+        stripe_subscription = mock.Mock()
+        stripe_subscription.status = 'trialing'
+        mocked_retrieve.return_value = stripe_subscription
+
+        canceled_subscription.sync_status()
+
+        mocked_retrieve.assert_called_once_with(canceled_subscription.subscription_id)
+        assert canceled_subscription.status == 'trialing'
+        assert canceled_subscription.active is True
+
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_sync_status_to_not_allowed_and_deactivate(self, mocked_retrieve, subscription):
+        """expect call retrieve to get Stripe subscription and then change status to past_due and deactivate"""
+        assert subscription.status == 'active'
+        assert subscription.active is True
+
+        stripe_subscription = mock.Mock()
+        stripe_subscription.status = 'past_due'
+        mocked_retrieve.return_value = stripe_subscription
+
+        subscription.sync_status()
+
+        mocked_retrieve.assert_called_once_with(subscription.subscription_id)
+        assert subscription.status == 'past_due'
+        assert subscription.active is False
+
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_sync_status_with_stripe_subscription(self, mocked_retrieve, subscription):
+        """expect call retrieve to get Stripe subscription and then change status to canceled and deactivate"""
+        assert subscription.status == 'active'
+        assert subscription.active is True
+
+        stripe_subscription = mock.Mock()
+        stripe_subscription.status = 'canceled'
+
+        subscription.sync_status(stripe_subscription=stripe_subscription)
+
+        mocked_retrieve.assert_not_called()
+        assert subscription.status == 'canceled'
+        assert subscription.active is False
 
     def test_update_user_permissions_for_allowed_status(self):
         pass
@@ -29,8 +99,47 @@ class TestSubscription:
     def test_update_user_permissions_for_not_allowed_status(self):
         pass
 
-    def test_sync_periods(self):
-        pass
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_sync_periods_with_stripe_subscription(self, mocked_retrieve, subscription):
+        """expect not to call retrieve and change current_period dates"""
+        stripe_subscription = mock.Mock()
+        stripe_subscription.current_period_start = 1632375374
+        stripe_subscription.current_period_end = 1634967374
+
+        assert subscription.current_period_start is None
+        assert subscription.current_period_end is None
+
+        subscription.sync_periods(stripe_subscription)
+
+        mocked_retrieve.assert_not_called()
+        assert subscription.current_period_start is not None
+        assert subscription.current_period_end is not None
+
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_sync_periods_for_active_subscription(self, mocked_retrieve, subscription):
+        """expect call retrieve to get Stripe subscription and then change current_period dates"""
+        stripe_subscription = mock.Mock()
+        stripe_subscription.current_period_start = 1632375374
+        stripe_subscription.current_period_end = 1634967374
+        mocked_retrieve.return_value = stripe_subscription
+
+        assert subscription.current_period_start is None
+        assert subscription.current_period_end is None
+
+        subscription.sync_periods()
+
+        mocked_retrieve.assert_called_once_with(subscription.subscription_id)
+        assert subscription.current_period_start is not None
+        assert subscription.current_period_end is not None
+
+    @mock.patch.object(Subscription, 'save')
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    def test_sync_periods_for_inactive_subscription(self, mocked_retrieve, mock_save, canceled_subscription):
+        """expect to not call retrieve or save"""
+        canceled_subscription.sync_periods()
+
+        mocked_retrieve.assert_not_called()
+        mock_save.assert_not_called()
 
     @mock.patch.object(stripe.Subscription, 'retrieve')
     @mock.patch.object(stripe.Subscription, 'modify')
