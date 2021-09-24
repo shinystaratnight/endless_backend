@@ -200,6 +200,9 @@ def fetch_payments():
                     subscription.status = stripe_subscription.status
                     subscription.active = False
                     subscription.save()
+                    logger.warning('Mark subscription {} as inactive from fetch_payments'.format(
+                        subscription.subscription_id
+                    ))
                 except Subscription.DoesNotExist:
                     pass
 
@@ -213,6 +216,9 @@ def fetch_payments():
                     payment_type = Payment.PAYMENT_TYPES.sms
                 elif 'extra workers' in invoice['description']:
                     payment_type = Payment.PAYMENT_TYPES.extra_workers
+                logger.warning('Create payment with invoice {} from fetch_payments'.format(
+                    invoice['id']
+                ))
                 Payment.objects.create(
                     company=company,
                     type=payment_type,
@@ -227,10 +233,16 @@ def fetch_payments():
                 invoice = stripe.Invoice.retrieve(payment.stripe_id)
             except InvalidRequestError as ex:
                 if ex.http_status == 404 and ex.code == 'resource_missing':
+                    logger.warning('Delete payment with invoice {} from fetch_payments'.format(
+                        payment.stripe_id
+                    ))
                     payment.delete()
                     continue
 
             if invoice['invoice_pdf']:
+                logger.warning('Set invoice_pdf with invoice {} from fetch_payments'.format(
+                    payment.stripe_id
+                ))
                 payment.invoice_url = invoice['invoice_pdf']
                 payment.save()
 
@@ -240,20 +252,32 @@ def fetch_payments():
                 invoice = stripe.Invoice.retrieve(payment.stripe_id)
             except InvalidRequestError as ex:
                 if ex.http_status == 404 and ex.code == 'resource_missing':
+                    logger.warning('Delete payment with invoice {} from fetch_payments'.format(
+                        payment.stripe_id
+                    ))
                     payment.delete()
                     continue
 
             if invoice['paid'] == True:
+                logger.warning('Mark payment with invoice {} as paid from fetch_payments'.format(
+                    payment.stripe_id
+                ))
                 payment.status = Payment.PAYMENT_STATUSES.paid
                 payment.save()
 
                 if 'sms' in invoice['description']:
                     sms_balance = SMSBalance.objects.filter(last_payment=payment).first()
                     if sms_balance:
+                        logger.warning('Add sms balance from payment with invoice {} rom fetch_payments'.format(
+                            payment.stripe_id
+                        ))
                         sms_balance.balance += payment.amount
                         sms_balance.save()
 
             if invoice['status'] == 'void':
+                logger.warning('Delete payment with invoice {} because it\'s void from fetch_payments'.format(
+                    payment.stripe_id
+                ))
                 payment.delete()
 
 
