@@ -20,8 +20,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 
 from r3sourcer.apps.core.api.viewsets import BaseViewsetMixin
+from r3sourcer.apps.core.api.serializers import RoleSerializer
 from r3sourcer.apps.core.models import Contact, User, SiteCompany
-from r3sourcer.apps.core.utils.companies import get_site_master_company
+from r3sourcer.apps.core.utils.companies import get_site_master_company, get_company_domain
 from r3sourcer.apps.core.utils.utils import get_host, is_valid_email, is_valid_phone_number
 from r3sourcer.apps.core.views import OAuth2JWTTokenMixin
 from r3sourcer.apps.login.api.exceptions import TokenAlreadyUsed
@@ -265,26 +266,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             raise exceptions.AuthenticationFailed()
 
         serializer = ContactLoginSerializer(request.user.contact)
-        roles = []
-        for x in self.request.user.role.all().order_by('name'):
-            if x.company_contact_rel:
-                company_name = x.company_contact_rel.company.name
-                company_shortname = x.company_contact_rel.company.short_name
-                company_id = x.company_contact_rel.company.id
-                client_contact_id = x.company_contact_rel.company_contact.id
-            else:
-                company_id = client_contact_id = company_name = company_shortname = x.name
-            roles.append(
-                {
-                    'id': x.id,
-                    'company_name': company_name,
-                    'company_id': company_id,
-                    'client_contact_id': client_contact_id,
-                    '__str__': '{} - {}'.format(
-                        x.name, company_shortname or company_name
-                    )
-                }
-            )
+        role_serializer = RoleSerializer(self.request.user.role.all(), many=True)
 
         cache.set('user_site_%s' % str(request.user.id), request.META.get('HTTP_HOST'))
         time_zone = request.user.company.get_timezone()
@@ -308,7 +290,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                 'end_trial_date': request.user.get_end_of_trial(),
                 'is_primary': request.user.company.primary_contact == request.user.contact.get_company_contact_by_company(
                     request.user.company),
-                'roles': roles,
+                'roles': role_serializer.data,
                 'country_code': country_code,
                 'country_phone_prefix': country_phone_prefix,
                 'allow_job_creation': company_settings.allow_job_creation
@@ -341,10 +323,13 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
             request, token_body, 200, redirect_host, username=user.contact.email or user.contact.phone_mobile
         )
 
+        domain = get_company_domain(user.contact.get_closest_company())
+
         response_data = {
             'status': 'success',
             'message': _('You are logged in as {user}').format(user=str(user.contact)),
             **token_content,
+            'domain': domain,
         }
 
         return Response(response_data, status=status.HTTP_200_OK)
