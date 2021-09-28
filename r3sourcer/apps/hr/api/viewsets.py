@@ -130,7 +130,14 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         if company_contact_rel:
             queryset = queryset.filter(job_offer__shift__date__job__customer_company=company_contact_rel.company)
 
-        return queryset.distinct().order_by('-shift_started_at')
+        ordering = self.request.query_params.get('ordering', '-shift_started_at')
+        if ordering:
+            ordering_fields = [param.strip() for param in ordering.split(',')]
+            queryset = queryset.order_by(*ordering_fields).distinct()
+        else:
+            queryset = queryset.order_by('-shift_started_at').distinct()
+
+        return queryset
 
     def handle_history(self, request):
         if request.user.is_authenticated:
