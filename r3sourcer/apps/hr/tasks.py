@@ -346,27 +346,45 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
         SHIFT_ENDING: {
             'tpl_name': 'candidate-timesheet-hours',
             'old_tpl_name': 'candidate-timesheet-hours-old',
+            'email_subject': _('Please fill time sheet'),
+            'email_text': _('Please fill time sheet'),
+            'email_tpl': 'candidate-timesheet-hours',
             'delta_hours': 1,
         },
         SUPERVISOR_DECLINED: {
             'tpl_name': 'candidate-timesheet-agree',
+            'email_subject': _('Your time sheet was declined'),
+            'email_text': _('Your time sheet was declined'),
+            'email_tpl': '',
         },
     }
+    should_send_sms = False
+    should_send_email = False
 
     try:
         time_sheet = hr_models.TimeSheet.objects.get(id=time_sheet_id)
     except hr_models.TimeSheet.DoesNotExist as e:
         logger.error(e)
     else:
+        now_utc = time_sheet.now_utc
+        today_utc = now_utc.date()
         candidate = time_sheet.candidate_contact
         contacts = {
             'candidate_contact': candidate,
             'company_contact': time_sheet.supervisor
         }
-        if time_sheet.shift_ended_at_tz:
+        if time_sheet.shift_ended_at:
+            shift_ended_at = time_sheet.shift_ended_at
             shift_ended_at_tz = time_sheet.shift_ended_at_tz
         else:
+            shift_ended_at = time_sheet.shift_started_at + timedelta(hours=8, minutes=30)
             shift_ended_at_tz = time_sheet.shift_started_at_tz + timedelta(hours=8, minutes=30)
+        if shift_ended_at.date() == utc_now().date():
+            tpl_name = events_dict[event]['tpl_name']
+            should_send_sms = True
+        else:
+            tpl_name = events_dict[event]['old_tpl_name']
+
         with transaction.atomic():
             site_url = core_companies_utils.get_site_url(user=contacts['candidate_contact'].contact.user)
             data_dict = dict(
@@ -394,7 +412,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 data_dict.update(
                     shift_start_date=formats.date_format(time_sheet.shift_started_at_tz, settings.DATE_FORMAT),
                     shift_start_time=formats.time_format(time_sheet.shift_started_at_tz.time(), settings.TIME_FORMAT),
-                    shift_end_time=formats.time_format(time_sheet.shift_ended_at_tz.time(), settings.TIME_FORMAT),
+                    shift_end_time=formats.time_format(shift_ended_at_tz.time(), settings.TIME_FORMAT),
                     shift_break_hours=break_str,
                     shift_worked_hours=worked_str,
                     supervisor_timeout=format_timedelta(timedelta(seconds=settings.SUPERVISOR_DECLINE_TIMEOUT))
@@ -427,10 +445,36 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 recipient = time_sheet.supervisor
 
             master_company = time_sheet.master_company
-            if time_sheet.shift_ended_at:
-                shift_ended_at = time_sheet.shift_ended_at
-            else:
-                shift_ended_at = time_sheet.shift_started_at + timedelta(hours=8, minutes=30)
+
+            if candidate.message_by_email:
+                try:
+                    email_interface = get_email_service()
+                except ImportError:
+                    logger.exception('Cannot load Email service')
+                    return
+                else:
+                    # last email to supervisor time
+                    try:
+                        last_email_time = EmailMessage.objects.filter(
+                            to_addresses__contains=candidate.contact.email,
+                            template__slug=tpl_name) \
+                                .latest('created_at') \
+                                .created_at
+                    except:
+                        last_email_time = None
+
+                    if last_email_time:
+                        # check if last email sent more than 30 min ago
+                        if now_utc - last_email_time > timedelta(minutes=30):
+                                should_send_email = True
+                    else:
+                        should_send_email = True
+                    if should_send_email:
+                        email_interface.send_tpl(recipient.contact,
+                                                 master_company,
+                                                 tpl_name,
+                                                 **data_dict
+                                                 )
 
             if candidate.message_by_sms:
                 try:
@@ -438,32 +482,31 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 except ImportError:
                     logger.exception('Cannot load SMS service')
                 else:
-                    tpl_name = events_dict[event]['tpl_name']
-                    if shift_ended_at.date() != utc_now().date():
-                        tpl_name = events_dict[event].get('old_tpl_name', tpl_name)
+                    # last sms to candidate time
+                    try:
+                        last_sms_time = SMSMessage.objects.filter(
+                            template__slug=tpl_name,
+                            to_number=candidate.contact.phone_mobile) \
+                                .latest('sent_at') \
+                                .sent_at
+                    except:
+                        last_sms_time = None
 
-                    sms_interface.send_tpl(recipient.contact,
-                                           master_company,
-                                           tpl_name,
-                                           check_reply=False,
-                                           **data_dict
-                                           )
+                    # check if unapproved_timesheets exist
+                    if last_sms_time:
+                        # check if last sms sent more than 30 min ago
+                        if now_utc - last_sms_time > timedelta(minutes=30):
+                                should_send_sms = True
+                    else:
+                        should_send_sms = True
 
-            if candidate.message_by_email:
-                try:
-                    email_interface = get_email_service()
-                except ImportError:
-                    logger.exception('Cannot load Email service')
-                else:
-                    tpl_name = events_dict[event]['tpl_name']
-                    if shift_ended_at.date() != utc_now().date():
-                        tpl_name = events_dict[event].get('old_tpl_name', tpl_name)
-
-                    email_interface.send_tpl(recipient.contact,
-                                             master_company,
-                                             tpl_name,
-                                             **data_dict
-                                             )
+                    if should_send_sms:
+                        sms_interface.send_tpl(recipient.contact,
+                                               master_company,
+                                               tpl_name,
+                                               check_reply=False,
+                                               **data_dict
+                                               )
 
 
 @app.task(bind=True, queue='sms')
@@ -565,8 +608,6 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
                                                                supervisor_approved_at__isnull=True) \
                                                        .exclude(pk=timesheet_id)
 
-    print(supervisor, time_sheet)
-
     if force:
 
         if supervisor.message_by_sms:
@@ -638,9 +679,8 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
             if now_utc - last_sms_time > timedelta(minutes=30) \
                 and not unapproved_timesheets_after_last_sms:
                     should_send_sms = True
-
-        if not last_sms_time or last_sms_time.date() != today_utc:
-            should_send_sms = False
+        else:
+            should_send_sms = True
 
     if supervisor.message_by_email:
         # last email to supervisor time
@@ -662,9 +702,8 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
             if now_utc - last_email_time > timedelta(minutes=30) \
                 and not unapproved_timesheets_after_last_email:
                     should_send_email = True
-
-        if not last_email_time or last_email_time.date() != today_utc:
-            should_send_email = False
+        else:
+            should_send_email = True
 
     if not should_send_email and not should_send_sms:
         return
