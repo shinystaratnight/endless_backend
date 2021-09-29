@@ -1934,6 +1934,7 @@ class FavouriteList(UUIDModel):
 
 
 class CarrierList(UUIDModel):
+    """a backup list for specific date and skill"""
 
     candidate_contact = models.ForeignKey(
         'candidate.CandidateContact',

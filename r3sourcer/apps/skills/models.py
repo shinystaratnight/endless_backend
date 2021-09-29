@@ -127,7 +127,7 @@ class Skill(MYOBMixin, UUIDModel):
         on_delete=models.CASCADE,
         verbose_name=_('Company')
     )
-
+    # how many candidate system needs to find for backup
     carrier_list_reserve = models.PositiveSmallIntegerField(
         default=0,
         verbose_name=_('Carrier List Reserve')
