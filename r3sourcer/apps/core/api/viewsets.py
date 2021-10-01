@@ -273,7 +273,10 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def verify_email(self, request, *args, **kwargs):
         contact = get_object_or_404(models.Contact, verification_token=request.query_params.get('token'))
         contact.email_verified = True
-        contact.save(update_fields=['email_verified'])
+        if contact.new_email:
+            contact.email = contact.new_email
+            contact.new_email = None
+        contact.save(update_fields=['email_verified', 'new_email', 'email'])
 
         master_company = get_site_master_company(request=self.request)
 
@@ -391,6 +394,38 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
         return data
 
+    @action(methods=['put'], detail=True)
+    def change_email(self, request, *args, **kwargs):
+        instance = self.get_object()
+        new_email = request.data.get('new_email', False)
+        password = request.data.get('password', False)
+
+        if not instance.user.check_password(password):
+            raise exceptions.ValidationError({
+                'password': _('Password invalid')
+            })
+
+        if models.Contact.objects.filter(email=new_email).exists():
+            raise exceptions.ValidationError({
+                'new_email': _('This email address is connected to another user')
+            })
+
+        instance.email_verified = False
+        instance.new_email = new_email
+        instance.save(update_fields=['email_verified', 'new_email'])
+
+        # send verification email
+        master_company = get_site_master_company()
+        manager = master_company.primary_contact
+        tasks.send_contact_verify_email(instance.id, manager.id, master_company.id, new_email = True)
+
+        data = {
+            'status': 'success',
+            'message': _('An activation link has been sent to your new email address. Please confirm it. You must use the old email until the new email address is confirmed')
+        }
+
+        return Response(data)
+
 
 class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
 
@@ -400,21 +435,6 @@ class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
         if is_create and not data.get('is_active'):
             data['is_active'] = True
         return data
-
-    # def list(self, request, *args, **kwargs):
-    #     # check include_all parameter
-    #     include_all = request.GET.get('include_all')
-    #     if include_all in ['true', 'True', '1']:
-    #         return self._paginate(request, self.get_serializer_class())
-    #     # distinct languages
-    #     queryset = self.filter_queryset(self.get_queryset())
-    #     countries = queryset.values_list('address__country', flat=True).distinct()
-    #     # filter addresses for 1 per country
-    #     filtered_qs = queryset.none()
-    #     for country in countries:
-    #         latest_country_address = queryset.filter(address__country=country).latest('created_at')
-    #         filtered_qs |= queryset.filter(pk=latest_country_address.pk)
-    #     return self._paginate(request, self.get_serializer_class(), queryset=filtered_qs)
 
     def clear_active_contactaddresses(self, instance):
         """ if new address is active make all old adresses not active """

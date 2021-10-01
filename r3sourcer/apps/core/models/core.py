@@ -120,6 +120,21 @@ class Contact(CategoryFolderMixin,
         unique=True,
     )
 
+    new_email = models.EmailField(
+        max_length=255,
+        verbose_name=_("New E-mail"),
+        null=True,
+        blank=True,
+        unique=True,
+    )
+
+    new_phone_mobile = PhoneNumberField(
+        verbose_name=_("New Mobile Phone"),
+        null=True,
+        blank=True,
+        unique=True,
+    )
+
     gender = models.CharField(
         max_length=7,
         verbose_name=_("Gender"),

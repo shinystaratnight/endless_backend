@@ -256,7 +256,7 @@ def send_contact_verify_sms(self, contact_id, manager_id):
 
 
 @shared_task(bind=True)
-def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
+def send_contact_verify_email(self, contact_id, manager_id, master_company_id, **kwargs):
     from r3sourcer.apps.email_interface.utils import get_email_service
 
     try:
@@ -279,7 +279,7 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
 
             master_company = core_models.Company.objects.get(id=master_company_id)
 
-            if not contact.verification_token:
+            if not contact.verification_token or contact.new_email:
                 contact.verification_token = contact.generate_auth_token(
                     token_field_name='verification_token', length=64
                 )
@@ -303,7 +303,8 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
             email_interface.send_tpl(contact,
                                      master_company,
                                      tpl_name=email_tpl,
-                                     **data_dict
+                                     **data_dict,
+                                     **kwargs
                                      )
 
 
