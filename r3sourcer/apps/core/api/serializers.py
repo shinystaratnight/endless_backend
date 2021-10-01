@@ -2032,9 +2032,15 @@ class UomSerializer(ApiBaseModelSerializer):
 
 
 class RoleSerializer(ApiBaseModelSerializer):
+    method_fields = ['domain']
+
     class Meta:
         model = core_models.Role
         fields = (
             'id', 'name',
             {'company_contact_rel': ('id', 'company', 'company_contact')},
         )
+
+    def get_domain(cls, obj):
+        site_company = obj.company_contact_rel.company.get_closest_master_company().site_companies.last()
+        return site_company.site.domain if site_company else None
