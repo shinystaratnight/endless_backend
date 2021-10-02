@@ -286,6 +286,13 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
             phone_mobile__in=[self.from_number, self.to_number]
         ).exists()
 
+    def new_phone_mobile_contact(self):
+        from r3sourcer.apps.core.models import Contact
+        contact = Contact.objects.filter(
+            new_phone_mobile=self.from_number
+        )
+        return contact.last() if contact else None
+
     def add_related_objects(self, *args):
         logging.info("Add related objects to message {}({}): {}".format(self.id, self, args))
         return [

@@ -120,6 +120,19 @@ class Contact(CategoryFolderMixin,
         unique=True,
     )
 
+    new_email = models.EmailField(
+        max_length=255,
+        verbose_name=_("New E-mail"),
+        null=True,
+        blank=True,
+    )
+
+    new_phone_mobile = PhoneNumberField(
+        verbose_name=_("New Mobile Phone"),
+        null=True,
+        blank=True,
+    )
+
     gender = models.CharField(
         max_length=7,
         verbose_name=_("Gender"),
@@ -309,6 +322,13 @@ class Contact(CategoryFolderMixin,
         if positive:
             self.phone_mobile_verified = True
             self.save(update_fields=['phone_mobile_verified'])
+
+    def process_new_phone_mobile_reply(self, positive):
+        if positive:
+            self.phone_mobile = self.new_phone_mobile
+            self.new_phone_mobile = None
+            self.phone_mobile_verified = True
+            self.save(update_fields=['phone_mobile_verified', 'phone_mobile', 'new_phone_mobile'])
 
     def save(self, *args, **kwargs):
         is_adding = self._state.adding
