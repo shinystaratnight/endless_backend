@@ -397,17 +397,24 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     @action(methods=['put'], detail=True)
     def change_email(self, request, *args, **kwargs):
         instance = self.get_object()
-        new_email = request.data.get('new_email', False)
-        password = request.data.get('password', False)
+        new_email = request.data.get('new_email')
+        password = request.data.get('password')
 
+        if not new_email:
+            raise exceptions.ValidationError({
+                'new_email': _('Please specify a new_email field')
+            })
+        if not password:
+            raise exceptions.ValidationError({
+                'password': _('Please specify a password field')
+            })
         if not instance.user.check_password(password):
             raise exceptions.ValidationError({
                 'password': _('Password invalid')
             })
-
         if models.Contact.objects.filter(email=new_email).exists():
             raise exceptions.ValidationError({
-                'new_email': _('This email address is connected to another user')
+                'new_email': _('User with this email address already registered')
             })
 
         instance.email_verified = False
@@ -417,11 +424,52 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         # send verification email
         master_company = get_site_master_company()
         manager = master_company.primary_contact
-        tasks.send_contact_verify_email(instance.id, manager.id, master_company.id, new_email = True)
+        tasks.send_contact_verify_email.apply_async(
+                args=(instance.id, manager.id, master_company.id), kwargs=dict(new_email=True))
 
         data = {
             'status': 'success',
             'message': _('An activation link has been sent to your new email address. Please confirm it. You must use the old email until the new email address is confirmed')
+        }
+
+        return Response(data)
+
+    @action(methods=['put'], detail=True)
+    def change_phone_mobile(self, request, *args, **kwargs):
+        instance = self.get_object()
+        new_phone_mobile = request.data.get('new_phone_mobile')
+        password = request.data.get('password')
+
+        if not new_phone_mobile:
+            raise exceptions.ValidationError({
+                'new_phone_mobile': _('Please specify a new_phone_mobile field')
+            })
+        if not password:
+            raise exceptions.ValidationError({
+                'password': _('Please specify a password field')
+            })
+        if not instance.user.check_password(password):
+            raise exceptions.ValidationError({
+                'password': _('Password invalid')
+            })
+        if models.Contact.objects.filter(phone_mobile=new_phone_mobile).exists():
+            raise exceptions.ValidationError({
+                'phone_mobile': _('User with this phone number already registered')
+            })
+
+        instance.phone_mobile_verified = False
+        instance.new_phone_mobile = new_phone_mobile
+        instance.save(update_fields=['phone_mobile_verified', 'new_phone_mobile'])
+
+        # send verification email
+        master_company = get_site_master_company()
+        manager = master_company.primary_contact
+        tasks.send_contact_verify_sms.apply_async(
+                args=(instance.id, manager.id), kwargs=dict(new_phone_mobile=True))
+
+        data = {
+            'status': 'success',
+            'message': _('An sms has been sent to your new mobile number. Please reply to it with "yes". You will receive notification to ols phone number until the new phone number is confirmed')
         }
 
         return Response(data)

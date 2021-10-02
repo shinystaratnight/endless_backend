@@ -125,14 +125,12 @@ class Contact(CategoryFolderMixin,
         verbose_name=_("New E-mail"),
         null=True,
         blank=True,
-        unique=True,
     )
 
     new_phone_mobile = PhoneNumberField(
         verbose_name=_("New Mobile Phone"),
         null=True,
         blank=True,
-        unique=True,
     )
 
     gender = models.CharField(
@@ -324,6 +322,13 @@ class Contact(CategoryFolderMixin,
         if positive:
             self.phone_mobile_verified = True
             self.save(update_fields=['phone_mobile_verified'])
+
+    def process_new_phone_mobile_reply(self, positive):
+        if positive:
+            self.phone_mobile = self.new_phone_mobile
+            self.new_phone_mobile = None
+            self.phone_mobile_verified = True
+            self.save(update_fields=['phone_mobile_verified', 'phone_mobile', 'new_phone_mobile'])
 
     def save(self, *args, **kwargs):
         is_adding = self._state.adding

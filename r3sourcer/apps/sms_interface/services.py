@@ -100,9 +100,14 @@ class BaseSMSService(metaclass=ABCMeta):
 
         template = self.get_template(contact_obj, master_company_obj, tpl_name)
 
+        if kwargs.get('new_phone_mobile') == True:
+            phone_mobile = contact_obj.new_phone_mobile
+        else:
+            phone_mobile = contact_obj.phone_mobile
+
         if template:
             message = template.compile(**kwargs)['text']
-            sms_message = self.send(contact_obj.phone_mobile, message, from_number, related_obj, **kwargs)
+            sms_message = self.send(phone_mobile, message, from_number, related_obj, **kwargs)
             if sms_message is not None:
                 sms_message.template = template
                 sms_message.save()
@@ -185,13 +190,22 @@ class BaseSMSService(metaclass=ABCMeta):
             sent_message, getattr(sent_message, 'id', '-'))
         )
 
+        positive = self._is_positive(sms_message)
+
+        new_phone_mobile_contact = sms_message.new_phone_mobile_contact()
+        if new_phone_mobile_contact:
+
+            logger.info('Confirm new phone mobile number. Related object: {}; Answer: {}'.format(
+                new_phone_mobile_contact, positive
+            ))
+            new_phone_mobile_contact.process_new_phone_mobile_reply(positive=positive)
+            return
+
         if not sms_message.has_contact_relation():
             logger.error("Can't find Contact with numbers: {}, {}".format(
                 sms_message.from_number, sms_message.to_number)
             )
             return
-
-        positive = self._is_positive(sms_message)
 
         if sent_message:
             sms_message.add_related_objects(*sent_message.get_related_objects())
