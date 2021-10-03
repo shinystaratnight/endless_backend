@@ -107,10 +107,15 @@ class BaseEmailService(metaclass=ABCMeta):
 
         template = self.get_template(contact_obj, master_company_obj, tpl_name)
 
+        if kwargs.get('new_email') == True:
+            email = contact_obj.new_email
+        else:
+            email = contact_obj.email
+
         if template:
             compiled = template.compile(**kwargs)
             subject = compiled['subject']
-            self.send(contact_obj.email, subject, compiled['text'],
+            self.send(email, subject, compiled['text'],
                     html_message=compiled['html'], from_email=from_email, template=template,
                     **kwargs
             )

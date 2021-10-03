@@ -221,7 +221,7 @@ def terminate_company_contact(company_contact_rel_id):
 
 
 @shared_task(bind=True)
-def send_contact_verify_sms(self, contact_id, manager_id):
+def send_contact_verify_sms(self, contact_id, manager_id, **kwargs):
     from r3sourcer.apps.sms_interface.utils import get_sms_service
 
     try:
@@ -239,6 +239,9 @@ def send_contact_verify_sms(self, contact_id, manager_id):
     else:
         with transaction.atomic():
             primary_contact = core_models.CompanyContact.objects.filter(contact_id=manager_id).first()
+            if primary_contact is None:
+                primary_contact = contact.get_closest_company().primary_contact
+
             master_company, *_ = primary_contact.get_master_company()
 
             data_dict = dict(
@@ -252,11 +255,13 @@ def send_contact_verify_sms(self, contact_id, manager_id):
             sms_interface.send_tpl(contact,
                                    master_company,
                                    sms_tpl,
-                                   **data_dict)
+                                   **data_dict,
+                                   **kwargs
+                                   )
 
 
 @shared_task(bind=True)
-def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
+def send_contact_verify_email(self, contact_id, manager_id, master_company_id, **kwargs):
     from r3sourcer.apps.email_interface.utils import get_email_service
 
     try:
@@ -279,7 +284,7 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
 
             master_company = core_models.Company.objects.get(id=master_company_id)
 
-            if not contact.verification_token:
+            if not contact.verification_token or contact.new_email:
                 contact.verification_token = contact.generate_auth_token(
                     token_field_name='verification_token', length=64
                 )
@@ -303,7 +308,8 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id):
             email_interface.send_tpl(contact,
                                      master_company,
                                      tpl_name=email_tpl,
-                                     **data_dict
+                                     **data_dict,
+                                     **kwargs
                                      )
 
 
