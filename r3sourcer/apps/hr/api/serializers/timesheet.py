@@ -28,11 +28,14 @@ def validate_timesheet(self, data):
     Time validation on timesheet save
     """
 
-    hours = data.get('hours', None)
+    hours = data.get('hours')
+    wage_type = data.get('wage_type')
+    if wage_type is None:
+        wage_type = self.instance.wage_type
 
     if self.instance.pk and (hours != None or self.instance.candidate_submitted_at):
-        if hours == None:
-            if data.get('wage_type') == 1 or self.instance.wage_type == 1:
+        if hours is None:
+            if wage_type == 1:
                 hours = False
             else:
                 hours = True
