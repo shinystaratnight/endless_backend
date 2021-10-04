@@ -143,9 +143,11 @@ def charge_for_sms(company_id, amount, sms_balance_id):
             # mark as unpaid if error
             payment.status = Payment.PAYMENT_STATUSES.not_paid
             payment.save()
+            logger.info('Invoice Topping up sms balance was not successful for {}'.format(company.id))
         else:
             # increase balance if payment is successful
             sms_balance.balance += Decimal(payment.amount)
+            logger.info('Invoice Topping up sms balance was successful for {}'.format(company.id))
         finally:
             # in any case save the last payment to sms_balance
             sms_balance.last_payment = payment
