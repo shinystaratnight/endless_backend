@@ -139,6 +139,7 @@ class Subscription(CompanyTimeZoneMixin):
         if this_user.trial_period_start:
             end_of_trial = this_user.get_end_of_trial_as_date()
             if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
+                logger.warning('Call deactivate subscription {} from update_user_permissions based on trial'.format(self.subscription_id))
                 self.deactivate(user_id=(str(this_user.id)), stripe_subscription=stripe_subscription)
         # elif self.status in allowed_statuses:
         #     self.activate(user_id=(str(this_user.id)))
@@ -166,6 +167,7 @@ class Subscription(CompanyTimeZoneMixin):
             stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
         try:
             stripe_subscription.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+            logger.warning('Successfully deactivate subscription {}'.format(self.subscription_id))
         except InvalidRequestError as e:
             logger.warning('Cannot deactivate subscription {}. It is missed, probably cancelled: {}'.format(self.subscription_id, e))
         if user_id:
