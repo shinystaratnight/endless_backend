@@ -194,19 +194,19 @@ def fetch_payments():
             continue
         # check all customer invoices
         for invoice in invoices:
-            # if subscription invoice is unpaid mark active subscription as inactive
-            if invoice['paid'] is False and invoice['subscription'] is not None:
-                try:
-                    subscription = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
-                    stripe_subscription = subscription.get_stripe_subscription()
-                    subscription.status = stripe_subscription.status
-                    subscription.active = False
-                    subscription.save()
-                    logger.warning('Mark subscription {} as inactive from fetch_payments'.format(
-                        subscription.subscription_id
-                    ))
-                except Subscription.DoesNotExist:
-                    pass
+            # if subscription invoice is unpaid mark active subscription as inactive -- this is done in sync_subscription
+            # if invoice['paid'] is False and invoice['subscription'] is not None:
+            #     try:
+            #         subscription = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
+            #         stripe_subscription = subscription.get_stripe_subscription()
+            #         subscription.status = stripe_subscription.status
+            #         subscription.active = False
+            #         subscription.save()
+            #         logger.warning('Mark subscription {} as inactive from fetch_payments'.format(
+            #             subscription.subscription_id
+            #         ))
+            #     except Subscription.DoesNotExist:
+            #         pass
 
             # if payment is not created yet then create it for not-void invoices
             # void means this invoice was a mistake or cancelled.
@@ -270,7 +270,7 @@ def fetch_payments():
                 if 'sms' in invoice['description']:
                     sms_balance = SMSBalance.objects.filter(last_payment=payment).first()
                     if sms_balance:
-                        logger.warning('Add sms balance from payment with invoice {} rom fetch_payments'.format(
+                        logger.warning('Add sms balance from payment with invoice {} from fetch_payments'.format(
                             payment.stripe_id
                         ))
                         sms_balance.balance += payment.amount
