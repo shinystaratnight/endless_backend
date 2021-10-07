@@ -178,15 +178,22 @@ class TestSubscription:
 
         assert subscription.status == 'canceled'
 
-    def test_save_another_active_subscription(self, canceled_subscription, subscription):
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    @mock.patch.object(stripe.Subscription, 'modify')
+    def test_save_another_active_subscription(self, mocked_modify, mocked_retrieve, canceled_subscription, subscription):
         """make a canceled subscription active and expect that 'old' subscription become inactive"""
         assert subscription.status == 'active'
         assert subscription.active is True
         assert canceled_subscription.status == 'canceled'
 
+        stripe_subscription = mock.Mock()
+        mocked_retrieve.return_value = stripe_subscription
+
         canceled_subscription.status = 'active'
         canceled_subscription.active = True
         canceled_subscription.save(update_fields=['status', 'active'])
+        mocked_retrieve.assert_called_once()
+        stripe_subscription.modify.assert_called_once_with(subscription.subscription_id, cancel_at_period_end=True, prorate=False)
 
         subscription.refresh_from_db()
         assert subscription.status == 'canceled'
@@ -250,6 +257,18 @@ class TestSMSBalance:
         sms_balance.save()
 
         assert regular_company.sms_balance.low_balance_sent is False
+
+    def test_charge_for_sms_withour_last_payment(self):
+        pass
+
+    def test_charge_for_sms_with_paid_last_payment(self):
+        pass
+
+    def test_charge_for_sms_with_not_paid_last_payment(self):
+        pass
+
+    def test_charge_for_sms_with_void_last_payment(self):
+        pass
 
 
 class TestDiscount:
