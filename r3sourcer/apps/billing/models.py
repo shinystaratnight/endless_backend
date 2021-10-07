@@ -10,10 +10,11 @@ from django.dispatch import receiver
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
-from stripe.error import InvalidRequestError
+from stripe.error import InvalidRequestError, CardError
 
 from r3sourcer import ref
 from r3sourcer.apps.core import tasks
+from r3sourcer.apps.core.models import VAT
 from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
 from r3sourcer.apps.email_interface.models import EmailTemplate, DefaultEmailTemplate
 from r3sourcer.helpers.datetimes import utc_now
@@ -235,6 +236,77 @@ class SMSBalance(models.Model):
         amount = Decimal(number_of_segments) * self.segment_cost
         self.balance = self.balance - Decimal(amount)
         self.save()
+
+    def charge_for_sms(self, amount):
+        # try to create and pay invoice if last payment was successful
+        # or if it's the first payment
+        if self.last_payment is None or self.last_payment.status == Payment.PAYMENT_STATUSES.paid:
+            country_code = self.company.get_hq_address().address.country.code2
+            stripe_secret_key = StripeCountryAccount.get_stripe_key(country_code)
+            stripe.api_key = stripe_secret_key
+            vat_object = VAT.get_vat(country_code).first()
+            tax_percent = vat_object.stripe_rate
+
+            for discount in self.company.get_active_discounts('sms'):
+                amount = discount.apply_discount(amount)
+
+            tax_value = tax_percent / 100 + 1
+            stripe.InvoiceItem.create(customer=self.company.stripe_customer,
+                                      amount=round(int(amount * 100 / tax_value)),
+                                      currency=self.company.currency,
+                                      description='Topping up sms balance')
+            logger.info('InvoiceItem Topping up sms balance created for {} to {}'.format(
+                round(int(amount * 100 / tax_value)),
+                self.company.id
+            ))
+            invoice = stripe.Invoice.create(customer=self.company.stripe_customer,
+                                            default_tax_rates=[vat_object.stripe_id],
+                                            description='Topping up sms balance')
+            logger.info('Invoice Topping up sms balance created to {}'.format(self.company.id))
+            payment = Payment.objects.create(
+                company=self.company,
+                type=Payment.PAYMENT_TYPES.sms,
+                amount=amount,
+                stripe_id=invoice['id'],
+                invoice_url=invoice['invoice_pdf'],
+                status=invoice['status']
+            )
+            # pay an invoice after creation of corresponding Payment
+            try:
+                invoice.pay()
+            except CardError as ex:
+                # mark as unpaid if error
+                payment.status = Payment.PAYMENT_STATUSES.not_paid
+                payment.save()
+                logger.info('Invoice Topping up sms balance was not successful for {}'.format(self.company.id))
+            else:
+                # increase balance if payment is successful
+                self.balance += Decimal(payment.amount)
+                logger.info('Invoice Topping up sms balance was successful for {}'.format(self.company.id))
+            finally:
+                # in any case save the last payment to sms_balance
+                self.last_payment = payment
+                self.save()
+        # try to pay again payment if it wasn't paid
+        elif self.last_payment.status == Payment.PAYMENT_STATUSES.not_paid:
+            payment = self.last_payment
+            invoice = stripe.Invoice.retrieve(payment.stripe_id)
+            logger.info('Invoice Topping up sms balance retrieved with id {}'.format(payment.stripe_id))
+            # try to pay an invoice again
+            try:
+                invoice.pay()
+            except CardError as ex:
+                # mark as unpaid if error
+                payment.status = Payment.PAYMENT_STATUSES.not_paid
+                payment.save()
+                logger.info('Invoice Topping up sms balance was not successful for {}'.format(self.company.id))
+            else:
+                # increase balance if payment is successful
+                self.balance += Decimal(payment.amount)
+                logger.info('Invoice Topping up sms balance was successful for {}'.format(self.company.id))
+            finally:
+                self.save()
+
 
     def save(self, *args, **kwargs):
         from r3sourcer.apps.billing.tasks import charge_for_sms
