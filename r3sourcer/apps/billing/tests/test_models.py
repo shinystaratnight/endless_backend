@@ -287,7 +287,7 @@ class TestDiscount:
 
         mocked_value = {'id': 'stripe_id'}
         mocked_invoice.return_value = mocked_value
-        charge_for_sms(company.id, 100, company.sms_balance.id)
+        charge_for_sms(100, company.sms_balance.id)
 
         assert Payment.objects.first().amount == 75
 

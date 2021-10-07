@@ -110,7 +110,7 @@ class TestChargeForSMS:
         mocked_value = {'id': 'stripe_id'}
         mocked_invoice.return_value = mocked_value
         initial_payment_count = Payment.objects.count()
-        charge_for_sms(company.id, 100, company.sms_balance.id)
+        charge_for_sms(100, company.sms_balance.id)
 
         assert initial_payment_count + 1 == Payment.objects.count()
 

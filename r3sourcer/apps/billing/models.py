@@ -312,7 +312,7 @@ class SMSBalance(models.Model):
         from r3sourcer.apps.billing.tasks import charge_for_sms
 
         if self.balance <= self.top_up_limit and self.auto_charge is True:
-            charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
+            charge_for_sms.delay(self.top_up_amount, self.id)
 
         if self.company.is_master:
             low_limit = SMSBalanceLimits.objects.filter(name="Low").first()
