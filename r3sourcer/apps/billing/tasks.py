@@ -42,7 +42,7 @@ def charge_for_extra_workers():
         active_workers = company.active_workers(subscription.current_period_start)
         country_code = company.get_country_code()
         stripe.api_key = sca.get_stripe_key(country_code)
-        vat_object = VAT.get_vat(country_code)
+        vat_object = VAT.get_vat(country_code).first()
         plan_type = subscription.subscription_type.type
 
         if active_workers > paid_workers:
