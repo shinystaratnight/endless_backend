@@ -1,5 +1,4 @@
 from datetime import timedelta
-from decimal import Decimal
 
 import stripe
 
@@ -8,7 +7,7 @@ from celery.utils.log import get_task_logger
 
 from django.conf import settings
 from django.db.models import Count
-from stripe.error import InvalidRequestError, CardError
+from stripe.error import InvalidRequestError
 
 from r3sourcer.apps.billing.models import (
                             Subscription,
@@ -102,57 +101,7 @@ def charge_for_extra_workers():
 def charge_for_sms(company_id, amount, sms_balance_id):
     company = Company.objects.get(id=company_id)
     sms_balance = SMSBalance.objects.get(id=sms_balance_id)
-
-    # try to create invoice and pay if last payment was successful
-    # or if it's the first payment
-    if sms_balance.last_payment is None or sms_balance.last_payment.status == Payment.PAYMENT_STATUSES.paid:
-        country_code = company.get_hq_address().address.country.code2
-        stripe_secret_key = sca.get_stripe_key(country_code)
-        stripe.api_key = stripe_secret_key
-        vat_object = VAT.get_vat(country_code).first()
-        tax_percent = vat_object.stripe_rate
-
-        for discount in company.get_active_discounts('sms'):
-            amount = discount.apply_discount(amount)
-
-        tax_value = tax_percent / 100 + 1
-        stripe.InvoiceItem.create(customer=company.stripe_customer,
-                                  amount=round(int(amount * 100 / tax_value)),
-                                  currency=company.currency,
-                                  description='Topping up sms balance')
-        logger.info('InvoiceItem Topping up sms balance created for {} to {}'.format(
-            round(int(amount * 100 / tax_value)),
-            company.id
-        ))
-        invoice = stripe.Invoice.create(customer=company.stripe_customer,
-                                        default_tax_rates=[vat_object.stripe_id],
-                                        description='Topping up sms balance')
-        logger.info('Invoice Topping up sms balance created to {}'.format(company.id))
-        payment = Payment.objects.create(
-            company=company,
-            type=Payment.PAYMENT_TYPES.sms,
-            amount=amount,
-            stripe_id=invoice['id'],
-            invoice_url=invoice['invoice_pdf'],
-            status=invoice['status']
-        )
-        # pay an invoice after creation of corresponding Payment
-        try:
-            invoice.pay()
-        except CardError as ex:
-            # mark as unpaid if error
-            payment.status = Payment.PAYMENT_STATUSES.not_paid
-            payment.save()
-            logger.info('Invoice Topping up sms balance was not successful for {}'.format(company.id))
-        else:
-            # increase balance if payment is successful
-            sms_balance.balance += Decimal(payment.amount)
-            logger.info('Invoice Topping up sms balance was successful for {}'.format(company.id))
-        finally:
-            # in any case save the last payment to sms_balance
-            sms_balance.last_payment = payment
-            sms_balance.save()
-
+    sms_balance.charge_for_sms(amount)
 
 @shared_task
 def sync_subscriptions():
