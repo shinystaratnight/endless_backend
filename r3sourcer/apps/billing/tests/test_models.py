@@ -296,47 +296,85 @@ class TestDiscount:
     @mock.patch.object(stripe.InvoiceItem, 'create')
     @mock.patch.object(stripe.Invoice, 'create')
     @mock.patch.object(Subscription, 'deactivate')
-    def test_apply_discount_sms(self, mocked_invoice_item, mocked_invoice, mocked_subscription, client, user, company, relationship):
+    def test_apply_discount_sms(self, mocked_subscription, mocked_invoice, mocked_invoice_item, client, user, company,
+                                relationship, company_address):
         Discount.objects.create(
             company=company,
             payment_type='sms',
             amount_off=25,
             duration='once',
         )
-
-        mocked_value = {'id': 'stripe_id'}
-        mocked_invoice.return_value = mocked_value
+        stripe_invoice_dict = {
+            'id': 'stripe_id',
+            'invoice_pdf': 'invoice_pdf',
+            'status': 'paid'
+        }
+        stripe_invoice = mock.MagicMock()
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_invoice.__getitem__.side_effect = stripe_invoice_dict.__getitem__
+        mocked_invoice.return_value = stripe_invoice
         charge_for_sms(100, company.sms_balance.id)
 
+        stripe_invoice.pay.assert_called_once()
         assert Payment.objects.first().amount == 75
 
+    @mock.patch.object(stripe.Subscription, 'modify')
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    @mock.patch.object(stripe.Plan, 'create')
     @mock.patch.object(stripe.InvoiceItem, 'create')
     @mock.patch.object(stripe.Invoice, 'create')
     @mock.patch('r3sourcer.apps.core.models.Company.active_workers')
-    def test_apply_discount_extra_workers(self, mocked_invoice_item, mocked_invoice, active_workers, client, user,
-                                          company):
+    def test_apply_discount_extra_workers(self, active_workers, mocked_invoice, mocked_invoice_item, mocked_plan_create,
+                                          mocked_subscription_retrieve, mocked_subscription_modify, client, user,
+                                          company, company_address, vat, subscription_type_monthly):
         Discount.objects.create(
             company=company,
             payment_type='extra_workers',
             amount_off=30,
             duration='once',
         )
+        stripe_invoice_dict = {
+            'id': 'stripe_id',
+            'invoice_pdf': 'invoice_pdf',
+            'status': 'paid'
+        }
+        stripe_invoice = mock.MagicMock()
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_invoice.__getitem__.side_effect = stripe_invoice_dict.__getitem__
+        mocked_invoice.return_value = stripe_invoice
         active_workers.return_value = 110
         company.stripe_customer = 'cus_CnGRCuSr6Fo0Uv'
         company.save()
         Subscription.objects.create(
             company=company,
             name='subscription',
-            subscription_type=SubscriptionType.objects.create(
-                type='monthly'
-            ),
+            subscription_type=subscription_type_monthly,
             price=500,
             worker_count=100,
             active=True,
             current_period_end=datetime.date.today()
         )
+
+        stripe_plan = mock.Mock()
+        stripe_plan.id = 'plan_id'
+        mocked_plan_create.return_value = stripe_plan
+
+        some_mock = mock.Mock()
+        some_mock.id = 'id'
+        stripe_subscription_dict = {
+            'items': {
+                'data': [some_mock]
+            }
+        }
+        stripe_subscription = mock.MagicMock()
+        stripe_subscription.id = 'subscription_id'
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_subscription.__getitem__.side_effect = stripe_subscription_dict.__getitem__
+        mocked_subscription_retrieve.return_value = stripe_subscription
+
         charge_for_extra_workers()
 
+        mocked_subscription_modify.assert_called_once()
         assert Payment.objects.first().amount == 100
 
     def test_duration_once(self, client, user, company):
