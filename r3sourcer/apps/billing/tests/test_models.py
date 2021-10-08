@@ -8,6 +8,7 @@ from stripe.error import CardError
 from r3sourcer.apps.billing.models import Discount, Subscription, Payment, SubscriptionType
 from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms
 from r3sourcer.apps.core.tasks import cancel_subscription_access
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class TestSubscription:
@@ -306,9 +307,8 @@ class TestSMSBalance:
 
     @mock.patch.object(stripe.InvoiceItem, 'create')
     @mock.patch.object(stripe.Invoice, 'create')
-    def test_charge_for_sms_with_paid_last_payment(self, mocked_invoice, mocked_invoice_item, client,
-                                                              user,
-                                                              company, company_address, relationship, vat):
+    def test_charge_for_sms_with_paid_last_payment(self, mocked_invoice, mocked_invoice_item, client, user, company,
+                                                   company_address, relationship, vat):
         """Topping up balance with 100 and assume balance would be 100"""
         sms_balance = company.sms_balance
         last_payment = Payment.objects.create(
@@ -316,7 +316,8 @@ class TestSMSBalance:
             amount=100,
             type=Payment.PAYMENT_TYPES.sms,
             status=Payment.PAYMENT_STATUSES.paid,
-            stripe_id='stripe_id'
+            stripe_id='stripe_id',
+            created=utc_now()-datetime.timedelta(minutes=1)
         )
         sms_balance.last_payment = last_payment
         sms_balance.save()
@@ -337,8 +338,9 @@ class TestSMSBalance:
         assert sms_balance.last_payment.id != last_payment.id
         assert sms_balance.balance == 100
 
-    @mock.patch.object(stripe.Invoice, 'retrieve')
-    def test_charge_for_sms_with_not_paid_last_payment(self, mocked_invoice, client,
+    @mock.patch.object(stripe.InvoiceItem, 'create')
+    @mock.patch.object(stripe.Invoice, 'create')
+    def test_charge_for_sms_with_not_paid_last_payment(self, mocked_invoice, mocked_invoice_item, client,
                                                        user, company, company_address, relationship, vat):
         """Topping up balance with 100 and assume balance would be 100 without changes in last Payment"""
         sms_balance = company.sms_balance
@@ -347,7 +349,8 @@ class TestSMSBalance:
             amount=100,
             type=Payment.PAYMENT_TYPES.sms,
             status=Payment.PAYMENT_STATUSES.not_paid,
-            stripe_id='stripe_id'
+            stripe_id='stripe_id',
+            created=utc_now()-datetime.timedelta(minutes=1)
         )
         sms_balance.last_payment = last_payment
         sms_balance.save()
@@ -365,7 +368,7 @@ class TestSMSBalance:
         sms_balance.charge_for_sms(100)
 
         stripe_invoice.pay.assert_called_once()
-        assert sms_balance.last_payment.id == last_payment.id
+        assert sms_balance.last_payment.id != last_payment.id
         assert sms_balance.balance == 100
 
 
