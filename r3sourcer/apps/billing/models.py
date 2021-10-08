@@ -238,12 +238,12 @@ class SMSBalance(models.Model):
         self.save()
 
     def charge_for_sms(self, amount):
-        # try to create and pay invoice if last payment was successful
-        # or if it's the first payment
-        if self.last_payment is None or self.last_payment.status == Payment.PAYMENT_STATUSES.paid:
-            country_code = self.company.get_hq_address().address.country.code2
-            stripe_secret_key = StripeCountryAccount.get_stripe_key(country_code)
-            stripe.api_key = stripe_secret_key
+        country_code = self.company.get_hq_address().address.country.code2
+        stripe_secret_key = StripeCountryAccount.get_stripe_key(country_code)
+        stripe.api_key = stripe_secret_key
+        # try to create and pay invoice if it's the first payment
+        # or if payment was more than a minute ago to exclude duplicates
+        if self.last_payment is None or self.last_payment.created + datetime.timedelta(minutes=1) < utc_now():
             vat_object = VAT.get_vat(country_code).first()
             tax_percent = vat_object.stripe_rate
 
@@ -286,25 +286,6 @@ class SMSBalance(models.Model):
             finally:
                 # in any case save the last payment to sms_balance
                 self.last_payment = payment
-                self.save()
-        # try to pay again payment if it wasn't paid
-        elif self.last_payment.status == Payment.PAYMENT_STATUSES.not_paid:
-            payment = self.last_payment
-            invoice = stripe.Invoice.retrieve(payment.stripe_id)
-            logger.info('Invoice Topping up sms balance retrieved with id {}'.format(payment.stripe_id))
-            # try to pay an invoice again
-            try:
-                invoice.pay()
-            except CardError as ex:
-                # mark as unpaid if error
-                payment.status = Payment.PAYMENT_STATUSES.not_paid
-                payment.save()
-                logger.info('Invoice Topping up sms balance was not successful for {}'.format(self.company.id))
-            else:
-                # increase balance if payment is successful
-                self.balance += Decimal(payment.amount)
-                logger.info('Invoice Topping up sms balance was successful for {}'.format(self.company.id))
-            finally:
                 self.save()
 
 
