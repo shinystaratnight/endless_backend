@@ -1,5 +1,6 @@
 import binascii
 import copy
+import datetime
 import pytest
 
 from unittest.mock import patch
@@ -7,11 +8,15 @@ from django.contrib.contenttypes.models import ContentType
 from django.contrib.sites.models import Site
 from django.core.management import call_command
 from django.core.files.base import ContentFile
+from django.utils import timezone
 
 from r3sourcer.apps.candidate.models import CandidateContact, CandidateRel
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.models.core import Role, CompanyAddress, ContactAddress
 from r3sourcer.apps.email_interface.models import EmailTemplate
+from r3sourcer.apps.hr.models import Job, ShiftDate, Shift, Jobsite, JobOffer, JobOfferSMS, TimeSheet
+from r3sourcer.apps.pricing.models import Industry
+from r3sourcer.apps.skills.models import SkillName, Skill
 
 
 @pytest.fixture
@@ -466,3 +471,218 @@ def email_test_message_template(company):
         message_html_template="Hello [[user__email]]",
         language_id='en'
     )
+
+
+@pytest.fixture
+def industry(db):
+    return Industry.objects.create(type='test')
+
+
+@pytest.fixture
+def skill_name(db, industry):
+    return SkillName.objects.create(name="Driver", industry=industry)
+
+
+@pytest.fixture
+def skill(db, skill_name, company):
+    return Skill.objects.create(
+        name=skill_name,
+        carrier_list_reserve=2,
+        short_name="Drv",
+        active=False,
+        company=company
+    )
+
+
+@pytest.fixture
+def jobsite(db, company, company_contact, industry, address, company_regular):
+    return Jobsite.objects.create(
+        industry=industry,
+        master_company=company,
+        start_date=datetime.date.today(),
+        end_date=datetime.date.today() + datetime.timedelta(days=7),
+        primary_contact=company_contact,
+        address=address,
+        regular_company=company_regular,
+    )
+
+
+@pytest.fixture
+def job(db, company, company_regular, jobsite, skill):
+    return Job.objects.create(
+        provider_company=company,
+        customer_company=company_regular,
+        jobsite=jobsite,
+        position=skill,
+        published=True,
+        workers=10
+    )
+
+
+@pytest.fixture
+def shift_date(db, job):
+    return ShiftDate.objects.create(
+        job=job,
+        shift_date=datetime.date.today()
+    )
+
+
+@pytest.fixture
+def shift(db, shift_date):
+    return Shift.objects.create(
+        date=shift_date,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+@patch.object(JobOffer, 'check_job_quota', return_value=True)
+def job_offer_accepted(mock_check, db, shift, candidate_contact):
+    job_offer = JobOffer.objects.create(
+        shift=shift,
+        candidate_contact=candidate_contact,
+        status=JobOffer.STATUS_CHOICES.accepted
+    )
+
+    JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+
+    return job_offer
+
+
+@pytest.fixture
+@patch.object(JobOffer, 'check_job_quota', return_value=True)
+def job_offer_accepted_second(mock_check, db, shift, candidate_contact_sec):
+    job_offer = JobOffer.objects.create(
+        shift=shift,
+        candidate_contact=candidate_contact_sec,
+        status=JobOffer.STATUS_CHOICES.accepted
+    )
+
+    JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+
+    return job_offer
+
+
+@pytest.fixture
+@patch.object(JobOffer, 'check_job_quota', return_value=True)
+def job_offer_cancelled_second(mock_check, db, shift, candidate_contact_sec):
+    job_offer = JobOffer.objects.create(
+        shift=shift,
+        candidate_contact=candidate_contact_sec,
+        status=JobOffer.STATUS_CHOICES.cancelled
+    )
+
+    JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+
+    return job_offer
+
+
+@pytest.fixture
+def timesheet_approved(db, job_offer_accepted, company_contact):
+    timesheet, _ = TimeSheet.objects.get_or_create(
+        job_offer=job_offer_accepted
+    )
+    timesheet.supervisor=company_contact
+    timesheet.supervisor_approved_at=timezone.now()
+    timesheet.candidate_submitted_at=timezone.now()
+    timesheet.going_to_work_confirmation=True
+    timesheet.status=TimeSheet.STATUS_CHOICES.approved
+    timesheet.save()
+    timesheet.refresh_from_db()
+    return timesheet
+
+@pytest.fixture
+def timesheet_second_approved(db, job_offer_accepted_second, company_contact):
+    timesheet, _ = TimeSheet.objects.get_or_create(
+        job_offer=job_offer_accepted_second
+    )
+    timesheet.supervisor=company_contact
+    timesheet.supervisor_approved_at=timezone.now()
+    timesheet.candidate_submitted_at=timezone.now()
+    timesheet.going_to_work_confirmation=True
+    timesheet.status=TimeSheet.STATUS_CHOICES.approved
+    timesheet.save()
+    timesheet.refresh_from_db()
+    return timesheet
+
+@pytest.fixture
+def timesheet_second_approval_pending(db, job_offer_accepted_second, company_contact):
+    timesheet, _ = TimeSheet.objects.get_or_create(
+        job_offer=job_offer_accepted_second
+    )
+    timesheet.supervisor=company_contact
+    timesheet.supervisor_approved_at=timezone.now()
+    timesheet.candidate_submitted_at=timezone.now()
+    timesheet.going_to_work_confirmation=False
+    timesheet.status=TimeSheet.STATUS_CHOICES.check_failed
+    timesheet.save()
+    timesheet.refresh_from_db()
+    return timesheet
+
+@pytest.fixture
+def jobsite_other(db, company, company_contact, industry, address, company_other):
+    return Jobsite.objects.create(
+        industry=industry,
+        master_company=company,
+        start_date=datetime.date.today(),
+        end_date=datetime.date.today() + datetime.timedelta(days=7),
+        primary_contact=company_contact,
+        address=address,
+        regular_company=company_other,
+    )
+
+
+@pytest.fixture
+def job_other(db, company, company_other, jobsite_other, skill):
+    return Job.objects.create(
+        provider_company=company,
+        customer_company=company_other,
+        jobsite=jobsite_other,
+        position=skill,
+        published=True,
+        workers=10
+    )
+
+
+@pytest.fixture
+def shift_date_other(db, job_other):
+    return ShiftDate.objects.create(
+        job=job_other,
+        shift_date=datetime.date.today()
+    )
+
+
+@pytest.fixture
+def shift_other(db, shift_date_other):
+    return Shift.objects.create(
+        date=shift_date_other,
+        time=datetime.time(hour=8, minute=30)
+    )
+
+
+@pytest.fixture
+@patch.object(JobOffer, 'check_job_quota', return_value=True)
+def job_offer_other_accepted(mock_check, db, shift_other, candidate_contact_sec):
+    job_offer = JobOffer.objects.create(
+        shift=shift_other,
+        candidate_contact=candidate_contact_sec,
+        status=JobOffer.STATUS_CHOICES.accepted
+    )
+
+    JobOfferSMS.objects.create(job_offer=job_offer, offer_sent_by_sms=None)
+
+    return job_offer
+
+@pytest.fixture
+def timesheet_other_approved(db, job_offer_other_accepted, company_contact):
+    timesheet, _ = TimeSheet.objects.get_or_create(
+        job_offer=job_offer_other_accepted
+    )
+    timesheet.supervisor=company_contact
+    timesheet.supervisor_approved_at=timezone.now()
+    timesheet.candidate_submitted_at=timezone.now()
+    timesheet.going_to_work_confirmation=True
+    timesheet.status=TimeSheet.STATUS_CHOICES.approved
+    timesheet.save()
+    timesheet.refresh_from_db()
+    return timesheet

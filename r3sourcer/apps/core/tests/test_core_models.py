@@ -338,6 +338,16 @@ class TestCompany:
     def test_default_get_country_code(self, company):
         assert company.get_country_code() == 'EE'
 
+    def test_get_active_workers(self, company_regular, timesheet_approved, timesheet_second_approved):
+        assert company_regular.active_workers() == 2
+
+    def test_get_active_workers_with_inactive(self, company_regular, timesheet_approved, timesheet_second_approved, timesheet_second_approval_pending):
+        assert company_regular.active_workers() == 2
+
+    def test_get_active_workers_with_other_offer(self, company_regular, company_other, timesheet_approved, timesheet_other_approved):
+        assert company_regular.active_workers() == 1
+        assert company_other.active_workers() == 1
+
 @pytest.mark.django_db
 class TestCompanyAddress:
 
