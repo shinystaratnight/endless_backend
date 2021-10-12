@@ -19,5 +19,5 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.RunPython(change_contact_default_languages),
+        # migrations.RunPython(change_contact_default_languages),
     ]

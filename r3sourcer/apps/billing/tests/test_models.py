@@ -3,10 +3,12 @@ import mock
 from decimal import Decimal
 
 import stripe
+from stripe.error import CardError
 
 from r3sourcer.apps.billing.models import Discount, Subscription, Payment, SubscriptionType
 from r3sourcer.apps.billing.tasks import charge_for_extra_workers, charge_for_sms
 from r3sourcer.apps.core.tasks import cancel_subscription_access
+from r3sourcer.helpers.datetimes import utc_now
 
 
 class TestSubscription:
@@ -178,15 +180,22 @@ class TestSubscription:
 
         assert subscription.status == 'canceled'
 
-    def test_save_another_active_subscription(self, canceled_subscription, subscription):
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    @mock.patch.object(stripe.Subscription, 'modify')
+    def test_save_another_active_subscription(self, mocked_modify, mocked_retrieve, canceled_subscription, subscription):
         """make a canceled subscription active and expect that 'old' subscription become inactive"""
         assert subscription.status == 'active'
         assert subscription.active is True
         assert canceled_subscription.status == 'canceled'
 
+        stripe_subscription = mock.Mock()
+        mocked_retrieve.return_value = stripe_subscription
+
         canceled_subscription.status = 'active'
         canceled_subscription.active = True
         canceled_subscription.save(update_fields=['status', 'active'])
+        mocked_retrieve.assert_called_once()
+        stripe_subscription.modify.assert_called_once_with(subscription.subscription_id, cancel_at_period_end=True, prorate=False)
 
         subscription.refresh_from_db()
         assert subscription.status == 'canceled'
@@ -251,6 +260,117 @@ class TestSMSBalance:
 
         assert regular_company.sms_balance.low_balance_sent is False
 
+    @mock.patch.object(stripe.InvoiceItem, 'create')
+    @mock.patch.object(stripe.Invoice, 'create')
+    def test_charge_for_sms_without_last_payment_carderror(self, mocked_invoice, mocked_invoice_item, client, user,
+                                                           company, company_address, relationship, vat):
+        """Topping up balance with 100 and assume balance would be 90 with stripe rate=0.1"""
+        sms_balance = company.sms_balance
+        stripe_invoice_dict = {
+            'id': 'stripe_id',
+            'invoice_pdf': 'invoice_pdf',
+            'status': 'paid'
+        }
+        stripe_invoice = mock.MagicMock()
+        stripe_invoice.pay = mock.Mock(side_effect=CardError('foo', '', 1))
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_invoice.__getitem__.side_effect = stripe_invoice_dict.__getitem__
+        mocked_invoice.return_value = stripe_invoice
+
+        sms_balance.charge_for_sms(100)
+
+        # mocked_invoice.pay.assert_called_once()
+        assert sms_balance.last_payment is not None
+        assert sms_balance.balance == 0
+
+    @mock.patch.object(stripe.InvoiceItem, 'create')
+    @mock.patch.object(stripe.Invoice, 'create')
+    def test_charge_for_sms_without_last_payment_successfully(self, mocked_invoice, mocked_invoice_item, client, user,
+                                                           company, company_address, relationship, vat):
+        """Topping up balance with 100 and assume balance would be 100"""
+        sms_balance = company.sms_balance
+        stripe_invoice_dict = {
+            'id': 'stripe_id',
+            'invoice_pdf': 'invoice_pdf',
+            'status': 'paid'
+        }
+        stripe_invoice = mock.MagicMock()
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_invoice.__getitem__.side_effect = stripe_invoice_dict.__getitem__
+        mocked_invoice.return_value = stripe_invoice
+
+        sms_balance.charge_for_sms(100)
+
+        stripe_invoice.pay.assert_called_once()
+        assert sms_balance.last_payment is not None
+        assert sms_balance.balance == 100
+
+    @mock.patch.object(stripe.InvoiceItem, 'create')
+    @mock.patch.object(stripe.Invoice, 'create')
+    def test_charge_for_sms_with_paid_last_payment(self, mocked_invoice, mocked_invoice_item, client, user, company,
+                                                   company_address, relationship, vat):
+        """Topping up balance with 100 and assume balance would be 100"""
+        sms_balance = company.sms_balance
+        last_payment = Payment.objects.create(
+            company=company,
+            amount=100,
+            type=Payment.PAYMENT_TYPES.sms,
+            status=Payment.PAYMENT_STATUSES.paid,
+            stripe_id='stripe_id',
+            created=utc_now()-datetime.timedelta(minutes=1)
+        )
+        sms_balance.last_payment = last_payment
+        sms_balance.save()
+
+        stripe_invoice_dict = {
+            'id': 'stripe_id',
+            'invoice_pdf': 'invoice_pdf',
+            'status': 'paid'
+        }
+        stripe_invoice = mock.MagicMock()
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_invoice.__getitem__.side_effect = stripe_invoice_dict.__getitem__
+        mocked_invoice.return_value = stripe_invoice
+
+        sms_balance.charge_for_sms(100)
+
+        stripe_invoice.pay.assert_called_once()
+        assert sms_balance.last_payment.id != last_payment.id
+        assert sms_balance.balance == 100
+
+    @mock.patch.object(stripe.InvoiceItem, 'create')
+    @mock.patch.object(stripe.Invoice, 'create')
+    def test_charge_for_sms_with_not_paid_last_payment(self, mocked_invoice, mocked_invoice_item, client,
+                                                       user, company, company_address, relationship, vat):
+        """Topping up balance with 100 and assume balance would be 100 without changes in last Payment"""
+        sms_balance = company.sms_balance
+        last_payment = Payment.objects.create(
+            company=company,
+            amount=100,
+            type=Payment.PAYMENT_TYPES.sms,
+            status=Payment.PAYMENT_STATUSES.not_paid,
+            stripe_id='stripe_id',
+            created=utc_now()-datetime.timedelta(minutes=1)
+        )
+        sms_balance.last_payment = last_payment
+        sms_balance.save()
+
+        stripe_invoice_dict = {
+            'id': 'stripe_id',
+            'invoice_pdf': 'invoice_pdf',
+            'status': 'paid'
+        }
+        stripe_invoice = mock.MagicMock()
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_invoice.__getitem__.side_effect = stripe_invoice_dict.__getitem__
+        mocked_invoice.return_value = stripe_invoice
+
+        sms_balance.charge_for_sms(100)
+
+        stripe_invoice.pay.assert_called_once()
+        assert sms_balance.last_payment.id != last_payment.id
+        assert sms_balance.balance == 100
+
 
 class TestDiscount:
 
@@ -277,47 +397,85 @@ class TestDiscount:
     @mock.patch.object(stripe.InvoiceItem, 'create')
     @mock.patch.object(stripe.Invoice, 'create')
     @mock.patch.object(Subscription, 'deactivate')
-    def test_apply_discount_sms(self, mocked_invoice_item, mocked_invoice, mocked_subscription, client, user, company, relationship):
+    def test_apply_discount_sms(self, mocked_subscription, mocked_invoice, mocked_invoice_item, client, user, company,
+                                relationship, company_address):
         Discount.objects.create(
             company=company,
             payment_type='sms',
             amount_off=25,
             duration='once',
         )
+        stripe_invoice_dict = {
+            'id': 'stripe_id',
+            'invoice_pdf': 'invoice_pdf',
+            'status': 'paid'
+        }
+        stripe_invoice = mock.MagicMock()
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_invoice.__getitem__.side_effect = stripe_invoice_dict.__getitem__
+        mocked_invoice.return_value = stripe_invoice
+        charge_for_sms(100, company.sms_balance.id)
 
-        mocked_value = {'id': 'stripe_id'}
-        mocked_invoice.return_value = mocked_value
-        charge_for_sms(company.id, 100, company.sms_balance.id)
-
+        stripe_invoice.pay.assert_called_once()
         assert Payment.objects.first().amount == 75
 
+    @mock.patch.object(stripe.Subscription, 'modify')
+    @mock.patch.object(stripe.Subscription, 'retrieve')
+    @mock.patch.object(stripe.Plan, 'create')
     @mock.patch.object(stripe.InvoiceItem, 'create')
     @mock.patch.object(stripe.Invoice, 'create')
     @mock.patch('r3sourcer.apps.core.models.Company.active_workers')
-    def test_apply_discount_extra_workers(self, mocked_invoice_item, mocked_invoice, active_workers, client, user,
-                                          company):
+    def test_apply_discount_extra_workers(self, active_workers, mocked_invoice, mocked_invoice_item, mocked_plan_create,
+                                          mocked_subscription_retrieve, mocked_subscription_modify, client, user,
+                                          company, company_address, vat, subscription_type_monthly):
         Discount.objects.create(
             company=company,
             payment_type='extra_workers',
             amount_off=30,
             duration='once',
         )
+        stripe_invoice_dict = {
+            'id': 'stripe_id',
+            'invoice_pdf': 'invoice_pdf',
+            'status': 'paid'
+        }
+        stripe_invoice = mock.MagicMock()
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_invoice.__getitem__.side_effect = stripe_invoice_dict.__getitem__
+        mocked_invoice.return_value = stripe_invoice
         active_workers.return_value = 110
         company.stripe_customer = 'cus_CnGRCuSr6Fo0Uv'
         company.save()
         Subscription.objects.create(
             company=company,
             name='subscription',
-            subscription_type=SubscriptionType.objects.create(
-                type='monthly'
-            ),
+            subscription_type=subscription_type_monthly,
             price=500,
             worker_count=100,
             active=True,
             current_period_end=datetime.date.today()
         )
+
+        stripe_plan = mock.Mock()
+        stripe_plan.id = 'plan_id'
+        mocked_plan_create.return_value = stripe_plan
+
+        some_mock = mock.Mock()
+        some_mock.id = 'id'
+        stripe_subscription_dict = {
+            'items': {
+                'data': [some_mock]
+            }
+        }
+        stripe_subscription = mock.MagicMock()
+        stripe_subscription.id = 'subscription_id'
+        # override getitem so we can mock stripe_invoice['id']
+        stripe_subscription.__getitem__.side_effect = stripe_subscription_dict.__getitem__
+        mocked_subscription_retrieve.return_value = stripe_subscription
+
         charge_for_extra_workers()
 
+        mocked_subscription_modify.assert_called_once()
         assert Payment.objects.first().amount == 100
 
     def test_duration_once(self, client, user, company):
