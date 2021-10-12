@@ -1397,8 +1397,8 @@ class Company(CategoryFolderMixin,
     def active_subscription(self):
         return self.subscriptions.filter(active=True).first()
 
-    def active_workers(self, start_date=None):
-        """ returns number of active workers"""
+    def _get_active_workers(self, start_date=None):
+        """ returns list of active workers"""
         from r3sourcer.apps.candidate.models import CandidateContact
 
         if not start_date:
@@ -1408,7 +1408,15 @@ class Company(CategoryFolderMixin,
             job_offers__shift__date__job__customer_company=self,
             job_offers__time_sheets__shift_started_at__gt=start_date,
             job_offers__time_sheets__status=7,
-        ).distinct().count()
+        ).distinct()
+
+    def active_workers(self, start_date=None):
+        """ returns number of active workers"""
+        return self._get_active_workers(start_date=start_date).count()
+
+    def get_active_workers_ids(self, start_date=None):
+        """ returns list with active workers ids"""
+        return self._get_active_workers(start_date=start_date).values_list('id', flat=True)
 
     def get_active_discounts(self, payment_type=None):
         discounts = self.discounts.filter(active=True)
