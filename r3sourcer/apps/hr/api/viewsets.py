@@ -738,6 +738,14 @@ class JobViewset(BaseApiViewset):
         if not candidate_ids:
             raise exceptions.ParseError(_('No Candidates has been chosen'))
 
+        job = self.get_object()
+        active_workers = job.customer_company.get_active_workers_ids()
+        all_workers = set(active_workers + candidate_ids)
+        subscription_worker_count = job.customer_company.active_subscription.worker_count
+        # check subscription limits
+        if len(all_workers) > subscription_worker_count:
+            raise exceptions.ValidationError(_('You are not allowed to book more than {}'.format(subscription_worker_count)))
+
         for candidate_id in candidate_ids:
             for shift in shifts:
                 if fill_shifts and str(shift.id) not in fill_shifts:
