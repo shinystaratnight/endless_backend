@@ -989,6 +989,19 @@ class BlackListSerializer(core_serializers.ApiBaseModelSerializer):
         return validated_data
 
 
+class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
+    class Meta:
+        model = hr_models.CarrierList
+        fields = (
+            '__all__',
+            {
+                'candidate_contact': (
+                    'contact', 'recruitment_agent'
+                )
+            }
+        )
+
+
 class JobRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
     class Meta:
         model = hr_models.JobRate
