@@ -1,5 +1,4 @@
 from datetime import timedelta
-from decimal import Decimal
 
 import stripe
 
@@ -8,7 +7,7 @@ from celery.utils.log import get_task_logger
 
 from django.conf import settings
 from django.db.models import Count
-from stripe.error import InvalidRequestError, CardError
+from stripe.error import InvalidRequestError
 
 from r3sourcer.apps.billing.models import (
                             Subscription,
@@ -43,7 +42,7 @@ def charge_for_extra_workers():
         active_workers = company.active_workers(subscription.current_period_start)
         country_code = company.get_country_code()
         stripe.api_key = sca.get_stripe_key(country_code)
-        vat_object = VAT.get_vat(country_code)
+        vat_object = VAT.get_vat(country_code).first()
         plan_type = subscription.subscription_type.type
 
         if active_workers > paid_workers:
@@ -99,58 +98,9 @@ def charge_for_extra_workers():
 
 
 @shared_task
-def charge_for_sms(company_id, amount, sms_balance_id):
-    company = Company.objects.get(id=company_id)
+def charge_for_sms(amount, sms_balance_id):
     sms_balance = SMSBalance.objects.get(id=sms_balance_id)
-
-    # try to create invoice and pay if last payment was successful
-    # or if it's the first payment
-    if sms_balance.last_payment is None or sms_balance.last_payment.status == Payment.PAYMENT_STATUSES.paid:
-        country_code = company.get_hq_address().address.country.code2
-        stripe_secret_key = sca.get_stripe_key(country_code)
-        stripe.api_key = stripe_secret_key
-        vat_object = VAT.get_vat(country_code).first()
-        tax_percent = vat_object.stripe_rate
-
-        for discount in company.get_active_discounts('sms'):
-            amount = discount.apply_discount(amount)
-
-        tax_value = tax_percent / 100 + 1
-        stripe.InvoiceItem.create(customer=company.stripe_customer,
-                                  amount=round(int(amount * 100 / tax_value)),
-                                  currency=company.currency,
-                                  description='Topping up sms balance')
-        logger.info('InvoiceItem Topping up sms balance created for {} to {}'.format(
-            round(int(amount * 100 / tax_value)),
-            company.id
-        ))
-        invoice = stripe.Invoice.create(customer=company.stripe_customer,
-                                        default_tax_rates=[vat_object.stripe_id],
-                                        description='Topping up sms balance')
-        logger.info('Invoice Topping up sms balance created to {}'.format(company.id))
-        payment = Payment.objects.create(
-            company=company,
-            type=Payment.PAYMENT_TYPES.sms,
-            amount=amount,
-            stripe_id=invoice['id'],
-            invoice_url=invoice['invoice_pdf'],
-            status=invoice['status']
-        )
-        # pay an invoice after creation of corresponding Payment
-        try:
-            invoice.pay()
-        except CardError as ex:
-            # mark as unpaid if error
-            payment.status = Payment.PAYMENT_STATUSES.not_paid
-            payment.save()
-        else:
-            # increase balance if payment is successful
-            sms_balance.balance += Decimal(payment.amount)
-        finally:
-            # in any case save the last payment to sms_balance
-            sms_balance.last_payment = payment
-            sms_balance.save()
-
+    sms_balance.charge_for_sms(amount)
 
 @shared_task
 def sync_subscriptions():
@@ -192,19 +142,19 @@ def fetch_payments():
             continue
         # check all customer invoices
         for invoice in invoices:
-            # if subscription invoice is unpaid mark active subscription as inactive
-            if invoice['paid'] is False and invoice['subscription'] is not None:
-                try:
-                    subscription = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
-                    stripe_subscription = subscription.get_stripe_subscription()
-                    subscription.status = stripe_subscription.status
-                    subscription.active = False
-                    subscription.save()
-                    logger.warning('Mark subscription {} as inactive from fetch_payments'.format(
-                        subscription.subscription_id
-                    ))
-                except Subscription.DoesNotExist:
-                    pass
+            # if subscription invoice is unpaid mark active subscription as inactive -- this is done in sync_subscription
+            # if invoice['paid'] is False and invoice['subscription'] is not None:
+            #     try:
+            #         subscription = Subscription.objects.get(subscription_id=invoice['subscription'], active=True)
+            #         stripe_subscription = subscription.get_stripe_subscription()
+            #         subscription.status = stripe_subscription.status
+            #         subscription.active = False
+            #         subscription.save()
+            #         logger.warning('Mark subscription {} as inactive from fetch_payments'.format(
+            #             subscription.subscription_id
+            #         ))
+            #     except Subscription.DoesNotExist:
+            #         pass
 
             # if payment is not created yet then create it for not-void invoices
             # void means this invoice was a mistake or cancelled.
@@ -268,7 +218,7 @@ def fetch_payments():
                 if 'sms' in invoice['description']:
                     sms_balance = SMSBalance.objects.filter(last_payment=payment).first()
                     if sms_balance:
-                        logger.warning('Add sms balance from payment with invoice {} rom fetch_payments'.format(
+                        logger.warning('Add sms balance from payment with invoice {} from fetch_payments'.format(
                             payment.stripe_id
                         ))
                         sms_balance.balance += payment.amount

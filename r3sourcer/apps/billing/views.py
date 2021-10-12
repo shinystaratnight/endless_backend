@@ -251,7 +251,7 @@ class TwilioFundCreateView(APIView):
         amount = self.request.data.get('amount')
 
         sms_balance, created = SMSBalance.objects.get_or_create(company=company)
-        charge_for_sms.delay(company.id, amount, sms_balance.id)
+        charge_for_sms.delay(amount, sms_balance.id)
 
         serializer = SmsBalanceSerializer(sms_balance)
 

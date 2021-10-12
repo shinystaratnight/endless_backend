@@ -273,7 +273,10 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     def verify_email(self, request, *args, **kwargs):
         contact = get_object_or_404(models.Contact, verification_token=request.query_params.get('token'))
         contact.email_verified = True
-        contact.save(update_fields=['email_verified'])
+        if contact.new_email:
+            contact.email = contact.new_email
+            contact.new_email = None
+        contact.save(update_fields=['email_verified', 'new_email', 'email'])
 
         master_company = get_site_master_company(request=self.request)
 
@@ -391,6 +394,86 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
 
         return data
 
+    @action(methods=['put'], detail=True)
+    def change_email(self, request, *args, **kwargs):
+        instance = self.get_object()
+        new_email = request.data.get('new_email')
+        password = request.data.get('password')
+
+        if not new_email:
+            raise exceptions.ValidationError({
+                'new_email': _('Please specify a new_email field')
+            })
+        if not password:
+            raise exceptions.ValidationError({
+                'password': _('Please specify a password field')
+            })
+        if not instance.user.check_password(password):
+            raise exceptions.ValidationError({
+                'password': _('Password invalid')
+            })
+        if models.Contact.objects.filter(email=new_email).exists():
+            raise exceptions.ValidationError({
+                'new_email': _('User with this email address already registered')
+            })
+
+        instance.email_verified = False
+        instance.new_email = new_email
+        instance.save(update_fields=['email_verified', 'new_email'])
+
+        # send verification email
+        master_company = get_site_master_company()
+        manager = master_company.primary_contact
+        tasks.send_contact_verify_email.apply_async(
+                args=(instance.id, manager.id, master_company.id), kwargs=dict(new_email=True))
+
+        data = {
+            'status': 'success',
+            'message': _('An activation link has been sent to your new email address. Please confirm it. You must use the old email until the new email address is confirmed')
+        }
+
+        return Response(data)
+
+    @action(methods=['put'], detail=True)
+    def change_phone_mobile(self, request, *args, **kwargs):
+        instance = self.get_object()
+        new_phone_mobile = request.data.get('new_phone_mobile')
+        password = request.data.get('password')
+
+        if not new_phone_mobile:
+            raise exceptions.ValidationError({
+                'new_phone_mobile': _('Please specify a new_phone_mobile field')
+            })
+        if not password:
+            raise exceptions.ValidationError({
+                'password': _('Please specify a password field')
+            })
+        if not instance.user.check_password(password):
+            raise exceptions.ValidationError({
+                'password': _('Password invalid')
+            })
+        if models.Contact.objects.filter(phone_mobile=new_phone_mobile).exists():
+            raise exceptions.ValidationError({
+                'phone_mobile': _('User with this phone number already registered')
+            })
+
+        instance.phone_mobile_verified = False
+        instance.new_phone_mobile = new_phone_mobile
+        instance.save(update_fields=['phone_mobile_verified', 'new_phone_mobile'])
+
+        # send verification email
+        master_company = get_site_master_company()
+        manager = master_company.primary_contact
+        tasks.send_contact_verify_sms.apply_async(
+                args=(instance.id, manager.id), kwargs=dict(new_phone_mobile=True))
+
+        data = {
+            'status': 'success',
+            'message': _('An sms has been sent to your new mobile number. Please reply to it with "yes". You will receive notification to ols phone number until the new phone number is confirmed')
+        }
+
+        return Response(data)
+
 
 class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
 
@@ -400,21 +483,6 @@ class ContactAddressViewset(GoogleAddressMixin, BaseApiViewset):
         if is_create and not data.get('is_active'):
             data['is_active'] = True
         return data
-
-    # def list(self, request, *args, **kwargs):
-    #     # check include_all parameter
-    #     include_all = request.GET.get('include_all')
-    #     if include_all in ['true', 'True', '1']:
-    #         return self._paginate(request, self.get_serializer_class())
-    #     # distinct languages
-    #     queryset = self.filter_queryset(self.get_queryset())
-    #     countries = queryset.values_list('address__country', flat=True).distinct()
-    #     # filter addresses for 1 per country
-    #     filtered_qs = queryset.none()
-    #     for country in countries:
-    #         latest_country_address = queryset.filter(address__country=country).latest('created_at')
-    #         filtered_qs |= queryset.filter(pk=latest_country_address.pk)
-    #     return self._paginate(request, self.get_serializer_class(), queryset=filtered_qs)
 
     def clear_active_contactaddresses(self, instance):
         """ if new address is active make all old adresses not active """

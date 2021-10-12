@@ -130,7 +130,14 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
         if company_contact_rel:
             queryset = queryset.filter(job_offer__shift__date__job__customer_company=company_contact_rel.company)
 
-        return queryset.distinct().order_by('-shift_started_at')
+        ordering = self.request.query_params.get('ordering', '-shift_started_at')
+        if ordering:
+            ordering_fields = [param.strip() for param in ordering.split(',')]
+            queryset = queryset.order_by(*ordering_fields).distinct()
+        else:
+            queryset = queryset.order_by('-shift_started_at').distinct()
+
+        return queryset
 
     def handle_history(self, request):
         if request.user.is_authenticated:
@@ -730,6 +737,14 @@ class JobViewset(BaseApiViewset):
 
         if not candidate_ids:
             raise exceptions.ParseError(_('No Candidates has been chosen'))
+
+        job = self.get_object()
+        active_workers = job.customer_company.get_active_workers_ids()
+        all_workers = set(active_workers + candidate_ids)
+        subscription_worker_count = job.customer_company.active_subscription.worker_count
+        # check subscription limits
+        if len(all_workers) > subscription_worker_count:
+            raise exceptions.ValidationError(_('You are not allowed to book more than {}'.format(subscription_worker_count)))
 
         for candidate_id in candidate_ids:
             for shift in shifts:

@@ -120,6 +120,19 @@ class Contact(CategoryFolderMixin,
         unique=True,
     )
 
+    new_email = models.EmailField(
+        max_length=255,
+        verbose_name=_("New E-mail"),
+        null=True,
+        blank=True,
+    )
+
+    new_phone_mobile = PhoneNumberField(
+        verbose_name=_("New Mobile Phone"),
+        null=True,
+        blank=True,
+    )
+
     gender = models.CharField(
         max_length=7,
         verbose_name=_("Gender"),
@@ -309,6 +322,13 @@ class Contact(CategoryFolderMixin,
         if positive:
             self.phone_mobile_verified = True
             self.save(update_fields=['phone_mobile_verified'])
+
+    def process_new_phone_mobile_reply(self, positive):
+        if positive:
+            self.phone_mobile = self.new_phone_mobile
+            self.new_phone_mobile = None
+            self.phone_mobile_verified = True
+            self.save(update_fields=['phone_mobile_verified', 'phone_mobile', 'new_phone_mobile'])
 
     def save(self, *args, **kwargs):
         is_adding = self._state.adding
@@ -1377,17 +1397,26 @@ class Company(CategoryFolderMixin,
     def active_subscription(self):
         return self.subscriptions.filter(active=True).first()
 
-    def active_workers(self, start_date=None):
+    def _get_active_workers(self, start_date=None):
+        """ returns list of active workers"""
         from r3sourcer.apps.candidate.models import CandidateContact
 
         if not start_date:
             start_date = datetime.combine(utc_now().date(), time(0, 0)) - timedelta(days=31)
 
         return CandidateContact.objects.filter(
+            job_offers__shift__date__job__customer_company=self,
             job_offers__time_sheets__shift_started_at__gt=start_date,
-        ).filter(
             job_offers__time_sheets__status=7,
-        ).count()
+        ).distinct()
+
+    def active_workers(self, start_date=None):
+        """ returns number of active workers"""
+        return self._get_active_workers(start_date=start_date).count()
+
+    def get_active_workers_ids(self, start_date=None):
+        """ returns list with active workers ids"""
+        return self._get_active_workers(start_date=start_date).values_list('id', flat=True)
 
     def get_active_discounts(self, payment_type=None):
         discounts = self.discounts.filter(active=True)

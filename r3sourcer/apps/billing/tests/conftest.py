@@ -6,7 +6,7 @@ from unittest.mock import patch
 
 from r3sourcer.apps.core.models import (
     User, Company, CompanyContact, CompanyContactRelationship, Country, Region, City, Address,
-    CompanyAddress, Language,
+    CompanyAddress, Language, VAT,
 )
 from r3sourcer.apps.email_interface.models import DefaultEmailTemplate
 from r3sourcer.apps.hr.models import Shift, ShiftDate, Job, Jobsite
@@ -104,9 +104,13 @@ def company_contact(db, contact):
 
 
 @pytest.fixture
-@patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(42, 42))
-def address(db):
+def country(db):
     country, _ = Country.objects.get_or_create(name='Australia', code2='AU')
+    return country
+
+@pytest.fixture
+@patch('r3sourcer.apps.core.models.core.fetch_geo_coord_by_address', return_value=(42, 42))
+def address(db, country):
     state = Region.objects.create(name='test', country=country)
     city = City.objects.create(name='city', country=country)
     return Address.objects.create(
@@ -124,6 +128,7 @@ def company_address(db, address, company):
         address=address,
         hq=True
     )
+
 
 @pytest.fixture
 def jobsite(db, master_company, company_contact, industry, address, regular_company):
@@ -179,14 +184,24 @@ def payment(db, company):
 @pytest.fixture
 def subscription_type_monthly(db):
     return SubscriptionType.objects.create(
-        type='monthly'
+        type='monthly',
+        step_change_val=7,
+        employess_total_num=10,
+        max_employess_num=1005,
+        start_range=5,
+        start_range_price_monthly=10,
     )
 
 
 @pytest.fixture
 def subscription_type_annual(db):
     return SubscriptionType.objects.create(
-        type='annual'
+        type='annual',
+        step_change_val=7,
+        employess_total_num=10,
+        max_employess_num=1005,
+        start_range=5,
+        start_range_price_annual=10,
     )
 
 
@@ -244,3 +259,14 @@ def ran_out_balance_limit(db, language):
     template, _ = DefaultEmailTemplate.objects.get_or_create(slug="sms-balance-ran-out", language=language)
     limit, _ = SMSBalanceLimits.objects.get_or_create(name="Ran out", low_balance_limit=0, email_template=template)
     return limit
+
+
+@pytest.fixture
+def vat(db, country):
+    vat, _ = VAT.objects.get_or_create(
+        country=country,
+        stripe_id='stripe_id',
+        rate=0.1,
+        start_date=datetime.date(2021, 1, 1)
+    )
+    return vat

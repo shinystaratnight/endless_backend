@@ -10,10 +10,11 @@ from django.dispatch import receiver
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from model_utils import Choices
-from stripe.error import InvalidRequestError
+from stripe.error import InvalidRequestError, CardError
 
 from r3sourcer import ref
 from r3sourcer.apps.core import tasks
+from r3sourcer.apps.core.models import VAT
 from r3sourcer.apps.core.models.mixins import CompanyTimeZoneMixin
 from r3sourcer.apps.email_interface.models import EmailTemplate, DefaultEmailTemplate
 from r3sourcer.helpers.datetimes import utc_now
@@ -139,6 +140,7 @@ class Subscription(CompanyTimeZoneMixin):
         if this_user.trial_period_start:
             end_of_trial = this_user.get_end_of_trial_as_date()
             if self.status not in self.ALLOWED_STATUSES and self.now_utc > end_of_trial:
+                logger.warning('Call deactivate subscription {} from update_user_permissions based on trial'.format(self.subscription_id))
                 self.deactivate(user_id=(str(this_user.id)), stripe_subscription=stripe_subscription)
         # elif self.status in allowed_statuses:
         #     self.activate(user_id=(str(this_user.id)))
@@ -166,6 +168,7 @@ class Subscription(CompanyTimeZoneMixin):
             stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
         try:
             stripe_subscription.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+            logger.warning('Successfully deactivate subscription {}'.format(self.subscription_id))
         except InvalidRequestError as e:
             logger.warning('Cannot deactivate subscription {}. It is missed, probably cancelled: {}'.format(self.subscription_id, e))
         if user_id:
@@ -234,11 +237,63 @@ class SMSBalance(models.Model):
         self.balance = self.balance - Decimal(amount)
         self.save()
 
+    def charge_for_sms(self, amount):
+        country_code = self.company.get_hq_address().address.country.code2
+        stripe_secret_key = StripeCountryAccount.get_stripe_key(country_code)
+        stripe.api_key = stripe_secret_key
+        # try to create and pay invoice if it's the first payment
+        # or if payment was more than a minute ago to exclude duplicates
+        if self.last_payment is None or self.last_payment.created + datetime.timedelta(minutes=1) < utc_now():
+            vat_object = VAT.get_vat(country_code).first()
+            tax_percent = vat_object.stripe_rate
+
+            for discount in self.company.get_active_discounts('sms'):
+                amount = discount.apply_discount(amount)
+
+            tax_value = tax_percent / 100 + 1
+            stripe.InvoiceItem.create(customer=self.company.stripe_customer,
+                                      amount=round(int(amount * 100 / tax_value)),
+                                      currency=self.company.currency,
+                                      description='Topping up sms balance')
+            logger.info('InvoiceItem Topping up sms balance created for {} to {}'.format(
+                round(int(amount * 100 / tax_value)),
+                self.company.id
+            ))
+            invoice = stripe.Invoice.create(customer=self.company.stripe_customer,
+                                            default_tax_rates=[vat_object.stripe_id],
+                                            description='Topping up sms balance')
+            logger.info('Invoice Topping up sms balance created to {}'.format(self.company.id))
+            payment = Payment.objects.create(
+                company=self.company,
+                type=Payment.PAYMENT_TYPES.sms,
+                amount=amount,
+                stripe_id=invoice['id'],
+                invoice_url=invoice['invoice_pdf'],
+                status=invoice['status']
+            )
+            # pay an invoice after creation of corresponding Payment
+            try:
+                invoice.pay()
+            except CardError as ex:
+                # mark as unpaid if error
+                payment.status = Payment.PAYMENT_STATUSES.not_paid
+                payment.save()
+                logger.info('Invoice Topping up sms balance was not successful for {}'.format(self.company.id))
+            else:
+                # increase balance if payment is successful
+                self.balance += Decimal(payment.amount)
+                logger.info('Invoice Topping up sms balance was successful for {}'.format(self.company.id))
+            finally:
+                # in any case save the last payment to sms_balance
+                self.last_payment = payment
+                self.save()
+
+
     def save(self, *args, **kwargs):
         from r3sourcer.apps.billing.tasks import charge_for_sms
 
         if self.balance <= self.top_up_limit and self.auto_charge is True:
-            charge_for_sms.delay(self.company.id, self.top_up_amount, self.id)
+            charge_for_sms.delay(self.top_up_amount, self.id)
 
         if self.company.is_master:
             low_limit = SMSBalanceLimits.objects.filter(name="Low").first()
