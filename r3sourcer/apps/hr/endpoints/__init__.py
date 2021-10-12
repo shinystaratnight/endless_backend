@@ -46,6 +46,7 @@ class JobOfferEndpoint(ApiEndpoint):
 class CarrierListEndpoint(ApiEndpoint):
 
     model = hr_models.CarrierList
+    serializer = job_serializers.CarrierListSerializer
     filter_class = hr_filters.CarrierListFilter
 
 
