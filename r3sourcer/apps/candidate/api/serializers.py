@@ -36,12 +36,6 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         fields = '__all__'
 
 
-class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
-    class Meta:
-        model = hr_models.CarrierList
-        fields = '__all__'
-
-
 class SkillRelSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
 
     class Meta:

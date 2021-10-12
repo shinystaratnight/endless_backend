@@ -57,6 +57,11 @@ class JobOfferAdmin(admin.ModelAdmin):
     ordering = ['-created_at']
 
 
+class CarrierListAdmin(admin.ModelAdmin):
+    list_display = ('candidate_contact', 'target_date', 'confirmed_available', 'skill')
+    ordering = ('-candidate_contact', '-target_date',)
+
+
 admin.site.register(models.Jobsite, JobsiteAdmin)
 admin.site.register(models.JobsiteUnavailability)
 admin.site.register(models.Job, JobAdmin)
@@ -70,7 +75,7 @@ admin.site.register(models.CandidateEvaluation)
 admin.site.register(models.CandidateScore)
 admin.site.register(models.BlackList)
 admin.site.register(models.FavouriteList)
-admin.site.register(models.CarrierList)
+admin.site.register(models.CarrierList, CarrierListAdmin)
 admin.site.register(models.Payslip)
 admin.site.register(models.PayslipLine)
 admin.site.register(models.PayslipRule)

@@ -12,13 +12,12 @@ from django.core.files.base import ContentFile
 from django.utils import timezone
 from django.utils.translation import ugettext_lazy as _
 
-from r3sourcer.helpers.models.abs import TemplateMessage
 from freezegun import freeze_time
 
 from r3sourcer.apps.core.models import (
     User, CompanyContact, BankAccount, CompanyAddress, ContactUnavailability,
     CompanyTradeReference, Note, Tag, InvoiceLine, FileStorage, Contact,
-    Company, CompanyLocalization, Country, Invoice, WorkflowNode,
+    Company, CompanyLocalization, Invoice, WorkflowNode,
     Workflow, SiteCompany, CompanyRel, CompanyContactRelationship
 )
 
@@ -337,6 +336,25 @@ class TestCompany:
 
     def test_default_get_country_code(self, company):
         assert company.get_country_code() == 'EE'
+
+    def test_get_active_workers(self, company_regular, timesheet_approved, timesheet_second_approved):
+        assert company_regular.active_workers() == 2
+
+    def test_get_active_workers_with_inactive(self, company_regular, timesheet_approved, timesheet_second_approved, timesheet_second_approval_pending):
+        assert company_regular.active_workers() == 2
+
+    def test_get_active_workers_with_other_offer(self, company_regular, company_other, timesheet_approved, timesheet_other_approved):
+        assert company_regular.active_workers() == 1
+        assert company_other.active_workers() == 1
+
+    def test_get_active_workers_ids_with_inactive(self, company_regular, timesheet_approved, timesheet_second_approval_pending):
+        assert len(company_regular.get_active_workers_ids()) == 2
+
+    def test_get_active_workers_ids_without_timesheets(self, company):
+        assert len(company.get_active_workers_ids()) == 0
+
+    def test_get_active_workers_ids_with_other_(self, company_other):
+        assert len(company_other.get_active_workers_ids()) == 0
 
 @pytest.mark.django_db
 class TestCompanyAddress:

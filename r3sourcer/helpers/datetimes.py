@@ -53,12 +53,12 @@ def local2utc(dt, timezone):
 
 def geo_time_zone(lng, lat):
     default_tz = settings.TIME_ZONE
-    if None in (lng, lat):
-        return pytz.timezone(default_tz)
+    # if None in (lng, lat):
+    #     return pytz.timezone(default_tz)
 
-    tf = settings.TIME_ZONE_FINDER
-    try:
-        time_zone = tf.timezone_at(lng=lng, lat=lat)
-    except pytz.UnknownTimeZoneError:
-        time_zone = default_tz
+    # tf = settings.TIME_ZONE_FINDER
+    # try:
+    #     time_zone = tf.timezone_at(lng=lng, lat=lat)
+    # except pytz.UnknownTimeZoneError:
+    time_zone = default_tz
     return pytz.timezone(time_zone)
