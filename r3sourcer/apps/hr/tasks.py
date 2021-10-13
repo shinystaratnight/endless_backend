@@ -948,7 +948,7 @@ def send_going_to_work_message(self, time_sheet_id):
                                                           **data_dict,
                                                           )
 
-                    if  sent_message:
+                    if sent_message:
                         setattr(time_sheet, action_sent, sent_message)
                         time_sheet.update_status(False)
                         time_sheet.save(update_fields=[action_sent, 'status'])
@@ -1387,3 +1387,90 @@ def generate_invoices():
                                      date_to,
                                      company=company,
                                      invoice_rule=invoice_rule)
+
+
+@app.task(bind=True)
+@one_sms_task_at_the_same_time
+def send_carrier_list_offer_sms(self, carrier_list_id):
+    """
+    Send sms with Carrier List offer to Candidate.
+
+    :param self: Task instance
+    :param carrier_list_id: Carrier List id
+    :return: None
+    """
+    tpl_name = 'carrier-list-offer'
+
+    with transaction.atomic():
+        try:
+            carrier_list = hr_models.CarrierList.objects.select_for_update().get(id=carrier_list_id)
+        except hr_models.CarrierList.DoesNotExist as e:
+            logger.error(e)
+        else:
+            candidate_contact = carrier_list.candidate_contact
+            if candidate_contact is None:
+                logger.warning('Carrier List {} does not have Candidate Contact'.format(carrier_list_id))
+                return
+
+            master_company = candidate_contact.contact.get_closest_company()
+
+            data_dict = dict(
+                target_date_and_time=date_format(
+                    datetime.combine(carrier_list.target_date, time(hour=7)),
+                    settings.DATETIME_FORMAT
+                ),
+                skill='',
+                candidate_contact=candidate_contact,
+                recruitment_agent=candidate_contact.recruitment_agent,
+                master_company=master_company
+            )
+
+            # send sms message if sms notification channel enabled
+            if candidate_contact.message_by_sms:
+                try:
+                    sms_interface = get_sms_service()
+                except ImportError:
+                    logger.exception('Cannot load SMS service')
+                else:
+                    template = sms_interface.get_template(candidate_contact.contact, carrier_list.job_offer.master_company, tpl_name)
+                    # get skill translation based on template
+                    template_language = template.language.alpha_2
+                    skill_translation = carrier_list.skill.name.translation(language=template_language)
+                    data_dict['skill'] = skill_translation
+
+                    outstanding_sms = SMSMessage.objects.select_for_update().filter(
+                        text__contains=data_dict['target_date_and_time'],
+                        sent_at__date=date.today(),
+                        to_number=candidate_contact.contact.phone_mobile,
+                    ).exists()
+                    if not outstanding_sms:
+                        now = master_company.now_tz
+                        eta = None
+                        if carrier_list.target_date > master_company.tomorrow_tz.date():
+                            eta = datetime.combine(
+                                carrier_list.target_date - timedelta(days=1),
+                                time(10, 0, 0, tzinfo=now.tzinfo)
+                            )
+                        elif carrier_list.target_date > now.date() and now.timetz() < time(10, 0, 0, tzinfo=now.tzinfo):
+                            eta = datetime.combine(now.date(), time(10, 0, 0, tzinfo=now.tzinfo))
+
+                        if eta:
+                            # reschedule
+                            send_carrier_list_offer_sms.apply_async(args=[carrier_list_id], eta=eta)
+                            carrier_list.sms_sending_scheduled_at = eta
+                            carrier_list.save(update_fields=['sms_sending_scheduled_at'])
+
+                            logger.info('SMS is rescheduled for Carrier List %s', str(carrier_list_id))
+                            return
+
+                        sent_message = sms_interface.send_tpl(candidate_contact.contact,
+                                                              master_company,
+                                                              tpl_name,
+                                                              **data_dict
+                                                              )
+                        sent_message.add_primary_related_object(carrier_list)
+                        sent_message.add_related_objects(candidate_contact)
+                        cache.set(sent_message.pk, 'sent_carrier_lists', (sent_message.reply_timeout + 2) * 60)
+
+                        carrier_list.sent_message = sent_message
+                        carrier_list.save(update_fields=['sent_message'])
