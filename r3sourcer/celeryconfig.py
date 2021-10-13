@@ -91,6 +91,10 @@ beat_schedule = {
         'task': 'r3sourcer.apps.hr.tasks.generate_invoices',
         'schedule': crontab(minute=0, hour=3)
     },
+    'check_carrier_list': {
+        'task': 'r3sourcer.apps.hr.tasks.check_carrier_list',
+        'schedule': crontab(minute=4, hour='10-22')
+    },
 }
 
 task_ignore_result = True
