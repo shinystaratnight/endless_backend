@@ -563,6 +563,14 @@ class JobViewset(BaseApiViewset):
                     candidate_rels__master_company=job.provider_company, candidate_rels__active=True
                 ).distinct()
 
+            # filter filled candidates
+            filled_candidates = candidate_models.CandidateContact.objects.filter(
+                    job_offers__shift__date__job__customer_company=job.customer_company,
+                    job_offers__time_sheets__job_offer__shift__in=init_shifts_qry,
+                    # job_offers__time_sheets__status=7,
+                ).distinct().values_list('id', flat=True)
+            candidate_contacts = candidate_contacts.exclude(id__in=filled_candidates)
+
             # filter transportation_to_work
             transportation = request.GET.get('transportation_to_work', None)
             if transportation:
@@ -739,7 +747,7 @@ class JobViewset(BaseApiViewset):
             raise exceptions.ParseError(_('No Candidates has been chosen'))
 
         job = self.get_object()
-        active_workers = job.customer_company.get_active_workers_ids()
+        active_workers = list(job.customer_company.get_active_workers_ids())
         all_workers = set(active_workers + candidate_ids)
         subscription_worker_count = job.customer_company.active_subscription.worker_count
         # check subscription limits

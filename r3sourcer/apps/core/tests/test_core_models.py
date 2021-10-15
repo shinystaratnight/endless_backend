@@ -356,6 +356,12 @@ class TestCompany:
     def test_get_active_workers_ids_with_other_(self, company_other):
         assert len(company_other.get_active_workers_ids()) == 0
 
+    def test_get_active_workers_ids(self, company_regular, timesheet_approved, timesheet_second_approval_pending):
+        active_workers = company_regular.get_active_workers_ids()
+        assert timesheet_approved.job_offer.candidate_contact.id in list(active_workers)
+        assert timesheet_second_approval_pending.job_offer.candidate_contact.id in list(active_workers)
+        assert len(active_workers) == 2
+
 @pytest.mark.django_db
 class TestCompanyAddress:
 
