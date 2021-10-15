@@ -9,7 +9,7 @@ from r3sourcer.apps.core.mixins import MYOBMixin
 from r3sourcer.apps.core.models import Company, UnitOfMeasurement
 from r3sourcer.apps.pricing.models import PriceListRate
 from r3sourcer.helpers.models.abs import UUIDModel
-from r3sourcer.apps.skills.managers import SelectRelatedSkillManager
+from r3sourcer.apps.skills.managers import SelectRelatedSkillManager, SkillManager
 
 
 class EmploymentClassification(UUIDModel):
@@ -156,6 +156,8 @@ class Skill(MYOBMixin, UUIDModel):
         related_name='skills',
         through='SkillTag'
     )
+
+    objects = SkillManager()
 
     class Meta:
         verbose_name = _("Skill")
