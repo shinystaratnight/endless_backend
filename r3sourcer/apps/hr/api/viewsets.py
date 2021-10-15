@@ -747,7 +747,7 @@ class JobViewset(BaseApiViewset):
             raise exceptions.ParseError(_('No Candidates has been chosen'))
 
         job = self.get_object()
-        active_workers = job.customer_company.get_active_workers_ids()
+        active_workers = list(job.customer_company.get_active_workers_ids())
         all_workers = set(active_workers + candidate_ids)
         subscription_worker_count = job.customer_company.active_subscription.worker_count
         # check subscription limits
