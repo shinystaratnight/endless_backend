@@ -749,10 +749,12 @@ class JobViewset(BaseApiViewset):
         job = self.get_object()
         active_workers = list(job.customer_company.get_active_workers_ids())
         all_workers = set(active_workers + candidate_ids)
-        subscription_worker_count = job.customer_company.active_subscription.worker_count
-        # check subscription limits
-        if len(all_workers) > subscription_worker_count:
-            raise exceptions.ValidationError(_('You are not allowed to book more than {}'.format(subscription_worker_count)))
+        # TODO: it's a hot fix. Need to figure out what to do if there is no active subscription
+        if job.customer_company.active_subscription:
+            subscription_worker_count = job.customer_company.active_subscription.worker_count
+            # check subscription limits
+            if len(all_workers) > subscription_worker_count:
+                raise exceptions.ValidationError(_('You are not allowed to book more than {}'.format(subscription_worker_count)))
 
         for candidate_id in candidate_ids:
             for shift in shifts:
