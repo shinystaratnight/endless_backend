@@ -111,7 +111,8 @@
 					{% if total_travel|index:forloop.parentloop.counter0 %}<th>Travel</th>{% endif %}
 					{% if total_meal|index:forloop.parentloop.counter0 %}<th>Meal</th>{% endif %}
 					<th>Electronic timesheet confirmed by supervisor</th>
-					<th>Electronic signature or timesheet confirmed by candidate</th>
+					<th>Timesheet confirmed by candidate</th>
+					<th>Electronic signature</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -131,12 +132,13 @@
 					{% if total_meal|index:forloop.parentloop.counter0 %}<td>{{ rate.timesheet.meal }}</td>{% endif %}
 					<td>{{ rate.timesheet.supervisor }}<br/>{{ rate.timesheet.supervisor.contact.phone_mobile }}<br/>{{rate.timesheet.supervisor_approved_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
 					</td>
+					<td>{{ rate.timesheet.candidate_contact.contact.phone_mobile }}<br/>{{rate.timesheet.candidate_submitted_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
+					</td>
+					<td>
 					{% if rate.timesheet.supervisor_signature %}
-						<td><img src="{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
-						{% else %}
-						<td>{{ rate.timesheet.candidate_contact.contact.phone_mobile }}<br/>{{rate.timesheet.candidate_submitted_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
-						</td>
+						<img src="{{ rate.timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle">
 					{% endif %}
+					</td>
 				</tr>
 			{% endfor %}
 				<tr>
@@ -161,7 +163,8 @@
 					<th>Value</th>
 					<th>Unit of measurement</th>
 					<th>Electronic timesheet confirmed by supervisor</th>
-					<th>Electronic signature or timesheet confirmed by candidate</th>
+					<th>Timesheet confirmed by candidate</th>
+					<th>Electronic signature</th>
 				</tr>
 			</thead>
 			<tbody>
@@ -175,13 +178,13 @@
 					<td>{{ rate.worktype.uom|translation:user}}</td>
 					<td>{{ rate.timesheet.supervisor }}<br/>{{ rate.timesheet.supervisor.contact.phone_mobile }}<br/>{{rate.timesheet.supervisor_approved_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
 					</td>
+					<td>{{ rate.timesheet.candidate_contact.contact.phone_mobile }}<br/>{{rate.timesheet.candidate_submitted_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
+					</td>
+					<td>
 					{% if rate.timesheet.supervisor_signature %}
-						<td><img src="{{ timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle"></td>
-						{% else %}
-						<td>{{ rate.timesheet.candidate_contact.contact.phone_mobile }}<br/>
-							{{rate.timesheet.candidate_submitted_at|timezone:rate.timesheet.timezone|date:'d/m/Y h:i A' }}
-						</td>
+						<img src="{{ rate.timesheet.supervisor_signature.url }}" alt="" style="width: 150px; height: auto; margin:0 auto; vertical-align: middle">
 					{% endif %}
+					</td>
 					</tr>
 			{% endfor %}
 			<tr>
