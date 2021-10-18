@@ -11,7 +11,7 @@ class SelectRelatedSkillManager(Manager):
 class SkillManager(Manager):
 
     def filtered_for_carrier_list(self, target_date_and_time):
-        """Filtering skill list
+        """Filters skill list
         Checks every skill and counts how many candidates we have on carrier list for that skill on Target date.
         Conditions:
             Is on carrier list for Target date
