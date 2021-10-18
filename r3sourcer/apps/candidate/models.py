@@ -9,6 +9,7 @@ from phonenumber_field.modelfields import PhoneNumberField
 
 from r3sourcer import ref
 from r3sourcer.apps.activity.models import Activity
+from r3sourcer.apps.candidate.managers import CandidateContactManager
 from r3sourcer.apps.candidate.tasks import send_candidate_consent_message
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.decorators import workflow_function
@@ -322,6 +323,8 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         verbose_name=_("Profile Price"),
         default=0
     )
+
+    objects = CandidateContactManager()
 
     class Meta:
         verbose_name = _("Candidate Contact")
