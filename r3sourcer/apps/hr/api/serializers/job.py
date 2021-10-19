@@ -758,14 +758,19 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         return 'first'
 
 
-class JobsiteSerializer(
-    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
-    core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer
-):
+class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
+                        core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer):
     method_fields = ('timezone', )
 
     class Meta:
         model = hr_models.Jobsite
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=model.objects.all(),
+                fields=('industry', 'regular_company', 'short_name'),
+                message=_("The Jobsite with such Client, Industry, and Site name already exists. Please change the Site name.")
+            )
+        ]
         fields = (
             '__all__',
             {
