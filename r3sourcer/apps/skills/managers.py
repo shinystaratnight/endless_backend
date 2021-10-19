@@ -1,7 +1,5 @@
 from django.db.models import Manager, Sum, Case, When, IntegerField, F, Q
 
-from r3sourcer.apps.hr.models import JobOffer
-
 
 class SelectRelatedSkillManager(Manager):
     def get_queryset(self):
@@ -20,6 +18,8 @@ class SkillManager(Manager):
         Filter skills from the list. Conditions:
             Skill must be active
             Carrier list count is less than Carrier list reserve"""
+        # prevent circular import
+        from r3sourcer.apps.hr.models import JobOffer
         return self.get_queryset().annotate(carrier_list_count=Sum(Case(
             When(
                 Q(candidate_skills__candidate_contact__carrier_lists__target_date=target_date_and_time.date()) &
