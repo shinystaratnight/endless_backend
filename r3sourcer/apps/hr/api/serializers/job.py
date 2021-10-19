@@ -227,32 +227,6 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
 
         return current_state and current_state.number == 20
 
-    # def validate(self, validated_data):
-    #     hourly_rate_default = validated_data.get('hourly_rate_default')
-
-    #     if hourly_rate_default:
-    #         skill = validated_data.get('position')
-    #         is_less_than_min = skill.lower_rate_limit and skill.lower_rate_limit > hourly_rate_default
-    #         is_more_than_max = skill.upper_rate_limit and skill.upper_rate_limit < hourly_rate_default
-
-    #         if is_less_than_min or is_more_than_max:
-    #             if is_less_than_min and is_more_than_max:
-    #                 error_part = _('between {lower} and {upper}')
-    #             elif is_less_than_min:
-    #                 error_part = _('more than or equal {lower}')
-    #             else:
-    #                 error_part = _('less than or equal {upper}')
-
-    #             error_part = error_part.format(
-    #                 lower=skill.lower_rate_limit, upper=skill.upper_rate_limit
-    #             )
-
-    #             raise exceptions.ValidationError({
-    #                 'hourly_rate_default': _('Hourly rate should be {error_part}').format(error_part=error_part)
-    #             })
-
-    #     return validated_data
-
     def get_tags(self, obj):
         tags = core_models.Tag.objects.filter(job_tags__job=obj).distinct()
         return core_serializers.TagSerializer(tags, many=True, read_only=True, fields=['id', 'name', 'translations']).data
@@ -591,7 +565,7 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
         return hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj.id).count()
 
     def get_hourly_rate(self, obj):
-        hourly_rate = obj.get_rate_for_skill(
+        hourly_rate = obj.get_candidate_rate_for_skill(
             self.context['job'].position, score__gt=0, skill__active=True
         )
         return hourly_rate
