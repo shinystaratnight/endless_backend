@@ -28,6 +28,11 @@ def skill_name(db, industry):
 
 
 @pytest.fixture
+def skill_name_plumber(db, industry):
+    return SkillName.objects.create(name="Plumber", industry=industry)
+
+
+@pytest.fixture
 def skill(db, skill_name, company):
     return Skill.objects.create(
         name=skill_name,
