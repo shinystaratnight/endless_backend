@@ -130,6 +130,7 @@ class Jobsite(CategoryFolderMixin,
     class Meta:
         verbose_name = _("Jobsite")
         verbose_name_plural = _("Jobsites")
+        unique_together = ('industry', 'regular_company', 'short_name')
 
     def __str__(self):
         return self.get_site_name()
