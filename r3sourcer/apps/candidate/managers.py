@@ -37,7 +37,7 @@ class CandidateContactManager(Manager):
             candidate_skills__skill=skill,
             candidate_skills__skill__active=True,
             contact__phone_mobile__isnull=False,
-            contact__contact_address__address__region__alternate_names__contains="NSW",
+            contact__contact_address__address__state__alternate_names__contains="NSW",
             contact__is_available=True,
         ).filter(
             ~Q(job_offers__shift__date__shift_date=target_date_and_time.date()) &
