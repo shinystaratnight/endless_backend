@@ -1479,13 +1479,12 @@ def send_carrier_list_offer_sms(self, carrier_list_id):
 
 
 @shared_task
-def check_carrier_list(self):
+def check_carrier_list():
     """
     Checks if carrier list for any of Skills is below minimum and fills it if needed
     """
     tpl_name = 'carrier-list-offer'
     target_date = utc_tomorrow()
-    is_saturday = target_date.weekday() == 5
 
     if core_models.PublicHoliday.is_holiday(target_date.date()) or target_date.weekday() == 6:
         return
@@ -1511,42 +1510,44 @@ def check_carrier_list(self):
 
         # take random guys from available
         for available_candidate_contact in available_candidate_contacts:
-            try:
-                with transaction.atomic():
-                    master_company = available_candidate_contact.contact.get_closest_company()
-                    if available_candidate_contact.message_by_sms:
-                        try:
-                            sms_interface = get_sms_service()
-                        except ImportError:
-                            logger.exception('Cannot load SMS service')
-                        else:
-                            template = sms_interface.get_template(available_candidate_contact.contact,
-                                                                  carrier_list.job_offer.master_company,
-                                                                  tpl_name)
-                            # get skill translation based on template
-                            template_language = template.language.alpha_2
-                            skill_translation = skill.name.translation(language=template_language)
-                            data_dict['skill'] = skill_translation
-                    data_dict['candidate_contact'] = available_candidate_contact
-                    data_dict['recruitment_agent'] = available_candidate_contact.recruitment_agent
-                    data_dict['master_company'] = master_company
+            # if available for hire
+            if available_candidate_contact.get_current_state() == 70:
+                try:
+                    with transaction.atomic():
+                        master_company = available_candidate_contact.contact.get_closest_company()
+                        if available_candidate_contact.message_by_sms:
+                            try:
+                                sms_interface = get_sms_service()
+                            except ImportError:
+                                logger.exception('Cannot load SMS service')
+                            else:
+                                template = sms_interface.get_template(available_candidate_contact.contact,
+                                                                      carrier_list.job_offer.master_company,
+                                                                      tpl_name)
+                                # get skill translation based on template
+                                template_language = template.language.alpha_2
+                                skill_translation = skill.name.translation(language=template_language)
+                                data_dict['skill'] = skill_translation
+                        data_dict['candidate_contact'] = available_candidate_contact
+                        data_dict['recruitment_agent'] = available_candidate_contact.recruitment_agent
+                        data_dict['master_company'] = master_company
 
-                    sent_message = sms_interface.send_tpl(available_candidate_contact.contact,
-                                                          master_company,
-                                                          tpl_name,
-                                                          **data_dict
-                                                          )
+                        sent_message = sms_interface.send_tpl(available_candidate_contact.contact,
+                                                              master_company,
+                                                              tpl_name,
+                                                              **data_dict
+                                                              )
 
-                    carrier_list, created = hr_models.CarrierList.objects.update_or_create(
-                        recruitee_contact=available_candidate_contact,
-                        target_date=target_date,
-                        defaults={'sent_message': sent_message, 'skill': skill}
-                    )
-                    carrier_list.sent_message = sent_message
-                    carrier_list.save(update_fields=['sent_message'])
+                        carrier_list, created = hr_models.CarrierList.objects.update_or_create(
+                            recruitee_contact=available_candidate_contact,
+                            target_date=target_date,
+                            defaults={'sent_message': sent_message, 'skill': skill}
+                        )
+                        carrier_list.sent_message = sent_message
+                        carrier_list.save(update_fields=['sent_message'])
 
-                    sent_message.add_primary_related_object(carrier_list)
-                    sent_message.add_related_objects(available_candidate_contact)
-                    cache.set(sent_message.pk, 'sent_carrier_lists', (sent_message.reply_timeout + 2) * 60)
-            except Exception as e:
-                logger.error(e)
+                        sent_message.add_primary_related_object(carrier_list)
+                        sent_message.add_related_objects(available_candidate_contact)
+                        cache.set(sent_message.pk, 'sent_carrier_lists', (sent_message.reply_timeout + 2) * 60)
+                except Exception as e:
+                    logger.error(e)
