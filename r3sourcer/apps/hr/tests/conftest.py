@@ -16,7 +16,7 @@ from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.skills.models import Skill, SkillName
 from r3sourcer.apps.pricing import models as pricing_models
 from r3sourcer.apps.sms_interface import models as sms_models
-from r3sourcer.helpers.datetimes import utc_now
+from r3sourcer.helpers.datetimes import utc_now, utc_tomorrow
 
 
 @pytest.fixture
@@ -94,20 +94,20 @@ def candidate_contact(db, contact):
         contact=contact
     )
     hr_models.CandidateScore.objects.create(candidate_contact=candidate, skill_score=4, average_score=4)
-    content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
-    w, _ = Workflow.objects.get_or_create(
-        name='test',
-        model=content_type
-    )
-    n, _ = WorkflowNode.objects.get_or_create(
-        number=70,
-        workflow=w,
-    )
-    core_models.WorkflowObject.objects.create(
-        state=n,
-        active=True,
-        object_id=candidate.pk
-    )
+    # content_type = ContentType.objects.get_for_model(candidate_models.CandidateContact)
+    # w, _ = Workflow.objects.get_or_create(
+    #     name='test',
+    #     model=content_type
+    # )
+    # n, _ = WorkflowNode.objects.get_or_create(
+    #     number=70,
+    #     workflow=w,
+    # )
+    # core_models.WorkflowObject.objects.create(
+    #     state=n,
+    #     active=True,
+    #     object_id=candidate.pk
+    # )
     return candidate
 
 
@@ -452,7 +452,8 @@ def timesheet_with_break(db, job_offer, company_contact):
 def carrier_list(db, candidate_contact, job_offer):
     return hr_models.CarrierList.objects.create(
         candidate_contact=candidate_contact,
-        job_offer=job_offer
+        job_offer=job_offer,
+        target_date=utc_tomorrow()
     )
 
 
