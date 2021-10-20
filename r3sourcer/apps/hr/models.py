@@ -1994,6 +1994,7 @@ class CarrierList(UUIDModel):
     skill = models.ForeignKey(
         'skills.Skill',
         verbose_name=_('Skill'),
+        related_name='carrier_lists',
         null=True,
         blank=True
     )
