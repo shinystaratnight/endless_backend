@@ -2022,7 +2022,7 @@ class CarrierList(UUIDModel):
         just_added = self._state.adding
         super(CarrierList, self).save(*args, **kwargs)
 
-        if just_added and not self.confirmed_available:
+        if not self.confirmed_available:
             from .tasks import send_carrier_list_offer_sms
             send_carrier_list_offer_sms.apply_async(args=[self.id], countdown=5)
 
