@@ -12,6 +12,7 @@ from r3sourcer.apps.acceptance_tests import models as acceptance_test_models
 from r3sourcer.apps.activity import models as activity_models
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.core import models as core_models
+from r3sourcer.apps.hr.models import CandidateScore
 from r3sourcer.apps.pricing.models import PriceList, Industry
 from r3sourcer.apps.skills import models as skills_models
 
@@ -86,18 +87,22 @@ def candidate(db, contact, candidate_data):
     rc = candidate_models.CandidateContact.objects.create(
         contact=contact
     )
-
-    rc.candidate_scores.reliability = 1
-    rc.candidate_scores.loyalty = 2
-    rc.candidate_scores.save(update_fields=['reliability', 'loyalty'])
-
-    keys = [
-        'height', 'weight', 'transportation_to_work', 'strength', 'language', 'tax_number', 'superannuation_fund',
-        'bank_account', 'emergency_contact_name', 'emergency_contact_phone', 'superannuation_membership_number',
-        'employment_classification'
-    ]
-    for key in keys:
-        setattr(rc, key, candidate_data[key])
+    CandidateScore.objects.create(
+        reliability=1,
+        loyalty=2,
+        candidate_contact=rc
+    )
+    # rc.candidate_scores.reliability = 1
+    # rc.candidate_scores.loyalty = 2
+    # rc.candidate_scores.save(update_fields=['reliability', 'loyalty'])
+    #
+    # keys = [
+    #     'height', 'weight', 'transportation_to_work', 'strength', 'language', 'tax_number', 'superannuation_fund',
+    #     'bank_account', 'emergency_contact_name', 'emergency_contact_phone', 'superannuation_membership_number',
+    #     'employment_classification'
+    # ]
+    # for key in keys:
+    #     setattr(rc, key, candidate_data[key])
     return rc
 
 
@@ -170,13 +175,13 @@ def skill(db, skill_name, company):
         carrier_list_reserve=2,
         short_name="Drv",
         active=False,
-        default_rate=10,
-        price_list_default_rate=20,
+        # default_rate=10,
+        # price_list_default_rate=20,
         company=company,
-        upper_rate_limit=20,
-        lower_rate_limit=5,
-        price_list_upper_rate_limit=30,
-        price_list_lower_rate_limit=5,
+        # upper_rate_limit=20,
+        # lower_rate_limit=5,
+        # price_list_upper_rate_limit=30,
+        # price_list_lower_rate_limit=5,
     )
 
 
@@ -194,7 +199,6 @@ def skill_rel(db, skill, candidate):
         skill=skill,
         score=4,
         candidate_contact=candidate,
-        hourly_rate=10,
     )
 
 
