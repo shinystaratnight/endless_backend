@@ -227,32 +227,6 @@ class JobSerializer(core_mixins.WorkflowStatesColumnMixin, core_serializers.ApiB
 
         return current_state and current_state.number == 20
 
-    # def validate(self, validated_data):
-    #     hourly_rate_default = validated_data.get('hourly_rate_default')
-
-    #     if hourly_rate_default:
-    #         skill = validated_data.get('position')
-    #         is_less_than_min = skill.lower_rate_limit and skill.lower_rate_limit > hourly_rate_default
-    #         is_more_than_max = skill.upper_rate_limit and skill.upper_rate_limit < hourly_rate_default
-
-    #         if is_less_than_min or is_more_than_max:
-    #             if is_less_than_min and is_more_than_max:
-    #                 error_part = _('between {lower} and {upper}')
-    #             elif is_less_than_min:
-    #                 error_part = _('more than or equal {lower}')
-    #             else:
-    #                 error_part = _('less than or equal {upper}')
-
-    #             error_part = error_part.format(
-    #                 lower=skill.lower_rate_limit, upper=skill.upper_rate_limit
-    #             )
-
-    #             raise exceptions.ValidationError({
-    #                 'hourly_rate_default': _('Hourly rate should be {error_part}').format(error_part=error_part)
-    #             })
-
-    #     return validated_data
-
     def get_tags(self, obj):
         tags = core_models.Tag.objects.filter(job_tags__job=obj).distinct()
         return core_serializers.TagSerializer(tags, many=True, read_only=True, fields=['id', 'name', 'translations']).data
@@ -308,7 +282,9 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
 
         price_list = obj.job.customer_company.get_effective_pricelist_qs(obj.job.position).first()
         if price_list:
-            price_list_rate = price_list.price_list_rates.filter(worktype__skill_name=obj.job.position.name).first()
+            price_list_rate = price_list.price_list_rates.filter(worktype__skill_name=obj.job.position.name,
+                                                                 worktype__name=hr_models.WorkType.DEFAULT) \
+                                                         .first()
             rate = price_list_rate and price_list_rate.rate
         else:
             rate = None
@@ -589,7 +565,7 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
         return hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj.id).count()
 
     def get_hourly_rate(self, obj):
-        hourly_rate = obj.get_rate_for_skill(
+        hourly_rate = obj.get_candidate_rate_for_skill(
             self.context['job'].position, score__gt=0, skill__active=True
         )
         return hourly_rate
@@ -756,14 +732,19 @@ class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
         return 'first'
 
 
-class JobsiteSerializer(
-    core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
-    core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer
-):
+class JobsiteSerializer(core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
+                        core_mixins.ApiContentTypeFieldMixin, core_serializers.ApiBaseModelSerializer):
     method_fields = ('timezone', )
 
     class Meta:
         model = hr_models.Jobsite
+        validators = [
+            serializers.UniqueTogetherValidator(
+                queryset=model.objects.all(),
+                fields=('industry', 'regular_company', 'short_name'),
+                message=_("The Jobsite with such Client, Industry, and Site name already exists. Please change the Site name.")
+            )
+        ]
         fields = (
             '__all__',
             {
