@@ -37,7 +37,6 @@ class TestSkillManager:
 
         assert len(skills) == 0
 
-    @skip
     @freeze_time('2021, 1, 2')
     def test_filtered_for_carrier_list_with_accepted_offer(self, job_offer_accepted):
         target_dt = datetime.now()

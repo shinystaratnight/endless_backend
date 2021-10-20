@@ -295,7 +295,7 @@ def carrier_list_5(db, skill_carpenter_no_reserve_active,
 
 
 @pytest.fixture
-def jobsite(db, company, company_contact, industry):
+def jobsite(db, company, industry):
     return Jobsite.objects.create(
         industry=industry,
         master_company=company,
@@ -304,8 +304,10 @@ def jobsite(db, company, company_contact, industry):
         regular_company=company,
     )
 
+
 @pytest.fixture
-def job(db, company, jobsite, skill_painter_active):
+@patch.object(Job, 'is_allowed', return_value=True)
+def job(mocked_is_allowed, db, company, jobsite, skill_painter_active):
     return Job.objects.create(
         provider_company=company,
         customer_company=company,
