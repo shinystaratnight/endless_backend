@@ -1500,19 +1500,12 @@ def check_carrier_list(self):
         skill='',
     )
 
-    sent_smses_numbers = SMSMessage.objects.filter(
-        text__contains=data_dict['target_date_and_time'],
-        sent_at__date=date.today(),
-    ).values_list('to_number', flat=True).distinct()
-
     skills = Skill.objects.filtered_for_carrier_list(target_date_and_time)
     for skill in skills:
-        data_dict['skill'] = skill
         count = skill.carrier_list_reserve - skill.carrier_list_count
 
         available_candidate_contacts = CandidateContact.objects.get_available_for_skill(
             skill,
-            sent_smses_numbers,
             target_date
         )[:count]
 
