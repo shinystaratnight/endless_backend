@@ -9,11 +9,12 @@ from django.core.cache import cache
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.files.base import ContentFile
 from django.db import transaction, models
-from django.utils import formats
+from django.utils import formats, timezone
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
 from filer.models import File, Folder
 
+from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.core.tasks import one_sms_task_at_the_same_time
 from r3sourcer.apps.core.utils import companies as core_companies_utils
@@ -27,11 +28,12 @@ from r3sourcer.apps.myob.helpers import get_myob_client
 from r3sourcer.apps.pricing.models import RateCoefficientModifier, PriceListRate
 from r3sourcer.apps.pricing.services import CoefficientService
 from r3sourcer.apps.pricing.utils.utils import format_timedelta
+from r3sourcer.apps.skills.models import Skill
 from r3sourcer.apps.sms_interface.models import SMSMessage
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 from r3sourcer.apps.pdf_templates.models import PDFTemplate
 from r3sourcer.celeryapp import app
-from r3sourcer.helpers.datetimes import utc_now, tz2utc, date2utc_date
+from r3sourcer.helpers.datetimes import utc_now, tz2utc, date2utc_date, utc_tomorrow, tomorrow_7_am
 
 logger = get_task_logger(__name__)
 
@@ -948,7 +950,7 @@ def send_going_to_work_message(self, time_sheet_id):
                                                           **data_dict,
                                                           )
 
-                    if  sent_message:
+                    if sent_message:
                         setattr(time_sheet, action_sent, sent_message)
                         time_sheet.update_status(False)
                         time_sheet.save(update_fields=[action_sent, 'status'])
@@ -1387,3 +1389,165 @@ def generate_invoices():
                                      date_to,
                                      company=company,
                                      invoice_rule=invoice_rule)
+
+
+@app.task(bind=True)
+@one_sms_task_at_the_same_time
+def send_carrier_list_offer_sms(self, carrier_list_id):
+    """
+    Send sms with Carrier List offer to Candidate.
+
+    :param self: Task instance
+    :param carrier_list_id: Carrier List id
+    :return: None
+    """
+    tpl_name = 'carrier-list-offer'
+
+    with transaction.atomic():
+        try:
+            carrier_list = hr_models.CarrierList.objects.select_for_update().get(id=carrier_list_id)
+        except hr_models.CarrierList.DoesNotExist as e:
+            logger.error(e)
+        else:
+            candidate_contact = carrier_list.candidate_contact
+            if candidate_contact is None:
+                logger.warning('Carrier List {} does not have Candidate Contact'.format(carrier_list_id))
+                return
+
+            master_company = candidate_contact.contact.get_closest_company()
+
+            data_dict = dict(
+                target_date_and_time=date_format(
+                    datetime.combine(carrier_list.target_date, time(hour=7)),
+                    settings.DATETIME_FORMAT
+                ),
+                skill='',
+                candidate_contact=candidate_contact,
+                recruitment_agent=candidate_contact.recruitment_agent,
+                master_company=master_company
+            )
+
+            # send sms message if sms notification channel enabled
+            if candidate_contact.message_by_sms:
+                try:
+                    sms_interface = get_sms_service()
+                except ImportError:
+                    logger.exception('Cannot load SMS service')
+                else:
+                    template = sms_interface.get_template(candidate_contact.contact, carrier_list.job_offer.master_company, tpl_name)
+                    # get skill translation based on template
+                    template_language = template.language.alpha_2
+                    skill_translation = carrier_list.skill.name.translation(language=template_language)
+                    data_dict['skill'] = skill_translation
+
+                    outstanding_sms = SMSMessage.objects.select_for_update().filter(
+                        text__contains=data_dict['target_date_and_time'],
+                        sent_at__date=date.today(),
+                        to_number=candidate_contact.contact.phone_mobile,
+                    ).exists()
+                    if not outstanding_sms:
+                        now = master_company.now_tz
+                        eta = None
+                        if carrier_list.target_date > master_company.tomorrow_tz.date():
+                            eta = datetime.combine(
+                                carrier_list.target_date - timedelta(days=1),
+                                time(10, 0, 0, tzinfo=now.tzinfo)
+                            )
+                        elif carrier_list.target_date > now.date() and now.timetz() < time(10, 0, 0, tzinfo=now.tzinfo):
+                            eta = datetime.combine(now.date(), time(10, 0, 0, tzinfo=now.tzinfo))
+
+                        if eta:
+                            # reschedule
+                            send_carrier_list_offer_sms.apply_async(args=[carrier_list_id], eta=eta)
+                            carrier_list.sms_sending_scheduled_at = eta
+                            carrier_list.save(update_fields=['sms_sending_scheduled_at'])
+
+                            logger.info('SMS is rescheduled for Carrier List %s', str(carrier_list_id))
+                            return
+
+                        sent_message = sms_interface.send_tpl(candidate_contact.contact,
+                                                              master_company,
+                                                              tpl_name,
+                                                              **data_dict
+                                                              )
+                        sent_message.add_primary_related_object(carrier_list)
+                        sent_message.add_related_objects(candidate_contact)
+                        cache.set(sent_message.pk, 'sent_carrier_lists', (sent_message.reply_timeout + 2) * 60)
+
+                        carrier_list.sent_message = sent_message
+                        carrier_list.save(update_fields=['sent_message'])
+
+
+@shared_task
+def check_carrier_list():
+    """
+    Checks if carrier list for any of Skills is below minimum and fills it if needed
+    """
+    tpl_name = 'carrier-list-offer'
+    target_date = utc_tomorrow()
+
+    if core_models.PublicHoliday.is_holiday(target_date.date()) or target_date.weekday() == 6:
+        return
+
+    target_date_and_time = timezone.make_aware(tomorrow_7_am())
+
+    data_dict = dict(
+        target_date_and_time=date_format(
+            target_date_and_time,
+            settings.DATETIME_FORMAT
+        ),
+        skill='',
+    )
+
+    skills = Skill.objects.filtered_for_carrier_list(target_date_and_time)
+    for skill in skills:
+        count = skill.carrier_list_reserve - skill.carrier_list_count
+
+        available_candidate_contacts = CandidateContact.objects.get_available_for_skill(
+            skill,
+            target_date
+        )[:count]
+
+        # take random guys from available
+        for available_candidate_contact in available_candidate_contacts:
+            # if available for hire
+            if available_candidate_contact.get_current_state() == 70:
+                try:
+                    with transaction.atomic():
+                        master_company = available_candidate_contact.contact.get_closest_company()
+                        if available_candidate_contact.message_by_sms:
+                            try:
+                                sms_interface = get_sms_service()
+                            except ImportError:
+                                logger.exception('Cannot load SMS service')
+                            else:
+                                template = sms_interface.get_template(available_candidate_contact.contact,
+                                                                      carrier_list.job_offer.master_company,
+                                                                      tpl_name)
+                                # get skill translation based on template
+                                template_language = template.language.alpha_2
+                                skill_translation = skill.name.translation(language=template_language)
+                                data_dict['skill'] = skill_translation
+                        data_dict['candidate_contact'] = available_candidate_contact
+                        data_dict['recruitment_agent'] = available_candidate_contact.recruitment_agent
+                        data_dict['master_company'] = master_company
+
+                        sent_message = sms_interface.send_tpl(available_candidate_contact.contact,
+                                                              master_company,
+                                                              tpl_name,
+                                                              **data_dict
+                                                              )
+
+                        carrier_list, created = hr_models.CarrierList.objects.update_or_create(
+                            recruitee_contact=available_candidate_contact,
+                            target_date=target_date,
+                            defaults={'sent_message': sent_message, 'skill': skill}
+                        )
+                        carrier_list.sent_message = sent_message
+                        carrier_list.save(update_fields=['sent_message'])
+
+                        sent_message.add_primary_related_object(carrier_list)
+                        sent_message.add_related_objects(available_candidate_contact)
+                        cache.set(sent_message.pk, 'sent_carrier_lists', (sent_message.reply_timeout + 2) * 60)
+                except Exception as e:
+                    logger.error(e)
