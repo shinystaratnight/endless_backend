@@ -62,5 +62,5 @@ class CandidateContactManager(Manager):
             'contact'
         ).order_by(
             '-recent_timesheet',
-            '-total_score',
+            '-candidate_scores__average_score',
         ).distinct()
