@@ -1994,6 +1994,7 @@ class CarrierList(UUIDModel):
     skill = models.ForeignKey(
         'skills.Skill',
         verbose_name=_('Skill'),
+        related_name='carrier_lists',
         null=True,
         blank=True
     )
@@ -2016,6 +2017,21 @@ class CarrierList(UUIDModel):
     def deny(self):
         self.confirmed_available = False
         self.save(update_fields=['confirmed_available'])
+
+    def save(self, *args, **kwargs):
+        just_added = self._state.adding
+        super(CarrierList, self).save(*args, **kwargs)
+
+        if not self.confirmed_available:
+            from .tasks import send_carrier_list_offer_sms
+            send_carrier_list_offer_sms.apply_async(args=[self.id], countdown=5)
+
+    def process_sms_reply(self, sent_sms, reply_sms, positive):
+        assert isinstance(positive, bool), _('Looks like we could not decide if reply was positive')
+        if self.sent_message == sent_sms:
+            self.reply_message = reply_sms
+            self.confirmed_available = positive
+            self.save()
 
 
 class CandidateEvaluation(UUIDModel):

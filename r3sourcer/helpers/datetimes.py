@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date, time
 
 import pytz
 from django.conf import settings
@@ -62,3 +62,11 @@ def geo_time_zone(lng, lat):
     except pytz.UnknownTimeZoneError:
         time_zone = default_tz
     return pytz.timezone(time_zone)
+
+
+def today_7_am():
+    return datetime.combine(date.today(), time(7, 0))
+
+
+def tomorrow_7_am():
+    return today_7_am() + timedelta(days=1)

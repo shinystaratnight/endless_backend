@@ -13,6 +13,7 @@ from r3sourcer.apps.candidate.models import (
 )
 from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.hr import models as hr_models
+from r3sourcer.apps.hr.tasks import check_carrier_list
 from r3sourcer.apps.pricing.models import PriceListRate
 from r3sourcer.apps.skills.models import SkillBaseRate
 
@@ -334,6 +335,8 @@ class TestCandidateContact:
 
         assert not mock_process.called
 
+    def test_manager(self, skill, candidate):
+        check_carrier_list()
 
 @pytest.mark.django_db
 class TestSkillRel:

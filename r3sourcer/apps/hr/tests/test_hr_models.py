@@ -1,5 +1,6 @@
 import datetime
 
+import mock
 import pytest
 from freezegun import freeze_time
 from mock import patch, PropertyMock, MagicMock
@@ -16,6 +17,7 @@ from r3sourcer.apps.hr.models import (
     TimeSheet, JobsiteUnavailability, CandidateEvaluation, JobOffer, ShiftDate, TimeSheetIssue, BlackList,
     FavouriteList, Job, CarrierList, Shift, JobOfferSMS, NOT_FULFILLED, FULFILLED, LIKELY_FULFILLED, IRRELEVANT
 )
+from r3sourcer.helpers.datetimes import utc_tomorrow
 from r3sourcer.helpers.models.abs.timezone_models import TimeZone
 from r3sourcer.apps.hr.models import TimeSheet
 
@@ -674,6 +676,15 @@ class TestCarrierList:
         assert carrier_list.confirmed_available
         carrier_list.deny()
         assert not carrier_list.confirmed_available
+
+    @mock.patch('r3sourcer.apps.hr.tasks.send_carrier_list_offer_sms.apply_async')
+    def test_sending_offer_after_saving(self, mocked_send, candidate_contact, job_offer, skill1):
+        carrier_list = CarrierList.objects.create(
+            candidate_contact=candidate_contact,
+            skill=skill1,
+            target_date=utc_tomorrow()
+        )
+        mocked_send.assert_called_once_with(args=[carrier_list.id], countdown=5)
 
 
 @pytest.mark.django_db

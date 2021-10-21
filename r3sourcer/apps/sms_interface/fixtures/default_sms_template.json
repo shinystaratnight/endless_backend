@@ -658,5 +658,51 @@
         "delivery_timeout": 10,
         "language": "fi"
   }
+},
+{
+    "model": "sms_interface.defaultsmstemplate",
+    "pk": null,
+    "fields": {
+        "name": "Carrier List Offer",
+        "slug": "carrier-list-offer",
+        "message_text_template": "Hello [[candidate_contact]]. Are you ready to do backup [[skill]] work for [[master_company]] from [[target_date_and_time]]? Reply YES to confirm the shift, we will send you Jobsite details later. Regards, [[recruitment_agent]], [[recruitment_agent__contact__phone_mobile]]",
+        "reply_timeout": 180,
+        "delivery_timeout": 10,
+        "language": "en"
+    }
+},
+{
+    "model": "sms_interface.defaultsmstemplate",
+    "pk": null,
+    "fields": {
+        "name": "Carrier List Offer",
+        "slug": "carrier-list-offer",
+        "message_text_template": "Уважаемый [[candidate_contact]]. Сможете ли вы выйти в резерв для выполнения [[skill]] работы на [[master_company]] в [[target_date_and_time]]? Отправьте YES в ответном сообщении, чтобы согласиться. Мы отправим вам детали работы позже. С уважением, [[recruitment_agent]], [[recruitment_agent__contact__phone_mobile]]",
+        "reply_timeout": 180,
+        "delivery_timeout": 10,
+        "language": "ru"
+    }
+},{
+    "model": "sms_interface.defaultsmstemplate",
+    "pk": null,
+    "fields": {
+        "name": "Carrier List Offer",
+        "slug": "carrier-list-offer",
+        "message_text_template": "Tere [[candidate_contact]]. Kas olete valmis [[master_company]] jaoks alates [[target_date_and_time]]-st olema varutöötaja [[oskus]] ametikohal? Vahetuse kinnitamiseks vastake YES. Saadame teile hiljem töökoha üksikasjad. Lugupidamisega [[recruitment_agent]], [[recruitment_agent__contact__phone_mobile]]",
+        "reply_timeout": 180,
+        "delivery_timeout": 10,
+        "language": "et"
+    }
+},{
+    "model": "sms_interface.defaultsmstemplate",
+    "pk": null,
+    "fields": {
+        "name": "Carrier List Offer",
+        "slug": "carrier-list-offer",
+        "message_text_template": "Hei [[candidate_contact]]. Oletko valmis tekemään [[skill]] - varmuuskopiotyötä [[master_company]]-lle [[target_date_and_time]]? Vahvista muutos vastaamalla YES, lähetämme sinulle työpaikan tiedot myöhemmin. Terveisin [[recruitment_agent]], [[recruitment_agent__contact__phone_mobile]]",
+        "reply_timeout": 180,
+        "delivery_timeout": 10,
+        "language": "fi"
+    }
 }
 ]
