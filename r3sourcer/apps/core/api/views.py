@@ -80,7 +80,7 @@ class TrialUserView(viewsets.GenericViewSet):
         company_contact = models.CompanyContact.objects.create(contact=contact)
         models.CompanyContactRelationship.objects.create(company=company, company_contact=company_contact)
 
-        domain = serializer.validated_data['website'].lower()
+        domain = '{}.{}'.format(serializer.validated_data['website'].lower(), settings.REDIRECT_DOMAIN)
         site, created = Site.objects.get_or_create(domain=domain, defaults={'name': domain})
         models.SiteCompany.objects.get_or_create(company=company, site=site)
 
