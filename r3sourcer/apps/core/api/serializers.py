@@ -2042,5 +2042,7 @@ class RoleSerializer(ApiBaseModelSerializer):
         )
 
     def get_domain(cls, obj):
-        site_company = obj.company_contact_rel.company.get_closest_master_company().site_companies.last()
-        return site_company.site.domain if site_company else None
+        if obj.company_contact_rel.company:
+            site_company = obj.company_contact_rel.company.get_closest_master_company().site_companies.last()
+            return site_company.site.domain if site_company else None
+        return None
