@@ -29,16 +29,10 @@ def validate_timesheet(self, data):
     """
 
     hours = data.get('hours')
-    wage_type = data.get('wage_type')
-    if wage_type is None:
-        wage_type = self.instance.wage_type
+    if hours is None and self.instance.pk:
+        hours = self.instance.wage_type == 0
 
-    if self.instance.pk and (hours != None or self.instance.candidate_submitted_at):
-        if hours is None:
-            if wage_type == 1:
-                hours = False
-            else:
-                hours = True
+    if self.instance.pk or self.instance.candidate_submitted_at:
 
         # validate sent fields
         if hours:
