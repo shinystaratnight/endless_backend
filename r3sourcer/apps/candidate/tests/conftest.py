@@ -307,12 +307,13 @@ def candidate_note(db, candidate):
 
 
 @pytest.fixture
-def activity_template(db):
+def activity_template(db, company):
     return activity_models.ActivityTemplate.objects.create(
         name='test',
         type=activity_models.ActivityTemplate.TYPE_CHOICES.ACTIVITY,
         subject_template='text content',
-        message_text_template='html content'
+        message_text_template='html content',
+        company=company
     )
 
 
