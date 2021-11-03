@@ -324,7 +324,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         default=0
     )
 
-    objects = CandidateContactManager()
+    filtered_objects = CandidateContactManager()
 
     class Meta:
         verbose_name = _("Candidate Contact")

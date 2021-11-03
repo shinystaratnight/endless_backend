@@ -1503,7 +1503,7 @@ def check_carrier_list():
     for skill in skills:
         count = skill.carrier_list_reserve - skill.carrier_list_count
 
-        available_candidate_contacts = CandidateContact.objects.get_available_for_skill(
+        available_candidate_contacts = CandidateContact.filtered_objects.get_available_for_skill(
             skill,
             target_date
         )[:count]
