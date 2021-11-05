@@ -1434,7 +1434,7 @@ def send_carrier_list_offer_sms(self, carrier_list_id):
                 except ImportError:
                     logger.exception('Cannot load SMS service')
                 else:
-                    template = sms_interface.get_template(candidate_contact.contact, carrier_list.job_offer.master_company, tpl_name)
+                    template = sms_interface.get_template(candidate_contact.contact, master_company, tpl_name)
                     # get skill translation based on template
                     template_language = template.language.alpha_2
                     skill_translation = carrier_list.skill.name.translation(language=template_language)
@@ -1522,7 +1522,7 @@ def check_carrier_list():
                                 logger.exception('Cannot load SMS service')
                             else:
                                 template = sms_interface.get_template(available_candidate_contact.contact,
-                                                                      carrier_list.job_offer.master_company,
+                                                                      master_company,
                                                                       tpl_name)
                                 # get skill translation based on template
                                 template_language = template.language.alpha_2
