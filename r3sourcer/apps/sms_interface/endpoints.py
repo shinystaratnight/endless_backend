@@ -13,7 +13,7 @@ class SMSMessageApiEndpoint(ApiEndpoint):
     base_viewset = viewsets.SMSMessageViewset
     filter_class = filters.SMSMessageFilter
 
-    search_fields = ('from_number', 'to_number')
+    search_fields = ('from_number', 'to_number', 'text')
 
 
 class SMSRelatedObjectEndpoint(ApiEndpoint):
