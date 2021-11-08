@@ -242,8 +242,8 @@ class SMSBalance(models.Model):
         stripe_secret_key = StripeCountryAccount.get_stripe_key(country_code)
         stripe.api_key = stripe_secret_key
         # try to create and pay invoice if it's the first payment
-        # or if payment was more than a minute ago to exclude duplicates
-        if self.last_payment is None or self.last_payment.created + datetime.timedelta(minutes=1) < utc_now():
+        # or if payment was more than a 3 minutes ago to exclude duplicates
+        if self.last_payment is None or self.last_payment.created_utc + datetime.timedelta(minutes=3) < utc_now():
             vat_object = VAT.get_vat(country_code).first()
             tax_percent = vat_object.stripe_rate
 
@@ -278,15 +278,18 @@ class SMSBalance(models.Model):
                 # mark as unpaid if error
                 payment.status = Payment.PAYMENT_STATUSES.not_paid
                 payment.save()
-                logger.info('Invoice Topping up sms balance was not successful for {}'.format(self.company.id))
+                logger.warning('Invoice Topping up sms balance was not successful for {}'.format(self.company.id))
             else:
                 # increase balance if payment is successful
                 self.balance += Decimal(payment.amount)
+                payment.status = Payment.PAYMENT_STATUSES.paid
+                payment.save()
                 logger.info('Invoice Topping up sms balance was successful for {}'.format(self.company.id))
             finally:
                 # in any case save the last payment to sms_balance
                 self.last_payment = payment
                 self.save()
+                logger.info('Topping up sms balance for {} finished'.format(self.company.id))
 
 
     def save(self, *args, **kwargs):
