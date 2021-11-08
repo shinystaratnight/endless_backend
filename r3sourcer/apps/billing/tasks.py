@@ -6,6 +6,7 @@ from celery import shared_task
 from celery.utils.log import get_task_logger
 
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Count
 from stripe.error import InvalidRequestError
 
@@ -99,8 +100,10 @@ def charge_for_extra_workers():
 
 @shared_task
 def charge_for_sms(amount, sms_balance_id):
-    sms_balance = SMSBalance.objects.get(id=sms_balance_id)
-    sms_balance.charge_for_sms(amount)
+    with transaction.atomic():
+        sms_balance = SMSBalance.objects.select_for_update().get(id=sms_balance_id)
+        sms_balance.charge_for_sms(amount)
+
 
 @shared_task
 def sync_subscriptions():
