@@ -248,7 +248,7 @@ class JobOfferSerializer(core_serializers.ApiBaseModelSerializer):
             '__all__',
             {
                 'shift': ['id', 'time', {
-                    'date': ['shift_date'],
+                    'date': ['shift_date', 'job'],
                 }],
                 'candidate_contact': ['id', {
                     'contact': ['phone_mobile'],
