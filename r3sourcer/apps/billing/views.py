@@ -5,7 +5,7 @@ from datetime import datetime
 
 from django.core.exceptions import ValidationError
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import status
+from rest_framework import status, filters
 from rest_framework.exceptions import NotFound
 from rest_framework.generics import ListAPIView, ListCreateAPIView
 from rest_framework.response import Response
@@ -187,14 +187,13 @@ class SubscriptionStatusView(APIView):
         return Response(data)
 
 
-class PaymentListView(APIView):
-    def get(self, *args, **kwargs):
-        payments = Payment.objects.filter(company=self.request.user.company).order_by('-created')
-        serializer = PaymentSerializer(payments, many=True)
-        data = {
-            "payments": serializer.data,
-        }
-        return Response(data)
+class PaymentListView(ListAPIView):
+    serializer_class = PaymentSerializer
+    filter_backends = (filters.OrderingFilter,)
+    ordering_fields = ['created', 'type', 'amount', 'status', 'invoice_url']
+
+    def get_queryset(self):
+        return Payment.objects.filter(company=self.request.user.company).order_by('-created')
 
 
 class CheckPaymentInformationView(APIView):
