@@ -180,6 +180,17 @@ def send_candidate_consent_message(candidaterel_id, data_dict):
     except candidate_models.CandidateContact.DoesNotExist:
         logger.exception('There is no CandidateContact with the id={}'.format(candidate_rel.candidate_contact_id))
 
+    if candidate_contact.message_by_email:
+        try:
+            email_interface = get_email_service()
+        except ImportError:
+            logger.exception('Cannot load Email service')
+        else:
+            email_interface.send_tpl(candidate_contact.contact,
+                                    candidate_rel.master_company,
+                                    tpl_name,
+                                    **data_dict)
+
     if candidate_contact.message_by_sms:
         try:
             sms_interface = get_sms_service()
@@ -191,14 +202,3 @@ def send_candidate_consent_message(candidaterel_id, data_dict):
                                 tpl_name,
                                 check_reply=True,
                                 **data_dict)
-
-    if candidate_contact.message_by_email:
-        try:
-            email_interface = get_email_service()
-        except ImportError:
-            logger.exception('Cannot load Email service')
-        else:
-            email_interface.send_tpl(candidate_contact.contact,
-                                    candidate_rel.master_company,
-                                    tpl_name,
-                                    **data_dict)
