@@ -226,6 +226,7 @@ class AcceptanceTestQuestion(UUIDModel):
         (0, 'options', _('Options')),
         (1, 'text', _('Text')),
         (2, 'boolean', _('Yes/No')),
+        (3, 'checkboxes', _('Checkboxes')),
     )
 
     type = models.PositiveSmallIntegerField(
