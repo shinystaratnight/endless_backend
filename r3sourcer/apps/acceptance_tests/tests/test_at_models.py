@@ -10,12 +10,17 @@ questions = MockSet(
     MockModel(id=1, workflow_object_answers=MockModel(workflow_object_id=1, score=3)),
     MockModel(id=2, workflow_object_answers=MockModel(workflow_object_id=1, score=5)),
 )
-
+questions_with_excluded = MockSet(
+    MockModel(id=1, workflow_object_answers=MockModel(workflow_object_id=1, score=3)),
+)
 
 @pytest.mark.django_db
 class TestAcceptanceTest:
     def test_str(self, acceptance_test):
         assert str(acceptance_test) == acceptance_test.test_name
+
+    def test_get_filtered_questions(self, acceptance_test, answer, excluded_question_answer, answer_wrong):
+        assert acceptance_test.acceptance_test_questions.filter(exclude_from_score=False).count() == 1
 
 
 @pytest.mark.django_db
@@ -73,5 +78,9 @@ class TestAcceptanceTestWorkflowNode:
         assert at_wf_obj.get_score(None) == 0
 
     def test_get_score(self, at_wf_obj):
-        with mock.patch.object(at_wf_obj, 'get_all_questions', return_value=questions):
+        with mock.patch.object(at_wf_obj, 'get_scored_questions', return_value=questions):
             assert at_wf_obj.get_score(1) == 4
+
+    def test_get_score_with_excluded(self, at_wf_obj):
+        with mock.patch.object(at_wf_obj, 'get_scored_questions', return_value=questions_with_excluded):
+            assert at_wf_obj.get_score(1) == 3
