@@ -235,6 +235,11 @@ class AcceptanceTestQuestion(UUIDModel):
         verbose_name=_("Question Type")
     )
 
+    exclude_from_score = models.BooleanField(
+        default=False,
+        verbose_name=_("Exclude from score")
+    )
+
     class Meta:
         verbose_name = _("Acceptance Test Question")
         verbose_name_plural = _("Acceptance Test Questions")
