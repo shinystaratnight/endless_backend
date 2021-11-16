@@ -12,7 +12,7 @@ class AcceptanceTestSerializer(ApiBaseModelSerializer):
             'test_name', 'description', 'valid_from', 'valid_until', 'is_active', 'id',
             {
                 'acceptance_test_questions': (
-                    'id', 'question', 'details', 'order', 'type', 'pictures',
+                    'id', 'question', 'details', 'order', 'type', 'pictures', 'exclude_from_score',
                     {
                         'acceptance_test_answers': ('id',  'answer', 'order', 'score', ),
                     },
@@ -33,7 +33,7 @@ class AcceptanceTestSerializerAll(ApiBaseModelSerializer):
             'test_name', 'description', 'id',
             {
                 'acceptance_test_questions': (
-                    'id', 'question', 'details', 'order', 'type', 'pictures',
+                    'id', 'question', 'details', 'order', 'type', 'pictures', 'exclude_from_score',
                     {
                         'acceptance_test_answers': ('id',  'answer', 'order', 'score', ),
                     },
@@ -75,7 +75,7 @@ class AcceptanceTestCandidateQuestionSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = models.AcceptanceTestQuestion
-        fields = ('question', 'details')
+        fields = ('question', 'details', 'exclude_from_score')
 
     def get_answer(self, obj):
         object_id = self.context['object_id']
@@ -105,7 +105,7 @@ class AcceptanceTestCandidateWorkflowSerializer(ApiBaseModelSerializer):
         super().__init__(*args, **kwargs)
 
     def get_score(self, obj):
-        return obj.get_all_questions().filter(
+        return obj.get_scored_questions().filter(
             workflow_object_answers__workflow_object__object_id=self.object_id,
             workflow_object_answers__workflow_object__state=obj.company_workflow_node.workflow_node
         ).aggregate(score_avg=Avg('workflow_object_answers__score'))['score_avg'] or 0
@@ -125,7 +125,7 @@ class FormAcceptanceTestCandidateQuestionSerializer(ApiBaseModelSerializer):
 
     class Meta:
         model = models.AcceptanceTestQuestion
-        fields = ('id', 'question', 'details')
+        fields = ('id', 'question', 'details', 'exclude_from_score')
 
     def get_answer(self, obj):
         object_id = self.context['object_id']

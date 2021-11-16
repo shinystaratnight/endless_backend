@@ -67,7 +67,7 @@ class AcceptanceTest(UUIDModel):
 
     @property
     def score(self):
-        return self.acceptance_test_questions.aggregate(score=models.Avg('acceptance_test_answers__score'))['score']
+        return self.acceptance_test_questions.filter(exclude_from_score=False).aggregate(score=models.Avg('acceptance_test_answers__score'))['score']
 
 
 class AcceptanceTestQuestionPicture(UUIDModel):
@@ -190,11 +190,14 @@ class AcceptanceTestWorkflowNode(UUIDModel):
     def get_all_questions(self):
         return self.acceptance_test.acceptance_test_questions.all()
 
+    def get_scored_questions(self):
+        return self.acceptance_test.acceptance_test_questions.filter(exclude_from_score=False)
+
     def get_score(self, workflow_object_id):
         if workflow_object_id is None:
             return 0
 
-        return self.get_all_questions().filter(
+        return self.get_scored_questions().filter(
             workflow_object_answers__workflow_object_id=workflow_object_id,
             workflow_object_answers__score__gt=0,
         ).aggregate(score_avg=models.Avg('workflow_object_answers__score'))['score_avg'] or 0
@@ -235,6 +238,11 @@ class AcceptanceTestQuestion(UUIDModel):
         verbose_name=_("Question Type")
     )
 
+    exclude_from_score = models.BooleanField(
+        default=False,
+        verbose_name=_("Exclude from score")
+    )
+
     class Meta:
         verbose_name = _("Acceptance Test Question")
         verbose_name_plural = _("Acceptance Test Questions")
@@ -250,6 +258,8 @@ class AcceptanceTestQuestion(UUIDModel):
 
     @property
     def score(self):
+        if self.exclude_from_score: return 0
+
         answers = self.get_all_answers()
 
         if self.type == self.QUESTION_TYPES.text:

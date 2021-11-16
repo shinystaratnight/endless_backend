@@ -82,7 +82,8 @@ def answer(db, question):
         acceptance_test_question=question,
         answer='answer',
         order=0,
-        is_correct=True
+        is_correct=True,
+        score=5
     )
 
 
@@ -93,6 +94,26 @@ def answer_wrong(db, question):
         answer='answer wrong',
         order=0,
         is_correct=False
+    )
+
+
+@pytest.fixture
+def excluded_question(db, acceptance_test):
+    return models.AcceptanceTestQuestion.objects.create(
+        acceptance_test=acceptance_test,
+        question='question2',
+        order=2,
+        exclude_from_score=True
+    )
+
+
+@pytest.fixture
+def excluded_question_answer(db, question):
+    return models.AcceptanceTestAnswer.objects.create(
+        acceptance_test_question=question,
+        answer='answer',
+        order=0,
+        is_correct=True
     )
 
 
