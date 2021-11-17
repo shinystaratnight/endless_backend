@@ -348,8 +348,10 @@ class CandidatePoolSerializer(core_mixins.WorkflowStatesColumnMixin, core_mixins
         related = core_serializers.RELATED_DIRECT
 
     def get_profile_price(self, obj):
-        commission = SAASCompanySettings.objects.first().candidate_sale_commission
-        return obj.profile_price * (1 + commission / 100) if commission else obj.profile_price
+        saas_settings = SAASCompanySettings.objects.first()
+        if saas_settings:
+            return obj.profile_price * (1 + saas_settings.candidate_sale_commission / 100)
+        return obj.profile_price
 
     def get_average_score(self, obj):
         return obj.candidate_scores.get_average_score()
@@ -396,8 +398,10 @@ class CandidatePoolDetailSerializer(core_serializers.ApiBaseModelSerializer):
                   )
 
     def get_profile_price(self, obj):
-        commission = SAASCompanySettings.objects.first().candidate_sale_commission
-        return obj.profile_price * (1 + commission / 100) if commission else obj.profile_price
+        saas_settings = SAASCompanySettings.objects.first()
+        if saas_settings:
+            return obj.profile_price * (1 + saas_settings.candidate_sale_commission / 100)
+        return obj.profile_price
 
     def get_average_score(self, obj):
         return obj.candidate_scores.get_average_score()

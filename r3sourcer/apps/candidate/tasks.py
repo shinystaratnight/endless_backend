@@ -81,12 +81,16 @@ def buy_candidate(candidate_rel_id, user=None):
         return
 
     try:
-        commission = SAASCompanySettings.objects.first().candidate_sale_commission
-        amount = int(candidate_contact.profile_price * (1 + commission / 100))
+        saas_settings = SAASCompanySettings.objects.first()
+        if saas_settings:
+            amount = candidate_contact.profile_price * (1 + saas_settings.candidate_sale_commission / 100)
+        else:
+            amount = candidate_contact.profile_price
+        amount_stripe = int(amount * 100)
 
         stripe.InvoiceItem.create(
             customer=company.stripe_customer,
-            amount=round(amount),
+            amount=amount_stripe,
             currency=company.currency,
             description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
         )
