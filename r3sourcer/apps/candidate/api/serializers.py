@@ -378,11 +378,11 @@ class CandidatePoolSerializer(core_mixins.WorkflowStatesColumnMixin, core_mixins
 
 class CandidatePoolDetailSerializer(core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('average_score', 'owned_by', 'bmi')
+    method_fields = ('profile_price', 'average_score', 'owned_by', 'bmi')
 
     class Meta:
         model = candidate_models.CandidateContactAnonymous
-        fields = ('profile_price', 'id', 'updated_at', 'created_at', 'transportation_to_work', 'height',
+        fields = ('id', 'updated_at', 'created_at', 'transportation_to_work', 'height',
                   'weight', 'residency', 'visa_type', 'visa_expiry_date', 'nationality',
                   'vevo_checked_at',
                   {
@@ -394,6 +394,10 @@ class CandidatePoolDetailSerializer(core_serializers.ApiBaseModelSerializer):
                           ),
                   }
                   )
+
+    def get_profile_price(self, obj):
+        commission = SAASCompanySettings.objects.first().candidate_sale_commission
+        return obj.profile_price * (1 + commission / 100) if commission else obj.profile_price
 
     def get_average_score(self, obj):
         return obj.candidate_scores.get_average_score()
