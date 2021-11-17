@@ -39,7 +39,7 @@ class RateCoefficientForRulesAdmin(admin.ModelAdmin):
 
 
 class RateCoefficientAdmin(admin.ModelAdmin):
-    list_display = ('name', 'industry', 'master_company', 'rules')
+    list_display = ('name', 'master_company', 'industry', 'rules')
 
     def master_company(self, obj):
         return [i.company for i in obj.rate_coefficient_rels.all()]

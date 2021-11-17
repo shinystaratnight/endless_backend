@@ -108,7 +108,6 @@ class RateCoefficient(UUIDModel):
     name = models.CharField(
         max_length=18,
         verbose_name=_("Name"),
-        unique=True,
     )
 
     group = models.ForeignKey(
@@ -141,7 +140,8 @@ class RateCoefficient(UUIDModel):
         verbose_name_plural = _("Rate Coefficients")
 
     def __str__(self):
-        return self.name
+        master_company = self.rate_coefficient_rels.first().company.name
+        return f'{master_company} - {self.name}'
 
     @property
     def is_allowance(self):
