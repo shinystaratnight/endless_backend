@@ -333,11 +333,6 @@ class SMSBalance(models.Model):
         return True
 
 
-@receiver(pre_delete, sender=SMSBalance)
-def smsbalance_delete(sender, instance, **kwargs):
-    raise Exception
-
-
 class Payment(CompanyTimeZoneMixin):
     PAYMENT_TYPES = Choices(
         ('sms', 'SMS'),
