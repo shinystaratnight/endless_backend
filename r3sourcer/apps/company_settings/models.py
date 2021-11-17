@@ -1,9 +1,23 @@
 from django.contrib.contenttypes.models import ContentType
 from django.contrib.auth.models import Permission
 from django.db import models
+from django.db.models.base import Model
 
 from r3sourcer.helpers.models.abs import UUIDModel
 from r3sourcer.apps.myob.models import MYOBCompanyFile
+
+
+class SAASCompanySettings(Model):
+
+    candidate_sale_commission = models.DecimalField(
+        'Candidate sale commission',
+        decimal_places=2,
+        max_digits=5,
+        default=20.0,
+    )
+
+    class Meta:
+        verbose_name = "SAAS company settings"
 
 
 class CompanySettings(UUIDModel):
