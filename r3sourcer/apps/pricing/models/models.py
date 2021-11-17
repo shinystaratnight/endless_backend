@@ -162,7 +162,7 @@ class RateCoefficientRel(UUIDModel):
         RateCoefficient,
         related_name='rate_coefficient_rels',
         verbose_name=_('Rate Coefficient'),
-        on_delete=models.CASCADE
+        on_delete=models.PROTECT
     )
 
     company = models.ForeignKey(
@@ -467,12 +467,14 @@ class PriceListRateModifier(UUIDModel):
 
     rate_coefficient = models.ForeignKey(
         RateCoefficient,
+        on_delete=models.PROTECT,
         related_name="price_list_rate_modifiers",
         verbose_name=_("Rate coefficient")
     )
 
     rate_coefficient_modifier = models.ForeignKey(
         RateCoefficientModifier,
+        on_delete=models.PROTECT,
         related_name="price_list_rate_modifiers",
         verbose_name=_("Rate coefficient modifier")
     )
