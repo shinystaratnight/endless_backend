@@ -2918,6 +2918,9 @@ class PublicHoliday(UUIDModel):
         verbose_name = _("Public holiday")
         verbose_name_plural = _("Public holidays")
 
+    def __str__(self):
+        return f'{self.date} - {self.name}'
+
     @classmethod
     def is_holiday(cls, date, country=None):
         if country is None:

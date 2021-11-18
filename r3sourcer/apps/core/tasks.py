@@ -7,11 +7,9 @@ from celery.utils.log import get_task_logger
 
 from django.conf import settings
 from django.core.cache import cache
-from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from vine.five import monotonic
 
-from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.celeryapp import app
 
 from r3sourcer.apps.core import models as core_models

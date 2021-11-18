@@ -1421,3 +1421,11 @@ class TagViewSet(BaseApiViewset):
             company_tag.save()
             headers = self.get_success_headers(serializer.data)
             return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class PublicHolidayViewset(BaseApiViewset):
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+        master_company = get_site_master_company(request=self.request)
+        return qs.filter(country=master_company.country)
