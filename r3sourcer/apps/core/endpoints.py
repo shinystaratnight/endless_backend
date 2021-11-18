@@ -357,6 +357,14 @@ class UomEndpoint(ApiEndpoint):
     serializer = serializers.UomSerializer
 
 
+class PublicHolidayEndpoint(ApiEndpoint):
+
+    base_viewset = viewsets.PublicHolidayViewset
+    model = models.PublicHoliday
+    serializer = serializers.PublicHolidaySerializer
+    filter_class = filters.PublicHolidayFilter
+
+
 router.register(endpoint=DashboardModuleEndpoint())
 router.register(endpoint=UserDashboardModuleEndpoint())
 router.register(endpoint=AddressEndpoint())
@@ -406,3 +414,4 @@ router.register(endpoint=ContentTypeEndpoint())
 router.register(endpoint=InvoiceRuleEndpoint())
 router.register(endpoint=UserEndpoint())
 router.register(endpoint=UomEndpoint())
+router.register(endpoint=PublicHolidayEndpoint())
