@@ -2046,3 +2046,11 @@ class RoleSerializer(ApiBaseModelSerializer):
             site_company = obj.company_contact_rel.company.get_closest_master_company().site_companies.last()
             return site_company.site.domain if site_company else None
         return None
+
+
+class PublicHolidaySerializer(ApiBaseModelSerializer):
+    class Meta:
+        model = core_models.PublicHoliday
+        fields = (
+            'id', 'date', 'name', 'country'
+            )

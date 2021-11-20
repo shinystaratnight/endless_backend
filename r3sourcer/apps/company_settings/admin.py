@@ -15,4 +15,4 @@ class CompanySettings(admin.ModelAdmin):
 admin.site.register(models.MYOBSettings, MYOBSettingsAdmin)
 admin.site.register(models.CompanySettings, CompanySettings)
 admin.site.register(models.MYOBAccount)
-
+admin.site.register(models.SAASCompanySettings)

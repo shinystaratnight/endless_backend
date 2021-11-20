@@ -14,6 +14,7 @@ from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.utils.utils import normalize_phone_number
 from r3sourcer.apps.hr import models as hr_models
 from r3sourcer.apps.myob.models import MYOBSyncObject
+from r3sourcer.apps.company_settings.models import SAASCompanySettings
 from r3sourcer.apps.skills import models as skill_models
 from r3sourcer.apps.skills.api.serializers import WorkTypeSerializer
 
@@ -329,11 +330,11 @@ class SubcontractorCandidateRelationSerializer(core_serializers.ApiBaseModelSeri
 class CandidatePoolSerializer(core_mixins.WorkflowStatesColumnMixin, core_mixins.WorkflowLatestStateMixin,
                               core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('average_score', 'owned_by', 'bmi', 'tag_list', 'skill_list')
+    method_fields = ('profile_price', 'average_score', 'owned_by', 'bmi', 'tag_list', 'skill_list')
 
     class Meta:
         model = candidate_models.CandidateContactAnonymous
-        fields = ('profile_price', 'id', 'transportation_to_work', 'height',
+        fields = ('id', 'transportation_to_work', 'height',
                   'weight', 'nationality',
                   {
                       'candidate_scores': (
@@ -345,6 +346,12 @@ class CandidatePoolSerializer(core_mixins.WorkflowStatesColumnMixin, core_mixins
                   }
                   )
         related = core_serializers.RELATED_DIRECT
+
+    def get_profile_price(self, obj):
+        saas_settings = SAASCompanySettings.objects.first()
+        if saas_settings:
+            return obj.profile_price * (1 + saas_settings.candidate_sale_commission / 100)
+        return obj.profile_price
 
     def get_average_score(self, obj):
         return obj.candidate_scores.get_average_score()
@@ -373,11 +380,11 @@ class CandidatePoolSerializer(core_mixins.WorkflowStatesColumnMixin, core_mixins
 
 class CandidatePoolDetailSerializer(core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ('average_score', 'owned_by', 'bmi')
+    method_fields = ('profile_price', 'average_score', 'owned_by', 'bmi')
 
     class Meta:
         model = candidate_models.CandidateContactAnonymous
-        fields = ('profile_price', 'id', 'updated_at', 'created_at', 'transportation_to_work', 'height',
+        fields = ('id', 'updated_at', 'created_at', 'transportation_to_work', 'height',
                   'weight', 'residency', 'visa_type', 'visa_expiry_date', 'nationality',
                   'vevo_checked_at',
                   {
@@ -389,6 +396,12 @@ class CandidatePoolDetailSerializer(core_serializers.ApiBaseModelSerializer):
                           ),
                   }
                   )
+
+    def get_profile_price(self, obj):
+        saas_settings = SAASCompanySettings.objects.first()
+        if saas_settings:
+            return obj.profile_price * (1 + saas_settings.candidate_sale_commission / 100)
+        return obj.profile_price
 
     def get_average_score(self, obj):
         return obj.candidate_scores.get_average_score()

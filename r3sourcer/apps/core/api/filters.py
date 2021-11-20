@@ -442,3 +442,11 @@ class UserFilter(FilterSet):
 
     def filter_role(self, queryset, name, value):
         return queryset.filter(role__name=value)
+
+
+class PublicHolidayFilter(FilterSet):
+    date = DateRangeFilter()
+
+    class Meta:
+        model = models.PublicHoliday
+        fields = ['date']

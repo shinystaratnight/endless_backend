@@ -15,6 +15,7 @@ from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.candidate import models as candidate_models
 from r3sourcer.apps.email_interface.utils import get_email_service
 from r3sourcer.apps.billing.models import StripeCountryAccount as sca
+from r3sourcer.apps.company_settings.models import SAASCompanySettings
 from r3sourcer.apps.sms_interface.utils import get_sms_service
 
 logger = get_task_logger(__name__)
@@ -80,10 +81,16 @@ def buy_candidate(candidate_rel_id, user=None):
         return
 
     try:
-        amount = int(candidate_contact.profile_price * 100)
+        saas_settings = SAASCompanySettings.objects.first()
+        if saas_settings:
+            amount = candidate_contact.profile_price * (1 + saas_settings.candidate_sale_commission / 100)
+        else:
+            amount = candidate_contact.profile_price
+        amount_stripe = int(amount * 100)
+
         stripe.InvoiceItem.create(
             customer=company.stripe_customer,
-            amount=round(amount),
+            amount=amount_stripe,
             currency=company.currency,
             description='%s candidate profile purchase for %s' % (str(candidate_contact), company.name)
         )
@@ -96,7 +103,7 @@ def buy_candidate(candidate_rel_id, user=None):
         billing_models.Payment.objects.create(
             company=company,
             type=billing_models.Payment.PAYMENT_TYPES.candidate,
-            amount=int(float(candidate_contact.profile_price)),
+            amount=amount,
             stripe_id=invoice['id'],
             invoice_url=invoice['invoice_pdf'],
             status=invoice['status']

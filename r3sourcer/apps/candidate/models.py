@@ -845,13 +845,15 @@ class SkillRateCoefficientRel(UUIDModel):
     rate_coefficient = models.ForeignKey(
         'pricing.RateCoefficient',
         related_name="candidate_skill_coefficient_rels",
-        verbose_name=_("Rate coefficient")
+        verbose_name=_("Rate coefficient"),
+        on_delete=models.PROTECT
     )
 
     rate_coefficient_modifier = models.ForeignKey(
         'pricing.RateCoefficientModifier',
         related_name="candidate_skill_coefficient_rels",
-        verbose_name=_("Rate coefficient modifier")
+        verbose_name=_("Rate coefficient modifier"),
+        on_delete=models.PROTECT
     )
 
     class Meta:
