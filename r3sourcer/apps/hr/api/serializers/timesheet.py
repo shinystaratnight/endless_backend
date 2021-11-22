@@ -29,10 +29,8 @@ def validate_timesheet(self, data):
     """
 
     hours = data.get('hours')
-    if hours is None and self.instance.pk:
-        hours = self.instance.wage_type == 0
 
-    if self.instance.pk or self.instance.candidate_submitted_at:
+    if self.instance.pk and hours is not None:
 
         # validate sent fields
         if hours:
@@ -175,7 +173,6 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             'going_to_work_reply_sms',
             'going_to_work_confirmation',
             'supervisor',
-            'wage_type',
             'candidate_submitted_at',
             'supervisor_approved_at',
             'supervisor_approved_scheme',
@@ -301,8 +298,7 @@ class TimeSheetSerializer(ApiTimesheetImageFieldsMixin, ApiBaseModelSerializer):
             (obj.going_to_work_confirmation and
             obj.candidate_submitted_at is not None and
             obj.supervisor_approved_at is None) and
-            (obj.wage_type == 1 or
-            obj.planned_shift_end_at_utc <= utc_now())
+            (obj.wage_type == 1 or obj.planned_shift_end_at_utc <= utc_now())
         )
 
     def get_candidate_submit_hidden(self, obj):
@@ -449,8 +445,7 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
             'supervisor_approved_at', 'shift_started_at_tz',
             'shift_ended_at_tz', 'break_started_at_tz', 'break_ended_at_tz',
             'shift_started_at_utc', 'shift_ended_at_utc',
-            'break_started_at_utc', 'break_ended_at_utc',
-            'wage_type'
+            'break_started_at_utc', 'break_ended_at_utc'
         )
 
     def validate(self, data):

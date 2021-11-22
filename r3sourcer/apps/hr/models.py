@@ -343,17 +343,6 @@ class Job(core_models.AbstractBaseOrder):
         blank=True
     )
 
-    WAGE_CHOICES = Choices(
-        (0,'HOURLY', _("Hourly wage")),
-        (1, 'PIECEWORK', _("Piecework wage")),
-    )
-
-    wage_type = models.PositiveSmallIntegerField(
-        choices=WAGE_CHOICES,
-        verbose_name=_("Type of wage"),
-        default=WAGE_CHOICES.HOURLY
-    )
-
     hourly_rate_default = models.DecimalField(
         decimal_places=2,
         max_digits=16,
@@ -1171,10 +1160,15 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         null=True
     )
 
+    WAGE_CHOICES = Choices(
+        (0,'HOURLY', _("Hourly wage")),
+        (1, 'PIECEWORK', _("Piecework wage")),
+    )
+
     wage_type = models.PositiveSmallIntegerField(
-        choices=Job.WAGE_CHOICES,
+        choices=WAGE_CHOICES,
         verbose_name=_("Type of wage"),
-        default=Job.WAGE_CHOICES.HOURLY
+        default=WAGE_CHOICES.HOURLY
     )
 
     def supervisor_signature_path(self, filename):
@@ -1301,7 +1295,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
         self.__original_candidate_submitted_at = self.candidate_submitted_at
 
     def __str__(self):
-        fields = [self.shift_started_at_tz, self.candidate_submitted_at_tz, self.wage_type]
+        fields = [self.shift_started_at_tz, self.candidate_submitted_at_tz]
         return ' '.join([str(x) for x in fields])
 
     @property
@@ -1433,7 +1427,6 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
             'candidate_rate': job_offer.shift.hourly_rate,
             'going_to_work_confirmation': going_to_work_confirmation,
             'status': status,
-            'wage_type': job_offer.job.wage_type,
         }
 
         try:
@@ -1658,7 +1651,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         super().save(*args, **kwargs)
 
-        if self.wage_type == Job.WAGE_CHOICES.HOURLY and self.candidate_submitted_at:
+        if self.wage_type == self.WAGE_CHOICES.HOURLY and self.candidate_submitted_at:
 
             hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
                                                   skill_name=self.job_offer.job.position.name) \
