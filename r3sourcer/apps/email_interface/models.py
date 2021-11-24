@@ -96,20 +96,23 @@ class DefaultEmailTemplate(DefaultTemplateABS):
                    subject_template=self.subject_template)
 
         templates = []
-        for company in Company.objects.filter(type=Company.COMPANY_TYPES.master,
-                                              languages__language=self.language) \
-                                      .exclude(email_templates__slug=self.slug):
-            obj = EmailTemplate(
-                name=self.name,
-                slug=self.slug,
-                message_html_template=self.message_html_template,
-                reply_timeout=self.reply_timeout,
-                delivery_timeout=self.delivery_timeout,
-                language_id=self.language.alpha_2,
-                company_id=company.id,
-                subject_template=self.subject_template
-            )
-            templates.append(obj)
+        companies = Company.objects.filter(type=Company.COMPANY_TYPES.master,
+                                           languages__language=self.language)
+        for company in companies:
+            if not EmailTemplate.objects.filter(company=company,
+                                                slug=self.slug,
+                                                language=self.language):
+                obj = EmailTemplate(
+                    name=self.name,
+                    slug=self.slug,
+                    message_html_template=self.message_html_template,
+                    reply_timeout=self.reply_timeout,
+                    delivery_timeout=self.delivery_timeout,
+                    language_id=self.language.alpha_2,
+                    company_id=company.id,
+                    subject_template=self.subject_template
+                )
+                templates.append(obj)
         EmailTemplate.objects.bulk_create(templates)
 
 
