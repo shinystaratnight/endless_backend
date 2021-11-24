@@ -29,19 +29,19 @@ class DefaultSMSTemplate(DefaultTemplateABS):
             update(message_text_template=self.message_text_template)
 
         templates = []
-        for company in Company.objects.filter(
-                    type=Company.COMPANY_TYPES.master,
-                    languages__language=self.language
-                ).exclude(
-                    sms_templates__slug=self.slug,
-                ):
-            obj = SMSTemplate(
-                name=self.name,
-                slug=self.slug,
-                message_text_template=self.message_text_template,
-                reply_timeout=self.reply_timeout,
-                delivery_timeout=self.delivery_timeout,
-                language_id=self.language.alpha_2,
-                company_id=company.id)
-            templates.append(obj)
+        companies = Company.objects.filter(type=Company.COMPANY_TYPES.master,
+                                           languages__language=self.language)
+        for company in companies:
+            if not SMSTemplate.objects.filter(company=company,
+                                              slug=self.slug,
+                                              language=self.language):
+                obj = SMSTemplate(
+                    name=self.name,
+                    slug=self.slug,
+                    message_text_template=self.message_text_template,
+                    reply_timeout=self.reply_timeout,
+                    delivery_timeout=self.delivery_timeout,
+                    language_id=self.language.alpha_2,
+                    company_id=company.id)
+                templates.append(obj)
         SMSTemplate.objects.bulk_create(templates)
