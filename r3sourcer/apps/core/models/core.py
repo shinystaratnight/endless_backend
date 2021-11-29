@@ -294,9 +294,7 @@ class Contact(CategoryFolderMixin,
         from r3sourcer.apps.core.utils.companies import get_site_master_company
 
         if self.is_company_contact():
-            master_company = self.company_contact.filter(relationships__active=True).first().get_master_company()
-            if len(master_company) > 0:
-                return master_company[0]
+            return get_site_master_company()
         elif self.is_candidate_contact():
             return self.candidate_contacts.get_closest_company()
         else:
