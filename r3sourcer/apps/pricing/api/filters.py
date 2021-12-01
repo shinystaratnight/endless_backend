@@ -29,17 +29,9 @@ class PriceListFilter(FilterSet):
 
 class IndustryFilter(FilterSet):
 
-    company = UUIDFilter(method='filter_by_company_price_lists')
-
     class Meta:
         model = models.Industry
         fields = ['company']
-
-    def filter_by_company_price_lists(self, queryset, name, value):
-        return queryset.filter(
-            Q(skill_names__skills__company_id=value) |
-            Q(skill_names__skills__active=True)
-        ).distinct()
 
 
 class RateCoefficientFilter(FilterSet):
