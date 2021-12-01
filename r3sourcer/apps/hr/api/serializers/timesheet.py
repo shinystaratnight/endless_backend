@@ -93,8 +93,8 @@ def validate_timesheet(self, data):
                 raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
             data['wage_type'] = 1
 
-        return data
-    raise exceptions.ValidationError({'non_field_errors': _("Timesheet data is not valid")})
+    return data
+    # raise exceptions.ValidationError({'non_field_errors': _("Timesheet data is not valid")})
 
 
 class ValidateApprovalScheme(serializers.Serializer):
