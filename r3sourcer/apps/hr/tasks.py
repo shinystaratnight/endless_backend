@@ -1503,6 +1503,7 @@ def check_carrier_list():
     skills = Skill.objects.filtered_for_carrier_list(target_date_and_time)
     for skill in skills:
         count = skill.carrier_list_reserve - skill.carrier_list_count
+        data_dict['skill'] = skill
 
         available_candidate_contacts = CandidateContact.filtered_objects.get_available_for_skill(
             skill,
@@ -1527,8 +1528,9 @@ def check_carrier_list():
                                                                       tpl_name)
                                 # get skill translation based on template
                                 template_language = template.language.alpha_2
-                                skill_translation = skill.name.translation(language=template_language)
-                                data_dict['skill'] = skill_translation
+                                if skill and skill.name:
+                                    skill_translation = skill.name.translation(language=template_language)
+                                    data_dict['skill'] = skill_translation
                         data_dict['candidate_contact'] = available_candidate_contact
                         data_dict['recruitment_agent'] = available_candidate_contact.recruitment_agent
                         data_dict['master_company'] = master_company
