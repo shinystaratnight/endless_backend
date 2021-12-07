@@ -982,6 +982,17 @@ class CarrierListSerializer(core_serializers.ApiBaseModelSerializer):
             }
         )
 
+    def validate(self, validated_data):
+        candidate_contact = validated_data.get('candidate_contact')
+        skill = validated_data.get('skill')
+
+        if not any([candidate_contact, skill]):
+            raise exceptions.ValidationError({
+                'non_field_errors': _('Candidate Contact and Skill are required.')
+            })
+
+        return validated_data
+
 
 class JobRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiBaseModelSerializer):
     class Meta:
