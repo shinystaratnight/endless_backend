@@ -8,7 +8,7 @@ from celery.utils.log import get_task_logger
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Count
-from stripe.error import InvalidRequestError
+from stripe.error import InvalidRequestError, StripeError
 
 from r3sourcer.apps.billing.models import (
                             Subscription,
@@ -109,12 +109,16 @@ def charge_for_sms(amount, sms_balance_id):
 def sync_subscriptions():
     """sync subscriptions statuses and periods"""
     for subscription in Subscription.objects.all():
-        stripe_subscription = subscription.get_stripe_subscription()
-        subscription.sync_status(stripe_subscription)
-        subscription.sync_periods(stripe_subscription)
-        subscription.update_user_permissions(stripe_subscription)
-        subscription.save()
-
+        try:
+            stripe_subscription = subscription.get_stripe_subscription()
+            subscription.sync_status(stripe_subscription)
+            subscription.sync_periods(stripe_subscription)
+            subscription.update_user_permissions(stripe_subscription)
+            subscription.save()
+        except StripeError as e:
+            logger.warning('StripeError during sync_subscriptions: {}'.format(
+                e.user_message
+            ))
 
 @shared_task
 def restrict_access_for_users_without_subscription():
