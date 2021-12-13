@@ -188,14 +188,31 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
     phone_fields = ['phone_mobile']
     raise_invalid_address = False
 
-    def perform_create(self, serializer):
-        instance = serializer.save()
+
+    def create(self, request, *args, **kwargs):
+        from rest_framework import status
 
         master_company = get_site_master_company(request=self.request)
-        models.ContactRelationship.objects.create(
-            contact=instance,
+        serializer = self.get_serializer(data=request.data)
+
+        if serializer.is_valid(raise_exception=False):
+            contact = serializer.save()
+            status = status.HTTP_201_CREATED
+        else:
+            contact = serializer.get_or_update()
+            if contact:
+                serializer = serializers.ContactSerializer(contact, many=False)
+                status = status.HTTP_200_OK
+            else:
+                return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        models.ContactRelationship.objects.get_or_create(
+            contact=contact,
             company=master_company
         )
+
+        return Response(serializer.data, status)
+
 
     @action(methods=['get'], detail=False, permission_classes=[AllowAny])
     def validate(self, request, *args, **kwargs):
