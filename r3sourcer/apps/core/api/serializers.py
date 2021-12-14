@@ -714,6 +714,19 @@ class ContactSerializer(ApiContactImageFieldsMixin,
 
         return data
 
+    def get_or_update(self):
+        defaults = self.data.copy()
+        email = defaults.pop('email')
+        phone_mobile = defaults.pop('phone_mobile')
+        contact = core_models.Contact.objects.filter(email=email,
+                                                     phone_mobile=phone_mobile) \
+                                             .first()
+        if contact:
+            for attr, value in defaults.items():
+                setattr(contact, attr, value)
+            contact.save()
+            return contact
+
     class Meta:
         model = core_models.Contact
         read_only = ('is_available', 'contact_address', 'company_contact', 'object_history', 'notes')
@@ -798,13 +811,23 @@ class ContactChangePasswordSerializer(ContactPasswordSerializer):
 class ContactRegisterSerializer(ContactSerializer):
 
     def create(self, validated_data):
-        # FIXME: change password handling
-        user = UserSerializer().create({'password': ''})
 
-        validated_data['user'] = user
-        contact = super().create(validated_data)
+        try:
+            user = get_user_model().objects.get(firts_name=validated_data('firts_name'),
+                                                last_name=validated_data('last_name'),
+                                                email=validated_data('email'),
+                                                phone_mobile=validated_data('phone_mobile'),
+                                                )
+            return user.contact
 
-        return contact
+        except get_user_model().DoesNotExist:
+            # FIXME: change password handling
+            user = UserSerializer().create({'password': ''})
+
+            validated_data['user'] = user
+            contact = super().create(validated_data)
+
+            return contact
 
     class Meta:
         fields = (

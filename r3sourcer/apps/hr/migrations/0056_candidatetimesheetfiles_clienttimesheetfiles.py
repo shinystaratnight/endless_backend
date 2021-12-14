@@ -17,32 +17,32 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.CreateModel(
-            name='CandidateTimeSheetFiles',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('file', models.FileField(blank=True, null=True, verbose_name='Candidate Timesheet File')),
-                ('time_sheet', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='candidate_files', to='hr.TimeSheet', verbose_name='TimeSheet')),
-            ],
-            options={
-                'verbose_name': 'Candidate TimeSheet File',
-                'verbose_name_plural': 'Candidate TimeSheet Files',
-            },
-        ),
-        migrations.CreateModel(
-            name='ClientTimeSheetFiles',
-            fields=[
-                ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
-                ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
-                ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
-                ('file', models.FileField(blank=True, null=True, verbose_name='Client Timesheet File')),
-                ('time_sheet', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='client_files', to='hr.TimeSheet', verbose_name='TimeSheet')),
-            ],
-            options={
-                'verbose_name': 'Client TimeSheet File',
-                'verbose_name_plural': 'Client TimeSheet Files',
-            },
-        ),
+        # migrations.CreateModel(
+        #     name='CandidateTimeSheetFiles',
+        #     fields=[
+        #         ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+        #         ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
+        #         ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
+        #         ('file', models.FileField(blank=True, null=True, verbose_name='Candidate Timesheet File')),
+        #         ('time_sheet', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='candidate_files', to='hr.TimeSheet', verbose_name='TimeSheet')),
+        #     ],
+        #     options={
+        #         'verbose_name': 'Candidate TimeSheet File',
+        #         'verbose_name_plural': 'Candidate TimeSheet Files',
+        #     },
+        # ),
+        # migrations.CreateModel(
+        #     name='ClientTimeSheetFiles',
+        #     fields=[
+        #         ('id', models.UUIDField(default=uuid.uuid4, editable=False, primary_key=True, serialize=False)),
+        #         ('updated_at', models.DateTimeField(auto_now=True, verbose_name='Updated at')),
+        #         ('created_at', models.DateTimeField(auto_now_add=True, verbose_name='Created at')),
+        #         ('file', models.FileField(blank=True, null=True, verbose_name='Client Timesheet File')),
+        #         ('time_sheet', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='client_files', to='hr.TimeSheet', verbose_name='TimeSheet')),
+        #     ],
+        #     options={
+        #         'verbose_name': 'Client TimeSheet File',
+        #         'verbose_name_plural': 'Client TimeSheet Files',
+        #     },
+        # ),
     ]

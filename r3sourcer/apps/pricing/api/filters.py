@@ -1,9 +1,7 @@
 from django.db.models import Q
-from django_filters import UUIDFilter
 from django_filters.rest_framework import FilterSet
 
 from r3sourcer.apps.pricing import models
-from r3sourcer.helpers.datetimes import utc_now
 
 
 class PriceListRateFilter(FilterSet):
