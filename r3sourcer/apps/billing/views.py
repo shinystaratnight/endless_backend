@@ -22,11 +22,12 @@ from r3sourcer.apps.core.models import Company, Contact, VAT
 from r3sourcer.apps.company_settings.models import GlobalPermission
 from r3sourcer.celeryapp import app
 from r3sourcer.apps.billing.models import StripeCountryAccount as sca
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 
 
 class SubscriptionCreateView(APIView):
     def post(self, *args, **kwargs):
-        company = self.request.user.company
+        company = get_site_master_company()
 
         if not company.stripe_customer:
             data = {'error': 'User did not provide payment information.'}
@@ -123,7 +124,8 @@ class SubscriptionCreateView(APIView):
 
 class SubscriptionListView(ListAPIView):
     def get(self, *args, **kwargs):
-        subscriptions = Subscription.objects.filter(company=self.request.user.company).order_by('-created')
+        company = get_site_master_company()
+        subscriptions = Subscription.objects.filter(company=company).order_by('-created')
         serializer = SubscriptionSerializer(subscriptions, many=True)
         data = {
             "subscriptions": serializer.data
@@ -133,7 +135,7 @@ class SubscriptionListView(ListAPIView):
 
 class StripeCustomerCreateView(APIView):
     def post(self, *args, **kwargs):
-        company = self.request.user.company
+        company = get_site_master_company()
         description = '{}'.format(company.name)
         email = ''
         country_code = 'EE'
@@ -158,7 +160,7 @@ class StripeCustomerCreateView(APIView):
         return Response(status=status.HTTP_201_CREATED)
 
     def put(self, *args, **kwargs):
-        company = self.request.user.company
+        company = get_site_master_company()
         country_code = 'EE'
         if not company.stripe_customer:
             raise ValidationError({"error": _("Company has no stripe account")})
@@ -175,7 +177,7 @@ class StripeCustomerCreateView(APIView):
 class SubscriptionStatusView(APIView):
     def get(self, *args, **kwargs):
         status = 'not_created'
-        company = self.request.user.company
+        company = get_site_master_company()
         subscription = company.subscriptions.filter(active=True).first()
 
         if subscription:
@@ -193,19 +195,22 @@ class PaymentListView(ListAPIView):
     ordering_fields = ['created', 'type', 'amount', 'status', 'invoice_url']
 
     def get_queryset(self):
-        return Payment.objects.filter(company=self.request.user.company).order_by('-created')
+        company = get_site_master_company()
+        return Payment.objects.filter(company=company).order_by('-created')
 
 
 class CheckPaymentInformationView(APIView):
     def get(self, *args, **kwargs):
+        company = get_site_master_company()
         return Response({
-            "payment_information_submited": bool(self.request.user.company.stripe_customer)
+            "payment_information_submited": bool(company.stripe_customer)
         })
 
 
 class SubscriptionCancelView(APIView):
     def get(self, *args, **kwargs):
-        subscription = Subscription.objects.get(company=self.request.user.company, active=True)
+        company = get_site_master_company()
+        subscription = Subscription.objects.get(company=company, active=True)
         subscription.deactivate()
         subscription.active = False
         subscription.status = 'canceled'
@@ -241,7 +246,7 @@ class DisableSMSContactView(APIView):
 
 class TwilioFundCreateView(APIView):
     def post(self, *args, **kwargs):
-        company = self.request.user.company
+        company = get_site_master_company()
 
         if not company.stripe_customer:
             data = {'error': 'User didnt provide payment information.'}
@@ -262,7 +267,7 @@ class TwilioFundCreateView(APIView):
 
 class TwilioAutoChargeView(APIView):
     def get(self, *args, **kwargs):
-        company = self.request.user.company
+        company = get_site_master_company()
         try:
             sms_balance = SMSBalance.objects.get(company=company)
         except SMSBalance.DoesNotExist:
@@ -275,7 +280,7 @@ class TwilioAutoChargeView(APIView):
         return Response(data, status=status.HTTP_200_OK)
 
     def post(self, *args, **kwargs):
-        company = self.request.user.company
+        company = get_site_master_company()
 
         if not company.stripe_customer:
             data = {'error': 'User didnt provide payment information.'}
@@ -301,9 +306,10 @@ class TwilioAutoChargeView(APIView):
 
 class SubscriptionTypeView(APIView):
     def get(self, *args, **kwargs):
-        company_address = self.request.user.company.get_hq_address()
+        company = get_site_master_company()
+        company_address = company.get_hq_address()
         if not company_address:
-            company_address = self.request.user.company.company_addresses.first()
+            company_address = company.company_addresses.first()
         if not company_address:
             raise NotFound(detail='Company address not found')
 
@@ -321,7 +327,7 @@ class SubscriptionTypeView(APIView):
 
 class StripeCountryAccountView(APIView):
     def get(self, *args, **kwargs):
-        company = self.request.user.company
+        company = get_site_master_company()
         hq_addr = company.get_hq_address()
         country_code = 'EE'
         if hq_addr:
