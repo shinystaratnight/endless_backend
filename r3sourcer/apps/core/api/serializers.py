@@ -29,6 +29,7 @@ from r3sourcer.apps.acceptance_tests.models import AcceptanceTestWorkflowNode
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core import models as core_models, tasks as core_tasks
 from r3sourcer.apps.core.utils.utils import normalize_phone_number, validate_phone_number
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.core.workflow import (NEED_REQUIREMENTS, ALLOWED, ACTIVE, NOT_ALLOWED)
 from r3sourcer.apps.core.api import mixins as core_mixins, fields as core_field
 from r3sourcer.apps.core.models import Workflow
@@ -2055,7 +2056,7 @@ class UomSerializer(ApiBaseModelSerializer):
 
 
 class RoleSerializer(ApiBaseModelSerializer):
-    method_fields = ['domain']
+    method_fields = ['domain', 'is_active']
 
     class Meta:
         model = core_models.Role
@@ -2069,6 +2070,14 @@ class RoleSerializer(ApiBaseModelSerializer):
             site_company = obj.company_contact_rel.company.get_closest_master_company().site_companies.last()
             return site_company.site.domain if site_company else None
         return None
+
+    def get_is_active(cls, obj):
+        company = get_site_master_company()
+        if obj.name == 'client' and company == obj.company_contact_rel.company:
+            return True
+        if obj.name == 'manager' and company == obj.company_contact_rel.company.get_closest_master_company():
+            return True
+        return False
 
 
 class PublicHolidaySerializer(ApiBaseModelSerializer):
