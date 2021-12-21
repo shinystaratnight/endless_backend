@@ -2073,11 +2073,11 @@ class RoleSerializer(ApiBaseModelSerializer):
 
     def get_is_active(cls, obj):
         company = get_site_master_company()
-        if obj.name == 'client' and company == obj.company_contact_rel.company:
-            return True
-        if obj.name == 'manager' and company == obj.company_contact_rel.company.get_closest_master_company():
-            return True
-        return False
+        if obj.name == 'manager':
+            if company == obj.company_contact_rel.company:
+                return True
+            else:
+                return False
 
 
 class PublicHolidaySerializer(ApiBaseModelSerializer):
