@@ -4,15 +4,17 @@ from r3sourcer.apps.core.api import viewsets as core_viewsets
 from r3sourcer.apps.skills.models import Skill, SkillRateRange
 from r3sourcer.apps.pricing.models import PriceListRate
 from r3sourcer.apps.core.models import Company
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 
 
 class SkillNameViewSet(core_viewsets.BaseApiViewset):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        company = get_site_master_company()
         qs = qs.filter(
-            industry__in=self.request.user.company.industries.all(),
-            skills__company=self.request.user.company,
+            industry__in=company.industries.all(),
+            skills__company=company,
         )
         if self.request.query_params.get('ordering'):
             ordering = self.request.query_params.get('ordering')
@@ -25,8 +27,9 @@ class SkillNameViewSet(core_viewsets.BaseApiViewset):
     def _filter_list(self):
         if not hasattr(self, '_map_skill'):
             map_skill = dict()
-            for skill in Skill.objects.filter(name__industry__in=self.request.user.company.industries.all(),
-                                              company=self.request.user.company).select_related('name'):
+            company = get_site_master_company()
+            for skill in Skill.objects.filter(name__industry__in=company.industries.all(),
+                                              company=company).select_related('name'):
                 map_skill.update({skill.name.name: skill})
             self._map_skill = map_skill
 
@@ -43,7 +46,7 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
         try:
             company =  Company.objects.get(pk=self.request.query_params.get('company'))
         except:
-            company = self.request.user.company
+            company = get_site_master_company()
         industries = company.industries.all()
         qs = qs.filter(Q(skill_name__industry__in=industries) |
                        Q(skill__company=company))
@@ -71,8 +74,9 @@ class SkillRateRangeViewSet(core_viewsets.BaseApiViewset):
 
     def get_queryset(self):
         qs = super().get_queryset()
+        company = get_site_master_company()
         qs = qs.filter(
-            skill__name__industry__in=self.request.user.company.industries.all(),
+            skill__name__industry__in=company.industries.all(),
         )
         if self.request.query_params.get('ordering'):
             ordering = self.request.query_params.get('ordering')
