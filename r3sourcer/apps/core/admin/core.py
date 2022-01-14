@@ -397,7 +397,7 @@ class VATAdmin(admin.ModelAdmin):
         'country',
         'name',
     )
-    exclude = ('stripe_id',)
+    # exclude = ('stripe_id',)
 
     def save_model(self, request, obj, form, change):
         country_code2 = obj.country_id

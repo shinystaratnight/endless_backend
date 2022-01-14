@@ -64,7 +64,7 @@ class SubscriptionCreateView(APIView):
                 cancel_at_period_end=False,
             )
         except InvalidRequestError as e:
-            data = {'error': e.message}
+            data = {'error': e.user_message}
             return Response(data, status=status.HTTP_400_BAD_REQUEST)
         current_period_start = None
         current_period_end = None
