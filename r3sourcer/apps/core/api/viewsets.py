@@ -20,6 +20,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
+from r3sourcer.apps.candidate.models import CandidateContact, CandidateRel
 from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.api.contact_bank_accounts.serializers import ContactBankAccountFieldSerializer
 from r3sourcer.apps.core.api.fields import ApiBase64FileField
@@ -203,6 +204,63 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
             if contact:
                 serializer = serializers.ContactSerializer(contact, many=False)
                 status = status.HTTP_200_OK
+
+                # copy CandidateContact
+                if not CandidateContact.objects.filter(contact=contact,
+                                                       candidate_rels__master_company=master_company) \
+                                               .exists():
+                    candidate = CandidateContact.objects.filter(contact=contact).last()
+                    recruitment_agent = self.request.user.contact.get_company_contact_by_company(master_company)
+                    if candidate:
+                        # copy related objects
+                        related_m2m = ['candidate_acceptance_tests',
+                                       'candidate_evaluations',
+                                       'candidate_skills',
+                                       'formalities',
+                                       'tag_rels']
+                        fks_to_copy = []
+                        import copy
+                        candidate_score = copy.deepcopy(candidate.candidate_scores)
+
+                        for rm in related_m2m:
+                            related_model = getattr(candidate, rm)
+                            fks_to_copy += related_model.all()
+
+                        # Now we can make the new record
+                        candidate.id = None
+                        candidate.recruitment_agent = recruitment_agent
+                        candidate.save()
+
+                        # Create CandidateScore
+                        candidate_score.id = None
+                        candidate_score.candidate_contact = candidate
+                        candidate_score.save()
+
+                        # create CandidateRel
+                        CandidateRel.objects.get_or_create(
+                            candidate_contact=candidate,
+                            master_company=master_company,
+                            company_contact=recruitment_agent
+                        )
+
+                        foreign_keys = {}
+                        for fk in fks_to_copy:
+                            fk.pk = None
+                            fk.candidate_contact = candidate
+                            # Likewise make any changes to the related model here
+                            # However, we avoid calling fk.save() here to prevent
+                            # hitting the database once per iteration of this loop
+                            try:
+                                # Use fk.__class__ here to avoid hard-coding the class name
+                                foreign_keys[fk.__class__].append(fk)
+                            except KeyError:
+                                foreign_keys[fk.__class__] = [fk]
+
+                        # Now we can issue just two calls to bulk_create,
+                        # one for fkeys_a and one for fkeys_b
+                        for cls, list_of_fks in foreign_keys.items():
+                            cls.objects.bulk_create(list_of_fks)
+
             else:
                 return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 

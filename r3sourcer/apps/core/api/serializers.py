@@ -723,6 +723,7 @@ class ContactSerializer(ApiContactImageFieldsMixin,
                                                      phone_mobile=phone_mobile) \
                                              .first()
         if contact:
+            # update model fields
             for attr, value in defaults.items():
                 setattr(contact, attr, value)
             contact.save()

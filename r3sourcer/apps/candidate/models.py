@@ -172,7 +172,7 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         (2, 'public', _("Public Transportation")),
     )
 
-    contact = models.OneToOneField(
+    contact = models.ForeignKey(
         'core.Contact',
         on_delete=models.CASCADE,
         related_name="candidate_contacts",

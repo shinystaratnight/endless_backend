@@ -10,15 +10,15 @@ def save_decorator(method, endless_logger):
     def wrapper(self, *args, **kwargs):
         just_added = self._state.adding
         old_instance = None
-        if not just_added:
-            old_instance = self.__class__.objects.get(id=self.id)
-
         result = method(self, *args, **kwargs)
+        if self.id:
+            if not just_added:
+                old_instance = self.__class__.objects.get(id=self.id)
 
-        if just_added:
-            endless_logger.log_instance_change(self, transaction_type='create')
-        else:
-            endless_logger.log_instance_change(self, old_instance=old_instance, transaction_type='update')
+            if just_added:
+                endless_logger.log_instance_change(self, transaction_type='create')
+            else:
+                endless_logger.log_instance_change(self, old_instance=old_instance, transaction_type='update')
 
         return result
     return wrapper
