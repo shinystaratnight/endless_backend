@@ -291,17 +291,6 @@ class Contact(CategoryFolderMixin,
         return None
 
     def get_closest_company(self):
-        from r3sourcer.apps.core.utils.companies import get_site_master_company
-
-        if self.is_company_contact():
-            return get_site_master_company()
-        elif self.is_candidate_contact():
-            return self.candidate_contacts.get_closest_company()
-        else:
-            contact_rel = self.contact_relations.first()
-            if contact_rel:
-                return contact_rel.company
-
         return get_site_master_company() or get_default_company()
 
     def get_master_companies(self):
