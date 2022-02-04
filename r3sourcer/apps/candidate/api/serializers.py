@@ -132,10 +132,10 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                 _('Contact is required.')
             )
 
-        if candidate_models.CandidateContact.objects.filter(contact=contact).exists():
-            raise exceptions.ValidationError(
-                _('Candidate Contact with this Contact already exists.')
-            )
+        # if candidate_models.CandidateContact.objects.filter(contact=contact).exists():
+        #     raise exceptions.ValidationError(
+        #         _('Candidate Contact with this Contact already exists.')
+        #     )
 
         request = self.context.get('request')
         access_levels = (core_models.constants.MANAGER, core_models.constants.CLIENT)

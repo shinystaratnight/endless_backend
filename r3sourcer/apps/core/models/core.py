@@ -243,7 +243,7 @@ class Contact(CategoryFolderMixin,
     is_company_contact.boolean = True
 
     def is_candidate_contact(self):
-        return hasattr(self, 'candidate_contacts')
+        return self.candidate_contacts.exists()
 
     def get_job_title(self):
         if self.company_contact.exists():
