@@ -287,7 +287,7 @@ class Contact(CategoryFolderMixin,
 
             return self.company_contact.first().id
         elif self.is_candidate_contact():
-            return self.candidate_contacts.id
+            return self.candidate_contacts.first().id
         return None
 
     def get_closest_company(self):
