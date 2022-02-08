@@ -96,9 +96,9 @@ class UserDashboardModule(UUIDModel):
             module=self.dashboard_module,
         )
 
-    @classmethod
-    def is_owned(cls):
-        return False
+    # @classmethod
+    # def is_owned(cls):
+    #     return False
 
     def is_available(self):
         return self.dashboard_module.is_active
