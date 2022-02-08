@@ -27,6 +27,7 @@ class SMSLogEndpoint(ApiEndpoint):
     model = sms_models.SMSMessage
     serializer = sms_serializers.SMSLogSerializer
     filter_class = filters.SMSMessageFilter
+    base_viewset = viewsets.SMSLogViewset
 
     search_fields = ('from_number', 'to_number', 'sid')
 
