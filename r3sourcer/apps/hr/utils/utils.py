@@ -78,7 +78,7 @@ def calculate_distances_for_jobsite(contacts, jobsite):
     """
     contacts_dict = defaultdict(list)
     for contact in contacts:
-        is_public = contact.candidate_contacts.transportation_to_work == CandidateContact.TRANSPORTATION_CHOICES.public
+        is_public = contact.candidate_contacts.first().transportation_to_work == CandidateContact.TRANSPORTATION_CHOICES.public
         if hasattr(contact, 'candidate_contacts') and is_public:
             contacts_dict[MODE_TRANSIT].append(contact)
         else:
