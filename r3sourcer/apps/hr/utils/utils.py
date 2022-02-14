@@ -16,6 +16,7 @@ from r3sourcer.apps.core.models import InvoiceRule, Invoice
 from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
 from r3sourcer.celeryapp import app
 from r3sourcer.helpers.datetimes import utc_now, date2utc_date
+from r3sourcer.apps.core.utils.companies import get_site_master_company
 
 log = logging.getLogger(__name__)
 
@@ -78,7 +79,8 @@ def calculate_distances_for_jobsite(contacts, jobsite):
     """
     contacts_dict = defaultdict(list)
     for contact in contacts:
-        is_public = contact.candidate_contacts.first().transportation_to_work == CandidateContact.TRANSPORTATION_CHOICES.public
+        candidate = contact.candidate_contacts.filter(candidate_rels__master_company=get_site_master_company()).first()
+        is_public = candidate.transportation_to_work == CandidateContact.TRANSPORTATION_CHOICES.public
         if hasattr(contact, 'candidate_contacts') and is_public:
             contacts_dict[MODE_TRANSIT].append(contact)
         else:

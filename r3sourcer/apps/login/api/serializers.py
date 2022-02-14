@@ -4,6 +4,8 @@ from rest_framework import serializers
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer, ApiContactImageFieldsMixin
 from r3sourcer.apps.core.models import Contact
 from r3sourcer.apps.core.utils.utils import is_valid_email, is_valid_phone_number
+from r3sourcer.apps.core.utils.companies import get_site_master_company
+
 from .. import models
 
 
@@ -79,7 +81,8 @@ class ContactLoginSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
 
     def get_candidate_contact(self, obj):
         if obj.is_candidate_contact():
-            return str(obj.candidate_contacts.first().pk)
+            candidate = obj.candidate_contacts.filter(candidate_rels__master_company=get_site_master_company()).first()
+            return str(candidate.pk)
 
     def get_default_language(self, obj):
         language = obj.languages.filter(default=True).first()
@@ -111,4 +114,5 @@ class TokenPayloadSerializer(ApiContactImageFieldsMixin, ApiBaseModelSerializer)
 
     def get_candidate_contact(self, obj):
         if obj.is_candidate_contact():
-            return str(obj.candidate_contacts.first().pk)
+            candidate = obj.candidate_contacts.filter(candidate_rels__master_company=get_site_master_company()).first()
+            return str(candidate.pk)
