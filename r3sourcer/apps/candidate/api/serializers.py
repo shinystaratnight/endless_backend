@@ -132,31 +132,91 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                 _('Contact is required.')
             )
 
-        if candidate_models.CandidateContact.objects.filter(contact=contact).exists():
-            raise exceptions.ValidationError(
-                _('Candidate Contact with this Contact already exists.')
-            )
-
         request = self.context.get('request')
-        access_levels = (core_models.constants.MANAGER, core_models.constants.CLIENT)
-
-        if request and (not request.user.is_authenticated or request.user.access_level not in access_levels):
-            raise exceptions.PermissionDenied()
-
-        instance = super().create(validated_data)
-
         if request:
-            current_company = request.user.contact.get_closest_company()
-            master_company = current_company.get_closest_master_company()
+
+            access_levels = (core_models.constants.MANAGER, core_models.constants.CLIENT)
+            if not request.user.is_authenticated or request.user.access_level not in access_levels:
+                raise exceptions.PermissionDenied()
+
+            master_company = get_site_master_company()
+            company_contact=request.user.contact.get_company_contact_by_company(master_company)
+
+            if candidate_models.CandidateContact.objects.filter(contact=contact,
+                                                                candidate_rels__master_company=master_company) \
+                                                        .exists():
+                raise exceptions.ValidationError(
+                    _('Candidate Contact with this Contact already exists.')
+                )
+
+            if request and contact.candidate_contacts.exists():
+                # copy CandidateContact
+                candidate = candidate_models.CandidateContact.objects.filter(contact=contact).last()
+                recruitment_agent = company_contact
+                if candidate:
+                    # copy related objects
+                    related_m2m = ['candidate_acceptance_tests',
+                                'candidate_evaluations',
+                                'candidate_skills',
+                                'formalities',
+                                'tag_rels',
+                                ]
+                    fks_to_copy = []
+                    import copy
+                    candidate_score = copy.deepcopy(candidate.candidate_scores)
+
+                    for rm in related_m2m:
+                        related_model = getattr(candidate, rm)
+                        fks_to_copy += related_model.all()
+
+                    # Now we can make the new record
+                    candidate.id = None
+                    candidate.recruitment_agent = recruitment_agent
+                    candidate.save()
+
+                    # Create CandidateScore
+                    candidate_score.id = None
+                    candidate_score.candidate_contact = candidate
+                    candidate_score.save()
+
+                    # create CandidateRel
+                    candidate_models.CandidateRel.objects.get_or_create(
+                        candidate_contact=candidate,
+                        master_company=master_company,
+                        company_contact=recruitment_agent
+                    )
+
+                    foreign_keys = {}
+                    for fk in fks_to_copy:
+                        fk.pk = None
+                        fk.candidate_contact = candidate
+                        # Likewise make any changes to the related model here
+                        # However, we avoid calling fk.save() here to prevent
+                        # hitting the database once per iteration of this loop
+                        try:
+                            # Use fk.__class__ here to avoid hard-coding the class name
+                            foreign_keys[fk.__class__].append(fk)
+                        except KeyError:
+                            foreign_keys[fk.__class__] = [fk]
+
+                    # Now we can issue just two calls to bulk_create,
+                    # one for fkeys_a and one for fkeys_b
+                    for cls, list_of_fks in foreign_keys.items():
+                        cls.objects.bulk_create(list_of_fks)
+
+            else:
+                candidate = super().create(validated_data)
+
             candidate_models.CandidateRel.objects.create(
                 master_company=master_company,
-                candidate_contact=instance,
-                company_contact=request.user.contact.company_contact.filter(relationships__active=True).first(),
+                candidate_contact=candidate,
+                company_contact=company_contact,
                 owner=True,
                 active=True,
             )
 
-        return instance
+            return candidate
+
 
     class Meta:
         model = candidate_models.CandidateContact

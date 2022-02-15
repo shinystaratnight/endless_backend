@@ -64,3 +64,17 @@ class SMSMessageTemplateViewset(mixins.ListModelMixin,
 
     def perform_create(self, serializer):
         serializer.save(company_id=self.request.user.company.id)
+
+
+class SMSLogViewset(BaseApiViewset):
+
+    def get_queryset(self):
+        qs = super().get_queryset()
+
+        if self.request.query_params.get('ordering'):
+            ordering = self.request.query_params.get('ordering')
+            qs = qs.order_by(*ordering.split(','))
+        else:
+            qs = qs.order_by('-sent_at')
+
+        return qs

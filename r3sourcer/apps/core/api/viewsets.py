@@ -20,6 +20,7 @@ from rest_framework.response import Response
 from rest_framework.viewsets import ViewSet
 
 from r3sourcer.apps.acceptance_tests.models import AcceptanceTestAnswer, AcceptanceTestQuestion
+from r3sourcer.apps.candidate.models import CandidateContact, CandidateRel
 from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.api.contact_bank_accounts.serializers import ContactBankAccountFieldSerializer
 from r3sourcer.apps.core.api.fields import ApiBase64FileField

@@ -989,12 +989,13 @@ class TimeSheetCandidateViewset(BaseTimeSheetViewsetMixin,
                                 GenericViewSet):
     def get_candidate_queryset(self, request):
         contact = request.user.contact
+        candidate = contact.candidate_contacts.filter(candidate_rels__master_company=get_site_master_company()).first()
 
         qs_approved = TimesheetFilter.get_filter_for_approved(request.user.contact)
         qs_unapproved = TimesheetFilter.get_filter_for_unapproved(request.user.contact)
 
         queryset = hr_models.TimeSheet.objects.filter(
-            job_offer__candidate_contact_id=contact.candidate_contacts.id
+            job_offer__candidate_contact_id=candidate
         ).annotate(
             approved=Case(When(qs_approved, then=True),
                           When(qs_unapproved, then=False),

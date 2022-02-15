@@ -243,7 +243,7 @@ class Contact(CategoryFolderMixin,
     is_company_contact.boolean = True
 
     def is_candidate_contact(self):
-        return hasattr(self, 'candidate_contacts')
+        return self.candidate_contacts.exists()
 
     def get_job_title(self):
         if self.company_contact.exists():
@@ -278,30 +278,16 @@ class Contact(CategoryFolderMixin,
 
     def get_role_id(self):
         if self.is_company_contact():
-            from r3sourcer.apps.core.utils.companies import get_site_master_company
-
             company_contact = self.company_contact.filter(relationships__company=get_site_master_company()).first()
-
             if company_contact:
                 return company_contact.id
-
             return self.company_contact.first().id
         elif self.is_candidate_contact():
-            return self.candidate_contacts.id
+            candidate = self.candidate_contacts.filter(candidate_rels__master_company=get_site_master_company()).first()
+            return candidate.id
         return None
 
     def get_closest_company(self):
-        from r3sourcer.apps.core.utils.companies import get_site_master_company
-
-        if self.is_company_contact():
-            return get_site_master_company()
-        elif self.is_candidate_contact():
-            return self.candidate_contacts.get_closest_company()
-        else:
-            contact_rel = self.contact_relations.first()
-            if contact_rel:
-                return contact_rel.company
-
         return get_site_master_company() or get_default_company()
 
     def get_master_companies(self):
@@ -595,7 +581,7 @@ class User(UUIDModel,
                 self.is_superuser = False
 
     def is_candidate(self) -> bool:
-        return hasattr(self.contact, 'candidate_contacts')
+        return self.contact.candidate_contacts.exists()
 
     def is_contact(self) -> bool:
         return hasattr(self, 'contact')
@@ -642,27 +628,7 @@ class User(UUIDModel,
 
     @property
     def company(self):
-        try:
-            if self.is_client() or self.is_manager():
-                contacts = self.contact.company_contact.all()
-                company = Company.objects.filter(relationships__company_contact__in=contacts) \
-                                         .filter(type='master').first()
-                if company:
-                    return company
-                else:
-                    for company_contact in self.contact.company_contact.all():
-                        for rel in company_contact.relationships.all():
-                            return rel.company
-
-                    return self.contact.company_contact.first().relationships.first().company
-            elif self.is_candidate():
-                return self.contact.candidate_contacts.candidate_rels.first().master_company
-            elif self.is_contact():
-                return get_site_master_company(request=self.request)
-            else:
-                raise APIException("Unknown user's role.")
-        except AttributeError:
-            return None
+        return get_site_master_company()
 
     @property
     def company_files(self):
