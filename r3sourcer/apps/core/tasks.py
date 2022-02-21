@@ -324,7 +324,8 @@ def send_generated_password_email(email, new_password=None):
             logger.exception('Cannot load Email service')
             return
 
-        site_url = core_companies_utils.get_site_url(user=contact.user)
+        master_company = contact.get_closest_company()
+        site_url = core_companies_utils.get_site_url(master_company=master_company)
         new_password = new_password or core_models.User.objects.make_random_password(20)
         data_dict = {
             'contact': contact,
@@ -332,7 +333,6 @@ def send_generated_password_email(email, new_password=None):
             'password': new_password,
             'site_url': site_url,
         }
-        master_company = contact.get_closest_company()
         email_interface.send_tpl(contact,
                                  master_company,
                                  tpl_name='generated-password',
