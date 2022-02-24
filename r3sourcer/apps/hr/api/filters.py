@@ -85,8 +85,9 @@ class TimesheetFilter(FilterSet):
             Q(supervisor_approved_at__isnull=True)
         ) & Q(going_to_work_confirmation=True) & Q(status=5)
 
-        if contact.company_contact.exists():
-            qs_unapproved &= Q(supervisor__contact=contact)
+        if contact.is_company_contact():
+            company_contact = contact.company_contact.all()
+            qs_unapproved &= Q(supervisor__contact=contact) | Q(job_offer__shift__date__job__jobsite__primary_contact__in=company_contact)
         else:
             qs_unapproved &= Q(job_offer__candidate_contact__contact=contact)
 
