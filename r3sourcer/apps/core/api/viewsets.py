@@ -319,7 +319,17 @@ class ContactViewset(GoogleAddressMixin, BaseApiViewset):
         serializer = serializers.ContactForgotPasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        tasks.send_generated_password_email.delay(serializer.data['email'])
+        email = serializer.data['email']
+
+        # Should pass master_company since request object is None in celery tasks.
+        # If no master_company is passed, incorrect master company domain is extracted.
+        try:
+            contact = models.Contact.objects.get(email=email)
+        except models.Contact.DoesNotExist as e:
+            raise ValidationError('Contact with email = {} does not exist'.format(email))
+
+        master_company = contact.get_closest_company()
+        tasks.send_generated_password_email.delay(email, None, master_company.id)
 
         return Response({
             'status': 'success',

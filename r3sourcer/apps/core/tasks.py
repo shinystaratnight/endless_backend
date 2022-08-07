@@ -312,7 +312,7 @@ def send_contact_verify_email(self, contact_id, manager_id, master_company_id, *
 
 
 @shared_task()
-def send_generated_password_email(email, new_password=None):
+def send_generated_password_email(email, new_password=None, master_company_id=None):
     try:
         contact = core_models.Contact.objects.get(email=email)
     except core_models.Contact.DoesNotExist as e:
@@ -324,7 +324,13 @@ def send_generated_password_email(email, new_password=None):
             logger.exception('Cannot load Email service')
             return
 
-        master_company = contact.get_closest_company()
+        if not master_company_id:
+            master_company = contact.get_closest_company()
+        else:
+            try:
+                master_company = core_models.Company.objects.get(pk=master_company_id)
+            except core_models.Company.DoesNotExist as e:
+                logger.error(e)
         site_url = core_companies_utils.get_site_url(master_company=master_company)
         new_password = new_password or core_models.User.objects.make_random_password(20)
         data_dict = {
