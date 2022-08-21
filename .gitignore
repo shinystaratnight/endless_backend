@@ -34,3 +34,6 @@ webui-app
 conf/docker/nginx.conf
 .pytest_cache/v/cache/nodeids
 .pytest_cache/v/cache/lastfailed
+
+dependencies/pip_py3_local.txt
+r3sourcer/settings/local.py
