@@ -524,7 +524,7 @@ def autoconfirm_rejected_timesheet(self, time_sheet_id):
 
 
 def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
-                                      tpl_name, related_timesheets=None, **kwargs):
+                                      tpl_name, related_timesheets=None, master_company_id=None, **kwargs):
 
     with transaction.atomic():
         sign_navigation = core_models.ExtranetNavigation.objects.get(id=119)
@@ -547,7 +547,11 @@ def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_e
             if company_rel:
                 portfolio_manager = company_rel.manager
 
-        site_url = core_companies_utils.get_site_url(user=supervisor.contact.user)
+        if master_company_id:
+            master_company = core_models.Company.objects.get(pk=master_company_id)
+            site_url = core_companies_utils.get_site_url(master_company=master_company)
+        else:
+            site_url = core_companies_utils.get_site_url(user=supervisor.contact.user)
         data_dict = dict(
             supervisor=supervisor,
             portfolio_manager=portfolio_manager,
@@ -588,7 +592,7 @@ def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_e
 
 
 @app.task(bind=True, queue='sms')
-def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=False):
+def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=False, master_company_id=None):
     try:
         supervisor = core_models.CompanyContact.objects.get(pk=supervisor_id)
     except core_models.CompanyContact.DoesNotExist:
@@ -659,7 +663,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 
         if should_send_sms or should_send_email:
             send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
-                                              tpl_name, [time_sheet])
+                                              tpl_name, [time_sheet], master_company_id)
         return
 
     if supervisor.message_by_email:
@@ -760,6 +764,7 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 
         send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_email,
                                           tpl_name, related_timesheets=related_timesheets,
+                                          master_company_id=master_company_id
                                           )
 
         eta = now_tz + timedelta(hours=4)
@@ -772,12 +777,13 @@ def send_supervisor_timesheet_sign(self, supervisor_id, timesheet_id, force=Fals
 
         if eta.weekday() in range(5) and not core_models.PublicHoliday.is_holiday(eta.date()):
             utc_eta = tz2utc(eta)
-            send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder], eta=utc_eta)
+            send_supervisor_timesheet_sign_reminder.apply_async(args=[supervisor_id, is_today_reminder,
+                                                                      master_company_id], eta=utc_eta)
 
 
 @app.task(bind=True, queue='sms')
 @one_sms_task_at_the_same_time
-def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
+def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today, master_company_id):
     tpl_name = 'supervisor-timesheet-sign-reminder'
     today = date.today()
     if not is_today:
@@ -801,7 +807,8 @@ def send_supervisor_timesheet_sign_reminder(self, supervisor_id, is_today):
 
     if timesheets.exists():
         send_supervisor_timesheet_message(supervisor, supervisor.message_by_sms, supervisor.message_by_email,
-                                          tpl_name, related_timesheets=list(timesheets)
+                                          tpl_name, related_timesheets=list(timesheets),
+                                          master_company_id=master_company_id
                                           )
 
 
