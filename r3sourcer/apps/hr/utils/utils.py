@@ -12,7 +12,7 @@ from django.templatetags.static import static
 from django.utils import formats
 
 from r3sourcer.apps.candidate.models import CandidateContact
-from r3sourcer.apps.core.models import InvoiceRule, Invoice
+from r3sourcer.apps.core.models import InvoiceRule, Invoice, CompanyContact
 from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
 from r3sourcer.celeryapp import app
 from r3sourcer.helpers.datetimes import utc_now, date2utc_date
@@ -218,13 +218,17 @@ def get_invoice(company, date_from, date_to, timesheet, invoice_rule):
 
 def send_supervisor_timesheet_approve(timesheet, force=False, not_agree=False):
     from r3sourcer.apps.hr.tasks import send_supervisor_timesheet_sign
+
+    contact = timesheet.supervisor.contact
+    master_company = contact.get_closest_company()
+
     if not_agree:
         date_time = utc_now() + timedelta(hours=4)
         send_supervisor_timesheet_sign.apply_async(
-            args=[timesheet.supervisor.id, timesheet.id, force], eta=date_time)
+            args=[timesheet.supervisor.id, timesheet.id, force, master_company.id], eta=date_time)
     else:
         send_supervisor_timesheet_sign.apply_async(
-            args=[timesheet.supervisor.id, timesheet.id, force], countdown=30*60)
+            args=[timesheet.supervisor.id, timesheet.id, force, master_company.id], countdown=30*60)
 
 
 def send_job_confirmation_sms(job):
