@@ -686,21 +686,27 @@ class CompanyViewset(BaseApiViewset):
         return Response(instance_serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     def perform_destroy(self, instance):
-        company_rels = instance.regular_companies.values_list('id', flat=True)
-        content_type = ContentType.objects.get_for_model(models.CompanyRel)
-        exclude_states = models.WorkflowObject.objects.filter(
-            state__number__gt=10, state__workflow__model=content_type, active=True, object_id__in=company_rels
-        ).values_list('object_id', flat=True)
-        states = models.WorkflowObject.objects.filter(
-            state__number__in=[10, 0], state__workflow__model=content_type, active=True, object_id__in=company_rels
-        ).exclude(
-            object_id__in=set(exclude_states)
-        ).distinct('object_id').values_list('object_id', flat=True)
+        # TODO: The condition (or not relations_in_state) is temporarily eliminated
+        #       because it doesn't make sense to me or Taavi
+        #       why it tries to check the state's number values.
+        # company_rels = instance.regular_companies.values_list('id', flat=True)
+        # content_type = ContentType.objects.get_for_model(models.CompanyRel)
+        # exclude_states = models.WorkflowObject.objects.filter(
+        #     state__number__gt=10, state__workflow__model=content_type, active=True, object_id__in=company_rels
+        # ).values_list('object_id', flat=True)
+        # states = models.WorkflowObject.objects.filter(
+        #     state__number__in=[10, 0], state__workflow__model=content_type, active=True, object_id__in=company_rels
+        # ).exclude(
+        #     object_id__in=set(exclude_states)
+        # ).distinct('object_id').values_list('object_id', flat=True)
 
-        relations_in_state = states.count() == instance.regular_companies.count()
+        # relations_in_state = states.count() == instance.regular_companies.count()
 
-        if instance.relationships.exists() or instance.jobsites_regular.exists() or not relations_in_state:
-            raise ValidationError(_('Cannot delete'))
+        # if instance.relationships.exists() or instance.jobsites_regular.exists() or not relations_in_state:
+
+        if instance.relationships.filter(company_contact__contact__user__is_active=True).exists() \
+                or instance.jobsites_regular.exists():
+            raise ValidationError(_('Cannot delete. Please delete the related company contact and/or job site first'))
 
         instance.candidate_rels.delete()
 
