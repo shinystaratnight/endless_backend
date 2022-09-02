@@ -1,4 +1,5 @@
 from cities_light.loading import get_model
+import uuid
 from django.apps import apps
 from django.conf import settings
 from django.contrib.auth import logout
@@ -1236,12 +1237,39 @@ class FormViewSet(BaseApiViewset):
         candidate = CandidateContact.objects.get(id=instance.id)
         if candidate and data.get('tests'):
             for item in data.get('tests'):
+                # TODO: The block below must be verified later. Only first three general questions, one tool question
+                #       and two carpenter questions are only passed, while the other questions are ignored.
+                if 'answer' in item:
+                    # If the answer is either an empty string or an empty list, skip!
+                    if not item['answer']:
+                        continue
+
+                    if isinstance(item['answer'], list):
+                        answers = item['answer']
+                    else:
+                        answers = [item['answer']]
+
+                elif 'answer_text' in item:
+                    # If the answer_text is an emtpy string, skip.
+                    if not item['answer_text'].strip():
+                        continue
+
                 question = AcceptanceTestQuestion.objects.get(id=item['acceptance_test_question'])
-                answer = AcceptanceTestAnswer.objects.get(id=item['answer'])
                 workflow_object = WorkflowObject.objects.get(object_id=str(instance.id))
-                WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
-                                                    acceptance_test_question=question,
-                                                    answer=answer)
+                if 'answer_text' in item:
+                    WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
+                                                        acceptance_test_question=question,
+                                                        answer_text=item['answer_text'])
+                else:
+                    for ans_id in answers:
+                        try:
+                            uuid.UUID(ans_id)
+                            answer = AcceptanceTestAnswer.objects.get(id=ans_id)
+                            WorkflowObjectAnswer.objects.create(workflow_object=workflow_object,
+                                                                acceptance_test_question=question,
+                                                                answer=answer)
+                        except ValueError:
+                            raise exceptions.ValidationError({"Answer": _("Answer id is not an UUID value")})
 
         # create formality object
         personal_id = data.get('formalities__personal_id', None)
@@ -1325,6 +1353,7 @@ class FormViewSet(BaseApiViewset):
                     except ObjectDoesNotExist:
                         continue
 
+        # TODO: form instance might not have any translations, which would lead to results_messages error
         return Response({'message': form_obj.submit_message,
                          'candidate_contact': instance.id},
                         status=status.HTTP_201_CREATED)
