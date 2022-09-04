@@ -6,7 +6,8 @@ import pytest
 from django.utils import timezone
 from freezegun import freeze_time
 
-from r3sourcer.apps.hr.payment.base import BasePaymentService, calc_worked_delta
+# from r3sourcer.apps.hr.payment.base import BasePaymentService, calc_worked_delta
+from r3sourcer.apps.hr.payment.base import BasePaymentService
 
 
 hour_1 = timedelta(hours=1)
@@ -19,86 +20,86 @@ class TestInvoiceService:
     def service(self):
         return BasePaymentService()
 
-    def test_calc_worked_delta(self, timesheet):
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8)
-
-    def test_calc_worked_delta_no_ended(self, timesheet):
-        timesheet.shift_ended_at = None
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta()
-
-    @freeze_time(datetime(2017, 1, 1))
-    def test_calc_worked_delta_ended_lt_started(self, timesheet):
-        timesheet.shift_ended_at = timezone.make_aware(
-            datetime.combine(date.today(), time(3, 30))
-        )
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8)
-
-    def test_calc_worked_delta_no_break(self, timesheet):
-        timesheet.break_started_at = None
-        timesheet.break_ended_at = None
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8, minutes=30)
-
-    @freeze_time(datetime(2017, 1, 1))
-    def test_calc_worked_delta_break_date_lt_started(self, timesheet):
-        timesheet.break_started_at = timezone.make_aware(
-            datetime.combine(date.today() - timedelta(days=1), time(12, 0))
-        )
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8)
-
-    @freeze_time(datetime(2017, 1, 1))
-    def test_calc_worked_delta_break_started_lt_started(self, timesheet):
-        timesheet.break_started_at = timezone.make_aware(
-            datetime.combine(date.today(), time(0, 0))
-        )
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8)
-
-    @freeze_time(datetime(2017, 1, 1))
-    def test_calc_worked_delta_break_ended_lt_started(self, timesheet):
-        timesheet.break_ended_at = timezone.make_aware(
-            datetime.combine(date.today(), time(0, 30))
-        )
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8)
-
-    def test_calc_worked_delta_break_started_gt_ended(self, timesheet):
-        timesheet.break_started_at = timesheet.shift_ended_at + hour_1
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8, minutes=30)
-
-    def test_calc_worked_delta_break_ended_gt_ended(self, timesheet):
-        timesheet.break_ended_at = timesheet.shift_ended_at + hour_1
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8, minutes=30)
-
-    def test_calc_worked_delta_break_ended_gt_break_started(self, timesheet):
-        timesheet.break_ended_at = timesheet.break_started_at - hour_1
-
-        res = calc_worked_delta(timesheet)
-
-        assert res == timedelta(hours=8, minutes=30)
+    # def test_calc_worked_delta(self, timesheet):
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8)
+    #
+    # def test_calc_worked_delta_no_ended(self, timesheet):
+    #     timesheet.shift_ended_at = None
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta()
+    #
+    # @freeze_time(datetime(2017, 1, 1))
+    # def test_calc_worked_delta_ended_lt_started(self, timesheet):
+    #     timesheet.shift_ended_at = timezone.make_aware(
+    #         datetime.combine(date.today(), time(3, 30))
+    #     )
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8)
+    #
+    # def test_calc_worked_delta_no_break(self, timesheet):
+    #     timesheet.break_started_at = None
+    #     timesheet.break_ended_at = None
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8, minutes=30)
+    #
+    # @freeze_time(datetime(2017, 1, 1))
+    # def test_calc_worked_delta_break_date_lt_started(self, timesheet):
+    #     timesheet.break_started_at = timezone.make_aware(
+    #         datetime.combine(date.today() - timedelta(days=1), time(12, 0))
+    #     )
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8)
+    #
+    # @freeze_time(datetime(2017, 1, 1))
+    # def test_calc_worked_delta_break_started_lt_started(self, timesheet):
+    #     timesheet.break_started_at = timezone.make_aware(
+    #         datetime.combine(date.today(), time(0, 0))
+    #     )
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8)
+    #
+    # @freeze_time(datetime(2017, 1, 1))
+    # def test_calc_worked_delta_break_ended_lt_started(self, timesheet):
+    #     timesheet.break_ended_at = timezone.make_aware(
+    #         datetime.combine(date.today(), time(0, 30))
+    #     )
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8)
+    #
+    # def test_calc_worked_delta_break_started_gt_ended(self, timesheet):
+    #     timesheet.break_started_at = timesheet.shift_ended_at + hour_1
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8, minutes=30)
+    #
+    # def test_calc_worked_delta_break_ended_gt_ended(self, timesheet):
+    #     timesheet.break_ended_at = timesheet.shift_ended_at + hour_1
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8, minutes=30)
+    #
+    # def test_calc_worked_delta_break_ended_gt_break_started(self, timesheet):
+    #     timesheet.break_ended_at = timesheet.break_started_at - hour_1
+    #
+    #     res = calc_worked_delta(timesheet)
+    #
+    #     assert res == timedelta(hours=8, minutes=30)
 
     def test_get_timesheets(self, timesheet_approved, service):
 
