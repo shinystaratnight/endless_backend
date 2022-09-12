@@ -706,7 +706,7 @@ class CompanyViewset(BaseApiViewset):
 
         if instance.relationships.filter(company_contact__contact__user__is_active=True).exists() \
                 or instance.jobsites_regular.exists():
-            raise ValidationError(_('Cannot delete. Please delete the related company contact and/or job site first'))
+            raise ValidationError(_('Please delete the related company contacts and job sites first.'))
 
         instance.candidate_rels.delete()
 
