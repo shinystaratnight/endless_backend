@@ -1179,3 +1179,12 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
         if company_id:
             queryset = self.queryset.filter(regular_company__id=company_id)
             return self._paginate(request, job_serializers.JobsiteSerializer, queryset)
+
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        if instance.jobs.exists():
+            raise exceptions.ValidationError({
+                'message': 'This jobsite currently has some related jobs. Please delete the jobs first.'
+            })
+        else:
+            return super(JobsiteViewset, self).destroy(request, *args, **kwargs)
