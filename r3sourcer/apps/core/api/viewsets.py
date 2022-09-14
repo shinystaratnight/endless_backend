@@ -1401,7 +1401,9 @@ class CompanyContactRelationshipViewset(BaseApiViewset):
             )
 
             if has_jobs or has_jobsites or company_contact.supervised_time_sheets.exists():
-                raise ValidationError({'non_field_errors': _('Cannot delete')})
+                raise ValidationError({
+                    'non_field_errors': _('This contact has some related jobs, jobsites or timesheets.')
+                })
             # Roles will be deleted according to on_delete=CASCADE
             # models.Role.objects.filter(company_contact_rel=instance).delete()
 
