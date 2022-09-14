@@ -1183,8 +1183,5 @@ class JobsiteViewset(GoogleAddressMixin, BaseApiViewset):
     def destroy(self, request, *args, **kwargs):
         instance = self.get_object()
         if instance.jobs.exists():
-            raise exceptions.ValidationError({
-                'message': 'This jobsite currently has some related jobs. Please delete the jobs first.'
-            })
-        else:
-            return super(JobsiteViewset, self).destroy(request, *args, **kwargs)
+            instance.jobs.all().delete()
+        return super(JobsiteViewset, self).destroy(request, *args, **kwargs)
