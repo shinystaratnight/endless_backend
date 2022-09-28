@@ -2676,8 +2676,16 @@ class TimeSheetRate(UUIDModel):
             elif self.timesheet.job_offer.shift.date.job.hourly_rate_default:
                 return self.timesheet.job_offer.shift.date.job.hourly_rate_default
 
-        # search skill activity rate in candidate's skill activity rates
-        rate = self.timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(self.worktype)
+        rate = 0
+        # search skill activity rate in job rates (job reservation rates)
+        job_rate = JobRate.objects.filter(worktype=self.worktype,
+                                      job=self.timesheet.job_offer.job).last()
+        if job_rate:
+            rate = job_rate.rate
+
+        if not rate:
+            # search skill activity rate in candidate's skill activity rates
+            rate = self.timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(self.worktype)
         if not rate:
             # search skill activity rate in job's skill activity rates
             rate = self.timesheet.job_offer.job.get_rate_for_worktype(self.worktype)
@@ -2688,7 +2696,7 @@ class TimeSheetRate(UUIDModel):
                                                      .last()
             if skill_rate_range:
                 rate = skill_rate_range.default_rate
-        return rate if rate else 0
+        return rate
 
     def save(self, *args, **kwargs):
         if not self.rate or self.rate == 0:
