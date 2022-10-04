@@ -1482,7 +1482,8 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     @property
     def get_hourly_rate(self):
-        return self.timesheet_rates.filter(worktype__name=WorkType.DEFAULT).first().rate or 0
+        return self.timesheet_rates.filter(worktype__name=WorkType.DEFAULT).first().rate if self.timesheet_rates.filter(
+            worktype__name=WorkType.DEFAULT) else 0
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
