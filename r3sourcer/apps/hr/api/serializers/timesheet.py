@@ -29,6 +29,12 @@ def validate_timesheet(self, data):
     """
 
     hours = data.get('hours')
+    shift_started_at = data.get('shift_started_at', None)
+    shift_ended_at = data.get('shift_ended_at', None)
+
+    if hours is None:
+        if shift_started_at is not None and shift_ended_at is not None:
+            hours = True
 
     if self.instance.pk and hours is not None:
 
@@ -37,8 +43,6 @@ def validate_timesheet(self, data):
             if data.get('no_break'):
                 data['break_started_at'] = None
                 data['break_ended_at'] = None
-            shift_started_at = data.get('shift_started_at', None)
-            shift_ended_at = data.get('shift_ended_at', None)
             break_started_at = data.get('break_started_at', None)
             break_ended_at = data.get('break_ended_at', None)
 

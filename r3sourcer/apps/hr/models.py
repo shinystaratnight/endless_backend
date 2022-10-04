@@ -1482,7 +1482,8 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     @property
     def get_hourly_rate(self):
-        return self.timesheet_rates.filter(worktype__name=WorkType.DEFAULT).first().rate or 0
+        return self.timesheet_rates.filter(worktype__name=WorkType.DEFAULT).first().rate if self.timesheet_rates.filter(
+            worktype__name=WorkType.DEFAULT) else 0
 
     def auto_fill_four_hours(self):
         self.candidate_submitted_at = utc_now()
@@ -2679,7 +2680,7 @@ class TimeSheetRate(UUIDModel):
         rate = 0
         # search skill activity rate in job rates (job reservation rates)
         job_rate = JobRate.objects.filter(worktype=self.worktype,
-                                      job=self.timesheet.job_offer.job).last()
+                                          job=self.timesheet.job_offer.job).last()
         if job_rate:
             rate = job_rate.rate
 
@@ -2699,8 +2700,7 @@ class TimeSheetRate(UUIDModel):
         return rate
 
     def save(self, *args, **kwargs):
-        if not self.rate or self.rate == 0:
-            self.rate = self.get_rate()
+        self.rate = self.get_rate()
         self.is_hourly = self.worktype.is_hourly()
         super().save(*args, **kwargs)
 
