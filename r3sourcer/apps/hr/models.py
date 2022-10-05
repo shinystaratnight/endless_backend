@@ -2700,7 +2700,10 @@ class TimeSheetRate(UUIDModel):
         return rate
 
     def save(self, *args, **kwargs):
+        skillraterange_default_rate = self.rate
         self.rate = self.get_rate()
+        if not self.rate or self.rate == 0:
+            self.rate = skillraterange_default_rate
         self.is_hourly = self.worktype.is_hourly()
         super().save(*args, **kwargs)
 
