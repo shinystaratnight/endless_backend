@@ -2680,7 +2680,7 @@ class TimeSheetRate(UUIDModel):
         rate = 0
         # search skill activity rate in job rates (job reservation rates)
         job_rate = JobRate.objects.filter(worktype=self.worktype,
-                                          job=self.timesheet.job_offer.job).last()
+                                      job=self.timesheet.job_offer.job).last()
         if job_rate:
             rate = job_rate.rate
 
