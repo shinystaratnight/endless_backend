@@ -57,7 +57,7 @@ def update_all_distances():
                 break
 
 
-def send_job_offer(job_offer, tpl_name, action_sent=None):
+def send_job_offer(job_offer, tpl_name, master_company_id, action_sent=None):
     """
     Send job offer with specific template.
 
@@ -66,13 +66,26 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
     :param action_sent: str Model field for waiting sms reply
     :return:
     """
-
     target_date_and_time = formats.date_format(job_offer.start_time_tz, settings.DATETIME_FORMAT)
 
     if utc_now() >= job_offer.start_time_utc:
         target_date_and_time = "ASAP"
 
-    master_company = job_offer.candidate_contact.contact.get_closest_company()
+    if master_company_id:
+        master_company = core_models.Company.objects.get(pk=master_company_id)
+    else:
+        master_company = job_offer.candidate_contact.contact.get_closest_company()
+    site_url = core_companies_utils.get_site_url(master_company=master_company)
+
+    sign_navigation = core_models.ExtranetNavigation.objects.get(id=130)
+    role = job_offer.candidate_contact.contact.user.role.filter(name=core_models.Role.ROLE_NAMES.candidate).first()
+    new_url_for_redirect = "/cd" + sign_navigation.url[:-1]
+
+    extranet_login = TokenLogin.objects.create(
+        contact=job_offer.candidate_contact.contact,
+        redirect_to=new_url_for_redirect,
+        role=role
+    )
 
     data_dict = {
         'job_offer': job_offer,
@@ -81,6 +94,7 @@ def send_job_offer(job_offer, tpl_name, action_sent=None):
         'candidate_contact': job_offer.candidate_contact,
         'target_date_and_time': target_date_and_time,
         'master_company': master_company,
+        'get_url': "%s%s" % (site_url, extranet_login.auth_url),
         'related_obj': job_offer,
         'related_objs': [job_offer.candidate_contact, job_offer.job],
     }
@@ -187,17 +201,19 @@ def send_or_schedule_job_offer(job_offer_id, task=None, **kwargs):
 
 
 @shared_task(bind=True, queue='sms')
-def send_jo_confirmation(self, job_offer_id):
+def send_jo_confirmation(self, job_offer_id, master_company_id):
     send_or_schedule_job_offer(job_offer_id,
                                task=send_jo_confirmation,
+                               master_company_id=master_company_id,
                                tpl_name='job-offer-1st',
                                action_sent='offer_sent_by_sms')
 
 
 @shared_task(bind=True, queue='sms')
-def send_recurring_jo_confirmation(self, job_offer_id):
+def send_recurring_jo_confirmation(self, job_offer_id, master_company_id):
     send_or_schedule_job_offer(job_offer_id,
                                task=send_recurring_jo_confirmation,
+                               master_company_id=master_company_id,
                                tpl_name='job-offer-recurring',
                                action_sent='offer_sent_by_sms')
 

@@ -1077,8 +1077,9 @@ class JobOffer(TimeZoneUUIDModel):
                     # FIXME: send job confirmation SMS because there is pending job's JOs for candidate
                     task = send_jo_confirmation
 
-                task.apply_async(args=[self.id], eta=utc_eta)
+                master_company = self.candidate_contact.contact.get_closest_company()
 
+                task.apply_async(args=[self.id, master_company.id], eta=utc_eta)
 
 class JobOfferSMS(UUIDModel):
 
@@ -2680,7 +2681,7 @@ class TimeSheetRate(UUIDModel):
         rate = 0
         # search skill activity rate in job rates (job reservation rates)
         job_rate = JobRate.objects.filter(worktype=self.worktype,
-                                      job=self.timesheet.job_offer.job).last()
+                                          job=self.timesheet.job_offer.job).last()
         if job_rate:
             rate = job_rate.rate
 
