@@ -999,6 +999,13 @@ class JobRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.ApiB
         model = hr_models.JobRate
         fields = (
             '__all__',
+            {
+                'worktype': (
+                    'id',
+                    'name',
+                    {'translations': ('language', 'value')}
+                )
+            }
         )
 
     def validate(self, data):
