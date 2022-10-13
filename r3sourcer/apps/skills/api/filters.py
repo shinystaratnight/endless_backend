@@ -1,9 +1,10 @@
 from django.db.models import Q
+from django.core.exceptions import ObjectDoesNotExist
 from django_filters import UUIDFilter
 from django_filters.rest_framework import FilterSet, BooleanFilter
 
-from r3sourcer.apps.core import models as core_models
 from r3sourcer.apps.skills import models as skills_models
+from r3sourcer.apps.candidate.models import CandidateContact
 
 
 class SkillFilter(FilterSet):
@@ -12,7 +13,6 @@ class SkillFilter(FilterSet):
     exclude_pricelist = UUIDFilter(method='exclude_by_pricelist')
     industry = UUIDFilter(method='filter_by_industry')
     active = BooleanFilter(method='filter_by_active')
-    company = UUIDFilter(method='filter_by_company')
 
     class Meta:
         model = skills_models.Skill
@@ -39,9 +39,6 @@ class SkillFilter(FilterSet):
 
     def filter_by_active(self, queryset, name, value):
         return queryset.filter(active=value)
-
-    def filter_by_company(self, queryset, name, value):
-        return queryset.filter(company_id=value)
 
 
 class SkillBaseRateFilter(FilterSet):
@@ -96,6 +93,7 @@ class SkillRateRangeFilter(FilterSet):
 
 class WorkTypeFilter(FilterSet):
     skill = UUIDFilter(method='filter_skill')
+    candidate_contact = UUIDFilter(method='filter_candidate_contact')
 
     class Meta:
         model = skills_models.WorkType
@@ -110,4 +108,13 @@ class WorkTypeFilter(FilterSet):
             Q(skill_name=skill.name) |
             Q(skill__name=skill.name)
         )
+        return queryset
+
+    def filter_candidate_contact(self, queryset, name, value):
+        try:
+            candidat_contact = CandidateContact.objects.get(pk=value)
+        except ObjectDoesNotExist:
+            candidat_contact = None
+        skill_rel_ids = candidat_contact.candidate_skills.values_list('id', flat=True)
+        queryset = queryset.filter(skill_rates__skill_rel_id__in=skill_rel_ids)
         return queryset

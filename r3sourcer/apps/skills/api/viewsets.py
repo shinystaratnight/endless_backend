@@ -44,7 +44,7 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
         priced = self.request.query_params.get('priced', False) in ['true', '1']
         limited = self.request.query_params.get('limited', False) in ['true', '1']
         try:
-            company =  Company.objects.get(pk=self.request.query_params.get('company'))
+            company = Company.objects.get(pk=self.request.query_params.get('company'))
         except:
             company = get_site_master_company()
         industries = company.industries.all()
@@ -59,7 +59,7 @@ class WorkTypeViewSet(core_viewsets.BaseApiViewset):
         if limited:
             # limit skill activities which have skill_rate_range
             rate_ranges_exists = SkillRateRange.objects.filter(skill__company=company.get_closest_master_company())
-            qs =qs.filter(skill_rate_ranges__in=rate_ranges_exists)
+            qs = qs.filter(skill_rate_ranges__in=rate_ranges_exists)
 
         if self.request.query_params.get('ordering'):
             ordering = self.request.query_params.get('ordering')
