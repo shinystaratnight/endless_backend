@@ -12,7 +12,7 @@ class SkillFilter(FilterSet):
     exclude = UUIDFilter(method='exclude_by_candidate')
     exclude_pricelist = UUIDFilter(method='exclude_by_pricelist')
     industry = UUIDFilter(method='filter_by_industry')
-    active = BooleanFilter(method='filter_by_active')
+    # active = BooleanFilter(method='filter_by_active')
 
     class Meta:
         model = skills_models.Skill
@@ -37,8 +37,8 @@ class SkillFilter(FilterSet):
     def filter_by_industry(self, queryset, name, value):
         return queryset.filter(name__industry=value).distinct()
 
-    def filter_by_active(self, queryset, name, value):
-        return queryset.filter(active=value)
+    # def filter_by_active(self, queryset, name, value):
+    #     return queryset.filter(active=value)
 
 
 class SkillBaseRateFilter(FilterSet):
