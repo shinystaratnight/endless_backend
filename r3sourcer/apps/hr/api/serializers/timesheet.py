@@ -429,7 +429,7 @@ class CandidateEvaluationSerializer(ApiBaseModelSerializer):
 
 class TimeSheetManualSerializer(ApiBaseModelSerializer):
     method_fields = (
-        'company', 'shift_total', 'break_total', 'total_worked', 'time_zone', 'position',
+        'candidate_contact_id', 'company', 'shift_total', 'break_total', 'total_worked', 'time_zone', 'position',
         'default_shift_times'
     )
 
@@ -465,6 +465,10 @@ class TimeSheetManualSerializer(ApiBaseModelSerializer):
                     'id': company.id, '__str__': str(company),
                     'supervisor_approved_scheme': company.timesheet_approval_scheme
                 }
+
+    def get_candidate_contact_id(self, obj):
+        if obj:
+            return obj.job_offer.candidate_contact.id
 
     def get_position(self, obj):
         if obj:
