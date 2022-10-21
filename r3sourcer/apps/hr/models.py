@@ -2666,39 +2666,13 @@ class TimeSheetRate(UUIDModel):
         return f'{self.timesheet}-{self.worktype}'
 
     def get_rate(self):
-
-        # if worktype is hourly work return hourly_rate
-        if self.worktype.name == WorkType.DEFAULT:
-            if self.timesheet.candidate_rate:
-                return self.timesheet.candidate_rate
-            elif self.timesheet.job_offer.shift.hourly_rate:
-                return self.timesheet.job_offer.shift.hourly_rate
-            elif self.timesheet.job_offer.shift.date.hourly_rate:
-                return self.timesheet.job_offer.shift.date.hourly_rate
-            elif self.timesheet.job_offer.shift.date.job.hourly_rate_default:
-                return self.timesheet.job_offer.shift.date.job.hourly_rate_default
-
-        rate = 0
-        # search skill activity rate in job rates (job reservation rates)
-        job_rate = JobRate.objects.filter(worktype=self.worktype,
-                                          job=self.timesheet.job_offer.job).last()
-        if job_rate:
-            rate = job_rate.rate
+        rate = self.timesheet.job_offer.job.get_rate_for_worktype(self.worktype)
 
         if not rate:
             # search skill activity rate in candidate's skill activity rates
             rate = self.timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(self.worktype)
-        if not rate:
-            # search skill activity rate in job's skill activity rates
-            rate = self.timesheet.job_offer.job.get_rate_for_worktype(self.worktype)
-        if not rate:
-            # search skill activity rate in skill rate ranges
-            skill_rate_range = SkillRateRange.objects.filter(worktype=self.worktype,
-                                                             skill=self.timesheet.job_offer.job.position) \
-                                                     .last()
-            if skill_rate_range:
-                rate = skill_rate_range.default_rate
-        return rate
+
+        return rate if rate else 0
 
     def save(self, *args, **kwargs):
         if not self.rate or self.rate == 0:
