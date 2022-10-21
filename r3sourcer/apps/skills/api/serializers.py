@@ -163,14 +163,14 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
             if timesheet_id:
                 try:
                     timesheet = TimeSheet.objects.get(pk=timesheet_id)
+
+                    # search skill activity rate in job's skill activity rates
+                    rate = timesheet.job_offer.job.get_rate_for_worktype(obj)
+                    if not rate:
+                        # search skill activity rate in candidate's skill activity rates
+                        rate = timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(obj)
+
+                    return rate if rate else 0
                 except ObjectDoesNotExist:
-                    return 0
-
-                # search skill activity rate in job's skill activity rates
-                rate = timesheet.job_offer.job.get_rate_for_worktype(obj)
-                if not rate:
-                    # search skill activity rate in candidate's skill activity rates
-                    rate = timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(obj)
-                return rate if rate else 0
-
+                    pass
         return 0
