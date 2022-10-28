@@ -69,6 +69,9 @@ class SkillRateSerializer(core_mixins.CreatedUpdatedByMixin, core_serializers.Ap
         model = candidate_models.SkillRate
         fields = (
             '__all__',
+            {
+                'worktype': ('id', {'translations': ('language', 'value')}),
+            },
         )
         extra_kwargs = {
             'worktype': {'required': False}
