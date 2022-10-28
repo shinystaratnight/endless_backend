@@ -34,6 +34,18 @@ def get_available_candidate_list(job):
         id__in=objects
     ).distinct()
 
+    no_rates_candidates = []
+    for candidate_contact in candidate_contacts:
+        skill_rel = candidate_models.SkillRel.objects.filter(
+            candidate_contact=candidate_contact,
+            skill__name=job.position.name
+        )
+        if skill_rel:
+            if skill_rel.first().skill_rates.count() == 0:
+                no_rates_candidates.append(candidate_contact.id)
+
+    candidate_contacts = candidate_contacts.exclude(id__in=no_rates_candidates)
+
     if candidate_contacts.exists():
         blacklists_candidates = hr_models.BlackList.objects.filter(
             Q(jobsite=job.jobsite) | Q(company_contact=job.jobsite.primary_contact),
