@@ -537,9 +537,10 @@ class CandidateStatisticsSerializer(core_serializers.ApiBaseModelSerializer):
                 hours += ts.shift_duration
                 earned += ts.get_hourly_rate * Decimal(ts.shift_duration.total_seconds()/3600)
 
-        data = {'total_hours': int(hours.total_seconds()/3600),
-                'total_minutes': (hours.seconds//60)%60,
-                'total_earned': earned}
+        data = {
+            'total_hours': round(hours.total_seconds()/3600, 2),
+            'total_earned': earned
+        }
 
         return data
 
