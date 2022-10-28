@@ -1,8 +1,10 @@
 from django.utils.translation import ugettext_lazy as _
-from rest_framework import exceptions, serializers
+from django.core.exceptions import ObjectDoesNotExist
+from rest_framework import exceptions
 
 from r3sourcer.apps.core.api.serializers import ApiBaseModelSerializer
 from r3sourcer.apps.skills.models import SkillBaseRate, Skill, SkillTag, SkillName, SkillRateRange, WorkType
+from r3sourcer.apps.hr.models import TimeSheet
 
 
 class SkillBaseRateSerializer(ApiBaseModelSerializer):
@@ -124,7 +126,7 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
 
 class WorkTypeSerializer(ApiBaseModelSerializer):
 
-    method_fields = ['skill_rate_ranges']
+    method_fields = ['skill_rate_ranges', 'skill_rate']
 
     class Meta:
         model = WorkType
@@ -153,3 +155,22 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
             return SkillRateRangeSerializer(obj.skill_rate_ranges.filter(skill=obj.skill),
                                             fields=['id', 'default_rate'],
                                             many=True).data
+
+    def get_skill_rate(self, obj):
+        request = self.context.get('request')
+        if request:
+            timesheet_id = request.query_params.get('timesheet', None)
+            if timesheet_id:
+                try:
+                    timesheet = TimeSheet.objects.get(pk=timesheet_id)
+
+                    # search skill activity rate in job's skill activity rates
+                    rate = timesheet.job_offer.job.get_rate_for_worktype(obj)
+                    if not rate:
+                        # search skill activity rate in candidate's skill activity rates
+                        rate = timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(obj)
+
+                    return rate if rate else 0
+                except ObjectDoesNotExist:
+                    pass
+        return 0
