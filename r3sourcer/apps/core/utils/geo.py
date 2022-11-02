@@ -10,6 +10,7 @@ from r3sourcer.helpers.datetimes import utc_now
 
 MODE_DRIVING = 'driving'
 MODE_TRANSIT = 'transit'
+MAX_DIMENSIONS = 25
 
 
 class GMapsException(Exception):
