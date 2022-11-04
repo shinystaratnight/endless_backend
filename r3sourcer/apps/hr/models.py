@@ -1655,6 +1655,7 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
         if self.wage_type == self.WAGE_CHOICES.HOURLY and self.candidate_submitted_at:
 
+            hourly_activity = None
             hourly_work = WorkType.objects.filter(name=WorkType.DEFAULT,
                                                   skill_name=self.job_offer.job.position.name) \
                                           .first()
