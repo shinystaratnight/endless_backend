@@ -261,7 +261,9 @@ class SMSBalance(models.Model):
             ))
             invoice = stripe.Invoice.create(customer=self.company.stripe_customer,
                                             default_tax_rates=[vat_object.stripe_id],
-                                            description='Topping up sms balance')
+                                            description='Topping up sms balance',
+                                            pending_invoice_items_behavior='include'
+                                            )
             logger.info('Invoice Topping up sms balance created to {}'.format(self.company.id))
             payment = Payment.objects.create(
                 company=self.company,
