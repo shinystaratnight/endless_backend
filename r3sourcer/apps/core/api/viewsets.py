@@ -808,9 +808,27 @@ class CompanyContactViewset(BaseApiViewset):
             if has_jobs or has_jobsites or instance.supervised_time_sheets.exists():
                 raise ValidationError({'non_field_errors': _('Cannot delete')})
 
+            relationships = instance.relationships.all()
+            for relationship in relationships:
+                roles = relationship.user_roles.all()
+                for role in roles:
+                    instance.contact.user.role.remove(role)
+                    
+                    # Delete Role object related to CompanyContactRelationship model
+                    # once it's detached from user_role table
+                    role.delete()
+
+                # CompanyContactRelationship record should be deleted manually
+                # because it's related to CompanyContact model by on_delete=SET_NULL
+                # Not necessarily required actually :)
+                relationship.delete()
+
+            # Delete the instance finally which deletes UserDashboardModule objects
+            instance.delete()
+
             # mark user as inactive
-            instance.contact.user.is_active = False
-            instance.contact.user.save()
+            # instance.contact.user.is_active = False
+            # instance.contact.user.save()
 
     def prepare_related_data(self, data, is_create=False):
         if is_create and not data.get('contact'):
