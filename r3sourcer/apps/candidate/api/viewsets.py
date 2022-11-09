@@ -66,9 +66,6 @@ class CandidateContactViewset(BaseApiViewset):
             # Delete WorkflowObject records attached to CandidateContact by object_id
             WorkflowObject.objects.filter(object_id=instance.id).delete()
 
-            # Remove the ContactRelationship record. It's unique for contact and master company.
-            ContactRelationship.objects.filter(contact=instance.contact, company=master_company).delete()
-
             # Delete the candidate contact object which deletes CandidateRel and CandidateScore by on_delete=CASCADE
             instance.delete()
 
