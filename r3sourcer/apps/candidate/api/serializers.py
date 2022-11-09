@@ -143,7 +143,7 @@ class CandidateContactSerializer(core_mixins.WorkflowStatesColumnMixin,
                 raise exceptions.PermissionDenied()
 
             master_company = get_site_master_company()
-            company_contact=request.user.contact.get_company_contact_by_company(master_company)
+            company_contact = request.user.contact.get_company_contact_by_company(master_company)
 
             if candidate_models.CandidateContact.objects.filter(contact=contact,
                                                                 candidate_rels__master_company=master_company) \
