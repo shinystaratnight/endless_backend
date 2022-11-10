@@ -3,6 +3,7 @@ from datetime import timedelta, date
 from django.contrib.contenttypes.models import ContentType
 from django.core.exceptions import ValidationError
 from django.db.models import Q, Exists
+from django.db import transaction
 from django.utils.translation import ugettext_lazy as _
 from phonenumber_field.modelfields import PhoneNumberField
 from rest_framework import status, exceptions, permissions as drf_permissions, viewsets, mixins
@@ -16,7 +17,8 @@ from r3sourcer.apps.candidate.api.filters import CandidateContactAnonymousFilter
 from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
-from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject, CompanyContact
+from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject, \
+                                        CompanyContact, ContactRelationship
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.hr.models import Job, TimeSheet
 from r3sourcer.apps.logger.main import location_logger
@@ -48,13 +50,28 @@ class CandidateContactViewset(BaseApiViewset):
                 args=(instance.contact.id, manager.id, master_company.id))
 
     def perform_destroy(self, instance):
-        has_joboffers = instance.job_offers.exists()
+        with transaction.atomic():
+            has_joboffers = instance.job_offers.exists()
 
-        if has_joboffers:
-            raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
-        # mark user as inactive
-        instance.contact.user.is_active = False
-        instance.contact.user.save()
+            if has_joboffers:
+                raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
+
+            master_company = instance.get_closest_company()
+
+            roles = instance.contact.user.role.filter(name='candidate', company_contact_rel__company=master_company)
+            for role in roles:
+                instance.contact.user.role.remove(role)
+                role.delete()
+
+            # Delete WorkflowObject records attached to CandidateContact by object_id
+            WorkflowObject.objects.filter(object_id=instance.id).delete()
+
+            # Delete the candidate contact object which deletes CandidateRel and CandidateScore by on_delete=CASCADE
+            instance.delete()
+
+            # mark user as inactive
+            # instance.contact.user.is_active = False
+            # instance.contact.user.save()
 
     def validate_contact(self, contact, data):
         master_company = get_site_master_company(request=self.request)
