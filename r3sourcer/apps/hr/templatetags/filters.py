@@ -12,5 +12,5 @@ def index(indexable, i):
 
 @register.filter
 def translation(value, user):
-    company_language = user.contact.get_closest_company().get_default_lanuage()
+    company_language = user.contact.get_closest_company().get_default_language()
     return value.translation(company_language)
