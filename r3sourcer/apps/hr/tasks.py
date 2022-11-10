@@ -1193,7 +1193,7 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
         master_company = timesheet_rates[0].timesheet.master_company
     if master_company.logo:
         master_logo = get_thumbnail_picture(master_company.logo, 'large')
-    company_language = master_company.get_default_lanuage()
+    company_language = master_company.get_default_language()
 
     # get template
     try:

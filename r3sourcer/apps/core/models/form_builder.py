@@ -677,7 +677,7 @@ class ModelFormField(FormField):
 
             model_fields = []
             for field in bank_layout.fields.all().order_by('order'):
-                label = field.field.translation(master_company.get_default_lanuage())
+                label = field.field.translation(master_company.get_default_language())
                 model_fields.append({
                     'name': 'contact__bank_accounts__' + field.field.name,
                     'required': field.required,
