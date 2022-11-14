@@ -26,7 +26,7 @@ from r3sourcer.apps.core import tasks
 from r3sourcer.apps.core.api.contact_bank_accounts.serializers import ContactBankAccountFieldSerializer
 from r3sourcer.apps.core.api.fields import ApiBase64FileField
 from r3sourcer.apps.core.api.mixins import GoogleAddressMixin
-from r3sourcer.apps.core.models import BankAccountLayout, ContactBankAccount, BankAccountField
+from r3sourcer.apps.core.models import BankAccountLayout, ContactBankAccount, BankAccountField, Contact
 from r3sourcer.apps.core.models.dashboard import DashboardModule
 from r3sourcer.apps.core.utils.address import parse_google_address
 from r3sourcer.apps.core.utils.form_builder import StorageHelper
@@ -885,6 +885,42 @@ class CompanyContactViewset(BaseApiViewset):
             'phone_number': phone_numbers,
             'message': _('Phones numbers was selected'),
         })
+
+    @action(methods=['put'], detail=True)
+    def change_username(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+        contact = data.get('contact', {})
+        instance = self.get_object()
+        new_email = contact.get('email', None)
+        new_phone_mobile = contact.get('phone_mobile', None)
+
+        if new_email is None or new_phone_mobile is None:
+            raise exceptions.ValidationError({'email': _('Email must be given.')})
+
+        if (new_email != instance.contact.email):
+            if Contact.objects.filter(email=new_email).exists():
+                raise exceptions.ValidationError({
+                    'email': _('User with this email address already registered')
+                })
+
+            instance.contact.email = new_email
+            instance.contact.save(update_fields=['email'])
+
+        if (new_phone_mobile != instance.contact.phone_mobile):
+            if Contact.objects.filter(phone_mobile=new_phone_mobile).exists():
+                raise exceptions.ValidationError({
+                    'phone_mobile': _('User with this phone number already registered')
+                })
+
+            instance.contact.phone_mobile = new_phone_mobile
+            instance.contact.save(update_fields=['phone_mobile'])
+
+        data = {
+            'status': 'status',
+            'message': _('Email and/or mobile phone has successfully been updated.')
+        }
+
+        return Response(data)
 
 
 class SiteViewset(BaseApiViewset):
