@@ -897,7 +897,7 @@ class CompanyContactViewset(BaseApiViewset):
         if new_email is None or new_phone_mobile is None:
             raise exceptions.ValidationError({'email': _('Email must be given.')})
 
-        if (new_email != instance.contact.email):
+        if new_email != instance.contact.email:
             if Contact.objects.filter(email=new_email).exists():
                 raise exceptions.ValidationError({
                     'email': _('User with this email address already registered')
@@ -906,7 +906,7 @@ class CompanyContactViewset(BaseApiViewset):
             instance.contact.email = new_email
             instance.contact.save(update_fields=['email'])
 
-        if (new_phone_mobile != instance.contact.phone_mobile):
+        if new_phone_mobile != instance.contact.phone_mobile:
             if Contact.objects.filter(phone_mobile=new_phone_mobile).exists():
                 raise exceptions.ValidationError({
                     'phone_mobile': _('User with this phone number already registered')

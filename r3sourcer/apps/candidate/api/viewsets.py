@@ -18,7 +18,7 @@ from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject, \
-                                        CompanyContact, ContactRelationship
+                                        CompanyContact, Contact
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.hr.models import Job, TimeSheet
 from r3sourcer.apps.logger.main import location_logger
@@ -282,7 +282,6 @@ class CandidateContactViewset(BaseApiViewset):
         serializer = serializers.CandidateRelSerializer(candidate_rel)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
     @action(methods=['get'], detail=False)
     def get_candidates_by_supervisor(self, request, *args, **kwargs):
         supervisor_id = request.query_params.get('supervisor')
@@ -298,7 +297,6 @@ class CandidateContactViewset(BaseApiViewset):
 
         return self._paginate(request, serializers.CandidateContactSerializer, candidates)
 
-
     @action(methods=['put'], detail=True)
     def change_username(self, request, *args, **kwargs):
         data = self.prepare_related_data(request.data)
@@ -313,7 +311,7 @@ class CandidateContactViewset(BaseApiViewset):
         if new_email is None or new_phone_mobile is None:
             raise exceptions.ValidationError({'email': _('Email must be given.')})
 
-        if (new_email != instance.contact.email):
+        if new_email != instance.contact.email:
             if Contact.objects.filter(email=new_email).exists():
                 raise exceptions.ValidationError({
                     'email': _('User with this email address already registered')
@@ -327,7 +325,7 @@ class CandidateContactViewset(BaseApiViewset):
             core_tasks.send_contact_verify_email.apply_async(
                 args=(instance.id, manager.id, master_company.id), kwargs=dict(new_email=True))
 
-        if (new_phone_mobile != instance.contact.phone_mobile):
+        if new_phone_mobile != instance.contact.phone_mobile:
             if Contact.objects.filter(phone_mobile=new_phone_mobile).exists():
                 raise exceptions.ValidationError({
                     'phone_mobile': _('User with this phone number already registered')
