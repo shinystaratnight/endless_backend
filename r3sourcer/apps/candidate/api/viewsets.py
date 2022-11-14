@@ -18,7 +18,7 @@ from r3sourcer.apps.core import tasks as core_tasks
 from r3sourcer.apps.core.api.permissions import SiteContactPermissions
 from r3sourcer.apps.core.api.viewsets import BaseApiViewset, BaseViewsetMixin
 from r3sourcer.apps.core.models import Company, InvoiceRule, Workflow, WorkflowObject, \
-                                        CompanyContact, ContactRelationship
+                                        CompanyContact, Contact
 from r3sourcer.apps.core.utils.companies import get_site_master_company
 from r3sourcer.apps.hr.models import Job, TimeSheet
 from r3sourcer.apps.logger.main import location_logger
@@ -282,7 +282,6 @@ class CandidateContactViewset(BaseApiViewset):
         serializer = serializers.CandidateRelSerializer(candidate_rel)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
-
     @action(methods=['get'], detail=False)
     def get_candidates_by_supervisor(self, request, *args, **kwargs):
         supervisor_id = request.query_params.get('supervisor')
@@ -297,6 +296,56 @@ class CandidateContactViewset(BaseApiViewset):
         candidates = CandidateContact.objects.filter(pk__in=candidates_ids)
 
         return self._paginate(request, serializers.CandidateContactSerializer, candidates)
+
+    @action(methods=['put'], detail=True)
+    def change_username(self, request, *args, **kwargs):
+        data = self.prepare_related_data(request.data)
+        contact = data.get('contact', {})
+        instance = self.get_object()
+        new_email = contact.get('email', None)
+        new_phone_mobile = contact.get('phone_mobile', None)
+
+        master_company = get_site_master_company()
+        manager = master_company.primary_contact
+
+        if new_email is None or new_phone_mobile is None:
+            raise exceptions.ValidationError({'email': _('Email must be given.')})
+
+        if new_email != instance.contact.email:
+            if Contact.objects.filter(email=new_email).exists():
+                raise exceptions.ValidationError({
+                    'email': _('User with this email address already registered')
+                })
+
+            instance.contact.email_verified = False
+            instance.contact.new_email = new_email
+            instance.contact.save(update_fields=['email_verified', 'new_email'])
+
+            # send verification email
+            core_tasks.send_contact_verify_email.apply_async(
+                args=(instance.id, manager.id, master_company.id), kwargs=dict(new_email=True))
+
+        if new_phone_mobile != instance.contact.phone_mobile:
+            if Contact.objects.filter(phone_mobile=new_phone_mobile).exists():
+                raise exceptions.ValidationError({
+                    'phone_mobile': _('User with this phone number already registered')
+                })
+
+            instance.contact.phone_mobile_verified = False
+            instance.contact.new_phone_mobile = new_phone_mobile
+            instance.contact.save(update_fields=['phone_mobile_verified', 'new_phone_mobile'])
+
+            # send verification SMS
+            core_tasks.send_contact_verify_sms.apply_async(
+                args=(instance.id, manager.id), kwargs=dict(new_phone_mobile=True))
+
+        data = {
+            'status': 'status',
+            'message': _(
+                'An activation link and/or SMS has been sent to you. Please confirm it. You must use the old email/phone number until the new one is confirmed')
+        }
+
+        return Response(data)
 
 
 class SubcontractorViewset(BaseApiViewset):
