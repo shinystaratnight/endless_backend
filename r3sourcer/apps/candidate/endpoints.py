@@ -20,6 +20,7 @@ class CandidateContactEndpoint(core_endpoints.ApiEndpoint):
     search_fields = (
         'contact__title', 'contact__last_name', 'contact__first_name',
         'contact__address__city__search_names', 'contact__address__street_address',
+        'contact__email', 'contact__phone_mobile',
     )
 
 

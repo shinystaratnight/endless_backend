@@ -55,7 +55,7 @@ class InvoiceService(BasePaymentService):
             industry = timesheet.job_offer.job.jobsite.industry
             customer_company = timesheet.job_offer.shift.date.job.customer_company
             vat = customer_company.get_vat()
-            company_language = customer_company.get_default_lanuage()
+            company_language = customer_company.get_default_language()
 
             for ts_rate in timesheet.timesheet_rates.all():
                 price_list_rate = self._get_price_list_rate(ts_rate.worktype, customer_company)
@@ -107,7 +107,7 @@ class InvoiceService(BasePaymentService):
     def generate_pdf(cls, invoice, show_candidate=False):
         template_slug = 'company-invoice'
         master_company = invoice.provider_company
-        company_language = master_company.get_default_lanuage()
+        company_language = master_company.get_default_language()
 
         # get template
         try:

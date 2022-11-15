@@ -167,7 +167,7 @@ class Subscription(CompanyTimeZoneMixin):
             stripe.api_key = StripeCountryAccount.get_stripe_key_on_company(self.company)
             stripe_subscription = stripe.Subscription.retrieve(self.subscription_id)
         try:
-            stripe_subscription.modify(self.subscription_id, cancel_at_period_end=True, prorate=False)
+            stripe_subscription.modify(self.subscription_id, cancel_at_period_end=True, proration_behavior=None)
             logger.warning('Successfully deactivate subscription {}'.format(self.subscription_id))
         except InvalidRequestError as e:
             logger.warning('Cannot deactivate subscription {}. It is missed, probably cancelled: {}'.format(self.subscription_id, e))
@@ -261,7 +261,9 @@ class SMSBalance(models.Model):
             ))
             invoice = stripe.Invoice.create(customer=self.company.stripe_customer,
                                             default_tax_rates=[vat_object.stripe_id],
-                                            description='Topping up sms balance')
+                                            description='Topping up sms balance',
+                                            pending_invoice_items_behavior='include'
+                                            )
             logger.info('Invoice Topping up sms balance created to {}'.format(self.company.id))
             payment = Payment.objects.create(
                 company=self.company,

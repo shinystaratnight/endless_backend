@@ -13,7 +13,7 @@ from django.utils import formats
 
 from r3sourcer.apps.candidate.models import CandidateContact
 from r3sourcer.apps.core.models import InvoiceRule, Invoice, CompanyContact
-from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT
+from r3sourcer.apps.core.utils.geo import calc_distance, MODE_TRANSIT, MAX_DIMENSIONS
 from r3sourcer.celeryapp import app
 from r3sourcer.helpers.datetimes import utc_now, date2utc_date
 from r3sourcer.apps.core.utils.companies import get_site_master_company
@@ -97,15 +97,20 @@ def calculate_distances_for_jobsite(contacts, jobsite):
         if jobsite_address is None:
             continue
 
-        result = calc_distance(jobsite_address.get_full_address(), addresses, mode=mode)
-        if not result:
-            return bool(result)
+        s = 0
+        while s < len(addresses):
+            segments = addresses[s:s + MAX_DIMENSIONS]
+            s = s + MAX_DIMENSIONS
 
-        if len(contact_list) == 1:
-            result = [result]
+            result = calc_distance(jobsite_address.get_full_address(), segments, mode=mode)
+            if not result:
+                return bool(result)
 
-        for distance, contact in zip(result[0], contact_list):
-            create_or_update_distance_cache(contact, jobsite, distance)
+            if len(contact_list) == 1:
+                result = [result]
+
+            for distance, contact in zip(result[0], contact_list):
+                create_or_update_distance_cache(contact, jobsite, distance)
 
     return True
 
