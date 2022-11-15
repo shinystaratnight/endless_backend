@@ -3,8 +3,7 @@ from collections import defaultdict
 
 from django.conf import settings
 from django.contrib.contenttypes.models import ContentType
-from django.db.models import Q
-
+from django.db.models import Q, Count
 
 HAS_JOBOFFER, HAS_TIMESHEET, UNAVAILABLE = range(3)
 
@@ -34,17 +33,8 @@ def get_available_candidate_list(job):
         id__in=objects
     ).distinct()
 
-    no_rates_candidates = []
-    for candidate_contact in candidate_contacts:
-        skill_rel = candidate_models.SkillRel.objects.filter(
-            candidate_contact=candidate_contact,
-            skill__name=job.position.name
-        )
-        if skill_rel:
-            if skill_rel.first().skill_rates.count() == 0:
-                no_rates_candidates.append(candidate_contact.id)
-
-    candidate_contacts = candidate_contacts.exclude(id__in=no_rates_candidates)
+    candidate_contacts = candidate_contacts.annotate(skilLrates_count=Count("candidate_skills__skill_rates")) \
+        .filter(candidate_skills__skill__name=job.position.name, skilLrates_count__gt=0)
 
     if candidate_contacts.exists():
         blacklists_candidates = hr_models.BlackList.objects.filter(
