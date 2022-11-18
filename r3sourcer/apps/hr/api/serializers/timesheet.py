@@ -55,7 +55,7 @@ def validate_timesheet(self, data):
                 # shift_started_at <= shift__time + 24h
                 if shift_started_at > shift_date + timedelta(hours=12):
                     raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be later than 12 hours after default shift starting time.')})
+                        _('<Shift Started At> cannot be later than 12 hours.')})
                 # shift_ended_at >= shift_started_at
                 if shift_ended_at < shift_started_at:
                     raise serializers.ValidationError({'shift_started_at':
@@ -80,7 +80,7 @@ def validate_timesheet(self, data):
                 # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at)  <= 24h
                 if (shift_ended_at - shift_started_at) - break_duration > timedelta(hours=24):
                     raise serializers.ValidationError({'shift_started_at':
-                        _('Total working hours must not be longer than 24 hours.')})
+                        _('Total working hours cannot be longer than 24 hours.')})
                 # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at) >= 0
                 if (shift_ended_at - shift_started_at) - break_duration <= timedelta(0):
                     raise serializers.ValidationError({'shift_started_at':
