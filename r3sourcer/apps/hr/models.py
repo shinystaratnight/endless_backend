@@ -1330,6 +1330,9 @@ class TimeSheet(TimeZoneUUIDModel, WorkflowProcess):
 
     @property
     def planned_shift_end_at_utc(self):
+        if self.shift_ended_at_utc:
+            return self.shift_ended_at_utc
+
         return self.shift_started_at + timedelta(hours=8, minutes=30)
 
     @property

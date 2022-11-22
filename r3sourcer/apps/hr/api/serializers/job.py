@@ -2,7 +2,7 @@ from datetime import date, datetime, timedelta
 
 import logging
 from django.conf import settings
-from django.db.models import Q, Max
+from django.db.models import Q, Max, Case, Value, When, F, ExpressionWrapper, DateTimeField
 from django.utils.translation import ugettext_lazy as _
 from rest_framework import serializers, exceptions
 
@@ -609,7 +609,7 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
 
 class JobExtendFillinSerialzier(core_serializers.ApiBaseModelSerializer):
 
-    method_fields = ['distance']
+    method_fields = ['distance', 'latest_activity_at']
 
     class Meta:
         model = candidate_models.CandidateContact
@@ -624,6 +624,22 @@ class JobExtendFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         distance_cache = obj.contact.distance_caches.filter(jobsite=self.context['job'].jobsite).first()
         distance = distance_cache and distance_cache.distance
         return hr_utils.meters_to_km(distance) if distance and distance > -1 else -1
+
+    def get_latest_activity_at(self, obj):
+        timesheet = hr_models.TimeSheet.objects.filter(
+            job_offer__candidate_contact=obj,
+            supervisor_approved_at__isnull=False
+        ).annotate(latest_activity_at=Case(
+            When(shift_ended_at__isnull=True,
+                 then=ExpressionWrapper(
+                     F('shift_started_at') + timedelta(hours=8, minutes=30),
+                     output_field=DateTimeField()
+                 )), default=F('shift_ended_at')
+        )).order_by('-latest_activity_at').first()
+
+        if timesheet:
+            return timesheet.latest_activity_at
+        return datetime.now()
 
 
 class CandidateJobOfferSerializer(core_serializers.ApiBaseModelSerializer):
