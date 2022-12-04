@@ -37,15 +37,15 @@ jobs:
             - "3c:ee:bd:12:7e:09:da:39:f0:60:d3:ed:f2:74:a7:1c"
       - run:
           name: fix host authenticity for staging server
-          command: ssh-keyscan r3sourcertest.com >> ~/.ssh/known_hosts
+          command: ssh-keyscan 54.66.252.95 >> ~/.ssh/known_hosts
       - run:
           name: Deploy Staging Over SSH
           command: |
-            ssh ubuntu@r3sourcertest.com "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
-            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web celery celery-beat"
-            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web celery celery-beat"
-            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml pull web"
-            ssh ubuntu@r3sourcertest.com "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml up -d"
+            ssh ubuntu@54.66.252.95 "echo $DOCKER_PWD | docker login -u $DOCKER_LOGIN --password-stdin"
+            ssh ubuntu@54.66.252.95 "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml stop web celery celery-beat"
+            ssh ubuntu@54.66.252.95 "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml rm -f web celery celery-beat"
+            ssh ubuntu@54.66.252.95 "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml pull web"
+            ssh ubuntu@54.66.252.95 "docker-compose -f /home/ubuntu/r3sourcer/docker-compose.yml up -d"
 
 
   build-production:
