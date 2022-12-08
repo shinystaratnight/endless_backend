@@ -568,6 +568,8 @@ def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_e
             site_url = core_companies_utils.get_site_url(master_company=master_company)
         else:
             site_url = core_companies_utils.get_site_url(user=supervisor.contact.user)
+            master_company = supervisor.contact.get_closest_company()
+
         data_dict = dict(
             supervisor=supervisor,
             portfolio_manager=portfolio_manager,
@@ -578,8 +580,6 @@ def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_e
         )
         data_dict['related_objs'].extend(related_timesheets or [])
         data_dict.update(kwargs)
-
-        master_company = supervisor.contact.get_closest_company()
 
         if should_send_email:
             try:
