@@ -1,6 +1,7 @@
 from django.contrib import admin
-from django.db.models import Q
+from django.db.models import Q, Count
 from . import models
+from r3sourcer.apps.candidate import models as candidate_models
 
 
 class TimeSheetRateInline(admin.TabularInline):
@@ -51,9 +52,24 @@ class JobsiteAdmin(admin.ModelAdmin):
     search_fields = ('short_name',)
 
 
+class CandidateContactListFilter(admin.SimpleListFilter):
+    title = 'Candidate Contact'
+    parameter_name = 'candidate_contact_id'
+
+    def lookups(self, request, model_admin):
+        candidate_contacts = candidate_models.CandidateContact.objects.annotate(job_offer_count=Count('job_offers'))\
+            .filter(job_offer_count__gt=0).distinct()
+        return [(c.pk, c.contact.__str__) for c in candidate_contacts]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(candidate_contact_id=self.value())
+        return queryset
+
+
 class JobOfferAdmin(admin.ModelAdmin):
     list_display = ('created_at', 'candidate_contact', 'status')
-    list_filter = ('created_at', 'candidate_contact')
+    list_filter = (CandidateContactListFilter, 'created_at')
     search_fields = ('candidate_contact__contact__first_name', 'candidate_contact__contact__last_name')
     ordering = ['-created_at']
 
