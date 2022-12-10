@@ -2075,7 +2075,7 @@ class RoleSerializer(ApiBaseModelSerializer):
     def get_is_active(cls, obj):
         company = get_site_master_company()
         if obj.name == 'manager':
-            if company == obj.company_contact_rel.company:
+            if obj.company_contact_rel and company == obj.company_contact_rel.company:
                 return True
             else:
                 return False
