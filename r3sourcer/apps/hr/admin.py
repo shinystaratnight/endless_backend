@@ -54,7 +54,7 @@ class JobsiteAdmin(admin.ModelAdmin):
 class JobOfferAdmin(admin.ModelAdmin):
     list_display = ('created_at', 'candidate_contact', 'status')
     list_filter = ('created_at', 'candidate_contact')
-    search_fields = ('short_name',)
+    search_fields = ('candidate_contact__contact__first_name', 'candidate_contact__contact__last_name')
     ordering = ['-created_at']
 
 
