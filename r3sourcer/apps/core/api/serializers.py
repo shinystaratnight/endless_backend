@@ -2080,6 +2080,8 @@ class RoleSerializer(ApiBaseModelSerializer):
             else:
                 return False
 
+        return True
+
 
 class PublicHolidaySerializer(ApiBaseModelSerializer):
     class Meta:
