@@ -573,8 +573,9 @@ def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_e
         data_dict = dict(
             supervisor=supervisor,
             portfolio_manager=portfolio_manager,
-            get_url="%s%s" % (site_url, extranet_login.auth_url),
+            get_url="%s%s" % (site_url, new_url_for_redirect),
             site_url=site_url,
+            auth_url="%s%s" % (site_url, extranet_login.auth_url),
             related_obj=supervisor,
             related_objs=[extranet_login],
         )
