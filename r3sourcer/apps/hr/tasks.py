@@ -404,6 +404,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
             tpl_name = events_dict[event]['old_tpl_name']
 
         with transaction.atomic():
+            master_company = time_sheet.master_company
             site_url = core_companies_utils.get_site_url(user=contacts['candidate_contact'].contact.user)
             data_dict = dict(
                 supervisor=contacts['company_contact'],
@@ -415,6 +416,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 shift_start_date=formats.date_format(time_sheet.shift_started_at_tz, settings.DATETIME_FORMAT),
                 shift_end_date=formats.date_format(shift_ended_at_tz.date(), settings.DATE_FORMAT),
                 related_obj=time_sheet,
+                master_company=master_company,
             )
 
             if event == SUPERVISOR_DECLINED:
@@ -461,8 +463,6 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                 })
             else:
                 recipient = time_sheet.supervisor
-
-            master_company = time_sheet.master_company
 
             if candidate.message_by_email:
                 try:
@@ -573,8 +573,9 @@ def send_supervisor_timesheet_message(supervisor, should_send_sms, should_send_e
         data_dict = dict(
             supervisor=supervisor,
             portfolio_manager=portfolio_manager,
-            get_url="%s%s" % (site_url, extranet_login.auth_url),
+            get_url="%s%s" % (site_url, new_url_for_redirect),
             site_url=site_url,
+            auth_url="%s%s" % (site_url, extranet_login.auth_url),
             related_obj=supervisor,
             related_objs=[extranet_login],
         )
