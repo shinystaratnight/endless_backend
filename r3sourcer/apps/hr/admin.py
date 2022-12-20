@@ -1,5 +1,6 @@
 from django.contrib import admin
-from django.db.models import Q
+from django.db.models import Q, Count
+from r3sourcer.apps.candidate import models as candidate_models
 from . import models
 
 
@@ -51,9 +52,25 @@ class JobsiteAdmin(admin.ModelAdmin):
     search_fields = ('short_name',)
 
 
+class CandidateContactListFilter(admin.SimpleListFilter):
+    title = 'Candidate Contact'
+    parameter_name = 'candidate_contact_id'
+
+    def lookups(self, request, model_admin):
+        candidate_contacts = candidate_models.CandidateContact.objects.annotate(job_offer_count=Count('job_offers'))\
+            .filter(job_offer_count__gt=0).distinct()
+        return [(c.pk, c.contact.__str__) for c in candidate_contacts]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(candidate_contact_id=self.value())
+        return queryset
+
+
 class JobOfferAdmin(admin.ModelAdmin):
     list_display = ('created_at', 'candidate_contact', 'status')
-    search_fields = ('short_name',)
+    list_filter = (CandidateContactListFilter, 'created_at')
+    search_fields = ('candidate_contact__contact__first_name', 'candidate_contact__contact__last_name')
     ordering = ['-created_at']
 
 
@@ -62,11 +79,52 @@ class CarrierListAdmin(admin.ModelAdmin):
     ordering = ('-candidate_contact', '-target_date',)
 
 
+class MasterCompanyListFilter(admin.SimpleListFilter):
+    title = 'Master Company'
+    parameter_name = 'master_company_id'
+
+    def lookups(self, request, model_admin):
+        qs = models.ShiftDate.objects.filter(cancelled=False).distinct('job__jobsite__master_company')
+        companies = [shift_date.job.jobsite.master_company for shift_date in qs]
+        return [(c.pk, c.name) for c in companies]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(job__jobsite__master_company_id=self.value())
+        return queryset
+
+
+class CustomerCompanyListFilter(admin.SimpleListFilter):
+    title = 'Customer Company'
+    parameter_name = 'customer_company_id'
+
+    def lookups(self, request, model_admin):
+        qs = models.ShiftDate.objects.filter(cancelled=False).distinct('job__jobsite__regular_company')
+        companies = [shift_date.job.jobsite.regular_company for shift_date in qs]
+        return [(c.pk, c.name) for c in companies]
+
+    def queryset(self, request, queryset):
+        if self.value():
+            return queryset.filter(job__jobsite__regular_company_id=self.value())
+        return queryset
+
+
+class ShiftDateAdmin(admin.ModelAdmin):
+    list_display = ('shift_date', 'primary_company', 'customer_company')
+    list_filter = (MasterCompanyListFilter, CustomerCompanyListFilter,)
+
+    def primary_company(self, obj):
+        return obj.job.jobsite.master_company
+
+    def customer_company(self, obj):
+        return obj.job.jobsite.regular_company
+
+
 admin.site.register(models.Jobsite, JobsiteAdmin)
 admin.site.register(models.JobsiteUnavailability)
 admin.site.register(models.Job, JobAdmin)
 admin.site.register(models.JobTag)
-admin.site.register(models.ShiftDate)
+admin.site.register(models.ShiftDate, ShiftDateAdmin)
 admin.site.register(models.Shift)
 admin.site.register(models.TimeSheet, TimeSheetAdmin)
 admin.site.register(models.TimeSheetIssue)

@@ -11,6 +11,7 @@ from r3sourcer.helpers.admin.filters import LanguageListFilter, CompanyListFilte
 class EmailTemplateAdmin(admin.ModelAdmin):
     prepopulated_fields = {"slug": ("name",)}
     list_display = ['name', 'company', 'slug', 'language_name']
+    search_fields = ('name', 'company__short_name', 'slug')
     ordering = ['company', 'slug', 'language']
     list_filter = (CompanyListFilter, LanguageListFilter, 'name')
 
@@ -63,7 +64,11 @@ class DefaultEmailTemplateAdmin(admin.ModelAdmin):
         return obj.language.name
 
 
-admin.site.register(email_models.EmailMessage, list_display=['from_email', 'to_addresses', 'created_at'])
+admin.site.register(
+    email_models.EmailMessage,
+    list_display=['from_email', 'to_addresses', 'template', 'created_at'],
+    search_fields=['from_email', 'to_addresses', 'template__name']
+)
 admin.site.register(email_models.EmailBody, list_display=['message', 'created_at'])
 admin.site.register(email_models.DefaultEmailTemplate, DefaultEmailTemplateAdmin)
 admin.site.register(email_models.EmailTemplate, EmailTemplateAdmin)

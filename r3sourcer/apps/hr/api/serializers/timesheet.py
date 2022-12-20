@@ -50,8 +50,7 @@ def validate_timesheet(self, data):
                 shift_date = self.instance.job_offer.shift.shift_date_at_tz
                 # shift_started_at >= shift__time - 4h
                 if shift_started_at < shift_date - timedelta(hours=4):
-                    raise serializers.ValidationError({'shift_started_at':
-                        _('Shift starting time can not be earlier than 4 hours before default shift starting time.')})
+                    raise serializers.ValidationError({'shift_started_at': 'error.invalid_shift_started_at_4'})
                 # shift_started_at <= shift__time + 24h
                 if shift_started_at > shift_date + timedelta(hours=12):
                     raise serializers.ValidationError({'shift_started_at': 'error.invalid_shift_started_at_12'})

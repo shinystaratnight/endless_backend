@@ -629,16 +629,10 @@ class JobExtendFillinSerialzier(core_serializers.ApiBaseModelSerializer):
         timesheet = hr_models.TimeSheet.objects.filter(
             job_offer__candidate_contact=obj,
             supervisor_approved_at__isnull=False
-        ).annotate(latest_activity_at=Case(
-            When(shift_ended_at__isnull=True,
-                 then=ExpressionWrapper(
-                     F('shift_started_at') + timedelta(hours=8, minutes=30),
-                     output_field=DateTimeField()
-                 )), default=F('shift_ended_at')
-        )).order_by('-latest_activity_at').first()
+        ).order_by('-shift_started_at').first()
 
         if timesheet:
-            return timesheet.latest_activity_at
+            return timesheet.shift_started_at
         return datetime.now()
 
 
