@@ -70,7 +70,7 @@ jobs:
             - "3c:ee:bd:12:7e:09:da:39:f0:60:d3:ed:f2:74:a7:1c"
       - run:
           name: fix host authenticity for staging server
-          command: ssh-keyscan r3sourcertest.com >> ~/.ssh/known_hosts
+          command: ssh-keyscan r3sourcer.com >> ~/.ssh/known_hosts
       - run:
           name: Deploy Staging Over SSH
           command: |
