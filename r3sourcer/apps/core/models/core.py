@@ -1239,6 +1239,8 @@ class Company(CategoryFolderMixin,
 
     stripe_customer = models.CharField(max_length=255, blank=True, null=True)
 
+    card_number = models.CharField(max_length=4, blank=True, null=True)
+
     sms_enabled = models.BooleanField(default=True)
 
     company_timezone = models.CharField(max_length=126, blank=True, null=True)
