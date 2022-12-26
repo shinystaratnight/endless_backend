@@ -4,7 +4,7 @@ from django.contrib.admin.sites import NotRegistered
 from r3sourcer.apps.core import models
 from r3sourcer.apps.core.admin import (
     BaseAdmin, UserAdmin, CompanyAdmin, SuperuserAdmin, ContactAdmin, WorkflowNodeAdmin, CompanyWorkflowNodeAdmin,
-    AddressAdmin
+    AddressAdmin, CompanyContactAdmin,
 )
 
 from r3sourcer.apps.logger.admin import LoggerMixin
@@ -18,7 +18,7 @@ DEFAULT_MODELS_LIST = [
 ]
 
 BASE_MODELS_LIST = [models.CompanyAddress,
-                    models.CompanyContact, models.CompanyContactAddress,
+                    models.CompanyContactAddress,
                     models.CompanyContactRelationship,
                     models.SiteCompany]
 
@@ -81,10 +81,15 @@ class SuperuserLoggerAdmin(LoggerMixin, SuperuserAdmin):
     pass
 
 
+class CompanyContactLoggerAdmin(LoggerMixin, CompanyContactAdmin):
+    pass
+
+
 admin.site.register(models.User, UserLoggerAdmin)
 admin.site.register(models.Address, AddressAdmin)
 admin.site.register(models.Company, CompanyLoggerAdmin)
 admin.site.register(models.Contact, ContactLoggerAdmin)
+admin.site.register(models.CompanyContact, CompanyContactLoggerAdmin)
 admin.site.register(models.WorkflowNode, WorkflowNodeLoggerAdmin)
 admin.site.register(models.CompanyWorkflowNode, CompanyWorkflowNodeLoggerAdmin)
 admin.site.register(DEFAULT_MODELS_LIST, LoggerAdmin)
