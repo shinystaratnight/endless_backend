@@ -62,7 +62,8 @@ class Activity(TimeZoneUUIDModel):
 
     contact = models.ForeignKey(
         'core.Contact',
-        verbose_name=_("Contact")
+        verbose_name=_("Contact"),
+        on_delete=models.CASCADE
     )
 
     starts_at = ref.DTField(_("Starts at"))
@@ -76,7 +77,8 @@ class Activity(TimeZoneUUIDModel):
 
     template = models.ForeignKey(
         'activity.ActivityTemplate',
-        verbose_name=_("Template")
+        verbose_name=_("Template"),
+        on_delete=models.CASCADE
     )
 
     involved_contacts = models.ManyToManyField(
@@ -274,7 +276,8 @@ class ActivityRepeat(TimeZoneUUIDModel):
     activity = models.ForeignKey(
         'activity.Activity',
         default=None,
-        verbose_name=_("Activity")
+        verbose_name=_("Activity"),
+        on_delete=models.CASCADE
     )
 
     started_at = ref.DTField(_("Started at"))

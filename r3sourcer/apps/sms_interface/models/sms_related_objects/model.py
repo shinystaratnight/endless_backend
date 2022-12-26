@@ -13,6 +13,7 @@ class SMSRelatedObject(UUIDModel):
 
     sms = models.ForeignKey(
         'sms_interface.SMSMessage',
+        on_delete=models.CASCADE,
         verbose_name=_("SMS message"),
         related_name='related_objects'
     )

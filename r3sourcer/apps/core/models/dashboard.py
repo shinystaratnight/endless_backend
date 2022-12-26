@@ -16,7 +16,8 @@ class DashboardModule(UUIDModel):
         'contenttypes.ContentType',
         verbose_name=_("Model"),
         unique=True,
-        related_name='+'
+        related_name='+',
+        on_delete=models.CASCADE,
     )
 
     is_active = models.BooleanField(
@@ -70,13 +71,15 @@ class UserDashboardModule(UUIDModel):
     company_contact = models.ForeignKey(
         'core.CompanyContact',
         verbose_name=_("Company contact"),
-        related_name='dashboard_modules'
+        related_name='dashboard_modules',
+        on_delete=models.CASCADE,
     )
 
     dashboard_module = models.ForeignKey(
         'DashboardModule',
         verbose_name=_("Dashboard module"),
-        related_name='dashboard_modules'
+        related_name='dashboard_modules',
+        on_delete=models.CASCADE,
     )
 
     position = models.PositiveIntegerField(

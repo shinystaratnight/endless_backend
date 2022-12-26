@@ -1143,7 +1143,7 @@ class UserDashboardModuleViewSet(BaseApiViewset):
     MODULE_ALREADY_EXISTS = _("Module already exists")
 
     def get_queryset(self):
-        if self.request.user.is_authenticated():
+        if self.request.user.is_authenticated:
             site_master_company = get_site_master_company(request=self.request)
 
             return models.UserDashboardModule.objects.owned_by(site_master_company).filter(

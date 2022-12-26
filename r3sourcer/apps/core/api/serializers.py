@@ -176,7 +176,7 @@ class ApiFullRelatedFieldsMixin():
             if is_many_to_one_relation:
                 rel_model = related_field.related_model
             else:
-                rel_model = related_field.rel.model
+                rel_model = related_field.remote_field.model
 
             if data is not empty or (request is not None and request.method in ('POST', 'PUT', 'PATCH')):
                 if is_pk_data or (data is empty and related_obj_setting == RELATED_NONE and not is_many_relation and

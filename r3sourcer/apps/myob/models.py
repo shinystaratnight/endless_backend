@@ -135,7 +135,7 @@ class MYOBAuthData(UUIDModel, MYOBWatchdogModel):
         null=True, blank=True
     )
 
-    user = models.ForeignKey(User, related_name='auth_data', blank=True, null=True)
+    user = models.ForeignKey(User, related_name='auth_data', blank=True, null=True, on_delete=models.CASCADE)
     company = models.ForeignKey(
         'core.Company',
         on_delete=models.CASCADE,
@@ -189,7 +189,10 @@ class MYOBCompanyFile(UUIDModel, MYOBWatchdogModel):
     auth_data = models.ForeignKey(
         'myob.MYOBAuthData',
         related_name='company_file',
-        blank=True, null=True)
+        blank=True,
+        null=True,
+        on_delete=models.CASCADE,
+    )
 
     class Meta:
         verbose_name = _("MYOB Company File")
@@ -226,14 +229,21 @@ class MYOBCompanyFileToken(UUIDModel, MYOBWatchdogModel):
     """
     Contains all information needed for authorization and fetching information related to a specific company file
     """
-    company_file = models.ForeignKey(MYOBCompanyFile, related_name='tokens')
+    company_file = models.ForeignKey(
+        MYOBCompanyFile,
+        related_name='tokens',
+        on_delete=models.CASCADE,
+    )
     auth_data = models.ForeignKey(
         'myob.MYOBAuthData',
-        related_name='company_file_token')
+        related_name='company_file_token',
+        on_delete=models.CASCADE,
+    )
     company = models.ForeignKey(
         'core.Company',
         on_delete=models.CASCADE,
-        related_name='company_file_tokens')
+        related_name='company_file_tokens'
+    )
     cf_token = models.CharField(
         verbose_name=_(u"Company File Token"),
         max_length=32,
@@ -315,6 +325,7 @@ class MYOBSyncObject(UUIDModel, models.Model):
 
     company_file = models.ForeignKey(
         MYOBCompanyFile,
+        on_delete=models.CASCADE,
         verbose_name=_("MYOB Company File"),
         related_name='sync_objects',
         null=True,

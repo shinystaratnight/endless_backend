@@ -390,7 +390,9 @@ class Discount(CompanyTimeZoneMixin):
     )
     company = models.ForeignKey(
         'core.Company',
-        related_name='discounts')
+        related_name='discounts',
+        on_delete=models.CASCADE
+    )
     payment_type = models.CharField(max_length=255, choices=PAYMENT_TYPES, blank=True, null=True)
     percent_off = models.IntegerField(blank=True, null=True)
     amount_off = models.IntegerField(blank=True, null=True)
@@ -496,6 +498,7 @@ class StripeCountryAccount(models.Model):
         to_field='code2',
         null=True,
         blank=True,
+        on_delete=models.CASCADE,
     )
     stripe_public_key = models.CharField(max_length=255, blank=True, null=True)
     stripe_secret_key = models.CharField(max_length=255, blank=True, null=True)
@@ -544,4 +547,7 @@ class StripeCountryAccount(models.Model):
 class SMSBalanceLimits(models.Model):
     name = models.CharField(max_length=255, unique=True)
     low_balance_limit = models.PositiveIntegerField(default=20)
-    email_template = models.ForeignKey(DefaultEmailTemplate)
+    email_template = models.ForeignKey(
+        DefaultEmailTemplate,
+        on_delete=models.CASCADE,
+    )

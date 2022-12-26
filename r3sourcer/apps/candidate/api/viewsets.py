@@ -163,7 +163,7 @@ class CandidateContactViewset(BaseApiViewset):
 
     @action(methods=['get'], detail=False)
     def pool(self, request, *args, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             queryset = CandidateContactAnonymous.objects.none()
         else:
             company = request.user.contact.get_closest_company()
@@ -181,7 +181,7 @@ class CandidateContactViewset(BaseApiViewset):
 
     @action(methods=['get'], detail=True)
     def pool_detail(self, request, pk, *args, **kwargs):
-        if not request.user.is_authenticated():
+        if not request.user.is_authenticated:
             instance = CandidateContactAnonymous.objects.none()
         else:
             instance = self.get_object()

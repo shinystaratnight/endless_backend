@@ -217,6 +217,7 @@ class SkillBaseRate(UUIDModel):   # TODO delete SkillBaseRate model after uom ra
 
     skill = models.ForeignKey(
         'skills.Skill',
+        on_delete=models.CASCADE,
         related_name="skill_rate_defaults",
         verbose_name=_("Skill")
     )
@@ -437,11 +438,13 @@ class SkillRateRange(MYOBMixin, UUIDModel):
 
     skill = models.ForeignKey(
         Skill,
+        on_delete=models.CASCADE,
         related_name="skill_rate_ranges",
         verbose_name=_("Skill")
     )
     worktype = models.ForeignKey(
         WorkType,
+        on_delete=models.CASCADE,
         related_name="skill_rate_ranges",
         verbose_name=_("Skill Activity"),
     )

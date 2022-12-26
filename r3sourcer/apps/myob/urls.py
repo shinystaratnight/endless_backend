@@ -12,3 +12,5 @@ urlpatterns = [
         name='cf_signin'),
     url(r'^cf_authorized/', views.cf_authorized, name='cf_authorized'),
 ]
+
+app_name = 'myob'
