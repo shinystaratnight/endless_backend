@@ -24,7 +24,8 @@ class Workflow(UUIDModel):
 
     model = models.ForeignKey(
         ContentType,
-        verbose_name=_('Binding model')
+        verbose_name=_('Binding model'),
+        on_delete=models.CASCADE,
     )
 
     class Meta:
@@ -111,7 +112,8 @@ class WorkflowNode(UUIDModel):
         verbose_name=_('Parent Node'),
         null=True,
         blank=True,
-        related_name='children'
+        related_name='children',
+        on_delete=models.CASCADE,
     )
 
     order = models.PositiveSmallIntegerField(
@@ -220,7 +222,8 @@ class WorkflowObject(UUIDModel):
     state = models.ForeignKey(
         WorkflowNode,
         verbose_name=_('State'),
-        related_name='states'
+        related_name='states',
+        on_delete=models.CASCADE,
     )
 
     comment = models.TextField(
@@ -402,7 +405,8 @@ class CompanyWorkflowNode(UUIDModel):
     workflow_node = models.ForeignKey(
         WorkflowNode,
         verbose_name=_('Workflow Node'),
-        related_name='company_workflow_nodes'
+        related_name='company_workflow_nodes',
+        on_delete=models.CASCADE,
     )
 
     active = models.BooleanField(

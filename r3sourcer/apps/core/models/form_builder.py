@@ -59,7 +59,8 @@ def transform_ui_choices(values: list):
 class FormBuilder(UUIDModel):
     content_type = models.OneToOneField(
         'contenttypes.ContentType',
-        verbose_name=_("Content type for form")
+        verbose_name=_("Content type for form"),
+        on_delete=models.CASCADE,
     )
 
     fields = ArrayField(
@@ -96,13 +97,15 @@ class FormBuilderExtraFields(UUIDModel):
     builder = models.ForeignKey(
         FormBuilder,
         related_name='extra_fields',
-        verbose_name=_("Form Builder")
+        verbose_name=_("Form Builder"),
+        on_delete=models.CASCADE,
     )
 
     content_type = models.ForeignKey(
         'contenttypes.ContentType',
         verbose_name=_("Content type for field"),
-        related_name='form_builder_fields'
+        related_name='form_builder_fields',
+        on_delete=models.CASCADE,
     )
 
     name = models.SlugField(
@@ -138,7 +141,8 @@ class FormBuilderExtraFields(UUIDModel):
         verbose_name=_("Content type of related model"),
         related_name='form_builder_through_fields',
         null=True,
-        blank=True
+        blank=True,
+        on_delete=models.CASCADE,
     )
 
     class Meta:
@@ -163,7 +167,8 @@ class Form(UUIDModel):
     builder = models.ForeignKey(
         FormBuilder,
         verbose_name=_("Form builder"),
-        related_name='forms'
+        related_name='forms',
+        on_delete=models.CASCADE,
     )
 
     is_active = models.BooleanField(
@@ -472,7 +477,8 @@ class FormFieldGroup(UUIDModel):
     form = models.ForeignKey(
         Form,
         verbose_name=_("Form"),
-        related_name='groups'
+        related_name='groups',
+        on_delete=models.CASCADE,
     )
 
     name = models.CharField(
@@ -515,7 +521,8 @@ class FormField(PolymorphicModel):
     group = models.ForeignKey(
         FormFieldGroup,
         verbose_name=_("Form group"),
-        related_name='fields'
+        related_name='fields',
+        on_delete=models.CASCADE,
     )
 
     name = models.SlugField(
@@ -1121,7 +1128,8 @@ class RelatedFormField(FormField):
 
     content_type = models.ForeignKey(
         'contenttypes.ContentType',
-        verbose_name=_("Content type for field")
+        verbose_name=_("Content type for field"),
+        on_delete=models.CASCADE,
     )
 
     def get_ui_config(self):

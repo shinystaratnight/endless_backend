@@ -1,6 +1,6 @@
 import mock
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from rest_framework import status
 
 from r3sourcer.apps.core.models import Invoice

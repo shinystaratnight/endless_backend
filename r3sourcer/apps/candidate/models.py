@@ -199,7 +199,8 @@ class CandidateContact(UUIDModel, WorkflowProcess):
         to_field='code2',
         null=True,
         blank=True,
-        related_name="candidate_contacts"
+        related_name="candidate_contacts",
+        on_delete=models.CASCADE
     )
 
     visa_type = models.ForeignKey(
@@ -740,7 +741,8 @@ class SkillRel(UUIDModel):
     skill = models.ForeignKey(
         'skills.Skill',
         related_name="candidate_skills",
-        verbose_name=_("Skill")
+        verbose_name=_("Skill"),
+        on_delete=models.CASCADE
     )
 
     score = models.PositiveSmallIntegerField(
@@ -796,13 +798,15 @@ class SkillRate(UUIDModel):
     skill_rel = models.ForeignKey(
         SkillRel,
         related_name="skill_rates",
-        verbose_name=_("Candidate Skill")
+        verbose_name=_("Candidate Skill"),
+        on_delete=models.CASCADE
     )
 
     worktype = models.ForeignKey(
         'skills.WorkType',
         related_name="skill_rates",
         verbose_name=_("Type of work"),
+        on_delete=models.CASCADE
     )
 
     rate = models.DecimalField(
@@ -839,7 +843,8 @@ class SkillRateCoefficientRel(UUIDModel):
     skill_rel = models.ForeignKey(
         'candidate.SkillRel',
         related_name="candidate_skill_coefficient_rels",
-        verbose_name=_("Candidate skill")
+        verbose_name=_("Candidate skill"),
+        on_delete=models.CASCADE
     )
 
     rate_coefficient = models.ForeignKey(
@@ -1127,13 +1132,15 @@ class SubcontractorCandidateRelation(UUIDModel):
     subcontractor = models.ForeignKey(
         'candidate.Subcontractor',
         related_name='subcontractor_candidates',
-        verbose_name=_('Subcontractor')
+        verbose_name=_('Subcontractor'),
+        on_delete=models.CASCADE
     )
 
     candidate_contact = models.ForeignKey(
         'candidate.CandidateContact',
         related_name='subcontractor_candidates',
-        verbose_name=_('Candidate Contact')
+        verbose_name=_('Candidate Contact'),
+        on_delete=models.CASCADE
     )
 
     class Meta:

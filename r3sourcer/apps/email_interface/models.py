@@ -203,7 +203,8 @@ class EmailMessage(TimeZoneUUIDModel):
         verbose_name=_("Template"),
         default=None,
         null=True,
-        blank=True
+        blank=True,
+        on_delete=models.CASCADE,
     )
 
     # error info

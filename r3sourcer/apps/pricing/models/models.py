@@ -259,6 +259,7 @@ class PriceListRate(UUIDModel):
 
     worktype = models.ForeignKey(
         'skills.WorkType',
+        on_delete=models.CASCADE,
         related_name="price_list_rates",
         verbose_name=_("Skill Activity"),
     )
