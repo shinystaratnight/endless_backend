@@ -2684,7 +2684,10 @@ class TimeSheetRate(UUIDModel):
         self.is_hourly = self.worktype.is_hourly()
         super().save(*args, **kwargs)
 
-        if self.is_hourly and not self.timesheet.shift_duration:
+        # The condition to check if the timesheetrate is created or updated should be added?
+        is_post = True  # The value should be changed to False when the method is PUT.
+
+        if self.is_hourly and is_post and not self.timesheet.shift_duration:
             self.timesheet.shift_ended_at = self.timesheet.shift_started_at + timedelta(hours=float(self.value))
             self.timesheet.save()
 
