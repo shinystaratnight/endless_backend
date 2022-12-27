@@ -825,7 +825,7 @@ class JobViewset(BaseApiViewset):
         fields.append('-tags_count')
 
         if params:
-            fields = fields.extend([param.strip() for param in params.split(',')] if params else [])
+            fields.extend([param.strip() for param in params.split(',')] if params else [])
 
         return candidate_contacts.order_by(*fields)
 
