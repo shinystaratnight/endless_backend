@@ -706,12 +706,18 @@ class ContactSerializer(ApiContactImageFieldsMixin,
         contact = core_models.Contact.objects.create(**validated_data)
         return contact
 
+    def validate_email(self, email):
+        return email.lower()
+
     def validate(self, data):
         if not self.partial and not data.get('email') and not data.get('phone_mobile'):
             raise serializers.ValidationError(_('Please specify E-mail and/or Mobile Phone'))
 
         if self.instance and getattr(self.instance, 'candidate_contacts', None) and not data.get('birthday'):
             raise serializers.ValidationError({'birthday': [_('Birthday is required')]})
+
+        if core_models.Contact.objects.filter(email__iexact=data.get('email')).exists():
+            raise exceptions.ValidationError({'email': ['Contact with this E-mail already exists.']})
 
         return data
 
