@@ -70,14 +70,16 @@ class TrialUserView(viewsets.GenericViewSet):
         new_user.trial_period_start = utc_now()
         new_user.save()
 
+        company_contact = models.CompanyContact.objects.create(contact=contact)
+
         company = models.Company.objects.create(
             name=serializer.validated_data['company_name'],
             type=models.Company.COMPANY_TYPES.master,
+            primary_contact=company_contact,
         )
 
         models.CompanyRel.objects.create(master_company=company, regular_company=company)
 
-        company_contact = models.CompanyContact.objects.create(contact=contact)
         models.CompanyContactRelationship.objects.create(company=company, company_contact=company_contact)
 
         domain = '{}.{}'.format(serializer.validated_data['website'].lower(), settings.REDIRECT_DOMAIN)
