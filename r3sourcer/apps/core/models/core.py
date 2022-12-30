@@ -178,6 +178,7 @@ class Contact(CategoryFolderMixin,
         related_name='contacts',
         null=True,
         blank=True,
+        on_delete=models.CASCADE
     )
 
     sms_enabled = models.BooleanField(default=True)
@@ -725,16 +726,27 @@ class Address(TimeZoneUUIDModel):
         verbose_name=_("Street Address")
     )
 
-    city = models.ForeignKey(City, null=True, blank=True)
+    city = models.ForeignKey(
+        City,
+        null=True,
+        blank=True,
+        on_delete=models.CASCADE
+    )
 
     postal_code = models.CharField(max_length=11, blank=True, verbose_name=_("Postal Code"))
 
-    state = models.ForeignKey(Region, blank=True, null=True, verbose_name=_("State/District"))
+    state = models.ForeignKey(
+        Region,
+        blank=True,
+        null=True,
+        verbose_name=_("State/District"),
+        on_delete=models.CASCADE
+    )
 
     latitude = models.DecimalField(max_digits=18, decimal_places=15, default=0)
     longitude = models.DecimalField(max_digits=18, decimal_places=15, default=0)
 
-    country = models.ForeignKey(Country, to_field='code2', default='AU')
+    country = models.ForeignKey(Country, to_field='code2', default='AU', on_delete=models.CASCADE)
     apartment = models.CharField(max_length=6, blank=True, null=True, verbose_name=_('Apartment'))
 
     class Meta:
@@ -1208,6 +1220,7 @@ class Company(CategoryFolderMixin,
         related_name='companies',
         null=True,
         blank=True,
+        on_delete=models.CASCADE,
     )
 
     TIMESHEET_APPROVAL_SCHEME = Choices(
@@ -1238,6 +1251,8 @@ class Company(CategoryFolderMixin,
     groups = models.ManyToManyField(Group, related_name='companies')
 
     stripe_customer = models.CharField(max_length=255, blank=True, null=True)
+
+    card_number = models.CharField(max_length=4, blank=True, null=True)
 
     sms_enabled = models.BooleanField(default=True)
 
@@ -1700,7 +1715,8 @@ class CompanyIndustryRel(UUIDModel):
     industry = models.ForeignKey(
         'pricing.Industry',
         related_name='company_industry_rels',
-        verbose_name=_("Industry")
+        verbose_name=_("Industry"),
+        on_delete=models.CASCADE,
     )
 
     default = models.BooleanField(default=False)
@@ -1926,6 +1942,7 @@ class CompanyLocalization(UUIDModel):
         to_field='code2',
         null=True,
         blank=True,
+        on_delete=models.CASCADE,
         help_text=_("Country of localization. Empty value used for default variant")
     )
     verbose_value = models.CharField(
@@ -2033,7 +2050,8 @@ class Note(UUIDModel):
 
     content_type = models.ForeignKey(
         ContentType,
-        verbose_name=_("Content type")
+        verbose_name=_("Content type"),
+        on_delete=models.CASCADE
     )
     object_id = models.UUIDField(verbose_name=_("Object id"))
     object = GenericForeignKey()
@@ -2090,7 +2108,14 @@ class Tag(MPTTModel, UUIDModel):
         ('company', _('Company')),
     )
     name = models.CharField(max_length=63, verbose_name=_("Tag Name"))
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+    parent = TreeForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='children',
+        db_index=True,
+        on_delete=models.CASCADE,
+    )
     active = models.BooleanField(default=True, verbose_name=_('Active'))
     evidence_required_for_approval = models.BooleanField(
         default=False,
@@ -2181,7 +2206,9 @@ class VAT(UUIDModel):
     country = models.ForeignKey(
         'core.Country',
         to_field='code2',
-        default='AU')
+        default='AU',
+        on_delete=models.CASCADE,
+    )
     name = models.CharField(
         max_length=64,
         verbose_name=_("Name"),
@@ -2873,7 +2900,11 @@ class PublicHoliday(UUIDModel):
     Public holiday model
     """
 
-    country = models.ForeignKey('core.Country', verbose_name=_("Country"))
+    country = models.ForeignKey(
+        'core.Country',
+        verbose_name=_("Country"),
+        on_delete=models.CASCADE
+    )
     date = models.DateField(_("Date"))
     name = models.CharField(_("Name"), max_length=512)
 
@@ -2910,7 +2941,14 @@ class ExtranetNavigation(MPTTModel, UUIDModel):
 
     id = models.AutoField(auto_created=True, primary_key=True,
                           serialize=False, verbose_name='ID')
-    parent = TreeForeignKey('self', null=True, blank=True, related_name='children', db_index=True)
+    parent = TreeForeignKey(
+        'self',
+        null=True,
+        blank=True,
+        related_name='children',
+        db_index=True,
+        on_delete=models.CASCADE
+    )
     name = models.CharField(max_length=63, verbose_name=_("Menu Title"))
     url = models.CharField(max_length=63, verbose_name=_("Default Url"))
     endpoint = models.CharField(max_length=63, verbose_name=_("DRF Endpoint"))

@@ -59,7 +59,13 @@ class MYOBAccount(UUIDModel):
     is_header = models.BooleanField()
     uri = models.CharField(max_length=255)
     row_version = models.CharField(max_length=255)
-    company_file = models.ForeignKey('myob.MYOBCompanyFile', blank=True, null=True, related_name='accounts')
+    company_file = models.ForeignKey(
+        'myob.MYOBCompanyFile',
+        blank=True,
+        null=True,
+        related_name='accounts',
+        on_delete=models.CASCADE
+    )
 
     def __str__(self):
         return '{} - {}'.format(self.number, self.name)

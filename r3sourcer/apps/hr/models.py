@@ -125,6 +125,7 @@ class Jobsite(CategoryFolderMixin,
         related_name='jobsites',
         null=True,
         blank=True,
+        on_delete=models.CASCADE,
     )
 
     class Meta:
@@ -1957,7 +1958,8 @@ class CarrierList(UUIDModel):
         verbose_name=_('Sent SMS Message'),
         related_name='sent_carrier_lists',
         blank=True,
-        null=True
+        null=True,
+        on_delete=models.CASCADE,
     )
 
     reply_message = models.ForeignKey(
@@ -1965,7 +1967,8 @@ class CarrierList(UUIDModel):
         verbose_name=_('Reply SMS Message'),
         related_name='reply_carrier_lists',
         blank=True,
-        null=True
+        null=True,
+        on_delete=models.CASCADE,
     )
 
     job_offer = models.ForeignKey(
@@ -1973,7 +1976,8 @@ class CarrierList(UUIDModel):
         verbose_name=_('Job Offer'),
         related_name='carrier_lists',
         blank=True,
-        null=True
+        null=True,
+        on_delete=models.CASCADE,
     )
 
     referral_job_offer = models.ForeignKey(
@@ -1981,7 +1985,8 @@ class CarrierList(UUIDModel):
         verbose_name=_('Referral Job Offer'),
         related_name='referral_carrier_lists',
         blank=True,
-        null=True
+        null=True,
+        on_delete=models.CASCADE,
     )
 
     sms_sending_scheduled_at = models.DateTimeField(
@@ -1995,7 +2000,8 @@ class CarrierList(UUIDModel):
         verbose_name=_('Skill'),
         related_name='carrier_lists',
         null=True,
-        blank=True
+        blank=True,
+        on_delete=models.CASCADE,
     )
 
     class Meta:
@@ -2174,7 +2180,8 @@ class Payslip(UUIDModel):
     candidate = models.ForeignKey(
         'candidate.CandidateContact',
         verbose_name=_("Candidate contact"),
-        related_name="payslips"
+        related_name="payslips",
+        on_delete=models.CASCADE,
     )
 
     cheque_number = models.TextField(
@@ -2310,7 +2317,8 @@ class PersonalIncomeTax(UUIDModel):
     country = models.ForeignKey(
         core_models.Country,
         to_field='code2',
-        default='AU'
+        default='AU',
+        on_delete=models.CASCADE,
     )
 
     name = models.CharField(
@@ -2357,7 +2365,8 @@ class SocialInsurance(UUIDModel):
     country = models.ForeignKey(
         core_models.Country,
         to_field='code2',
-        default='AU'
+        default='AU',
+        on_delete=models.CASCADE,
     )
 
     name = models.CharField(
@@ -2638,8 +2647,9 @@ class TimeSheetRate(UUIDModel):
     worktype = models.ForeignKey(
         WorkType,
         related_name="timesheet_rates",
-        verbose_name=_("Type of work")
-        )
+        verbose_name=_("Type of work"),
+        on_delete=models.CASCADE,
+    )
 
     value = models.DecimalField(
         _("Timesheet Value"),
@@ -2684,7 +2694,10 @@ class TimeSheetRate(UUIDModel):
         self.is_hourly = self.worktype.is_hourly()
         super().save(*args, **kwargs)
 
-        if self.is_hourly and not self.timesheet.shift_duration:
+        # The condition to check if the timesheetrate is created or updated should be added?
+        is_post = True  # The value should be changed to False when the method is PUT.
+
+        if self.is_hourly and is_post and not self.timesheet.shift_duration:
             self.timesheet.shift_ended_at = self.timesheet.shift_started_at + timedelta(hours=float(self.value))
             self.timesheet.save()
 
@@ -2694,13 +2707,15 @@ class JobRate(UUIDModel):
         Job,
         verbose_name=_("Job"),
         on_delete=models.CASCADE,
-        related_name='job_rates')
+        related_name='job_rates'
+    )
 
     worktype = models.ForeignKey(
         WorkType,
         related_name='job_rates',
         verbose_name=_("Skill activity"),
-        )
+        on_delete=models.CASCADE,
+    )
 
     rate = models.DecimalField(
         _("Gob Skill Activity Rate"),

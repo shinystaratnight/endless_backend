@@ -176,7 +176,7 @@ class ApiFullRelatedFieldsMixin():
             if is_many_to_one_relation:
                 rel_model = related_field.related_model
             else:
-                rel_model = related_field.rel.model
+                rel_model = related_field.remote_field.model
 
             if data is not empty or (request is not None and request.method in ('POST', 'PUT', 'PATCH')):
                 if is_pk_data or (data is empty and related_obj_setting == RELATED_NONE and not is_many_relation and
@@ -706,12 +706,18 @@ class ContactSerializer(ApiContactImageFieldsMixin,
         contact = core_models.Contact.objects.create(**validated_data)
         return contact
 
+    def validate_email(self, email):
+        return email.lower()
+
     def validate(self, data):
         if not self.partial and not data.get('email') and not data.get('phone_mobile'):
             raise serializers.ValidationError(_('Please specify E-mail and/or Mobile Phone'))
 
         if self.instance and getattr(self.instance, 'candidate_contacts', None) and not data.get('birthday'):
             raise serializers.ValidationError({'birthday': [_('Birthday is required')]})
+
+        if core_models.Contact.objects.filter(email__iexact=data.get('email')).exists():
+            raise exceptions.ValidationError({'email': ['Contact with this E-mail already exists.']})
 
         return data
 

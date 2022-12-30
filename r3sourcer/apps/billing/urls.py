@@ -23,3 +23,5 @@ urlpatterns = [
     url(r'^billing/companies/$', views.CompanyListView.as_view(), name='company_list'),
     url(r'^billing/discounts/$', views.DiscountView.as_view(), name='discounts'),
 ]
+
+app_name = 'billing'

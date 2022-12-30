@@ -5,7 +5,7 @@ import mock
 import pytest
 from unittest.mock import patch
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 from django.contrib.sites.models import Site
 from django.utils import timezone
 

@@ -405,7 +405,7 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
 
         with transaction.atomic():
             master_company = time_sheet.master_company
-            site_url = core_companies_utils.get_site_url(user=contacts['candidate_contact'].contact.user)
+            site_url = core_companies_utils.get_site_url(master_company=master_company)
             data_dict = dict(
                 supervisor=contacts['company_contact'],
                 candidate_contact=contacts['candidate_contact'],
@@ -456,7 +456,6 @@ def process_time_sheet_log_and_send_notifications(self, time_sheet_id, event):
                     role=role
                 )
 
-                site_url = core_companies_utils.get_site_url(user=recipient.contact.user)
                 data_dict.update({
                     'get_fill_time_sheet_url': "%s%s" % (site_url, extranet_login.auth_url),
                     'related_objs': [extranet_login],
@@ -865,6 +864,7 @@ def send_timesheet_message(timesheet_id, job_offer_id, tpl_name, recipient, need
             logger.info('SMS sending will not be proceed for JO: {}'.format(job_offer_id))
         else:
             master_company = timesheet.master_company
+            master_company_contact = master_company.primary_contact
             data_dict = dict(
                 job=jo.job,
                 candidate_contact=jo.candidate_contact,
@@ -872,7 +872,8 @@ def send_timesheet_message(timesheet_id, job_offer_id, tpl_name, recipient, need
                 timesheet=timesheet,
                 related_obj=jo.job,
                 related_objs=[jo.candidate_contact, timesheet.supervisor, timesheet],
-                master_company=master_company
+                master_company=master_company,
+                master_company_contact=master_company_contact,
             )
             if needs_target_dt:
                 try:

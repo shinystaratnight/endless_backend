@@ -93,6 +93,7 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
     )
     template = models.ForeignKey(
         'sms_interface.SMSTemplate',
+        on_delete=models.CASCADE,
         verbose_name=_("Template"),
         null=True,
         blank=True
@@ -174,6 +175,7 @@ class SMSMessage(DeadlineCheckingMixin, TimeZoneUUIDModel):
     # late reply
     late_reply = models.ForeignKey(
         'self',
+        on_delete=models.CASCADE,
         verbose_name=_("Late reply"),
         related_name='sent_sms_messages',
         default=None,

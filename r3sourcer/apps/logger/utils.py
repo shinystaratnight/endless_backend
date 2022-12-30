@@ -28,7 +28,7 @@ def get_current_user():
     :return: current user of the system
     """
     request = get_current_request()
-    if request and request.user and request.user.is_authenticated():
+    if request and request.user and request.user.is_authenticated:
         default_user = request.user
     else:
         default_user = get_default_user()

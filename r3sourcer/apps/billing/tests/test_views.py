@@ -3,7 +3,7 @@ import mock
 
 import stripe
 
-from django.core.urlresolvers import reverse
+from django.urls import reverse
 
 from r3sourcer.apps.billing.models import Subscription, Discount
 from r3sourcer.apps.core.models import Company, Contact

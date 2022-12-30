@@ -156,6 +156,7 @@ class StripeCustomerCreateView(APIView):
             name=company.name or str(company.primary_contact),
         )
         company.stripe_customer = customer.id
+        company.card_number = self.request.data.get('last4')
         company.save()
         return Response(status=status.HTTP_201_CREATED)
 
@@ -171,6 +172,8 @@ class StripeCustomerCreateView(APIView):
             company.stripe_customer,
             source=self.request.data.get('source'),
         )
+        company.card_number = self.request.data.get('last4')
+        company.save()
         return Response(status=status.HTTP_200_OK)
 
 
@@ -203,7 +206,8 @@ class CheckPaymentInformationView(APIView):
     def get(self, *args, **kwargs):
         company = get_site_master_company()
         return Response({
-            "payment_information_submited": bool(company.stripe_customer)
+            "payment_information_submited": bool(company.stripe_customer),
+            "card_number_last4": company.card_number if bool(company.stripe_customer) else None,
         })
 
 

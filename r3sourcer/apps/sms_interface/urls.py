@@ -9,3 +9,5 @@ urlpatterns = [
     url('^message/$', SMSMessageListView.as_view(), name='sms_messages'),
     url('^error-message/$', ErrorSMSMessageListView.as_view(), name='error_sms_messages')
 ]
+
+app_name = 'sms_interface'

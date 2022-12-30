@@ -25,6 +25,7 @@ class TokenLogin(UUIDModel,
         'core.Contact',
         related_name="extranet_logins",
         verbose_name=_("Contact"),
+        on_delete=models.CASCADE,
     )
 
     auth_token = models.CharField(

@@ -17,7 +17,7 @@ class SitePermissions(DRYPermissions):
             return True
 
         if request.method in permissions.SAFE_METHODS:
-            return request.user and request.user.is_authenticated()
+            return request.user and request.user.is_authenticated
         else:
             return request.user and request.user.is_superuser
 
@@ -26,7 +26,7 @@ class SitePermissions(DRYPermissions):
             return True
 
         if request.method in permissions.SAFE_METHODS:
-            return request.user and request.user.is_authenticated()
+            return request.user and request.user.is_authenticated
         is_superuser = request.user and request.user.is_superuser
         return is_superuser or self.is_master_related(request.user, obj)
 
@@ -39,13 +39,13 @@ class SiteContactPermissions(SitePermissions):
         if not self.global_permissions:
             return True
 
-        return request.user and request.user.is_authenticated() and self.is_master_related(request.user, request)
+        return request.user and request.user.is_authenticated and self.is_master_related(request.user, request)
 
     def has_object_permission(self, request, view, obj):
         if not self.object_permissions:
             return True
 
-        return request.user and request.user.is_authenticated() and self.is_master_related(request.user, request)
+        return request.user and request.user.is_authenticated and self.is_master_related(request.user, request)
 
     def is_master_related(self, user, request):
         contact = user.contact

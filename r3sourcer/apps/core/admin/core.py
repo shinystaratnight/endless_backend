@@ -136,6 +136,11 @@ class ContactAdmin(admin.ModelAdmin):
     search_fields = ('email', 'phone_mobile', 'first_name', 'last_name',)
     inlines = [ContactLanguageInlineAdmin]
 
+
+class CompanyContactAdmin(admin.ModelAdmin):
+    search_fields = ('job_title', 'contact__first_name', 'contact__last_name')
+
+
 class ContactAddressAdmin(admin.ModelAdmin):
 
     search_fields = ('contact__first_name', 'contact__last_name', 'contact__email', 'contact__phone_mobile')
@@ -464,7 +469,6 @@ admin.site.register(models.Address, AddressAdmin)
 admin.site.register(models.CompanyRel, CompanyRelAdmin)
 admin.site.register(models.CompanyAddress, CompanyAddressAdmin)
 admin.site.register(models.CompanyLocalization)
-admin.site.register(models.CompanyContact)
 admin.site.register(models.CompanyContactAddress, BaseAdmin)
 admin.site.register(models.CompanyContactRelationship, BaseAdmin)
 admin.site.register(models.Invoice, InvoiceAdmin)
