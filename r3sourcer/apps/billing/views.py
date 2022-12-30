@@ -172,6 +172,8 @@ class StripeCustomerCreateView(APIView):
             company.stripe_customer,
             source=self.request.data.get('source'),
         )
+        company.card_number = self.request.data.get('last4')
+        company.save()
         return Response(status=status.HTTP_200_OK)
 
 
