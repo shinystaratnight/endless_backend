@@ -59,12 +59,10 @@ class BaseTimeSheetViewsetMixin:
             data.update(supervisor_approved_at=utc_now())
 
         if data.get('hours', False) is False and data.get('shift_ended_at', None) is None:
-            timesheet_rates = time_sheet.timesheet_rates.all()
-            for timesheet_rate in timesheet_rates:
-                if timesheet_rate.is_hourly:
-                    started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1])
-                    data.update(shift_ended_at=started_at + datetime.timedelta(hours=float(timesheet_rate.value)))
-                    break
+            if hr_models.TimeSheetRate.objects.filter(timesheet=time_sheet, is_hourly=True).exists():
+                timesheet_rate = hr_models.TimeSheetRate.objects.filter(timesheet=time_sheet, is_hourly=True).first()
+                started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1])
+                data.update(shift_ended_at=started_at + datetime.timedelta(hours=float(timesheet_rate.value)))
 
         serializer = timesheet_serializers.TimeSheetSerializer(time_sheet, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
