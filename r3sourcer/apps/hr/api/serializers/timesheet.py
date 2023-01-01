@@ -91,6 +91,7 @@ def validate_timesheet(self, data):
                                                     skill_name=self.instance.job_offer.job.position.name) \
                                             .first()
             if not TimeSheetRate.objects.filter(timesheet=self.instance).exclude(worktype=hourly_work).exists():
+                TimeSheetRate.objects.filter(timesheet=self.instance).delete()
                 raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
             data['wage_type'] = 1
 
