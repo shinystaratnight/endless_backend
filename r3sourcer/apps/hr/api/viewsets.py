@@ -1013,7 +1013,7 @@ class TimeSheetCandidateViewset(BaseTimeSheetViewsetMixin,
     def list(self, request, *args, **kwargs):
         return self.paginated(self.get_candidate_queryset(request))
 
-    @transaction.atomic
+    # @transaction.atomic
     @action(methods=['get', 'put'], detail=True)
     def submit(self, request, pk, *args, **kwargs):  # pragma: no cover
         return self.handle_request(request, pk, *args, **kwargs)
