@@ -702,8 +702,8 @@ class JobViewset(BaseApiViewset):
             candidate_contacts = candidate_contacts.filter(distance_to_jobsite__lte=restrict_radius * 1000)
 
         sort_fields = []
-        if len(top_contacts) > 0:
-            sort_fields.append('top_order')
+        # if len(top_contacts) > 0:
+        #     sort_fields.append('top_order')
 
         candidate_contacts = self.sort_candidates(request, candidate_contacts, *sort_fields)
 
