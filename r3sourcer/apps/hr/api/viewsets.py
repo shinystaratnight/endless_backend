@@ -688,7 +688,8 @@ class JobViewset(BaseApiViewset):
                 When(tag_rels__tag_id__in=job_tags, job_offers__isnull=True, then=1),
                 default=0,
                 output_field=IntegerField(),
-            ))
+            )),
+            average_score=F('candidate_scores__average_score')
         ).prefetch_related('tag_rels__tag')
 
         tags_filter = request.query_params.get('show_without_tags', None) in ('True', None)
