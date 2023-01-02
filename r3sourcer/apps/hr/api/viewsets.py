@@ -659,15 +659,15 @@ class JobViewset(BaseApiViewset):
             carrier_lists__target_date__gte=job.now_utc.date()
         ).values_list('id', flat=True))
 
-        top_contacts = set(favourite_list + booked_before_list + carrier_list)
-        if len(top_contacts) > 0:
-            candidate_contacts = candidate_contacts.annotate(
-                top_order=Case(
-                    *[When(pk=pk, then=0) for pos, pk in enumerate(top_contacts)],
-                    default=1,
-                    output_field=IntegerField()
-                )
-            )
+        # top_contacts = set(favourite_list + booked_before_list + carrier_list)
+        # if len(top_contacts) > 0:
+        #     candidate_contacts = candidate_contacts.annotate(
+        #         top_order=Case(
+        #             *[When(pk=pk, then=0) for pos, pk in enumerate(top_contacts)],
+        #             default=1,
+        #             output_field=IntegerField()
+        #         )
+        #     )
 
         job_tags = job.tags.values_list('tag_id', flat=True)
 
