@@ -8,7 +8,7 @@ from functools import reduce
 from django.conf import settings
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Min
+from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Min, Count
 from django.utils import dateparse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -689,7 +689,8 @@ class JobViewset(BaseApiViewset):
                 default=0,
                 output_field=IntegerField(),
             )),
-            average_score=F('candidate_scores__average_score')
+            average_score=F('candidate_scores__average_score'),
+            count_timesheets=Count('job_offers__time_sheets', distinct=True)
         ).prefetch_related('tag_rels__tag')
 
         tags_filter = request.query_params.get('show_without_tags', None) in ('True', None)
