@@ -64,6 +64,19 @@ class BaseTimeSheetViewsetMixin:
                 started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1])
                 data.update(shift_ended_at=started_at + datetime.timedelta(hours=float(timesheet_rate.value)))
 
+        if data.get('hours', False):
+            shift_started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1]) \
+                if data.get('shift_started_at', None) else 0
+            shift_ended_at = datetime.datetime.fromisoformat(data.get('shift_ended_at')[:-1]) \
+                if data.get('shift_ended_at', None) else 0
+
+            if shift_ended_at - shift_started_at >= datetime.timedelta(hours=8):
+                if not data.get('break_started_at', None) and not data.get('break_ended_at', None):
+                    data.update({
+                        'break_started_at': shift_started_at,
+                        'break_ended_at': shift_started_at + datetime.timedelta(minutes=30),
+                    })
+
         serializer = timesheet_serializers.TimeSheetSerializer(time_sheet, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
