@@ -77,7 +77,6 @@ def validate_timesheet(self, data):
                         raise serializers.ValidationError({
                             'non_field_errors': _("The break time should be at least 30 minutes.")
                         })
-
                 else:
                     break_duration = timedelta(0)
                 # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at)  <= 24h

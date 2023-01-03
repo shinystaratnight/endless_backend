@@ -58,12 +58,6 @@ class BaseTimeSheetViewsetMixin:
         else:
             data.update(supervisor_approved_at=utc_now())
 
-        if data.get('hours', False) is False and data.get('shift_ended_at', None) is None:
-            if hr_models.TimeSheetRate.objects.filter(timesheet=time_sheet, is_hourly=True).exists():
-                timesheet_rate = hr_models.TimeSheetRate.objects.filter(timesheet=time_sheet, is_hourly=True).first()
-                started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1])
-                data.update(shift_ended_at=started_at + datetime.timedelta(hours=float(timesheet_rate.value)))
-
         if data.get('hours', False):
             shift_started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1]) \
                 if data.get('shift_started_at', None) else 0
@@ -76,6 +70,21 @@ class BaseTimeSheetViewsetMixin:
                         'break_started_at': shift_started_at,
                         'break_ended_at': shift_started_at + datetime.timedelta(minutes=30),
                     })
+        else:
+            if hr_models.TimeSheetRate.objects.filter(timesheet=time_sheet, is_hourly=True).exists():
+                timesheet_rate = hr_models.TimeSheetRate.objects.filter(timesheet=time_sheet, is_hourly=True).first()
+                started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1])
+
+                if data.get('shift_ended_at', None) is None:
+                    data.update(shift_ended_at=started_at + datetime.timedelta(hours=float(timesheet_rate.value)))
+
+                    if timesheet_rate.value >= 8:
+                        data.update({
+                            'break_started_at': started_at,
+                            'break_ended_at': started_at + datetime.timedelta(minutes=30),
+                        })
+                        timesheet_rate.value = float(timesheet_rate.value) - 0.5
+                        timesheet_rate.save()
 
         serializer = timesheet_serializers.TimeSheetSerializer(time_sheet, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
