@@ -59,20 +59,24 @@ def validate_timesheet(self, data):
                     raise serializers.ValidationError({'shift_started_at':
                         _('Incorrect shift starting or ending time.')})
                 if break_ended_at and break_started_at:
-                # break_ended_at >= break_started_at
+                    # break_ended_at >= break_started_at
                     if break_started_at < break_started_at:
                         raise serializers.ValidationError({'break_started_at':
                             _('Incorrect break starting or ending time.')})
-                # shift_started_at <= break_started_at
+                    # shift_started_at <= break_started_at
                     if shift_started_at > break_started_at:
                         raise serializers.ValidationError({'break_started_at':
                             _('Break must start after shift starting time.')})
-                # shift_ended_at >= break_ended_at
+                    # shift_ended_at >= break_ended_at
                     if shift_ended_at < break_ended_at:
                         raise serializers.ValidationError({'break_ended_at':
                             _('Break must end before shift ending time.')})
-                # calculate break duration
+                    # calculate break duration
                     break_duration = break_ended_at - break_started_at
+                    if break_duration < timedelta(minutes=30) and shift_ended_at-shift_started_at >= timedelta(hours=8):
+                        raise serializers.ValidationError({
+                            'non_field_errors': _("The break time should be at least 30 minutes.")
+                        })
                 else:
                     break_duration = timedelta(0)
                 # (shift_ended_at - shift_started_at) - (break_ended_at - break_started_at)  <= 24h
@@ -91,6 +95,7 @@ def validate_timesheet(self, data):
                                                     skill_name=self.instance.job_offer.job.position.name) \
                                             .first()
             if not TimeSheetRate.objects.filter(timesheet=self.instance).exclude(worktype=hourly_work).exists():
+                TimeSheetRate.objects.filter(timesheet=self.instance).delete()
                 raise exceptions.ValidationError({'non_field_errors': _("You need to add at least one skill activity")})
             data['wage_type'] = 1
 

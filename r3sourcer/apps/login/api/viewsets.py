@@ -185,6 +185,8 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
 
         if not serializer.data['remember_me']:
             request.session.set_expiry(0)
+        else:
+            request.session.set_expiry(86400)
 
         url, headers, body, resp_status = self.create_token_response(request)
         token_content, resp_status = self.get_jwt_oauth2_token(request, json.loads(body), resp_status, redirect_host)

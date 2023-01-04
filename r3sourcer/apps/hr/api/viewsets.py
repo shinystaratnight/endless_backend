@@ -8,7 +8,7 @@ from functools import reduce
 from django.conf import settings
 from django.core.exceptions import ValidationError, ObjectDoesNotExist
 from django.db import transaction
-from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Min
+from django.db.models import Q, Case, When, BooleanField, Value, IntegerField, F, Sum, Max, Min, Count
 from django.utils import dateparse
 from django.utils.formats import date_format
 from django.utils.translation import ugettext_lazy as _
@@ -58,13 +58,33 @@ class BaseTimeSheetViewsetMixin:
         else:
             data.update(supervisor_approved_at=utc_now())
 
-        if data.get('hours', False) is False and data.get('shift_ended_at', None) is None:
-            timesheet_rates = time_sheet.timesheet_rates.all()
-            for timesheet_rate in timesheet_rates:
-                if timesheet_rate.is_hourly:
-                    started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1])
+        if data.get('hours', False):
+            shift_started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1]) \
+                if data.get('shift_started_at', None) else 0
+            shift_ended_at = datetime.datetime.fromisoformat(data.get('shift_ended_at')[:-1]) \
+                if data.get('shift_ended_at', None) else 0
+
+            if shift_ended_at - shift_started_at >= datetime.timedelta(hours=8):
+                if not data.get('break_started_at', None) and not data.get('break_ended_at', None):
+                    data.update({
+                        'break_started_at': shift_started_at,
+                        'break_ended_at': shift_started_at + datetime.timedelta(minutes=30),
+                    })
+        else:
+            if hr_models.TimeSheetRate.objects.filter(timesheet=time_sheet, is_hourly=True).exists():
+                timesheet_rate = hr_models.TimeSheetRate.objects.filter(timesheet=time_sheet, is_hourly=True).first()
+                started_at = datetime.datetime.fromisoformat(data.get('shift_started_at')[:-1])
+
+                if data.get('shift_ended_at', None) is None:
                     data.update(shift_ended_at=started_at + datetime.timedelta(hours=float(timesheet_rate.value)))
-                    break
+
+                    if timesheet_rate.value >= 8:
+                        data.update({
+                            'break_started_at': started_at,
+                            'break_ended_at': started_at + datetime.timedelta(minutes=30),
+                        })
+                        timesheet_rate.value = float(timesheet_rate.value) - 0.5
+                        timesheet_rate.save()
 
         serializer = timesheet_serializers.TimeSheetSerializer(time_sheet, data=data, partial=True)
         serializer.is_valid(raise_exception=True)
@@ -661,15 +681,15 @@ class JobViewset(BaseApiViewset):
             carrier_lists__target_date__gte=job.now_utc.date()
         ).values_list('id', flat=True))
 
-        top_contacts = set(favourite_list + booked_before_list + carrier_list)
-        if len(top_contacts) > 0:
-            candidate_contacts = candidate_contacts.annotate(
-                top_order=Case(
-                    *[When(pk=pk, then=0) for pos, pk in enumerate(top_contacts)],
-                    default=1,
-                    output_field=IntegerField()
-                )
-            )
+        # top_contacts = set(favourite_list + booked_before_list + carrier_list)
+        # if len(top_contacts) > 0:
+        #     candidate_contacts = candidate_contacts.annotate(
+        #         top_order=Case(
+        #             *[When(pk=pk, then=0) for pos, pk in enumerate(top_contacts)],
+        #             default=1,
+        #             output_field=IntegerField()
+        #         )
+        #     )
 
         job_tags = job.tags.values_list('tag_id', flat=True)
 
@@ -690,7 +710,9 @@ class JobViewset(BaseApiViewset):
                 When(tag_rels__tag_id__in=job_tags, job_offers__isnull=True, then=1),
                 default=0,
                 output_field=IntegerField(),
-            ))
+            )),
+            average_score=F('candidate_scores__average_score'),
+            count_timesheets=Count('job_offers__time_sheets', distinct=True)
         ).prefetch_related('tag_rels__tag')
 
         tags_filter = request.query_params.get('show_without_tags', None) in ('True', None)
@@ -702,8 +724,8 @@ class JobViewset(BaseApiViewset):
             candidate_contacts = candidate_contacts.filter(distance_to_jobsite__lte=restrict_radius * 1000)
 
         sort_fields = []
-        if len(top_contacts) > 0:
-            sort_fields.append('top_order')
+        # if len(top_contacts) > 0:
+        #     sort_fields.append('top_order')
 
         candidate_contacts = self.sort_candidates(request, candidate_contacts, *sort_fields)
 
@@ -1015,7 +1037,7 @@ class TimeSheetCandidateViewset(BaseTimeSheetViewsetMixin,
     def list(self, request, *args, **kwargs):
         return self.paginated(self.get_candidate_queryset(request))
 
-    @transaction.atomic
+    # @transaction.atomic
     @action(methods=['get', 'put'], detail=True)
     def submit(self, request, pk, *args, **kwargs):  # pragma: no cover
         return self.handle_request(request, pk, *args, **kwargs)
