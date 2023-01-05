@@ -805,8 +805,18 @@ class CompanyContactViewset(BaseApiViewset):
                 instance.provider_representative_jobs.exists() or instance.customer_representative_jobs.exists()
             )
 
-            if has_jobs or has_jobsites or instance.supervised_time_sheets.exists():
-                raise ValidationError({'non_field_errors': _('Cannot delete')})
+            if has_jobs:
+                raise ValidationError({
+                    'non_field_errors': _('There are jobs related to this client contact.')
+                })
+            elif has_jobsites:
+                raise ValidationError({
+                    'non_field_errors': _('There are jobsites related to this client contact.')
+                })
+            elif instance.supervised_time_sheets.exists():
+                raise ValidationError({
+                    'non_field_errors': _('There are timesheets related to this client contact.')
+                })
 
             relationships = instance.relationships.all()
             for relationship in relationships:
