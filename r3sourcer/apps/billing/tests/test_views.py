@@ -93,7 +93,7 @@ class TestSubscriptionStatusView:
         assert response['status'] == 'not_created'
 
 
-class TestStripeCustomerCreateView:
+class TestStripeCustomerView:
     def test_get(self, client, user, company, relationship, company_address):
         url = reverse('billing:stripe_customer_create')
         client.force_login(user)
