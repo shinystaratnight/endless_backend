@@ -54,7 +54,9 @@ class CandidateContactViewset(BaseApiViewset):
             has_joboffers = instance.job_offers.exists()
 
             if has_joboffers:
-                raise exceptions.ValidationError({'non_field_errors': _('Cannot delete')})
+                raise exceptions.ValidationError({
+                    'non_field_errors': _('There are job offers related to this candidate contact.')
+                })
 
             master_company = instance.get_closest_company()
 
