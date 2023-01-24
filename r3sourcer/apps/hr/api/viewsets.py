@@ -440,7 +440,13 @@ class InvoiceViewset(BaseApiViewset):
 
     def filter_queryset(self, queryset):
         queryset = super().filter_queryset(queryset)
-        return queryset.order_by('created_at')
+        sort_fields = []
+        params = self.request.query_params.get(api_settings.ORDERING_PARAM)
+        if params:
+            sort_fields.extend([param.strip() for param in params.split(',')] if params else [])
+        else:
+            sort_fields.append('created_at')
+        return queryset.order_by(*sort_fields)
 
     @action(methods=['get'], detail=True)
     def pdf(self, request, *args, **kwargs):
