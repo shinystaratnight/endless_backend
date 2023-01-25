@@ -126,7 +126,7 @@ class SkillRateRangeSerializer(ApiBaseModelSerializer):
 
 class WorkTypeSerializer(ApiBaseModelSerializer):
 
-    method_fields = ['skill_rate_ranges', 'skill_rate']
+    method_fields = ['skill_rate_ranges', 'skill_rate', 'default_rate']
 
     class Meta:
         model = WorkType
@@ -171,6 +171,20 @@ class WorkTypeSerializer(ApiBaseModelSerializer):
                         rate = timesheet.job_offer.candidate_contact.get_candidate_rate_for_worktype(obj)
 
                     return rate if rate else 0
+                except ObjectDoesNotExist:
+                    pass
+        return 0
+
+    def get_default_rate(self, obj):
+        request = self.context.get('request')
+        if request:
+            skill_id = request.query_params.get('skill')
+            if skill_id:
+                try:
+                    skill = Skill.objects.get(pk=skill_id)
+                    skill_rate_ranges = obj.skill_rate_ranges.filter(skill=skill)
+                    if skill_rate_ranges.exists():
+                        return skill_rate_ranges.first().default_rate
                 except ObjectDoesNotExist:
                     pass
         return 0

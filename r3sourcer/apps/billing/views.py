@@ -133,7 +133,7 @@ class SubscriptionListView(ListAPIView):
         return Response(data)
 
 
-class StripeCustomerCreateView(APIView):
+class StripeCustomerView(APIView):
     def post(self, *args, **kwargs):
         company = get_site_master_company()
         description = '{}'.format(company.name)
@@ -175,6 +175,13 @@ class StripeCustomerCreateView(APIView):
         company.card_number = self.request.data.get('last4')
         company.save()
         return Response(status=status.HTTP_200_OK)
+
+    def delete(self, *args, **kwargs):
+        company = get_site_master_company()
+        company.stripe_customer = None
+        company.card_number = None
+        company.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 class SubscriptionStatusView(APIView):
