@@ -498,6 +498,9 @@ class MYOBAccountRightV2API(object):
         resp = self._client.get_resources()
         data = resp.json()
 
+        if isinstance(data, str):
+            raise MYOBImplementationException(_("MyOB settings are incorrectly configured"))
+
         if 'Resources' not in data:
             message = data.get('Message', None)
 

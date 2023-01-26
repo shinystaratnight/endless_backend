@@ -47,14 +47,6 @@ beat_schedule = {
         'task': 'r3sourcer.apps.hr.tasks.check_unpaid_invoices',
         'schedule': crontab(hour=5, minute=00),
     },
-    'sync_to_myob': {
-        'task': 'r3sourcer.apps.myob.tasks.sync_to_myob',
-        'schedule': crontab(minute=0, hour=1),
-    },
-    'sync_timesheets': {
-        'task': 'r3sourcer.apps.myob.tasks.sync_timesheets',
-        'schedule': crontab(minute=0, hour='*/1'),
-    },
     'update_all_distances': {
         'task': 'r3sourcer.apps.hr.tasks.update_all_distances',
         'schedule': crontab(minute=0, hour=22, day_of_week='fri,sat')
