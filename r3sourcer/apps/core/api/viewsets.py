@@ -1401,10 +1401,11 @@ class FormViewSet(BaseApiViewset):
                         continue
                     if not isinstance(field, ForeignKey):
                         continue
-                    if isinstance(instance, field.rel.model):
+                    rel_model = field.rel.model if hasattr(field, 'rel') else field.remote_field.model
+                    if isinstance(instance, rel_model):
                         val[field.name] = instance
                         continue
-                    if isinstance(instance.recruitment_agent, field.rel.model):
+                    if isinstance(instance.recruitment_agent, rel_model):
                         val[field.name] = instance.recruitment_agent
                         continue
 
