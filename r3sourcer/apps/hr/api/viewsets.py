@@ -617,17 +617,17 @@ class JobViewset(BaseApiViewset):
 
         # filter overpriced candidates
         overpriced = request.GET.get('overpriced', 'False') == 'True'
-        overpriced_candidates = []
+        # overpriced_candidates = []
         skill_rate_range = job.position.skill_rate_ranges.filter(worktype=None).last()
         if skill_rate_range:
             overpriced_qry = Q(
                 candidate_skills__skill=job.position,
                 candidate_skills__score__gt=0
             )
-            overpriced_candidates = candidate_contacts.filter(
-                overpriced_qry,
-                candidate_skills__hourly_rate__gt=skill_rate_range.default_rate,
-            ).values_list('id', flat=True)
+            # overpriced_candidates = candidate_contacts.filter(
+            #     overpriced_qry,
+            #     candidate_skills__hourly_rate__gt=skill_rate_range.default_rate,
+            # ).values_list('id', flat=True)
 
             if not overpriced:
                 candidate_contacts = candidate_contacts.filter(
@@ -653,15 +653,15 @@ class JobViewset(BaseApiViewset):
                     data['shifts'] = [shift for shift in single_shifts if shift.id in data['shifts']]
         # end
 
-        when_list = self._get_undefined_jo_lookups(single_shifts)
+        # when_list = self._get_undefined_jo_lookups(single_shifts)
 
-        candidate_contacts = candidate_contacts.annotate(
-            jos=Sum(Case(
-                *when_list,
-                default=Value(0),
-                output_field=IntegerField()
-            ))
-        )
+        # candidate_contacts = candidate_contacts.annotate(
+        #     jos=Sum(Case(
+        #         *when_list,
+        #         default=Value(0),
+        #         output_field=IntegerField()
+        #     ))
+        # )
 
         company_contacts = request.user.contact.company_contact.all()
         if company_contacts.exists():
@@ -675,17 +675,17 @@ class JobViewset(BaseApiViewset):
                 favouritelists__company_contact__in=company_contacts
             ).values_list('id', flat=True).distinct())
         else:
-            favourite_list = []
+           favourite_list = []
 
-        booked_before_list = list(candidate_contacts.filter(
-            job_offers__in=job.get_job_offers().values('id'),
-            job_offers__time_sheets__isnull=False
-        ).values_list('id', flat=True))
+        # booked_before_list = list(candidate_contacts.filter(
+        #     job_offers__in=job.get_job_offers().values('id'),
+        #     job_offers__time_sheets__isnull=False
+        # ).values_list('id', flat=True))
 
-        carrier_list = list(candidate_contacts.filter(
-            carrier_lists__confirmed_available=True,
-            carrier_lists__target_date__gte=job.now_utc.date()
-        ).values_list('id', flat=True))
+        # carrier_list = list(candidate_contacts.filter(
+        #     carrier_lists__confirmed_available=True,
+        #     carrier_lists__target_date__gte=job.now_utc.date()
+        # ).values_list('id', flat=True))
 
         # top_contacts = set(favourite_list + booked_before_list + carrier_list)
         # if len(top_contacts) > 0:
@@ -712,11 +712,11 @@ class JobViewset(BaseApiViewset):
                 default=-1
             )),
             last_timesheet_date=Max('job_offers__time_sheets__shift_started_at'),
-            tags_count=Sum(Case(
-                When(tag_rels__tag_id__in=job_tags, job_offers__isnull=True, then=1),
-                default=0,
-                output_field=IntegerField(),
-            )),
+            # tags_count=Sum(Case(
+            #     When(tag_rels__tag_id__in=job_tags, job_offers__isnull=True, then=1),
+            #     default=0,
+            #     output_field=IntegerField(),
+            # )),
             average_score=F('candidate_scores__average_score'),
             count_timesheets=Count('job_offers__time_sheets', distinct=True)
         ).prefetch_related('tag_rels__tag')
@@ -737,11 +737,11 @@ class JobViewset(BaseApiViewset):
 
         context = {
             'partially_available_candidates': partially_available_candidates,
-            'overpriced': overpriced_candidates,
+            # 'overpriced': overpriced_candidates,
             'job': job,
             'favourite_list': favourite_list,
-            'booked_before_list': booked_before_list,
-            'carrier_list': carrier_list,
+            # 'booked_before_list': booked_before_list,
+            # 'carrier_list': carrier_list,
             'init_shifts': init_shifts,
         }
 
@@ -762,7 +762,7 @@ class JobViewset(BaseApiViewset):
             })
 
         serializer = job_serializers.JobFillinSerialzier(
-            candidate_contacts[:51], context=context, many=True
+            candidate_contacts[:51].select_related('candidate_scores'), context=context, many=True
         )
         return Response({
             'shifts': [
@@ -858,7 +858,7 @@ class JobViewset(BaseApiViewset):
     def sort_candidates(self, request, candidate_contacts, *fields):
         params = request.query_params.get(api_settings.ORDERING_PARAM)
         fields = list(fields)
-        fields.append('-tags_count')
+        # fields.append('-tags_count')
 
         if params:
             fields.extend([param.strip() for param in params.split(',')] if params else [])
