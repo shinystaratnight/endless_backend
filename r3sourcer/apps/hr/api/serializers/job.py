@@ -530,21 +530,20 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
 
     method_fields = (
         'available', 'days_from_last_timesheet', 'distance_to_jobsite', 'time_to_jobsite', 'count_timesheets',
-        'hourly_rate', 'color', 'favourite', 'tags',    # 'overpriced',
+        'hourly_rate', 'tags', 'favourite'#, 'overpriced', 'color'
     )
 
-    jos = serializers.IntegerField(read_only=True)
+    # jos = serializers.IntegerField(read_only=True)
     candidate_scores = CandidateScoreSerializer(read_only=True)
 
     class Meta:
         model = candidate_models.CandidateContact
         fields = (
-            'id', 'recruitment_agent', 'tag_rels', 'nationality', 'transportation_to_work',
-            'jos', 'candidate_scores', {
-                'contact': ['gender', 'first_name', 'last_name', {
-                    'address': ('longitude', 'latitude'),
-                }],
-                'tag_rels': ['tag'],
+            'id', 'transportation_to_work', 'candidate_scores',
+            # 'recruitment_agent', 'nationality', 'jos',
+            {
+            'contact': ['first_name', 'last_name'],
+            # 'tag_rels': ['tag'],
             }
         )
 
@@ -562,7 +561,7 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
         return hr_utils.seconds_to_hrs(obj.time_to_jobsite) if obj.time_to_jobsite and obj.time_to_jobsite > 0 else -1
 
     def get_count_timesheets(self, obj):
-        return hr_models.TimeSheet.objects.filter(job_offer__candidate_contact=obj.id).count()
+        return obj.count_timesheets
 
     def get_hourly_rate(self, obj):
         hourly_rate = obj.get_candidate_rate_for_skill(
@@ -576,19 +575,19 @@ class JobFillinSerialzier(FillinAvailableMixin, core_serializers.ApiBaseModelSer
     # def get_overpriced(self, obj):
     #     return obj.id in self.context['overpriced']
 
-    def get_color(self, obj):
-        is_partially_avail = obj.id in self.context['partially_available_candidates']
-        # if self.get_overpriced(obj):
-        #     if is_partially_avail:
-        #         return 5
-        #     return 3
-        if is_partially_avail:
-            return 4
-        elif obj.id in self.context['carrier_list'] or obj.id in self.context['booked_before_list']:
-            if obj.jos > 0:
-                return 2
-            return 1
-        return 0
+    # def get_color(self, obj):
+    #     is_partially_avail = obj.id in self.context['partially_available_candidates']
+    #     # if self.get_overpriced(obj):
+    #     #     if is_partially_avail:
+    #     #         return 5
+    #     #     return 3
+    #     if is_partially_avail:
+    #         return 4
+    #     elif obj.id in self.context['carrier_list'] or obj.id in self.context['booked_before_list']:
+    #         if obj.jos > 0:
+    #             return 2
+    #         return 1
+    #     return 0
 
     def get_tags(self, obj):
         job_tags = self.context['job'].tags
