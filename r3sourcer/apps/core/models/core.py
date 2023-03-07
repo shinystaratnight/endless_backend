@@ -2725,8 +2725,15 @@ class InvoiceLine(AbstractOrderLine):
 
     @property
     def activities_list(self):
-        activities = self.timesheet.timesheet_rates.values_list('worktype__name', flat=True)
-        return ','.join(activities)
+        activities_list = []
+        master_company = self.timesheet.master_company
+        company_language = master_company.get_default_language()
+        timesheet_rates = self.timesheet.timesheet_rates
+
+        for tr in timesheet_rates.all():
+            activities_list.append(tr.worktype.translation(company_language))
+
+        return ','.join(activities_list)
 
     def __str__(self):
         return '{}: {}'.format(
