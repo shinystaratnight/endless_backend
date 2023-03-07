@@ -180,6 +180,7 @@
         <th>Units</th>
         <th>Unit name</th>
         <th>Notes</th>
+        <th>Skill Activities</th>
         <th>Tax</th>
         <th>Rate</th>
         <th>Amount</th>
@@ -197,7 +198,7 @@
         {% else %}
             <td>{{ line.notes }}</td>
         {% endif %}
-        <td>{{ line.vat.name }}</td>
+        <!-- <td>{{ line.vat.name }}</td> -->
         <td>${{ line.unit_price }}</td>
         <td>${{ line.amount }}</td>
       </tr>
