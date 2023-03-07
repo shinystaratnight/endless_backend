@@ -164,6 +164,7 @@ class Contact(CategoryFolderMixin,
 
     phone_mobile_verified = models.BooleanField(verbose_name=_("Mobile Phone Verified"), default=False)
     email_verified = models.BooleanField(verbose_name=_("E-mail Verified"), default=False)
+    # registration_completed = models.BooleanField(verbose_name=_("Registration Completed"), default=True)
 
     address = models.ManyToManyField(
         'Address',
@@ -2721,6 +2722,18 @@ class InvoiceLine(AbstractOrderLine):
     @property
     def updated_at_utc(self):
         return self.updated_at
+
+    @property
+    def activities_list(self):
+        activities_list = []
+        master_company = self.timesheet.master_company
+        company_language = master_company.get_default_language()
+        timesheet_rates = self.timesheet.timesheet_rates
+
+        for tr in timesheet_rates.all():
+            activities_list.append(tr.worktype.translation(company_language))
+
+        return ','.join(activities_list)
 
     def __str__(self):
         return '{}: {}'.format(
