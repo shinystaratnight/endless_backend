@@ -433,8 +433,13 @@ class TimeSheetViewset(BaseTimeSheetViewsetMixin, BaseApiViewset):
             return Response({"error": "No timesheets were selected"})
         else:
             pdf_file = generate_pdf(request.data.get("timesheets"), request)
-        return Response({'pdf_url': pdf_file.url})
-
+        if pdf_file:
+            return Response({'pdf_url': pdf_file.url})
+        else:
+            return Response({
+            'status': 'Not Found',
+            'message': _("Can't view PDF without submitted timesheets")
+        }, status=status.HTTP_404_NOT_FOUND)
 
 class InvoiceViewset(BaseApiViewset):
 
