@@ -1191,6 +1191,8 @@ def generate_pdf(timesheet_ids, request=None, master_company=None):
 
     timesheet_rates = hr_models.TimeSheetRate.objects.filter(timesheet__pk__in=timesheet_ids).order_by(
         'timesheet__job_offer__shift__date__job__jobsite', 'is_hourly', 'timesheet__shift_started_at')
+    if not timesheet_rates:
+        return None
     if not master_company:
         master_company = timesheet_rates[0].timesheet.master_company
     if master_company.logo:
