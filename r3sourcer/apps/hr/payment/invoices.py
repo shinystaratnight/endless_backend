@@ -93,7 +93,7 @@ class InvoiceService(BasePaymentService):
                     lines.append({
                         'date': timesheet.shift_started_at_tz.date(),
                         'units': ts_rate.value,
-                        'notes': ts_rate.worktype.translation(company_language),
+                        'notes': ts_rate.worktype.skill_translation(company_language),
                         'unit_price': price_list_rate.rate,
                         'amount': math.ceil(price_list_rate.rate * ts_rate.value * 100) / 100,
                         'vat': vat,
