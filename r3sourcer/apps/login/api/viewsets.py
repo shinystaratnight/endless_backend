@@ -289,6 +289,7 @@ class AuthViewSet(OAuthLibMixin, OAuth2JWTTokenMixin, BaseViewsetMixin, viewsets
                 'contact': serializer.data,
                 'timezone': time_zone.zone,
                 'user': str(request.user.id),
+                'is_superuser': request.user.is_superuser,
                 'end_trial_date': request.user.get_end_of_trial(),
                 'is_primary': request.user.company.primary_contact == request.user.contact.get_company_contact_by_company(
                     request.user.company),
